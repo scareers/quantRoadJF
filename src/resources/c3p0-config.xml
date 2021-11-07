@@ -1,0 +1,129 @@
+<c3p0-config>
+    <!--    java代码. 可传递参数,为连接池名称; 使用xml后, 不需要 各种set-->
+    <!--    ComboPooledDataSource cpds = new ComboPooledDataSource();-->
+    <!--    //        ComboPooledDataSource cpds = new ComboPooledDataSource("myDataSource");-->
+    <!--    cpds.setDriverClass("com.mysql.jdbc.Driver");-->
+    <!--    cpds.setJdbcUrl("jdbc:mysql://host:port/db");-->
+    <!--    cpds.setUser("username");-->
+    <!--    cpds.setPassword("password");-->
+    <!--    cpds.setMinPoolSize(5);-->
+    <!--    cpds.setMaxPoolSize(20);-->
+    <!--    cpds.setAcquireIncrement(5);-->
+
+    <!--    Connection conn = cpds.getConnection();-->
+    <!--    cpds.close();-->
+
+    <!--    c3p0连接池配置. 因多线程, 对同参数的连接,会重复创建n个连接对象. 连接池可复用对象-->
+    <!--    注意: 连接池中, 所有连接未关闭的情况下, 达到上限将阻塞. 如果多个sql在一个conn内执行, 注意暂存conn变量, 而非每次从池子获取-->
+    <!-- 默认数据源 -->
+    <default-config>
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://127.0.0.1:3306/tushare?useSSL=false</property>
+        <property name="user">root</property>
+        <property name="password">123</property>
+        <property name="initialPoolSize">4</property>
+        <property name="minPoolSize">3</property>
+        <property name="maxPoolSize">128</property>
+        <property name="acquireIncrement">5</property>
+        <!-- 连接的最大空闲时间，如果超过这个时间，某个数据库连接还没有被使用，则会断开掉这个连接。为0，则永远不会断开连接。默认值: 0,单位: 秒 -->
+        <property name="maxIdleTime">60</property>
+        <!-- 连接测试语句 -->
+        <property name="preferredTestQuery">select 1</property>
+        <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
+        从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
+        <property name="idleConnectionTestPeriod">60</property>
+        <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
+        <property name="acquireRetryAttempts">3</property>
+        <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
+        <property name="acquireRetryDelay">2000</property>
+    </default-config>
+
+    <!-- 定义带名称的数据源 -->
+    <named-config name="localTushare">
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://127.0.0.1:3306/tushare?useSSL=false</property>
+        <property name="user">root</property>
+        <property name="password">123</property>
+        <property name="initialPoolSize">4</property>
+        <property name="minPoolSize">3</property>
+        <property name="maxPoolSize">128</property>
+        <property name="acquireIncrement">5</property>
+        <!-- 连接的最大空闲时间，如果超过这个时间，某个数据库连接还没有被使用，则会断开掉这个连接。为0，则永远不会断开连接。默认值: 0,单位: 秒 -->
+        <property name="maxIdleTime">60</property>
+        <!-- 连接测试语句 -->
+        <property name="preferredTestQuery">select 1</property>
+        <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
+        从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
+        <property name="idleConnectionTestPeriod">60</property>
+        <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
+        <property name="acquireRetryAttempts">3</property>
+        <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
+        <property name="acquireRetryDelay">2000</property>
+    </named-config>
+
+    <named-config name="localStocktest">
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://127.0.0.1:3306/stocktest?useSSL=false</property>
+        <property name="user">root</property>
+        <property name="password">123</property>
+        <property name="initialPoolSize">4</property>
+        <property name="minPoolSize">3</property>
+        <property name="maxPoolSize">128</property>
+        <property name="acquireIncrement">5</property>
+        <!-- 连接的最大空闲时间，如果超过这个时间，某个数据库连接还没有被使用，则会断开掉这个连接。为0，则永远不会断开连接。默认值: 0,单位: 秒 -->
+        <property name="maxIdleTime">60</property>
+        <!-- 连接测试语句 -->
+        <property name="preferredTestQuery">select 1</property>
+        <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
+        从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
+        <property name="idleConnectionTestPeriod">60</property>
+        <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
+        <property name="acquireRetryAttempts">3</property>
+        <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
+        <property name="acquireRetryDelay">2000</property>
+    </named-config>
+
+    <named-config name="localKlineForms">
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://127.0.0.1:3306/kline_forms?useSSL=false</property>
+        <property name="user">root</property>
+        <property name="password">123</property>
+        <property name="initialPoolSize">4</property>
+        <property name="minPoolSize">3</property>
+        <property name="maxPoolSize">128</property>
+        <property name="acquireIncrement">5</property>
+        <!-- 连接的最大空闲时间，如果超过这个时间，某个数据库连接还没有被使用，则会断开掉这个连接。为0，则永远不会断开连接。默认值: 0,单位: 秒 -->
+        <property name="maxIdleTime">60</property>
+        <!-- 连接测试语句 -->
+        <property name="preferredTestQuery">select 1</property>
+        <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
+        从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
+        <property name="idleConnectionTestPeriod">60</property>
+        <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
+        <property name="acquireRetryAttempts">3</property>
+        <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
+        <property name="acquireRetryDelay">2000</property>
+    </named-config>
+
+    <named-config name="localTushare1M">
+        <property name="driverClass">com.mysql.jdbc.Driver</property>
+        <property name="jdbcUrl">jdbc:mysql://127.0.0.1:3306/tushare_1m?useSSL=false</property>
+        <property name="user">root</property>
+        <property name="password">123</property>
+        <property name="initialPoolSize">4</property>
+        <property name="minPoolSize">3</property>
+        <property name="maxPoolSize">128</property>
+        <property name="acquireIncrement">5</property>
+        <!-- 连接的最大空闲时间，如果超过这个时间，某个数据库连接还没有被使用，则会断开掉这个连接。为0，则永远不会断开连接。默认值: 0,单位: 秒 -->
+        <property name="maxIdleTime">60</property>
+        <!-- 连接测试语句 -->
+        <property name="preferredTestQuery">select 1</property>
+        <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
+        从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
+        <property name="idleConnectionTestPeriod">60</property>
+        <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
+        <property name="acquireRetryAttempts">3</property>
+        <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
+        <property name="acquireRetryDelay">2000</property>
+    </named-config>
+</c3p0-config>

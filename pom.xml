@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.scareers</groupId>
+    <artifactId>quantRoad</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>quantRoad</name>
+    <!-- FIXME change it to the project's website -->
+    <url>http://www.example.com</url>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+        <!--        WEKA：WEKA是一个可用于数据挖掘任务的机器学习算法集合。该算法可以直接应用到数据集或从自己的Java代码调用。 WEKA包含数据预处理，分类，回归，聚类，关联规则，和可视化工具。它也非常适用于开发新的机器学习方案。-->
+
+        <!--        jmotif：时间序列、分类、数据挖掘开发库-->
+
+        <!--        java-ml：Java机器学习库，聚类、分类、特征选择、-->
+
+        <!--        flanagan： 数学和统计java开发库，包含回归算法，一次二次线性非线性回归算法，数据平滑算法，傅里叶变换，数值积分，插值法。http://www.ee.ucl.ac.uk/~mflanaga/java/-->
+
+        <!--        Mahout：Apache Mahout 是 Apache Software Foundation（ASF） 旗下的一个开源项目，提供一些可扩展的机器学习领域经典算法的实现，旨在帮助开发人员更加方便快捷地创建智能应用程序。经典算法包括聚类、分类、协同过滤、进化编程等等，并且，在 Mahout 的最近版本中还加入了对 Apache Hadoop 的支持，使这些算法可以更高效的运行在云计算环境中。-->
+
+        <!--        matlab：-->
+
+        <!--        JMulTi：时间序列分析开发库-->
+
+        <!-- https://mvnrepository.com/artifact/com.navinfo.mapspotter.algorithms.thirdpart/flanagan -->
+        <!--        <dependency>-->
+        <!--            <groupId>com.navinfo.mapspotter.algorithms.thirdpart</groupId>-->
+        <!--            <artifactId>flanagan</artifactId>-->
+        <!--&lt;!&ndash;            <version>0.9</version>&ndash;&gt;-->
+        <!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/cn.weiyinfu/tqdm -->
+        <!--        <dependency>-->
+        <!--            <groupId>cn.weiyinfu</groupId>-->
+        <!--            <artifactId>tqdm</artifactId>-->
+        <!--            <version>1.0</version>-->
+        <!--        类文件版本不对, 照抄源代码即可-->
+        <!--        </dependency>-->
+
+        <!--        <dependency>-->
+        <!--            <groupId>com.xeiam.xchart</groupId>-->
+        <!--            <artifactId>xchart</artifactId>-->
+        <!--            <version>2.4.2</version>-->
+        <!--            &lt;!&ndash;            df 画图需要&ndash;&gt;-->
+        <!--        </dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/com.github.dpaukov/combinatoricslib3 -->
+        <!--        https://blog.csdn.net/weixin_39585596/article/details/107441792  例子-->
+        <dependency>
+            <groupId>com.github.dpaukov</groupId>
+            <artifactId>combinatoricslib3</artifactId>
+            <version>3.2.0</version>
+            <scope>test</scope>
+            <!--            组合-->
+        </dependency>
+
+        <!-- c3p0连接池 -->
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.2</version>
+        </dependency>
+        <!-- 日志组件配合c3p0 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.25</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.12.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.8</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi</artifactId>
+            <version>3.17</version>
+        </dependency>
+        <!--        <dependency>-->
+        <!--            <groupId>net.corda</groupId>-->
+        <!--            <artifactId>corda-finance</artifactId>-->
+        <!--            <version>3.4-corda</version>-->
+        <!--        </dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.clojars.edbond/talib -->
+        <!-- https://mvnrepository.com/artifact/com.tictactec/ta-lib -->
+        <dependency>
+            <groupId>com.tictactec</groupId>
+            <artifactId>ta-lib</artifactId>
+            <version>0.4.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/eu.verdelhan/ta4j -->
+        <dependency>
+            <groupId>eu.verdelhan</groupId>
+            <artifactId>ta4j</artifactId>
+            <version>0.9</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.47</version>
+        </dependency>
+        <dependency>
+            <groupId>sh.joinery</groupId>
+            <artifactId>joinery-dataframe</artifactId>
+            <version>1.10</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+            <version>5.7.15</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>1.5.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
+            <plugins>
+                <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <version>3.1.0</version>
+                </plugin>
+                <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.0</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>2.22.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.0.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-install-plugin</artifactId>
+                    <version>2.5.2</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>2.8.2</version>
+                </plugin>
+                <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
+                <plugin>
+                    <artifactId>maven-site-plugin</artifactId>
+                    <version>3.7.1</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-project-info-reports-plugin</artifactId>
+                    <version>3.0.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
