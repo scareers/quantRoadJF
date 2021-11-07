@@ -1,6 +1,7 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.math.MathUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.sqlapi.TushareApi;
@@ -9,6 +10,7 @@ import com.scareers.utils.SqlUtil;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.combinpermu.Generator;
 import joinery.DataFrame;
+import org.apache.commons.math3.util.MathUtils;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -141,27 +143,27 @@ public class SingleKlineFormsBase {
 }
 
 class CalcStatResultAndSaveTask implements Callable<String> {
-    CountDownLatch latchOfCalcForEpoch; // 每轮计数
+    CountDownLatch latchOfCalcForEpoch; // 每轮计数, 多出来.  而少了图片显示参数
 
     String formName;
-    int statStockpoolLenth;
+    int statStockCounts;
     List<String> statDateRange;
-    List<Double> singleResult;
+    List<Double> results; // 单形态的统计列表
     List<Double> bigChangeThreshold;
     int bins;
     List<Double> effectiveValueRange;
     String saveTablename;
 
-    public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, String formName, int statStockpoolLenth,
+    public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, String formName, int statStockCounts,
                                      List<String> statDateRange, List<Double> singleResult,
                                      List<Double> bigChangeThreshold, int bins,
                                      List<Double> effectiveValueRange, String saveTablename) {
         this.latchOfCalcForEpoch = latchOfCalcForEpoch;
 
         this.formName = formName;
-        this.statStockpoolLenth = statStockpoolLenth;
+        this.statStockCounts = statStockCounts;
         this.statDateRange = statDateRange;
-        this.singleResult = singleResult;
+        this.results = singleResult;
         this.bigChangeThreshold = bigChangeThreshold;
         this.bins = bins;
         this.effectiveValueRange = effectiveValueRange;
@@ -173,21 +175,263 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         HashMap<String, Object> analyzeResultMap =
                 analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
         // 精细分析也不需要保存 cdfwithtick. 过于冗余
+
+        // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
+        int splitIndex = formName.lastIndexOf("__");
+        String formNamePure = formName.substring(0, splitIndex);
+        String statResultAlgorithm = formName.substring(splitIndex + 2);
+        List<String> conditions = StrUtil.split(formNamePure, "__");
+        String condition1 = null;
+        String condition2 = null;
+        String condition3 = null;
+        String condition4 = null;
+        String condition5 = null;
+        String condition6 = null;
+        String condition7 = null;
+
+        for (String condition : conditions) {
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(0))) {
+                condition1 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(1))) {
+                condition2 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(2))) {
+                condition3 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(3))) {
+                condition4 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(4))) {
+                condition5 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(5))) {
+                condition6 = condition;
+            }
+            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(6))) {
+                condition7 = condition;
+            }
+        }
+
+
         return null;
     }
 
+    /**
+     * 对比python: 显示图像 和 保存图像的 参数未传递.
+     *
+     * @param calcCdfOrFrequencyWithTick
+     * @return
+     */
     public HashMap<String, Object> analyzeStatsResults(boolean calcCdfOrFrequencyWithTick) {
         List<Double> outliers = new ArrayList<>();
         List<Double> effectiveResults = new ArrayList<>();
         List<Integer> occurencesList = new ArrayList<>();
+        for (int i = 0; i < bins; i++) {
+            occurencesList.add(0); // 数量记录初始化
+        }
         Double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
         List<Double> tickList = new ArrayList<>();
-        for (int i = 0; i < bins + 1; i++) {
+        for (int i = 0; i < bins + 1; i++) {// 初始化 tick列表.
             tickList.add(effectiveValueRange.get(0) + i * perRangeWidth);
         }
-//todo: 于此
+        for (int i = 0; i < results.size(); i++) {
+            Double value = results.get(i);
+            if (value < effectiveValueRange.get(0) || value > effectiveValueRange.get(1)) {
+                outliers.add(value);
+                continue;
+            }
+            effectiveResults.add(value);
+            if (value.equals(effectiveValueRange.get(1))) { // 常规是前包后不包. 恰好等于最大限制的, 放在最后一个bin
+                Integer count = occurencesList.get(bins - 1);
+                occurencesList.set(bins - 1, count + 1);
+                continue;
+            }
+            int index = (int) ((value - effectiveValueRange.get(0)) / perRangeWidth);
+            Integer count = occurencesList.get(index);
+            occurencesList.set(index, count + 1);
+        }
+
+        if (effectiveResults.size() <= 0) {
+            return null; // 没有有效统计数值, 返回null, 调用方注意判断
+        }
+
+        HashMap<String, Object> conclusion = new HashMap<>();
+        conclusion.put("stat_stock_counts", statStockCounts); // int
+        conclusion.put("total_counts", results.size()); // int
+        conclusion.put("outliers_counts", outliers.size()); // int
+        conclusion.put("outliers_count_percent",
+                (double) (int) conclusion.get("outliers_counts") / (int) conclusion.get(
+                        "total_counts")); // int
+        conclusion.put("effective_counts", occurencesList.stream().mapToInt(Integer::intValue).sum()); // int
+        conclusion.put("effective_count_percent",
+                (double) (int) conclusion.get("effective_counts") / (int) conclusion.get(
+                        "total_counts")); // double
+
+        ArrayList<Integer> zeroCompareCounts = new ArrayList<>();
+        int ltZero = 0, eqZero = 0, gtZero = 0;
+        for (Double i : effectiveResults) {
+            if (i < 0.0) {
+                ltZero++;
+            } else if (i == 0.0) {
+                eqZero++;
+            } else {
+                gtZero++;
+            }
+        }
+        ArrayList<Double> zeroCompareCountsPercent = getDoubles(effectiveResults, conclusion, zeroCompareCounts, ltZero,
+                eqZero,
+                gtZero, "zero_compare_counts");
+        conclusion.put("zero_compare_counts_percent", zeroCompareCountsPercent); //AL
+
+        ArrayList<Integer> bigchangeCompareCounts = new ArrayList<>();
+        int ltBigchange = 0, betweenBigchange = 0, gtBigchange = 0;
+        for (Double i : effectiveResults) {
+            if (i <= bigChangeThreshold.get(0)) {
+                ltBigchange++;
+            } else if (i >= bigChangeThreshold.get(1)) {
+                gtBigchange++;
+            } else {
+                betweenBigchange++;
+            }
+        }
+        ArrayList<Double> bigchangeCompareCountsPercent = getDoubles(effectiveResults, conclusion,
+                bigchangeCompareCounts, ltBigchange, betweenBigchange, gtBigchange,
+                "bigchange_compare_counts");
+        conclusion.put("bigchange_compare_counts_percent", bigchangeCompareCountsPercent); //AL
+
+        DataFrame<Double> dfEffectiveResults = new DataFrame<>();
+        dfEffectiveResults.add("value", effectiveResults);
+        conclusion.put("mean", dfEffectiveResults.mean().get(0, 0));
+        conclusion.put("std", dfEffectiveResults.stddev().get(0, 0));
+        conclusion.put("min", dfEffectiveResults.min().get(0, 0));
+        conclusion.put("max", dfEffectiveResults.max().get(0, 0));
+        conclusion.put("skew", dfEffectiveResults.skew().get(0, 0));
+        conclusion.put("kurt", dfEffectiveResults.kurt().get(0, 0));
+
+        // Double
+        conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
+
+//        conclusion_base_stat['virtual_geometry_mean'] = calc_virtual_geometry_mean_recursion(effective_results,
+//                parts = 100,
+//                single_max_lenth = 1000)
+
+        conclusion.put("effective_value_range", effectiveValueRange);
+        conclusion.put("bins", bins);
+        conclusion.put("big_change_threshold", bigChangeThreshold);
+
+        conclusion.put("tick_list", tickList);
+        conclusion.put("occurences_list", occurencesList);
+        ArrayList<Double> frequencyList = new ArrayList<>();
+        for (Integer i : occurencesList) {
+            frequencyList.add((double) i / effectiveResults.size());
+        }
+        conclusion.put("frequency_list", frequencyList);
+        conclusion.put("frequency_with_tick", null);
+        if (calcCdfOrFrequencyWithTick) {
+            List<List<Double>> frequencyWithTick = getListWithTick(tickList, frequencyList);
+            conclusion.put("frequency_with_tick", frequencyWithTick);
+        }
+
+        DataFrame<Double> dfTemp = new DataFrame<>();
+        dfTemp.append(frequencyList);
+        dfTemp = dfTemp.cumsum();
+        List<Double> cdfList = dfTemp.col(0);
+        conclusion.put("cdf_list", cdfList);
+        conclusion.put("cdf_with_tick", null);
+        if (calcCdfOrFrequencyWithTick) {
+            List<List<Double>> cdfWithTick = getListWithTick(tickList, cdfList);
+            conclusion.put("cdf_with_tick", cdfWithTick);
+        }
+
+
         return null;
     }
+
+    /**
+     * 见上一方法的两次调用. 本方法为 idea 提取的方法
+     *
+     * @param effectiveResults
+     * @param conclusion
+     * @param bigchangeCompareCounts
+     * @param ltBigchange
+     * @param betweenBigchange
+     * @param gtBigchange
+     * @param bigchange_compare_counts
+     * @return
+     */
+    private ArrayList<Double> getDoubles(List<Double> effectiveResults, HashMap<String, Object> conclusion,
+                                         ArrayList<Integer> bigchangeCompareCounts, int ltBigchange,
+                                         int betweenBigchange, int gtBigchange, String bigchange_compare_counts) {
+        bigchangeCompareCounts.add(ltBigchange);
+        bigchangeCompareCounts.add(betweenBigchange);
+        bigchangeCompareCounts.add(gtBigchange);
+        conclusion.put(bigchange_compare_counts, bigchangeCompareCounts); //AL
+        ArrayList<Double> bigchangeCompareCountsPercent = new ArrayList<>();
+        for (Integer i : bigchangeCompareCounts) {
+            bigchangeCompareCountsPercent.add((double) i / effectiveResults.size());
+        }
+        return bigchangeCompareCountsPercent;
+    }
+
+    private List<List<Double>> getListWithTick(List<Double> tickList, List<Double> cdfList) {
+        List<List<Double>> cdfWithTick = new ArrayList<>();
+        for (int i = 0; i < cdfList.size(); i++) {
+            Double cdf = cdfList.get(i);
+            Double tick = tickList.get(i + 1);
+            cdfWithTick.add(Arrays.<Double>asList(cdf, tick));
+        }
+        return cdfWithTick;
+    }
+
+    /**
+     * @param effectiveResults
+     * @param splitParts
+     * @param singleMaxLenth
+     * @return noti: 对于lenth过长的, 当分拆时, 分拆为100部分, 的最后一部分, 可能数据量并没有前面99部分那么多, 这里做了一个近似
+     * :param effective_results: 需要计算虚拟 几何日平均收益率 的列表;  分拆计算后, 结果维持不变.*********
+     * :param parts: 如果列表过大, 大于 single_max_lenth, 则进行分拆递归计算, 分拆为 parts 部分, 当然, 也可能分拆的部分也过大了
+     * :param single_max_lenth: 直接计算时的 最大长度.  他两没有必然关系
+     */
+    public static Double calcVirtualGeometryMeanRecursion(List<Double> effectiveResults, int splitParts,
+                                                          int singleMaxLenth) {
+        Double res;
+        if (effectiveResults.size() == 0) {
+            return null;
+        }
+        if (effectiveResults.size() <= singleMaxLenth) {
+            res = geometryMean(effectiveResults);
+        } else {
+            // batchApproximateValues 最多100个数字. 单个部分 由递归计算而来.
+            List<Double> batchApproximateValues = new ArrayList<>();
+            int batchCounts = (int) Math.ceil((double) effectiveResults.size() / splitParts);
+            for (int i = 0; i < splitParts; i++) {
+                List<Double> batchResults = effectiveResults.subList(i * batchCounts, Math.min(i * (batchCounts + 1),
+                        effectiveResults.size()));
+                Double approximateSingleValue = calcVirtualGeometryMeanRecursion(batchResults, splitParts,
+                        singleMaxLenth);
+                if (approximateSingleValue != null) {
+                    batchApproximateValues.add(approximateSingleValue);
+                }
+            }
+            res = geometryMean(batchApproximateValues);
+        }
+        return res;
+    }
+
+    private static Double geometryMean(List<Double> effectiveResults) {
+        Double res;
+        DataFrame<Double> dfValues = new DataFrame<>();
+        dfValues.add(effectiveResults);
+        dfValues = dfValues.apply(value -> {
+            return value + 1;
+        });
+        Double prod = dfValues.prod().get(0, 0);
+        res = Math.pow(prod, (double) 1 / effectiveResults.size()) - 1;
+        return res;
+    }
+
+
 }
 
 /**
