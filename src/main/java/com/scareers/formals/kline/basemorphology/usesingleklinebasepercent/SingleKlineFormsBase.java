@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.math.MathUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.SqlUtil;
@@ -128,14 +129,16 @@ public class SingleKlineFormsBase {
             List<String> formNamesCurrentEpoch = forNameRaws
                     .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
             CountDownLatch latchOfCalcForEpoch = new CountDownLatch(formNamesCurrentEpoch.size());
-            for (int i = 0; i < formNamesCurrentEpoch.size(); i++) {
-                String formName = formNamesCurrentEpoch.get(i);
+            for (String formName : Tqdm.tqdm(formNamesCurrentEpoch, formNamesCurrentEpoch.size())) {
                 List<Double> resultSingle = results.get(formName);
-                Future<String> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch, formName,
+                Connection connOfSave = ConnectionFactory.getConnLocalKlineFormsFromPool();
+                Future<String> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch,
+                        connOfSave, formName,
                         stocks.size(), statDateRange, resultSingle, bigChangeThreshold, bins, effectiveValueRange,
                         saveTablename));
                 String finishedFormName = f.get();
                 results.remove(finishedFormName); // 删除key, 节省空间
+                connOfSave.close();
             }
             latchOfCalcForEpoch.await(); // 本轮执行完毕
         }
@@ -143,7 +146,9 @@ public class SingleKlineFormsBase {
 }
 
 class CalcStatResultAndSaveTask implements Callable<String> {
-    CountDownLatch latchOfCalcForEpoch; // 每轮计数, 多出来.  而少了图片显示参数
+    CountDownLatch latchOfCalcForEpoch;
+    // 每轮计数, 多出来.  而少了图片显示参数
+    Connection connOfSingleThread;
 
     String formName;
     int statStockCounts;
@@ -154,11 +159,13 @@ class CalcStatResultAndSaveTask implements Callable<String> {
     List<Double> effectiveValueRange;
     String saveTablename;
 
-    public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, String formName, int statStockCounts,
+    public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, Connection connOfSingleThread,
+                                     String formName, int statStockCounts,
                                      List<String> statDateRange, List<Double> singleResult,
                                      List<Double> bigChangeThreshold, int bins,
                                      List<Double> effectiveValueRange, String saveTablename) {
         this.latchOfCalcForEpoch = latchOfCalcForEpoch;
+        this.connOfSingleThread = connOfSingleThread;
 
         this.formName = formName;
         this.statStockCounts = statStockCounts;
@@ -172,56 +179,237 @@ class CalcStatResultAndSaveTask implements Callable<String> {
 
     @Override
     public String call() throws Exception {
-        HashMap<String, Object> analyzeResultMap =
-                analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
-        // 精细分析也不需要保存 cdfwithtick. 过于冗余
+        try {
+            HashMap<String, Object> analyzeResultMap =
+                    analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
+            // 精细分析也不需要保存 cdfwithtick. 过于冗余
 
-        // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
-        int splitIndex = formName.lastIndexOf("__");
-        String formNamePure = formName.substring(0, splitIndex);
-        String statResultAlgorithm = formName.substring(splitIndex + 2);
-        List<String> conditions = StrUtil.split(formNamePure, "__");
-        String condition1 = null;
-        String condition2 = null;
-        String condition3 = null;
-        String condition4 = null;
-        String condition5 = null;
-        String condition6 = null;
-        String condition7 = null;
+            // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
+            int splitIndex = formName.lastIndexOf("__");
+            String formNamePure = formName.substring(0, splitIndex);
+            String statResultAlgorithm = formName.substring(splitIndex + 2);
+            List<String> conditions = StrUtil.split(formNamePure, "__");
+            String condition1 = null;
+            String condition2 = null;
+            String condition3 = null;
+            String condition4 = null;
+            String condition5 = null;
+            String condition6 = null;
+            String condition7 = null;
 
-        for (String condition : conditions) {
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(0))) {
-                condition1 = condition;
+            for (String condition : conditions) {
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(0))) {
+                    condition1 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(1))) {
+                    condition2 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(2))) {
+                    condition3 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(3))) {
+                    condition4 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(4))) {
+                    condition5 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(5))) {
+                    condition6 = condition;
+                }
+                if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(6))) {
+                    condition7 = condition;
+                }
             }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(1))) {
-                condition2 = condition;
-            }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(2))) {
-                condition3 = condition;
-            }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(3))) {
-                condition4 = condition;
-            }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(4))) {
-                condition5 = condition;
-            }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(5))) {
-                condition6 = condition;
-            }
-            if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(6))) {
-                condition7 = condition;
-            }
+
+            saveAnalyzeResult(analyzeResultMap, formNamePure, statDateRange, statResultAlgorithm, "",
+                    connOfSingleThread,
+                    saveTablename,
+                    condition1, condition2,
+                    condition3, condition4, condition5, condition6, condition7);
+            return formName;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            latchOfCalcForEpoch.countDown();
+            return formName;
+        }
+    }
+
+
+    public static void saveAnalyzeResult(HashMap<String, Object> analyzeResultMap, String formNamePure,
+                                         List<String> statDateRange, String statResultAlgorithm, String conditionsSet,
+                                         Connection saveDb,
+                                         String saveTablename,
+                                         String condition1,
+                                         String condition2,
+                                         String condition3,
+                                         String condition4,
+                                         String condition5,
+                                         String condition6,
+                                         String condition7) throws SQLException {
+
+        saveAnalyzeResult(analyzeResultMap, formNamePure, statDateRange, statResultAlgorithm, conditionsSet
+                , saveDb, saveTablename, condition1, condition2, condition3, condition4, condition5, condition6,
+                condition7,
+                null, null, null, null,
+                null); // 7条件的常态调用.
+
+    }
+
+
+    /**
+     * * HashMap<String,Object> String为项目, Object为值   24个key
+     * * <p>
+     * * stat_stock_counts int
+     * * total_counts int
+     * * outliers_counts  int
+     * * outliers_count_percent double
+     * * effective_counts int
+     * * effective_count_percent double
+     * * zero_compare_counts ArrayList<Integer> 3
+     * * zero_compare_counts_percent ArrayList<Double>  3
+     * * bigchange_compare_counts  ArrayList<Integer> 3
+     * * bigchange_compare_counts_percent  ArrayList<Double>  3
+     * * min
+     * * max
+     * * std
+     * * mean
+     * * skew
+     * * virtual_geometry_mean
+     * * kurt    Double
+     * * effective_value_range  List<Double>
+     * * bins  int
+     * * big_change_threshold  List<Double>
+     * * tick_list List<Double>
+     * * occurences_list  List<Integer>
+     * * frequency_list  ArrayList<Double>
+     * * frequency_with_tick      List<List<Double>>
+     * * cdf_list List<Double>
+     * * cdf_with_tick    List<List<Double>>
+     *
+     * @param analyzeResultMap
+     * @param formNamePure
+     * @param statDateRange
+     * @param statResultAlgorithm
+     * @param conditionsSet
+     * @param saveDb
+     * @param saveTablename
+     * @param condition1
+     * @param condition2
+     * @param condition3
+     * @param condition4
+     * @param condition5
+     * @param condition6
+     * @param condition7
+     * @param condition8
+     * @param condition9
+     * @param condition10
+     * @param selfNotes
+     * @param formDescription
+     */
+    public static void saveAnalyzeResult(HashMap<String, Object> analyzeResultMap, String formNamePure,
+                                         List<String> statDateRange, String statResultAlgorithm, String conditionsSet,
+                                         Connection saveDb,
+                                         String saveTablename,
+                                         String condition1,
+                                         String condition2,
+                                         String condition3,
+                                         String condition4,
+                                         String condition5,
+                                         String condition6,
+                                         String condition7,
+                                         String condition8,
+                                         String condition9,
+                                         String condition10,
+                                         String selfNotes,
+                                         String formDescription
+    ) throws SQLException {
+        if (analyzeResultMap == null) {
+            return;
         }
 
+        DataFrameSelf<Object> dfSaved = new DataFrameSelf<>();
+        List<Object> row = new ArrayList<>();
+        for (String key : analyzeResultMap.keySet()) {
+            dfSaved.add(key);
+            row.add(analyzeResultMap.get(key));
+        }
 
-        return null;
+        // 加入其他字段  // 列
+        dfSaved.add("form_name");
+        dfSaved.add("stat_date_range");
+        dfSaved.add("stat_result_algorithm");
+        dfSaved.add("self_notes");
+        dfSaved.add("form_description");
+        dfSaved.add("conditions_set");
+        dfSaved.add("condition1");
+        dfSaved.add("condition2");
+        dfSaved.add("condition3");
+        dfSaved.add("condition4");
+        dfSaved.add("condition5");
+        dfSaved.add("condition6");
+        dfSaved.add("condition7");
+        dfSaved.add("condition8");
+        dfSaved.add("condition9");
+        dfSaved.add("condition10");
+
+        // 对应的 List<Object> 加入其他Object
+        row.add(formNamePure);
+        row.add(statDateRange);
+        row.add(statResultAlgorithm);
+        row.add(selfNotes);
+        row.add(formDescription);
+        row.add(conditionsSet);
+        row.add(condition1);
+        row.add(condition2);
+        row.add(condition3);
+        row.add(condition4);
+        row.add(condition5);
+        row.add(condition6);
+        row.add(condition7);
+        row.add(condition8);
+        row.add(condition9);
+        row.add(condition10);
+
+        dfSaved.append(row); // 加入.
+        dfSaved.toSql(saveTablename, saveDb, "append", null);
+        // 连接未关闭
     }
 
     /**
      * 对比python: 显示图像 和 保存图像的 参数未传递.
      *
      * @param calcCdfOrFrequencyWithTick
-     * @return
+     * @return 分析结论, 所有字段及 类型:
+     * <p>
+     * HashMap<String,Object> String为项目, Object为值   24个key
+     * <p>
+     * stat_stock_counts int
+     * total_counts int
+     * outliers_counts  int
+     * outliers_count_percent double
+     * effective_counts int
+     * effective_count_percent double
+     * zero_compare_counts ArrayList<Integer> 3
+     * zero_compare_counts_percent ArrayList<Double>  3
+     * bigchange_compare_counts  ArrayList<Integer> 3
+     * bigchange_compare_counts_percent  ArrayList<Double>  3
+     * min
+     * max
+     * std
+     * mean
+     * skew
+     * virtual_geometry_mean
+     * kurt    Double
+     * effective_value_range  List<Double>
+     * bins  int
+     * big_change_threshold  List<Double>
+     * tick_list List<Double>
+     * occurences_list  List<Integer>
+     * frequency_list  ArrayList<Double>
+     * frequency_with_tick      List<List<Double>>
+     * cdf_list List<Double>
+     * cdf_with_tick    List<List<Double>>
      */
     public HashMap<String, Object> analyzeStatsResults(boolean calcCdfOrFrequencyWithTick) {
         List<Double> outliers = new ArrayList<>();
@@ -262,7 +450,7 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         conclusion.put("outliers_counts", outliers.size()); // int
         conclusion.put("outliers_count_percent",
                 (double) (int) conclusion.get("outliers_counts") / (int) conclusion.get(
-                        "total_counts")); // int
+                        "total_counts")); // double
         conclusion.put("effective_counts", occurencesList.stream().mapToInt(Integer::intValue).sum()); // int
         conclusion.put("effective_count_percent",
                 (double) (int) conclusion.get("effective_counts") / (int) conclusion.get(
@@ -343,9 +531,7 @@ class CalcStatResultAndSaveTask implements Callable<String> {
             List<List<Double>> cdfWithTick = getListWithTick(tickList, cdfList);
             conclusion.put("cdf_with_tick", cdfWithTick);
         }
-
-
-        return null;
+        return conclusion;
     }
 
     /**
