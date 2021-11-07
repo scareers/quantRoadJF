@@ -84,6 +84,7 @@ public class App {
         System.out.println(Runtime.getRuntime().totalMemory());
 
 
+
     }
 }
 
