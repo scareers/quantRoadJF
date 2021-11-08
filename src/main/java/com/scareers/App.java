@@ -17,9 +17,8 @@ import joinery.DataFrame;
 
 
 import java.sql.Connection;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 //import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.CalcStatResultAndSaveTask
 // .calcVirtualGeometryMeanRecursion;
@@ -31,34 +30,50 @@ import java.util.Properties;
 public class App {
     public static void main(String[] args) throws Exception {
 
-        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+        System.gc();
+        Map<Integer, String> passedMap = new HashMap<>();
+        for (int i = 0; i < 1000000; i++) {
+            passedMap.put(i, "000000");
         }
+        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+        for (int i = 0; i < 1000000; i++) {
+            passedMap.remove(i);
+        }
+        System.gc();
+        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+//
 
-        Object x = "abc";
-        Console.log(x instanceof String);
-        Double nan = Double.NaN;
-        Console.log(Double.compare(1, Double.NaN));
 
-        Console.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
-        Console.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
-        Console.log(Math.pow(2.1867241478865562, 5));
 
-        DataFrame<Double> df = new DataFrame<>();
-        df.add(Arrays.asList(1.0));
-        df = df.apply(value -> {
-            return value + 1;
-        });
-        Console.log(df);
-        Console.log(df.kurt());
+//        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
+//            try {
+//                Thread.sleep(100);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        Object x = "abc";
+//        Console.log(x instanceof String);
+//        Double nan = Double.NaN;
+//        Console.log(Double.compare(1, Double.NaN));
+//
+//        Console.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
+//        Console.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
+//        Console.log(Math.pow(2.1867241478865562, 5));
+//
+//        DataFrame<Double> df = new DataFrame<>();
+//        df.add(Arrays.asList(1.0));
+//        df = df.apply(value -> {
+//            return value + 1;
+//        });
+//        Console.log(df);
+//        Console.log(df.kurt());
 
 
 //        DataFrameSelf<Object> df = new DataFrameSelf<>("a", "b");
-        Connection conn = ConnectionFactory.getConnLocalKlineForms();
+//        Connection conn = ConnectionFactory.getConnLocalKlineForms();
 
 //        df.append(Arrays.asList(1, 2));
 //        df.append(Arrays.asList(3, 4));

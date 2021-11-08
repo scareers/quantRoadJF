@@ -3,6 +3,8 @@ package com.scareers.pandasdummy;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import joinery.DataFrame;
+import joinery.impl.Combining;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,6 +12,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * update:
+ * 已经将toSql, 修改为 静态方法.
+ * <p>
+ * ---
  * 对 joinery.DataFrame 进行修改封装, 使得接近python, 主要是 writeSql 相关方法
  * 1. writeSql 为final方法, 不用即可, 改写为 toSql(), 同python.
  * 2. 原readSql, 仅有 conn和sql, 不可注入参数
@@ -24,7 +30,6 @@ import java.util.List;
  * @param <V> 数据类型, 常用 Object
  */
 public class DataFrameSelf<V> extends joinery.DataFrame<V> {
-
     public DataFrameSelf() {
         super();
     }
@@ -87,7 +92,8 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
      *                       至少需要保证 append 时列数 在 原表中全部有;  replace则取决于建表语句
      * @throws SQLException
      */
-    public void toSql(String tablename, Connection conn, String ifExists, String sqlCreateTable) throws SQLException {
+    public static void toSql(DataFrame<Object> df, String tablename, Connection conn, String ifExists,
+                             String sqlCreateTable) throws SQLException {
         conn.setAutoCommit(true);
         if (ifExists == null) {
             ifExists = "fail";
@@ -109,17 +115,20 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         // 第二个%s是字段列表, 第三个是 相同数量的 ?
         String sqlSave = "insert into {}({}) values ({})";
         ArrayList<String> questionMarks = new ArrayList<>();
-        for (int i = 0; i < columns().size(); i++) {
+        for (int i = 0; i < df.columns().size(); i++) {
             questionMarks.add("?");
         }
-        ArrayList<String> columnsAsString = getColumnsAsString();
+        ArrayList<String> columnsAsString = new ArrayList<>();
+        for (Object column : df.columns()) {
+            columnsAsString.add(column.toString());
+        }
         sqlSave = StrUtil.format(sqlSave, tablename, String.join(",", columnsAsString),
                 String.join(",", questionMarks));
         // 逻辑从 writeSql 底层 抄袭而来. 遍历df 行列, 使用 PreparedStatement 批量插入; 使用的 setObject
         PreparedStatement stmt = conn.prepareStatement(sqlSave);
-        for (int r = 0; r < this.length(); r++) {
-            for (int c = 1; c <= this.size(); c++) {
-                Object value = this.get(r, c - 1);
+        for (int r = 0; r < df.length(); r++) {
+            for (int c = 1; c <= df.size(); c++) {
+                Object value = df.get(r, c - 1);
                 stmt.setObject(c, value);
             }
             stmt.addBatch();
@@ -130,6 +139,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         conn.setAutoCommit(true);
         // 注意并未关闭conn, 同原生 writeSql 一样. 这样可以复用 连接
     }
+
 }
 
 

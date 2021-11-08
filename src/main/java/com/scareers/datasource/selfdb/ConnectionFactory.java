@@ -3,7 +3,7 @@ package com.scareers.datasource.selfdb;
 
 
 import cn.hutool.core.lang.Console;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
+//import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
@@ -14,10 +14,10 @@ import java.sql.SQLException;
 
 public class ConnectionFactory {
     // 各个db对应的连接池对象. 单例懒汉模式
-    private static ComboPooledDataSource localTushareConnPool;
-    private static ComboPooledDataSource localStocktestConnPool;
-    private static ComboPooledDataSource localKlineFormsConnPool;
-    private static ComboPooledDataSource localTushare1MConnPool;
+//    private static ComboPooledDataSource localTushareConnPool;
+//    private static ComboPooledDataSource localStocktestConnPool;
+//    private static ComboPooledDataSource localKlineFormsConnPool;
+//    private static ComboPooledDataSource localTushare1MConnPool;
 
 
     public static void main(String[] args) throws PropertyVetoException, SQLException {
@@ -26,9 +26,9 @@ public class ConnectionFactory {
         Console.log("************");
 //        getConnLocalTushareFromPool();
         Console.log("************");
-        getConnLocalTushare1MFromPool();
+//        getConnLocalTushare1MFromPool();
         Console.log("************");
-        getConnLocalStocktestFromPool();
+//        getConnLocalStocktestFromPool();
         Console.log("************");
 //        getConnLocalKlineFormsFromPool();
 
@@ -49,12 +49,12 @@ public class ConnectionFactory {
         return connectToLocalMysqlMain("stocktest");
     }
 
-    public static Connection getConnLocalStocktestFromPool() throws SQLException {
-        if (localStocktestConnPool == null) {
-            localStocktestConnPool = new ComboPooledDataSource("localStocktest");
-        }
-        return localStocktestConnPool.getConnection();
-    }
+//    public static Connection getConnLocalStocktestFromPool() throws SQLException {
+//        if (localStocktestConnPool == null) {
+//            localStocktestConnPool = new ComboPooledDataSource("localStocktest");
+//        }
+//        return localStocktestConnPool.getConnection();
+//    }
 
 
     public static Connection getConnLocalTushare() throws SQLException {
@@ -85,12 +85,12 @@ public class ConnectionFactory {
         return connectToLocalMysqlMain("tushare_1m");
     }
 
-    public static Connection getConnLocalTushare1MFromPool() throws SQLException {
-        if (localTushare1MConnPool == null) {
-            localTushare1MConnPool = new ComboPooledDataSource("localTushare1M");
-        }
-        return localTushare1MConnPool.getConnection();
-    }
+//    public static Connection getConnLocalTushare1MFromPool() throws SQLException {
+//        if (localTushare1MConnPool == null) {
+//            localTushare1MConnPool = new ComboPooledDataSource("localTushare1M");
+//        }
+//        return localTushare1MConnPool.getConnection();
+//    }
 
     public static Connection getConnLocalQuant() {
         return connectToLocalMysqlMain("quant");

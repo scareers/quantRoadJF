@@ -16,12 +16,12 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static final int windowUsePeriodsCoreArg = 11;
+    public static final int windowUsePeriodsCoreArg = 7;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
-    public static final int processAmount = 16;
+    public static final int processAmount = 32;
     public static final int gcControlEpoch = 10; // 新增:控制gc频率.越大则手动gc频率越低.
-    public static final int stockAmountsBeCalc = 100;
-    public static final int perEpochTaskAmounts = 2048;
+    public static final int stockAmountsBeCalc = 1000000;
+    public static final int perEpochTaskAmounts = 512;
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
     public static final String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
@@ -95,7 +95,7 @@ public class SettingsOfSingleKlineBasePercent {
 
     public static final String sqlCreateSaveTableRaw = getSqlCreateSaveTableTemplate();
     public static final String sqlCreateSaveTable = StrUtil.format(sqlCreateSaveTableRaw, saveTablename);
-    public static final String sqlDeleteExistDateRangeRaw = "delete from {} where stat_date_range=\"{}\"";
+    public static final String sqlDeleteExistDateRangeRaw = "delete from {} where stat_date_range=\'{}\'";
     public static final String sqlDeleteExistDateRange = StrUtil.format(sqlDeleteExistDateRangeRaw, saveTablename);
     // 仍有{}需要填充date range
 

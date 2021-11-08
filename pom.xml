@@ -65,11 +65,11 @@
         </dependency>
 
         <!-- c3p0连接池 -->
-        <dependency>
-            <groupId>com.mchange</groupId>
-            <artifactId>c3p0</artifactId>
-            <version>0.9.5.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.mchange</groupId>-->
+<!--            <artifactId>c3p0</artifactId>-->
+<!--            <version>0.9.5.2</version>-->
+<!--        </dependency>-->
         <!-- 日志组件配合c3p0 -->
         <dependency>
             <groupId>org.slf4j</groupId>

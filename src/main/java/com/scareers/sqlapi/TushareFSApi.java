@@ -39,31 +39,31 @@ public class TushareFSApi {
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
         interval.start();
-        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-                "20180130", null);
-        Console.log(interval.intervalRestart());
-        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-                "20180131", null);
-
-        Console.log(interval.intervalRestart());
-        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-                "20180131", null);
-
-        Console.log(interval.intervalRestart());
-
-
-        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(),
-                "000001.SZ", "20181030",
-                "20190230", true, null);
-        Console.log(interval.intervalRestart());
-        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-                "20181130",
-                "20190230", true, null);
-        Console.log(interval.intervalRestart());
-        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-                "20181130",
-                "20190230", true, null);
-        Console.log(interval.intervalRestart());
+//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
+//                "20180130", null);
+//        Console.log(interval.intervalRestart());
+//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
+//                "20180131", null);
+//
+//        Console.log(interval.intervalRestart());
+//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
+//                "20180131", null);
+//
+//        Console.log(interval.intervalRestart());
+//
+//
+//        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(),
+//                "000001.SZ", "20181030",
+//                "20190230", true, null);
+//        Console.log(interval.intervalRestart());
+//        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
+//                "20181130",
+//                "20190230", true, null);
+//        Console.log(interval.intervalRestart());
+//        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
+//                "20181130",
+//                "20190230", true, null);
+//        Console.log(interval.intervalRestart());
 
     }
 
