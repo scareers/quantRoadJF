@@ -25,6 +25,18 @@ import java.util.*;
  * 即 无 conn 参数的方法, 从连接池拿到conn, 理应关闭.  不考虑该对象复用问题
  */
 public class TushareApi {
+    // 不带conn的方法, 均使用次静态连接, 且不关闭次连接. 此连接一直存活.  需要显式调用静态方法 TushareApi.connClose()!
+    public static Connection connLocalTushare = null;
+
+    static {
+        try {
+//            connLocalTushare = ConnectionFactory.getConnLocalTushareFromPool();
+            connLocalTushare = ConnectionFactory.getConnLocalTushare(); // 可选择连接是否从连接池获取.
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static final String STOCK_LIST_TABLENAME = "sds_stock_list_tu_stock";
     public static final String STOCK_NAMECHANGE_TABLENAME = "sds_stock_name_change_tu_stock";
     public static final String STOCK_PRICE_DAILY_TABLENAME_TEMPLATE = "sds_stock_price_daily_{}_tu_stock";
@@ -59,28 +71,16 @@ public class TushareApi {
 
     public static DataFrame<String> getStockListWithBoardFromTushare() throws Exception {
         String sql = StrUtil.format("select ts_code,market from {} order by ts_code", STOCK_LIST_TABLENAME);
-        Connection connLocalTushareFromPool = ConnectionFactory.getConnLocalTushareFromPool();
-        DataFrame<Object> res = DataFrame.readSql(connLocalTushareFromPool, sql);
+        DataFrame<Object> res = DataFrame.readSql(connLocalTushare, sql);
         // python返回字典, 这里返回 df. 注意
-        connLocalTushareFromPool.close();
         // 后面将放在ConcurrentHashMap, 要求不为null
         res = res.select(values -> values.get(0) != null && values.get(1) != null);
         return res.cast(String.class);
     }
 
     public static DataFrame<String> getStockListWithCnNameFromTushare() throws Exception {
-        //        使用传统 sql查询获取
-        //        ResultSet rs = execSqlQuery(sql_, ConnectionFactory.getConnLocalTushare());
-        //        ArrayList<String> stockListTemp = new ArrayList<>();
-        //        while (rs.next()) {
-        //            stockListTemp.add(rs.getString("ts_code"));
-        //        }
-        //        Console.log(stockListTemp);
-        //        Console.log(stockListTemp.size());
         String sql = StrUtil.format("select ts_code,name from {} order by ts_code", STOCK_LIST_TABLENAME);
-        Connection conn = ConnectionFactory.getConnLocalTushareFromPool();
-        DataFrame<String> res = DataFrame.readSql(conn, sql).cast(String.class);
-        conn.close();
+        DataFrame<String> res = DataFrame.readSql(connLocalTushare, sql).cast(String.class);
         return res;
     }
 
@@ -155,7 +155,7 @@ public class TushareApi {
         }
         Connection connTemp;
         if (conn == null) {
-            connTemp = ConnectionFactory.getConnLocalTushareFromPool();
+            connTemp = connLocalTushare; // 可使用不同的连接对象. 且均不关闭
         } else {
             connTemp = conn;
         }
@@ -169,10 +169,6 @@ public class TushareApi {
             sql = sql.replace("and trade_date<", "and trade_date<=");
         }
         DataFrame<Object> res = DataFrame.readSql(connTemp, sql);
-        if (conn == null) {
-            // 未传递conn, 则需要关闭掉 强行获取的连接
-            connTemp.close();
-        }
         return res;
     }
 
@@ -181,9 +177,7 @@ public class TushareApi {
                 "    from {}\n" +
                 "    where (change_reason = 'ST' OR change_reason = '*ST')", STOCK_NAMECHANGE_TABLENAME);
         HashMap<String, List<List<String>>> stockWithStDateRanges = new HashMap<>();
-        Connection connLocalTushareFromPool = ConnectionFactory.getConnLocalTushareFromPool();
-        DataFrame<Object> df = DataFrame.readSql(connLocalTushareFromPool, sql);
-        connLocalTushareFromPool.close();
+        DataFrame<Object> df = DataFrame.readSql(connLocalTushare, sql);
         for (int i = 0; i < df.length(); i++) {
             List<Object> row = df.row(i);
             String stock = (String) row.get(0);
@@ -194,7 +188,7 @@ public class TushareApi {
                 singleDateRange = Arrays.asList((String) row.get(1), (String) row.get(2));
             }
 
-            stockWithStDateRanges.computeIfAbsent(stock, k -> new ArrayList<List<String>>());
+            stockWithStDateRanges.computeIfAbsent(stock, k -> new ArrayList<>());
             stockWithStDateRanges.get(stock).add(singleDateRange);
         }
         return stockWithStDateRanges;
@@ -208,20 +202,19 @@ public class TushareApi {
         //Console.log(dfAdjFactors.types()); // 默认全部是String
         dfAdjFactors = dfAdjFactors.convert(String.class, Double.class);
         HashSet<String> res = new HashSet<>();
-//        Console.log(dfAdjFactors);
         if (dfAdjFactors.length() <= 1) {
             return res;
             // 只有一天的记录, 则无视掉
         }
-        Double factor_pre = (Double) dfAdjFactors.row(0).get(1);
+        Double factorPre = (Double) dfAdjFactors.row(0).get(1);
         for (int i = 1; i < dfAdjFactors.length(); i++) {// 注意第一天
             List<Object> row = dfAdjFactors.row(i);
             String date = (String) row.get(0);
             Double factor = (Double) row.get(1);
-            if (!factor.equals(factor_pre)) {
+            if (!factor.equals(factorPre)) {
                 res.add(date);
             }
-            factor_pre = factor;
+            factorPre = factor;
         }
         return res;
     }
@@ -247,12 +240,10 @@ public class TushareApi {
         String sqlGetPriceLimit = StrUtil.format("select trade_date, up_limit, down_limit " +
                 "        from sds_stock_pricelimit_tu_stock " +
                 "    where ts_code = '{}' order by trade_date", stock);
-        Connection conn = ConnectionFactory.getConnLocalTushareFromPool();
-        DataFrame<Object> dfPriceLimitPerStock = DataFrame.readSql(conn, sqlGetPriceLimit);
 
+        DataFrame<Object> dfPriceLimitPerStock = DataFrame.readSql(connLocalTushare, sqlGetPriceLimit);
         DataFrame<Object> dfDailyPriceNofqAll = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
-                Arrays.asList("trade_date", "close"), null, conn);
-        conn.close(); // 已经用完, 归还连接池
+                Arrays.asList("trade_date", "close"), null, connLocalTushare);
         HashSet<String> datesSetOfPriceLimitMax = new HashSet<>();
         HashSet<String> datesSetOfPriceLimitMin = new HashSet<>();
         List<String> effectiveCalcDateRange = null;
@@ -289,5 +280,11 @@ public class TushareApi {
         Object[] res = {datesSetOfPriceLimitMax, datesSetOfPriceLimitMin, effectiveCalcDateRange};
         stockPriceLimitMaxMinCache.put(stock, res, DateUnit.HOUR.getMillis() * 3);
         return res;
+    }
+
+    public static void connClose() throws SQLException {
+        if (connLocalTushare != null) {
+            connLocalTushare.close();
+        }
     }
 }

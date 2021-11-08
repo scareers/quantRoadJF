@@ -19,26 +19,22 @@ import java.util.List;
 
 /**
  * description: 分时图,tushare 1分钟 数据 相关的api.
+ * 0.因分时图可能保存在不同的数据库, 因此两大方法的 conn对象, 采用 传递方式; 且不负责关闭
+ * 而不像TushareApi, 静态属性维护一个conn;
  *
  * @author: admin
  * @date: 2021/11/5  0005-3:04
  * <p>
- * noti:
- * 1. 日期传递参数, 需要符合 tushare格式,  yyyyMMdd  8位字符串
- * 2. 因为hutool的DateUtil 会自动将 20190230 这种不合法日期, 自动转换为 20190302;
- * 为了使得区间取分时图的方法符合预期, 这里不用 DateUtil,
- * 直接用 字符串切片 拼接 -
- * <p>
- * 3.使用连接池后, 读取缓存用时0ms;  可见此前时间耗费在 连接对象的创建.
  */
-public class TushareFSApi { // todo: 关闭优化
+public class TushareFSApi {
+
     public static final String STR_DONSNOT_EXIST = "doesn't exist";
     public static final List<String> FS_ALL_FIELDS = Arrays.asList("trade_time", "open", "close", "high", "low", "vol",
             "amount");
     // using cache for one day fs1m of stock.
     // the first time: conn object init, so == 500ms;  normal first ==30ms, using cache==10ms
-    public static Cache<String, DataFrame<Object>> stockPriceFsOneDayCache = CacheUtil.newLRUCache(128);
-    public static Cache<String, DataFrame<Object>> stockPriceFsDateRangeCache = CacheUtil.newLRUCache(128);
+    public static Cache<String, DataFrame<Object>> stockPriceFsOneDayCache = CacheUtil.newLRUCache(32);
+    public static Cache<String, DataFrame<Object>> stockPriceFsDateRangeCache = CacheUtil.newLRUCache(32);
 
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();

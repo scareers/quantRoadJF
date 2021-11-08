@@ -31,7 +31,7 @@
         <property name="preferredTestQuery">select 1</property>
         <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
         从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
-        <property name="idleConnectionTestPeriod">60</property>
+        <property name="idleConnectionTestPeriod">0</property>
         <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
         <property name="acquireRetryAttempts">3</property>
         <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
@@ -54,7 +54,7 @@
         <property name="preferredTestQuery">select 1</property>
         <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
         从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
-        <property name="idleConnectionTestPeriod">60</property>
+        <property name="idleConnectionTestPeriod">0</property>
         <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
         <property name="acquireRetryAttempts">3</property>
         <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
@@ -76,7 +76,7 @@
         <property name="preferredTestQuery">select 1</property>
         <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
         从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
-        <property name="idleConnectionTestPeriod">60</property>
+        <property name="idleConnectionTestPeriod">0</property>
         <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
         <property name="acquireRetryAttempts">3</property>
         <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
@@ -98,7 +98,7 @@
         <property name="preferredTestQuery">select 1</property>
         <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
         从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
-        <property name="idleConnectionTestPeriod">60</property>
+        <property name="idleConnectionTestPeriod">0</property>
         <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
         <property name="acquireRetryAttempts">3</property>
         <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->
@@ -120,7 +120,7 @@
         <property name="preferredTestQuery">select 1</property>
         <!-- 用来配置测试空闲连接的间隔时间。可以用来解决MySQL 8小时断开连接的问题。因为它保证连接池会每隔一定时间对空闲连接进行一次测试，
         从而保证有效的空闲连接能每隔一定时间访问一次数据库，将MySQL8小时无会话的状态打破。为0则不测试。默认值:0,单位: 秒 -->
-        <property name="idleConnectionTestPeriod">60</property>
+        <property name="idleConnectionTestPeriod">0</property>
         <!-- 连接池在获得新连接失败时重试的次数，如果小于等于0则无限重试直至连接获得成功。默认值: 30 -->
         <property name="acquireRetryAttempts">3</property>
         <!-- 连接池在获得新连接时的间隔时间,默认值: 1000,单位: 毫秒 -->

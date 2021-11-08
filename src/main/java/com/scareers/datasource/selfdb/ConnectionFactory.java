@@ -22,15 +22,15 @@ public class ConnectionFactory {
 
     public static void main(String[] args) throws PropertyVetoException, SQLException {
 
-        getConnLocalTushareFromPool();
+//        getConnLocalTushareFromPool();
         Console.log("************");
-        getConnLocalTushareFromPool();
+//        getConnLocalTushareFromPool();
         Console.log("************");
         getConnLocalTushare1MFromPool();
         Console.log("************");
         getConnLocalStocktestFromPool();
         Console.log("************");
-        getConnLocalKlineFormsFromPool();
+//        getConnLocalKlineFormsFromPool();
 
     }
 
@@ -60,26 +60,26 @@ public class ConnectionFactory {
     public static Connection getConnLocalTushare() throws SQLException {
         return connectToLocalMysqlMain("tushare");
     }
-
-    public static Connection getConnLocalTushareFromPool() throws SQLException {
-        if (localTushareConnPool == null) {
-            localTushareConnPool = new ComboPooledDataSource("localTushare");
-        }
-        return localTushareConnPool.getConnection();
-        // todo: 完成连接池
-    }
+//
+//    public static Connection getConnLocalTushareFromPool() throws SQLException {
+//        if (localTushareConnPool == null) {
+//            localTushareConnPool = new ComboPooledDataSource("localTushare");
+//        }
+//        return localTushareConnPool.getConnection();
+//        // todo: 完成连接池
+//    }
 
 
     public static Connection getConnLocalKlineForms() {
         return connectToLocalMysqlMain("kline_forms");
     }
 
-    public static Connection getConnLocalKlineFormsFromPool() throws SQLException {
-        if (localKlineFormsConnPool == null) {
-            localKlineFormsConnPool = new ComboPooledDataSource("localKlineForms");
-        }
-        return localKlineFormsConnPool.getConnection();
-    }
+//    public static Connection getConnLocalKlineFormsFromPool() throws SQLException {
+//        if (localKlineFormsConnPool == null) {
+//            localKlineFormsConnPool = new ComboPooledDataSource("localKlineForms");
+//        }
+//        return localKlineFormsConnPool.getConnection();
+//    }
 
     public static Connection getConnLocalTushare1M() {
         return connectToLocalMysqlMain("tushare_1m");

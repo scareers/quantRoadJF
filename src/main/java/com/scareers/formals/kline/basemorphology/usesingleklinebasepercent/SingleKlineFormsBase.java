@@ -35,7 +35,6 @@ public class SingleKlineFormsBase {
         DataFrame<String> stockWithBoard = TushareApi.getStockListWithBoardFromTushare();
 
         List<List<String>> dateRanges = SettingsOfSingleKlineBasePercent.dateRanges;
-        int processAmount = SettingsOfSingleKlineBasePercent.processAmount;
         HashMap<String, List<List<String>>> stockWithStDateRanges = TushareApi.getStockWithStDateRanges();
 
         // 未关闭连接,可复用
@@ -43,14 +42,14 @@ public class SingleKlineFormsBase {
                 SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
         for (List<String> statDateRange : dateRanges) {
             Console.log("当前循环组: {}", statDateRange);
-            String statDateRangeJsonStr = StrUtil.format("('{}','{}')", statDateRange.get(0), statDateRange.get(1));
-            String sql = StrUtil.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange, statDateRangeJsonStr);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             SqlUtil.execSql(
-                    sql, SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
+                    StrUtil.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
+                            StrUtil.format("('{}','{}')", statDateRange.get(0), statDateRange.get(1))),
+                    SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
 
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    Arrays.<Double>asList(-0.05, 0.05), 82, Arrays.<Double>asList(-0.205, 0.205),
+                    Arrays.asList(-0.05, 0.05), 82, Arrays.<Double>asList(-0.205, 0.205),
                     SettingsOfSingleKlineBasePercent.saveTablename);
 
 //            MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
@@ -87,23 +86,23 @@ public class SingleKlineFormsBase {
                 SettingsOfSingleKlineBasePercent.processAmount * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());
         CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
+        Connection connOfParse = ConnectionFactory.getConnLocalTushare();
         for (String stock : Tqdm.tqdm(stocks, "process: ")) {
-            // for (String stock : stocks) {
             Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
                     .submit(new StockSingleParseTask(latchOfParse, stock, stockWithBoard, statDateRange,
-                            stockWithStDateRanges));
-            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            int total = 0;
+                            stockWithStDateRanges, connOfParse)); // 全线程使用1个conn
+             = f.get();
             for (String key : resultTemp.keySet()) {
                 results.putIfAbsent(key, new ArrayList<>());
                 results.get(key).addAll(resultTemp.get(key));
-                total += resultTemp.get(key).size();
             }
-//            Console.log("{}: {}: {}: {}", stock, resultTemp.size(), total, resultTemp.get("Dummy__Next4Open").size());
-            resultTemp = null;
+
         }
         latchOfParse.await();
         poolOfParse.shutdown(); // 关闭线程池
+        poolOfParse = null;
+        connOfParse.close(); // 关闭唯一连接
+        connOfParse = null;
         System.out.println();
         Console.log(results.size());
         Console.log(results.getClass().getName());
@@ -122,7 +121,7 @@ public class SingleKlineFormsBase {
         int totalEpochAmounts = (int) Math  // 仅用于显示进度
                 .ceil((double) results.size() / SettingsOfSingleKlineBasePercent.perEpochTaskAmounts);
         int process = 1;
-        Connection connOfSave = ConnectionFactory.getConnLocalKlineForms();
+        Connection connOfSave = SettingsOfSingleKlineBasePercent.ConnOfSaveTable;
         for (int currentEpoch = 0; currentEpoch < Integer.MAX_VALUE; currentEpoch++) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
@@ -732,6 +731,8 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
     public static final List<Double> volToPre5dayAvgRangeList =
             SettingsOfSingleKlineBasePercent.volToPre5dayAvgRangeList;
 
+    Connection conn;
+
     //为了不大量重构代码, 本参数作为 stockWithBoard 字典版的缓存. 在很久之后才计算一次, 且线程安全, 类似于单例
     public static ConcurrentHashMap<String, String> stockWithBoardAsDict = null;
     // 读取静态属性省一下代码长度.
@@ -750,12 +751,13 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
     public StockSingleParseTask(CountDownLatch countDownLatch,
                                 String stock,
                                 DataFrame<String> stockWithBoard, List<String> statDateRange,
-                                HashMap<String, List<List<String>>> stockWithStDateRanges) {
+                                HashMap<String, List<List<String>>> stockWithStDateRanges, Connection conn) {
         this.countDownLatch = countDownLatch;
         this.stock = stock;
         this.stockWithBoard = stockWithBoard;
         this.statDateRange = statDateRange;
         this.stockWithStDateRanges = stockWithStDateRanges;
+        this.conn = conn;
     }
 
     @Override
@@ -763,7 +765,7 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
         // 实际逻辑显然对应了python 的parse_single_stock() 函数
         // 使得不会返回null. 至少会返回空的字典
         ConcurrentHashMap<String, List<Double>> resultSingle = new ConcurrentHashMap<>(2 ^ 5);
-        try (Connection connLocalTushareFromPool = ConnectionFactory.getConnLocalTushareFromPool()) {
+        try {
             /*
             //模拟主要逻辑
             //注意这里线程池9线程, 如果以线程名作为key, 则最多9个key.没有bug. latch.count也是
@@ -783,17 +785,14 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
             // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
             DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
                     SettingsOfSingleKlineBasePercent.fieldsOfDfRaw,
-                    statDateRangeFull, connLocalTushareFromPool);
+                    statDateRangeFull, conn);
             dfRaw = dfRaw.dropna();
             // 新知识: java不定参数等价于 数组.而非List
             dfRaw.convert(fieldsOfDfRawClass);
-            HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, connLocalTushareFromPool);
+            HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, conn);
             resultSingle = baseFormAndOpenConditionAnalyzer(dfRaw, adjDates, stock, stockWithBoard,
                     stockWithStDateRanges, statDateRange,
-                    connLocalTushareFromPool); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
-            if (connLocalTushareFromPool != null) {
-                connLocalTushareFromPool.close();
-            }
+                    conn); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
             return resultSingle;
         } catch (Exception e) {
             e.printStackTrace();

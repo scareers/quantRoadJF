@@ -120,24 +120,10 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         for (int r = 0; r < this.length(); r++) {
             for (int c = 1; c <= this.size(); c++) {
                 Object value = this.get(r, c - 1);
-                // 原来的实现, 直接设定Object, 可能出现没有加引号, 出现 Unknown column错误
                 stmt.setObject(c, value);
-                // 这里改变实现为 判定一下类型.
-                // 对String, Integer,Double 进行判定
-//                if (value instanceof String) {
-//                    stmt.setString(c, (String) value);
-//                } else if (value instanceof Double) {
-//                    stmt.setFloat(c, ((Double) value).floatValue());
-//                } else if (value instanceof Integer) {
-//                    stmt.setInt(c, (Integer) value);
-//                } else {
-//                    stmt.setObject(c, value); // 默认应当设置object
-//                }
-                // 待续
-                // 由于 setString/Double/Date/Time 等等,不知道具体的数据类型.
             }
             stmt.addBatch();
-//            Console.log(stmt.toString());
+            // Console.log(stmt.toString()); 可以看到sql语句
         }
         stmt.executeBatch();
         conn.commit();
