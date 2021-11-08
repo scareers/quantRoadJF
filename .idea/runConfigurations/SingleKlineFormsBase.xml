@@ -2,7 +2,7 @@
   <configuration default="false" name="SingleKlineFormsBase" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SingleKlineFormsBase" />
     <module name="quantRoad" />
-    <option name="VM_PARAMETERS" value="-Xmx512g -XX:MaxPermSize=512g -XX:MaxGCPauseMillis=1" />
+    <option name="VM_PARAMETERS" value="-Xmx512g -XX:+PrintGC -XX:MaxTenuringThreshold=3" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.*" />

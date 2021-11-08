@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.sqlapi.TushareApi.*;
 
@@ -87,16 +88,21 @@ public class SingleKlineFormsBase {
                 new LinkedBlockingQueue<>());
         CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
         Connection connOfParse = ConnectionFactory.getConnLocalTushare();
+        AtomicInteger parseProcess = new AtomicInteger(0);
         for (String stock : Tqdm.tqdm(stocks, "process: ")) {
             Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
                     .submit(new StockSingleParseTask(latchOfParse, stock, stockWithBoard, statDateRange,
                             stockWithStDateRanges, connOfParse)); // 全线程使用1个conn
-             = f.get();
+            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
                 results.putIfAbsent(key, new ArrayList<>());
                 results.get(key).addAll(resultTemp.get(key));
             }
-
+            resultTemp = null;
+            int value = parseProcess.incrementAndGet();
+            if (value % 10 == SettingsOfSingleKlineBasePercent.gcControlEpoch) {
+                System.gc();
+            }
         }
         latchOfParse.await();
         poolOfParse.shutdown(); // 关闭线程池
@@ -118,10 +124,12 @@ public class SingleKlineFormsBase {
          * 因java执行速度快, 因此考虑, 单个线程, 执行一个epoch; 而非 全进程执行一个epoch.
          * 且每次写入mysql为一个epoch的数据, 而非单条数据.
          */
-        int totalEpochAmounts = (int) Math  // 仅用于显示进度
+        // 仅用于显示进度
+        int totalEpochAmounts = (int) Math
                 .ceil((double) results.size() / SettingsOfSingleKlineBasePercent.perEpochTaskAmounts);
         int process = 1;
         Connection connOfSave = SettingsOfSingleKlineBasePercent.ConnOfSaveTable;
+        CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
         for (int currentEpoch = 0; currentEpoch < Integer.MAX_VALUE; currentEpoch++) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
@@ -132,9 +140,9 @@ public class SingleKlineFormsBase {
 
             List<String> formNamesCurrentEpoch = forNameRaws
                     .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
-            CountDownLatch latchOfCalcForEpoch = new CountDownLatch(formNamesCurrentEpoch.size());
 
 
+            AtomicInteger processAnalyze = new AtomicInteger(0);//
             for (String formName : Tqdm.tqdm(formNamesCurrentEpoch,
                     StrUtil.format("process: {}/{}/{}", process, totalEpochAmounts, results.size()))) {
                 try {
@@ -148,14 +156,13 @@ public class SingleKlineFormsBase {
                     results.remove(finishedFormName); // 删除key, 节省空间
                 } catch (Exception e) {
                     e.printStackTrace();
-                } finally {
-//                    connOfSave.close();
-//                    connOfSave = null;
                 }
-            }
 
+            }
             latchOfCalcForEpoch.await(); // 本轮执行完毕
             process++;
+            formNamesCurrentEpoch = null;
+            //System.gc();
         }
         connOfSave.close();
         connOfSave = null;
