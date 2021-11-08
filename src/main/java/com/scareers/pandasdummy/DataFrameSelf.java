@@ -1,6 +1,9 @@
 package com.scareers.pandasdummy;
 
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,23 +107,37 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         conn.setAutoCommit(false);
         // 将调用prest.executeBatch(), 手动提交
         // 第二个%s是字段列表, 第三个是 相同数量的 ?
-        String sqlSave = "insert into %s(%s) values (%s)";
+        String sqlSave = "insert into {}({}) values ({})";
         ArrayList<String> questionMarks = new ArrayList<>();
         for (int i = 0; i < columns().size(); i++) {
             questionMarks.add("?");
         }
         ArrayList<String> columnsAsString = getColumnsAsString();
-        sqlSave = String.format(sqlSave, tablename, String.join(",", columnsAsString),
+        sqlSave = StrUtil.format(sqlSave, tablename, String.join(",", columnsAsString),
                 String.join(",", questionMarks));
-
         // 逻辑从 writeSql 底层 抄袭而来. 遍历df 行列, 使用 PreparedStatement 批量插入; 使用的 setObject
         PreparedStatement stmt = conn.prepareStatement(sqlSave);
         for (int r = 0; r < this.length(); r++) {
             for (int c = 1; c <= this.size(); c++) {
-                stmt.setObject(c, this.get(r, c - 1));
-                // 由于 setString/Double/Date/Time 等等,不知道具体的数据类型.自动判定
+                Object value = this.get(r, c - 1);
+                // 原来的实现, 直接设定Object, 可能出现没有加引号, 出现 Unknown column错误
+                stmt.setObject(c, value);
+                // 这里改变实现为 判定一下类型.
+                // 对String, Integer,Double 进行判定
+//                if (value instanceof String) {
+//                    stmt.setString(c, (String) value);
+//                } else if (value instanceof Double) {
+//                    stmt.setFloat(c, ((Double) value).floatValue());
+//                } else if (value instanceof Integer) {
+//                    stmt.setInt(c, (Integer) value);
+//                } else {
+//                    stmt.setObject(c, value); // 默认应当设置object
+//                }
+                // 待续
+                // 由于 setString/Double/Date/Time 等等,不知道具体的数据类型.
             }
             stmt.addBatch();
+//            Console.log(stmt.toString());
         }
         stmt.executeBatch();
         conn.commit();

@@ -31,14 +31,14 @@ public class CommonUtils {
      * @return 为了数据完整性, 前后更宽的statRange
      */
     public static List<String> changeStatRangeForFull(List<String> statRange) {
-        return Arrays.asList("19000101", "21000101");
-//        String start = statRange.get(0);
-//        String end = statRange.get(1);
-//        int startYear = DateUtil.parse(start).year() - 2;
-//        int endYear = DateUtil.parse(start).year() + 2;
-//
-//        String startNew = StrUtil.format("{}{}", startYear, StrUtil.sub(start, 4, 8));
-//        String endNew = StrUtil.format("{}{}", endYear, StrUtil.sub(end, 4, 8));
-//        return Arrays.asList(startNew, endNew);
+//        return Arrays.asList("19000101", "21000101");
+        String start = statRange.get(0);
+        String end = statRange.get(1);
+        int startYear = DateUtil.parse(start).year() - 2;
+        int endYear = DateUtil.parse(start).year() + 2;
+
+        String startNew = StrUtil.format("{}{}", startYear, StrUtil.sub(start, 4, 8));
+        String endNew = StrUtil.format("{}{}", endYear, StrUtil.sub(end, 4, 8));
+        return Arrays.asList(startNew, endNew);
     }
 }

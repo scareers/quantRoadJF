@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SingleKlineFormsBase" type="Application" factoryName="Application" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SingleKlineFormsBase" />
+    <module name="quantRoad" />
+    <option name="VM_PARAMETERS" value="-Xmx512g" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

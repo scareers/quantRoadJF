@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/tushare?serverTimezone=Asia/Shanghai" uuid="f54abd4e-b025-4948-9473-28085d9f57f2">
+    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/tushare?serverTimezone=Asia/Shanghai" uuid="6b0db749-02dd-4371-90cd-188bc72c6c48">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
@@ -15,7 +15,7 @@
         <property name="yearIsDateType" value="false" />
       </driver-properties>
     </data-source>
-    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/kline_forms?serverTimezone=Asia/Shanghai" uuid="97ee621c-bd2f-4376-a546-f0eb6730fc43">
+    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/kline_forms?serverTimezone=Asia/Shanghai" uuid="b6d18749-5e9a-49fb-aec8-4a95001925f3">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>

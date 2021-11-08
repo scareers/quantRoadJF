@@ -3,6 +3,7 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.math.MathUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
@@ -98,7 +99,7 @@ public class SingleKlineFormsBase {
                 results.get(key).addAll(resultTemp.get(key));
                 total += resultTemp.get(key).size();
             }
-            Console.log("{}: {}: {}: {}", stock, resultTemp.size(), total, resultTemp.get("Dummy__Next4Open").size());
+//            Console.log("{}: {}: {}: {}", stock, resultTemp.size(), total, resultTemp.get("Dummy__Next4Open").size());
             resultTemp = null;
         }
         latchOfParse.await();
@@ -106,7 +107,7 @@ public class SingleKlineFormsBase {
         System.out.println();
         Console.log(results.size());
         Console.log(results.getClass().getName());
-        Console.log(results);
+//        Console.log(results);
 
         Console.log("构建结果字典完成");
         Console.log("开始计算并保存");
@@ -114,10 +115,14 @@ public class SingleKlineFormsBase {
         ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmount,
                 SettingsOfSingleKlineBasePercent.processAmount * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());
-
+        /**
+         * 因java执行速度快, 因此考虑, 单个线程, 执行一个epoch; 而非 全进程执行一个epoch.
+         * 且每次写入mysql为一个epoch的数据, 而非单条数据.
+         */
         int totalEpochAmounts = (int) Math  // 仅用于显示进度
                 .ceil((double) results.size() / SettingsOfSingleKlineBasePercent.perEpochTaskAmounts);
-
+        int process = 1;
+        Connection connOfSave = ConnectionFactory.getConnLocalKlineForms();
         for (int currentEpoch = 0; currentEpoch < Integer.MAX_VALUE; currentEpoch++) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
@@ -129,19 +134,32 @@ public class SingleKlineFormsBase {
             List<String> formNamesCurrentEpoch = forNameRaws
                     .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
             CountDownLatch latchOfCalcForEpoch = new CountDownLatch(formNamesCurrentEpoch.size());
-            for (String formName : Tqdm.tqdm(formNamesCurrentEpoch, formNamesCurrentEpoch.size())) {
-                List<Double> resultSingle = results.get(formName);
-                Connection connOfSave = ConnectionFactory.getConnLocalKlineFormsFromPool();
-                Future<String> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch,
-                        connOfSave, formName,
-                        stocks.size(), statDateRange, resultSingle, bigChangeThreshold, bins, effectiveValueRange,
-                        saveTablename));
-                String finishedFormName = f.get();
-                results.remove(finishedFormName); // 删除key, 节省空间
-                connOfSave.close();
+
+
+            for (String formName : Tqdm.tqdm(formNamesCurrentEpoch,
+                    StrUtil.format("process: {}/{}/{}", process, totalEpochAmounts, results.size()))) {
+                try {
+                    List<Double> resultSingle = results.get(formName);
+
+                    Future<String> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch,
+                            connOfSave, formName,
+                            stocks.size(), statDateRange, resultSingle, bigChangeThreshold, bins, effectiveValueRange,
+                            saveTablename));
+                    String finishedFormName = f.get();
+                    results.remove(finishedFormName); // 删除key, 节省空间
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+//                    connOfSave.close();
+//                    connOfSave = null;
+                }
             }
+
             latchOfCalcForEpoch.await(); // 本轮执行完毕
+            process++;
         }
+        connOfSave.close();
+        connOfSave = null;
     }
 }
 
@@ -281,7 +299,7 @@ class CalcStatResultAndSaveTask implements Callable<String> {
      * * bins  int
      * * big_change_threshold  List<Double>
      * * tick_list List<Double>
-     * * occurences_list  List<Integer>
+     * * occurrences_list  List<Integer>
      * * frequency_list  ArrayList<Double>
      * * frequency_with_tick      List<List<Double>>
      * * cdf_list List<Double>
@@ -330,9 +348,55 @@ class CalcStatResultAndSaveTask implements Callable<String> {
 
         DataFrameSelf<Object> dfSaved = new DataFrameSelf<>();
         List<Object> row = new ArrayList<>();
+//        Console.log(analyzeResultMap.keySet());
+//        Console.log(analyzeResultMap);
         for (String key : analyzeResultMap.keySet()) {
+            // zero_compare_counts ArrayList<Integer> 3
+            // zero_compare_counts_percent ArrayList<Double>  3
+            // bigchange_compare_counts  ArrayList<Integer> 3
+            // bigchange_compare_counts_percent  ArrayList<Double>  3
+            // 当key为以上四个, 则需要对字段进行 0,1,2 的拆分, 值也进行拆分. 总计分为12个字段. 方便数据库直接查询.
+            if ("zero_compare_counts".equals(key) || "bigchange_compare_counts".equals(key)) {
+                // 3 个Integer 的AL, 这里1拆为3; --> 0,1,2
+                ArrayList<Integer> tempList = (ArrayList<Integer>) analyzeResultMap.get(key);
+                for (int i = 0; i < 3; i++) {
+                    String fieldName = key + "_" + i;
+                    dfSaved.add(fieldName);
+                    row.add(tempList.get(i));
+                }
+                continue;
+            }
+            // 同样为了应对数据表的字段 percnet..
+            if ("zero_compare_counts_percent".equals(key) || "bigchange_compare_counts_percnet".equals(key)) {
+                // 3 个Integer 的AL, 这里1拆为3; --> 0,1,2
+                ArrayList<Double> tempList = (ArrayList<Double>) analyzeResultMap.get(key);
+                for (int i = 0; i < 3; i++) {
+                    String fieldName = key + "_" + i;
+                    dfSaved.add(fieldName);
+                    row.add(tempList.get(i));
+                }
+                continue;
+            }
+
             dfSaved.add(key);
-            row.add(analyzeResultMap.get(key));
+            Object value = analyzeResultMap.get(key);
+            // Object 总体分为 ArrayList,List, List<List>, int, double 等.
+            // 列表性结果, 则转换为 json, 字符串, int,double (包装类) 等不转换
+            if (value instanceof List) {
+                row.add(JSONUtil.toJsonStr(value));
+            } else {
+                // 此时 有可能为Double.NaN, 将sql错误, 修复一下
+                if (value instanceof Double) {
+                    // 注意 , 不能用 ==; 需要用 此静态方法, 判定是否为 NaN
+                    if (Double.compare(Double.NaN, (Double) value) == 0) {
+                        row.add(null); // 将NAN替换为null
+                    } else {
+                        row.add(value);  // @bugfix: 又特么是这里else忘了写
+                    }
+                } else {
+                    row.add(value);
+                }
+            }
         }
 
         // 加入其他字段  // 列
@@ -355,7 +419,7 @@ class CalcStatResultAndSaveTask implements Callable<String> {
 
         // 对应的 List<Object> 加入其他Object
         row.add(formNamePure);
-        row.add(statDateRange);
+        row.add(JSONUtil.toJsonStr(statDateRange)); // L<S>
         row.add(statResultAlgorithm);
         row.add(selfNotes);
         row.add(formDescription);
@@ -374,6 +438,10 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         dfSaved.append(row); // 加入.
         dfSaved.toSql(saveTablename, saveDb, "append", null);
         // 连接未关闭
+    }
+
+    public static String objectToJsonStr(Object object) {
+        return JSONUtil.toJsonStr(JSONUtil.parse(object));
     }
 
     /**
@@ -405,7 +473,7 @@ class CalcStatResultAndSaveTask implements Callable<String> {
      * bins  int
      * big_change_threshold  List<Double>
      * tick_list List<Double>
-     * occurences_list  List<Integer>
+     * occurrences_list  List<Integer>
      * frequency_list  ArrayList<Double>
      * frequency_with_tick      List<List<Double>>
      * cdf_list List<Double>
@@ -486,16 +554,20 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         ArrayList<Double> bigchangeCompareCountsPercent = getDoubles(effectiveResults, conclusion,
                 bigchangeCompareCounts, ltBigchange, betweenBigchange, gtBigchange,
                 "bigchange_compare_counts");
-        conclusion.put("bigchange_compare_counts_percent", bigchangeCompareCountsPercent); //AL
+        // @noti: 这里故意拼写错误 percent成 percnet, 为了数据表字段将错就错
+        conclusion.put("bigchange_compare_counts_percnet", bigchangeCompareCountsPercent); //AL
 
         DataFrame<Double> dfEffectiveResults = new DataFrame<>();
         dfEffectiveResults.add("value", effectiveResults);
         conclusion.put("mean", dfEffectiveResults.mean().get(0, 0));
+//        conclusion.put("mean", 1);
         conclusion.put("std", dfEffectiveResults.stddev().get(0, 0));
         conclusion.put("min", dfEffectiveResults.min().get(0, 0));
         conclusion.put("max", dfEffectiveResults.max().get(0, 0));
         conclusion.put("skew", dfEffectiveResults.skew().get(0, 0));
+
         conclusion.put("kurt", dfEffectiveResults.kurt().get(0, 0));
+//        conclusion.put("kurt", 1);
 
         // Double
         conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
@@ -509,13 +581,15 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         conclusion.put("big_change_threshold", bigChangeThreshold);
 
         conclusion.put("tick_list", tickList);
-        conclusion.put("occurences_list", occurencesList);
+        conclusion.put("occurrences_list", occurencesList);
         ArrayList<Double> frequencyList = new ArrayList<>();
         for (Integer i : occurencesList) {
             frequencyList.add((double) i / effectiveResults.size());
         }
         conclusion.put("frequency_list", frequencyList);
-        conclusion.put("frequency_with_tick", null);
+        // 不使用null, 因frequency_with_tick 将被转换为json字符串保存, 这里直接设定为 "",
+        // 如果使用null, 保存时会报错: No value specified for parameter 6
+        conclusion.put("frequency_with_tick", "");
         if (calcCdfOrFrequencyWithTick) {
             List<List<Double>> frequencyWithTick = getListWithTick(tickList, frequencyList);
             conclusion.put("frequency_with_tick", frequencyWithTick);
@@ -526,11 +600,13 @@ class CalcStatResultAndSaveTask implements Callable<String> {
         dfTemp = dfTemp.cumsum();
         List<Double> cdfList = dfTemp.col(0);
         conclusion.put("cdf_list", cdfList);
-        conclusion.put("cdf_with_tick", null);
+        conclusion.put("cdf_with_tick", "");
         if (calcCdfOrFrequencyWithTick) {
             List<List<Double>> cdfWithTick = getListWithTick(tickList, cdfList);
             conclusion.put("cdf_with_tick", cdfWithTick);
         }
+
+
         return conclusion;
     }
 
@@ -589,10 +665,15 @@ class CalcStatResultAndSaveTask implements Callable<String> {
             res = geometryMean(effectiveResults);
         } else {
             // batchApproximateValues 最多100个数字. 单个部分 由递归计算而来.
+
             List<Double> batchApproximateValues = new ArrayList<>();
             int batchCounts = (int) Math.ceil((double) effectiveResults.size() / splitParts);
             for (int i = 0; i < splitParts; i++) {
-                List<Double> batchResults = effectiveResults.subList(i * batchCounts, Math.min(i * (batchCounts + 1),
+                if (i * batchCounts >= effectiveResults.size()) { // 强制判定
+                    continue;
+                }
+                // @bugfix: (i+1)*batchCounts 而非 i*(batchCounts+1)
+                List<Double> batchResults = effectiveResults.subList(i * batchCounts, Math.min((i + 1) * batchCounts,
                         effectiveResults.size()));
                 Double approximateSingleValue = calcVirtualGeometryMeanRecursion(batchResults, splitParts,
                         singleMaxLenth);

@@ -18,9 +18,9 @@ import java.util.List;
 public class SettingsOfSingleKlineBasePercent {
     public static final int windowUsePeriodsCoreArg = 11;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
-    public static final int processAmount = 1;
-    public static final int stockAmountsBeCalc = 10;
-    public static final int perEpochTaskAmounts = 512;
+    public static final int processAmount = 16;
+    public static final int stockAmountsBeCalc = 1000;
+    public static final int perEpochTaskAmounts = 2048;
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
     public static final String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");

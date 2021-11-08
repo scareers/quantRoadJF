@@ -9,6 +9,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.Tqdm;
@@ -38,15 +39,23 @@ public class App {
             }
         }
 
+        Object x = "abc";
+        Console.log(x instanceof String);
+        Double nan = Double.NaN;
+        Console.log(Double.compare(1, Double.NaN));
 
+        Console.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
+        Console.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
         Console.log(Math.pow(2.1867241478865562, 5));
 
         DataFrame<Double> df = new DataFrame<>();
-        df.add(Arrays.asList(1.0, 2.0));
+        df.add(Arrays.asList(1.0));
         df = df.apply(value -> {
             return value + 1;
         });
         Console.log(df);
+        Console.log(df.kurt());
+
 
 //        DataFrameSelf<Object> df = new DataFrameSelf<>("a", "b");
         Connection conn = ConnectionFactory.getConnLocalKlineForms();
