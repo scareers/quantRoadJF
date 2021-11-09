@@ -1,6 +1,5 @@
 package com.scareers.utils;
 
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
@@ -40,5 +39,17 @@ public class CommonUtils {
         String startNew = StrUtil.format("{}{}", startYear, StrUtil.sub(start, 4, 8));
         String endNew = StrUtil.format("{}{}", endYear, StrUtil.sub(end, 4, 8));
         return Arrays.asList(startNew, endNew);
+    }
+
+    public static void showMemoryUsageByte() {
+        Console.log("{}b - {}b == {}b", Runtime.getRuntime().totalMemory(),
+                Runtime.getRuntime().freeMemory(),
+                Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+    }
+
+    public static void showMemoryUsageMB() {
+        Console.log("{}M - {}M == {}M", Runtime.getRuntime().totalMemory() / 1024 / 1024,
+                Runtime.getRuntime().freeMemory() / 1024 / 1024,
+                Runtime.getRuntime().totalMemory() / 1024 / 1024 - Runtime.getRuntime().freeMemory() / 1024 / 1024);
     }
 }

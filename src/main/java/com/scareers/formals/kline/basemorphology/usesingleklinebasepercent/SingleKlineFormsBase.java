@@ -11,7 +11,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
-import com.scareers.utils.SettingsCommon;
+import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.SqlUtil;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.combinpermu.Generator;
@@ -25,6 +25,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.sqlapi.TushareApi.*;
+import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
 
 /**
  * description:
@@ -34,6 +35,14 @@ import static com.scareers.sqlapi.TushareApi.*;
  */
 public class SingleKlineFormsBase {
     public static void main(String[] args) throws Exception {
+        // 不需要刷新. 批量执行需要刷新
+        main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
+        // 直接执行时, 读取设定的 周期数量
+        // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
+        // 设定的所有都不需要变, 只有 周期数需要改变
+    }
+
+    public static void main0(int windowUsePeriodsCoreArg) throws Exception {
         List<String> stocks = TushareApi.getStockListFromTushareExNotMain();
         stocks = stocks.subList(0, Math.min(SettingsOfSingleKlineBasePercent.stockAmountsBeCalc, stocks.size()));
         DataFrame<String> stockWithBoard = TushareApi.getStockListWithBoardFromTushare();
@@ -54,7 +63,7 @@ public class SingleKlineFormsBase {
 
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     Arrays.asList(-0.05, 0.05), 82, Arrays.<Double>asList(-0.205, 0.205),
-                    SettingsOfSingleKlineBasePercent.saveTablename);
+                    SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
 
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
                     null);
@@ -84,7 +93,8 @@ public class SingleKlineFormsBase {
                                                           DataFrame<String> stockWithBoard,
                                                           List<String> statDateRange, List<Double> bigChangeThreshold,
                                                           int bins, List<Double> effectiveValueRange,
-                                                          String saveTablename) throws Exception {
+                                                          String saveTablename, int windowUsePeriodsCoreArg)
+            throws Exception {
         Console.log("构建结果字典");
         ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
         ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmount,
@@ -93,10 +103,10 @@ public class SingleKlineFormsBase {
         CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
         Connection connOfParse = ConnectionFactory.getConnLocalTushare();
         AtomicInteger parseProcess = new AtomicInteger(0);
-        for (String stock : Tqdm.tqdm(stocks, "process: ")) {
+        for (String stock : Tqdm.tqdm(stocks, StrUtil.format("{} process: ", statDateRange))) {
             Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
                     .submit(new StockSingleParseTask(latchOfParse, stock, stockWithBoard, statDateRange,
-                            stockWithStDateRanges, connOfParse)); // 全线程使用1个conn
+                            stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg)); // 全线程使用1个conn
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
                 results.putIfAbsent(key, new ArrayList<>());
@@ -106,9 +116,9 @@ public class SingleKlineFormsBase {
             resultTemp = null;
             if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
                 System.gc();
-                Console.log("{} - {} == {}", Runtime.getRuntime().totalMemory(),
-                        Runtime.getRuntime().freeMemory(),
-                        Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+                    showMemoryUsageMB();
+                }
             }
         }
         latchOfParse.await();
@@ -141,7 +151,7 @@ public class SingleKlineFormsBase {
         CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
         // 批量插入不伤ssd. 单条插入很伤ssd
         for (Integer currentEpoch : Tqdm
-                .tqdm(epochs, "process: ")) {
+                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             List<String> formNamesCurrentEpoch = forNameRaws
@@ -157,9 +167,9 @@ public class SingleKlineFormsBase {
                 }
                 if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
                     System.gc();
-                    Console.log("{} - {} == {}", Runtime.getRuntime().totalMemory(),
-                            Runtime.getRuntime().freeMemory(),
-                            Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+                    if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+                        showMemoryUsageMB();
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -472,9 +482,6 @@ class CalcStatResultAndSaveTask implements Callable<List<String>> {
         // 连接未关闭
     }
 
-    public static String objectToJsonStr(Object object) {
-        return JSONUtil.toJsonStr(JSONUtil.parse(object));
-    }
 
     /**
      * 对比python: 显示图像 和 保存图像的 参数未传递.
@@ -781,6 +788,7 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
     List<String> statDateRange;
     DataFrame<String> stockWithBoard;
     HashMap<String, List<List<String>>> stockWithStDateRanges;
+    int windowUsePeriodsCoreArg;
 
 
     public StockSingleParseTask() {
@@ -789,13 +797,15 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
     public StockSingleParseTask(CountDownLatch countDownLatch,
                                 String stock,
                                 DataFrame<String> stockWithBoard, List<String> statDateRange,
-                                HashMap<String, List<List<String>>> stockWithStDateRanges, Connection conn) {
+                                HashMap<String, List<List<String>>> stockWithStDateRanges, Connection conn,
+                                int windowUsePeriodsCoreArg) {
         this.countDownLatch = countDownLatch;
         this.stock = stock;
         this.stockWithBoard = stockWithBoard;
         this.statDateRange = statDateRange;
         this.stockWithStDateRanges = stockWithStDateRanges;
         this.conn = conn;
+        this.windowUsePeriodsCoreArg = windowUsePeriodsCoreArg;
     }
 
     @Override
@@ -804,16 +814,7 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
         // 使得不会返回null. 至少会返回空的字典
         ConcurrentHashMap<String, List<Double>> resultSingle = new ConcurrentHashMap<>(2 ^ 5);
         try {
-            /*
-            //模拟主要逻辑
-            //注意这里线程池9线程, 如果以线程名作为key, 则最多9个key.没有bug. latch.count也是
-            if (Thread.currentThread().getName().contains("pool-1-thread-9")) {
-                Thread.sleep(30);
-            }
-            Thread.sleep((long) (Math.random() * 10));
-            Thread.sleep(1);
-            resultSingle.put("Test" + Thread.currentThread().getName(), Arrays.<Double>asList(1.0, 2.0));
-             */
+
 
             // 开始主要逻辑
             // 添加结果到 线程安全的 总结果集
@@ -830,7 +831,7 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
             HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, conn);
             resultSingle = baseFormAndOpenConditionAnalyzer(dfRaw, adjDates, stock, stockWithBoard,
                     stockWithStDateRanges, statDateRange,
-                    conn); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
+                    conn, windowUsePeriodsCoreArg); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
             return resultSingle;
         } catch (Exception e) {
             e.printStackTrace();
@@ -859,17 +860,17 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
             DataFrame<String> stockWithBoard,
             HashMap<String, List<List<String>>> stockWithStDateRanges,
             List<String> statDateRange,
-            Connection conn) {
+            Connection conn, int windowUsePeriodsCoreArg) {
 
         ConcurrentHashMap<String, List<Double>> resultTemp = new ConcurrentHashMap<>(2);
-        if (dfRaw.length() < SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg) {
+        if (dfRaw.length() < windowUsePeriodsCoreArg) {
             return resultTemp;
         }
-        for (int i = 4; i < dfRaw.length() - SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg; i++) {
+        for (int i = 4; i < dfRaw.length() - windowUsePeriodsCoreArg; i++) {
             try {
 
                 DataFrame<Object> dfWindowRaw = dfRaw.slice(i - 4,
-                        i - 4 + SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
+                        i - 4 + windowUsePeriodsCoreArg);
                 String todayTemp = (String) dfWindowRaw
                         .get(5, fieldsOfDfRaw.indexOf("trade_date"));
                 if (todayTemp.compareTo(statDateRange.get(0)) < 0 || todayTemp.compareTo(statDateRange.get(1)) >= 0) {
@@ -894,27 +895,21 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
                 }
                 dfWindow = dfWindow.dropna();
                 //@bugfix: 注意是 length, 而非size()
-                if (dfWindow.length() != SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg) {
+                if (dfWindow.length() != windowUsePeriodsCoreArg) {
 //                    Console.log(todayTemp);
 //                    Console.log(dfWindow);
 //                    Console.log(dfWindowRaw);
                     continue; // 后复权数据,有所缺失
                 }
 
-                //                Console.log(todayTemp); 到此处同, 是遍历了相同的todayTemp的
-                // 到这里不同了.  395 - 417  // 结果上 391 - 413 ; 恰好差4.       22天差距
-//                Console.log(todayTemp);
                 List<Object> pre5dayKlineRow = dfWindow.row(0);
                 List<Object> yesterdayKlineRow = dfWindow.row(4);
                 List<Object> todayKlineRow = dfWindow.row(5);
                 List<Object> resultAccordingKlineRow =
-                        dfWindow.row(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 1);
+                        dfWindow.row(windowUsePeriodsCoreArg - 1);
                 List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
                         yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
-//                System.out.println(concreteTodayFormStrs);
-//                System.out.println(stock);
-//                System.out.println(dfWindow);
-//                System.exit(0);
+
 
                 // 7条件判定完成 *******
                 if (concreteTodayFormStrs.contains("-")) {
@@ -939,7 +934,7 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
                             .forEach(allIndexCombinations::add);
                 }
                 //                Console.log(allIndexCombinations.size()); // 全索引组合128种
-                String prefix = "Next" + (SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7);
+                String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
 
                 for (int j = 0; j < allIndexCombinations.size(); j++) {
                     List<Integer> singleCombination = allIndexCombinations.get(j);
@@ -1101,7 +1096,6 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
                 break;
             }
         }
-
         return conditionsCalced;
     }
 
@@ -1235,7 +1229,6 @@ class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Do
         }
         return false;
     }
-
 
 }
 

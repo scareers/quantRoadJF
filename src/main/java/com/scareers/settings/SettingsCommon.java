@@ -1,6 +1,5 @@
-package com.scareers.utils;
+package com.scareers.settings;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 

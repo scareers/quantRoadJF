@@ -3,7 +3,6 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import eu.verdelhan.ta4j.indicators.bollinger.BollingerBandsLowerIndicator;
 
 import java.sql.Connection;
 import java.util.Arrays;
@@ -16,7 +15,7 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static final int windowUsePeriodsCoreArg = 7;
+    public static int windowUsePeriodsCoreArg = 8;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
     public static final int processAmount = 32;
     public static final int gcControlEpoch = 10; // 新增:控制gc频率.越大则手动gc频率越低.
@@ -25,9 +24,9 @@ public class SettingsOfSingleKlineBasePercent {
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
     public static final String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
+    public static final boolean showMemoryUsage = false;
 
-
-    public static final String saveTablenameFiltered = getSaveTablename("filtered_single_kline_from_next{}");
+    public static String saveTablenameFiltered = getSaveTablename("filtered_single_kline_from_next{}");
     public static final Connection ConnOfSaveTable = tryGetConnForSavetable();
     public static final boolean calcCdfAndFrequencyWithTick = false;
     // 读取股票数据时的列, 注意 Class 列表需要与列一一对应
@@ -48,6 +47,21 @@ public class SettingsOfSingleKlineBasePercent {
     public static final List<Double> volToPre5dayAvgRangeList = Arrays.<Double>asList(0.0, 0.2, 0.5, 0.8, 1.0, 2.0, 4.0,
             8.0, 16.0, 32.0, 64.0, 1000.);
 
+    public static void refreshWindowUsePeriodRelativeSettings(int windowUsePeriodsCoreArg) {
+        // 在使用批量脚本时, 虽然 windowUsePeriodsCoreArg 通过了参数传递,
+        // 但是,
+        // 其他与之相关的设定, 例如保存表名等, 并不会跟随刷新, 导致bug出现.
+        // 本方法, 刷新相关参数, 使得可以跟随 windowUsePeriodsCoreArg 而改变
+        // 目前仅有保存表需要随动, 其他均固定
+
+        // 设置传递来的参数
+        SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg = windowUsePeriodsCoreArg;
+        // 保存表与之相关
+        saveTablenameFiltered = getSaveTablename("filtered_single_kline_from_next{}");
+
+
+    }
+
     private static String getSaveTablename(String s) {
         String res = StrUtil.format(s,
                 windowUsePeriodsCoreArg - 7);
@@ -64,22 +78,22 @@ public class SettingsOfSingleKlineBasePercent {
 
             Arrays.asList("20050603", "20060807"),
             Arrays.asList("20060807", "20071017"),
-            Arrays.asList("20071017", "20081028"),
-
-            Arrays.asList("20081028", "20090804"),
-            Arrays.asList("20090804", "20111011"),
-            Arrays.asList("20111011", "20140721"),
-
-            Arrays.asList("20140721", "20150615"),
-            Arrays.asList("20150615", "20160128"),
-
-            Arrays.asList("20160128", "20170116"),
-            Arrays.asList("20170116", "20180129"),
-            Arrays.asList("20180129", "20190104"),
-
-            Arrays.asList("20190104", "20200203"),
-            Arrays.asList("20200203", "20210218"),
-            Arrays.asList("20210218", "21000101")
+            Arrays.asList("20071017", "20081028")
+//
+//            Arrays.asList("20081028", "20090804"),
+//            Arrays.asList("20090804", "20111011"),
+//            Arrays.asList("20111011", "20140721"),
+//
+//            Arrays.asList("20140721", "20150615"),
+//            Arrays.asList("20150615", "20160128"),
+//
+//            Arrays.asList("20160128", "20170116"),
+//            Arrays.asList("20170116", "20180129"),
+//            Arrays.asList("20180129", "20190104"),
+//
+//            Arrays.asList("20190104", "20200203"),
+//            Arrays.asList("20200203", "20210218"),
+//            Arrays.asList("20210218", "21000101")
 
             //            Arrays.asList('20020129', '20050603'), // 中组合区间1
             //            Arrays.asList('20050603', '20081028'),
@@ -208,10 +222,4 @@ public class SettingsOfSingleKlineBasePercent {
                 "    comment '单条k线形态, 以及相关延伸的分析结果保存;';\n";
         return s;
     }
-/*
-if exclude_some_boards:
-    save_tablename += '__excybkcb'
-    save_table_filtered += '__excybkcb'
- */
-
 }

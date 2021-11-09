@@ -37,7 +37,8 @@ public class App {
             row.add(RandomUtil.randomDouble());
         }
         dfo.append(row);
-        dfo.show();
+//        dfo.show();
+        dfo.plot(DataFrame.PlotType.LINE);
 
 //        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
 //            try {
