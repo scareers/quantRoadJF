@@ -113,8 +113,8 @@ public class SingleKlineFormsBase {
         }
         latchOfParse.await();
         poolOfParse.shutdown(); // 关闭线程池
-        connOfParse.close(); // 关闭唯一连接
-        connOfParse = null; // 关闭唯一连接
+//        connOfParse.close(); // 关闭唯一连接
+//        connOfParse = null; // 关闭唯一连接
         System.out.println();
         Console.log("results size: {}", results.size());
 
@@ -167,8 +167,8 @@ public class SingleKlineFormsBase {
         }
         Console.log("计算并保存完成!");
         latchOfCalcForEpoch.await(); // 本轮执行完毕
-        connOfSave.close();
-        connOfSave = null;
+//        connOfSave.close();
+//        connOfSave = null;
     }
 }
 

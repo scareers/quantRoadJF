@@ -1,24 +1,10 @@
 package com.scareers;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.Month;
-import cn.hutool.core.io.resource.ClassPathResource;
-import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
-import cn.hutool.json.JSONUtil;
-import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
-
-import java.sql.Connection;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 //import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.CalcStatResultAndSaveTask
 // .calcVirtualGeometryMeanRecursion;
@@ -44,7 +30,11 @@ public class App {
         System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //
 
+        DataFrame<Double> dfo = new DataFrame<>("a");
+        ArrayList<Double> row = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
 
+        }
 
 //        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
 //            try {
