@@ -1,5 +1,6 @@
 package com.scareers;
 
+import cn.hutool.core.util.RandomUtil;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
@@ -33,8 +34,10 @@ public class App {
         DataFrame<Double> dfo = new DataFrame<>("a");
         ArrayList<Double> row = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-
+            row.add(RandomUtil.randomDouble());
         }
+        dfo.append(row);
+        dfo.show();
 
 //        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
 //            try {
