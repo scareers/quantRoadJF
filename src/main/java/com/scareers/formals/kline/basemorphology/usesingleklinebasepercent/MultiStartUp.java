@@ -22,8 +22,10 @@ public class MultiStartUp {
         );
 
         for (Integer i : windowUsePeriodsCoreArgList) {
-            refreshWindowUsePeriodRelativeSettings(i); // 注意刷新设定里面与该参数相关的设定
-            SingleKlineFormsBase.main0(i); // 匹配执行主脚本执行
+            // 注意刷新设定里面与该参数相关的设定
+            refreshWindowUsePeriodRelativeSettings(i);
+            // 匹配执行主脚本执行
+            SingleKlineFormsBase.main0(i);
         }
 
 
