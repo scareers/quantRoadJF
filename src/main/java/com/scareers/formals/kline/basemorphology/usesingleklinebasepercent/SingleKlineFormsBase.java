@@ -60,9 +60,13 @@ public class SingleKlineFormsBase {
                     StrUtil.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
                             StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
-
+            // 7, 8用.
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     Arrays.asList(-0.05, 0.05), 82, Arrays.<Double>asList(-0.205, 0.205),
+                    SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
+            // 9,10 用. 1.1**4=1.464
+            statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
+                    Arrays.asList(-0.05, 0.05), 188, Arrays.<Double>asList(-0.47, 0.47),
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
 
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
