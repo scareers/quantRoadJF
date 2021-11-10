@@ -17,27 +17,8 @@ import java.util.concurrent.*;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        final TimeInterval timer = new TimeInterval();
-        timer.start("1");
 
-        List<Integer> indexes = CommonUtils.range(100);
-        CountDownLatch latch = new CountDownLatch(indexes.size());
-        ThreadPoolExecutor pool = new ThreadPoolExecutor(100,
-                200, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
-        ArrayList<String> results = new ArrayList<>();
-        ArrayList<Future<String>> futures = new ArrayList<>();
-        for (Integer index : indexes) {
-            Future<String> f = pool
-                    .submit(new TaskTest(index, latch));
-            futures.add(f);
-        }
-        for (Future f : futures) {
-            results.add((String) f.get());
-        }
-        Console.log(results);
 
-        Console.log(timer.intervalRestart());
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();
 //        Map<Integer, String> passedMap = new HashMap<>();
@@ -146,31 +127,6 @@ public class App {
     }
 }
 
-
-class TaskTest implements Callable<String> {
-    Integer i;
-    CountDownLatch latch;
-
-
-    public TaskTest(Integer i, CountDownLatch latch) {
-        this.i = i;
-        this.latch = latch;
-    }
-
-    @Override
-    public String call() throws Exception {
-        try {
-            Thread.sleep(RandomUtil.randomInt(1000));
-            Console.log(StrUtil.format("task {} finish", i));
-            return StrUtil.format("task {} finish", i);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            latch.countDown();
-            return StrUtil.format("task {} finish", i);
-        }
-    }
-}
 
 
 
