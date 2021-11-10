@@ -17,10 +17,12 @@ import java.util.List;
 public class SettingsOfSingleKlineBasePercent {
     public static int windowUsePeriodsCoreArg = 7;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
-    public static final int processAmount = 32;
-    public static final int gcControlEpoch = 10; // 新增:控制gc频率.越大则手动gc频率越低.
+    public static final int processAmountParse = 8; // 实测8-16. 更多无济于事
+    public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳
+    public static final int gcControlEpochParse = 300; // 新增:控制Parse 时gc频率.越大则手动gc频率越低,小幅减少时间.过大则要求线程数量不要过大
+    public static final int gcControlEpochSave = 1000; // 新增:控制Save 时gc频率.越大则手动gc频率越低. 通常比上大
     public static final int stockAmountsBeCalc = 1000000;
-    public static final int perEpochTaskAmounts = 512;
+    public static final int perEpochTaskAmounts = 64;// 至少2.  实测 61%ssd负载; 很难再高.
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
     public static final String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
@@ -46,6 +48,18 @@ public class SettingsOfSingleKlineBasePercent {
             -0.1, -0.05, 0.0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0);
     public static final List<Double> volToPre5dayAvgRangeList = Arrays.<Double>asList(0.0, 0.2, 0.5, 0.8, 1.0, 2.0, 4.0,
             8.0, 16.0, 32.0, 64.0, 1000.);
+
+    public static final List<Integer> binsList = Arrays.asList(44, 88, 136, 188);
+    // 分别对应window=7,8,9,10 用,
+    // 千分之5一个tick
+    public static final List<List<Double>> effectiveValusRanges = Arrays.asList(
+            // 分别对应window=7,8,9,10 用
+            Arrays.asList(-0.11, 0.11),
+            Arrays.asList(-0.22, 0.22),
+            Arrays.asList(-0.34, 0.34),
+            Arrays.asList(-0.47, 0.47)
+    );
+
 
     public static void refreshWindowUsePeriodRelativeSettings(int windowUsePeriodsCoreArg) {
         // 在使用批量脚本时, 虽然 windowUsePeriodsCoreArg 通过了参数传递,
@@ -95,6 +109,7 @@ public class SettingsOfSingleKlineBasePercent {
             Arrays.asList("20200203", "20210218"),
             Arrays.asList("20210218", "21000101")
 
+
             //            Arrays.asList('20020129', '20050603'), // 中组合区间1
             //            Arrays.asList('20050603', '20081028'),
             //            Arrays.asList('20081028', '20140721'),
@@ -114,7 +129,8 @@ public class SettingsOfSingleKlineBasePercent {
     // 仍有{}需要填充date range
 
     public static void main(String[] args) {
-        Console.log(processAmount);
+        Console.log(processAmountParse);
+        Console.log(processAmountSave);
 
         Console.log(excludeBoards.get(1));
         Console.log(sqlDeleteExistDateRange);

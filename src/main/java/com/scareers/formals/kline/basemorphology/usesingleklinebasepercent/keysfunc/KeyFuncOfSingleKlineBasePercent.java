@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.utils.CommonUtils;
 import com.scareers.utils.combinpermu.Generator;
 import joinery.DataFrame;
 
@@ -22,6 +23,16 @@ import static com.scareers.sqlapi.TushareApi.getReachPriceLimitDates;
  * @date: 2021/11/10  0010-4:29
  */
 public class KeyFuncOfSingleKlineBasePercent {
+    public static List<Double> getTickListByBinsAndEffectiveValueRange(List<Double> effectiveValueRange, int bins,
+                                                                       double perRangeWidth) {
+        // double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
+        List<Double> tickList = new ArrayList<>();
+        for (int i = 0; i < bins + 1; i++) {// 初始化 tick列表.
+            tickList.add(CommonUtils.roundHalfUP(effectiveValueRange.get(0) + i * perRangeWidth, 3));
+        }
+        return tickList;
+    }
+
     public static HashMap<String, HashMap<String, Object>> analyzeStatsResultsStatic(List<String> formNameRaws,
                                                                                      ConcurrentHashMap<String,
                                                                                              List<Double>> results,
@@ -39,13 +50,11 @@ public class KeyFuncOfSingleKlineBasePercent {
             List<Double> effectiveResults = new ArrayList<>();
             List<Integer> occurencesList = new ArrayList<>();
             for (int i = 0; i < bins; i++) {
-                occurencesList.add(0); // 数量记录初始化
+                occurencesList.add(0);
+                // 数量记录初始化
             }
-            Double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
-            List<Double> tickList = new ArrayList<>();
-            for (int i = 0; i < bins + 1; i++) {// 初始化 tick列表.
-                tickList.add(effectiveValueRange.get(0) + i * perRangeWidth);
-            }
+            double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
+            List<Double> tickList = getTickListByBinsAndEffectiveValueRange(effectiveValueRange, bins, perRangeWidth);
             for (int i = 0; i < results0.size(); i++) {
                 Double value = results0.get(i);
                 if (value < effectiveValueRange.get(0) || value > effectiveValueRange.get(1)) {
@@ -131,7 +140,8 @@ public class KeyFuncOfSingleKlineBasePercent {
             conclusion.put("bins", bins);
             conclusion.put("big_change_threshold", bigChangeThreshold);
 
-            conclusion.put("tick_list", tickList);
+            // conclusion.put("tick_list", tickList); //不再保存tickList
+            // conclusion.put("tick_list", null); // 或者设置null
             conclusion.put("occurrences_list", occurencesList);
             ArrayList<Double> frequencyList = new ArrayList<>();
             for (Integer i : occurencesList) {

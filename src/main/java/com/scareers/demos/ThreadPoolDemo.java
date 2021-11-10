@@ -27,14 +27,16 @@ import java.util.concurrent.*;
  * ... 因此 遍历暂存的 futures, 调用 f.get() 拿到结果.  当然, 在循环中, f.get() 后的代码, 约等于是串行的. 而非并行,尽量不执行耗时代码
  * 4.循环调用f.get() 已经达成了等待, 因此 等待所有子线程结束, 再跑主线程,  并不需要 latch 机制帮助!!!
  * -- pool.shutdown();
+ * 5.如果使用了Callable, 但是又不需要读取返回值, 即不调用 f.get(), 则需要配合 latch, 才能等待所有线程执行完成
  * 这样才会正常退出程序
  *
  * @author: admin
  * @date: 2021/11/10  0010-10:25
  */
 public class ThreadPoolDemo {
-    public static void main(String[] args) throws InterruptedException {
-        testRunable();
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
+//        testRunable();
+        testCallable();
     }
 
     public static void testRunable() throws InterruptedException {
@@ -73,11 +75,11 @@ public class ThreadPoolDemo {
             futures.add(f);
         }
 
-        for (Future f : futures) {
-            results.add((String) f.get());
-            Thread.sleep(2);  // 这些代码 将循环耗时
-        }
-        latch.await();
+//        for (Future f : futures) {
+//            results.add((String) f.get());
+//            Thread.sleep(2);  // 这些代码 将循环耗时
+//        }
+//        latch.await();
 
         Console.log(results);
         Console.log(timer.intervalRestart());

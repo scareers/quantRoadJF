@@ -53,6 +53,9 @@ public class SingleKlineFormsBase {
         // 未关闭连接,可复用
         SqlUtil.execSql(SettingsOfSingleKlineBasePercent.sqlCreateSaveTable,
                 SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
+        int bins = SettingsOfSingleKlineBasePercent.binsList.get(windowUsePeriodsCoreArg - 7);
+        List<Double> effectiveValueRange =
+                SettingsOfSingleKlineBasePercent.effectiveValusRanges.get(windowUsePeriodsCoreArg - 7);
         for (List<String> statDateRange : dateRanges) {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
@@ -60,15 +63,11 @@ public class SingleKlineFormsBase {
                     StrUtil.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
                             StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
+
             // 7, 8用.
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    Arrays.asList(-0.05, 0.05), 82, Arrays.<Double>asList(-0.205, 0.205),
+                    Arrays.asList(-0.05, 0.05), bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
-            // 9,10 用. 1.1**4=1.464
-            statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    Arrays.asList(-0.05, 0.05), 188, Arrays.<Double>asList(-0.47, 0.47),
-                    SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
-
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
                     null);
         }
@@ -101,42 +100,48 @@ public class SingleKlineFormsBase {
             throws Exception {
         Console.log("构建结果字典");
         ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
-        ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmount,
-                SettingsOfSingleKlineBasePercent.processAmount * 2, 10000, TimeUnit.MILLISECONDS,
+        ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmountParse,
+                SettingsOfSingleKlineBasePercent.processAmountParse * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());
         CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
         Connection connOfParse = ConnectionFactory.getConnLocalTushare();
         AtomicInteger parseProcess = new AtomicInteger(0);
-        for (String stock : Tqdm.tqdm(stocks, StrUtil.format("{} process: ", statDateRange))) {
+        ArrayList<Future<ConcurrentHashMap<String, List<Double>>>> futuresOfParse = new ArrayList<>();
+        for (String stock : stocks) {
             // 全线程使用1个conn
             Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
                     .submit(new StockSingleParseTask(latchOfParse, stock, stockWithBoard, statDateRange,
                             stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg));
+            futuresOfParse.add(f);
+        }
+        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
+            Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
                 results.putIfAbsent(key, new ArrayList<>());
                 results.get(key).addAll(resultTemp.get(key));
             }
             resultTemp.clear();
-            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
+            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpochParse == 0) {
                 System.gc();
                 if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
                     showMemoryUsageMB();
                 }
             }
         }
-        latchOfParse.await();
-        connOfParse.close(); // 关闭连接
+        //        latchOfParse.await(); // 不需要,
+//        connOfParse.close(); // 关闭连接
         poolOfParse.shutdown(); // 关闭线程池
         System.out.println();
         Console.log("results size: {}", results.size());
-
+        System.gc();
 
         Console.log("构建结果字典完成");
         Console.log("开始计算并保存");
         ArrayList<String> forNameRaws = new ArrayList<>(results.keySet());
-        ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmount,
-                SettingsOfSingleKlineBasePercent.processAmount * 2, 10000, TimeUnit.MILLISECONDS,
+        ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmountSave,
+                SettingsOfSingleKlineBasePercent.processAmountSave * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());
         /**
          * 因java执行速度快, 因此考虑, 单个线程, 执行一个epoch; 而非 全进程执行一个epoch.
@@ -145,12 +150,10 @@ public class SingleKlineFormsBase {
         // 仅用于显示进度
         int totalEpochAmounts = (int) Math
                 .ceil((double) results.size() / SettingsOfSingleKlineBasePercent.perEpochTaskAmounts);
-        ArrayList<Integer> epochs = new ArrayList<>();
-        for (int i = 0; i < totalEpochAmounts; i++) {
-            epochs.add(i);
-        }
+        List<Integer> epochs = CommonUtils.range(totalEpochAmounts);
         Connection connOfSave = SettingsOfSingleKlineBasePercent.ConnOfSaveTable;
         CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
+        ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
         // 批量插入不伤ssd. 单条插入很伤ssd
         for (Integer currentEpoch : Tqdm
                 .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
@@ -158,29 +161,35 @@ public class SingleKlineFormsBase {
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             List<String> formNamesCurrentEpoch = forNameRaws
                     .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
-            try {
-                Future<List<String>> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch,
-                        connOfSave, formNamesCurrentEpoch,
-                        stocks.size(), statDateRange, results, bigChangeThreshold, bins, effectiveValueRange,
-                        saveTablename));
-                List<String> finishedFormNames = f.get();
-                for (String formName0 : finishedFormNames) {
-                    // 删除key, 节省空间
-                    results.remove(formName0);
-                }
-                if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
-                    System.gc();
-                    if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
-                        showMemoryUsageMB();
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+
+            Future<List<String>> f = poolOfCalc.submit(new CalcStatResultAndSaveTask(latchOfCalcForEpoch,
+                    connOfSave, formNamesCurrentEpoch,
+                    stocks.size(), statDateRange, results, bigChangeThreshold, bins, effectiveValueRange,
+                    saveTablename));
+            futuresOfSave.add(f);
+
         }
+        AtomicInteger saveProcess = new AtomicInteger(0);
+        for (Integer i : Tqdm
+                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
+            Future<List<String>> f = futuresOfSave.get(i);
+            List<String> finishedFormNames = f.get();
+            for (String formName0 : finishedFormNames) {
+                // 删除key, 节省空间
+                results.remove(formName0);
+            }
+            //            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
+            //                System.gc();
+            //                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+            //                    showMemoryUsageMB();
+            //                }
+            //            }
+        }
+
         Console.log("计算并保存完成!");
         latchOfCalcForEpoch.await();
-        connOfSave.close();
+//        connOfSave.close();
+        poolOfCalc.shutdown();
         // 本轮执行完毕
     }
 }
@@ -285,7 +294,9 @@ class CalcStatResultAndSaveTask implements Callable<List<String>> {
                         dfTotalSave = dfTotalSave.concat(dfSingleSaved);
                     }
                 }
-                // results.remove(formName); //返回后统一删除key.
+                //results.remove(formName);
+                // 这里直接删除了, 则 主线程不需要读取返回值的 列表, 进行删除. 因此可使用latch完成等待, 而非 f.get()
+                //或者: 返回后统一删除key.
             }
             // dfTotalSave 应当转换为 self
             DataFrameSelf.toSql(dfTotalSave, saveTablename, connOfSingleThread, "append", null);
@@ -294,6 +305,12 @@ class CalcStatResultAndSaveTask implements Callable<List<String>> {
             e.printStackTrace();
         } finally {
             latchOfCalcForEpoch.countDown();
+            if (latchOfCalcForEpoch.getCount() % SettingsOfSingleKlineBasePercent.gcControlEpochSave == 0) {
+                System.gc();
+                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+                    showMemoryUsageMB();
+                }
+            }
             return formNameRaws;
         }
     }

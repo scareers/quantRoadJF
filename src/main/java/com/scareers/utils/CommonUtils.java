@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -69,5 +70,10 @@ public class CommonUtils {
 
     public static List<Integer> range(int end) {
         return range(0, end);
+    }
+
+    public static double roundHalfUP(double value, int scale) {// 正宗四舍五入
+        return new BigDecimal(value).setScale(scale,
+                BigDecimal.ROUND_HALF_UP).doubleValue();
     }
 }

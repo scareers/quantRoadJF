@@ -1,12 +1,12 @@
 package com.scareers.pandasdummy;
 
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import joinery.DataFrame;
-import joinery.impl.Combining;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -94,7 +94,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
      */
     public static void toSql(DataFrame<Object> df, String tablename, Connection conn, String ifExists,
                              String sqlCreateTable) throws SQLException {
-        conn.setAutoCommit(true);
+        //        conn.setAutoCommit(true);
         if (ifExists == null) {
             ifExists = "fail";
             // 不传递则报错
@@ -110,7 +110,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
             conn.createStatement().execute(sqlCreateTable);
         }
 
-        conn.setAutoCommit(false);
+        //        conn.setAutoCommit(false);
         // 将调用prest.executeBatch(), 手动提交
         // 第二个%s是字段列表, 第三个是 相同数量的 ?
         String sqlSave = "insert into {}({}) values ({})";
@@ -135,8 +135,8 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
             // Console.log(stmt.toString()); 可以看到sql语句
         }
         stmt.executeBatch();
-        conn.commit();
-        conn.setAutoCommit(true);
+//        conn.commit();
+//        conn.setAutoCommit(true);
         // 注意并未关闭conn, 同原生 writeSql 一样. 这样可以复用 连接
     }
 
