@@ -15,7 +15,7 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static int windowUsePeriodsCoreArg = 9;
+    public static int windowUsePeriodsCoreArg = 7;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
     public static final int processAmount = 32;
     public static final int gcControlEpoch = 10; // 新增:控制gc频率.越大则手动gc频率越低.

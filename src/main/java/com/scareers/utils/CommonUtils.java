@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -51,5 +52,22 @@ public class CommonUtils {
         Console.log("{}M - {}M == {}M", Runtime.getRuntime().totalMemory() / 1024 / 1024,
                 Runtime.getRuntime().freeMemory() / 1024 / 1024,
                 Runtime.getRuntime().totalMemory() / 1024 / 1024 - Runtime.getRuntime().freeMemory() / 1024 / 1024);
+    }
+
+    // 模拟 python 的range. 主要遍历index索引
+    public static List<Integer> range(int start, int end, int step) {
+        ArrayList<Integer> res = new ArrayList<>();
+        for (int i = start; i < end; i += step) {
+            res.add(i);
+        }
+        return res;
+    }
+
+    public static List<Integer> range(int start, int end) {
+        return range(start, end, 1);
+    }
+
+    public static List<Integer> range(int end) {
+        return range(0, end);
     }
 }

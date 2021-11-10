@@ -3,19 +3,16 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.utils.CommonUtils;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
 import java.sql.Connection;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
-import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -24,6 +21,9 @@ import static com.scareers.utils.SqlUtil.execSql;
  * Arrays.asList("20200203", "20210218"),
  * Arrays.asList("20210218", "21000101")
  * 这里我们 对 倒2进行主要筛选, 更早日期为辅助, 对 倒1日期, 则不引入未来数据
+ * <p>
+ * noti:
+ * 同python, 主要设置是 设置类的:  windowUsePeriodsCoreArg = 7;
  *
  * @author: admin
  * @date: 2021/11/10  0010-8:12
@@ -34,43 +34,36 @@ public class FilterSimpleFor0B1S {
     public static String sourceTablenameBeFilter = SettingsOfSingleKlineBasePercent.saveTablename;
     public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
 
-    public static List<String> algorithms = getAlgorithms(); // open,close,high,low
-    public static List<Double> minVirtualGeometryMeans = Arrays.asList(-0.001, 0.001, 0.02, -0.05); // 注意参数与上面顺序匹配
+    // open,close,high,low
+    public static List<String> algorithms = getAlgorithms();
+    // 注意参数与上面顺序匹配
+    public static List<Double> minVirtualGeometryMeans = Arrays.asList(-0.001, 0.001, 0.02, -0.05);
     public static String sqlCreateFiteredSaveTable =
             StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, saveTablenameFiltered);
     //17个日期周期, 至少有8个才可能被选中
     public static Integer haveMinStatRanges = 8;
-    //17个日期周期, 至少有8个才可能被选中; 且对最后 30%(不含最后一期), 进行>min的判定
+    //17个日期周期, 至少有8个才可能被选中; 且对最后 30%(不含最后一期), 进行>min的判定; 数值越小, 判定越加严格
     public static double gtMinVGMeanPercent = 0.7;
 
 
     public static void main(String[] args) throws Exception {
-        execSql(sqlCreateFiteredSaveTable, connection);
-        CountDownLatch latchOfParse = new CountDownLatch(algorithms.size());
-
+        // 不能关闭
+        execSql(sqlCreateFiteredSaveTable, connection, false);
         // 四种算法
-        List<Integer> indexes = Arrays.asList(0, 1, 2, 3);
+        List<Integer> indexes = CommonUtils.range(algorithms.size());
+
+        CountDownLatch latch = new CountDownLatch(algorithms.size());
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(4,
+                8, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
             String algorithm = algorithms.get(index);
             Double minVGMean = minVirtualGeometryMeans.get(index);
-
-
             // 全线程使用1个conn
-            Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
-                    .submit(new StockSingleParseTask(latchOfParse, stock, stockWithBoard, statDateRange,
-                            stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg));
-            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            for (String key : resultTemp.keySet()) {
-                results.putIfAbsent(key, new ArrayList<>());
-                results.get(key).addAll(resultTemp.get(key));
-            }
-            resultTemp.clear();
-            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
-                System.gc();
-                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
-                    showMemoryUsageMB();
-                }
-            }
+            Future<String> f = pool
+                    .submit(new FilterWithAlgorithmAndMinVGMean(algorithm, minVGMean, sourceTablenameBeFilter,
+                            connection, saveTablenameFiltered, latch));
+            f.get();
         }
     }
 
@@ -105,56 +98,86 @@ class FilterWithAlgorithmAndMinVGMean implements Callable<String> {
     Double minVGMean;
     String sourceTablenameBeFilter;
     Connection connection;
+    String saveTablenameFiltered;
+    CountDownLatch latch;
+
+    public FilterWithAlgorithmAndMinVGMean(String algorithm, Double minVGMean, String sourceTablenameBeFilter,
+                                           Connection connection, String saveTablenameFiltered, CountDownLatch latch) {
+        this.algorithm = algorithm;
+        this.minVGMean = minVGMean;
+        this.sourceTablenameBeFilter = sourceTablenameBeFilter;
+        this.connection = connection;
+        this.saveTablenameFiltered = saveTablenameFiltered;
+        this.latch = latch;
+    }
 
     @Override
     public String call() throws Exception {
-        Console.log("start: {} -- {}", algorithm, minVGMean);
-        String sqlSelectGoodForm = StrUtil.format("select form_name,stat_result_algorithm\n" +
-                "        from {}\n" +
-                "        where virtual_geometry_mean > {}\n" +
-                "            and effective_counts > 1\n" +
-                "            and stat_result_algorithm = '{}'\n" +
-                "            and stat_date_range = '[\"20200203\",\"20210218\"]'\n" +
-                "        order by virtual_geometry_mean desc\n", sourceTablenameBeFilter, minVGMean, algorithm);
-        // 初步选择, 倒数第二个 日期区间, 符合 算法, 且>VGMean 的.
+        try {
+            Console.log("start: {} -- {}", algorithm, minVGMean);
+            String sqlSelectGoodForm = StrUtil.format("select form_name,stat_result_algorithm\n" +
+                    "        from {}\n" +
+                    "        where virtual_geometry_mean > {}\n" +
+                    "            and effective_counts > 1\n" +
+                    "            and stat_result_algorithm = '{}'\n" +
+                    "            and stat_date_range = '[\"20200203\",\"20210218\"]'\n" +
+                    "        order by virtual_geometry_mean desc\n", sourceTablenameBeFilter, minVGMean, algorithm);
+            // 初步选择, 倒数第二个 日期区间, 符合 算法, 且>VGMean 的.
 
-        String sqlValidateGoodFormRaw = StrUtil.format("select virtual_geometry_mean\n" +
-                "    from {}\n" +
-                "    where stat_result_algorithm={}\n" +
-                "      and form_name = {}\n" +
-                "    order by stat_date_range\n" +
-                "    limit 17", sourceTablenameBeFilter, algorithm); // 没有附带 formname
+            String sqlValidateGoodFormRaw = StrUtil.format("select stat_date_range,virtual_geometry_mean\n" +
+                    // 仅仅读取2个字段, 只是做验证. 验证成功再读取全部字段
+                    "    from {}\n" +
+                    "    where stat_result_algorithm='{}'\n" +
+                    "      and form_name = '{}'\n" +
+                    "    order by stat_date_range\n" +
+                    "    limit 17", sourceTablenameBeFilter, algorithm);
+            // 没有附带 formname
 
-        DataFrame<Object> dfSelectedForms = DataFrame.readSql(connection, sqlSelectGoodForm);
-        Console.log("{} - {} : {}", algorithm, minVGMean, dfSelectedForms.length());
-        dfSelectedForms.cast(String.class);
+            String sqlSaveGoodFormRaw = StrUtil.format("select *\n" +
+                    // 同上, 只不过读取全部字段
+                    "    from {}\n" +
+                    "    where stat_result_algorithm='{}'\n" +
+                    "      and form_name = '{}'\n" +
+                    "    order by stat_date_range\n" +
+                    "    limit 17", sourceTablenameBeFilter, algorithm); // 没有附带 formname
 
-        for (int i = 0; i < dfSelectedForms.length(); i++) {
-            String formName = (String) dfSelectedForms.get(i, 0);
-            String statResultAlgorithm = (String) dfSelectedForms.get(i, 1);
+            DataFrame<Object> dfSelectedForms = DataFrame.readSql(connection, sqlSelectGoodForm);
+            Console.log("{} - {} : {}", algorithm, minVGMean, dfSelectedForms.length());
+            dfSelectedForms.cast(String.class);
+            List<Integer> indexes = CommonUtils.range(dfSelectedForms.length());
+            for (Integer i : Tqdm.tqdm(indexes, StrUtil.format("{} process", algorithm))) {
+                String formName = (String) dfSelectedForms.get(i, 0);
 
-            DataFrame<Object> dfTemp = DataFrame.readSql(connection, StrUtil.format(sqlValidateGoodFormRaw, formName));
+                DataFrame<Object> dfTemp = DataFrame
+                        .readSql(connection, StrUtil.format(sqlValidateGoodFormRaw, formName));
 
-            if (dfTemp.length() < FilterSimpleFor0B1S.haveMinStatRanges) {
-                continue;
-            }
-            dfTemp.convert(Double.class);
-            boolean allGtMinVGMean = true;
-            for (int j = (int) (dfTemp.size() * 0.7); j < dfTemp.size() - 1; j++) {
-                // 排除掉了最后一期!   且仅仅对 倒数多期(不包含最后一期) 进行 >MinVGMean 的强制判定
-                Double vgMean = (Double) dfTemp.get(j, 0);
-                if (vgMean < minVGMean) {
-                    allGtMinVGMean = false;
-                    break;
+                if (dfTemp.length() < FilterSimpleFor0B1S.haveMinStatRanges) {
+                    continue;
+                }
+                dfTemp.convert(Double.class);
+                boolean allGtMinVGMean = true;
+                for (int j = (int) (dfTemp.size() * 0.7); j < dfTemp.size() - 1; j++) {
+                    // 排除掉了最后一期!   且仅仅对 倒数多期(不包含最后一期) 进行 >MinVGMean 的强制判定
+                    Double vgMean = (Double) dfTemp.get(j, 1);
+                    if (vgMean < minVGMean) {
+                        allGtMinVGMean = false;
+                        break;
+                    }
+                }
+                if (allGtMinVGMean) {
+                    // 读取全部字段
+                    DataFrame<Object> dfSave = DataFrame
+                            .readSql(connection, StrUtil.format(sqlSaveGoodFormRaw, formName));
+                    DataFrameSelf.toSql(dfSave, saveTablenameFiltered, connection, "append", null);
                 }
             }
-            if(allGtMinVGMean){
-                //
-            }
-
-
+            return "success";
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            latch.countDown();
+            return "success";
         }
-
     }
 }
 

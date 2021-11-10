@@ -1,13 +1,14 @@
 package com.scareers;
 
+import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
-import joinery.DataFrame;
+import cn.hutool.core.util.StrUtil;
+import com.scareers.utils.CommonUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
-//import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.CalcStatResultAndSaveTask
+import java.util.List;
+import java.util.concurrent.*;
 // .calcVirtualGeometryMeanRecursion;
 
 
@@ -16,29 +17,49 @@ import java.util.Map;
  */
 public class App {
     public static void main(String[] args) throws Exception {
+        final TimeInterval timer = new TimeInterval();
+        timer.start("1");
 
-        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
-        System.gc();
-        Map<Integer, String> passedMap = new HashMap<>();
-        for (int i = 0; i < 1000000; i++) {
-            passedMap.put(i, "000000");
+        List<Integer> indexes = CommonUtils.range(100);
+        CountDownLatch latch = new CountDownLatch(indexes.size());
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(100,
+                200, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+        ArrayList<String> results = new ArrayList<>();
+        ArrayList<Future<String>> futures = new ArrayList<>();
+        for (Integer index : indexes) {
+            Future<String> f = pool
+                    .submit(new TaskTest(index, latch));
+            futures.add(f);
         }
-        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
-        for (int i = 0; i < 1000000; i++) {
-            passedMap.remove(i);
+        for (Future f : futures) {
+            results.add((String) f.get());
         }
-        System.gc();
-        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+        Console.log(results);
+
+        Console.log(timer.intervalRestart());
+//        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+//        System.gc();
+//        Map<Integer, String> passedMap = new HashMap<>();
+//        for (int i = 0; i < 1000000; i++) {
+//            passedMap.put(i, "000000");
+//        }
+//        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+//        for (int i = 0; i < 1000000; i++) {
+//            passedMap.remove(i);
+//        }
+//        System.gc();
+//        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
+////
 //
-
-        DataFrame<Double> dfo = new DataFrame<>("a");
-        ArrayList<Double> row = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            row.add(RandomUtil.randomDouble());
-        }
-        dfo.append(row);
-//        dfo.show();
-        dfo.plot(DataFrame.PlotType.LINE);
+//        DataFrame<Double> dfo = new DataFrame<>("a");
+//        ArrayList<Double> row = new ArrayList<>();
+//        for (int i = 0; i < 100; i++) {
+//            row.add(RandomUtil.randomDouble());
+//        }
+//        dfo.append(row);
+////        dfo.show();
+//        dfo.plot(DataFrame.PlotType.LINE);
 
 //        for (int i : Tqdm.tqdm(Arrays.asList(1, 2, 3, 4, 5, 6), "iterating")) {
 //            try {
@@ -126,7 +147,30 @@ public class App {
 }
 
 
+class TaskTest implements Callable<String> {
+    Integer i;
+    CountDownLatch latch;
 
+
+    public TaskTest(Integer i, CountDownLatch latch) {
+        this.i = i;
+        this.latch = latch;
+    }
+
+    @Override
+    public String call() throws Exception {
+        try {
+            Thread.sleep(RandomUtil.randomInt(1000));
+            Console.log(StrUtil.format("task {} finish", i));
+            return StrUtil.format("task {} finish", i);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            latch.countDown();
+            return StrUtil.format("task {} finish", i);
+        }
+    }
+}
 
 
 
