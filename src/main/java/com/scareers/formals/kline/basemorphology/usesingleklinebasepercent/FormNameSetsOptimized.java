@@ -5,7 +5,10 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+
+import static com.scareers.utils.SqlUtil.execSql;
 
 /**
  * description: 本脚本, 依据截止今日的数据, 而决定明日买后日卖,或者后日卖大后日卖, 以此类推. 本脚本分析不同 形态集合下的 明后日分布
@@ -70,6 +73,27 @@ public class FormNameSetsOptimized {
             Arrays.asList(-1.0, -0.03),
             Arrays.asList(-1.0, -0.04)
     );
+
+    public static HashMap<String, Double> forceFilterFormArgs = getForceFilterFormArgs();
+
+    private static HashMap<String, Double> getForceFilterFormArgs() {
+        HashMap<String, Double> res = new HashMap<>();
+        res.put("low_limit_of_CGO", -100000.0); // 下限限制, 去掉该值及以下. 极小负数则相当于无筛选功能
+        res.put("low_limit_of_US", -100000.0);
+        res.put("low_limit_of_OP", -100000.0);
+        res.put("low_limit_of_LS", -100000.0);
+        res.put("low_limit_of_P5DP", -100000.0);
+        res.put("low_limit_of_VTP5D", -100000.0);
+
+        res.put("high_limit_of_CGO", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_US", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_OP", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_LS", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_P5DP", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_VTP5D", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        return res;
+    }
+
     public static List<Integer> intTableList = Arrays.asList(1, 2);
     public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
     public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
@@ -80,8 +104,7 @@ public class FormNameSetsOptimized {
     public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2); // 需要与 上面两个表对应. sql语句中填充
     public static String tablenameSaveAnalyze = "next0b1s_of_single_kiline";
 
-    public static String sqlCreateSaveTable =
-            getSqlCreateSaveTable();
+    public static String sqlCreateSaveTable = getSqlCreateSaveTable();
 
     private static String getSqlCreateSaveTable() {
         String s = StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, tablenameSaveAnalyze);
@@ -90,9 +113,13 @@ public class FormNameSetsOptimized {
         return s;
     }
 
-    public static void main(String[] args) {
-        execSql("", conn);
+    public static void main(String[] args) throws Exception {
+        execSql(sqlCreateSaveTable, connection); // 创建结论保存表
+
+
     }
+
+    PS
 
 
 }
