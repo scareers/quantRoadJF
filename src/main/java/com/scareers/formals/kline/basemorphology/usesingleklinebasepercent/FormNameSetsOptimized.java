@@ -1,5 +1,9 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
+import cn.hutool.core.util.StrUtil;
+import com.scareers.datasource.selfdb.ConnectionFactory;
+
+import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,6 +70,29 @@ public class FormNameSetsOptimized {
             Arrays.asList(-1.0, -0.03),
             Arrays.asList(-1.0, -0.04)
     );
-    List<Integer> intTableList =
+    public static List<Integer> intTableList = Arrays.asList(1, 2);
+    public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
+    public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
+
+    public static String validateDateRange = "[\"20210218\",\"21000101\"]"; //注意和保存在数据库的json字符串保持一致
+    public static String tablenameLowBuy = "filtered_single_kline_from_next0__excybkcb"; //哪天低买?简单筛选后的表名称
+    public static String tablenameHighSell = "filtered_single_kline_from_next1__excybkcb";//哪天高卖?简单筛选后的表名称
+    public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2); // 需要与 上面两个表对应. sql语句中填充
+    public static String tablenameSaveAnalyze = "next0b1s_of_single_kiline";
+
+    public static String sqlCreateSaveTable =
+            getSqlCreateSaveTable();
+
+    private static String getSqlCreateSaveTable() {
+        String s = StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, tablenameSaveAnalyze);
+        s = s.replace("form_name                          varchar(512)  null comment '形态名称.形如 条件[参数区间]__条件2[参数区间]", "" +
+                "form_name                          longtext  null comment '形态名称.形如 条件[参数区间]__条件2[参数区间]");
+        return s;
+    }
+
+    public static void main(String[] args) {
+        execSql("", conn);
+    }
+
 
 }
