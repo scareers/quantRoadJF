@@ -2,8 +2,10 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import joinery.DataFrame;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -98,7 +100,7 @@ public class FormNameSetsOptimized {
     public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
     public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
 
-    public static String validateDateRange = "[\"20210218\",\"21000101\"]"; //注意和保存在数据库的json字符串保持一致
+    public static String validateDateRange = "[\"20210218\",\"21000101\"]"; //注意和保存在数据库的json字符串保持一致,
     public static String tablenameLowBuy = "filtered_single_kline_from_next0__excybkcb"; //哪天低买?简单筛选后的表名称
     public static String tablenameHighSell = "filtered_single_kline_from_next1__excybkcb";//哪天高卖?简单筛选后的表名称
     public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2); // 需要与 上面两个表对应. sql语句中填充
@@ -119,7 +121,33 @@ public class FormNameSetsOptimized {
 
     }
 
-    PS
+    public static DataFrame<Object> getHighConditionLimitDf(String tablenameHighSell, List<Double> highArgs,
+                                                            String validateDateRange) throws SQLException {
+
+        DataFrame<Object> df = DataFrame.readSql(connection, StrUtil.format(
+                "select *\n" +
+                        "        from (select form_name,\n" +
+                        "                     avg(effective_counts)                   as avgcounts,\n" +
+                        "                     avg(mean)                               as mean,\n" +
+                        "                     avg(zero_compare_counts_percent_2)      as zero2\n" +
+                        "        \n" +
+                        "              FROM {}\n" +
+                        "              where\n" +
+                        "                condition5 = 'PL[0,0]'\n" +
+                        "                and\n" +
+                        "                stat_result_algorithm = 'Next{}High'\n" +
+                        "                and stat_date_range!='{}'\n" +
+                        "              group by form_name\n" +
+                        "              order by zero2 desc) as temp\n" +
+                        "        where mean >= {}\n" +
+                        "        and mean < {}\n" +
+                        "          and avgcounts > 0"
+                , tablenameHighSell, correspondingFilterAlgos.get(1), validateDateRange, highArgs.get(0),
+                highArgs.get(1)
+        ));
+        df = df.convert();
+        return df;
+    }
 
 
 }
