@@ -126,12 +126,12 @@ public class SingleKlineFormsBase {
         for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            for (String key : resultTemp.keySet()) {
-                //                results.putIfAbsent(key, new ArrayList<>());
-                // @bugfix: value的列表应该线程安全! 而非简单的AL
-                results.putIfAbsent(key, new ArrayList<>());
-                synchronized (results) {
-
+            synchronized (results) {
+                for (String key : resultTemp.keySet()) {
+                    // @bugfix: value的列表应该线程安全! 而非简单的AL;
+                    // @bigfix2: CopyOnWriteArrayList 由于使用锁, 对象过大, 内存不足; 因此使用同步关键字
+                    // @noti: 按照逻辑来讲, 此处本身就是串行, 不需要同步.
+                    results.putIfAbsent(key, new ArrayList<>());
                     results.get(key).addAll(resultTemp.get(key));
                 }
             }
@@ -201,7 +201,7 @@ public class SingleKlineFormsBase {
 
         Console.log("计算并保存完成!");
         latchOfCalcForEpoch.await();
-//        connOfSave.close();
+        //        connOfSave.close(); // 不可关闭, 因底层默认会重新获取到null连接
         poolOfCalc.shutdown();
         // 本轮执行完毕
     }
