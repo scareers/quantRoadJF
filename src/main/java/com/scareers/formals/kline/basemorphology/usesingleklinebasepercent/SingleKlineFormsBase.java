@@ -6,6 +6,8 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -34,9 +36,14 @@ import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
  * @date: 2021/11/5  0005-15:13
  */
 public class SingleKlineFormsBase {
+    public static Log log = LogFactory.get();
+
     public static void main(String[] args) throws Exception {
         // 不需要刷新. 批量执行需要刷新
+
+        log.info("current time");
         main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
+        log.info("current time");
         // 直接执行时, 读取设定的 周期数量
         // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
         // 设定的所有都不需要变, 只有 周期数需要改变
@@ -70,6 +77,7 @@ public class SingleKlineFormsBase {
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
                     null);
+            log.info("current time");
         }
         MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
         Console.log("email success");
@@ -119,8 +127,13 @@ public class SingleKlineFormsBase {
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
+                //                results.putIfAbsent(key, new ArrayList<>());
+                // @bugfix: value的列表应该线程安全! 而非简单的AL
                 results.putIfAbsent(key, new ArrayList<>());
-                results.get(key).addAll(resultTemp.get(key));
+                synchronized (results) {
+
+                    results.get(key).addAll(resultTemp.get(key));
+                }
             }
             resultTemp.clear();
             if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpochParse == 0) {
@@ -286,14 +299,23 @@ class CalcStatResultAndSaveTask implements Callable<List<String>> {
                         condition1, condition2,
                         condition3, condition4, condition5, condition6, condition7);
 
-                synchronized (this) {
-                    // 同步this, 单个线程的任务, 拼接总df.
-                    if (dfTotalSave == null) {
-                        dfTotalSave = dfSingleSaved;
-                    } else {
-                        dfTotalSave = dfTotalSave.concat(dfSingleSaved);
-                    }
+                //                synchronized (this) {
+                // 同步this, 单个线程的任务, 拼接总df.
+                if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
+                    dfTotalSave = dfSingleSaved;
+                } else {
+                    dfTotalSave = dfTotalSave.concat(dfSingleSaved);
                 }
+                //                }
+
+                //                synchronized (this) {
+                //                    // 同步this, 单个线程的任务, 拼接总df.
+                //                    if (dfTotalSave == null) {
+                //                        dfTotalSave = dfSingleSaved;
+                //                    } else {
+                //                        dfTotalSave = dfTotalSave.concat(dfSingleSaved);
+                //                    }
+                //                }
                 //results.remove(formName);
                 // 这里直接删除了, 则 主线程不需要读取返回值的 列表, 进行删除. 因此可使用latch完成等待, 而非 f.get()
                 //或者: 返回后统一删除key.

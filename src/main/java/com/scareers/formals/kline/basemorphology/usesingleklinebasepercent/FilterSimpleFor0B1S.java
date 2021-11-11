@@ -9,6 +9,7 @@ import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
 import java.sql.Connection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
@@ -56,6 +57,7 @@ public class FilterSimpleFor0B1S {
         ThreadPoolExecutor pool = new ThreadPoolExecutor(4,
                 8, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());
+        List<Future<String>> futures = new ArrayList<>();
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
             String algorithm = algorithms.get(index);
             Double minVGMean = minVirtualGeometryMeans.get(index);
@@ -63,8 +65,13 @@ public class FilterSimpleFor0B1S {
             Future<String> f = pool
                     .submit(new FilterWithAlgorithmAndMinVGMean(algorithm, minVGMean, sourceTablenameBeFilter,
                             connection, saveTablenameFiltered, latch));
-            f.get();
+            futures.add(f);
         }
+
+        for (Future<String> future : futures) {
+            future.get();
+        }
+
     }
 
     public static String getSaveTablenameFiltered() {

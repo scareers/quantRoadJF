@@ -1,14 +1,7 @@
 package com.scareers;
 
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
-import com.scareers.utils.CommonUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 // .calcVirtualGeometryMeanRecursion;
 
 
@@ -17,7 +10,8 @@ import java.util.concurrent.*;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-
+        Log log = LogFactory.get();
+        log.info("x");
 
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();
