@@ -126,15 +126,15 @@ public class SingleKlineFormsBase {
         for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            synchronized (results) {
-                for (String key : resultTemp.keySet()) {
-                    // @bugfix: value的列表应该线程安全! 而非简单的AL;
-                    // @bigfix2: CopyOnWriteArrayList 由于使用锁, 对象过大, 内存不足; 因此使用同步关键字
-                    // @noti: 按照逻辑来讲, 此处本身就是串行, 不需要同步.
-                    results.putIfAbsent(key, new ArrayList<>());
-                    results.get(key).addAll(resultTemp.get(key));
-                }
+            //            synchronized (results) {
+            for (String key : resultTemp.keySet()) {
+                // @bugfix: value的列表应该线程安全! 而非简单的AL;
+                // @bigfix2: CopyOnWriteArrayList 由于使用锁, 对象过大, 内存不足; 因此使用同步关键字
+                // @noti: 按照逻辑来讲, 此处本身就是串行, 不需要同步.
+                results.putIfAbsent(key, new ArrayList<>());
+                results.get(key).addAll(resultTemp.get(key));
             }
+            //            }
             resultTemp.clear();
             if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpochParse == 0) {
                 System.gc();

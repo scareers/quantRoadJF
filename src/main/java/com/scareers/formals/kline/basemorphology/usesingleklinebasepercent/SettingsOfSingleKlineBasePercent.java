@@ -15,7 +15,7 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static int windowUsePeriodsCoreArg = 8;
+    public static int windowUsePeriodsCoreArg = 7;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
     public static final int processAmountParse = 8; // 实测8-16. 更多无济于事
     public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳

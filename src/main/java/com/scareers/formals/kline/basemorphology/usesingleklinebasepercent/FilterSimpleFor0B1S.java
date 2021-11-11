@@ -188,3 +188,16 @@ class FilterWithAlgorithmAndMinVGMean implements Callable<String> {
     }
 }
 
+/*
+
+数量记录
+-0.001, 0.001, 0.02, -0.05
+Open, Close, High, Low
+
+Next0Open   158052
+Next0Close  158388
+Next0High   248706
+Next0Low    326498
+
+
+ */
