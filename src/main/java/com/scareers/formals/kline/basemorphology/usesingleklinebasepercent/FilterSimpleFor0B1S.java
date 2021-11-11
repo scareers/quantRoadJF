@@ -1,9 +1,13 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.MailUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
@@ -48,6 +52,9 @@ public class FilterSimpleFor0B1S {
 
 
     public static void main(String[] args) throws Exception {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+
         // 不能关闭
         execSql(sqlCreateFiteredSaveTable, connection, false);
         // 四种算法
@@ -71,6 +78,9 @@ public class FilterSimpleFor0B1S {
         for (Future<String> future : futures) {
             future.get();
         }
+        MailUtil.send(SettingsCommon.receivers, "简易筛选完成", StrUtil.format("简易筛选完成,耗时: {}h",
+                (double) timer.intervalRestart() / 3600),
+                false, null);
 
     }
 

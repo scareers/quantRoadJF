@@ -3,6 +3,8 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
  * -Xmx512g -XX:+PrintGC -XX:MaxTenuringThreshold=3
  */
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
@@ -40,6 +42,8 @@ public class SingleKlineFormsBase {
 
     public static void main(String[] args) throws Exception {
         // 不需要刷新. 批量执行需要刷新
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
 
         log.info("current time");
         main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
@@ -47,6 +51,9 @@ public class SingleKlineFormsBase {
         // 直接执行时, 读取设定的 周期数量
         // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
         // 设定的所有都不需要变, 只有 周期数需要改变
+        MailUtil.send(SettingsCommon.receivers, "全部解析完成", StrUtil.format("全部解析完成,耗时: {}h",
+                (double) timer.intervalRestart() / 3600),
+                false, null);
     }
 
     public static void main0(int windowUsePeriodsCoreArg) throws Exception {
@@ -79,8 +86,8 @@ public class SingleKlineFormsBase {
                     null);
             log.info("current time");
         }
-        MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
-        Console.log("email success");
+        //        MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
+        Console.log("finish");
 
         System.exit(0);
     }
