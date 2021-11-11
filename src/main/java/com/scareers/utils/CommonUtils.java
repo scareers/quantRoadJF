@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -76,4 +77,29 @@ public class CommonUtils {
         return new BigDecimal(value).setScale(scale,
                 BigDecimal.ROUND_HALF_UP).doubleValue();
     }
+
+    public static HashSet<String> intersectionOfSet(HashSet<String> set1, HashSet<String> set2) {
+        // 交集
+        HashSet<String> res = new HashSet<>();
+        res.addAll(set1);
+        res.retainAll(set2);
+        return res;
+    }
+
+    public static HashSet<Object> subtractionOfSet(HashSet<Object> set1, HashSet<Object> set2) {
+        // 差集
+        HashSet<Object> res = new HashSet<>();
+        res.addAll(set1);
+        res.removeAll(set2);
+        return res;
+    }
+
+    public static HashSet<Object> aggregateOfSet(HashSet<Object> set1, HashSet<Object> set2) {
+        // 并集
+        HashSet<Object> res = new HashSet<>();
+        res.addAll(set1);
+        res.addAll(set2);
+        return res;
+    }
+
 }

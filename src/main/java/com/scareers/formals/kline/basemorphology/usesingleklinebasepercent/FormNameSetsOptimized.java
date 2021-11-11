@@ -13,6 +13,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
+import static com.scareers.utils.CommonUtils.intersectionOfSet;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -175,7 +176,8 @@ public class FormNameSetsOptimized {
 
     public static void conditionOptimizeTrying(HashSet<String> selectedForms, String resultTableName,
                                                String resultAlgorithm, Connection connection, // 少了print
-                                               HashMap<String, Double> forceFilterFormArgs, String validateDateRange) {
+                                               HashMap<String, Double> forceFilterFormArgs, String validateDateRange)
+            throws SQLException {
 
         HashMap<String, Double> forceFilterFormArgsRaw = getForceFilterFormArgsRaw();
         forceFilterFormArgsRaw.putAll(forceFilterFormArgs);
@@ -186,9 +188,45 @@ public class FormNameSetsOptimized {
             if (forceFilterByLowAndHighLimit(formName, forceFilterFormArgsRaw)) {
                 continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
             }
+            DataFrame<Object> df_ = new DataFrame<>();
+            df_ = DataFrame.readSql(connection, StrUtil.format("            select  \n" +
+                    "                stat_date_range,\n" +
+                    "                    virtual_geometry_mean,\n" +
+                    "                    mean,\n" +
+                    "                    effective_counts,\n" +
+                    "                    total_counts,\n" +
+                    "                    zero_compare_counts_percent_0,\n" +
+                    "                    zero_compare_counts_percent_2\n" +
+                    "             from {}\n" +
+                    "             where form_name ='{}'\n" +
+                    "                   and stat_result_algorithm = '{}'\n" +
+                    "             order by stat_date_range", resultTableName, formName, resultAlgorithm));
+            df_ = df_.convert();
+            if (df_.length() == 0) {
+                continue;
+            }
+            List<Object> colOfStatDateRange = df_.col("stat_date_range");
+            if (!colOfStatDateRange.get(colOfStatDateRange.size() - 1).equals(validateDateRange)) {
+                continue; // 最后一个日期区间, 不是需要验证的区间
+            }
+            List<Object> colOfEarnings = df_.col("virtual_geometry_mean");
+            List<Object> colOfEffectiveCounts = df_.col("effective_counts");
+            Double earning = (Double) colOfEarnings.get(colOfEarnings.size() - 1);
+            Integer counts = (Integer) colOfEffectiveCounts.get(colOfEffectiveCounts.size() - 1);
 
+//// TODO: 2021/11/12  0012
+            isParentOfRecord(formName, calcedForms);
 
-            // todo
+        }
+
+    }
+
+    private static void isParentOfRecord(String formName, HashMap<String, List<Double>> calcedForms) {
+        List<String> children = new ArrayList<>();
+        HashSet<String> formNameSplitSet = new HashSet<>(StrUtil.split(formName, "__"));
+        for (String formNameCalced : calcedForms.keySet()) {
+            HashSet<String> formNameCalcedSplitSet = new HashSet<>(StrUtil.split(formNameCalced, "__"));
+            HashSet<String> interaction = intersectionOfSet(formNameSplitSet, formNameCalcedSplitSet);
         }
 
     }
