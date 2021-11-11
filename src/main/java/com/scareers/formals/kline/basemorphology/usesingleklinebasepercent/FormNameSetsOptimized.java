@@ -11,10 +11,7 @@ import joinery.DataFrame;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -93,12 +90,30 @@ public class FormNameSetsOptimized {
         res.put("low_limit_of_P5DP", -100000.0);
         res.put("low_limit_of_VTP5D", -100000.0);
 
-        res.put("high_limit_of_CGO", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
-        res.put("high_limit_of_US", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
-        res.put("high_limit_of_OP", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
-        res.put("high_limit_of_LS", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
-        res.put("high_limit_of_P5DP", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
-        res.put("high_limit_of_VTP5D", -100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_CGO", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_US", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_OP", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_LS", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_P5DP", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_VTP5D", 100000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        return res;
+    }
+
+    private static HashMap<String, Double> getForceFilterFormArgsRaw() { // 默认无筛选, 定死
+        HashMap<String, Double> res = new HashMap<>();
+        res.put("low_limit_of_CGO", -1000000.0); // 下限限制, 去掉该值及以下. 极小负数则相当于无筛选功能
+        res.put("low_limit_of_US", -1000000.0);
+        res.put("low_limit_of_OP", -1000000.0);
+        res.put("low_limit_of_LS", -1000000.0);
+        res.put("low_limit_of_P5DP", -1000000.0);
+        res.put("low_limit_of_VTP5D", -1000000.0);
+
+        res.put("high_limit_of_CGO", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_US", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_OP", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_LS", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_P5DP", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
+        res.put("high_limit_of_VTP5D", 1000000.0); // 上限限制, 去掉该值及以上的, 极大正数,相当于无筛选功能
         return res;
     }
 
@@ -143,10 +158,9 @@ public class FormNameSetsOptimized {
                         String info = StrUtil
                                 .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
                         log.info(StrUtil.format("start: {}", info));
-                        String resulteTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+                        String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
                                 intTable); // 通常对作为条件的两个表, 都做四项计算
                         int selectedFormCounts = selectedForms.size();
-
 
 
                     }
@@ -158,6 +172,76 @@ public class FormNameSetsOptimized {
 
 
     }
+
+    public static void conditionOptimizeTrying(HashSet<String> selectedForms, String resultTableName,
+                                               String resultAlgorithm, Connection connection, // 少了print
+                                               HashMap<String, Double> forceFilterFormArgs, String validateDateRange) {
+
+        HashMap<String, Double> forceFilterFormArgsRaw = getForceFilterFormArgsRaw();
+        forceFilterFormArgsRaw.putAll(forceFilterFormArgs);
+
+        List<Double> finalEarnings = new ArrayList<>();
+        HashMap<String, List<Double>> calcedForms = new HashMap<>(); // key:value:  某种具体形态: (折算复利收益率,次数)
+        for (String formName : selectedForms) {
+            if (forceFilterByLowAndHighLimit(formName, forceFilterFormArgsRaw)) {
+                continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
+            }
+
+
+            // todo
+        }
+
+    }
+
+    public static boolean forceFilterByLowAndHighLimit(String formName,
+                                                       HashMap<String, Double> forceFilterFormArgsActual) {
+        List<String> conditions = Arrays.asList("CGO", "US", "OP", "LS", "P5DP", "VTP5D");// 对6条件进行强制筛选
+        for (String condition : conditions) {
+            Double lowLimitOfCondition = getLowLimit(formName, condition);
+            if (lowLimitOfCondition == null) {
+                continue; // 如果形态中没有明确指明该条件限制值, 则无视掉, 通过筛选
+            }
+            if (lowLimitOfCondition <= forceFilterFormArgsActual.get("low_limit_of_" + condition)) {
+                return true; // 一旦low限制<=设置, 则强行筛选掉
+            }
+
+            Double highLimitOfCondition = getHighLimit(formName, condition); // 逻辑类似
+            if (highLimitOfCondition == null) {
+                continue;
+            }
+            if (lowLimitOfCondition >= forceFilterFormArgsActual.get("high_limit_of_" + condition)) {
+                return true; // 一旦low限制<=设置, 则强行筛选掉
+            }
+        }
+        return false; // 默认没有被筛选掉
+    }
+
+    private static Double getHighLimit(String formName, String condition) {
+        String condition_ = condition + "[";
+        int pos = formName.indexOf(condition_);
+        if (pos != -1) {
+            String formNameTemp = StrUtil.sub(formName, pos, formName.length());
+            int pos1 = formNameTemp.indexOf("]");
+            int pos2 = formNameTemp.indexOf(",");
+            String upperLimit = StrUtil.sub(formNameTemp, pos2 + 1, pos1);
+            return Double.valueOf(upperLimit);
+        }
+        return null;
+    }
+
+    private static Double getLowLimit(String formName, String condition) {
+        String condition_ = condition + "[";
+        int pos = formName.indexOf(condition_);
+        if (pos != -1) {
+            String formNameTemp = StrUtil.sub(formName, pos, formName.length());
+            int pos1 = formNameTemp.indexOf("[");
+            int pos2 = formNameTemp.indexOf(",");
+            String lowLimit = StrUtil.sub(formNameTemp, pos1 + 1, pos2);
+            return Double.valueOf(lowLimit);
+        }
+        return null;
+    }
+
 
     public static HashSet<String> getSelectFormsSet(DataFrame<Object> dfOfHighLimitConditon,
                                                     DataFrame<Object> dfOfLowLimitConditon) {
