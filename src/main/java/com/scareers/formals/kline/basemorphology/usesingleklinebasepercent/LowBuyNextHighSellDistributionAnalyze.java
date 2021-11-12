@@ -2,15 +2,20 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.settings.SettingsCommon;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -183,6 +188,9 @@ public class LowBuyNextHighSellDistributionAnalyze {
     public static Log log = LogFactory.get();
 
     public static void main(String[] args) throws Exception {
+        // 主逻辑四层循环, 34层 2*4 8次小循环.  1,2 则根据设定的参数列表来. 这里 对 3,4 层 封装到单个线程中去.
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
         execSql(sqlCreateSaveTable, connection); // 创建结论保存表
 
         for (List<Double> highArgs : highKeyArgsList) {
@@ -197,51 +205,123 @@ public class LowBuyNextHighSellDistributionAnalyze {
 
                 HashSet<String> selectedForms = getSelectFormsSet(dfOfHighLimitConditon, dfOfLowLimitConditon);
 
-                for (Integer intTable : correspondingFilterAlgos) {
-                    for (String algorithmRaw : algorithmRawList) {
-                        String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
-                        String info = StrUtil
-                                .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
-                        log.info(StrUtil.format("start: {}", info));
-                        String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
-                                intTable); // 通常对作为条件的两个表, 都做四项计算
 
-                        HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
-                                resultTableName, resultAlgorithm, connection,
-                                forceFilterFormArgs, validateDateRange);
-                        List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
-                        for (String key : calcedForms.keySet()) {
-                            Double earing = (Double) calcedForms.get(key).get(0);
-                            Integer counts = (Integer) calcedForms.get(key).get(1);
-                            for (int i = 0; i < counts; i++) {
-                                finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
-                            }
-                        }
 
-                        HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
-                        HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
-                                SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
-                                effectiveValusRanges.get(intTable), false);
-                        Integer selectedFormCounts = selectedForms.size();
-                        DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
-                                JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
-                                validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
-                                JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
-                                String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
-                                null);
-                        DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
-                        Console.log(resultSingle);
-                        Console.log("selected forms counts: {}", selectedForms.size());
-                        Console.log("actual selected counts: {}", calcedForms.size());
-                    }
-                }
+                inner8(highArgs, lowArgs, selectedForms);
             }
-
-
         }
+
+        MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("分布分析完成,耗时: {}h",
+                (double) timer.intervalRestart() / 3600),
+                false, null);
 
 
     }
+
+    /**
+     * 内部类: 4层循环,  3.4两层  2*4==8次循环 线程池任务封装.
+     * 内部类形式: 可访问来自 父类的 静态属性设定!!!!.   而主程序太多设置来自于设置类, 因此没有写成内部类的形式
+     * 内部类形式能够少显式传递 构造器更多参数
+     */
+    class Inner8LoopRunnable implements Runnable {
+        List<Double> highArgs;
+        List<Double> lowArgs;
+        HashSet<String> selectedForms;
+
+        public Inner8LoopRunnable(List<Double> highArgs, List<Double> lowArgs,
+                                  HashSet<String> selectedForms) {
+            this.highArgs = highArgs;
+            this.lowArgs = lowArgs;
+            this.selectedForms = selectedForms;
+        }
+
+        @SneakyThrows
+        @Override
+        public void run() {
+            for (Integer intTable : correspondingFilterAlgos) {
+                for (String algorithmRaw : algorithmRawList) {
+                    String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
+                    String info = StrUtil
+                            .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
+                    log.info(StrUtil.format("start: {}", info));
+                    String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+                            intTable); // 通常对作为条件的两个表, 都做四项计算
+
+                    HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
+                            resultTableName, resultAlgorithm, connection,
+                            forceFilterFormArgs, validateDateRange);
+                    List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
+                    for (String key : calcedForms.keySet()) {
+                        Double earing = (Double) calcedForms.get(key).get(0);
+                        Integer counts = (Integer) calcedForms.get(key).get(1);
+                        for (int i = 0; i < counts; i++) {
+                            finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
+                        }
+                    }
+
+                    HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
+                    HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
+                            SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
+                            effectiveValusRanges.get(intTable), false);
+                    Integer selectedFormCounts = selectedForms.size();
+                    DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+                            JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+                            validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
+                            JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
+                            String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+                            null);
+                    // 单条记录保存了
+                    DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+                    Console.log(resultSingle);
+                    Console.log("selected forms counts: {}", selectedForms.size());
+                    Console.log("actual selected counts: {}", calcedForms.size());
+                }
+            }
+        }
+    }
+
+//    public static void inner8(List<Double> highArgs, List<Double> lowArgs, HashSet<String> selectedForms)
+//            throws SQLException {
+//        for (Integer intTable : correspondingFilterAlgos) {
+//            for (String algorithmRaw : algorithmRawList) {
+//                String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
+//                String info = StrUtil
+//                        .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
+//                log.info(StrUtil.format("start: {}", info));
+//                String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+//                        intTable); // 通常对作为条件的两个表, 都做四项计算
+//
+//                HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
+//                        resultTableName, resultAlgorithm, connection,
+//                        forceFilterFormArgs, validateDateRange);
+//                List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
+//                for (String key : calcedForms.keySet()) {
+//                    Double earing = (Double) calcedForms.get(key).get(0);
+//                    Integer counts = (Integer) calcedForms.get(key).get(1);
+//                    for (int i = 0; i < counts; i++) {
+//                        finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
+//                    }
+//                }
+//
+//                HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
+//                HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
+//                        SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
+//                        effectiveValusRanges.get(intTable), false);
+//                Integer selectedFormCounts = selectedForms.size();
+//                DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+//                        JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+//                        validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
+//                        JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
+//                        String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+//                        null);
+//                // 单条记录保存了
+//                DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+//                Console.log(resultSingle);
+//                Console.log("selected forms counts: {}", selectedForms.size());
+//                Console.log("actual selected counts: {}", calcedForms.size());
+//            }
+//        }
+//    }
 
     /**
      * 相比python, 2个返回值, java将 finalEarnings舍弃, 由调用方, 从 calcedForms 返回值自行计算得来, 且逻辑会更快
