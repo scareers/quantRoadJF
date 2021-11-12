@@ -5,6 +5,8 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
@@ -54,11 +56,13 @@ public class FilterSimpleFor0B1S {
     public static Integer haveMinStatRanges = 8;
     //17个日期周期, 至少有8个才可能被选中; 且对最后 30%(不含最后一期), 进行>min的判定; 数值越小, 判定越加严格
     public static double gtMinVGMeanPercent = 0.7;
+    public static Log log = LogFactory.get();
 
 
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
+        log.info("current time");
 
         // 不能关闭
         execSql(sqlCreateFiteredSaveTable, connection, false);
@@ -87,6 +91,7 @@ public class FilterSimpleFor0B1S {
                 (double) timer.intervalRestart() / 3600),
                 false, null);
         pool.shutdown();
+        log.info("current time");
     }
 
     public static String getSaveTablenameFiltered() {

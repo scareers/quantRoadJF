@@ -1,8 +1,8 @@
 package com.scareers;
 
-import cn.hutool.log.Log;
-import cn.hutool.log.LogFactory;
-// .calcVirtualGeometryMeanRecursion;
+import cn.hutool.core.lang.Console;
+import cn.hutool.cron.CronUtil;
+import cn.hutool.cron.task.Task;
 
 
 /**
@@ -10,8 +10,26 @@ import cn.hutool.log.LogFactory;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        Log log = LogFactory.get();
-        log.info("x");
+        CronUtil.schedule("0 30 15 * * ?", new Task() {
+            // 动态定时任务
+            @Override
+            public void execute() {
+                try {
+//                    mainx(null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+// 支持秒级别定时任务
+        CronUtil.setMatchSecond(true);
+        CronUtil.start();
+        Console.log("定时任务开始");
+
+
+//        Log log = LogFactory.get();
+//        log.info("x");
 
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();
