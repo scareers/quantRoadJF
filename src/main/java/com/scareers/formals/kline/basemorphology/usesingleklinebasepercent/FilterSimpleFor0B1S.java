@@ -32,8 +32,12 @@ import static com.scareers.utils.SqlUtil.execSql;
  *
  * @author: admin
  * @date: 2021/11/10  0010-8:12
+ * <p>
+ * 2.对全数据进行 初步条件筛选的脚本
  */
 public class FilterSimpleFor0B1S {
+    // 主要设置是 设置类的:  windowUsePeriodsCoreArg = 7; 更改即可筛选不同基表
+
     public static String saveTablenameFiltered = getSaveTablenameFiltered();
     // 读取当前配置中的数据表
     public static String sourceTablenameBeFilter = SettingsOfSingleKlineBasePercent.saveTablename;
@@ -46,6 +50,7 @@ public class FilterSimpleFor0B1S {
     public static String sqlCreateFiteredSaveTable =
             StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, saveTablenameFiltered);
     //17个日期周期, 至少有8个才可能被选中
+
     public static Integer haveMinStatRanges = 8;
     //17个日期周期, 至少有8个才可能被选中; 且对最后 30%(不含最后一期), 进行>min的判定; 数值越小, 判定越加严格
     public static double gtMinVGMeanPercent = 0.7;
@@ -81,7 +86,7 @@ public class FilterSimpleFor0B1S {
         MailUtil.send(SettingsCommon.receivers, "简易筛选完成", StrUtil.format("简易筛选完成,耗时: {}h",
                 (double) timer.intervalRestart() / 3600),
                 false, null);
-
+        pool.shutdown();
     }
 
     public static String getSaveTablenameFiltered() {
@@ -209,5 +214,10 @@ Next0Close  158388
 Next0High   248706
 Next0Low    326498
 
+
+Next1Open   177212
+Next1Close  170787
+Next1High   216774
+Next1Low    305378
 
  */

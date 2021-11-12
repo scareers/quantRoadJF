@@ -2,17 +2,24 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.binsList;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.effectiveValusRanges;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.analyzeListDoubleSingle;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.prepareSaveDfForAnalyzeResult;
 import static com.scareers.utils.CommonUtils.intersectionOfSet;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -23,8 +30,55 @@ import static com.scareers.utils.SqlUtil.execSql;
  *
  * @author: admin
  * @date: 2021/11/11  0011-8:06
+ * <p>
+ * """
+ * 3.进一步验证分析脚本
+ * <p>
+ * // 对应了 java 的  LowBuyNextHighSellDistributionAnalyze
+ * <p>
+ * 1.保存到数据库时, 多出的字段等, 放在condition1-10里面
+ * len(selected_form_amounts)           初始被选中数量, 简单求交集来的      放在 condition3
+ * len(calced_forms)                      实际被选中数量,  经过了 历史数据的筛选   放在 condition4
+ * <p>
+ * # 嵌套循环条件
+ * high_key_args = (0.035, 1)  # 初步筛选 nexthigh> ?     对next1 的high的限制     放在condition1
+ * low_key_args = (-0.03, -0.02)  # 初步筛选 nextlow> ?    对next0 的low 的限制     放在condition2
+ * # 计算项目,  8个.
+ * int_table = 0      #     计算保存哪个表        8个计算项目, 以 stat_result_algorithm 列区分
+ * algorithm_raw = 'High' # 的哪种算法.
+ * <p>
+ * filter_dict_    形态的强制筛选参数字典. str       放在 condition5
+ * <p>
+ * 实际选中的forms , 保存在 form_description.    form列None
+ * 2.逻辑是:
+ * 依据 high_key_args 和  low_key_args, 得到选中forms, 这很耗时,
+ * 双层循环
+ * <p>
+ * 然后, 计算8种计算项, 并保存结果到数据库.
+ * <p>
+ * 期间:
+ * 对 实际选中的forms结果 保存到 form_description; 不再保存成文件
+ * 图片 是频数分布图片, 保存到 figure_save_basedir文件夹
+ * <p>
+ * <p>
+ * """
  */
-public class FormNameSetsOptimized {
+public class LowBuyNextHighSellDistributionAnalyze {
+    // 核心设定: 元素1和2分别为 低卖,高卖的 两个时间. 0代表明日, 一次类推
+    // 后面的 数据读取表, 结果保存表, 均受此核心设定决定!!!!!! 只需更改这个唯一设定即可  , 设置可 明日买,大后天卖.
+    public static List<Integer> correspondingFilterAlgos = Arrays.asList(0, 1);
+    public static List<String> validateDateRangeList = Arrays.asList("20210218", "21000101"); //注意和保存在数据库的json字符串保持一致,
+    public static String tablenameSaveAnalyze = StrUtil.format("next{}b{}s_of_single_kiline",
+            correspondingFilterAlgos.get(0), correspondingFilterAlgos.get(1)); // next0b1s_of_single_kiline
+    public static String tablenameLowBuy = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+            correspondingFilterAlgos.get(0)); // 哪天低买?简单筛选后的表名称
+    public static String tablenameHighSell = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+            correspondingFilterAlgos.get(1));// 哪天高卖?简单筛选后的表名称
+    public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
+    public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
+    public static String validateDateRange = JSONUtil.toJsonStr(validateDateRangeList); ////同上,方便参数传递而已
+
+    public static String sqlCreateSaveTable = getSqlCreateSaveTable();
     // 卖点当天 最低价限定
     public static List<List<Double>> highKeyArgsList = Arrays.asList(
             // 跨度 0.015
@@ -118,16 +172,6 @@ public class FormNameSetsOptimized {
         return res;
     }
 
-    public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
-    public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
-
-    public static String validateDateRange = "[\"20210218\",\"21000101\"]"; //注意和保存在数据库的json字符串保持一致,
-    public static String tablenameLowBuy = "filtered_single_kline_from_next0__excybkcb"; //哪天低买?简单筛选后的表名称
-    public static String tablenameHighSell = "filtered_single_kline_from_next1__excybkcb";//哪天高卖?简单筛选后的表名称
-    public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2); // 需要与 上面两个表对应. sql语句中填充
-    public static String tablenameSaveAnalyze = "next0b1s_of_single_kiline";
-
-    public static String sqlCreateSaveTable = getSqlCreateSaveTable();
 
     private static String getSqlCreateSaveTable() {
         String s = StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, tablenameSaveAnalyze);
@@ -161,9 +205,34 @@ public class FormNameSetsOptimized {
                         log.info(StrUtil.format("start: {}", info));
                         String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
                                 intTable); // 通常对作为条件的两个表, 都做四项计算
-                        int selectedFormCounts = selectedForms.size();
 
+                        HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
+                                resultTableName, resultAlgorithm, connection,
+                                forceFilterFormArgs, validateDateRange);
+                        List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
+                        for (String key : calcedForms.keySet()) {
+                            Double earing = (Double) calcedForms.get(key).get(0);
+                            Integer counts = (Integer) calcedForms.get(key).get(1);
+                            for (int i = 0; i < counts; i++) {
+                                finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
+                            }
+                        }
 
+                        HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
+                        HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
+                                SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
+                                effectiveValusRanges.get(intTable), false);
+                        Integer selectedFormCounts = selectedForms.size();
+                        DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+                                JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+                                validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
+                                JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
+                                String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+                                null);
+                        DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+                        Console.log(resultSingle);
+                        Console.log("selected forms counts: {}", selectedForms.size());
+                        Console.log("actual selected counts: {}", calcedForms.size());
                     }
                 }
             }
@@ -174,16 +243,31 @@ public class FormNameSetsOptimized {
 
     }
 
-    public static void conditionOptimizeTrying(HashSet<String> selectedForms, String resultTableName,
-                                               String resultAlgorithm, Connection connection, // 少了print
-                                               HashMap<String, Double> forceFilterFormArgs, String validateDateRange)
+    /**
+     * 相比python, 2个返回值, java将 finalEarnings舍弃, 由调用方, 从 calcedForms 返回值自行计算得来, 且逻辑会更快
+     *
+     * @param selectedForms
+     * @param resultTableName
+     * @param resultAlgorithm
+     * @param connection
+     * @param forceFilterFormArgs
+     * @param validateDateRange
+     * @return
+     * @throws SQLException
+     */
+    public static HashMap<String, List<Object>> conditionOptimizeTrying(HashSet<String> selectedForms,
+                                                                        String resultTableName,
+                                                                        String resultAlgorithm, Connection connection,
+                                                                        // 少了print
+                                                                        HashMap<String, Double> forceFilterFormArgs,
+                                                                        String validateDateRange)
             throws SQLException {
 
         HashMap<String, Double> forceFilterFormArgsRaw = getForceFilterFormArgsRaw();
         forceFilterFormArgsRaw.putAll(forceFilterFormArgs);
 
-        List<Double> finalEarnings = new ArrayList<>();
-        HashMap<String, List<Double>> calcedForms = new HashMap<>(); // key:value:  某种具体形态: (折算复利收益率,次数)
+        // List<Double> finalEarnings = new ArrayList<>();
+        HashMap<String, List<Object>> calcedForms = new HashMap<>(); // key:value:  某种具体形态: (折算复利收益率,次数)
         for (String formName : selectedForms) {
             if (forceFilterByLowAndHighLimit(formName, forceFilterFormArgsRaw)) {
                 continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
@@ -214,21 +298,46 @@ public class FormNameSetsOptimized {
             Double earning = (Double) colOfEarnings.get(colOfEarnings.size() - 1);
             Integer counts = (Integer) colOfEffectiveCounts.get(colOfEffectiveCounts.size() - 1);
 
-//// TODO: 2021/11/12  0012
-            isParentOfRecord(formName, calcedForms);
-
+            List<String> childrenCalced = isParentOfRecord(formName, calcedForms);
+            boolean hasChildCalcedAlready = childrenCalced.size() > 0;
+            if (havaParentInRecord(formName, calcedForms)) {
+                continue; // 当父形态已被计算, 则本形态不再计算加入
+            } else if (hasChildCalcedAlready) { // 有子形态计算过了, 则删除所有子形态,
+                for (String child : childrenCalced) {
+                    calcedForms.remove(child);
+                }
+            }
+            // 此时, 有自行他计算过了已被删除, 所有情况都需要加入本(父)形态
+            calcedForms.put(formName, Arrays.asList(earning, counts)); // 添加本父形态
         }
-
+        return calcedForms;
     }
 
-    private static void isParentOfRecord(String formName, HashMap<String, List<Double>> calcedForms) {
+    private static boolean havaParentInRecord(String formName, HashMap<String, List<Object>> calcedForms) {
+        HashSet<String> formNameSplitSet = new HashSet<>(StrUtil.split(formName, "__"));
+        for (String formNameCalced : calcedForms.keySet()) {
+            HashSet<String> formNameCalcedSplitSet = new HashSet<>(StrUtil.split(formNameCalced, "__"));
+            HashSet<String> interaction = intersectionOfSet(formNameSplitSet, formNameCalcedSplitSet);
+            if (formNameCalcedSplitSet.equals(interaction)) {
+                // HashSet.equals 底层调用 containsAll
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<String> isParentOfRecord(String formName, HashMap<String, List<Object>> calcedForms) {
         List<String> children = new ArrayList<>();
         HashSet<String> formNameSplitSet = new HashSet<>(StrUtil.split(formName, "__"));
         for (String formNameCalced : calcedForms.keySet()) {
             HashSet<String> formNameCalcedSplitSet = new HashSet<>(StrUtil.split(formNameCalced, "__"));
             HashSet<String> interaction = intersectionOfSet(formNameSplitSet, formNameCalcedSplitSet);
+            if (formNameSplitSet.equals(interaction)) {
+                // HashSet.equals 底层调用 containsAll
+                children.add(formNameCalced);
+            }
         }
-
+        return children;
     }
 
     public static boolean forceFilterByLowAndHighLimit(String formName,

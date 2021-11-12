@@ -9,7 +9,6 @@ import com.scareers.utils.combinpermu.Generator;
 import joinery.DataFrame;
 
 import java.math.BigDecimal;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +32,7 @@ public class KeyFuncOfSingleKlineBasePercent {
         return tickList;
     }
 
+    // java修改后, 本函数为 多条记录同时分析. 当然逻辑上,只是简单循环单条分析List<Double> .
     public static HashMap<String, HashMap<String, Object>> analyzeStatsResultsStatic(List<String> formNameRaws,
                                                                                      ConcurrentHashMap<String,
                                                                                              List<Double>> results,
@@ -44,131 +44,147 @@ public class KeyFuncOfSingleKlineBasePercent {
 
         HashMap<String, HashMap<String, Object>> res = new HashMap<>();
         for (String formName : formNameRaws) {
-            List<Double> results0 = results.get(formName); // 单条结果
-
-            List<Double> outliers = new ArrayList<>();
-            List<Double> effectiveResults = new ArrayList<>();
-            List<Integer> occurencesList = new ArrayList<>();
-            for (int i = 0; i < bins; i++) {
-                occurencesList.add(0);
-                // 数量记录初始化
-            }
-            double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
-            List<Double> tickList = getTickListByBinsAndEffectiveValueRange(effectiveValueRange, bins, perRangeWidth);
-            for (int i = 0; i < results0.size(); i++) {
-                Double value = results0.get(i);
-                if (value < effectiveValueRange.get(0) || value > effectiveValueRange.get(1)) {
-                    outliers.add(value);
-                    continue;
-                }
-                effectiveResults.add(value);
-                if (value.equals(effectiveValueRange.get(1))) { // 常规是前包后不包. 恰好等于最大限制的, 放在最后一个bin
-                    Integer count = occurencesList.get(bins - 1);
-                    occurencesList.set(bins - 1, count + 1);
-                    continue;
-                }
-                int index = (int) ((value - effectiveValueRange.get(0)) / perRangeWidth);
-                Integer count = occurencesList.get(index);
-                occurencesList.set(index, count + 1);
-            }
-
-            if (effectiveResults.size() <= 0) {
+            List<Double> resultSingle = results.get(formName); // 单条结果
+            HashMap<String, Object> conclusion = analyzeListDoubleSingle(resultSingle, statStockCounts,
+                    bigChangeThreshold,
+                    bins, effectiveValueRange,
+                    calcCdfOrFrequencyWithTick);
+            if (conclusion == null) {
                 continue; // 没有有效统计数值, 则conclusion为null. 这里直接skip掉.  后面res.get(key) , 也要判定一下是否为null
-            }
-
-            HashMap<String, Object> conclusion = new HashMap<>();
-            conclusion.put("stat_stock_counts", statStockCounts); // int
-            conclusion.put("total_counts", results0.size()); // int
-            conclusion.put("outliers_counts", outliers.size()); // int
-            conclusion.put("outliers_count_percent",
-                    (double) (int) conclusion.get("outliers_counts") / (int) conclusion.get(
-                            "total_counts")); // double
-            conclusion.put("effective_counts", occurencesList.stream().mapToInt(Integer::intValue).sum()); // int
-            conclusion.put("effective_count_percent",
-                    (double) (int) conclusion.get("effective_counts") / (int) conclusion.get(
-                            "total_counts")); // double
-
-            ArrayList<Integer> zeroCompareCounts = new ArrayList<>();
-            int ltZero = 0, eqZero = 0, gtZero = 0;
-            for (Double i : effectiveResults) {
-                if (i < 0.0) {
-                    ltZero++;
-                } else if (i == 0.0) {
-                    eqZero++;
-                } else {
-                    gtZero++;
-                }
-            }
-            ArrayList<Double> zeroCompareCountsPercent = getDoubles(effectiveResults, conclusion, zeroCompareCounts,
-                    ltZero,
-                    eqZero,
-                    gtZero, "zero_compare_counts");
-            conclusion.put("zero_compare_counts_percent", zeroCompareCountsPercent); //AL
-
-            ArrayList<Integer> bigchangeCompareCounts = new ArrayList<>();
-            int ltBigchange = 0, betweenBigchange = 0, gtBigchange = 0;
-            for (Double i : effectiveResults) {
-                if (i <= bigChangeThreshold.get(0)) {
-                    ltBigchange++;
-                } else if (i >= bigChangeThreshold.get(1)) {
-                    gtBigchange++;
-                } else {
-                    betweenBigchange++;
-                }
-            }
-            ArrayList<Double> bigchangeCompareCountsPercent = getDoubles(effectiveResults, conclusion,
-                    bigchangeCompareCounts, ltBigchange, betweenBigchange, gtBigchange,
-                    "bigchange_compare_counts");
-            // @noti: 这里故意拼写错误 percent成 percnet, 为了数据表字段将错就错
-            conclusion.put("bigchange_compare_counts_percnet", bigchangeCompareCountsPercent); //AL
-
-            DataFrame<Double> dfEffectiveResults = new DataFrame<>();
-            dfEffectiveResults.add("value", effectiveResults);
-            conclusion.put("mean", dfEffectiveResults.mean().get(0, 0));
-            conclusion.put("std", dfEffectiveResults.stddev().get(0, 0));
-            conclusion.put("min", dfEffectiveResults.min().get(0, 0));
-            conclusion.put("max", dfEffectiveResults.max().get(0, 0));
-            conclusion.put("skew", dfEffectiveResults.skew().get(0, 0));
-
-            conclusion.put("kurt", dfEffectiveResults.kurt().get(0, 0));
-
-            // Double
-            conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
-
-
-            conclusion.put("effective_value_range", effectiveValueRange);
-            conclusion.put("bins", bins);
-            conclusion.put("big_change_threshold", bigChangeThreshold);
-
-            // conclusion.put("tick_list", tickList); //不再保存tickList
-            // conclusion.put("tick_list", null); // 或者设置null
-            conclusion.put("occurrences_list", occurencesList);
-            ArrayList<Double> frequencyList = new ArrayList<>();
-            for (Integer i : occurencesList) {
-                frequencyList.add((double) i / effectiveResults.size());
-            }
-            conclusion.put("frequency_list", frequencyList);
-            // 不使用null, 因frequency_with_tick 将被转换为json字符串保存, 这里直接设定为 "",
-            // 如果使用null, 保存时会报错: No value specified for parameter 6
-            conclusion.put("frequency_with_tick", "");
-            if (calcCdfOrFrequencyWithTick) {
-                List<List<Double>> frequencyWithTick = getListWithTick(tickList, frequencyList);
-                conclusion.put("frequency_with_tick", frequencyWithTick);
-            }
-
-            DataFrame<Double> dfTemp = new DataFrame<>();
-            dfTemp.append(frequencyList);
-            dfTemp = dfTemp.cumsum();
-            List<Double> cdfList = dfTemp.col(0);
-            conclusion.put("cdf_list", cdfList);
-            conclusion.put("cdf_with_tick", "");
-            if (calcCdfOrFrequencyWithTick) {
-                List<List<Double>> cdfWithTick = getListWithTick(tickList, cdfList);
-                conclusion.put("cdf_with_tick", cdfWithTick);
             }
             res.put(formName, conclusion);
         }
         return res;
+    }
+
+    // 被上函数调用, 仅仅分析 List<Double> 的逻辑, 不含其他任何
+    public static HashMap<String, Object> analyzeListDoubleSingle(List<Double> resultSingle,
+                                                                  int statStockCounts, List<Double> bigChangeThreshold,
+                                                                  int bins, List<Double> effectiveValueRange,
+                                                                  boolean calcCdfOrFrequencyWithTick) {
+//
+
+        List<Double> outliers = new ArrayList<>();
+        List<Double> effectiveResults = new ArrayList<>();
+        List<Integer> occurencesList = new ArrayList<>();
+        for (int i = 0; i < bins; i++) {
+            occurencesList.add(0);
+            // 数量记录初始化
+        }
+        double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
+        List<Double> tickList = getTickListByBinsAndEffectiveValueRange(effectiveValueRange, bins, perRangeWidth);
+        for (int i = 0; i < resultSingle.size(); i++) {
+            Double value = resultSingle.get(i);
+            if (value < effectiveValueRange.get(0) || value > effectiveValueRange.get(1)) {
+                outliers.add(value);
+                continue;
+            }
+            effectiveResults.add(value);
+            if (value.equals(effectiveValueRange.get(1))) { // 常规是前包后不包. 恰好等于最大限制的, 放在最后一个bin
+                Integer count = occurencesList.get(bins - 1);
+                occurencesList.set(bins - 1, count + 1);
+                continue;
+            }
+            int index = (int) ((value - effectiveValueRange.get(0)) / perRangeWidth);
+            Integer count = occurencesList.get(index);
+            occurencesList.set(index, count + 1);
+        }
+
+        if (effectiveResults.size() <= 0) {
+            return null;
+        }
+
+        HashMap<String, Object> conclusion = new HashMap<>();
+        conclusion.put("stat_stock_counts", statStockCounts); // int
+        conclusion.put("total_counts", resultSingle.size()); // int
+        conclusion.put("outliers_counts", outliers.size()); // int
+        conclusion.put("outliers_count_percent",
+                (double) (int) conclusion.get("outliers_counts") / (int) conclusion.get(
+                        "total_counts")); // double
+        conclusion.put("effective_counts", occurencesList.stream().mapToInt(Integer::intValue).sum()); // int
+        conclusion.put("effective_count_percent",
+                (double) (int) conclusion.get("effective_counts") / (int) conclusion.get(
+                        "total_counts")); // double
+
+        ArrayList<Integer> zeroCompareCounts = new ArrayList<>();
+        int ltZero = 0, eqZero = 0, gtZero = 0;
+        for (Double i : effectiveResults) {
+            if (i < 0.0) {
+                ltZero++;
+            } else if (i == 0.0) {
+                eqZero++;
+            } else {
+                gtZero++;
+            }
+        }
+        ArrayList<Double> zeroCompareCountsPercent = getDoubles(effectiveResults, conclusion, zeroCompareCounts,
+                ltZero,
+                eqZero,
+                gtZero, "zero_compare_counts");
+        conclusion.put("zero_compare_counts_percent", zeroCompareCountsPercent); //AL
+
+        ArrayList<Integer> bigchangeCompareCounts = new ArrayList<>();
+        int ltBigchange = 0, betweenBigchange = 0, gtBigchange = 0;
+        for (Double i : effectiveResults) {
+            if (i <= bigChangeThreshold.get(0)) {
+                ltBigchange++;
+            } else if (i >= bigChangeThreshold.get(1)) {
+                gtBigchange++;
+            } else {
+                betweenBigchange++;
+            }
+        }
+        ArrayList<Double> bigchangeCompareCountsPercent = getDoubles(effectiveResults, conclusion,
+                bigchangeCompareCounts, ltBigchange, betweenBigchange, gtBigchange,
+                "bigchange_compare_counts");
+        // @noti: 这里故意拼写错误 percent成 percnet, 为了数据表字段将错就错
+        conclusion.put("bigchange_compare_counts_percnet", bigchangeCompareCountsPercent); //AL
+
+        DataFrame<Double> dfEffectiveResults = new DataFrame<>();
+        dfEffectiveResults.add("value", effectiveResults);
+        conclusion.put("mean", dfEffectiveResults.mean().get(0, 0));
+        conclusion.put("std", dfEffectiveResults.stddev().get(0, 0));
+        conclusion.put("min", dfEffectiveResults.min().get(0, 0));
+        conclusion.put("max", dfEffectiveResults.max().get(0, 0));
+        conclusion.put("skew", dfEffectiveResults.skew().get(0, 0));
+
+        conclusion.put("kurt", dfEffectiveResults.kurt().get(0, 0));
+
+        // Double
+        conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
+
+
+        conclusion.put("effective_value_range", effectiveValueRange);
+        conclusion.put("bins", bins);
+        conclusion.put("big_change_threshold", bigChangeThreshold);
+
+        // conclusion.put("tick_list", tickList); //不再保存tickList
+        // conclusion.put("tick_list", null); // 或者设置null
+        conclusion.put("occurrences_list", occurencesList);
+        ArrayList<Double> frequencyList = new ArrayList<>();
+        for (Integer i : occurencesList) {
+            frequencyList.add((double) i / effectiveResults.size());
+        }
+        conclusion.put("frequency_list", frequencyList);
+        // 不使用null, 因frequency_with_tick 将被转换为json字符串保存, 这里直接设定为 "",
+        // 如果使用null, 保存时会报错: No value specified for parameter 6
+        conclusion.put("frequency_with_tick", "");
+        if (calcCdfOrFrequencyWithTick) {
+            List<List<Double>> frequencyWithTick = getListWithTick(tickList, frequencyList);
+            conclusion.put("frequency_with_tick", frequencyWithTick);
+        }
+
+        DataFrame<Double> dfTemp = new DataFrame<>();
+        dfTemp.append(frequencyList);
+        dfTemp = dfTemp.cumsum();
+        List<Double> cdfList = dfTemp.col(0);
+        conclusion.put("cdf_list", cdfList);
+        conclusion.put("cdf_with_tick", "");
+        if (calcCdfOrFrequencyWithTick) {
+            List<List<Double>> cdfWithTick = getListWithTick(tickList, cdfList);
+            conclusion.put("cdf_with_tick", cdfWithTick);
+        }
+        return conclusion;
     }
 
     /**
@@ -260,21 +276,20 @@ public class KeyFuncOfSingleKlineBasePercent {
     }
 
 
-    public static DataFrameSelf<Object> saveAnalyzeResult(HashMap<String, Object> analyzeResultMap, String formNamePure,
-                                                          List<String> statDateRange, String statResultAlgorithm,
-                                                          String conditionsSet,
-                                                          Connection saveDb,
-                                                          String saveTablename,
-                                                          String condition1,
-                                                          String condition2,
-                                                          String condition3,
-                                                          String condition4,
-                                                          String condition5,
-                                                          String condition6,
-                                                          String condition7) throws SQLException {
+    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
+                                                                      String formNamePure,
+                                                                      List<String> statDateRange, String statResultAlgorithm,
+                                                                      String conditionsSet,
+                                                                      String condition1,
+                                                                      String condition2,
+                                                                      String condition3,
+                                                                      String condition4,
+                                                                      String condition5,
+                                                                      String condition6,
+                                                                      String condition7) throws SQLException {
 
-        return saveAnalyzeResult(analyzeResultMap, formNamePure, statDateRange, statResultAlgorithm, conditionsSet
-                , saveDb, saveTablename, condition1, condition2, condition3, condition4, condition5, condition6,
+        return prepareSaveDfForAnalyzeResult(analyzeResultMapSingle, formNamePure, statDateRange, statResultAlgorithm, conditionsSet
+                ,  condition1, condition2, condition3, condition4, condition5, condition6,
                 condition7,
                 null, null, null, null,
                 null); // 7条件的常态调用.
@@ -312,13 +327,11 @@ public class KeyFuncOfSingleKlineBasePercent {
      * * cdf_list List<Double>
      * * cdf_with_tick    List<List<Double>>
      *
-     * @param analyzeResultMap
+     * @param analyzeResultMapSingle
      * @param formNamePure
      * @param statDateRange
      * @param statResultAlgorithm
      * @param conditionsSet
-     * @param saveDb
-     * @param saveTablename
      * @param condition1
      * @param condition2
      * @param condition3
@@ -332,31 +345,30 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param selfNotes
      * @param formDescription
      */
-    public static DataFrameSelf<Object> saveAnalyzeResult(HashMap<String, Object> analyzeResultMap, String formNamePure,
-                                                          List<String> statDateRange, String statResultAlgorithm,
-                                                          String conditionsSet,
-                                                          Connection saveDb,
-                                                          String saveTablename,
-                                                          String condition1,
-                                                          String condition2,
-                                                          String condition3,
-                                                          String condition4,
-                                                          String condition5,
-                                                          String condition6,
-                                                          String condition7,
-                                                          String condition8,
-                                                          String condition9,
-                                                          String condition10,
-                                                          String selfNotes,
-                                                          String formDescription
+    // 本函数是针对单条结果的, 并不执行保存逻辑, 返回 单条记录的 df; 调用方可拼接多次实现批量保存
+    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle, String formNamePure,
+                                                                      List<String> statDateRange, String statResultAlgorithm,
+                                                                      String conditionsSet,
+                                                                      String condition1,
+                                                                      String condition2,
+                                                                      String condition3,
+                                                                      String condition4,
+                                                                      String condition5,
+                                                                      String condition6,
+                                                                      String condition7,
+                                                                      String condition8,
+                                                                      String condition9,
+                                                                      String condition10,
+                                                                      String selfNotes,
+                                                                      String formDescription
     ) throws SQLException {
-        if (analyzeResultMap == null) {
+        if (analyzeResultMapSingle == null) {
             return null;
         }
 
         DataFrameSelf<Object> dfSaved = new DataFrameSelf<>();
         List<Object> row = new ArrayList<>();
-        for (String key : analyzeResultMap.keySet()) {
+        for (String key : analyzeResultMapSingle.keySet()) {
             // zero_compare_counts ArrayList<Integer> 3
             // zero_compare_counts_percent ArrayList<Double>  3
             // bigchange_compare_counts  ArrayList<Integer> 3
@@ -364,7 +376,7 @@ public class KeyFuncOfSingleKlineBasePercent {
             // 当key为以上四个, 则需要对字段进行 0,1,2 的拆分, 值也进行拆分. 总计分为12个字段. 方便数据库直接查询.
             if ("zero_compare_counts".equals(key) || "bigchange_compare_counts".equals(key)) {
                 // 3 个Integer 的AL, 这里1拆为3; --> 0,1,2
-                ArrayList<Integer> tempList = (ArrayList<Integer>) analyzeResultMap.get(key);
+                ArrayList<Integer> tempList = (ArrayList<Integer>) analyzeResultMapSingle.get(key);
                 for (int i = 0; i < 3; i++) {
                     String fieldName = key + "_" + i;
                     dfSaved.add(fieldName);
@@ -375,7 +387,7 @@ public class KeyFuncOfSingleKlineBasePercent {
             // 同样为了应对数据表的字段 percnet..
             if ("zero_compare_counts_percent".equals(key) || "bigchange_compare_counts_percnet".equals(key)) {
                 // 3 个Integer 的AL, 这里1拆为3; --> 0,1,2
-                ArrayList<Double> tempList = (ArrayList<Double>) analyzeResultMap.get(key);
+                ArrayList<Double> tempList = (ArrayList<Double>) analyzeResultMapSingle.get(key);
                 for (int i = 0; i < 3; i++) {
                     String fieldName = key + "_" + i;
                     dfSaved.add(fieldName);
@@ -385,7 +397,7 @@ public class KeyFuncOfSingleKlineBasePercent {
             }
 
             dfSaved.add(key);
-            Object value = analyzeResultMap.get(key);
+            Object value = analyzeResultMapSingle.get(key);
             // Object 总体分为 ArrayList,List, List<List>, int, double 等.
             // 列表性结果, 则转换为 json, 字符串, int,double (包装类) 等不转换
             if (value instanceof List) {

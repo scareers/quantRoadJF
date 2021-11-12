@@ -15,7 +15,7 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static int windowUsePeriodsCoreArg = 7;
+    public static int windowUsePeriodsCoreArg = 8;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
     public static final int processAmountParse = 8; // 实测8-16. 更多无济于事
     public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳
@@ -49,9 +49,10 @@ public class SettingsOfSingleKlineBasePercent {
     public static final List<Double> volToPre5dayAvgRangeList = Arrays.<Double>asList(0.0, 0.2, 0.5, 0.8, 1.0, 2.0, 4.0,
             8.0, 16.0, 32.0, 64.0, 1000.);
 
-    public static final List<Integer> binsList = Arrays.asList(44, 88, 136, 188);
+    // @noti: 这里也用于了 LowBuyNextHighSellDistributionAnalyze 脚本. 分析分布的脚本.
     // 分别对应window=7,8,9,10 用,
     // 千分之5一个tick
+    public static final List<Integer> binsList = Arrays.asList(44, 88, 136, 188);
     public static final List<List<Double>> effectiveValusRanges = Arrays.asList(
             // 分别对应window=7,8,9,10 用
             Arrays.asList(-0.11, 0.11),
@@ -59,6 +60,7 @@ public class SettingsOfSingleKlineBasePercent {
             Arrays.asList(-0.34, 0.34),
             Arrays.asList(-0.47, 0.47)
     );
+    public static List<Double> bigChangeThreshold = Arrays.asList(-0.05, 0.05);
 
 
     public static void refreshWindowUsePeriodRelativeSettings(int windowUsePeriodsCoreArg) {

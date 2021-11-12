@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.bigChangeThreshold;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.getAdjdatesByTscodeFromTushare;
 import static com.scareers.sqlapi.TushareApi.getStockPriceByTscodeAndDaterangeAsDfFromTushare;
@@ -36,6 +37,8 @@ import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
  *
  * @author: admin
  * @date: 2021/11/5  0005-15:13
+ *
+ * 1.分析计算结果保存脚本 -- 全部数据
  */
 public class SingleKlineFormsBase {
     public static Log log = LogFactory.get();
@@ -79,8 +82,9 @@ public class SingleKlineFormsBase {
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
 
             // 7, 8用.
+
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    Arrays.asList(-0.05, 0.05), bins, effectiveValueRange,
+                    bigChangeThreshold, bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
                     null);
@@ -299,10 +303,9 @@ class CalcStatResultAndSaveTask implements Callable<List<String>> {
                     }
                 }
 
-                DataFrameSelf<Object> dfSingleSaved = saveAnalyzeResult(analyzeResultMap, formNamePure, statDateRange,
+                DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultMap, formNamePure,
+                        statDateRange,
                         statResultAlgorithm, "",
-                        connOfSingleThread,
-                        saveTablename,
                         condition1, condition2,
                         condition3, condition4, condition5, condition6, condition7);
 
