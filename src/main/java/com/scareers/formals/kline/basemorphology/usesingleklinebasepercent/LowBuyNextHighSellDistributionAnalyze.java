@@ -20,6 +20,10 @@ import lombok.SneakyThrows;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.binsList;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.effectiveValusRanges;
@@ -204,18 +208,25 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 log.info(StrUtil.format("LowBuy selected forms count: {}", dfOfLowLimitConditon.length()));
 
                 HashSet<String> selectedForms = getSelectFormsSet(dfOfHighLimitConditon, dfOfLowLimitConditon);
-
-
-
-                inner8(highArgs, lowArgs, selectedForms);
+                // 内部 2*4==8循环使用多线程
+                ThreadPoolExecutor poolOfInner8 =
+                        new ThreadPoolExecutor(8, 16, 10000,
+                                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+                CountDownLatch latchOfInner8 = new CountDownLatch(8);
+                for (Integer intTable : correspondingFilterAlgos) {
+                    for (String algorithmRaw : algorithmRawList) {
+                        poolOfInner8.execute(new Inner8LoopRunnable(highArgs, lowArgs,
+                                selectedForms, intTable, algorithmRaw, latchOfInner8));
+                    }
+                }
+                latchOfInner8.await();
+                //inner8(highArgs, lowArgs, selectedForms);
             }
         }
 
         MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("分布分析完成,耗时: {}h",
                 (double) timer.intervalRestart() / 3600),
                 false, null);
-
-
     }
 
     /**
@@ -223,59 +234,68 @@ public class LowBuyNextHighSellDistributionAnalyze {
      * 内部类形式: 可访问来自 父类的 静态属性设定!!!!.   而主程序太多设置来自于设置类, 因此没有写成内部类的形式
      * 内部类形式能够少显式传递 构造器更多参数
      */
-    class Inner8LoopRunnable implements Runnable {
+    static class Inner8LoopRunnable implements Runnable {
         List<Double> highArgs;
         List<Double> lowArgs;
         HashSet<String> selectedForms;
+        Integer intTable;
+        String algorithmRaw;
+        CountDownLatch latchOfInner8;
 
         public Inner8LoopRunnable(List<Double> highArgs, List<Double> lowArgs,
-                                  HashSet<String> selectedForms) {
+                                  HashSet<String> selectedForms, Integer intTable, String algorithmRaw,
+                                  CountDownLatch latchOfInner8) {
             this.highArgs = highArgs;
             this.lowArgs = lowArgs;
             this.selectedForms = selectedForms;
+            this.intTable = intTable;
+            this.algorithmRaw = algorithmRaw;
+            this.latchOfInner8 = latchOfInner8;
         }
 
         @SneakyThrows
         @Override
         public void run() {
-            for (Integer intTable : correspondingFilterAlgos) {
-                for (String algorithmRaw : algorithmRawList) {
-                    String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
-                    String info = StrUtil
-                            .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
-                    log.info(StrUtil.format("start: {}", info));
-                    String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
-                            intTable); // 通常对作为条件的两个表, 都做四项计算
+            try {
+                String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
+                String info = StrUtil
+                        .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
+                log.info(StrUtil.format("start: {}", info));
+                String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+                        intTable); // 通常对作为条件的两个表, 都做四项计算
 
-                    HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
-                            resultTableName, resultAlgorithm, connection,
-                            forceFilterFormArgs, validateDateRange);
-                    List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
-                    for (String key : calcedForms.keySet()) {
-                        Double earing = (Double) calcedForms.get(key).get(0);
-                        Integer counts = (Integer) calcedForms.get(key).get(1);
-                        for (int i = 0; i < counts; i++) {
-                            finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
-                        }
+                HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
+                        resultTableName, resultAlgorithm, connection,
+                        forceFilterFormArgs, validateDateRange);
+                List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
+                for (String key : calcedForms.keySet()) {
+                    Double earing = (Double) calcedForms.get(key).get(0);
+                    Integer counts = (Integer) calcedForms.get(key).get(1);
+                    for (int i = 0; i < counts; i++) {
+                        finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
                     }
-
-                    HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
-                    HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
-                            SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
-                            effectiveValusRanges.get(intTable), false);
-                    Integer selectedFormCounts = selectedForms.size();
-                    DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
-                            JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
-                            validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
-                            JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
-                            String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
-                            null);
-                    // 单条记录保存了
-                    DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
-                    Console.log(resultSingle);
-                    Console.log("selected forms counts: {}", selectedForms.size());
-                    Console.log("actual selected counts: {}", calcedForms.size());
                 }
+
+                HashSet<String> actualCalcedFormSet = new HashSet<>(calcedForms.keySet());
+                HashMap<String, Object> resultSingle = analyzeListDoubleSingle(finalEarnings, 10000,
+                        SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
+                        effectiveValusRanges.get(intTable), false);
+                Integer selectedFormCounts = selectedForms.size();
+                DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+                        JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+                        validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
+                        JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
+                        String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+                        null);
+                // 单条记录保存了
+                DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+                Console.log(resultSingle);
+                Console.log("selected forms counts: {}", selectedForms.size());
+                Console.log("actual selected counts: {}", calcedForms.size());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                latchOfInner8.countDown();
             }
         }
     }
