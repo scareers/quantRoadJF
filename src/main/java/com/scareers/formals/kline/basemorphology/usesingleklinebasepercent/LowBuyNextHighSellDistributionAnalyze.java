@@ -74,7 +74,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class LowBuyNextHighSellDistributionAnalyze {
     // 核心设定: 元素1和2分别为 低卖,高卖的 两个时间. 0代表明日, 一次类推
     // 后面的 数据读取表, 结果保存表, 均受此核心设定决定!!!!!! 只需更改这个唯一设定即可  , 设置可 明日买,大后天卖.
-    public static List<Integer> correspondingFilterAlgos = Arrays.asList(0, 1);
+    public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2);
     public static List<String> validateDateRangeList = Arrays.asList("20210218", "21000101"); //注意和保存在数据库的json字符串保持一致,
     public static String tablenameSaveAnalyze = StrUtil.format("next{}b{}s_of_single_kiline",
             correspondingFilterAlgos.get(0), correspondingFilterAlgos.get(1)); // next0b1s_of_single_kiline
@@ -381,23 +381,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
             if (forceFilterByLowAndHighLimit(formName, forceFilterFormArgsRaw)) {
                 continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
             }
-            DataFrame<Object> df_;
-            String sqlTemp = StrUtil.format("            select  \n" +
-                    "                stat_date_range,\n" +
-                    "                    virtual_geometry_mean,\n" +
-                    "                    mean,\n" +
-                    "                    effective_counts,\n" +
-                    "                    total_counts,\n" +
-                    "                    zero_compare_counts_percent_0,\n" +
-                    "                    zero_compare_counts_percent_2\n" +
-                    "             from {}\n" +
-                    "             where form_name ='{}'\n" +
-                    "                   and stat_result_algorithm = '{}'\n" +
-                    "             order by stat_date_range", resultTableName, formName, resultAlgorithm);
-            // Console.log(sqlTemp);
-            df_ = DataFrame.readSql(connection, sqlTemp);
-            df_ = df_.convert(String.class, Double.class, Double.class, Integer.class, Integer.class, Double.class,
-                    Double.class); // 数量也强行转换为 double
+            DataFrame<Object> df_ = getSingleDfByFormNameAndAlgorithm(resultTableName, resultAlgorithm, connection,
+                    formName);
 
             if (df_.length() == 0) {
                 continue;
@@ -428,6 +413,39 @@ public class LowBuyNextHighSellDistributionAnalyze {
             calcedForms.put(formName, Arrays.asList(earning, counts)); // 添加本父形态
         }
         return calcedForms;
+    }
+
+    public static Cache<String, DataFrame<Object>> singleDfByFormNameAndAlgorithmCache = CacheUtil.newLRUCache(8096);
+
+    @Cached(notes = "缓存key 由resultTableName,resultAlgorithm,formName 共同构成. 虽然前两者有重复嫌疑")
+    public static DataFrame<Object> getSingleDfByFormNameAndAlgorithm(String resultTableName, String resultAlgorithm,
+                                                                      Connection connection, String formName)
+            throws SQLException {
+        // 缓存
+        String cacheKey = resultAlgorithm + resultAlgorithm + formName;
+        DataFrame<Object> df_;
+        df_ = singleDfByFormNameAndAlgorithmCache.get(cacheKey);
+        if (df_ != null) {
+            return df_;
+        }
+        String sqlTemp = StrUtil.format("            select  \n" +
+                "                stat_date_range,\n" +
+                "                    virtual_geometry_mean,\n" +
+                "                    mean,\n" +
+                "                    effective_counts,\n" +
+                "                    total_counts,\n" +
+                "                    zero_compare_counts_percent_0,\n" +
+                "                    zero_compare_counts_percent_2\n" +
+                "             from {}\n" +
+                "             where form_name ='{}'\n" +
+                "                   and stat_result_algorithm = '{}'\n" +
+                "             order by stat_date_range", resultTableName, formName, resultAlgorithm);
+        // Console.log(sqlTemp);
+        df_ = DataFrame.readSql(connection, sqlTemp);
+        df_ = df_.convert(String.class, Double.class, Double.class, Integer.class, Integer.class, Double.class,
+                Double.class); // 数量也强行转换为 double
+        singleDfByFormNameAndAlgorithmCache.put(cacheKey, df_);
+        return df_;
     }
 
     private static boolean havaParentInRecord(String formName, HashMap<String, List<Object>> calcedForms) {
