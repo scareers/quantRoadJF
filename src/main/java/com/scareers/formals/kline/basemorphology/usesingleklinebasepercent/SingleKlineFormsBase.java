@@ -3,6 +3,7 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
  * -Xmx512g -XX:+PrintGC -XX:MaxTenuringThreshold=3
  */
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
@@ -44,19 +45,34 @@ public class SingleKlineFormsBase {
     public static Log log = LogFactory.get();
 
     public static void main(String[] args) throws Exception {
-        // 不需要刷新. 批量执行需要刷新
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
+        mainExclude(args);
+    }
 
-        log.info("current time");
-        main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
-        log.info("current time");
-        // 直接执行时, 读取设定的 周期数量
-        // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
-        // 设定的所有都不需要变, 只有 周期数需要改变
-        MailUtil.send(SettingsCommon.receivers, "全部解析完成", StrUtil.format("全部解析完成,耗时: {}h",
-                (double) timer.intervalRestart() / 3600000),
-                false, null);
+    public static void mainExclude(String[] args) throws Exception {
+        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(10, 11, 12);
+        for (Integer windowUsePeriodsCoreArg : windowUsePeriodsCoreArgList) {
+            // 不需要刷新. 批量执行需要刷新
+            TimeInterval timer = DateUtil.timer();
+            timer.start();
+
+            log.info("current time");
+            log.warn(StrUtil.format("start windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg));
+            // 刷新相关设定:
+            SettingsOfSingleKlineBasePercent.refreshWindowUsePeriodRelativeSettings(windowUsePeriodsCoreArg);
+            main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
+            log.info("current time");
+            // 直接执行时, 读取设定的 周期数量
+            // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
+            // 设定的所有都不需要变, 只有 周期数需要改变
+            MailUtil.send(SettingsCommon.receivers,
+                    StrUtil.format("全部解析完成,windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg),
+                    StrUtil.format("全部解析完成,耗时: {}h",
+                            (double) timer.intervalRestart() / 3600000),
+                    false, null);
+            Console.log("耗时: windowUsePeriodsCoreArg: {} , {} ", windowUsePeriodsCoreArg,
+                    (double) timer.intervalRestart() / 3600000);
+        }
+
     }
 
     public static void main0(int windowUsePeriodsCoreArg) throws Exception {
@@ -90,10 +106,6 @@ public class SingleKlineFormsBase {
                     null);
             log.info("current time");
         }
-        MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
-        Console.log("finish");
-
-        System.exit(0);
     }
 
     /**
@@ -155,7 +167,7 @@ public class SingleKlineFormsBase {
             }
         }
         //        latchOfParse.await(); // 不需要,
-//        connOfParse.close(); // 关闭连接
+        //        connOfParse.close(); // 关闭连接
         poolOfParse.shutdown(); // 关闭线程池
         System.out.println();
         Console.log("results size: {}", results.size());
@@ -164,6 +176,8 @@ public class SingleKlineFormsBase {
         Console.log("构建结果字典完成");
         Console.log("开始计算并保存");
         ArrayList<String> forNameRaws = new ArrayList<>(results.keySet());
+        //        forNameRaws.sort((o1, o2) -> o1.compareTo(o2)); // 排序
+        forNameRaws.sort(Comparator.naturalOrder()); // 排序, 自然顺序
         ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmountSave,
                 SettingsOfSingleKlineBasePercent.processAmountSave * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>());

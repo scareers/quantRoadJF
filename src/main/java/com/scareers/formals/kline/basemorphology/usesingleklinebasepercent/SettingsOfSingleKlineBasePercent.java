@@ -15,17 +15,17 @@ import java.util.List;
  * @date: 2021/11/5  0005-15:09
  */
 public class SettingsOfSingleKlineBasePercent {
-    public static int windowUsePeriodsCoreArg = 9;
+    public static int windowUsePeriodsCoreArg = 10;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
     public static final int processAmountParse = 8; // 实测8-16. 更多无济于事
     public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳
     public static final int gcControlEpochParse = 300; // 新增:控制Parse 时gc频率.越大则手动gc频率越低,小幅减少时间.过大则要求线程数量不要过大
     public static final int gcControlEpochSave = 1000; // 新增:控制Save 时gc频率.越大则手动gc频率越低. 通常比上大
-    public static final int stockAmountsBeCalc = 1000000;
+    public static final int stockAmountsBeCalc = 2;
     public static final int perEpochTaskAmounts = 64;// 至少2.  实测 61%ssd负载; 很难再高.
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
-    public static final String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
+    public static String saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
     public static final boolean showMemoryUsage = false;
 
     public static String saveTablenameFiltered = getSaveTablename("filtered_single_kline_from_next{}");
@@ -52,13 +52,20 @@ public class SettingsOfSingleKlineBasePercent {
     // @noti: 这里也用于了 LowBuyNextHighSellDistributionAnalyze 脚本. 分析分布的脚本.
     // 分别对应window=7,8,9,10 用,
     // 千分之5一个tick
-    public static final List<Integer> binsList = Arrays.asList(44, 88, 136, 188);
+    public static final List<Integer> binsList = Arrays.asList(
+            44, 88, 136, 188, // 7,8,9,10
+            208, 248, 298
+    );
     public static final List<List<Double>> effectiveValusRanges = Arrays.asList(
             // 分别对应window=7,8,9,10 用
             Arrays.asList(-0.11, 0.11),
             Arrays.asList(-0.22, 0.22),
             Arrays.asList(-0.34, 0.34),
-            Arrays.asList(-0.47, 0.47)
+            Arrays.asList(-0.36, 0.47), // window lenth == 10, 即next3开始, 不再强行对称. 而改用 0.9**n/ 1.1**n折算
+            Arrays.asList(-0.42, 0.62), //
+            Arrays.asList(-0.46, 0.78), // 12
+            Arrays.asList(-0.54, 0.95) // 13
+
     );
     public static List<Double> bigChangeThreshold = Arrays.asList(-0.05, 0.05);
 
@@ -72,10 +79,11 @@ public class SettingsOfSingleKlineBasePercent {
 
         // 设置传递来的参数
         SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg = windowUsePeriodsCoreArg;
+        saveTablename = getSaveTablename("single_kline_forms_analyze_results_next{}");
         // 保存表与之相关
         saveTablenameFiltered = getSaveTablename("filtered_single_kline_from_next{}");
-
-
+        sqlCreateSaveTable = StrUtil.format(sqlCreateSaveTableRaw, saveTablename);
+        sqlDeleteExistDateRange = StrUtil.format(sqlDeleteExistDateRangeRaw, saveTablename);
     }
 
     private static String getSaveTablename(String s) {
@@ -125,9 +133,9 @@ public class SettingsOfSingleKlineBasePercent {
     );
 
     public static final String sqlCreateSaveTableRaw = getSqlCreateSaveTableTemplate();
-    public static final String sqlCreateSaveTable = StrUtil.format(sqlCreateSaveTableRaw, saveTablename);
+    public static String sqlCreateSaveTable = StrUtil.format(sqlCreateSaveTableRaw, saveTablename);
     public static final String sqlDeleteExistDateRangeRaw = "delete from {} where stat_date_range=\'{}\'";
-    public static final String sqlDeleteExistDateRange = StrUtil.format(sqlDeleteExistDateRangeRaw, saveTablename);
+    public static String sqlDeleteExistDateRange = StrUtil.format(sqlDeleteExistDateRangeRaw, saveTablename);
     // 仍有{}需要填充date range
 
     public static void main(String[] args) {
