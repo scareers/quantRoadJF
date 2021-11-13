@@ -232,7 +232,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
             }
         }
 
-        MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("分布分析完成,耗时: {}h",
+        MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("LowBuyNextHighSellDistributionAnalyze " +
+                        "分布分析完成,耗时: {}h",
                 (double) timer.intervalRestart() / 360000),
                 false, null);
     }
@@ -271,7 +272,6 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 log.info(StrUtil.format("start: {}", info));
                 String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
                         intTable); // 通常对作为条件的两个表, 都做四项计算
-
                 HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
                         resultTableName, resultAlgorithm, connection,
                         forceFilterFormArgs, validateDateRange);
@@ -415,7 +415,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
         return calcedForms;
     }
 
-    public static Cache<String, DataFrame<Object>> singleDfByFormNameAndAlgorithmCache = CacheUtil.newLRUCache(2^16);
+    public static Cache<String, DataFrame<Object>> singleDfByFormNameAndAlgorithmCache = CacheUtil.newLRUCache(2 ^ 16);
 
     @Cached(notes = "缓存key 由resultTableName,resultAlgorithm,formName 共同构成. 虽然前两者有重复嫌疑")
     public static DataFrame<Object> getSingleDfByFormNameAndAlgorithm(String resultTableName, String resultAlgorithm,

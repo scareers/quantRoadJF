@@ -21,7 +21,7 @@ public class SettingsOfSingleKlineBasePercent {
     public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳
     public static final int gcControlEpochParse = 300; // 新增:控制Parse 时gc频率.越大则手动gc频率越低,小幅减少时间.过大则要求线程数量不要过大
     public static final int gcControlEpochSave = 1000; // 新增:控制Save 时gc频率.越大则手动gc频率越低. 通常比上大
-    public static final int stockAmountsBeCalc = 2;
+    public static final int stockAmountsBeCalc = 1000000;
     public static final int perEpochTaskAmounts = 64;// 至少2.  实测 61%ssd负载; 很难再高.
     public static final boolean excludeSomeBoards = true;
     public static final List<String> excludeBoards = Arrays.asList(null, "CDR", "科创板", "创业板");
