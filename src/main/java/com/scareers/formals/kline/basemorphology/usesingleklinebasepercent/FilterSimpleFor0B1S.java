@@ -88,7 +88,7 @@ public class FilterSimpleFor0B1S {
             future.get();
         }
         MailUtil.send(SettingsCommon.receivers, "简易筛选完成", StrUtil.format("简易筛选完成,耗时: {}h",
-                (double) timer.intervalRestart() / 3600),
+                (double) timer.intervalRestart() / 3600000),
                 false, null);
         pool.shutdown();
         log.info("current time");

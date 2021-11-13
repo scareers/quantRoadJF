@@ -37,7 +37,7 @@ import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
  *
  * @author: admin
  * @date: 2021/11/5  0005-15:13
- *
+ * <p>
  * 1.分析计算结果保存脚本 -- 全部数据
  */
 public class SingleKlineFormsBase {
@@ -55,7 +55,7 @@ public class SingleKlineFormsBase {
         // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
         // 设定的所有都不需要变, 只有 周期数需要改变
         MailUtil.send(SettingsCommon.receivers, "全部解析完成", StrUtil.format("全部解析完成,耗时: {}h",
-                (double) timer.intervalRestart() / 3600),
+                (double) timer.intervalRestart() / 3600000),
                 false, null);
     }
 
@@ -90,7 +90,7 @@ public class SingleKlineFormsBase {
                     null);
             log.info("current time");
         }
-        //        MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
+        MailUtil.send(SettingsCommon.receivers, "全部解析完成", "全部解析完成", false, null);
         Console.log("finish");
 
         System.exit(0);
