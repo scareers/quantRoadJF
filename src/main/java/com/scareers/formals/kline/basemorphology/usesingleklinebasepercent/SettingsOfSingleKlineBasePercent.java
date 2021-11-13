@@ -53,15 +53,15 @@ public class SettingsOfSingleKlineBasePercent {
     // 分别对应window=7,8,9,10 用,
     // 千分之5一个tick
     public static final List<Integer> binsList = Arrays.asList(
-            44, 88, 136, 188, // 7,8,9,10
+            44, 88, 124, 188, // 7,8,9,10
             208, 248, 298
     );
     public static final List<List<Double>> effectiveValusRanges = Arrays.asList(
             // 分别对应window=7,8,9,10 用
             Arrays.asList(-0.11, 0.11),
             Arrays.asList(-0.22, 0.22),
-            Arrays.asList(-0.34, 0.34),
-            Arrays.asList(-0.36, 0.47), // window lenth == 10, 即next3开始, 不再强行对称. 而改用 0.9**n/ 1.1**n折算
+            Arrays.asList(-0.28, 0.34), // window lenth == 9, 即next2开始, 不再强行对称. 而改用 0.9**n/ 1.1**n折算
+            Arrays.asList(-0.36, 0.47), //
             Arrays.asList(-0.42, 0.62), //
             Arrays.asList(-0.46, 0.78), // 12
             Arrays.asList(-0.54, 0.95) // 13
@@ -96,28 +96,28 @@ public class SettingsOfSingleKlineBasePercent {
     }
 
     public static final List<List<String>> dateRanges = Arrays.asList(
-            Arrays.asList("20020129", "20031113"),
-            Arrays.asList("20031113", "20040407"),
-            Arrays.asList("20040407", "20050603"),
+            Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
+            Arrays.asList("20031113", "20040407"), // 短暂快牛
+            Arrays.asList("20040407", "20050603"), // 长熊市后半触底
 
-            Arrays.asList("20050603", "20060807"),
-            Arrays.asList("20060807", "20071017"),
-            Arrays.asList("20071017", "20081028"),
+            Arrays.asList("20050603", "20060807"), // 牛市前段小牛
+            Arrays.asList("20060807", "20071017"), // 超级牛市主升  10/16到6124
+            Arrays.asList("20071017", "20081028"), // 超级熊市
 
-            Arrays.asList("20081028", "20090804"),
-            Arrays.asList("20090804", "20111011"),
-            Arrays.asList("20111011", "20140721"),
+            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
+            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
+            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
 
-            Arrays.asList("20140721", "20150615"),
-            Arrays.asList("20150615", "20160128"),
+            Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
+            Arrays.asList("20150615", "20160128"), // 大熊市, 含救市的明显回升后, 暴跌到底
 
-            Arrays.asList("20160128", "20170116"),
-            Arrays.asList("20170116", "20180129"),
-            Arrays.asList("20180129", "20190104"),
+            Arrays.asList("20160128", "20170116"), // 2年小长牛 -- 前段, 结尾下跌
+            Arrays.asList("20170116", "20180129"), // 2年小长牛 -- 后段
+            Arrays.asList("20180129", "20190104"), // 1年快速熊市
 
-            Arrays.asList("20190104", "20200203"),
-            Arrays.asList("20200203", "20210218"),
-            Arrays.asList("20210218", "21000101")
+            Arrays.asList("20190104", "20200203"), // 1年中低位大幅振荡, 先升.
+            Arrays.asList("20200203", "20210218"), // 开年暴跌后, 明显牛市到顶
+            Arrays.asList("20210218", "21000101") // 顶部下跌后平稳年, 尝试突破未果;;@current 2021/10/11, 到未来
 
 
             //            Arrays.asList('20020129', '20050603'), // 中组合区间1

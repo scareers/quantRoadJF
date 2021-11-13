@@ -9,9 +9,7 @@ import joinery.DataFrame;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * update:
@@ -147,6 +145,26 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
 //        conn.commit();
 //        conn.setAutoCommit(true);
         // 注意并未关闭conn, 同原生 writeSql 一样. 这样可以复用 连接
+    }
+
+    /**
+     * 某些情况下方便查看, 将df, 按照 列 的名称进行排序!
+     *
+     * @param df
+     * @return
+     */
+    public static DataFrame<Object> sortByColumnName(DataFrame<Object> df) {
+        Set<Object> colset = df.columns();
+        ArrayList<String> colList = new ArrayList<>();
+        for (Object o : colset) {
+            colList.add(o.toString());
+        }
+        DataFrame<Object> newDf = new DataFrame<>();
+        colList.sort(Comparator.naturalOrder());
+        for (String colName : colList) {
+            newDf.add(colName, df.col(colName));
+        }
+        return newDf;
     }
 
 }

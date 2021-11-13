@@ -660,7 +660,7 @@ public class KeyFuncOfSingleKlineBasePercent {
         // 详尽分析时, simpleMode 为false.   特殊情况手动调用时, 可以 true提高计算速度
         boolean priceReachPriceLimitMax = false;
         boolean priceReachPriceLimitmin = false;
-        Object[] res_ = getReachPriceLimitDates("000153.SZ");
+        Object[] res_ = getReachPriceLimitDates(stock);
         HashSet<String> datesSetOfPriceLimitMax = (HashSet<String>) res_[0];
         HashSet<String> datesSetOfPriceLimitMin = (HashSet<String>) res_[1]; // 只可能为空集合
         List<String> effectiveCalcDateRange = (List<String>) res_[2]; // 可能为null

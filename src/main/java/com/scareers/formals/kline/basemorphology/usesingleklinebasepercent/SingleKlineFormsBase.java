@@ -45,10 +45,10 @@ public class SingleKlineFormsBase {
     public static Log log = LogFactory.get();
 
     public static void main(String[] args) throws Exception {
-        mainExclude(args);
+        MainCanExclude(args);
     }
 
-    public static void mainExclude(String[] args) throws Exception {
+    public static void MainCanExclude(String[] args) throws Exception {
         List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(10, 11, 12);
         for (Integer windowUsePeriodsCoreArg : windowUsePeriodsCoreArgList) {
             // 不需要刷新. 批量执行需要刷新
@@ -75,6 +75,12 @@ public class SingleKlineFormsBase {
 
     }
 
+    /**
+     * main0 主逻辑开始. 前部分代码可复用用于分时分析
+     *
+     * @param windowUsePeriodsCoreArg
+     * @throws Exception
+     */
     public static void main0(int windowUsePeriodsCoreArg) throws Exception {
         List<String> stocks = TushareApi.getStockListFromTushareExNotMain();
         stocks = stocks.subList(0, Math.min(SettingsOfSingleKlineBasePercent.stockAmountsBeCalc, stocks.size()));
