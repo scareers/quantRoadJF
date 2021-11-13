@@ -59,7 +59,7 @@ public class FilterSimpleFor0B1S {
     public static Log log = LogFactory.get();
 
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] c) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
         log.info("current time");
@@ -224,5 +224,10 @@ Next1Open   177212
 Next1Close  170787
 Next1High   216774
 Next1Low    305378
+
+Next2Open   179129
+Next2Close  172441
+Next2High   205443
+Next2Low    293519
 
  */
