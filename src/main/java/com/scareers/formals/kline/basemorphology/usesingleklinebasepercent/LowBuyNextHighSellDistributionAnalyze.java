@@ -415,7 +415,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
         return calcedForms;
     }
 
-    public static Cache<String, DataFrame<Object>> singleDfByFormNameAndAlgorithmCache = CacheUtil.newLRUCache(8096);
+    public static Cache<String, DataFrame<Object>> singleDfByFormNameAndAlgorithmCache = CacheUtil.newLRUCache(2^16);
 
     @Cached(notes = "缓存key 由resultTableName,resultAlgorithm,formName 共同构成. 虽然前两者有重复嫌疑")
     public static DataFrame<Object> getSingleDfByFormNameAndAlgorithm(String resultTableName, String resultAlgorithm,
