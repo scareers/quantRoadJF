@@ -25,8 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.binsList;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.effectiveValusRanges;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.analyzeListDoubleSingle;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.prepareSaveDfForAnalyzeResult;
 import static com.scareers.utils.CommonUtils.intersectionOfSet;
@@ -205,16 +204,17 @@ public class LowBuyNextHighSellDistributionAnalyze {
             // 高卖限制
             DataFrame<Object> dfOfHighLimitConditon = getHighConditionLimitDf(tablenameHighSell, highArgs,
                     validateDateRange);
-            Console.log(dfOfHighLimitConditon);
+            //            Console.log(dfOfHighLimitConditon);
             System.gc();
             for (List<Double> lowArgs : lowKeyArgsList) {
                 log.info(StrUtil.format("HighSell selected forms count: {}", dfOfHighLimitConditon.length()));
                 DataFrame<Object> dfOfLowLimitConditon = getLowConditionLimitDf(tablenameLowBuy, lowArgs,
                         validateDateRange); // 低买
-                Console.log(dfOfLowLimitConditon);
+                //                Console.log(dfOfLowLimitConditon);
                 log.info(StrUtil.format("LowBuy selected forms count: {}", dfOfLowLimitConditon.length()));
 
                 HashSet<String> selectedForms = getSelectFormsSet(dfOfHighLimitConditon, dfOfLowLimitConditon);
+                Console.log("raw selectedForms counts: {}", selectedForms.size());
                 // 内部 2*4==8循环使用多线程
                 ThreadPoolExecutor poolOfInner8 =
                         new ThreadPoolExecutor(8, 16, 10000,
@@ -228,13 +228,12 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 }
                 latchOfInner8.await();
                 poolOfInner8.shutdown();
-                poolOfInner8 = null;
                 //inner8(highArgs, lowArgs, selectedForms);
             }
         }
 
         MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("分布分析完成,耗时: {}h",
-                (double) timer.intervalRestart() / 3600),
+                (double) timer.intervalRestart() / 360000),
                 false, null);
     }
 
@@ -279,7 +278,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 List<Double> finalEarnings = new ArrayList<>(); // 相比python, 需要自行计算出来calcedForms,更快
                 for (String key : calcedForms.keySet()) {
                     Double earing = (Double) calcedForms.get(key).get(0);
-                    Integer counts = (Integer) calcedForms.get(key).get(1);
+                    // 保存的是Object, 数量已经转换为Integer.class,
+                    int counts = (Integer) calcedForms.get(key).get(1);
                     for (int i = 0; i < counts; i++) {
                         finalEarnings.add(earing); // 对全部形态, 符合条件下, 几何日收益率的等价汇总
                     }
@@ -381,7 +381,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
             if (forceFilterByLowAndHighLimit(formName, forceFilterFormArgsRaw)) {
                 continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
             }
-            DataFrame<Object> df_ = new DataFrame<>();
+            DataFrame<Object> df_;
             df_ = DataFrame.readSql(connection, StrUtil.format("            select  \n" +
                     "                stat_date_range,\n" +
                     "                    virtual_geometry_mean,\n" +
@@ -394,7 +394,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
                     "             where form_name ='{}'\n" +
                     "                   and stat_result_algorithm = '{}'\n" +
                     "             order by stat_date_range", resultTableName, formName, resultAlgorithm));
-            df_ = df_.convert();
+            df_ = df_.convert(String.class, Double.class, Double.class, Integer.class, Integer.class, Double.class,
+                    Double.class); // 数量也强行转换为 double
             if (df_.length() == 0) {
                 continue;
             }
@@ -525,7 +526,64 @@ public class LowBuyNextHighSellDistributionAnalyze {
      * @throws SQLException
      */
     public static Cache<String, DataFrame<Object>> highConditionLimitDfCache = CacheUtil.newLRUCache(128);
+    public static DataFrame<Object> highConditionLimitDfAllCache = null; // 仅仅缓存唯一总结果df.
     public static Cache<String, DataFrame<Object>> lowConditionLimitDfCache = CacheUtil.newLRUCache(128);
+    public static DataFrame<Object> lowConditionLimitDfAllCache = null;
+
+    @Cached(notes = "唯一结果缓存")
+    public static DataFrame<Object> getHighConditionLimitDfAll(String tablenameHighSell,
+                                                               String validateDateRange) throws SQLException {
+        if (highConditionLimitDfAllCache == null) {
+            highConditionLimitDfAllCache = DataFrame.readSql(connection, StrUtil.format(
+                    "        select form_name,\n" +
+                            "                     avg(effective_counts)                   as avgcounts,\n" +
+                            "                     avg(mean)                               as mean,\n" +
+                            "                     avg(zero_compare_counts_percent_2)      as zero2\n" +
+                            "        \n" +
+                            "              FROM {}\n" +
+                            "              where\n" +
+                            "                condition5 = 'PL[0,0]'\n" +
+                            "                and\n" +
+                            "                stat_result_algorithm = 'Next{}High'\n" +
+                            "                and stat_date_range!='{}'\n" +
+                            "              group by form_name\n" +
+                            "              order by zero2 desc\n"
+                    , tablenameHighSell, correspondingFilterAlgos.get(1), validateDateRange
+            ));
+            highConditionLimitDfAllCache = highConditionLimitDfAllCache
+                    .convert(String.class, Double.class, Double.class, Double.class);
+        }
+        Console.log(highConditionLimitDfAllCache);
+        return highConditionLimitDfAllCache;
+    }
+
+    @Cached(notes = "唯一结果缓存")
+    public static DataFrame<Object> getLowConditionLimitDfAll(String tablenameLowBuy,
+                                                              String validateDateRange) throws SQLException {
+        if (lowConditionLimitDfAllCache == null) {
+            lowConditionLimitDfAllCache = DataFrame.readSql(connection, StrUtil.format(
+                    "        select form_name,\n" +
+                            "                     avg(effective_counts)                   as avgcounts,\n" +
+                            "                     avg(mean)                               as mean,\n" +
+                            "                     avg(zero_compare_counts_percent_2)      as zero2\n" +
+                            "        \n" +
+                            "              FROM {}\n" +
+                            "              where\n" +
+                            "                condition5 = 'PL[0,0]'\n" +
+                            "                and\n" +
+                            "                stat_result_algorithm = 'Next{}Low'\n" +
+                            "                and stat_date_range!='{}'\n" +
+                            "              group by form_name\n" +
+                            "              order by zero2 desc\n"
+                    , tablenameLowBuy, correspondingFilterAlgos.get(0), validateDateRange
+            ));
+            lowConditionLimitDfAllCache = lowConditionLimitDfAllCache
+                    .convert(String.class, Double.class, Double.class, Double.class);
+        }
+        Console.log(lowConditionLimitDfAllCache);
+        return lowConditionLimitDfAllCache;
+    }
+
 
     @Cached(notes = "注意:只对 highArgs 参数作为key进行缓存. 因为一般本脚本不会并行, tablename高卖和排除的日期区间, 都是固定的!!!")
     public static DataFrame<Object> getHighConditionLimitDf(String tablenameHighSell, List<Double> highArgs,
@@ -536,32 +594,17 @@ public class LowBuyNextHighSellDistributionAnalyze {
         if (df != null) {
             return df;
         }
+        df = getHighConditionLimitDfAll(tablenameHighSell, validateDateRange);
+        df = df.select(value -> {
+            Double mean = (Double) value.get(2);
+            return mean >= highArgs.get(0) && mean < highArgs.get(1) && (Double) value.get(1) > 0;
+            // todo: 筛选条件优化
+        });
 
-        df = DataFrame.readSql(connection, StrUtil.format(
-                "select *\n" +
-                        "        from (select form_name,\n" +
-                        "                     avg(effective_counts)                   as avgcounts,\n" +
-                        "                     avg(mean)                               as mean,\n" +
-                        "                     avg(zero_compare_counts_percent_2)      as zero2\n" +
-                        "        \n" +
-                        "              FROM {}\n" +
-                        "              where\n" +
-                        "                condition5 = 'PL[0,0]'\n" +
-                        "                and\n" +
-                        "                stat_result_algorithm = 'Next{}High'\n" +
-                        "                and stat_date_range!='{}'\n" +
-                        "              group by form_name\n" +
-                        "              order by zero2 desc) as temp\n" +
-                        "        where mean >= {}\n" +
-                        "        and mean < {}\n" +
-                        "          and avgcounts > 0"
-                , tablenameHighSell, correspondingFilterAlgos.get(1), validateDateRange, highArgs.get(0),
-                highArgs.get(1)
-        ));
-        df = df.convert();
         highConditionLimitDfCache.put(cacheKey, df);
         return df;
     }
+
 
     @Cached(notes = "注意:只对 lowArgs 参数作为key进行缓存. 因为一般本脚本不会并行, tablename高卖和排除的日期区间, 都是固定的!!!")
     public static DataFrame<Object> getLowConditionLimitDf(String tablenameLowBuy, List<Double> lowArgs,
@@ -573,28 +616,12 @@ public class LowBuyNextHighSellDistributionAnalyze {
             return df;
         }
 
-        df = DataFrame.readSql(connection, StrUtil.format(
-                "select *\n" +
-                        "        from (select form_name,\n" +
-                        "                     avg(effective_counts)                   as avgcounts,\n" +
-                        "                     avg(mean)                               as mean,\n" +
-                        "                     avg(zero_compare_counts_percent_2)      as zero2\n" +
-                        "        \n" +
-                        "              FROM {}\n" +
-                        "              where\n" +
-                        "                condition5 = 'PL[0,0]'\n" +
-                        "                and\n" +
-                        "                stat_result_algorithm = 'Next{}Low'\n" +
-                        "                and stat_date_range!='{}'\n" +
-                        "              group by form_name\n" +
-                        "              order by zero2 desc) as temp\n" +
-                        "        where mean >= {}\n" +
-                        "        and mean < {}\n" +
-                        "          and avgcounts > 0"
-                , tablenameLowBuy, correspondingFilterAlgos.get(0), validateDateRange, lowArgs.get(0),
-                lowArgs.get(1)
-        ));
-        df = df.convert();
+        df = getLowConditionLimitDfAll(tablenameLowBuy, validateDateRange);
+        df = df.select(value -> {
+            Double mean = (Double) value.get(2);
+            return mean >= lowArgs.get(0) && mean < lowArgs.get(1) && (Double) value.get(1) > 0;
+        });
+
         lowConditionLimitDfCache.put(cacheKey, df);
         return df;
     }

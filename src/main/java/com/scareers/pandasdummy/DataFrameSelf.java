@@ -2,6 +2,8 @@ package com.scareers.pandasdummy;
 
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -72,6 +74,8 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         return indexesAsString;
     }
 
+    public static Log log = LogFactory.get();
+
     /**
      * joinery.DataFrame 自带 writeSql(), 与python to_sql() 方法差距较大, 且使用较为繁琐. 因此封装一下
      * 仅保留了 if_exists 判定, 和 dtype 指定字段名称的方法.
@@ -95,6 +99,10 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     public static void toSql(DataFrame<Object> df, String tablename, Connection conn, String ifExists,
                              String sqlCreateTable) throws SQLException {
         //        conn.setAutoCommit(true);
+        if (df == null) {
+            log.warn("df is null, skip save");
+            return;
+        }
         if (ifExists == null) {
             ifExists = "fail";
             // 不传递则报错
@@ -109,6 +117,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         if (sqlCreateTable != null) {
             conn.createStatement().execute(sqlCreateTable);
         }
+
 
         //        conn.setAutoCommit(false);
         // 将调用prest.executeBatch(), 手动提交
