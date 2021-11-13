@@ -2,12 +2,9 @@ package com.scareers.utils;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.selfdb.ConnectionFactory;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,16 +18,15 @@ import java.util.List;
  * 默认函数是 自动关闭连接.  execSqlUpdate 同理
  * <p>
  * DataFrame 相关sql操作, 默认均不会关闭连接, 如果不再复用conn, 则应当关闭掉连接对象
- *
- *
  */
 public class SqlUtil {
     public static void main(String[] args) throws Exception {
 //        createIndexes(ConnectionFactory.getConnLocalKlineForms(), "test", Arrays.asList("a"));
     }
 
+    // 默认不关闭连接.
     public static boolean execSql(String sql, Connection conn) throws Exception {
-        return execSql(sql, conn, true);
+        return execSql(sql, conn, false);
     }
 
     public static boolean execSql(String sql, Connection conn, boolean closeConn) throws Exception {

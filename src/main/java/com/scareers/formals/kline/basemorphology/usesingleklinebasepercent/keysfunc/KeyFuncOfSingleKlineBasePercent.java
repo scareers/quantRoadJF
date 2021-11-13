@@ -278,7 +278,8 @@ public class KeyFuncOfSingleKlineBasePercent {
 
     public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
                                                                       String formNamePure,
-                                                                      List<String> statDateRange, String statResultAlgorithm,
+                                                                      List<String> statDateRange,
+                                                                      String statResultAlgorithm,
                                                                       String conditionsSet,
                                                                       String condition1,
                                                                       String condition2,
@@ -288,8 +289,9 @@ public class KeyFuncOfSingleKlineBasePercent {
                                                                       String condition6,
                                                                       String condition7) throws SQLException {
 
-        return prepareSaveDfForAnalyzeResult(analyzeResultMapSingle, formNamePure, statDateRange, statResultAlgorithm, conditionsSet
-                ,  condition1, condition2, condition3, condition4, condition5, condition6,
+        return prepareSaveDfForAnalyzeResult(analyzeResultMapSingle, formNamePure, statDateRange, statResultAlgorithm,
+                conditionsSet
+                , condition1, condition2, condition3, condition4, condition5, condition6,
                 condition7,
                 null, null, null, null,
                 null); // 7条件的常态调用.
@@ -346,8 +348,10 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param formDescription
      */
     // 本函数是针对单条结果的, 并不执行保存逻辑, 返回 单条记录的 df; 调用方可拼接多次实现批量保存
-    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle, String formNamePure,
-                                                                      List<String> statDateRange, String statResultAlgorithm,
+    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
+                                                                      String formNamePure,
+                                                                      List<String> statDateRange,
+                                                                      String statResultAlgorithm,
                                                                       String conditionsSet,
                                                                       String condition1,
                                                                       String condition2,

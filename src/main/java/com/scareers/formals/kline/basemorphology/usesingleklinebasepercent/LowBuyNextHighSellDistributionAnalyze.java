@@ -186,6 +186,9 @@ public class LowBuyNextHighSellDistributionAnalyze {
         String s = StrUtil.format(SettingsOfSingleKlineBasePercent.sqlCreateSaveTableRaw, tablenameSaveAnalyze);
         s = s.replace("form_name                          varchar(512)  null comment '形态名称.形如 条件[参数区间]__条件2[参数区间]", "" +
                 "form_name                          longtext  null comment '形态名称.形如 条件[参数区间]__条件2[参数区间]");
+        // python使用form_description保存,本身没有索引. java使用 form_name字段, 且修改为了longtext, 注意取消索引!!text无法创建索引
+        s = s.replace("     INDEX form_name_index (form_name ASC),\n", "");
+
         return s;
     }
 
@@ -198,13 +201,17 @@ public class LowBuyNextHighSellDistributionAnalyze {
         execSql(sqlCreateSaveTable, connection); // 创建结论保存表
 
         for (List<Double> highArgs : highKeyArgsList) {
+            log.info(StrUtil.format("high args: {}", highArgs));
             // 高卖限制
             DataFrame<Object> dfOfHighLimitConditon = getHighConditionLimitDf(tablenameHighSell, highArgs,
                     validateDateRange);
+            Console.log(dfOfHighLimitConditon);
+            System.gc();
             for (List<Double> lowArgs : lowKeyArgsList) {
                 log.info(StrUtil.format("HighSell selected forms count: {}", dfOfHighLimitConditon.length()));
                 DataFrame<Object> dfOfLowLimitConditon = getLowConditionLimitDf(tablenameLowBuy, lowArgs,
                         validateDateRange); // 低买
+                Console.log(dfOfLowLimitConditon);
                 log.info(StrUtil.format("LowBuy selected forms count: {}", dfOfLowLimitConditon.length()));
 
                 HashSet<String> selectedForms = getSelectFormsSet(dfOfHighLimitConditon, dfOfLowLimitConditon);
@@ -220,6 +227,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
                     }
                 }
                 latchOfInner8.await();
+                poolOfInner8.shutdown();
+                poolOfInner8 = null;
                 //inner8(highArgs, lowArgs, selectedForms);
             }
         }

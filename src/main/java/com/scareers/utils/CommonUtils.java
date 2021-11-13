@@ -2,9 +2,9 @@ package com.scareers.utils;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,7 +33,7 @@ public class CommonUtils {
      * @return 为了数据完整性, 前后更宽的statRange
      */
     public static List<String> changeStatRangeForFull(List<String> statRange) {
-//        return Arrays.asList("19000101", "21000101");
+        //        return Arrays.asList("19000101", "21000101");
         String start = statRange.get(0);
         String end = statRange.get(1);
         int startYear = DateUtil.parse(start).year() - 2;
@@ -74,8 +74,9 @@ public class CommonUtils {
     }
 
     public static double roundHalfUP(double value, int scale) {// 正宗四舍五入
-        return new BigDecimal(value).setScale(scale,
-                BigDecimal.ROUND_HALF_UP).doubleValue();
+        return NumberUtil.round(value, scale).doubleValue();
+        //        return new BigDecimal(value).setScale(scale,  // 底层实现同
+        //                BigDecimal.ROUND_HALF_UP).doubleValue();
     }
 
     public static HashSet<String> intersectionOfSet(HashSet<String> set1, HashSet<String> set2) {
