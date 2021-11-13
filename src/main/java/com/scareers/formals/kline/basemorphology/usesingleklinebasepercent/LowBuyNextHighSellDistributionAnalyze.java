@@ -298,7 +298,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
                         null);
                 // 单条记录保存了
                 DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
-                Console.log(resultSingle);
+                //                Console.log(resultSingle);
                 Console.log("selected forms counts: {}", selectedForms.size());
                 Console.log("actual selected counts: {}", calcedForms.size());
             } catch (Exception e) {
@@ -382,7 +382,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 continue; // 被强制筛选掉了. 默认设定没有筛选能力 ; python代码已经修复
             }
             DataFrame<Object> df_;
-            df_ = DataFrame.readSql(connection, StrUtil.format("            select  \n" +
+            String sqlTemp = StrUtil.format("            select  \n" +
                     "                stat_date_range,\n" +
                     "                    virtual_geometry_mean,\n" +
                     "                    mean,\n" +
@@ -393,20 +393,27 @@ public class LowBuyNextHighSellDistributionAnalyze {
                     "             from {}\n" +
                     "             where form_name ='{}'\n" +
                     "                   and stat_result_algorithm = '{}'\n" +
-                    "             order by stat_date_range", resultTableName, formName, resultAlgorithm));
+                    "             order by stat_date_range", resultTableName, formName, resultAlgorithm);
+            // Console.log(sqlTemp);
+            df_ = DataFrame.readSql(connection, sqlTemp);
             df_ = df_.convert(String.class, Double.class, Double.class, Integer.class, Integer.class, Double.class,
                     Double.class); // 数量也强行转换为 double
+
             if (df_.length() == 0) {
                 continue;
             }
+
             List<Object> colOfStatDateRange = df_.col("stat_date_range");
             if (!colOfStatDateRange.get(colOfStatDateRange.size() - 1).equals(validateDateRange)) {
                 continue; // 最后一个日期区间, 不是需要验证的区间
             }
+
+            //            Console.log(df_);
+            //            System.exit(1);
             List<Object> colOfEarnings = df_.col("virtual_geometry_mean");
             List<Object> colOfEffectiveCounts = df_.col("effective_counts");
             Double earning = (Double) colOfEarnings.get(colOfEarnings.size() - 1);
-            Integer counts = (Integer) colOfEffectiveCounts.get(colOfEffectiveCounts.size() - 1);
+            Integer counts = ((Double) colOfEffectiveCounts.get(colOfEffectiveCounts.size() - 1)).intValue();
 
             List<String> childrenCalced = isParentOfRecord(formName, calcedForms);
             boolean hasChildCalcedAlready = childrenCalced.size() > 0;
@@ -552,8 +559,9 @@ public class LowBuyNextHighSellDistributionAnalyze {
             ));
             highConditionLimitDfAllCache = highConditionLimitDfAllCache
                     .convert(String.class, Double.class, Double.class, Double.class);
+            Console.log(highConditionLimitDfAllCache);
         }
-        Console.log(highConditionLimitDfAllCache);
+
         return highConditionLimitDfAllCache;
     }
 
@@ -579,8 +587,9 @@ public class LowBuyNextHighSellDistributionAnalyze {
             ));
             lowConditionLimitDfAllCache = lowConditionLimitDfAllCache
                     .convert(String.class, Double.class, Double.class, Double.class);
+            Console.log(lowConditionLimitDfAllCache);
         }
-        Console.log(lowConditionLimitDfAllCache);
+
         return lowConditionLimitDfAllCache;
     }
 
