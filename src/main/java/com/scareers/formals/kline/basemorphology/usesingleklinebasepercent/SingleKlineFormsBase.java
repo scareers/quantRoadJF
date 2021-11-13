@@ -230,342 +230,347 @@ public class SingleKlineFormsBase {
         poolOfCalc.shutdown();
         // 本轮执行完毕
     }
-}
 
-class CalcStatResultAndSaveTask implements Callable<List<String>> {
-    private CountDownLatch latchOfCalcForEpoch;
-    // 每轮计数, 多出来.  而少了图片显示参数
-    private Connection connOfSingleThread;
+    public static class CalcStatResultAndSaveTask implements Callable<List<String>> {
+        private CountDownLatch latchOfCalcForEpoch;
+        // 每轮计数, 多出来.  而少了图片显示参数
+        private Connection connOfSingleThread;
 
-    // 注意是单个批量的forms(单个线程执行一个批量)
+        // 注意是单个批量的forms(单个线程执行一个批量)
 
-    private List<String> formNameRaws;
-    private int statStockCounts;
-    private List<String> statDateRange;
-    // 单形态的统计列表
+        private List<String> formNameRaws;
+        private int statStockCounts;
+        private List<String> statDateRange;
+        // 单形态的统计列表
 
-    private ConcurrentHashMap<String, List<Double>> results;
-    private List<Double> bigChangeThreshold;
-    private int bins;
-    private List<Double> effectiveValueRange;
-    private String saveTablename;
+        private ConcurrentHashMap<String, List<Double>> results;
+        private List<Double> bigChangeThreshold;
+        private int bins;
+        private List<Double> effectiveValueRange;
+        private String saveTablename;
 
-    public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, Connection connOfSingleThread,
-                                     List<String> formNameRaws, int statStockCounts,
-                                     List<String> statDateRange, ConcurrentHashMap<String, List<Double>> singleResult,
-                                     List<Double> bigChangeThreshold, int bins,
-                                     List<Double> effectiveValueRange, String saveTablename) {
-        this.latchOfCalcForEpoch = latchOfCalcForEpoch;
-        this.connOfSingleThread = connOfSingleThread;
+        public CalcStatResultAndSaveTask(CountDownLatch latchOfCalcForEpoch, Connection connOfSingleThread,
+                                         List<String> formNameRaws, int statStockCounts,
+                                         List<String> statDateRange,
+                                         ConcurrentHashMap<String, List<Double>> singleResult,
+                                         List<Double> bigChangeThreshold, int bins,
+                                         List<Double> effectiveValueRange, String saveTablename) {
+            this.latchOfCalcForEpoch = latchOfCalcForEpoch;
+            this.connOfSingleThread = connOfSingleThread;
 
-        this.formNameRaws = formNameRaws;
-        this.statStockCounts = statStockCounts;
-        this.statDateRange = statDateRange;
-        this.results = singleResult;
-        this.bigChangeThreshold = bigChangeThreshold;
-        this.bins = bins;
-        this.effectiveValueRange = effectiveValueRange;
-        this.saveTablename = saveTablename;
-    }
-
-    @Override
-    public List<String> call() throws Exception {
-        try {
-            DataFrame<Object> dfTotalSave = null;
-            HashMap<String, HashMap<String, Object>> analyzeResultMapTotal =
-                    analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
-            for (String formName : formNameRaws) {
-                HashMap<String, Object> analyzeResultMap = analyzeResultMapTotal.get(formName);
-                if (analyzeResultMap == null) { // 单条分析是可能为null的
-                    continue;
-                }
-                // 精细分析也不需要保存 cdfwithtick. 过于冗余
-                // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
-                int splitIndex = formName.lastIndexOf("__");
-                String formNamePure = formName.substring(0, splitIndex);
-                String statResultAlgorithm = formName.substring(splitIndex + 2);
-                List<String> conditions = StrUtil.split(formNamePure, "__");
-                String condition1 = null;
-                String condition2 = null;
-                String condition3 = null;
-                String condition4 = null;
-                String condition5 = null;
-                String condition6 = null;
-                String condition7 = null;
-
-                for (String condition : conditions) {
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(0))) {
-                        condition1 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(1))) {
-                        condition2 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(2))) {
-                        condition3 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(3))) {
-                        condition4 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(4))) {
-                        condition5 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(5))) {
-                        condition6 = condition;
-                    }
-                    if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(6))) {
-                        condition7 = condition;
-                    }
-                }
-
-                DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultMap, formNamePure,
-                        statDateRange,
-                        statResultAlgorithm, "",
-                        condition1, condition2,
-                        condition3, condition4, condition5, condition6, condition7);
-
-                //                synchronized (this) {
-                // 同步this, 单个线程的任务, 拼接总df.
-                if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
-                    dfTotalSave = dfSingleSaved;
-                } else {
-                    dfTotalSave = dfTotalSave.concat(dfSingleSaved);
-                }
-                //                }
-
-                //                synchronized (this) {
-                //                    // 同步this, 单个线程的任务, 拼接总df.
-                //                    if (dfTotalSave == null) {
-                //                        dfTotalSave = dfSingleSaved;
-                //                    } else {
-                //                        dfTotalSave = dfTotalSave.concat(dfSingleSaved);
-                //                    }
-                //                }
-                //results.remove(formName);
-                // 这里直接删除了, 则 主线程不需要读取返回值的 列表, 进行删除. 因此可使用latch完成等待, 而非 f.get()
-                //或者: 返回后统一删除key.
-            }
-            // dfTotalSave 应当转换为 self
-            DataFrameSelf.toSql(dfTotalSave, saveTablename, connOfSingleThread, "append", null);
-            return formNameRaws;
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            latchOfCalcForEpoch.countDown();
-            if (latchOfCalcForEpoch.getCount() % SettingsOfSingleKlineBasePercent.gcControlEpochSave == 0) {
-                System.gc();
-                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
-                    showMemoryUsageMB();
-                }
-            }
-            return formNameRaws;
+            this.formNameRaws = formNameRaws;
+            this.statStockCounts = statStockCounts;
+            this.statDateRange = statDateRange;
+            this.results = singleResult;
+            this.bigChangeThreshold = bigChangeThreshold;
+            this.bins = bins;
+            this.effectiveValueRange = effectiveValueRange;
+            this.saveTablename = saveTablename;
         }
-    }
 
-    public HashMap<String, HashMap<String, Object>> analyzeStatsResults(boolean calcCdfOrFrequencyWithTick) {
-        return analyzeStatsResultsStatic(formNameRaws, results, statStockCounts, bigChangeThreshold, bins,
-                effectiveValueRange, calcCdfOrFrequencyWithTick);
-    }
-
-}
-
-/**
- * -- 面向对象与面向过程
- * 对应了python中的, 对单只股票进行解析的函数. java需要实现成类. 函数的参数, 则经过实例化对象时, 通过属性进行传递.
- * run() 方法才能直接访问这些属性, 相当于读取了函数参数
- * 该函数使用了 4个参数.
- * -- 与python对称
- * 原python代码, 单个线程返回值是 dict, 将多个dict, 汇总extend到 大的result;
- * 调用端, 大的 result使用 ConcurrentHashMap, 而 各个线程, 则将自身结果extend到Map;
- * https://blog.csdn.net/huyaowei789/article/details/102811729 参考.
- * 这里, 我们同样, 将 CountDownLatch计数器, 和 汇总的 result 的大Map, 作为参数传递!. 因此作为类的属性.
- * -- 实现接口与线程池调用
- * 如果使用单个线程返回值, 主线程拼接的方式, 则实现Callable<Object>, 泛型可以指定为准确的返回值, 方便future.get()
- * 如果单线程自行添加部分结果到 总Result, 则实现Runnable
- * 且汇总方式调用pool.execute即可, 而 返回值方式, 使用 pool.submit(), 它返回Future
- * -- run()实现注意
- * 需要 try{主要过程}, finally {latch.countDown()} 即保证绝对调用计数器-1, 使得即使某个线程异常, 也能阻塞结束,主线程能够继续运行
- * -- tqdm 显示进度
- * 则需要 单个线程返回值的方式. Future f = pool.submit(Callable); f.get() 转型
- */
-class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Double>>> {
-    //  注意间接==settings
-    public static List<String> fieldsOfDfRaw = KeyFuncOfSingleKlineBasePercent.fieldsOfDfRaw;
-    public static Class[] fieldsOfDfRawClass = SettingsOfSingleKlineBasePercent.fieldsOfDfRawClass;
-
-    private Connection conn;
-
-
-    // 读取静态属性省一下代码长度.
-    // 以下2属性, 为java于python主要不同. 这里并没有使用 Future 对单线程返回值做操作. python也可以这样写. 但cdl是java独有
-
-    private CountDownLatch countDownLatch;
-    private String stock;
-    private List<String> statDateRange;
-    private DataFrame<String> stockWithBoard;
-    private HashMap<String, List<List<String>>> stockWithStDateRanges;
-    private int windowUsePeriodsCoreArg;
-
-
-    public StockSingleParseTask() {
-    }
-
-    public StockSingleParseTask(CountDownLatch countDownLatch,
-                                String stock,
-                                DataFrame<String> stockWithBoard, List<String> statDateRange,
-                                HashMap<String, List<List<String>>> stockWithStDateRanges, Connection conn,
-                                int windowUsePeriodsCoreArg) {
-        this.countDownLatch = countDownLatch;
-        this.stock = stock;
-        this.stockWithBoard = stockWithBoard;
-        this.statDateRange = statDateRange;
-        this.stockWithStDateRanges = stockWithStDateRanges;
-        this.conn = conn;
-        this.windowUsePeriodsCoreArg = windowUsePeriodsCoreArg;
-    }
-
-    @Override
-    public ConcurrentHashMap<String, List<Double>> call() {
-        // 实际逻辑显然对应了python 的parse_single_stock() 函数
-        // 使得不会返回null. 至少会返回空的字典
-        ConcurrentHashMap<String, List<Double>> resultSingle = new ConcurrentHashMap<>(2 ^ 5);
-        try {
-            // 开始主要逻辑
-            // 添加结果到 线程安全的 总结果集
-            List<String> statDateRangeFull = CommonUtils.changeStatRangeForFull(statDateRange);
-            // 单个线程用一个 conn 对象, 用完close(), 否则线程池容量不够
-            // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
-            DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
-                    SettingsOfSingleKlineBasePercent.fieldsOfDfRaw,
-                    statDateRangeFull, conn);
-            dfRaw = dfRaw.dropna();
-            // 新知识: java不定参数等价于 数组.而非List
-            dfRaw.convert(fieldsOfDfRawClass);
-            HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, conn);
-            resultSingle = baseFormAndOpenConditionAnalyzer(dfRaw, adjDates, stock, stockWithBoard,
-                    stockWithStDateRanges, statDateRange,
-                    conn, windowUsePeriodsCoreArg); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
-            return resultSingle;
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            // 必须计数减1, 使得主线程能够结束阻塞
-            countDownLatch.countDown();
-            return resultSingle;
-        }
-    }
-
-    /**
-     * 对应python 的 BaseFormAndOpenConditionAnalyzer 函数
-     * 因为conn一直没有关闭, 这里传递conn对象. 直到单只股票分析完, 再关闭
-     *
-     * @param dfRaw
-     * @param adjDates
-     * @param stock
-     * @param stockWithBoard
-     * @param stockWithStDateRanges
-     * @param statDateRange:        已经是 statDateRangeFull.
-     * @return
-     */
-    public static ConcurrentHashMap<String, List<Double>> baseFormAndOpenConditionAnalyzer(
-            DataFrame<Object> dfRaw, HashSet<String> adjDates,
-            String stock,
-            DataFrame<String> stockWithBoard,
-            HashMap<String, List<List<String>>> stockWithStDateRanges,
-            List<String> statDateRange,
-            Connection conn, int windowUsePeriodsCoreArg) {
-
-        ConcurrentHashMap<String, List<Double>> resultTemp = new ConcurrentHashMap<>(2);
-        if (dfRaw.length() < windowUsePeriodsCoreArg) {
-            return resultTemp;
-        }
-        for (int i = 4; i < dfRaw.length() - windowUsePeriodsCoreArg; i++) {
+        @Override
+        public List<String> call() throws Exception {
             try {
+                DataFrame<Object> dfTotalSave = null;
+                HashMap<String, HashMap<String, Object>> analyzeResultMapTotal =
+                        analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
+                for (String formName : formNameRaws) {
+                    HashMap<String, Object> analyzeResultMap = analyzeResultMapTotal.get(formName);
+                    if (analyzeResultMap == null) { // 单条分析是可能为null的
+                        continue;
+                    }
+                    // 精细分析也不需要保存 cdfwithtick. 过于冗余
+                    // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
+                    int splitIndex = formName.lastIndexOf("__");
+                    String formNamePure = formName.substring(0, splitIndex);
+                    String statResultAlgorithm = formName.substring(splitIndex + 2);
+                    List<String> conditions = StrUtil.split(formNamePure, "__");
+                    String condition1 = null;
+                    String condition2 = null;
+                    String condition3 = null;
+                    String condition4 = null;
+                    String condition5 = null;
+                    String condition6 = null;
+                    String condition7 = null;
 
-                DataFrame<Object> dfWindowRaw = dfRaw.slice(i - 4,
-                        i - 4 + windowUsePeriodsCoreArg);
-                String todayTemp = (String) dfWindowRaw
-                        .get(5, fieldsOfDfRaw.indexOf("trade_date"));
-                if (todayTemp.compareTo(statDateRange.get(0)) < 0 || todayTemp.compareTo(statDateRange.get(1)) >= 0) {
-                    // 前包后不包
-                    continue;
-                }
-                DataFrame<Object> dfWindow;
-                if (hasIntersectionBetweenAdjDatesAndDfWindow(adjDates, dfWindowRaw)) {
-                    List<Object> colTradeDates = dfWindowRaw.col(fieldsOfDfRaw.indexOf("trade_date"));
-                    List<String> dateRangeEqual = Arrays.asList((String) colTradeDates.get(0),
-                            (String) colTradeDates.get(colTradeDates.size() - 1));
-                    // @bugfix: 当获取等价后复权时,日期应当包含尾; 而原sqlApi实现包头不包尾.
-                    // 不读取后复权sql时,不会影响,因此出现这种情况;  而python的sql是现写的, 没出现bug. :  < --> <=
-                    // @bugfix: 已重构, 参数 excludeEndDate, 可以选择 设定. 此处设置 false, 则包尾
-                    dfWindow = TushareApi.getStockPriceByTscodeAndDaterangeAsDfFromTushare0(stock, "hfq", fieldsOfDfRaw,
-                            dateRangeEqual, conn, false);
-                    dfWindow.convert(fieldsOfDfRawClass);
-                } else {
-                    dfWindow = dfWindowRaw;
-                }
-                dfWindow = dfWindow.dropna();
-                //@bugfix: 注意是 length, 而非size()
-                if (dfWindow.length() != windowUsePeriodsCoreArg) {
-                    continue; // 后复权数据,有所缺失
-                }
+                    for (String condition : conditions) {
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(0))) {
+                            condition1 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(1))) {
+                            condition2 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(2))) {
+                            condition3 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(3))) {
+                            condition4 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(4))) {
+                            condition5 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(5))) {
+                            condition6 = condition;
+                        }
+                        if (condition.startsWith(SettingsOfSingleKlineBasePercent.conditionNames.get(6))) {
+                            condition7 = condition;
+                        }
+                    }
 
-                List<Object> pre5dayKlineRow = dfWindow.row(0);
-                List<Object> yesterdayKlineRow = dfWindow.row(4);
-                List<Object> todayKlineRow = dfWindow.row(5);
-                List<Object> resultAccordingKlineRow =
-                        dfWindow.row(windowUsePeriodsCoreArg - 1);
-                List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
-                        yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
+                    DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultMap, formNamePure,
+                            statDateRange,
+                            statResultAlgorithm, "",
+                            condition1, condition2,
+                            condition3, condition4, condition5, condition6, condition7);
 
-                // 四个结果值
-                Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
-                Double singleResultAccordingNextOpen =
-                        getPriceOfSingleKline(resultAccordingKlineRow, "open") / todayClose - 1;
-                Double singleResultAccordingNextClose =
-                        getPriceOfSingleKline(resultAccordingKlineRow, "close") / todayClose - 1;
-                Double singleResultAccordingNextHigh =
-                        getPriceOfSingleKline(resultAccordingKlineRow, "high") / todayClose - 1;
-                Double singleResultAccordingNextLow =
-                        getPriceOfSingleKline(resultAccordingKlineRow, "low") / todayClose - 1;
+                    //                synchronized (this) {
+                    // 同步this, 单个线程的任务, 拼接总df.
+                    if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
+                        dfTotalSave = dfSingleSaved;
+                    } else {
+                        dfTotalSave = dfTotalSave.concat(dfSingleSaved);
+                    }
+                    //                }
 
-                // 7条件判定完成 *******
-                if (concreteTodayFormStrs.contains("-")) {
-                    continue;
+                    //                synchronized (this) {
+                    //                    // 同步this, 单个线程的任务, 拼接总df.
+                    //                    if (dfTotalSave == null) {
+                    //                        dfTotalSave = dfSingleSaved;
+                    //                    } else {
+                    //                        dfTotalSave = dfTotalSave.concat(dfSingleSaved);
+                    //                    }
+                    //                }
+                    //results.remove(formName);
+                    // 这里直接删除了, 则 主线程不需要读取返回值的 列表, 进行删除. 因此可使用latch完成等待, 而非 f.get()
+                    //或者: 返回后统一删除key.
                 }
-                List<String> allForms = getAllFormNamesByConcreteFormStrs(concreteTodayFormStrs);
-                String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
-                for (String keyTemp : allForms) {
-                    resultTemp.putIfAbsent(keyTemp + prefix + "Open", new ArrayList<>());
-                    resultTemp.get(keyTemp + prefix + "Open").add(singleResultAccordingNextOpen);
-                    resultTemp.putIfAbsent(keyTemp + prefix + "Close", new ArrayList<>());
-                    resultTemp.get(keyTemp + prefix + "Close").add(singleResultAccordingNextClose);
-                    resultTemp.putIfAbsent(keyTemp + prefix + "High", new ArrayList<>());
-                    resultTemp.get(keyTemp + prefix + "High").add(singleResultAccordingNextHigh);
-                    resultTemp.putIfAbsent(keyTemp + prefix + "Low", new ArrayList<>());
-                    resultTemp.get(keyTemp + prefix + "Low").add(singleResultAccordingNextLow);
-                }
+                // dfTotalSave 应当转换为 self
+                DataFrameSelf.toSql(dfTotalSave, saveTablename, connOfSingleThread, "append", null);
+                return formNameRaws;
             } catch (Exception e) {
                 e.printStackTrace();
-                // 打印此时的 dfwindow 前3行
-                Console.log("发生了异常, dfWindow: ");
-                Console.log(dfRaw.slice(i, i + 3));
+            } finally {
+                latchOfCalcForEpoch.countDown();
+                if (latchOfCalcForEpoch.getCount() % SettingsOfSingleKlineBasePercent.gcControlEpochSave == 0) {
+                    System.gc();
+                    if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+                        showMemoryUsageMB();
+                    }
+                }
+                return formNameRaws;
             }
         }
-        return resultTemp;
+
+        public HashMap<String, HashMap<String, Object>> analyzeStatsResults(boolean calcCdfOrFrequencyWithTick) {
+            return analyzeStatsResultsStatic(formNameRaws, results, statStockCounts, bigChangeThreshold, bins,
+                    effectiveValueRange, calcCdfOrFrequencyWithTick);
+        }
+
     }
 
 
-    public static List<String> parseConditionsAsStrs(String stock, DataFrame<Object> dfWindow,
-                                                     List<Object> pre5dayKlineRow,
-                                                     List<Object> yesterdayKlineRow,
-                                                     List<Object> todayKlineRow,
-                                                     HashMap<String, List<List<String>>> stockWithStDateRanges,
-                                                     DataFrame<String> stockWithBoard) throws SQLException {
-        return KeyFuncOfSingleKlineBasePercent.parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
-                yesterdayKlineRow, todayKlineRow,
-                stockWithStDateRanges, stockWithBoard, false, false);
+    /**
+     * -- 面向对象与面向过程
+     * 对应了python中的, 对单只股票进行解析的函数. java需要实现成类. 函数的参数, 则经过实例化对象时, 通过属性进行传递.
+     * run() 方法才能直接访问这些属性, 相当于读取了函数参数
+     * 该函数使用了 4个参数.
+     * -- 与python对称
+     * 原python代码, 单个线程返回值是 dict, 将多个dict, 汇总extend到 大的result;
+     * 调用端, 大的 result使用 ConcurrentHashMap, 而 各个线程, 则将自身结果extend到Map;
+     * https://blog.csdn.net/huyaowei789/article/details/102811729 参考.
+     * 这里, 我们同样, 将 CountDownLatch计数器, 和 汇总的 result 的大Map, 作为参数传递!. 因此作为类的属性.
+     * -- 实现接口与线程池调用
+     * 如果使用单个线程返回值, 主线程拼接的方式, 则实现Callable<Object>, 泛型可以指定为准确的返回值, 方便future.get()
+     * 如果单线程自行添加部分结果到 总Result, 则实现Runnable
+     * 且汇总方式调用pool.execute即可, 而 返回值方式, 使用 pool.submit(), 它返回Future
+     * -- run()实现注意
+     * 需要 try{主要过程}, finally {latch.countDown()} 即保证绝对调用计数器-1, 使得即使某个线程异常, 也能阻塞结束,主线程能够继续运行
+     * -- tqdm 显示进度
+     * 则需要 单个线程返回值的方式. Future f = pool.submit(Callable); f.get() 转型
+     */
+    public static class StockSingleParseTask implements Callable<ConcurrentHashMap<String, List<Double>>> {
+        //  注意间接==settings
+        public static List<String> fieldsOfDfRaw = KeyFuncOfSingleKlineBasePercent.fieldsOfDfRaw;
+        public static Class[] fieldsOfDfRawClass = SettingsOfSingleKlineBasePercent.fieldsOfDfRawClass;
+
+        private Connection conn;
+
+
+        // 读取静态属性省一下代码长度.
+        // 以下2属性, 为java于python主要不同. 这里并没有使用 Future 对单线程返回值做操作. python也可以这样写. 但cdl是java独有
+
+        private CountDownLatch countDownLatch;
+        private String stock;
+        private List<String> statDateRange;
+        private DataFrame<String> stockWithBoard;
+        private HashMap<String, List<List<String>>> stockWithStDateRanges;
+        private int windowUsePeriodsCoreArg;
+
+
+        public StockSingleParseTask() {
+        }
+
+        public StockSingleParseTask(CountDownLatch countDownLatch,
+                                    String stock,
+                                    DataFrame<String> stockWithBoard, List<String> statDateRange,
+                                    HashMap<String, List<List<String>>> stockWithStDateRanges, Connection conn,
+                                    int windowUsePeriodsCoreArg) {
+            this.countDownLatch = countDownLatch;
+            this.stock = stock;
+            this.stockWithBoard = stockWithBoard;
+            this.statDateRange = statDateRange;
+            this.stockWithStDateRanges = stockWithStDateRanges;
+            this.conn = conn;
+            this.windowUsePeriodsCoreArg = windowUsePeriodsCoreArg;
+        }
+
+        @Override
+        public ConcurrentHashMap<String, List<Double>> call() {
+            // 实际逻辑显然对应了python 的parse_single_stock() 函数
+            // 使得不会返回null. 至少会返回空的字典
+            ConcurrentHashMap<String, List<Double>> resultSingle = new ConcurrentHashMap<>(2 ^ 5);
+            try {
+                // 开始主要逻辑
+                // 添加结果到 线程安全的 总结果集
+                List<String> statDateRangeFull = CommonUtils.changeStatRangeForFull(statDateRange);
+                // 单个线程用一个 conn 对象, 用完close(), 否则线程池容量不够
+                // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
+                DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
+                        SettingsOfSingleKlineBasePercent.fieldsOfDfRaw,
+                        statDateRangeFull, conn);
+                dfRaw = dfRaw.dropna();
+                // 新知识: java不定参数等价于 数组.而非List
+                dfRaw.convert(fieldsOfDfRawClass);
+                HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, conn);
+                resultSingle = baseFormAndOpenConditionAnalyzer(dfRaw, adjDates, stock, stockWithBoard,
+                        stockWithStDateRanges, statDateRange,
+                        conn, windowUsePeriodsCoreArg); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
+                return resultSingle;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                // 必须计数减1, 使得主线程能够结束阻塞
+                countDownLatch.countDown();
+                return resultSingle;
+            }
+        }
+
+        /**
+         * 对应python 的 BaseFormAndOpenConditionAnalyzer 函数
+         * 因为conn一直没有关闭, 这里传递conn对象. 直到单只股票分析完, 再关闭
+         *
+         * @param dfRaw
+         * @param adjDates
+         * @param stock
+         * @param stockWithBoard
+         * @param stockWithStDateRanges
+         * @param statDateRange:        已经是 statDateRangeFull.
+         * @return
+         */
+        public static ConcurrentHashMap<String, List<Double>> baseFormAndOpenConditionAnalyzer(
+                DataFrame<Object> dfRaw, HashSet<String> adjDates,
+                String stock,
+                DataFrame<String> stockWithBoard,
+                HashMap<String, List<List<String>>> stockWithStDateRanges,
+                List<String> statDateRange,
+                Connection conn, int windowUsePeriodsCoreArg) {
+
+            ConcurrentHashMap<String, List<Double>> resultTemp = new ConcurrentHashMap<>(2);
+            if (dfRaw.length() < windowUsePeriodsCoreArg) {
+                return resultTemp;
+            }
+            for (int i = 4; i < dfRaw.length() - windowUsePeriodsCoreArg; i++) {
+                try {
+
+                    DataFrame<Object> dfWindowRaw = dfRaw.slice(i - 4,
+                            i - 4 + windowUsePeriodsCoreArg);
+                    String todayTemp = (String) dfWindowRaw
+                            .get(5, fieldsOfDfRaw.indexOf("trade_date"));
+                    if (todayTemp.compareTo(statDateRange.get(0)) < 0 || todayTemp
+                            .compareTo(statDateRange.get(1)) >= 0) {
+                        // 前包后不包
+                        continue;
+                    }
+                    DataFrame<Object> dfWindow;
+                    if (hasIntersectionBetweenAdjDatesAndDfWindow(adjDates, dfWindowRaw)) {
+                        List<Object> colTradeDates = dfWindowRaw.col(fieldsOfDfRaw.indexOf("trade_date"));
+                        List<String> dateRangeEqual = Arrays.asList((String) colTradeDates.get(0),
+                                (String) colTradeDates.get(colTradeDates.size() - 1));
+                        // @bugfix: 当获取等价后复权时,日期应当包含尾; 而原sqlApi实现包头不包尾.
+                        // 不读取后复权sql时,不会影响,因此出现这种情况;  而python的sql是现写的, 没出现bug. :  < --> <=
+                        // @bugfix: 已重构, 参数 excludeEndDate, 可以选择 设定. 此处设置 false, 则包尾
+                        dfWindow = TushareApi
+                                .getStockPriceByTscodeAndDaterangeAsDfFromTushare0(stock, "hfq", fieldsOfDfRaw,
+                                        dateRangeEqual, conn, false);
+                        dfWindow.convert(fieldsOfDfRawClass);
+                    } else {
+                        dfWindow = dfWindowRaw;
+                    }
+                    dfWindow = dfWindow.dropna();
+                    //@bugfix: 注意是 length, 而非size()
+                    if (dfWindow.length() != windowUsePeriodsCoreArg) {
+                        continue; // 后复权数据,有所缺失
+                    }
+
+                    List<Object> pre5dayKlineRow = dfWindow.row(0);
+                    List<Object> yesterdayKlineRow = dfWindow.row(4);
+                    List<Object> todayKlineRow = dfWindow.row(5);
+                    List<Object> resultAccordingKlineRow =
+                            dfWindow.row(windowUsePeriodsCoreArg - 1);
+                    List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
+                            yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
+
+                    // 四个结果值
+                    Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
+                    Double singleResultAccordingNextOpen =
+                            getPriceOfSingleKline(resultAccordingKlineRow, "open") / todayClose - 1;
+                    Double singleResultAccordingNextClose =
+                            getPriceOfSingleKline(resultAccordingKlineRow, "close") / todayClose - 1;
+                    Double singleResultAccordingNextHigh =
+                            getPriceOfSingleKline(resultAccordingKlineRow, "high") / todayClose - 1;
+                    Double singleResultAccordingNextLow =
+                            getPriceOfSingleKline(resultAccordingKlineRow, "low") / todayClose - 1;
+
+                    // 7条件判定完成 *******
+                    if (concreteTodayFormStrs.contains("-")) {
+                        continue;
+                    }
+                    List<String> allForms = getAllFormNamesByConcreteFormStrs(concreteTodayFormStrs);
+                    String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
+                    for (String keyTemp : allForms) {
+                        resultTemp.putIfAbsent(keyTemp + prefix + "Open", new ArrayList<>());
+                        resultTemp.get(keyTemp + prefix + "Open").add(singleResultAccordingNextOpen);
+                        resultTemp.putIfAbsent(keyTemp + prefix + "Close", new ArrayList<>());
+                        resultTemp.get(keyTemp + prefix + "Close").add(singleResultAccordingNextClose);
+                        resultTemp.putIfAbsent(keyTemp + prefix + "High", new ArrayList<>());
+                        resultTemp.get(keyTemp + prefix + "High").add(singleResultAccordingNextHigh);
+                        resultTemp.putIfAbsent(keyTemp + prefix + "Low", new ArrayList<>());
+                        resultTemp.get(keyTemp + prefix + "Low").add(singleResultAccordingNextLow);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // 打印此时的 dfwindow 前3行
+                    Console.log("发生了异常, dfWindow: ");
+                    Console.log(dfRaw.slice(i, i + 3));
+                }
+            }
+            return resultTemp;
+        }
+
+
+        public static List<String> parseConditionsAsStrs(String stock, DataFrame<Object> dfWindow,
+                                                         List<Object> pre5dayKlineRow,
+                                                         List<Object> yesterdayKlineRow,
+                                                         List<Object> todayKlineRow,
+                                                         HashMap<String, List<List<String>>> stockWithStDateRanges,
+                                                         DataFrame<String> stockWithBoard) throws SQLException {
+            return KeyFuncOfSingleKlineBasePercent.parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
+                    yesterdayKlineRow, todayKlineRow,
+                    stockWithStDateRanges, stockWithBoard, false, false);
+        }
+
     }
+
 
 }
-
 

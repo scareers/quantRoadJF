@@ -114,99 +114,101 @@ public class FilterSimpleFor0B1S {
                 );
     }
 
-}
+    /**
+     * 依据算法, 和对应不同的 最小 VGMean , 进行简单的筛选
+     */
+    public static class FilterWithAlgorithmAndMinVGMean implements Callable<String> {
 
-/**
- * 依据算法, 和对应不同的 最小 VGMean , 进行简单的筛选
- */
-class FilterWithAlgorithmAndMinVGMean implements Callable<String> {
+        String algorithm;
+        Double minVGMean;
+        String sourceTablenameBeFilter;
+        Connection connection;
+        String saveTablenameFiltered;
+        CountDownLatch latch;
 
-    String algorithm;
-    Double minVGMean;
-    String sourceTablenameBeFilter;
-    Connection connection;
-    String saveTablenameFiltered;
-    CountDownLatch latch;
+        public FilterWithAlgorithmAndMinVGMean(String algorithm, Double minVGMean, String sourceTablenameBeFilter,
+                                               Connection connection, String saveTablenameFiltered,
+                                               CountDownLatch latch) {
+            this.algorithm = algorithm;
+            this.minVGMean = minVGMean;
+            this.sourceTablenameBeFilter = sourceTablenameBeFilter;
+            this.connection = connection;
+            this.saveTablenameFiltered = saveTablenameFiltered;
+            this.latch = latch;
+        }
 
-    public FilterWithAlgorithmAndMinVGMean(String algorithm, Double minVGMean, String sourceTablenameBeFilter,
-                                           Connection connection, String saveTablenameFiltered, CountDownLatch latch) {
-        this.algorithm = algorithm;
-        this.minVGMean = minVGMean;
-        this.sourceTablenameBeFilter = sourceTablenameBeFilter;
-        this.connection = connection;
-        this.saveTablenameFiltered = saveTablenameFiltered;
-        this.latch = latch;
-    }
+        @Override
+        public String call() throws Exception {
+            try {
+                Console.log("start: {} -- {}", algorithm, minVGMean);
+                String sqlSelectGoodForm = StrUtil.format("select form_name,stat_result_algorithm\n" +
+                        "        from {}\n" +
+                        "        where virtual_geometry_mean > {}\n" +
+                        "            and effective_counts > 1\n" +
+                        "            and stat_result_algorithm = '{}'\n" +
+                        "            and stat_date_range = '[\"20200203\",\"20210218\"]'\n" +
+                        "        order by virtual_geometry_mean desc\n", sourceTablenameBeFilter, minVGMean, algorithm);
+                // 初步选择, 倒数第二个 日期区间, 符合 算法, 且>VGMean 的.
 
-    @Override
-    public String call() throws Exception {
-        try {
-            Console.log("start: {} -- {}", algorithm, minVGMean);
-            String sqlSelectGoodForm = StrUtil.format("select form_name,stat_result_algorithm\n" +
-                    "        from {}\n" +
-                    "        where virtual_geometry_mean > {}\n" +
-                    "            and effective_counts > 1\n" +
-                    "            and stat_result_algorithm = '{}'\n" +
-                    "            and stat_date_range = '[\"20200203\",\"20210218\"]'\n" +
-                    "        order by virtual_geometry_mean desc\n", sourceTablenameBeFilter, minVGMean, algorithm);
-            // 初步选择, 倒数第二个 日期区间, 符合 算法, 且>VGMean 的.
+                String sqlValidateGoodFormRaw = StrUtil.format("select stat_date_range,virtual_geometry_mean\n" +
+                        // 仅仅读取2个字段, 只是做验证. 验证成功再读取全部字段
+                        "    from {}\n" +
+                        "    where stat_result_algorithm='{}'\n" +
+                        "      and form_name = '{}'\n" +
+                        "    order by stat_date_range\n" +
+                        "    limit 17", sourceTablenameBeFilter, algorithm);
+                // 没有附带 formname
 
-            String sqlValidateGoodFormRaw = StrUtil.format("select stat_date_range,virtual_geometry_mean\n" +
-                    // 仅仅读取2个字段, 只是做验证. 验证成功再读取全部字段
-                    "    from {}\n" +
-                    "    where stat_result_algorithm='{}'\n" +
-                    "      and form_name = '{}'\n" +
-                    "    order by stat_date_range\n" +
-                    "    limit 17", sourceTablenameBeFilter, algorithm);
-            // 没有附带 formname
+                String sqlSaveGoodFormRaw = StrUtil.format("select *\n" +
+                        // 同上, 只不过读取全部字段
+                        "    from {}\n" +
+                        "    where stat_result_algorithm='{}'\n" +
+                        "      and form_name = '{}'\n" +
+                        "    order by stat_date_range\n" +
+                        "    limit 17", sourceTablenameBeFilter, algorithm); // 没有附带 formname
 
-            String sqlSaveGoodFormRaw = StrUtil.format("select *\n" +
-                    // 同上, 只不过读取全部字段
-                    "    from {}\n" +
-                    "    where stat_result_algorithm='{}'\n" +
-                    "      and form_name = '{}'\n" +
-                    "    order by stat_date_range\n" +
-                    "    limit 17", sourceTablenameBeFilter, algorithm); // 没有附带 formname
+                DataFrame<Object> dfSelectedForms = DataFrame.readSql(connection, sqlSelectGoodForm);
+                Console.log("{} - {} : {}", algorithm, minVGMean, dfSelectedForms.length());
+                dfSelectedForms.cast(String.class);
+                List<Integer> indexes = CommonUtils.range(dfSelectedForms.length());
+                for (Integer i : Tqdm.tqdm(indexes, StrUtil.format("{} process", algorithm))) {
+                    String formName = (String) dfSelectedForms.get(i, 0);
 
-            DataFrame<Object> dfSelectedForms = DataFrame.readSql(connection, sqlSelectGoodForm);
-            Console.log("{} - {} : {}", algorithm, minVGMean, dfSelectedForms.length());
-            dfSelectedForms.cast(String.class);
-            List<Integer> indexes = CommonUtils.range(dfSelectedForms.length());
-            for (Integer i : Tqdm.tqdm(indexes, StrUtil.format("{} process", algorithm))) {
-                String formName = (String) dfSelectedForms.get(i, 0);
+                    DataFrame<Object> dfTemp = DataFrame
+                            .readSql(connection, StrUtil.format(sqlValidateGoodFormRaw, formName));
 
-                DataFrame<Object> dfTemp = DataFrame
-                        .readSql(connection, StrUtil.format(sqlValidateGoodFormRaw, formName));
-
-                if (dfTemp.length() < FilterSimpleFor0B1S.haveMinStatRanges) {
-                    continue;
-                }
-                dfTemp.convert(Double.class);
-                boolean allGtMinVGMean = true;
-                for (int j = (int) (dfTemp.size() * 0.7); j < dfTemp.size() - 1; j++) {
-                    // 排除掉了最后一期!   且仅仅对 倒数多期(不包含最后一期) 进行 >MinVGMean 的强制判定
-                    Double vgMean = (Double) dfTemp.get(j, 1);
-                    if (vgMean < minVGMean) {
-                        allGtMinVGMean = false;
-                        break;
+                    if (dfTemp.length() < FilterSimpleFor0B1S.haveMinStatRanges) {
+                        continue;
+                    }
+                    dfTemp.convert(Double.class);
+                    boolean allGtMinVGMean = true;
+                    for (int j = (int) (dfTemp.size() * 0.7); j < dfTemp.size() - 1; j++) {
+                        // 排除掉了最后一期!   且仅仅对 倒数多期(不包含最后一期) 进行 >MinVGMean 的强制判定
+                        Double vgMean = (Double) dfTemp.get(j, 1);
+                        if (vgMean < minVGMean) {
+                            allGtMinVGMean = false;
+                            break;
+                        }
+                    }
+                    if (allGtMinVGMean) {
+                        // 读取全部字段
+                        DataFrame<Object> dfSave = DataFrame
+                                .readSql(connection, StrUtil.format(sqlSaveGoodFormRaw, formName));
+                        DataFrameSelf.toSql(dfSave, saveTablenameFiltered, connection, "append", null);
                     }
                 }
-                if (allGtMinVGMean) {
-                    // 读取全部字段
-                    DataFrame<Object> dfSave = DataFrame
-                            .readSql(connection, StrUtil.format(sqlSaveGoodFormRaw, formName));
-                    DataFrameSelf.toSql(dfSave, saveTablenameFiltered, connection, "append", null);
-                }
+                return "success";
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                latch.countDown();
+                return "success";
             }
-            return "success";
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            latch.countDown();
-            return "success";
         }
     }
 }
+
+
 
 /*
 
