@@ -76,7 +76,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
     // 后面的 数据读取表, 结果保存表, 均受此核心设定决定!!!!!! 只需更改这个唯一设定即可  , 设置可 明日买,大后天卖.
     public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2);
     public static List<String> validateDateRangeList = Arrays.asList("20210218", "21000101"); //注意和保存在数据库的json字符串保持一致,
-    public static String tablenameSaveAnalyze = StrUtil.format("next{}b{}s_of_single_kiline",
+    public static String tablenameSaveAnalyze = StrUtil.format("next{}b{}s_of_single_kline",
             correspondingFilterAlgos.get(0), correspondingFilterAlgos.get(1)); // next0b1s_of_single_kiline
     public static String tablenameLowBuy = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
             correspondingFilterAlgos.get(0)); // 哪天低买?简单筛选后的表名称
