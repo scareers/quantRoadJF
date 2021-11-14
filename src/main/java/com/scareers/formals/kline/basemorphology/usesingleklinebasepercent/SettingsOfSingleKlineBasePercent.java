@@ -96,6 +96,8 @@ public class SettingsOfSingleKlineBasePercent {
     }
 
     public static final List<List<String>> dateRanges = Arrays.asList(
+            // [20111011, 20140721]  8应从此
+            // [20150615, 20160128] 9应从此
             Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
             Arrays.asList("20031113", "20040407"), // 短暂快牛
             Arrays.asList("20040407", "20050603"), // 长熊市后半触底

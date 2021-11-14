@@ -1,14 +1,11 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs;
 
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.SqlUtil;
 import joinery.DataFrame;
 
 import java.util.HashMap;
 import java.util.List;
 
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.SettingsOfLowBuyFS.connSingleton;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.SettingsOfLowBuyFS.stockAmountsBeCalcFS;
 
 /**
@@ -31,9 +28,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         HashMap<String, List<List<String>>> stockWithStDateRanges = TushareApi.getStockWithStDateRanges();
 
         // 未关闭连接,可复用
-        SqlUtil.execSql(,connSingleton, false);
-        int bins = SettingsOfSingleKlineBasePercent.binsList.get(windowUsePeriodsCoreArg - 7);
-        List<Double> effectiveValueRange =
-                SettingsOfSingleKlineBasePercent.effectiveValusRanges.get(windowUsePeriodsCoreArg - 7);
+//        SqlUtil.execSql(,connSingleton, false);
+//        int bins = SettingsOfSingleKlineBasePercent.binsList.get(windowUsePeriodsCoreArg - 7);
+//        List<Double> effectiveValueRange =
+//                SettingsOfSingleKlineBasePercent.effectiveValusRanges.get(windowUsePeriodsCoreArg - 7);
     }
 }
