@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="quantRoad" />
+        <module name="quantRoadJ" />
       </profile>
     </annotationProcessing>
   </component>

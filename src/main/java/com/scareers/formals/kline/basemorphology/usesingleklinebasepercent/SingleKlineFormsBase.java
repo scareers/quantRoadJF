@@ -49,7 +49,8 @@ public class SingleKlineFormsBase {
     }
 
     public static void MainCanExclude(String[] args) throws Exception {
-        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(9, 10);
+//        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(9, 10);
+        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(8);
         for (Integer windowUsePeriodsCoreArg : windowUsePeriodsCoreArgList) {
             // 不需要刷新. 批量执行需要刷新
             TimeInterval timer = DateUtil.timer();

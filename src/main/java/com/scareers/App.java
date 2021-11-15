@@ -5,6 +5,7 @@ package com.scareers;
  */
 public class App {
     public static void main(String[] args) throws Exception {
+        System.out.println("hello");
 // SF1141606309289
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();
