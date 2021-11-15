@@ -17,8 +17,8 @@ import java.util.List;
 public class SettingsOfSingleKlineBasePercent {
     public static int windowUsePeriodsCoreArg = 10;
     //    public static final int processAmount = Runtime.getRuntime().availableProcessors() / 2 + 1;
-    public static final int processAmountParse = 8; // 实测8-16. 更多无济于事
-    public static final int processAmountSave = 16; // 实测32附近差不多ssd61%,增大效果不佳
+    public static final int processAmountParse = 16; // 实测8-16. 更多无济于事
+    public static final int processAmountSave = 64; // 实测32附近差不多ssd61%,增大效果不佳
     public static final int gcControlEpochParse = 300; // 新增:控制Parse 时gc频率.越大则手动gc频率越低,小幅减少时间.过大则要求线程数量不要过大
     public static final int gcControlEpochSave = 1000; // 新增:控制Save 时gc频率.越大则手动gc频率越低. 通常比上大
     public static final int stockAmountsBeCalc = 1000000;
@@ -108,9 +108,9 @@ public class SettingsOfSingleKlineBasePercent {
 //
 //            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
 //            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
-            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
-
-            Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
+//            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
+//
+//            Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
             Arrays.asList("20150615", "20160128"), // 大熊市, 含救市的明显回升后, 暴跌到底
 
             Arrays.asList("20160128", "20170116"), // 2年小长牛 -- 前段, 结尾下跌
