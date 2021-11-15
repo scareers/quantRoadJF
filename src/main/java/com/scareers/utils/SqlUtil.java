@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 
@@ -39,19 +40,19 @@ public class SqlUtil {
     }
 
 
-    //    public static ResultSet execSqlQuery(String sql, Connection conn) throws Exception {
-    //        Statement s = conn.createStatement();
-    //        ResultSet rs = s.executeQuery(sql);
-    //        // 查询返回 ResultSet
-    //        /*
-    //        ResultSet symbols = execSqlQuery(sqlGetStockList);
-    //        ArrayList<String> stockListTemp = new ArrayList<>();
-    //        while (symbols.next()) { // 遍历读取
-    //            stockListTemp.add(symbols.getString("symbol")); // 另有getDouble() 等等
-    //        }
-    //         */
-    //        return rs;
-    //    }
+    public static ResultSet execSqlQuery(String sql, Connection conn) throws Exception {
+        Statement s = conn.createStatement();
+        ResultSet rs = s.executeQuery(sql);
+        // 查询返回 ResultSet
+            /*
+            ResultSet symbols = execSqlQuery(sqlGetStockList);
+            ArrayList<String> stockListTemp = new ArrayList<>();
+            while (symbols.next()) { // 遍历读取
+                stockListTemp.add(symbols.getString("symbol")); // 另有getDouble() 等等
+            }
+             */
+        return rs;
+    }
     public static int execSqlUpdate(String sql, Connection conn) throws Exception {
         return execSqlUpdate(sql, conn, true);
     }

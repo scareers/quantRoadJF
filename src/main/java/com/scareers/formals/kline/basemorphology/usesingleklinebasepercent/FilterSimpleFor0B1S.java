@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static com.scareers.sqlapi.MysqlApi.setBufferPoolSizeGB;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -60,6 +61,8 @@ public class FilterSimpleFor0B1S {
 
 
     public static void main(String[] c) throws Exception {
+        setBufferPoolSizeGB(40, connection);
+
         TimeInterval timer = DateUtil.timer();
         timer.start();
         log.info("current time");

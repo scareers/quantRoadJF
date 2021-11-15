@@ -123,8 +123,11 @@ public class ConnectionFactory {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+        // &allowMultiQueries=true 允许多条sql语句连续执行.  ; 分割即可
         String url = String
-                .format("jdbc:mysql://%s:%s/%s?useSSL=false&generateSimpleParameterMetadate=true", ip, port, dbname);
+                .format("jdbc:mysql://%s:%s/%s?useSSL=false&generateSimpleParameterMetadate=true&allowMultiQueries=true",
+                        ip, port, dbname);
+
         try {
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {

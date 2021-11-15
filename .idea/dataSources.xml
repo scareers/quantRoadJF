@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/tushare?serverTimezone=Asia/Shanghai" uuid="6b0db749-02dd-4371-90cd-188bc72c6c48">
+    <data-source source="LOCAL" name="tushare      of mysql_main" uuid="85a0def2-d82a-402d-8bc3-1b42b6eb10a5">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
@@ -15,7 +15,21 @@
         <property name="yearIsDateType" value="false" />
       </driver-properties>
     </data-source>
-    <data-source source="LOCAL" name="jdbc:mysql://localhost:3306/kline_forms?serverTimezone=Asia/Shanghai" uuid="b6d18749-5e9a-49fb-aec8-4a95001925f3">
+    <data-source source="LOCAL" name="tushare_1m          of mysql_main" uuid="f257e0b0-1311-4d63-bf15-d4adafc66a20">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://localhost:3306/tushare_1m?serverTimezone=Asia/Shanghai</jdbc-url>
+      <driver-properties>
+        <property name="autoReconnect" value="true" />
+        <property name="zeroDateTimeBehavior" value="CONVERT_TO_NULL" />
+        <property name="tinyInt1isBit" value="false" />
+        <property name="characterEncoding" value="utf8" />
+        <property name="characterSetResults" value="utf8" />
+        <property name="yearIsDateType" value="false" />
+      </driver-properties>
+    </data-source>
+    <data-source source="LOCAL" name="kline_forms      of mysql_main" uuid="6c733183-6762-4b3a-bfe3-63bfd290f28a">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
