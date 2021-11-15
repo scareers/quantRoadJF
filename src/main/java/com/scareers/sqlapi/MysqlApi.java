@@ -26,8 +26,8 @@ public class MysqlApi {
     public static void main(String[] args) throws Exception {
         Connection connection = ConnectionFactory.getConnLocalTushare();
         Console.log(getMemoryUsageOfBuffer(connection));
-        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268
-        setBufferPoolSizeGB(4, connection);
+        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
+//        setBufferPoolSizeGB(40, connection);
         Console.log(getBufferPoolSizeSetted(connection));
         connection.close();
     }
@@ -105,13 +105,14 @@ public class MysqlApi {
      */
     public static void setBufferPoolSizeGB(int newSizeGB, Connection connection) throws Exception {
         Long rawSize = getBufferPoolSizeSetted(connection);
-        Long actualSize = (long) newSizeGB * 1024 ^ 3;
+        Long actualSize = (long) newSizeGB * (1024L * 1024 * 1024);
         execSql(StrUtil.format("SET GLOBAL innodb_buffer_pool_size = {};", actualSize), connection);
-        Long newSize = getBufferPoolSizeSetted(connection);
         Thread.sleep(3);
         Console.log(StrUtil.format("try to modified MySQL config: Innodb_buffer_pool_size from {} to {};\nbut will " +
                 "spend " +
                 "some " +
-                "time, you can check that call getBufferPoolSizeSetted() later.", rawSize, newSize));
+                "time, you can check that call getBufferPoolSizeSetted() later.", rawSize, actualSize));
     }
 }
+
+

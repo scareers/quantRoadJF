@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.*;
 
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg;
 import static com.scareers.sqlapi.MysqlApi.setBufferPoolSizeGB;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -61,7 +62,7 @@ public class FilterSimpleFor0B1S {
 
 
     public static void main(String[] c) throws Exception {
-        setBufferPoolSizeGB(40, connection);
+//        setBufferPoolSizeGB(40, connection);
 
         TimeInterval timer = DateUtil.timer();
         timer.start();
@@ -90,8 +91,10 @@ public class FilterSimpleFor0B1S {
         for (Future<String> future : futures) {
             future.get();
         }
-        MailUtil.send(SettingsCommon.receivers, "简易筛选完成", StrUtil.format("简易筛选完成,耗时: {}h",
-                (double) timer.intervalRestart() / 3600000),
+        MailUtil.send(SettingsCommon.receivers,
+                StrUtil.format("简易筛选完成,windowUsePeriodsCoreArg:{}", windowUsePeriodsCoreArg),
+                StrUtil.format("简易筛选完成,耗时: {}h",
+                        (double) timer.intervalRestart() / 3600000),
                 false, null);
         pool.shutdown();
         log.info("current time");
@@ -100,7 +103,7 @@ public class FilterSimpleFor0B1S {
     public static String getSaveTablenameFiltered() {
 //        filtered_single_kline_from_next{total_use_periods - 7}
         String res = StrUtil.format("filtered_single_kline_from_next{}",
-                SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7);
+                windowUsePeriodsCoreArg - 7);
         if (SettingsOfSingleKlineBasePercent.excludeSomeBoards) {
             res = res + "__excybkcb";
         }
@@ -110,10 +113,10 @@ public class FilterSimpleFor0B1S {
     public static List<String> getAlgorithms() {
         return Arrays
                 .asList(
-                        StrUtil.format("Next{}Open", SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7),
-                        StrUtil.format("Next{}Close", SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7),
-                        StrUtil.format("Next{}High", SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7),
-                        StrUtil.format("Next{}Low", SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg - 7)
+                        StrUtil.format("Next{}Open", windowUsePeriodsCoreArg - 7),
+                        StrUtil.format("Next{}Close", windowUsePeriodsCoreArg - 7),
+                        StrUtil.format("Next{}High", windowUsePeriodsCoreArg - 7),
+                        StrUtil.format("Next{}Low", windowUsePeriodsCoreArg - 7)
                 );
     }
 
@@ -225,10 +228,10 @@ Next0High   248706
 Next0Low    326498
 
 
-Next1Open   177212
-Next1Close  170787
-Next1High   216774
-Next1Low    305378
+Next1Open   153535
+Next1Close  149224
+Next1High   192686
+Next1Low    272175
 
 Next2Open   179129
 Next2Close  172441
