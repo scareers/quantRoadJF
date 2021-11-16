@@ -239,4 +239,9 @@ Next2Close  152660
 Next2High   183938
 Next2Low    264138
 
+Next3Open   159178
+Next3Close  150845
+Next3High   179207
+Next3Low    256958
+
  */

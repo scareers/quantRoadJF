@@ -30,8 +30,8 @@ public class MysqlApi {
         System.out.println(getDiskUsageOfDB("kline_forms", connection).toString(100));
 
 //        Console.log(getMemoryUsageOfBuffer(connection));
-//        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
-        setBufferPoolSizeGB(5, connection);
+        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
+//        setBufferPoolSizeGB(30, connection);
         Console.log(getBufferPoolSizeSetted(connection));
 
 

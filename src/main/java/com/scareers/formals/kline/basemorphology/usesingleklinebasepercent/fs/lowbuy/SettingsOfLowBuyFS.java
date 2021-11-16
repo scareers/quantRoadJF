@@ -1,4 +1,4 @@
-package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs;
+package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy;
 
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -43,22 +43,16 @@ public class SettingsOfLowBuyFS {
             Arrays.asList("20200203", "20210218"), // 开年暴跌后, 明显牛市到顶
             Arrays.asList("20210218", "21000101") // 顶部下跌后平稳年, 尝试突破未果;;@current 2021/10/11, 到未来
 
-
-            //            Arrays.asList('20020129', '20050603'), // 中组合区间1
-            //            Arrays.asList('20050603', '20081028'),
-            //            Arrays.asList('20081028', '20140721'),
-            //            Arrays.asList('20140721', '20160128'),
-            //            Arrays.asList('20160128', '20190104'),
-            //            Arrays.asList('20190104', '21000101'),
-            //
-            //            Arrays.asList('20020129', '20140721'), // 大组合区间2
-            //            Arrays.asList('20140721', '20200203'),
-            //            Arrays.asList('20200203', '21000101')
     );
 
+    public static String saveTablenameLowBuyFS = "fs_distribution_of_low_buy_next{}";
     public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
     public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,
-            StrUtil.format("fs_distribution_of_low_buy_next{}", keyInt));
+            StrUtil.format(saveTablenameLowBuyFS, keyInt));
+    public static final String sqlDeleteExistDateRangeRawFS = "delete from {} where stat_date_range=\'{}\'";
+    // 删除曾经的记录,逻辑同主程序
+    public static String sqlDeleteExistDateRangeFS = StrUtil.format(sqlDeleteExistDateRangeRawFS,
+            saveTablenameLowBuyFS);
 
     public static String getSaveTableTemplate() {
         String s = "create table if not exists `{}`\n" +

@@ -105,8 +105,6 @@ public class SingleKlineFormsBase {
                             StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
 
-            // 7, 8用.
-
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     bigChangeThreshold, bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);

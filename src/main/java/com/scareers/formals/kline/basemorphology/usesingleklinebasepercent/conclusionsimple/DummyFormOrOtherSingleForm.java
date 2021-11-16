@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class DummyFormOrOtherSingleForm {
     //    public static String targetForm = "PL[0,1]";
-    public static String targetForm = "PL[0,1]";
+    public static String targetForm = "PL[0,0]";
     // 对比next0,1,3 三个表, 某种形态的数据.结果已经join
     public static List<Integer> keyIntegers = ListUtil.of(0, 1, 2);
     public static List<String> simpleAlgorithms = ListUtil.of("Open", "Close", "High", "Low");
