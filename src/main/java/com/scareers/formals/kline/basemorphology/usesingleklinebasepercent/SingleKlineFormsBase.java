@@ -32,6 +32,7 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.sqlapi.TushareApi.getAdjdatesByTscodeFromTushare;
 import static com.scareers.sqlapi.TushareApi.getStockPriceByTscodeAndDaterangeAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 
 /**
  * description:
@@ -109,11 +110,14 @@ public class SingleKlineFormsBase {
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     bigChangeThreshold, bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
-            MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange), "部分解析完成", false,
+            String hardwareInfo = reportCpuMemoryDisk(true);
+            MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange),
+                    StrUtil.format("部分解析完成, 硬件信息:\n", hardwareInfo), false,
                     null);
             log.info("current time");
         }
     }
+
 
     /**
      * main: 主逻辑函数, 单date_range 的分析.

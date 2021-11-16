@@ -24,11 +24,17 @@ import static com.scareers.utils.SqlUtil.execSqlQuery;
  */
 public class MysqlApi {
     public static void main(String[] args) throws Exception {
+
+
         Connection connection = ConnectionFactory.getConnLocalTushare();
-        Console.log(getMemoryUsageOfBuffer(connection));
-        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
-        setBufferPoolSizeGB(3, connection);
-        Console.log(getBufferPoolSizeSetted(connection));
+        System.out.println(getDiskUsageOfDB("kline_forms", connection).toString(100));
+
+//        Console.log(getMemoryUsageOfBuffer(connection));
+//        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
+////        setBufferPoolSizeGB(3, connection);
+//        Console.log(getBufferPoolSizeSetted(connection));
+
+
         connection.close();
     }
 
@@ -113,6 +119,21 @@ public class MysqlApi {
                 "some " +
                 "time, you can check that call getBufferPoolSizeSetted() later.", rawSize, actualSize));
     }
+
+    public static DataFrame<Object> getDiskUsageOfDB(String dbName, Connection connection) throws SQLException {
+        String sql = StrUtil.format("select\n" +
+                "        table_schema as 'db',\n" +
+                "        table_name as 'tablename',\n" +
+                "        table_rows as 'rows',\n" +
+                "        truncate(data_length/1024/1024, 2) as 'space(MB)',\n" +
+                "        truncate(index_length/1024/1024, 2) as 'index_space(MB)',\n" +
+                "        truncate((index_length+data_length)/1024/1024/1024, 2) as 'total(GB)'\n" +
+                "        from information_schema.tables\n" +
+                "        where table_schema='{}'\n" +
+                "        order by table_rows desc, index_length desc;", dbName);
+        return DataFrame.readSql(connection, sql);
+    }
 }
+
 
 

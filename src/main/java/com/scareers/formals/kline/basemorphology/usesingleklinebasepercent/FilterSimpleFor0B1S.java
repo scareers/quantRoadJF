@@ -22,6 +22,7 @@ import java.util.concurrent.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg;
 import static com.scareers.sqlapi.MysqlApi.setBufferPoolSizeGB;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -93,8 +94,8 @@ public class FilterSimpleFor0B1S {
         }
         MailUtil.send(SettingsCommon.receivers,
                 StrUtil.format("简易筛选完成,windowUsePeriodsCoreArg:{}", windowUsePeriodsCoreArg),
-                StrUtil.format("简易筛选完成,耗时: {}h",
-                        (double) timer.intervalRestart() / 3600000),
+                StrUtil.format("简易筛选完成,耗时: {}h \n硬件信息:{}",
+                        (double) timer.intervalRestart() / 3600000,reportCpuMemoryDisk(true)),
                 false, null);
         pool.shutdown();
         log.info("current time");
@@ -188,7 +189,7 @@ public class FilterSimpleFor0B1S {
                     }
                     dfTemp.convert(Double.class);
                     boolean allGtMinVGMean = true;
-                    for (int j = (int) (dfTemp.size() * 0.7); j < dfTemp.size() - 1; j++) {
+                    for (int j = (int) (dfTemp.size() * gtMinVGMeanPercent); j < dfTemp.size() - 1; j++) {
                         // 排除掉了最后一期!   且仅仅对 倒数多期(不包含最后一期) 进行 >MinVGMean 的强制判定
                         Double vgMean = (Double) dfTemp.get(j, 1);
                         if (vgMean < minVGMean) {
@@ -233,9 +234,9 @@ Next1Close  149224
 Next1High   192686
 Next1Low    272175
 
-Next2Open   179129
-Next2Close  172441
-Next2High   205443
-Next2Low    293519
+Next2Open   157074
+Next2Close  152660
+Next2High   183938
+Next2Low    264138
 
  */

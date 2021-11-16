@@ -78,6 +78,11 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.25</version>
         </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.4</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/com.xeiam.xchart/xchart -->
         <!--        <dependency>-->
         <!--            <groupId>com.xeiam.xchart</groupId>-->

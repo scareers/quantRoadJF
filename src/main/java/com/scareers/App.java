@@ -1,11 +1,23 @@
 package com.scareers;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.MailUtil;
+import com.scareers.settings.SettingsCommon;
+
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+
 /**
  * Hello world!
  */
 public class App {
     public static void main(String[] args) throws Exception {
         System.out.println("hello");
+
+
+        MailUtil.send(SettingsCommon.receivers,
+                "硬件信息: ",
+                reportCpuMemoryDisk(true),
+                false, null);
 // SF1141606309289
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();

@@ -1,21 +1,57 @@
 package com.scareers.utils;
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import org.apache.commons.beanutils.BeanUtils;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
+import oshi.hardware.HWDiskStore;
 
+import java.lang.reflect.InvocationTargetException;
+import java.sql.ResultSet;
 import java.text.DecimalFormat;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 
 public class HardwareUtils {
-    public static void main(String[] args) throws InterruptedException {
-        getCpuInfoAsString(true);
+    public static void main(String[] args)
+            throws InterruptedException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+//        getCpuInfoAsString(true);
+//        getMemInfoAsString(true);
+
+//        SystemInfo systemInfo = new SystemInfo();
+//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getDiskStores()));
+//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getMemory()));
+//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getProcessor()));
+
+        Console.log(reportCpuMemoryDisk(false));
+    }
+
+    public static String reportCpuMemoryDisk(boolean showInStdout) throws InterruptedException {
+        String res = "";
+        res += getCpuInfoAsString(showInStdout);
+        res += getMemInfoAsString(showInStdout);
+        res += getDiskInfoAsJsonString(showInStdout);
+        return res;
+    }
+
+    public static String getDiskInfoAsJsonString(boolean showInStdout) {
+        SystemInfo systemInfo = new SystemInfo();
+        String res = "----------------磁盘信息---------------\n";
+        res += JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getDiskStores());
+        res += "\n--------------------------------------";
+        if (showInStdout) {
+            Console.log(res);
+        }
+        return "\n" + res + "\n";
     }
 
     private static String getCpuInfoAsString(boolean showInStdout) throws InterruptedException {
-        //System.out.println("----------------cpu信息----------------");
+        //System.out.println("----------------cpu信息---------------");
         SystemInfo systemInfo = new SystemInfo();
         CentralProcessor processor = systemInfo.getHardware().getProcessor();
         long[] prevTicks = processor.getSystemCpuLoadTicks();
@@ -41,7 +77,7 @@ public class HardwareUtils {
         long totalCpu = user + nice + cSys + idle + iowait + irq + softirq + steal;
 
         String res = "\n";
-        res += "----------------cpu信息----------------" + "\n";
+        res += "----------------cpu信息---------------" + "\n";
         res += "cpu核数:" + processor.getLogicalProcessorCount() + "\n";
         res += "cpu系统使用率:" + new DecimalFormat("#.##%").format(cSys * 1.0 / totalCpu) + "\n";
         res += "cpu用户使用率:" + new DecimalFormat("#.##%").format(user * 1.0 / totalCpu) + "\n";
@@ -52,24 +88,26 @@ public class HardwareUtils {
             System.out.println(res);
         }
         return res;
-
     }
 
     public static String getMemInfoAsString(boolean showInStdout) {
-        System.out.println("----------------主机内存信息----------------");
         SystemInfo systemInfo = new SystemInfo();
         GlobalMemory memory = systemInfo.getHardware().getMemory();
         //总内存
         long totalByte = memory.getTotal();
         //剩余
         long acaliableByte = memory.getAvailable();
-
-
-        System.out.println("总内存 = " + formatByte(totalByte));
-        System.out.println("使用" + formatByte(totalByte - acaliableByte));
-        System.out.println("剩余内存 = " + formatByte(acaliableByte));
-        System.out.println("使用率：" + new DecimalFormat("#.##%").format((totalByte - acaliableByte) * 1.0 / totalByte));
-        return null;
+        String res = "\n";
+        res += "----------------主机内存信息-----------" + "\n";
+        res += "总内存 = " + formatByte(totalByte) + "\n";
+        res += "使用" + formatByte(totalByte - acaliableByte) + "\n";
+        res += "剩余内存 = " + formatByte(acaliableByte) + "\n";
+        res += "使用率：" + new DecimalFormat("#.##%").format((totalByte - acaliableByte) * 1.0 / totalByte) + "\n";
+        res += "--------------------------------------" + "\n";
+        if (showInStdout) {
+            System.out.println(res);
+        }
+        return res;
     }
 
     public static void setSysInfo() {
