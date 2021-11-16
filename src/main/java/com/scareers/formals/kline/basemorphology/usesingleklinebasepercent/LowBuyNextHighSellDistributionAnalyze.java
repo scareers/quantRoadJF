@@ -29,6 +29,7 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.analyzeListDoubleSingle;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.prepareSaveDfForAnalyzeResult;
 import static com.scareers.utils.CommonUtils.intersectionOfSet;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -74,7 +75,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class LowBuyNextHighSellDistributionAnalyze {
     // 核心设定: 元素1和2分别为 低卖,高卖的 两个时间. 0代表明日, 一次类推
     // 后面的 数据读取表, 结果保存表, 均受此核心设定决定!!!!!! 只需更改这个唯一设定即可  , 设置可 明日买,大后天卖.
-    public static List<Integer> correspondingFilterAlgos = Arrays.asList(1, 2);
+    public static List<Integer> correspondingFilterAlgos = Arrays.asList(0, 1);
     public static List<String> validateDateRangeList = Arrays.asList("20210218", "21000101"); //注意和保存在数据库的json字符串保持一致,
     public static String tablenameSaveAnalyze = StrUtil.format("next{}b{}s_of_single_kline",
             correspondingFilterAlgos.get(0), correspondingFilterAlgos.get(1)); // next0b1s_of_single_kiline
@@ -197,6 +198,8 @@ public class LowBuyNextHighSellDistributionAnalyze {
         // 主逻辑四层循环, 34层 2*4 8次小循环.  1,2 则根据设定的参数列表来. 这里 对 3,4 层 封装到单个线程中去.
         TimeInterval timer = DateUtil.timer();
         timer.start();
+        TimeInterval timerTotal = DateUtil.timer();
+        timerTotal.start();
         execSql(sqlCreateSaveTable, connection); // 创建结论保存表
 
         for (List<Double> highArgs : highKeyArgsList) {
@@ -230,11 +233,18 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 poolOfInner8.shutdown();
                 //inner8(highArgs, lowArgs, selectedForms);
             }
+            MailUtil.send(SettingsCommon.receivers,
+                    StrUtil.format("部分完成分布分析: {} -- {}", highArgs, tablenameSaveAnalyze),
+                    StrUtil.format("LowBuyNextHighSellDistributionAnalyze " +
+                                    "部分完成,耗时: {}h \n硬件信息{}",
+                            (double) timer.intervalRestart() / 3600000, reportCpuMemoryDisk(false)),
+                    false, null);
         }
 
-        MailUtil.send(SettingsCommon.receivers, "分布分析完成", StrUtil.format("LowBuyNextHighSellDistributionAnalyze " +
-                        "分布分析完成,耗时: {}h",
-                (double) timer.intervalRestart() / 360000),
+        MailUtil.send(SettingsCommon.receivers, StrUtil.format("全部完成分布分析: {}", tablenameSaveAnalyze),
+                StrUtil.format("LowBuyNextHighSellDistributionAnalyze " +
+                                "分布分析完成,耗时: {}h \n硬件信息{}",
+                        (double) timerTotal.intervalRestart() / 3600000, reportCpuMemoryDisk(false)),
                 false, null);
     }
 
