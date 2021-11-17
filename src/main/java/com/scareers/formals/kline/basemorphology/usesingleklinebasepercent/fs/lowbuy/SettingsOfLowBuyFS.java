@@ -57,26 +57,19 @@ public class SettingsOfLowBuyFS {
     public static String getSaveTableTemplate() {
         String s = "create table if not exists `{}`\n" +
                 "(\n" +
-                "    id                                 int auto_increment comment 'id'\n" +
-                "        primary key,\n" +
-                "    form_sets_id                          int  not null comment '形态集合id, 对应 " +
-                "next0b1s_of_single_kline 的id列,不能为空'," +
-                "    stat_date_range                    varchar(1024) null comment '该条记录的 统计日期区间',\n" +
-                "    stat_result_algorithm              varchar(1024) null comment '统计使用的结果算法, 例如计算明日收盘,则为 Next0Close',\n" +
-                "    stat_stock_counts                  int           null comment '统计时股票数量, 常规为全部股票. ',\n" +
-                "    form_description                   varchar(1024) null comment '形态描述, 自行添加',\n" +
-                "    conditions_set                     varchar(1024) null comment '条件集合,描述,自行添加',\n" +
-                "    condition1                         varchar(1024) null comment '条件1 的取值, 形如  条件名称[下限,上限], 一般包含下限,不包含上限',\n" +
-                "    condition2                         varchar(1024) null,\n" +
-                "    condition3                         varchar(1024) null,\n" +
-                "    condition4                         varchar(1024) null,\n" +
-                "    condition5                         varchar(1024) null,\n" +
-                "    condition6                         varchar(1024) null,\n" +
-                "    condition7                         varchar(1024) null,\n" +
-                "    condition8                         varchar(1024) null,\n" +
-                "    condition9                         varchar(1024) null,\n" +
-                "    condition10                        varchar(1024) null,\n" +
-                "\n" +
+                "    id int auto_increment comment 'id'\n" + " primary key,\n" +
+
+                "    stat_date_range   varchar(1024) null comment '该条记录的 统计日期区间',\n" +
+                "    stat_result_algorithm     varchar(1024) null comment '统计使用的结果算法, 例如计算明日收盘,则为 " + "Next0Close',\n" +
+                "    stat_stock_counts  int  null comment '统计时股票数量, 常规为全部股票. ',\n" +
+
+                "    form_sets_id  int  not null comment '形态集合id, 对应 " + "next0b1s_of_single_kline 的id列,不能为空'," +
+                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
+                "    detail_list  longtext  not null comment '原始的分布结果列表,将对次列表进行统计分析',\n" +
+                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
+                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
+                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
+
                 "     INDEX condition1_index (condition1 ASC),\n" +
                 "     INDEX condition2_index (condition2 ASC),\n" +
                 "     INDEX condition3_index (condition3 ASC),\n" +
