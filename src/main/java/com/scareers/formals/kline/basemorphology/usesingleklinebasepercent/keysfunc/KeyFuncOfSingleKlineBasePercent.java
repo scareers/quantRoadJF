@@ -117,7 +117,8 @@ public class KeyFuncOfSingleKlineBasePercent {
                 gtZero++;
             }
         }
-        ArrayList<Double> zeroCompareCountsPercent = getCompareCountsAndPercentList(effectiveResults, conclusion, zeroCompareCounts,
+        ArrayList<Double> zeroCompareCountsPercent = getCompareCountsAndPercentList(effectiveResults, conclusion,
+                zeroCompareCounts,
                 ltZero,
                 eqZero,
                 gtZero, "zero_compare_counts");
@@ -167,7 +168,8 @@ public class KeyFuncOfSingleKlineBasePercent {
         }
 
         DataFrame<Double> dfTemp = new DataFrame<>();
-        dfTemp.append(frequencyList);
+        //@bugfix: append添加行, add添加列, 这里显然应当添加列. 已修正
+        dfTemp.add("temp", frequencyList);
         dfTemp = dfTemp.cumsum();
         List<Double> cdfList = dfTemp.col(0);
         conclusion.put("cdf_list", cdfList);
@@ -191,8 +193,10 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param bigchange_compare_counts
      * @return
      */
-    public static ArrayList<Double> getCompareCountsAndPercentList(List<Double> effectiveResults, HashMap<String, Object> conclusion,
-                                                                   ArrayList<Integer> bigchangeCompareCounts, int ltBigchange,
+    public static ArrayList<Double> getCompareCountsAndPercentList(List<Double> effectiveResults,
+                                                                   HashMap<String, Object> conclusion,
+                                                                   ArrayList<Integer> bigchangeCompareCounts,
+                                                                   int ltBigchange,
                                                                    int betweenBigchange, int gtBigchange,
                                                                    String bigchange_compare_counts) {
         bigchangeCompareCounts.add(ltBigchange);

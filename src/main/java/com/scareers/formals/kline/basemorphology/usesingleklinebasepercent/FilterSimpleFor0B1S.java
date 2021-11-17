@@ -95,7 +95,7 @@ public class FilterSimpleFor0B1S {
         MailUtil.send(SettingsCommon.receivers,
                 StrUtil.format("简易筛选完成,windowUsePeriodsCoreArg:{}", windowUsePeriodsCoreArg),
                 StrUtil.format("简易筛选完成,耗时: {}h \n硬件信息:{}",
-                        (double) timer.intervalRestart() / 3600000,reportCpuMemoryDisk(true)),
+                        (double) timer.intervalRestart() / 3600000, reportCpuMemoryDisk(true)),
                 false, null);
         pool.shutdown();
         log.info("current time");
@@ -223,7 +223,7 @@ public class FilterSimpleFor0B1S {
 -0.001, 0.001, 0.02, -0.05
 Open, Close, High, Low
 
-Next0Open   158052
+Next0Open   158052 // todo: 待修改
 Next0Close  158388
 Next0High   248706
 Next0Low    326498
@@ -243,5 +243,10 @@ Next3Open   159178
 Next3Close  150845
 Next3High   179207
 Next3Low    256958
+
+Next4Open   157918
+Next4Close  151536
+Next4High   174520
+Next4Low    253360
 
  */
