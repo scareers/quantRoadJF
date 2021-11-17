@@ -51,7 +51,7 @@ public class SingleKlineFormsBase {
 
     public static void MainCanExclude(String[] args) throws Exception {
 //        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(9, 10);
-        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(11, 12, 13);
+        List<Integer> windowUsePeriodsCoreArgList = ListUtil.of(12, 13);
         for (Integer windowUsePeriodsCoreArg : windowUsePeriodsCoreArgList) {
             // 不需要刷新. 批量执行需要刷新
             TimeInterval timer = DateUtil.timer();
@@ -110,7 +110,7 @@ public class SingleKlineFormsBase {
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
             String hardwareInfo = reportCpuMemoryDisk(true);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange),
-                    StrUtil.format("部分解析完成, 硬件信息:\n", hardwareInfo), false,
+                    StrUtil.format("部分解析完成, 硬件信息:{}\n", hardwareInfo), false,
                     null);
             log.info("current time");
         }

@@ -31,7 +31,7 @@ public class MysqlApi {
 
 //        Console.log(getMemoryUsageOfBuffer(connection));
         Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
-        setBufferPoolSizeGB(3, connection);
+        setBufferPoolSizeGB(20, connection);
         Console.log(getBufferPoolSizeSetted(connection));
 
 
