@@ -117,7 +117,7 @@ public class KeyFuncOfSingleKlineBasePercent {
                 gtZero++;
             }
         }
-        ArrayList<Double> zeroCompareCountsPercent = getDoubles(effectiveResults, conclusion, zeroCompareCounts,
+        ArrayList<Double> zeroCompareCountsPercent = getCompareCountsAndPercentList(effectiveResults, conclusion, zeroCompareCounts,
                 ltZero,
                 eqZero,
                 gtZero, "zero_compare_counts");
@@ -134,21 +134,13 @@ public class KeyFuncOfSingleKlineBasePercent {
                 betweenBigchange++;
             }
         }
-        ArrayList<Double> bigchangeCompareCountsPercent = getDoubles(effectiveResults, conclusion,
+        ArrayList<Double> bigchangeCompareCountsPercent = getCompareCountsAndPercentList(effectiveResults, conclusion,
                 bigchangeCompareCounts, ltBigchange, betweenBigchange, gtBigchange,
                 "bigchange_compare_counts");
         // @noti: 这里故意拼写错误 percent成 percnet, 为了数据表字段将错就错
         conclusion.put("bigchange_compare_counts_percnet", bigchangeCompareCountsPercent); //AL
 
-        DataFrame<Double> dfEffectiveResults = new DataFrame<>();
-        dfEffectiveResults.add("value", effectiveResults);
-        conclusion.put("mean", dfEffectiveResults.mean().get(0, 0));
-        conclusion.put("std", dfEffectiveResults.stddev().get(0, 0));
-        conclusion.put("min", dfEffectiveResults.min().get(0, 0));
-        conclusion.put("max", dfEffectiveResults.max().get(0, 0));
-        conclusion.put("skew", dfEffectiveResults.skew().get(0, 0));
-
-        conclusion.put("kurt", dfEffectiveResults.kurt().get(0, 0));
+        KeyFuncOfKlineCommons.baseStatValueByDF(effectiveResults, conclusion);
 
         // Double
         conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
@@ -199,10 +191,10 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param bigchange_compare_counts
      * @return
      */
-    private static ArrayList<Double> getDoubles(List<Double> effectiveResults, HashMap<String, Object> conclusion,
-                                                ArrayList<Integer> bigchangeCompareCounts, int ltBigchange,
-                                                int betweenBigchange, int gtBigchange,
-                                                String bigchange_compare_counts) {
+    public static ArrayList<Double> getCompareCountsAndPercentList(List<Double> effectiveResults, HashMap<String, Object> conclusion,
+                                                                   ArrayList<Integer> bigchangeCompareCounts, int ltBigchange,
+                                                                   int betweenBigchange, int gtBigchange,
+                                                                   String bigchange_compare_counts) {
         bigchangeCompareCounts.add(ltBigchange);
         bigchangeCompareCounts.add(betweenBigchange);
         bigchangeCompareCounts.add(gtBigchange);

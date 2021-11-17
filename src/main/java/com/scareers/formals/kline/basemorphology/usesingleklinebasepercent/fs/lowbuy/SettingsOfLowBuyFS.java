@@ -65,7 +65,7 @@ public class SettingsOfLowBuyFS {
 
                 "    form_sets_id  int  not null comment '形态集合id, 对应 " + "next0b1s_of_single_kline 的id列,不能为空'," +
                 "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
-                "    detail_list  longtext  not null comment '原始的分布结果列表,将对次列表进行统计分析',\n" +
+                "    detail_list  longtext  not null comment '原始的分布结果列表,将对此列表进行统计分析.左右支配和出现时间全保存.价格转换为区间保存',\n" +
                 "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
                 "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
                 "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +

@@ -112,50 +112,50 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                                                           DataFrame<String> stockWithBoard, List<String> statDateRange,
                                                           String saveTablenameLowBuyFS, int keyInt) {
 
-        Console.log("构建结果字典");
-        ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
-        ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmountParse,
-                SettingsOfSingleKlineBasePercent.processAmountParse * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
-        CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
-        Connection connOfParse = ConnectionFactory.getConnLocalTushare();
-        AtomicInteger parseProcess = new AtomicInteger(0);
-        ArrayList<Future<ConcurrentHashMap<String, List<Double>>>> futuresOfParse = new ArrayList<>();
-        for (String stock : stocks) {
-            // 全线程使用1个conn
-            Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
-                    .submit(new SingleKlineFormsBase.StockSingleParseTask(latchOfParse, stock, stockWithBoard,
-                            statDateRange,
-                            stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg));
-            futuresOfParse.add(f);
-        }
-        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
-            Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
-            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            //            synchronized (results) {
-            for (String key : resultTemp.keySet()) {
-                // @bugfix: value的列表应该线程安全! 而非简单的AL;
-                // @bigfix2: CopyOnWriteArrayList 由于使用锁, 对象过大, 内存不足; 因此使用同步关键字
-                // @noti: 按照逻辑来讲, 此处本身就是串行, 不需要同步.
-                results.putIfAbsent(key, new ArrayList<>());
-                results.get(key).addAll(resultTemp.get(key));
-            }
-            //            }
-            resultTemp.clear();
-            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpochParse == 0) {
-                System.gc();
-                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
-                    showMemoryUsageMB();
-                }
-            }
-        }
-        //        latchOfParse.await(); // 不需要,
-        //        connOfParse.close(); // 关闭连接
-        poolOfParse.shutdown(); // 关闭线程池
-        System.out.println();
-        Console.log("results size: {}", results.size());
-        System.gc();
+//        Console.log("构建结果字典");
+//        ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
+//        ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(SettingsOfSingleKlineBasePercent.processAmountParse,
+//                SettingsOfSingleKlineBasePercent.processAmountParse * 2, 10000, TimeUnit.MILLISECONDS,
+//                new LinkedBlockingQueue<>());
+//        CountDownLatch latchOfParse = new CountDownLatch(stocks.size());
+//        Connection connOfParse = ConnectionFactory.getConnLocalTushare();
+//        AtomicInteger parseProcess = new AtomicInteger(0);
+//        ArrayList<Future<ConcurrentHashMap<String, List<Double>>>> futuresOfParse = new ArrayList<>();
+//        for (String stock : stocks) {
+//            // 全线程使用1个conn
+//            Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
+//                    .submit(new SingleKlineFormsBase.StockSingleParseTask(latchOfParse, stock, stockWithBoard,
+//                            statDateRange,
+//                            stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg));
+//            futuresOfParse.add(f);
+//        }
+//        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
+//        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
+//            Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
+//            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
+//            //            synchronized (results) {
+//            for (String key : resultTemp.keySet()) {
+//                // @bugfix: value的列表应该线程安全! 而非简单的AL;
+//                // @bigfix2: CopyOnWriteArrayList 由于使用锁, 对象过大, 内存不足; 因此使用同步关键字
+//                // @noti: 按照逻辑来讲, 此处本身就是串行, 不需要同步.
+//                results.putIfAbsent(key, new ArrayList<>());
+//                results.get(key).addAll(resultTemp.get(key));
+//            }
+//            //            }
+//            resultTemp.clear();
+//            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpochParse == 0) {
+//                System.gc();
+//                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+//                    showMemoryUsageMB();
+//                }
+//            }
+//        }
+//        //        latchOfParse.await(); // 不需要,
+//        //        connOfParse.close(); // 关闭连接
+//        poolOfParse.shutdown(); // 关闭线程池
+//        System.out.println();
+//        Console.log("results size: {}", results.size());
+//        System.gc();
     }
 
     public static Log log = LogFactory.get();
