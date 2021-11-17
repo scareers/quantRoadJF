@@ -1,5 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc;
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import joinery.DataFrame;
@@ -21,7 +22,10 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
  */
 public class KeyFuncOfKlineCommons {
     public static void main(String[] args) {
-        Console.log();
+        Map<String, Object> res;
+        res = simpleStatAnalyzeByCountsList(ListUtil.of(2L, 5L, 10L, 7L, 1L), ListUtil.of(0.1, 0.2, 0.3, 0.4, 0.5),
+                0.3, ListUtil.of(0.15, 0.35), false);
+        Console.log(res);
     }
 
     /**
