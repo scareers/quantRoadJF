@@ -32,9 +32,11 @@ public class SettingsOfSingleKlineBasePercent {
     public static final Connection ConnOfSaveTable = tryGetConnForSavetable();
     public static final boolean calcCdfAndFrequencyWithTick = false;
     // 读取股票数据时的列, 注意 Class 列表需要与列一一对应
-    public static final List<String> fieldsOfDfRaw = Arrays.asList("trade_date", "open", "close", "high", "low", "vol");
+    public static final List<String> fieldsOfDfRaw = Arrays
+            // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
+            .asList("trade_date", "open", "close", "high", "low", "vol", "amount");
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
-            Double.class, Double.class, Double.class};
+            Double.class, Double.class, Double.class, Double.class}; // 对应的新增了成交额
     public static final List<String> conditionNames = Arrays.asList("OP", "CGO", "US", "LS", "PL", "P5DP", "VTP5D");
     public static final List<Double> upperShadowRangeList = Arrays.<Double>asList(0.0, 0.002, 0.01, 0.025, 0.04, 0.06,
             0.075, 0.09, 0.41);

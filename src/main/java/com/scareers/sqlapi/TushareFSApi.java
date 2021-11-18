@@ -39,17 +39,18 @@ public class TushareFSApi {
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
         interval.start();
-//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-//                "20180130", null);
-//        Console.log(interval.intervalRestart());
-//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-//                "20180131", null);
-//
-//        Console.log(interval.intervalRestart());
-//        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
-//                "20180131", null);
-//
-//        Console.log(interval.intervalRestart());
+        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
+                "20180130", null);
+        Console.log(interval.intervalRestart());
+        DataFrame<Object> dftemp = getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(),
+                "000001.SZ",
+                "20180131", null);
+        Console.log(dftemp);
+        Console.log(interval.intervalRestart());
+        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
+                "20180131", null);
+
+        Console.log(interval.intervalRestart());
 //
 //
 //        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(),

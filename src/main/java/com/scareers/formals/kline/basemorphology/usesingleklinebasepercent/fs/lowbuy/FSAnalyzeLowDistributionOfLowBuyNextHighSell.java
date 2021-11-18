@@ -322,7 +322,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     List<Object> keyInt0LowBuyKlineRow = dfWindow.row(6 + keyInt); // 这里 keyInt==keyInts.get(0),懒得改
                     List<Object> keyInt1HighSellKlineRow = dfWindow.row(6 + keyInts.get(1));
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
-
+                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
                     String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期.
 
 
