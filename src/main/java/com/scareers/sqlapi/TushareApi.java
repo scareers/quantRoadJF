@@ -6,6 +6,8 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import joinery.DataFrame;
@@ -27,6 +29,7 @@ import java.util.*;
 public class TushareApi {
     // 不带conn的方法, 均使用次静态连接, 且不关闭次连接. 此连接一直存活.  需要显式调用静态方法 TushareApi.connClose()!
     public static Connection connLocalTushare = null;
+    public static Log log = LogFactory.get();
 
     static {
         try {
@@ -287,4 +290,43 @@ public class TushareApi {
             connLocalTushare.close();
         }
     }
+
+    /**
+     * //@key: 给定某只股票, 给定今日日期, 给定未来某一日的日期,
+     * 根据复权因子, 判定 今日的Close, 以未来那天前复权, 今日close应该折算为多少?
+     * 目前本方法应用于, 分时图判定时, 需要以 今日收盘价, 作为一个基准. 本方法解决了 复权带来的问题
+     * <p>
+     * // 两个日期可以任意给, 当然一般是 今日 和 未来某一日.
+     * //@noti: 如果访问复权因子失败, 则返回 此前某一日收盘价, 不做处理
+     *
+     * @param stock
+     * @param preTradeDate
+     * @param futureDate
+     * @return 以未来一天为基准, 对 此前某一日收盘价做临时前复权, 返回 以前某一日close 前复权价格
+     */
+    public static Double CloseOfQfqStockSpecialDay(String stock, String preTradeDate, String futureDate,
+                                                   Connection conn) throws SQLException {
+        String sqlGetAdjFactorOfOneDay = StrUtil.format("select trade_date,adj_factor from " +
+                "sds_stock_adj_factor_tu_stock " +
+                "where ts_code='{}' and trade_date=='{}'", stock);
+        DataFrame<Object> factorPre = DataFrame
+                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, stock, preTradeDate));
+        DataFrame<Object> factorFuture = DataFrame
+                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, stock, futureDate));
+
+        DataFrame<Object> closeDF = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
+                Arrays.asList("close"),
+                Arrays.asList(preTradeDate, futureDate), conn); // 多读不了太多数据
+        Double stdClose = Double.valueOf(closeDF.get(0, 0).toString());
+        if (factorPre.length() == 0 || factorFuture.length() == 0) {
+            log.warn("获取复权因子失败, 仅原封返回 未复权 close 价格");
+            return stdClose; // 读取复权因子失败, 则返回原close. 警告一下
+        }
+        // 复权时, 未来的复权因子 > 以前的复权因子. 等式:
+        Double factor1 = Double.valueOf(factorPre.get(0, 1).toString());
+        Double factor2 = Double.valueOf(factorFuture.get(0, 1).toString());
+        // 今日价格 * 今日复权因子 == 未来实际价格(小) * 未来复权因子(大)
+        return stdClose * factor1 / factor2;
+    }
+
 }

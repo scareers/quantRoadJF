@@ -321,9 +321,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 注意window 原数据列: "trade_date", "open", "close", "high", "low", "vol".
                     List<Object> keyInt0LowBuyKlineRow = dfWindow.row(6 + keyInt); // 这里 keyInt==keyInts.get(0),懒得改
                     List<Object> keyInt1HighSellKlineRow = dfWindow.row(6 + keyInts.get(1));
-                    String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
+                    // @special: 因为分时图未复权的考虑. 对于 todayClose, 我们从 不复权读取close, 然后读取 当两天复权因子比例,
+                    // 折算到一个 当天等价的 前复权价格.   这个价格必须这样计算.
+                    // 因此传递 today, 计算, 假设明日复权, 那么 临时前复权, 今日的 close应该 复权成多少??.
+                    // 分时图中的 基准价格应该是当日前复权close;  而成交量使用成交额, 不存在此问题. 参见 TushareApi.qfqStockSpecialDay
+                    // @specialend
                     Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
-
+                    String today = todayKlineRow.get(0).toString(); // 今日价格
+                    String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
 
 
