@@ -87,6 +87,13 @@ public class CommonUtils {
         return res;
     }
 
+    public static HashSet<String> intersectionOfList(List<String> list1, List<String> list2) {
+        // 交集
+        HashSet<String> set1 = new HashSet<>(list1);
+        HashSet<String> set2 = new HashSet<>(list2);
+        return intersectionOfSet(set1, set2);
+    }
+
     public static HashSet<Object> subtractionOfSet(HashSet<Object> set1, HashSet<Object> set2) {
         // 差集
         HashSet<Object> res = new HashSet<>();

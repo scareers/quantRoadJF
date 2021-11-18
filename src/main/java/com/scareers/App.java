@@ -1,9 +1,16 @@
 package com.scareers;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
+import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.settings.SettingsCommon;
 
+import java.sql.Connection;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 
 /**
@@ -12,12 +19,15 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 public class App {
     public static void main(String[] args) throws Exception {
         System.out.println("hello");
+        ConcurrentHashMap<Long, List<String>> res = parseFromsSetsFromDb(ConnectionFactory.getConnLocalKlineForms());
+        Console.log(res.size());
+        Console.log(res.get(1));
 
-
-        MailUtil.send(SettingsCommon.receivers,
-                "硬件信息: ",
-                reportCpuMemoryDisk(true),
-                false, null);
+//
+//        MailUtil.send(SettingsCommon.receivers,
+//                "硬件信息: ",
+//                reportCpuMemoryDisk(true),
+//                false, null);
 // SF1141606309289
 //        System.out.println(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory());
 //        System.gc();

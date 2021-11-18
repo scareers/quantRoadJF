@@ -14,9 +14,16 @@ import java.util.List;
  * @date: 2021/11/14  0014-8:51
  */
 public class SettingsOfLowBuyFS {
-    public static final int keyInt = 0; // 即判定 next0(明日) 的 最低点的分布.
+    // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
+    // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
+    public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static final int stockAmountsBeCalcFS = 1000000;
     public static final Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
+
+    public static final int processAmountParse = 8;
+    public static final int gcControlEpochParse = 100;
+    public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
+            Double.class, Double.class, Double.class};
 
     public static final List<List<String>> dateRanges = Arrays.asList(
             // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
@@ -48,7 +55,7 @@ public class SettingsOfLowBuyFS {
     public static String saveTablenameLowBuyFS = "fs_distribution_of_low_buy_next{}";
     public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
     public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,
-            StrUtil.format(saveTablenameLowBuyFS, keyInt));
+            StrUtil.format(saveTablenameLowBuyFS, keyInts.get(0)));
     public static final String sqlDeleteExistDateRangeRawFS = "delete from {} where stat_date_range=\'{}\'";
     // 删除曾经的记录,逻辑同主程序
     public static String sqlDeleteExistDateRangeFS = StrUtil.format(sqlDeleteExistDateRangeRawFS,
