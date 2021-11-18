@@ -324,7 +324,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
 
-                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期.
+                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
 
 
 //                    String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
