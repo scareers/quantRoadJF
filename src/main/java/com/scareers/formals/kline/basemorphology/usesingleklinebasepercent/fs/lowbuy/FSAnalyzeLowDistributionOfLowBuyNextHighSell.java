@@ -25,8 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
-import static com.scareers.sqlapi.TushareApi.getAdjdatesByTscodeFromTushare;
-import static com.scareers.sqlapi.TushareApi.getStockPriceByTscodeAndDaterangeAsDfFromTushare;
+import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.utils.CommonUtils.intersectionOfList;
 import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
@@ -326,10 +325,22 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 因此传递 today, 计算, 假设明日复权, 那么 临时前复权, 今日的 close应该 复权成多少??.
                     // 分时图中的 基准价格应该是当日前复权close;  而成交量使用成交额, 不存在此问题. 参见 TushareApi.qfqStockSpecialDay
                     // @specialend
-                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
                     String today = todayKlineRow.get(0).toString(); // 今日价格
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
+                    // 未复权时等价于今日收盘价
+                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
+                    Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
+                    // 临时前复权作为基准close.
+                    // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
+                    // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
+                    // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
+                    HashMap<String, Double> resultOf15Algorithm = calc15ItemValusOfLowBuy(stdAmount, stdCloseOfLowBuy,
+                            lowBuyDate);
+//todo:
+
                     String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
+                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
+                    // 临时前复权作为基准close.
 
 
 //                    String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
@@ -353,6 +364,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 }
             }
             return resultTemp;
+        }
+
+        private static HashMap<String, Double> calc15ItemValusOfLowBuy(Double stdAmount, Double stdCloseOfLowBuy,
+                                                                       String lowBuyDate) {
+            return null;
         }
 
         private static List<Long> calcBelongToFormSets(ConcurrentHashMap<Long, List<String>> formSetsMapFromDB,
