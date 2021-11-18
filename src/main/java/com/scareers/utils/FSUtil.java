@@ -18,47 +18,33 @@ public class FSUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(fsTicks.subList(230, fsTicks.size()));
+        System.out.println(fsTicks.subList(0, fsTicks.size()));
         System.out.println(fsTicks.size());
-        Console.log(fsTickDoubleParseToTimeStr(5.0));
+        Console.log(fsTickDoubleParseToTimeStr(100.0));
         Console.log(fsTimeStrParseToTickDouble("14:29"));
     }
 
     public static List<String> fsTicks;
 
+    public static List<String> generateTickTimes(int start, int end, String hour) {
+        List<String> res = new ArrayList<>();
+        for (int i = start; i < end; i++) {
+            if (i <= 9) {
+                res.add(StrUtil.format("{}:0{}", hour, i));
+            } else {
+                res.add(StrUtil.format("{}:{}", hour, i));
+            }
+        }
+        return res;
+    }
+
     public static List<String> getAllFSTickTimes() {
         List<String> res = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            res.add(StrUtil.format("09:{}", 30 + i));
-        }
-        for (int i = 0; i < 60; i++) {
-            if (i <= 9) {
-                res.add(StrUtil.format("10:0{}", i));
-            } else {
-                res.add(StrUtil.format("10:{}", i));
-            }
-        }
-        for (int i = 0; i < 31; i++) {
-            if (i <= 9) {
-                res.add(StrUtil.format("11:0{}", i));
-            } else {
-                res.add(StrUtil.format("11:{}", i));
-            }
-        }
-        for (int i = 1; i < 60; i++) {
-            if (i <= 9) {
-                res.add(StrUtil.format("13:0{}", i));
-            } else {
-                res.add(StrUtil.format("13:{}", i));
-            }
-        }
-        for (int i = 0; i < 60; i++) {
-            if (i <= 9) {
-                res.add(StrUtil.format("14:0{}", i));
-            } else {
-                res.add(StrUtil.format("14:{}", i));
-            }
-        }
+        res.addAll(generateTickTimes(30, 60, "09"));
+        res.addAll(generateTickTimes(0, 60, "10"));
+        res.addAll(generateTickTimes(0, 31, "11"));
+        res.addAll(generateTickTimes(1, 60, "13"));
+        res.addAll(generateTickTimes(0, 60, "14"));
         res.add("15:00");
         return res;
     }

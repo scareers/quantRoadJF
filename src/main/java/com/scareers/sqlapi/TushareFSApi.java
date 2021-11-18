@@ -3,7 +3,6 @@ package com.scareers.sqlapi;
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
@@ -39,15 +38,15 @@ public class TushareFSApi {
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
         interval.start();
-        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
+        getFs1mStockPriceOneDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
                 "20180130", null);
         Console.log(interval.intervalRestart());
-        DataFrame<Object> dftemp = getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(),
+        DataFrame<Object> dftemp = getFs1mStockPriceOneDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(),
                 "000001.SZ",
                 "20180131", null);
         Console.log(dftemp);
         Console.log(interval.intervalRestart());
-        getFs1mStockPriceOndDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
+        getFs1mStockPriceOneDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
                 "20180131", null);
 
         Console.log(interval.intervalRestart());
@@ -69,7 +68,7 @@ public class TushareFSApi {
     }
 
     @Cached(description = "warning: do not use conn arg build cacheKey! No use difference conn")
-    public static DataFrame<Object> getFs1mStockPriceOndDayAsDfFromTushare(Connection conn, String tsCode,
+    public static DataFrame<Object> getFs1mStockPriceOneDayAsDfFromTushare(Connection conn, String tsCode,
                                                                            String whichDate, List<String> fields)
             throws Exception {
         if (fields == null) {

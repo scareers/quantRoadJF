@@ -26,9 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.*;
-import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOndDayAsDfFromTushare;
+import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.intersectionOfList;
 import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
+import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 
 /**
@@ -373,10 +374,26 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         private static HashMap<String, Double> calc15ItemValusOfLowBuy(Double stdAmount, Double stdCloseOfLowBuy,
                                                                        String lowBuyDate, Connection conn,
                                                                        String stock) throws Exception {
-            List<String> FS_ALL_FIELDS = Arrays.asList("trade_time", "open", "close", "high", "low", "vol",
-                    "amount");
-            DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOndDayAsDfFromTushare(conn, stock, lowBuyDate,
+            // 5项基本: happen_tick / value_percent / dominate_left / dominate_right / continuous_fall_vol_percent
+            // key是 Low__5项基本  Low2... Low3...
+            HashMap<String, Double> res = new HashMap<>();
+            DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(conn, stock, lowBuyDate,
                     fsSpecialUseFields); // 字段列表: Arrays.asList("trade_time", "close", "amount");
+            if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
+                return res; // 无分时数据, 则没有计算结果
+            }
+            // 1.将 trade_time, 转换为 tickDouble.
+            List<Object> tradeTimeCol = dfFSLowBuyDay.col(0);
+            List<Object> tickDoubleCol = new ArrayList<>();
+            for (Object o : tradeTimeCol) {
+                String tick = o.toString();
+                tickDoubleCol.add(fsTimeStrParseToTickDouble(tick.substring(11, 16))); // 分钟tick转换为整数型double
+            }
+            // 字段列表: Arrays.asList("trade_time", "close", "amount");  + "tick_double
+            dfFSLowBuyDay.add("tick_double", tickDoubleCol);
+
+// todo: 具体实现.
+
 
             return null;
         }
