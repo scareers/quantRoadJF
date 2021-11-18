@@ -25,6 +25,8 @@ public class SettingsOfLowBuyFS {
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
 
+    // 分时数据时, 仅访问close, 不访问多余字段,加速
+    public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close", "amount");
     public static final List<List<String>> dateRanges = Arrays.asList(
             // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
             Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡

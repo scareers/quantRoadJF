@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.*;
+import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOndDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.intersectionOfList;
 import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
@@ -77,51 +78,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
     }
 
     // 核心逻辑: next0 low 分时分布详细分析
-
-    /**
-     * next0/1/2/3等,        low 在分时图中 出现的分析, 分析项目为以下几个.
-     * --- 分析项目
-     * 1.Low最低价出现时间(0-240表示).
-     * 2.Low的左领域值 , 即low往左边计算, 左边相邻有多少个区域, 其价格比low高, 但是很相近, 例如low=-0.05, 相邻阈值可以 -0.045
-     * 3.Low的右领域值 , 右边相近的时间数量    dominateRight
-     * 4.Low2  次低价, 定义为排除掉 Low 以及其左右支配后, 剩余下面选择.
-     * 5.Low2 的左右支配
-     * 6.Low3 第三低价 及 左右支配
-     * 7.Low /Low2/Low3 的具体数值.  // 总计12项目
-     * --- 说明
-     * 1.本脚本是给定形态集合,id, 分析之下 next Low 的相关分布.  本身行数不会多大. 列数多.
-     * --- 保存的数据
-     * 2.对单个形态集合,  基本分析以上 12项目:
-     * 1.Low/2/3出现时间: 结果为 列表json字符串,   241个元素, 代表了在当分钟出现的次数!!!
-     * 后续如果分区间分析, 也方便转换
-     * 2.3个价格(百分比), 依旧采用 [] 区间分析方法.
-     * 3.左支配时间:  因为最大可能 241个支配, 统一性, 同 出现时间, 用 241个数组
-     * 4.右支配时间: 同理
-     * --- 新增:成交量分析:
-     * 当到达Low/2/3时,   连续下跌到达Low, 整个多分钟的 总成交量, 占(昨日成交量)的比例.
-     * noti: 需要连续下跌, 才计算进成交量, == 的不计算. 显然至少能计算1分钟的成交量
-     * 分析项名称为  continuous_fall_vol_percent   连续下跌成交量占昨日百分比
-     * <p>
-     * *************
-     * 15项列表: 3*5
-     * --> Low /2/3  == 3
-     * --> 5项基本: happen_tick / value_percent / dominate_left / dominate_right / continuous_fall_vol_percent
-     * --> 即        发生时间    / 具体的涨跌幅  / 左支配         /右支配           / 连续下跌到最低多分钟整个成交量占昨日比
-     * <p>
-     * *************
-     *
-     * @param stocks
-     * @param stockWithStDateRanges
-     * @param stockWithBoard
-     * @param statDateRange
-     * @param saveTablenameLowBuyFS
-     * @param keyInt
-     * @key: 保存 12项基本数据, 每种数据都是一个列表的 json字符串.
-     * @key: 要对 12项基本 数组进行 分布分析,  因此考虑,  用 字段 "analyze_item_type" 列, 保存单条记录是什么"类型", 总计12种
-     * @key: 数据表改造后, 单行数据, 表示了 某一项数据(一个列表)的分析结果.
-     * analyze_item_type 表示分析的什么数据
-     * detail_list  保存 那个json列表!   其余列, 表示对 detail_list 的统计分析
-     */
     private static void fsLowBuyDistributionDetailAnalyze(List<String> stocks,
                                                           HashMap<String, List<List<String>>> stockWithStDateRanges,
                                                           DataFrame<String> stockWithBoard, List<String> statDateRange,
@@ -335,7 +291,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
                     // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
                     HashMap<String, Double> resultOf15Algorithm = calc15ItemValusOfLowBuy(stdAmount, stdCloseOfLowBuy,
-                            lowBuyDate);
+                            lowBuyDate, conn, stock);
 //todo:
 
                     String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
@@ -366,8 +322,62 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             return resultTemp;
         }
 
+        /**
+         * LowBuy 分析核心方法. 计算15种结果值.
+         * 3*5
+         * Low /Low2/Low3 * happen_tick / value_percent / dominate_left / dominate_right / continuous_fall_vol_percent
+         *
+         * @param stdAmount
+         * @param stdCloseOfLowBuy
+         * @param lowBuyDate
+         * @return
+         */
+        /**
+         * next0/1/2/3等,        low 在分时图中 出现的分析, 分析项目为以下几个.
+         * --- 分析项目
+         * 1.Low最低价出现时间(0-240表示).
+         * 2.Low的左领域值 , 即low往左边计算, 左边相邻有多少个区域, 其价格比low高, 但是很相近, 例如low=-0.05, 相邻阈值可以 -0.045
+         * 3.Low的右领域值 , 右边相近的时间数量    dominateRight
+         * 4.Low2  次低价, 定义为排除掉 Low 以及其左右支配后, 剩余下面选择.
+         * 5.Low2 的左右支配
+         * 6.Low3 第三低价 及 左右支配
+         * 7.Low /Low2/Low3 的具体数值.  // 总计12项目
+         * --- 说明
+         * 1.本脚本是给定形态集合,id, 分析之下 next Low 的相关分布.  本身行数不会多大. 列数多.
+         * --- 保存的数据
+         * 2.对单个形态集合,  基本分析以上 12项目:
+         * 1.Low/2/3出现时间: 结果为 列表json字符串,   241个元素, 代表了在当分钟出现的次数!!!
+         * 后续如果分区间分析, 也方便转换
+         * 2.3个价格(百分比), 依旧采用 [] 区间分析方法.
+         * 3.左支配时间:  因为最大可能 241个支配, 统一性, 同 出现时间, 用 241个数组
+         * 4.右支配时间: 同理
+         * --- 新增:成交量分析:
+         * 当到达Low/2/3时,   连续下跌到达Low, 整个多分钟的 总成交量, 占(昨日成交量)的比例.
+         * noti: 需要连续下跌, 才计算进成交量, == 的不计算. 显然至少能计算1分钟的成交量
+         * 分析项名称为  continuous_fall_vol_percent   连续下跌成交量占昨日百分比
+         * <p>
+         * *************
+         * 15项列表: 3*5
+         * --> Low /2/3  == 3
+         * --> 5项基本: happen_tick / value_percent / dominate_left / dominate_right / continuous_fall_vol_percent
+         * --> 即        发生时间    / 具体的涨跌幅  / 左支配         /右支配           / 连续下跌到最低多分钟整个成交量占昨日比
+         * <p>
+         * *************
+         *
+         * @key: 保存 12项基本数据, 每种数据都是一个列表的 json字符串.
+         * @key: 要对 12项基本 数组进行 分布分析,  因此考虑,  用 字段 "analyze_item_type" 列, 保存单条记录是什么"类型", 总计12种
+         * @key: 数据表改造后, 单行数据, 表示了 某一项数据(一个列表)的分析结果.
+         * analyze_item_type 表示分析的什么数据
+         * detail_list  保存 那个json列表!   其余列, 表示对 detail_list 的统计分析
+         */
         private static HashMap<String, Double> calc15ItemValusOfLowBuy(Double stdAmount, Double stdCloseOfLowBuy,
-                                                                       String lowBuyDate) {
+                                                                       String lowBuyDate, Connection conn,
+                                                                       String stock) throws Exception {
+            List<String> FS_ALL_FIELDS = Arrays.asList("trade_time", "open", "close", "high", "low", "vol",
+                    "amount");
+            DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOndDayAsDfFromTushare(conn, stock, lowBuyDate,
+                    fsSpecialUseFields); // 字段列表: Arrays.asList("trade_time", "close", "amount");
+
             return null;
         }
 
