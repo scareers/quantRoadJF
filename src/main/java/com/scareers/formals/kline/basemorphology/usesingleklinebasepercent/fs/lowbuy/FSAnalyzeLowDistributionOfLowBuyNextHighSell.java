@@ -106,6 +106,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
             // 串行不再需要使用 CountDownLatch
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
+            // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
                 results.putIfAbsent(key, new ArrayList<>());
@@ -292,28 +293,25 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
                     // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
                     // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
-                    HashMap<String, Double> resultOf15Algorithm = calc10ItemValusOfLowBuy(stdAmount, stdCloseOfLowBuy,
+                    // todo: 2021/11/19, 仅仅实现 Low和Low1, 未实现Low2, 因此仅10种结果
+                    HashMap<String, Double> resultOf10AlgorithmLow = calc10ItemValusOfLowBuy(stdAmount,
+                            stdCloseOfLowBuy,
                             lowBuyDate, connOfFS, stock);
-//todo:
 
                     String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
                     Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
                     // 临时前复权作为基准close.
+                    // todo: highSell 对应的10种结果
 
-
-//                    String prefix = "Next" + (windowUsePeriodsCoreArg - 7);
-//                    for (String keyTemp : allForms) {
-//                        resultTemp.putIfAbsent(keyTemp + prefix + "Open", new ArrayList<>());
-//                        resultTemp.get(keyTemp + prefix + "Open").add(singleResultAccordingNextOpen);
-//                        resultTemp.putIfAbsent(keyTemp + prefix + "Close", new ArrayList<>());
-//                        resultTemp.get(keyTemp + prefix + "Close").add(singleResultAccordingNextClose);
-//                        resultTemp.putIfAbsent(keyTemp + prefix + "High", new ArrayList<>());
-//                        resultTemp.get(keyTemp + prefix + "High").add(singleResultAccordingNextHigh);
-//                        resultTemp.putIfAbsent(keyTemp + prefix + "Low", new ArrayList<>());
-//                        resultTemp.get(keyTemp + prefix + "Low").add(singleResultAccordingNextLow);
-//                    }
-
-
+                    // 开始填充结果:  @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
+                    for (Long setId : belongToFormsetIds) {
+                        String prefix = setId.toString() + "__"; // 临时前缀.
+                        for (String lowKeys : resultOf10AlgorithmLow.keySet()) {
+                            String keyFull = StrUtil.format("{}{}", prefix, lowKeys);
+                            resultTemp.putIfAbsent(keyFull, new ArrayList<>());
+                            resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                     // 打印此时的 dfwindow 前3行
