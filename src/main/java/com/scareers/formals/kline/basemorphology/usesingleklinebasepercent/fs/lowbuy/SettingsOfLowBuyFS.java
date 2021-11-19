@@ -33,8 +33,8 @@ public class SettingsOfLowBuyFS {
     public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
     public static List<Double> effectiveValueRangeOfValuePercent = Arrays.asList(-0.5, 0.5);
     public static int binsOfValuePercent = 200;
-    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(-0.03, 0.03); // 连续成交额的3个参数.
-    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(-0.5, 0.5);
+    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(0.05, 0.15); // 连续成交额的3个参数.
+    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(0.0, 1.0); // 成交量 200tick, 每个 0.5%
     public static int binsOfAmountPercent = 200;
 
 

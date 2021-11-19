@@ -156,7 +156,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             saveTablenameLowBuyFS));
             futuresOfSave.add(f);
         }
-        AtomicInteger saveProcess = new AtomicInteger(0);
         for (Integer i : Tqdm
                 .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
             Future<List<String>> f = futuresOfSave.get(i);
@@ -165,12 +164,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 // 删除key, 节省空间
                 results.remove(formName0);
             }
-            //            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
-            //                System.gc();
-            //                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
-            //                    showMemoryUsageMB();
-            //                }
-            //            }
         }
 
         Console.log("计算并保存完成!");
@@ -665,6 +658,45 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
     public static Log log = LogFactory.get();
 
     public static class CalcStatResultAndSaveTaskOfFSLowBuyHighSell implements Callable<List<String>> {
+        CountDownLatch latchOfCalcForEpoch;
+        Connection connOfSave;
+        List<String> formNamesCurrentEpoch;
+        int size;
+        List<String> statDateRange;
+        ConcurrentHashMap<String, List<Double>> results;
+        List<Double> smallLargeThresholdOfValuePercent;
+        List<Double> effectiveValueRangeOfValuePercent;
+        int binsOfValuePercent;
+        List<Double> smallLargeThresholdOfAmountPercent;
+        List<Double> effectiveValueRangeOfAmountPercent;
+        int binsOfAmountPercent;
+        String saveTablenameLowBuyFS;
+
+        public CalcStatResultAndSaveTaskOfFSLowBuyHighSell(CountDownLatch latchOfCalcForEpoch, Connection connOfSave,
+                                                           List<String> formNamesCurrentEpoch, int size,
+                                                           List<String> statDateRange,
+                                                           ConcurrentHashMap<String, List<Double>> results,
+                                                           List<Double> smallLargeThresholdOfValuePercent,
+                                                           List<Double> effectiveValueRangeOfValuePercent,
+                                                           int binsOfValuePercent,
+                                                           List<Double> smallLargeThresholdOfAmountPercent,
+                                                           List<Double> effectiveValueRangeOfAmountPercent,
+                                                           int binsOfAmountPercent, String saveTablenameLowBuyFS) {
+            this.latchOfCalcForEpoch = latchOfCalcForEpoch;
+            this.connOfSave = connOfSave;
+            this.formNamesCurrentEpoch = formNamesCurrentEpoch;
+            this.size = size;
+            this.statDateRange = statDateRange;
+            this.results = results;
+            this.smallLargeThresholdOfValuePercent = smallLargeThresholdOfValuePercent;
+            this.effectiveValueRangeOfValuePercent = effectiveValueRangeOfValuePercent;
+            this.binsOfValuePercent = binsOfValuePercent;
+            this.smallLargeThresholdOfAmountPercent = smallLargeThresholdOfAmountPercent;
+            this.effectiveValueRangeOfAmountPercent = effectiveValueRangeOfAmountPercent;
+            this.binsOfAmountPercent = binsOfAmountPercent;
+            this.saveTablenameLowBuyFS = saveTablenameLowBuyFS;
+        }
+
         @Override
         public List<String> call() throws Exception {
             return null;
