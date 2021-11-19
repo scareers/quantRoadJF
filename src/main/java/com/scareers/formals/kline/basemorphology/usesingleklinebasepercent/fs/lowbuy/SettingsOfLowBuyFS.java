@@ -19,11 +19,13 @@ public class SettingsOfLowBuyFS {
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static final int stockAmountsBeCalcFS = 1000000;
     public static final Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
-
+    // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
+    public static final Double dominateRateKeyArg = 0.2;
     public static final int processAmountParse = 8;
     public static final int gcControlEpochParse = 100;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
+
 
     // 分时数据时, 仅访问close, 不访问多余字段,加速
     public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close", "amount");

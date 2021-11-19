@@ -1,10 +1,12 @@
 package com.scareers;
 
+import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.settings.SettingsCommon;
+import joinery.DataFrame;
 
 import java.sql.Connection;
 import java.util.List;
@@ -18,10 +20,16 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        System.out.println("hello");
-        ConcurrentHashMap<Long, List<String>> res = parseFromsSetsFromDb(ConnectionFactory.getConnLocalKlineForms());
-        Console.log(res.size());
-        Console.log(res.get(1));
+        DataFrame<Object> df_ = new DataFrame<>();
+        df_.add("a", ListUtil.of("abc", "xyz"));
+        df_.add("b", ListUtil.of("2.0", "1.0"));
+        df_ = df_.convert(String.class, String.class);
+
+        Console.log(df_);
+        Console.log(df_.types());
+        List<Object> col1 = df_.col(0);
+        Console.log(col1.get(0) instanceof String);
+
 
 //
 //        MailUtil.send(SettingsCommon.receivers,

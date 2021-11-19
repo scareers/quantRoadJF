@@ -1,6 +1,7 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
@@ -10,12 +11,14 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.LowBuyNextHighSellDistributionAnalyze;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
+import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.SqlUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
+import org.apache.commons.math3.stat.ranking.NaturalRanking;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -382,9 +385,10 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
                 return res; // 无分时数据, 则没有计算结果
             }
+            dfFSLowBuyDay.convert(String.class, Double.class, Double.class);
             // 1.将 trade_time, 转换为 tickDouble.
             List<Object> tradeTimeCol = dfFSLowBuyDay.col(0);
-            List<Object> tickDoubleCol = new ArrayList<>();
+            List<Double> tickDoubleCol = new ArrayList<>();
             for (Object o : tradeTimeCol) {
                 String tick = o.toString();
                 tickDoubleCol.add(fsTimeStrParseToTickDouble(tick.substring(11, 16))); // 分钟tick转换为整数型double
@@ -393,6 +397,55 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             dfFSLowBuyDay.add("tick_double", tickDoubleCol);
 
 // todo: 具体实现.
+            // 1.low, 相关
+            List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close");
+            List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "amount");
+            Double low = NumberUtil.min((Double[]) closeCol.toArray());
+            // 1-1. happen_tick
+            // 只不过最后再转换为Double, 目前int,方便计算, 且 tick相关均使用 tick_double列进行取值
+            int happernTickOfLow = closeCol.indexOf(low);
+            // 1-2. value_percent
+            Double valuePercentOfLow = low / stdCloseOfLowBuy - 1;
+            // 1-3/4. dominate_left / dominate_right
+            Double dominateThreshold = Math.abs(low) * dominateRateKeyArg + low; // 确定比low大
+            int dominateLeft = 0; // 最小0, 最大 happernTickOfLow - 1
+            if (!(happernTickOfLow == 0)) {
+                for (int i = happernTickOfLow - 1; i >= 0; i--) {
+                    if (closeCol.get(i) > dominateThreshold) {
+                        break;
+                    }
+                    dominateLeft++;
+                }
+            }
+            int dominateRight = 0;
+            if (!(happernTickOfLow == closeCol.size() - 1)) {
+                for (int i = happernTickOfLow + 1; i >= 0; i--) {
+                    if (closeCol.get(i) > dominateThreshold) {
+                        break;
+                    }
+                    dominateLeft++;
+                }
+            }
+            // 1.5. 连续成交额占比, 包含了 low那一分钟 . continuous_fall_vol_percent
+            ArrayList<Integer> continuousFallIndexes = new ArrayList<>();
+            continuousFallIndexes.add(happernTickOfLow); // low那一分钟加入
+            if (!(happernTickOfLow == 0)) { // 至少1, 才有可能往前找
+                for (int i = happernTickOfLow; i > 0; i++) { // 注意>0
+                    Double closeAfter = closeCol.get(i);
+                    Double closeBefore = closeCol.get(i - 1);
+                    if (closeAfter < closeBefore) {
+                        continuousFallIndexes.add(i - 1); // 将前1分钟成交额加入索引列表.
+                    }
+                }
+            }
+            Double amountTotal = 0.0;
+            for (Integer i : continuousFallIndexes) {
+                amountTotal += amountCol.get(i);
+            }
+            Double continuous_fall_vol_percent = amountTotal / stdAmount;
+
+            // Low相关5项完成.
+            res.put("Low__happen_tick", tickDoubleCol.get());
 
 
             return null;

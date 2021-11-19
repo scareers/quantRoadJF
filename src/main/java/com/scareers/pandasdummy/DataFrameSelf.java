@@ -167,6 +167,33 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         return newDf;
     }
 
+    public static List<Double> getColAsDoubleList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = df.col(colNameOrIndex);
+        List<Double> res = new ArrayList<>();
+        for (Object o : col) {
+            res.add(Double.valueOf(o.toString()));
+        }
+        return res;
+    }
+
+    public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = df.col(colNameOrIndex);
+        List<String> res = new ArrayList<>();
+        for (Object o : col) {
+            res.add(o.toString());
+        }
+        return res;
+    }
+
+    public static List<Integer> getColAsIntegerList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = df.col(colNameOrIndex);
+        List<Integer> res = new ArrayList<>();
+        for (Object o : col) {
+            res.add(Integer.valueOf(o.toString()));
+        }
+        return res;
+    }
+
 }
 
 
