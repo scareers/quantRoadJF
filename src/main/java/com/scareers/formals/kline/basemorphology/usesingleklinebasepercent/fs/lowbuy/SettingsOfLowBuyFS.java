@@ -23,10 +23,19 @@ public class SettingsOfLowBuyFS {
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
     public static final int processAmountParse = 8;
+    public static final int processAmountSave = 8;
+    public static final int perEpochTaskAmounts = 64;
     public static final int gcControlEpochParse = 100;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
+
+    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
+    public static List<Double> effectiveValueRangeOfValuePercent = Arrays.asList(-0.5, 0.5);
+    public static int binsOfValuePercent = 200;
+    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(-0.03, 0.03); // 连续成交额的3个参数.
+    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(-0.5, 0.5);
+    public static int binsOfAmountPercent = 200;
 
 
     // 分时数据时, 仅访问close, 不访问多余字段,加速
@@ -58,14 +67,15 @@ public class SettingsOfLowBuyFS {
 
     );
 
-    public static String saveTablenameLowBuyFS = "fs_distribution_of_low_buy_next{}";
+    public static String saveTablenameLowBuyFSRow = "fs_distribution_of_low_buy_next{}";
+    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0));
     public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
     public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,
-            StrUtil.format(saveTablenameLowBuyFS, keyInts.get(0)));
+            StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0)));
     public static final String sqlDeleteExistDateRangeRawFS = "delete from {} where stat_date_range=\'{}\'";
     // 删除曾经的记录,逻辑同主程序
     public static String sqlDeleteExistDateRangeFS = StrUtil.format(sqlDeleteExistDateRangeRawFS,
-            saveTablenameLowBuyFS);
+            saveTablenameLowBuyFSRow);
 
     public static String getSaveTableTemplate() {
         String s = "create table if not exists `{}`\n" +

@@ -69,7 +69,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // 主程序使用 windowUsePeriodsCoreArg=7/8/9/10,
             // FS分析为了更加直观, 修改为 keyInt设定. 0代表next0, 即明日, 对应了主程序中的 7
             fsLowBuyDistributionDetailAnalyze(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    saveTablenameLowBuyFS, keyInts.get(0));
+                    saveTablenameLowBuyFSRow, keyInts.get(0));
 
             String hardwareInfo = reportCpuMemoryDisk(true);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
@@ -125,7 +125,59 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         Console.log("results size: {}", results.size());
         System.gc();
 
+        // --------------------------------------------------------- 保存
+        Console.log("构建结果字典完成");
+        Console.log("开始计算并保存");
+        ArrayList<String> forNameRaws = new ArrayList<>(results.keySet());
+        forNameRaws.sort(Comparator.naturalOrder()); // 排序, 自然顺序
+        ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(processAmountSave,
+                processAmountSave * 2, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+        int totalEpochAmounts = (int) Math
+                .ceil((double) results.size() / perEpochTaskAmounts);
+        List<Integer> epochs = CommonUtils.range(totalEpochAmounts);
+        Connection connOfSave = ConnectionFactory.getConnLocalKlineForms();
+        CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
+        ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
+        // 批量插入不伤ssd. 单条插入很伤ssd
+        for (Integer currentEpoch : Tqdm
+                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
+            int startIndex = currentEpoch * perEpochTaskAmounts;
+            int endIndex = (currentEpoch + 1) * perEpochTaskAmounts;
+            List<String> formNamesCurrentEpoch = forNameRaws
+                    .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
 
+            Future<List<String>> f = poolOfCalc
+                    .submit(new CalcStatResultAndSaveTaskOfFSLowBuyHighSell(latchOfCalcForEpoch,
+                            connOfSave, formNamesCurrentEpoch,
+                            stocks.size(), statDateRange, results, smallLargeThresholdOfValuePercent,
+                            effectiveValueRangeOfValuePercent, binsOfValuePercent, smallLargeThresholdOfAmountPercent,
+                            effectiveValueRangeOfAmountPercent, binsOfAmountPercent,
+                            saveTablenameLowBuyFS));
+            futuresOfSave.add(f);
+        }
+        AtomicInteger saveProcess = new AtomicInteger(0);
+        for (Integer i : Tqdm
+                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
+            Future<List<String>> f = futuresOfSave.get(i);
+            List<String> finishedFormNames = f.get();
+            for (String formName0 : finishedFormNames) {
+                // 删除key, 节省空间
+                results.remove(formName0);
+            }
+            //            if (parseProcess.incrementAndGet() % SettingsOfSingleKlineBasePercent.gcControlEpoch == 0) {
+            //                System.gc();
+            //                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+            //                    showMemoryUsageMB();
+            //                }
+            //            }
+        }
+
+        Console.log("计算并保存完成!");
+        latchOfCalcForEpoch.await();
+        //        connOfSave.close(); // 不可关闭, 因底层默认会重新获取到null连接
+        poolOfCalc.shutdown();
+        // 本轮执行完毕
     }
 
 
@@ -611,4 +663,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
     }
 
     public static Log log = LogFactory.get();
+
+    public static class CalcStatResultAndSaveTaskOfFSLowBuyHighSell implements Callable<List<String>> {
+        @Override
+        public List<String> call() throws Exception {
+            return null;
+        }
+    }
+
 }
