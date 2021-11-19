@@ -2,33 +2,33 @@ package com.scareers;
 
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.extra.mail.MailUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.settings.SettingsCommon;
 import joinery.DataFrame;
 
-import java.sql.Connection;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc10ItemValusOfLowBuy;
 
 /**
  * Hello world!
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        DataFrame<Object> df_ = new DataFrame<>();
-        df_.add("a", ListUtil.of("abc", "xyz"));
-        df_.add("b", ListUtil.of("2.0", "1.0"));
-        df_ = df_.convert(String.class, String.class);
+//        DataFrame<Object> df_ = new DataFrame<>();
+//        df_.add("a", ListUtil.of("abc", "xyz"));
+//        df_.add("b", ListUtil.of("2.0", "1.0"));
+//
+//        Console.log(df_);
+//        Console.log(df_.types());
+//        List<Object> col1 = df_.col(0);
+//        Console.log(col1.get(0) instanceof String);
 
-        Console.log(df_);
-        Console.log(df_.types());
-        List<Object> col1 = df_.col(0);
-        Console.log(col1.get(0) instanceof String);
+        Console.log(calc10ItemValusOfLowBuy(3346000000.0, 19.43, "20210831",
+                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ"));
+
+
+//        List<String> x = Arrays.asList("abc", "xyz");
 
 
 //

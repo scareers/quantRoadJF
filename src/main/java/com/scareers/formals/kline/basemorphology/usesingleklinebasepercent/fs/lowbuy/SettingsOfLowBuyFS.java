@@ -9,6 +9,7 @@ import java.util.List;
 
 /**
  * description:
+ * // @todo: LowBuy仅仅实现了 low和low1, low2未实现.
  *
  * @author: admin
  * @date: 2021/11/14  0014-8:51
@@ -25,6 +26,7 @@ public class SettingsOfLowBuyFS {
     public static final int gcControlEpochParse = 100;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
+    public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
 
 
     // 分时数据时, 仅访问close, 不访问多余字段,加速

@@ -1,6 +1,7 @@
 package com.scareers.utils;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
@@ -107,6 +108,17 @@ public class CommonUtils {
         HashSet<Object> res = new HashSet<>();
         res.addAll(set1);
         res.addAll(set2);
+        return res;
+    }
+
+    public static Double minOfListDouble(List<Double> doubles) {
+        Assert.isTrue(doubles.size() > 0);
+        Double res = doubles.get(0);
+        for (int i = 1; i < doubles.size(); i++) {
+            if (doubles.get(i) < res) {
+                res = doubles.get(i);
+            }
+        }
         return res;
     }
 
