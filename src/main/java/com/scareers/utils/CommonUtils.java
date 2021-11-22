@@ -113,11 +113,18 @@ public class CommonUtils {
 
     public static Double minOfListDouble(List<Double> doubles) {
         Assert.isTrue(doubles.size() > 0);
-        Double res = doubles.get(0);
-        for (int i = 1; i < doubles.size(); i++) {
-            if (doubles.get(i) < res) {
+        Double res = Double.MAX_VALUE;
+        for (int i = 0; i < doubles.size(); i++) {
+            Double ele = doubles.get(i);
+            if (ele == null) { // 有null时能够正确返回.
+                continue;
+            }
+            if (ele < res) {
                 res = doubles.get(i);
             }
+        }
+        if (res.equals(Double.MAX_VALUE)) {
+            return null; // 全部时null时, 可能发生.
         }
         return res;
     }
