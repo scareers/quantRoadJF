@@ -19,7 +19,6 @@ public class SettingsOfLowBuyFS {
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static final int stockAmountsBeCalcFS = 1000000;
-    public static final Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
     public static final int calcLayer = 2; // 即判定3层. Low, Low2, Low3
@@ -32,6 +31,7 @@ public class SettingsOfLowBuyFS {
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
+    public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
 
     // 在 分析函数已经手动设定. 对这些参数不在显式设定, 见 analyzeStatsResults()
     //    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
@@ -71,61 +71,61 @@ public class SettingsOfLowBuyFS {
 
     );
 
-    public static String saveTablenameLowBuyFSRow = "fs_distribution_of_low_buy_next{}";
-    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0));
+    public static String saveTablenameLowBuyFSRow = "fs_distribution_of_lowbuy_highsell_next{}b{}s";
+    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0),
+            keyInts.get(1));
     public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
     public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,
-            StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0)));
-    public static final String sqlDeleteExistDateRangeRawFS = "delete from {} where stat_date_range=\'{}\'";
+            saveTablenameLowBuyFS);
     // 删除曾经的记录,逻辑同主程序
+    public static final String sqlDeleteExistDateRangeRawFS = "delete from {} where stat_date_range=\'{}\'";
     public static String sqlDeleteExistDateRangeFS = StrUtil.format(sqlDeleteExistDateRangeRawFS,
-            saveTablenameLowBuyFSRow);
+            saveTablenameLowBuyFS);
 
+    /**
+     * [暂时的字段列表
+     * "small_large_threshold",
+     * "samlllarge_compare_counts_percent_0",
+     * "samlllarge_compare_counts_percent_1",
+     * "samlllarge_compare_counts_percent_2",
+     * "std",
+     * "bins",
+     * "frequency_list",
+     * "outliers_counts",
+     * "max",
+     * "effective_value_range",
+     * "cdf_list",
+     * "tick_list",
+     * "reference_compare_counts_percent_0",
+     * "reference_compare_counts_percent_1",
+     * "reference_compare_counts_percent_2",
+     * "virtual_geometry_mean",
+     * "effective_counts",
+     * "total_counts",
+     * "reference_value",
+     * "min",
+     * "samlllarge_compare_counts_0",
+     * "samlllarge_compare_counts_1",
+     * "samlllarge_compare_counts_2",
+     * "reference_compare_counts_0",
+     * "reference_compare_counts_1",
+     * "reference_compare_counts_2",
+     * "mean",
+     * "effective_count_percent",
+     * "counts_list",
+     * "outliers_count_percent",
+     * "kurt",
+     * "skew"
+     * ]
+     * <p>
+     * analyzeResultDf.add("form_set_id", formSetId.intValue());
+     * analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
+     * analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
+     * analyzeResultDf.add("stat_date_range", statDateRange);
+     * analyzeResultDf.add("stat_stock_counts", stockCount);
+     */
     public static String getSaveTableTemplate() {
-        /*
-        [暂时的字段列表
-            "small_large_threshold",
-            "samlllarge_compare_counts_percent_0",
-            "samlllarge_compare_counts_percent_1",
-            "samlllarge_compare_counts_percent_2",
-            "std",
-            "bins",
-            "frequency_list",
-            "outliers_counts",
-            "max",
-            "effective_value_range",
-            "cdf_list",
-            "tick_list",
-            "reference_compare_counts_percent_0",
-            "reference_compare_counts_percent_1",
-            "reference_compare_counts_percent_2",
-            "virtual_geometry_mean",
-            "effective_counts",
-            "total_counts",
-            "reference_value",
-            "min",
-            "samlllarge_compare_counts_0",
-            "samlllarge_compare_counts_1",
-            "samlllarge_compare_counts_2",
-            "reference_compare_counts_0",
-            "reference_compare_counts_1",
-            "reference_compare_counts_2",
-            "mean",
-            "effective_count_percent",
-            "counts_list",
-            "outliers_count_percent",
-            "kurt",
-            "skew"
-        ]
 
-        analyzeResultDf.add("form_set_id", formSetId.intValue());
-        analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
-        analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
-        analyzeResultDf.add("stat_date_range", statDateRange);
-        analyzeResultDf.add("stat_stock_counts", stockCount);
-
-
-         */
         String s = "create table if not exists `{}`\n" +
                 "(\n" +
                 "    id int auto_increment comment 'id'\n" + " primary key,\n" +
@@ -181,7 +181,7 @@ public class SettingsOfLowBuyFS {
                 "     INDEX condition4_index (condition4 ASC),\n" +
                 "     INDEX condition5_index (condition5 ASC),\n" +
                 "     \n" +
-                "     INDEX form_sets_id_index (form_sets_id ASC),\n" +
+                "     INDEX form_set_id_index (form_set_id ASC),\n" +
                 "     INDEX stat_date_range_index (stat_date_range ASC),\n" +
                 "     INDEX stat_result_algorithm_index (stat_result_algorithm ASC),\n" +
                 "     INDEX concrete_algorithm_index (concrete_algorithm ASC),\n" +

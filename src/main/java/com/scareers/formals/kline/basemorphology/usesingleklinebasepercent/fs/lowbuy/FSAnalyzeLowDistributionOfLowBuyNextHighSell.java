@@ -18,7 +18,6 @@ import com.scareers.utils.SqlUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
-import java.beans.Expression;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -31,7 +30,6 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.*;
-import static com.scareers.utils.CommonUtils.minOfListDouble;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 
@@ -87,7 +85,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                                                           DataFrame<String> stockWithBoard, List<String> statDateRange,
                                                           String saveTablenameLowBuyFS, int keyInt)
             throws SQLException, ExecutionException, InterruptedException {
-
+        // --------------------------------------------- 解析
         Console.log("构建结果字典");
         // 形态集合id__计算项: 值列表.
         ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
@@ -853,8 +851,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             String tableName = StrUtil.format(LowBuyNextHighSellDistributionAnalyze.tablenameSaveAnalyze,
                     keyInts.get(0),
                     keyInts.get(1));
-            DataFrame<Object> dfFormSets = DataFrame.readSql(conn, StrUtil.format("select id,form_name from {};",
-                    tableName));
+            DataFrame<Object> dfFormSets = DataFrame
+                    .readSql(connOfKlineForms, StrUtil.format("select id,form_name from {};",
+                            tableName));
             ConcurrentHashMap<Long, List<String>> res = new ConcurrentHashMap<>();
 
             for (int i = 0; i < dfFormSets.length(); i++) {
@@ -863,7 +862,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 List<String> value = JSONUtil.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
                 res.put(key, value);
             }
-            Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {}", tableName));
+            //Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {}", tableName));
             //@noti: res.get(1L)  才行, 注意时 long, 而非int
             return res;
         }
