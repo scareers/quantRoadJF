@@ -18,6 +18,7 @@ import com.scareers.utils.SqlUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
+import java.beans.Expression;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -25,6 +26,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfKlineCommons.simpleStatAnalyzeByValueListAsDF;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
@@ -889,7 +891,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         CountDownLatch latchOfCalcForEpoch;
         Connection connOfSave;
         List<String> formNamesCurrentEpoch;
-        int size;
+        int stockCount;
         List<String> statDateRange;
         ConcurrentHashMap<String, List<Double>> results;
         List<Double> smallLargeThresholdOfValuePercent;
@@ -901,7 +903,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         String saveTablenameLowBuyFS;
 
         public CalcStatResultAndSaveTaskOfFSLowBuyHighSell(CountDownLatch latchOfCalcForEpoch, Connection connOfSave,
-                                                           List<String> formNamesCurrentEpoch, int size,
+                                                           List<String> formNamesCurrentEpoch, int stockCount,
                                                            List<String> statDateRange,
                                                            ConcurrentHashMap<String, List<Double>> results,
                                                            List<Double> smallLargeThresholdOfValuePercent,
@@ -913,7 +915,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             this.latchOfCalcForEpoch = latchOfCalcForEpoch;
             this.connOfSave = connOfSave;
             this.formNamesCurrentEpoch = formNamesCurrentEpoch;
-            this.size = size;
+            this.stockCount = stockCount;
             this.statDateRange = statDateRange;
             this.results = results;
             this.smallLargeThresholdOfValuePercent = smallLargeThresholdOfValuePercent;
@@ -927,9 +929,83 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
         @Override
         public List<String> call() throws Exception {
+            try {
+                DataFrame<Object> dfTotalSave = null;
+                HashMap<String, DataFrame<Object>> analyzeResultMapTotal = // 默认参数适用 formNameRaws
+                        analyzeStatsResults();
+                for (String formName : formNamesCurrentEpoch) {
+                    DataFrame<Object> analyzeResultDf = analyzeResultMapTotal.get(formName);
+                    if (analyzeResultDf == null) { // 单条分析是可能为null的
+                        continue;
+                    }
+                    // 精细分析也不需要保存 cdfwithtick. 过于冗余
+                    // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
+                    List<String> formNameFragments = StrUtil.split(formName, "__");
+                    Double formSetId = Double.valueOf(formNameFragments.get(0)); // 形态集合id.
+                    String statResultAlgorithm = formNameFragments.get(1); // Low1/2/3 作为算法字段保存
+                    String concreteAlgorithm = formNameFragments.get(2); // 具体小算法5种
+
+
+                    DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultDf,
+                            concreteAlgorithm,
+                            formSetId,
+                            statResultAlgorithm);
+                    if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
+                        dfTotalSave = dfSingleSaved;
+                    } else {
+                        dfTotalSave = dfTotalSave.concat(dfSingleSaved); // 可能由于列不同, 而发生错误
+                    }
+                }
+                // dfTotalSave 应当转换为 self
+                DataFrameSelf.toSql(dfTotalSave, saveTablenameLowBuyFS, connOfSave, "append", null);
+                return formNamesCurrentEpoch;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                latchOfCalcForEpoch.countDown();
+                if (latchOfCalcForEpoch.getCount() % gcControlEpochSave == 0) {
+                    System.gc();
+                    if (showMemoryUsage) {
+                        showMemoryUsageMB();
+                    }
+                }
+                return formNamesCurrentEpoch;
+            }
+        }
+
+        private DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(DataFrame<Object> analyzeResultDf,
+                                                                    String concreteAlgorithm, Double formSetId,
+                                                                    String statResultAlgorithm) {
             return null;
         }
-        // todo:
+
+        private HashMap<String, DataFrame<Object>> analyzeStatsResults() throws Exception {
+            HashMap<String, DataFrame<Object>> res = new HashMap<>();
+            for (String formName : formNamesCurrentEpoch) {
+                DataFrame<Object> conclusion = null;
+                List<Double> resultSingle = results.get(formName); // 单条结果
+                if (formName.endsWith("happen_tick")) { // 5种不同计量, 调用的参数不同
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(0.0, 240.0), 120.0,
+                            Arrays.asList(60.0, 180.0), false);
+                } else if (formName.endsWith("value_percent")) { // 这里涨跌幅定死了的
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 400, Arrays.asList(-1.0, 1.0), 0.0,
+                            Arrays.asList(-0.02, 0.02), true);
+                } else if (formName.endsWith("dominate_left") || formName.endsWith("dominate_right")) { // 左右支配的参考需要设定一下
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(0.0, 240.0), 5.0,
+                            Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
+                } else if (formName.endsWith("continuous_fall_vol_percent")) { // 成交量需要注意
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
+                            Arrays.asList(0.005, 0.05), true); // 5分钟为基准. 3和10以上为 小大.
+                } else {
+                    throw new Exception("未知key");
+                }
+                if (conclusion == null) {
+                    continue; // 没有有效统计数值, 则conclusion为null. 这里直接skip掉.  后面res.get(key) , 也要判定一下是否为null
+                }
+                res.put(formName, conclusion);
+            }
+            return res;
+        }
 
 
     }

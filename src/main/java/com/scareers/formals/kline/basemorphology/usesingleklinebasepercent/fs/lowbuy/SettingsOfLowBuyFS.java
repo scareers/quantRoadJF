@@ -27,6 +27,8 @@ public class SettingsOfLowBuyFS {
     public static final int processAmountSave = 8;
     public static final int perEpochTaskAmounts = 64;
     public static final int gcControlEpochParse = 100;
+    public static final int gcControlEpochSave = 1000;
+    public static final boolean showMemoryUsage = false;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();

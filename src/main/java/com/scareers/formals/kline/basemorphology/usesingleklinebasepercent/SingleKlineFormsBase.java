@@ -281,7 +281,7 @@ public class SingleKlineFormsBase {
         public List<String> call() throws Exception {
             try {
                 DataFrame<Object> dfTotalSave = null;
-                HashMap<String, HashMap<String, Object>> analyzeResultMapTotal =
+                HashMap<String, HashMap<String, Object>> analyzeResultMapTotal = // 默认参数适用 formNameRaws
                         analyzeStatsResults(SettingsOfSingleKlineBasePercent.calcCdfAndFrequencyWithTick);
                 for (String formName : formNameRaws) {
                     HashMap<String, Object> analyzeResultMap = analyzeResultMapTotal.get(formName);
