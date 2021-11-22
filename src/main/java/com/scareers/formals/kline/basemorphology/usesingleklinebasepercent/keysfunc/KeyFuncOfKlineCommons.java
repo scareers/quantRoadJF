@@ -3,8 +3,8 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keys
 import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.json.JSONUtil;
-import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
@@ -24,15 +24,15 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 public class KeyFuncOfKlineCommons {
     public static void main(String[] args) {
         DataFrame<Object> res;
-        res = simpleStatAnalyzeByValueListAsDF(ListUtil.of(0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.3, 0.3, 0.35), 2,
-                ListUtil.of(0.1, 0.3)
-                , 0.2, ListUtil.of(0.15, 0.25), true);
-        Console.log(res.columns());
+//        res = simpleStatAnalyzeByValueListAsDF(ListUtil.of(0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.3, 0.3, 0.35), 2,
+//                ListUtil.of(0.1, 0.3)
+//                , 0.2, ListUtil.of(0.15, 0.25), true);
+//        Console.log(res.columns());
 //        Console.log(res);
 
 
         Map<String, Object> resMap = simpleStatAnalyzeByValueList(
-                ListUtil.of(0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.3, 0.3, 0.35), 2,
+                ListUtil.of(0.05, 0.1, 0.1, 0.15,0.18, 0.2, 0.2, 0.25, 0.27, 0.3, 0.3), 2,
                 ListUtil.of(0.1, 0.3)
                 , 0.2, ListUtil.of(0.15, 0.25), true);
         Console.log(JSONUtil.toJsonPrettyStr(resMap));
@@ -224,6 +224,8 @@ public class KeyFuncOfKlineCommons {
         // Double
         if (calcVirtualGeometryMean) {
             conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
+        } else {
+            conclusion.put("virtual_geometry_mean", null);
         }
 
         conclusion.put("bins", tickList.size()); // 很正常
@@ -286,7 +288,10 @@ public class KeyFuncOfKlineCommons {
             countList.add(0L);
             // 数量记录初始化
         }
-        double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
+        // @noti: 因为浮点数误差,double在5位小数前基本都能准确表示,, 计算perRangeWidth时,保留5位, 能够使得tick足够准确,
+        // 同理, 在面对恰好为 tick的值时, 也不会由于浮点数误差, 导致tick无法依照意愿分配到 前一或者后一tick. 能够在速度和准确取得平衡
+        double perRangeWidth = NumberUtil.round((effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins, 5)
+                .doubleValue();
         List<Double> tickList = getTickListByBinsAndEffectiveValueRange(effectiveValueRange, bins, perRangeWidth);
         for (int i = 0; i < valueList.size(); i++) {
             Double value = valueList.get(i);
@@ -302,7 +307,12 @@ public class KeyFuncOfKlineCommons {
                 countList.set(0, count + 1);
                 continue;
             }
-            int index = (int) ((value - effectiveValueRange.get(0)) / perRangeWidth);
+            int index = (int) Math.ceil((NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
+                    .doubleValue())) - 1; // 注意逻辑还是比较绕, 基本上不能少
+            Console.log(value, effectiveValueRange.get(0), perRangeWidth,
+                    NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
+                            .doubleValue(), index);
+
             Long count = countList.get(index);
             countList.set(index, count + 1);
         }
