@@ -1,6 +1,7 @@
 package com.scareers.pandasdummy;
 
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -139,7 +140,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
                 stmt.setObject(c, value);
             }
             stmt.addBatch();
-            // Console.log(stmt.toString()); 可以看到sql语句
+            Console.log(stmt.toString()); //可以看到sql语句
         }
         stmt.executeBatch();
 //        conn.commit();

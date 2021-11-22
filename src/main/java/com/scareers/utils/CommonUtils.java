@@ -112,7 +112,9 @@ public class CommonUtils {
     }
 
     public static Double minOfListDouble(List<Double> doubles) {
-        Assert.isTrue(doubles.size() > 0);
+        if (doubles.size() == 0) {
+            return null;
+        }
         Double res = Double.MAX_VALUE;
         for (int i = 0; i < doubles.size(); i++) {
             Double ele = doubles.get(i);

@@ -69,7 +69,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // 主程序使用 windowUsePeriodsCoreArg=7/8/9/10,
             // FS分析为了更加直观, 修改为 keyInt设定. 0代表next0, 即明日, 对应了主程序中的 7
             fsLowBuyDistributionDetailAnalyze(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    saveTablenameLowBuyFSRow, keyInts.get(0));
+                    saveTablenameLowBuyFS, keyInts.get(0));
 
             String hardwareInfo = reportCpuMemoryDisk(true);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
@@ -315,7 +315,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     }
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDB, allForms);
-                    Console.log();
                     if (belongToFormsetIds.size() == 0) {
                         continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     }
@@ -356,7 +355,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                             resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
                         }
-                        Console.log(setId);
+                        //Console.log(setId);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -365,7 +364,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     Console.log(dfRaw.slice(i, i + 3));
                 }
             }
-            Console.log(resultTemp);
+            //Console.log(resultTemp);
             return resultTemp;
         }
 
@@ -642,8 +641,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             // 字段列表: Arrays.asList("trade_time", "close", "amount");  + "tick_double
             //dfFSLowBuyDay.add("tick_double", tickDoubleCol);
-            Console.log(dfFSLowBuyDay.toString(300));
-            Console.log(dfFSLowBuyDay.types());
+//            Console.log(dfFSLowBuyDay.toString(300));
+//            Console.log(dfFSLowBuyDay.types());
             // 1.low, 相关
             List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close");
             List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "amount");
@@ -930,7 +929,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     String statResultAlgorithm = formNameFragments.get(1); // Low1/2/3 作为算法字段保存
                     String concreteAlgorithm = formNameFragments.get(2); // 具体小算法5种
 
-                    DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultDf,
+                    DataFrame<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultDf,
                             concreteAlgorithm,
                             formSetId,
                             statResultAlgorithm);
@@ -957,20 +956,20 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
         }
 
-        private DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(DataFrame<Object> analyzeResultDf,
-                                                                    String concreteAlgorithm, Double formSetId,
-                                                                    String statResultAlgorithm) {
+        private DataFrame<Object> prepareSaveDfForAnalyzeResult(DataFrame<Object> analyzeResultDf,
+                                                                String concreteAlgorithm, Double formSetId,
+                                                                String statResultAlgorithm) {
             // analyzeResultDf 添加其他需要保存的列就行了.
             if (analyzeResultDf == null) {
                 return null;
             }
-            analyzeResultDf.add("form_set_id", formSetId.intValue());
-            analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
-            analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
-            analyzeResultDf.add("stat_date_range", statDateRange);
-            analyzeResultDf.add("stat_stock_counts", stockCount);
+            analyzeResultDf.add("form_set_id", Arrays.asList(formSetId.intValue()));
+            analyzeResultDf.add("stat_result_algorithm", Arrays.asList(statResultAlgorithm));
+            analyzeResultDf.add("concrete_algorithm", Arrays.asList(statResultAlgorithm));
+            analyzeResultDf.add("stat_date_range", Arrays.asList(statDateRange));
+            analyzeResultDf.add("stat_stock_counts", Arrays.asList(stockCount));
 
-            return null;
+            return analyzeResultDf;
         }
 
         private HashMap<String, DataFrame<Object>> analyzeStatsResults() throws Exception {
@@ -979,13 +978,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 DataFrame<Object> conclusion = null;
                 List<Double> resultSingle = results.get(formName); // 单条结果
                 if (formName.endsWith("happen_tick")) { // 5种不同计量, 调用的参数不同
-                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(0.0, 240.0), 120.0,
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 120.0,
                             Arrays.asList(60.0, 180.0), false);
                 } else if (formName.endsWith("value_percent")) { // 这里涨跌幅定死了的
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 400, Arrays.asList(-1.0, 1.0), 0.0,
                             Arrays.asList(-0.02, 0.02), true);
                 } else if (formName.endsWith("dominate_left") || formName.endsWith("dominate_right")) { // 左右支配的参考需要设定一下
-                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(0.0, 240.0), 5.0,
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 5.0,
                             Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
                 } else if (formName.endsWith("continuous_fall_vol_percent")) { // 成交量需要注意
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
