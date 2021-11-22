@@ -135,23 +135,75 @@ public class SettingsOfLowBuyFS {
                 "    stat_result_algorithm     varchar(1024) null comment '统计使用的结果算法, 例如计算明日收盘,则为Next0Close',\n" +
                 "    concrete_algorithm     varchar(1024) null comment '具体的5种计量之一.',\n" +
                 "    stat_stock_counts  int  null comment '统计时股票数量, 常规为全部股票. ',\n" +
+                "    conditions_set                     varchar(1024) null comment '条件集合,描述,自行添加',\n" +
+                "    condition1                         varchar(1024) null comment '条件1 的取值, 形如  条件名称[下限,上限], 一般包含下限,不包含上限',\n" +
+                "    condition2                         varchar(1024) null,\n" +
+                "    condition3                         varchar(1024) null,\n" +
+                "    condition4                         varchar(1024) null,\n" +
+                "    condition5                         varchar(1024) null,\n" +
+                "    small_large_threshold               mediumtext    null comment '简单统计结果出现大幅变化的状态, (-0.05,+0.05), 表示对-0.05以下和0.05以上,视为大改变,进行统计',\n" +
+                "    bins                               int           null comment '本身是matplotlib画柱状图时分区间数量参数, 这里引申对所有数据划分为多少个等价区间',\n" +
+                "    effective_value_range              mediumtext    null comment '对结果数据, 设定有效区间, (-0.20.5,+0.205) 统计涨跌停以内情况',\n" +
+                "    max                                float         null comment '基础统计量 -- 最大值',\n" +
+                "    mean                               float         null comment '基础统计量 -- 算术平均',\n" +
+                "    min                                float         null comment '基础统计量 -- 最小值',\n" +
+                "    std                                float         null comment '基础统计量 -- 标准差, 不统计方差',\n" +
+                "    virtual_geometry_mean              float         null comment '基础统计量 -- 折算的几何平均值, 即复利收益率,可能有少许误差',\n" +
+                "    skew                                float   null comment '基础统计量 -- 斜度, 反映 聚集于 左边尾部 或右边尾部状态, 正太分布为0',\n" +
+                "    kurt                                float   null comment '基础统计量 -- 峰度, 反映聚集于平均值附近的状态, 正太分布为3, 已减去3',\n" +
+                "    cdf_list                           mediumtext    null comment 'cdf 即累计密度,列表;; 对应bins',\n" +
+                "    frequency_list                     mediumtext    null comment 'frequency 频率列表',\n" +
+                "    \n" +
+                "    counts_list                   mediumtext    null comment '频数 列表',\n" +
+                "    tick_list                          mediumtext    null comment 'tick 即区间分配列表',\n" +
+                "    samlllarge_compare_counts_0         int           null comment '大值改变,对应 big_change_threshold, 0,1,2分别对应 小值,中间值,大值出现次数',\n" +
+                "    samlllarge_compare_counts_1         int           null,\n" +
+                "    samlllarge_compare_counts_2         int           null,\n" +
+                "    samlllarge_compare_counts_percent_0 float         null comment '大值改变,频数的百分比, 0,1,2分别对应小,间,大',\n" +
+                "    samlllarge_compare_counts_percent_1 float         null,\n" +
+                "    samlllarge_compare_counts_percent_2 float         null,\n" +
+                "    effective_counts                   int           null comment '有效的数量, 排除掉了无效数据后',\n" +
+                "    effective_count_percent            float         null comment '有效统计 百分比',\n" +
+                "    outliers_counts                    int           null comment '异常值数量',\n" +
+                "    outliers_count_percent             int           null comment '异常值百分比',\n" +
+                "    total_counts                       int           null comment '总计数量, 含异常值',\n" +
+                "    reference_compare_counts_0              int           null comment '以0作为分界统计, 统计 <0,==0,>0 的数量'," +
+                "    reference_compare_counts_1              int           null,\n" +
+                "    reference_compare_counts_2              int           null,\n" +
+                "    reference_compare_counts_percent_0      float         null comment '以0作为分界统计, 统计 <0,==0,>0 的数量 的百分比',\n" +
+                "    reference_compare_counts_percent_1      float         null,\n" +
+                "    reference_compare_counts_percent_2      float         null,\n" +
+                "    self_notes                         varchar(2048) null comment '其他备注',\n" +
 
                 "     INDEX condition1_index (condition1 ASC),\n" +
                 "     INDEX condition2_index (condition2 ASC),\n" +
                 "     INDEX condition3_index (condition3 ASC),\n" +
                 "     INDEX condition4_index (condition4 ASC),\n" +
                 "     INDEX condition5_index (condition5 ASC),\n" +
-                "     INDEX condition6_index (condition6 ASC),\n" +
-                "     INDEX condition7_index (condition7 ASC),\n" +
-                "     INDEX condition8_index (condition8 ASC),\n" +
-                "     INDEX condition9_index (condition9 ASC),\n" +
-                "     INDEX condition10_index (condition10 ASC),\n" +
                 "     \n" +
                 "     INDEX form_sets_id_index (form_sets_id ASC),\n" +
                 "     INDEX stat_date_range_index (stat_date_range ASC),\n" +
                 "     INDEX stat_result_algorithm_index (stat_result_algorithm ASC),\n" +
+                "     INDEX concrete_algorithm_index (concrete_algorithm ASC),\n" +
+                "     INDEX reference_compare_counts_percent_0_index (reference_compare_counts_percent_0 ASC),\n" +
+                "     INDEX reference_compare_counts_percent_1_index (reference_compare_counts_percent_1 ASC),\n" +
+                "     INDEX reference_compare_counts_percent_2_index (reference_compare_counts_percent_2 ASC),\n" +
+                "     \n" +
+                "     INDEX samlllarge_compare_counts_percent_0_index (samlllarge_compare_counts_percent_0 ASC),\n" +
+                "     INDEX samlllarge_compare_counts_percent_1_index (samlllarge_compare_counts_percent_1 ASC),\n" +
+                "     INDEX samlllarge_compare_counts_percent_2_index (samlllarge_compare_counts_percent_2 ASC),\n" +
+                "     \n" +
+                "     INDEX max_index (max ASC),\n" +
+                "     INDEX min_index (min ASC),\n" +
+                "     INDEX std_index (std ASC),\n" +
+                "     INDEX mean_index (mean ASC),\n" +
+                "     INDEX skew_index (skew ASC),\n" +
+                "     INDEX kurt_index (kurt ASC),\n" +
+                "     INDEX virtual_geometry_mean_index (virtual_geometry_mean ASC),\n" +
+                "\n" +
+                "     INDEX effective_counts_index (effective_counts ASC)\n" +
                 ")\n" +
-                "    comment '分时 低买 次日最低点分布分析';\n";
+                "    comment '分时 低买高卖 最低点最高点分布分析';\n";
         return s;
     }
 }
