@@ -140,9 +140,18 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
                 stmt.setObject(c, value);
             }
             stmt.addBatch();
-            Console.log(stmt.toString()); //可以看到sql语句
+            //Console.log(stmt.toString()); //可以看到sql语句
         }
-        stmt.executeBatch();
+
+        try {
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+//            Console.log(df);
+            throw e;
+        } finally {
+
+        }
 //        conn.commit();
 //        conn.setAutoCommit(true);
         // 注意并未关闭conn, 同原生 writeSql 一样. 这样可以复用 连接

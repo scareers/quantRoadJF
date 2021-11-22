@@ -966,7 +966,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             analyzeResultDf.add("form_set_id", Arrays.asList(formSetId.intValue()));
             analyzeResultDf.add("stat_result_algorithm", Arrays.asList(statResultAlgorithm));
             analyzeResultDf.add("concrete_algorithm", Arrays.asList(statResultAlgorithm));
-            analyzeResultDf.add("stat_date_range", Arrays.asList(statDateRange));
+            // 此5列, 仅此列注意一下
+            analyzeResultDf.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(statDateRange)));
             analyzeResultDf.add("stat_stock_counts", Arrays.asList(stockCount));
 
             return analyzeResultDf;
