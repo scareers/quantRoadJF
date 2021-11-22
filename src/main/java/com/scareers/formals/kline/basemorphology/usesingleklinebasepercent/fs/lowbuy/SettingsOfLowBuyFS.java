@@ -33,12 +33,13 @@ public class SettingsOfLowBuyFS {
             Double.class, Double.class, Double.class};
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
 
-    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
-    public static List<Double> effectiveValueRangeOfValuePercent = Arrays.asList(-0.5, 0.5);
-    public static int binsOfValuePercent = 200;
-    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(0.05, 0.15); // 连续成交额的3个参数.
-    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(0.0, 1.0); // 成交量 200tick, 每个 0.5%
-    public static int binsOfAmountPercent = 200;
+    // 在 分析函数已经手动设定. 对这些参数不在显式设定, 见 analyzeStatsResults()
+    //    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
+    //    public static List<Double> effectiveValueRangeOfValuePercent = Arrays.asList(-0.5, 0.5);
+    //    public static int binsOfValuePercent = 200;
+    //    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(0.05, 0.15); // 连续成交额的3个参数.
+    //    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(0.0, 1.0); // 成交量 200tick, 每个 0.5%
+    //    public static int binsOfAmountPercent = 200;
 
 
     // 分时数据时, 仅访问close, 不访问多余字段,加速
@@ -81,20 +82,59 @@ public class SettingsOfLowBuyFS {
             saveTablenameLowBuyFSRow);
 
     public static String getSaveTableTemplate() {
+        /*
+        [暂时的字段列表
+            "small_large_threshold",
+            "samlllarge_compare_counts_percent_0",
+            "samlllarge_compare_counts_percent_1",
+            "samlllarge_compare_counts_percent_2",
+            "std",
+            "bins",
+            "frequency_list",
+            "outliers_counts",
+            "max",
+            "effective_value_range",
+            "cdf_list",
+            "tick_list",
+            "reference_compare_counts_percent_0",
+            "reference_compare_counts_percent_1",
+            "reference_compare_counts_percent_2",
+            "virtual_geometry_mean",
+            "effective_counts",
+            "total_counts",
+            "reference_value",
+            "min",
+            "samlllarge_compare_counts_0",
+            "samlllarge_compare_counts_1",
+            "samlllarge_compare_counts_2",
+            "reference_compare_counts_0",
+            "reference_compare_counts_1",
+            "reference_compare_counts_2",
+            "mean",
+            "effective_count_percent",
+            "counts_list",
+            "outliers_count_percent",
+            "kurt",
+            "skew"
+        ]
+
+        analyzeResultDf.add("form_set_id", formSetId.intValue());
+        analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
+        analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
+        analyzeResultDf.add("stat_date_range", statDateRange);
+        analyzeResultDf.add("stat_stock_counts", stockCount);
+
+
+         */
         String s = "create table if not exists `{}`\n" +
                 "(\n" +
                 "    id int auto_increment comment 'id'\n" + " primary key,\n" +
+                "    form_set_id  int  not null comment '形态集合id, 对应 " + "next0b1s_of_single_kline 的id列,不能为空'," +
 
                 "    stat_date_range   varchar(1024) null comment '该条记录的 统计日期区间',\n" +
-                "    stat_result_algorithm     varchar(1024) null comment '统计使用的结果算法, 例如计算明日收盘,则为 " + "Next0Close',\n" +
+                "    stat_result_algorithm     varchar(1024) null comment '统计使用的结果算法, 例如计算明日收盘,则为Next0Close',\n" +
+                "    concrete_algorithm     varchar(1024) null comment '具体的5种计量之一.',\n" +
                 "    stat_stock_counts  int  null comment '统计时股票数量, 常规为全部股票. ',\n" +
-
-                "    form_sets_id  int  not null comment '形态集合id, 对应 " + "next0b1s_of_single_kline 的id列,不能为空'," +
-                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
-                "    detail_list  longtext  not null comment '原始的分布结果列表,将对此列表进行统计分析.左右支配和出现时间全保存.价格转换为区间保存',\n" +
-                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
-                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
-                "    analyze_item_type  varchar(2048)  not null comment '统计的项目:Low/2/3*4 总计12项',\n" +
 
                 "     INDEX condition1_index (condition1 ASC),\n" +
                 "     INDEX condition2_index (condition2 ASC),\n" +

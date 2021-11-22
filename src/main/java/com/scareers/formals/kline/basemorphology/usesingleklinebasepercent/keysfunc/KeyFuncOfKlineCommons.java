@@ -24,15 +24,15 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 public class KeyFuncOfKlineCommons {
     public static void main(String[] args) {
         DataFrame<Object> res;
-//        res = simpleStatAnalyzeByValueListAsDF(ListUtil.of(0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.3, 0.3, 0.35), 2,
-//                ListUtil.of(0.1, 0.3)
-//                , 0.2, ListUtil.of(0.15, 0.25), true);
-//        Console.log(res.columns());
-//        Console.log(res);
+        res = simpleStatAnalyzeByValueListAsDF(ListUtil.of(0.05, 0.1, 0.1, 0.2, 0.2, 0.25, 0.3, 0.3, 0.35), 2,
+                ListUtil.of(0.1, 0.3)
+                , 0.2, ListUtil.of(0.15, 0.25), true);
+        Console.log();
+        Console.log(JSONUtil.toJsonPrettyStr(res.columns()));
 
 
         Map<String, Object> resMap = simpleStatAnalyzeByValueList(
-                ListUtil.of(0.05, 0.1, 0.1, 0.15,0.18, 0.2, 0.2, 0.25, 0.27, 0.3, 0.3), 2,
+                ListUtil.of(0.05, 0.1, 0.1, 0.15, 0.18, 0.2, 0.2, 0.25, 0.27, 0.3, 0.3), 2,
                 ListUtil.of(0.1, 0.3)
                 , 0.2, ListUtil.of(0.15, 0.25), true);
         Console.log(JSONUtil.toJsonPrettyStr(resMap));
@@ -224,8 +224,6 @@ public class KeyFuncOfKlineCommons {
         // Double
         if (calcVirtualGeometryMean) {
             conclusion.put("virtual_geometry_mean", calcVirtualGeometryMeanRecursion(effectiveResults, 100, 1000));
-        } else {
-            conclusion.put("virtual_geometry_mean", null);
         }
 
         conclusion.put("bins", tickList.size()); // 很正常
@@ -309,9 +307,9 @@ public class KeyFuncOfKlineCommons {
             }
             int index = (int) Math.ceil((NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
                     .doubleValue())) - 1; // 注意逻辑还是比较绕, 基本上不能少
-            Console.log(value, effectiveValueRange.get(0), perRangeWidth,
-                    NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
-                            .doubleValue(), index);
+//            Console.log(value, effectiveValueRange.get(0), perRangeWidth,
+//                    NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
+//                            .doubleValue(), index);
 
             Long count = countList.get(index);
             countList.set(index, count + 1);

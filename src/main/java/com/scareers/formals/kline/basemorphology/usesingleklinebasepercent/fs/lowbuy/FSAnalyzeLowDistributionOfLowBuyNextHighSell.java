@@ -152,9 +152,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             Future<List<String>> f = poolOfCalc
                     .submit(new CalcStatResultAndSaveTaskOfFSLowBuyHighSell(latchOfCalcForEpoch,
                             connOfSave, formNamesCurrentEpoch,
-                            stocks.size(), statDateRange, results, smallLargeThresholdOfValuePercent,
-                            effectiveValueRangeOfValuePercent, binsOfValuePercent, smallLargeThresholdOfAmountPercent,
-                            effectiveValueRangeOfAmountPercent, binsOfAmountPercent,
+                            stocks.size(), statDateRange, results,
                             saveTablenameLowBuyFS));
             futuresOfSave.add(f);
         }
@@ -894,36 +892,19 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         int stockCount;
         List<String> statDateRange;
         ConcurrentHashMap<String, List<Double>> results;
-        List<Double> smallLargeThresholdOfValuePercent;
-        List<Double> effectiveValueRangeOfValuePercent;
-        int binsOfValuePercent;
-        List<Double> smallLargeThresholdOfAmountPercent;
-        List<Double> effectiveValueRangeOfAmountPercent;
-        int binsOfAmountPercent;
         String saveTablenameLowBuyFS;
 
         public CalcStatResultAndSaveTaskOfFSLowBuyHighSell(CountDownLatch latchOfCalcForEpoch, Connection connOfSave,
                                                            List<String> formNamesCurrentEpoch, int stockCount,
                                                            List<String> statDateRange,
                                                            ConcurrentHashMap<String, List<Double>> results,
-                                                           List<Double> smallLargeThresholdOfValuePercent,
-                                                           List<Double> effectiveValueRangeOfValuePercent,
-                                                           int binsOfValuePercent,
-                                                           List<Double> smallLargeThresholdOfAmountPercent,
-                                                           List<Double> effectiveValueRangeOfAmountPercent,
-                                                           int binsOfAmountPercent, String saveTablenameLowBuyFS) {
+                                                           String saveTablenameLowBuyFS) {
             this.latchOfCalcForEpoch = latchOfCalcForEpoch;
             this.connOfSave = connOfSave;
             this.formNamesCurrentEpoch = formNamesCurrentEpoch;
             this.stockCount = stockCount;
             this.statDateRange = statDateRange;
             this.results = results;
-            this.smallLargeThresholdOfValuePercent = smallLargeThresholdOfValuePercent;
-            this.effectiveValueRangeOfValuePercent = effectiveValueRangeOfValuePercent;
-            this.binsOfValuePercent = binsOfValuePercent;
-            this.smallLargeThresholdOfAmountPercent = smallLargeThresholdOfAmountPercent;
-            this.effectiveValueRangeOfAmountPercent = effectiveValueRangeOfAmountPercent;
-            this.binsOfAmountPercent = binsOfAmountPercent;
             this.saveTablenameLowBuyFS = saveTablenameLowBuyFS;
         }
 
@@ -944,7 +925,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     Double formSetId = Double.valueOf(formNameFragments.get(0)); // 形态集合id.
                     String statResultAlgorithm = formNameFragments.get(1); // Low1/2/3 作为算法字段保存
                     String concreteAlgorithm = formNameFragments.get(2); // 具体小算法5种
-
 
                     DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultDf,
                             concreteAlgorithm,
@@ -976,6 +956,16 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         private DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(DataFrame<Object> analyzeResultDf,
                                                                     String concreteAlgorithm, Double formSetId,
                                                                     String statResultAlgorithm) {
+            // analyzeResultDf 添加其他需要保存的列就行了.
+            if (analyzeResultDf == null) {
+                return null;
+            }
+            analyzeResultDf.add("form_set_id", formSetId.intValue());
+            analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
+            analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
+            analyzeResultDf.add("stat_date_range", statDateRange);
+            analyzeResultDf.add("stat_stock_counts", stockCount);
+
             return null;
         }
 
