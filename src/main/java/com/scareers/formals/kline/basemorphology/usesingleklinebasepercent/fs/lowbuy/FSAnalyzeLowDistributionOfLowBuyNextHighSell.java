@@ -115,10 +115,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             resultTemp.clear();
             if (parseProcess.incrementAndGet() % gcControlEpochParse == 0) {
                 System.gc();
-                if (SettingsOfSingleKlineBasePercent.showMemoryUsage) {
+                if (showMemoryUsage) {
                     showMemoryUsageMB();
                 }
             }
+            Console.log("results size: {}", results.size());
         }
         poolOfParse.shutdown(); // 关闭线程池
         System.out.println();
@@ -307,13 +308,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 该window 128种形态
                     // @key: 以上均为, 与主程序形态判定逻辑一致, 从这里开始, 将判定是否符合某种形态集合!
                     // lb1: 数据库读取形态集合,单形态集合为: List<String>, 遍历形态集合 id, 看是否符合. 再计算15种结果
-                    List<String> allForms = getAllFormNamesByConcreteFormStrs(concreteTodayFormStrs);
+                    List<String> allForms = getAllFormNamesByConcreteFormStrsWithoutSuffix(concreteTodayFormStrs);
                     if (formSetsMapFromDB == null) {
                         // 初始化形态集合 必要;
                         formSetsMapFromDB = parseFromsSetsFromDb(conn);
                     }
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDB, allForms);
+                    Console.log();
                     if (belongToFormsetIds.size() == 0) {
                         continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     }
@@ -341,8 +343,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             stdCloseOfLowBuy,
                             lowBuyDate, connOfFS, stock);
 
-                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
-                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
+//                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
+//                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
                     // 临时前复权作为基准close.
                     // todo: highSell 对应的10种结果
 
@@ -354,6 +356,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                             resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
                         }
+                        Console.log(setId);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -362,6 +365,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     Console.log(dfRaw.slice(i, i + 3));
                 }
             }
+            Console.log(resultTemp);
             return resultTemp;
         }
 
@@ -659,7 +663,6 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     fixHappenTicks, // 片段列表
                     amountsFragments, // 片段列表
                     tickDoubleCol);
-
             return res;
         }
 
@@ -839,6 +842,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 List<String> value = formSetsMapFromDB.get(key);
                 // 判定交集
                 HashSet<String> inter = intersectionOfList(allForms, value);
+                //Console.log("{} --{}", allForms, value);
+
                 if (inter.size() > 0) {
                     belongToFormsetIds.add(key);
                 }

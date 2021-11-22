@@ -308,11 +308,11 @@ public class TushareApi {
                                                    Connection conn) throws SQLException {
         String sqlGetAdjFactorOfOneDay = StrUtil.format("select trade_date,adj_factor from " +
                 "sds_stock_adj_factor_tu_stock " +
-                "where ts_code='{}' and trade_date=='{}'", stock);
+                "where ts_code='{}' and trade_date='{}'", stock);
         DataFrame<Object> factorPre = DataFrame
-                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, stock, preTradeDate));
+                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, preTradeDate));
         DataFrame<Object> factorFuture = DataFrame
-                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, stock, futureDate));
+                .readSql(conn, StrUtil.format(sqlGetAdjFactorOfOneDay, futureDate));
 
         DataFrame<Object> closeDF = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
                 Arrays.asList("close"),

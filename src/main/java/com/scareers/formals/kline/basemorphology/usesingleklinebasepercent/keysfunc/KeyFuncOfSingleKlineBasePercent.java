@@ -494,6 +494,32 @@ public class KeyFuncOfSingleKlineBasePercent {
         return allFormNames__;
     }
 
+    public static List<String> getAllFormNamesByConcreteFormStrsWithoutSuffix(List<String> concreteTodayFormStrs) {
+        if (allIndexCombinations == null) {
+            allIndexCombinations = new ArrayList<>();
+            for (int j = 0; j < 7 + 1; j++) {// 单组合取 0,1,2,3,4,5,6,7 个; 8种
+                Generator.combination(0, 1, 2, 3, 4, 5, 6) // 全部可取索引, 7个,固定的
+                        .simple(j)
+                        .stream()
+                        .forEach(allIndexCombinations::add);
+            }
+        }
+
+        List<String> allFormNames__ = new ArrayList<>();
+        for (int j = 0; j < allIndexCombinations.size(); j++) {
+            List<Integer> singleCombination = allIndexCombinations.get(j);
+            String keyTemp = "";
+            for (int k = 0; k < singleCombination.size(); k++) {
+                keyTemp += (concreteTodayFormStrs.get(singleCombination.get(k)) + "__");
+            }
+            if ("".equals(keyTemp)) {
+                keyTemp = "Dummy__";
+            }
+            allFormNames__.add(keyTemp.substring(0, keyTemp.length() - 2));
+        }
+        return allFormNames__;
+    }
+
     public static List<String> fieldsOfDfRaw = SettingsOfSingleKlineBasePercent.fieldsOfDfRaw;
     public static final List<String> conditionNames = SettingsOfSingleKlineBasePercent.conditionNames;
     public static final List<Double> upperShadowRangeList = SettingsOfSingleKlineBasePercent.upperShadowRangeList;
@@ -628,7 +654,7 @@ public class KeyFuncOfSingleKlineBasePercent {
     }
 
     public static Double getPriceOfSingleKline(List<Object> klineRow, String whichPrice) {
-        return (Double) klineRow.get(fieldsOfDfRaw.indexOf(whichPrice));
+        return Double.valueOf(klineRow.get(fieldsOfDfRaw.indexOf(whichPrice)).toString());
     }
 
     /**
