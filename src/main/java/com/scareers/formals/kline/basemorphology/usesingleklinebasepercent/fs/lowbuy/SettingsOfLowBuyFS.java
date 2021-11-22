@@ -22,7 +22,7 @@ public class SettingsOfLowBuyFS {
     public static final Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
-    public static final int layer = 3; // 即判定3层. Low, Low2, Low3
+    public static final int calcLayer = 2; // 即判定3层. Low, Low2, Low3
     public static final int processAmountParse = 8;
     public static final int processAmountSave = 8;
     public static final int perEpochTaskAmounts = 64;

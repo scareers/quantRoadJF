@@ -1,14 +1,16 @@
 package com.scareers;
 
-import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import joinery.DataFrame;
+import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc10ItemValusOfLowBuy;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
+import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
 
 /**
  * Hello world!
@@ -23,9 +25,22 @@ public class App {
 //        Console.log(df_.types());
 //        List<Object> col1 = df_.col(0);
 //        Console.log(col1.get(0) instanceof String);
+//        HashMap<String, Double> temp = calc10ItemValusOfLowBuyDeprecated(3346000000.0, 19.43, "20210831",
+//                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ");
+//        Console.log(JSONUtil.toJsonPrettyStr(temp));
 
-        Console.log(calc10ItemValusOfLowBuy(3346000000.0, 19.43, "20210831",
-                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ"));
+        HashMap<String, Double> temp2 = calc5ItemValusOfLowBuy(3346000000.0, 19.43, "20210831",
+                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
+        ArrayList<String> keys = new ArrayList<>(temp2.keySet());
+        keys.sort(Comparator.naturalOrder());
+
+        for (String key : keys) {
+            if (key.endsWith("happen_tick")) {
+                Console.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
+                continue;
+            }
+            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
+        }
 
 
 //        List<String> x = Arrays.asList("abc", "xyz");

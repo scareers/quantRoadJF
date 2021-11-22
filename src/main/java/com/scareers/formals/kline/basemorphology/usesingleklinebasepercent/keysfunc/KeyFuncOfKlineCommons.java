@@ -295,9 +295,11 @@ public class KeyFuncOfKlineCommons {
                 continue;
             }
             effectiveResults.add(value);
-            if (value.equals(effectiveValueRange.get(1))) { // 常规是前包后不包. 恰好等于最大限制的, 放在最后一个bin
-                Long count = countList.get(bins - 1);
-                countList.set(bins - 1, count + 1);
+            if (value.equals(effectiveValueRange.get(0))) {
+                // 常规是前包后不包. 恰好等于最大限制的, 放在最后一个bin
+                // @update: 为了适用分时tick, 将此修改为 前不包,后包. 某个tick值代表不大于的所有值. 最小值放入第一个tick
+                Long count = countList.get(0);
+                countList.set(0, count + 1);
                 continue;
             }
             int index = (int) ((value - effectiveValueRange.get(0)) / perRangeWidth);
