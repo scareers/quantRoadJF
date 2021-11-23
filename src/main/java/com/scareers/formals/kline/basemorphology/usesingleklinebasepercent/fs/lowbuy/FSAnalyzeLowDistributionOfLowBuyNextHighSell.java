@@ -176,7 +176,15 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
     public static class LowBuyParseTask implements Callable<ConcurrentHashMap<String,
             List<Double>>> {
         // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
-        public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB = null;
+        public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
+
+        static {
+            try {
+                formSetsMapFromDB = parseFromsSetsFromDb();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
 
         String stock;
         DataFrame<String> stockWithBoard;
@@ -310,8 +318,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // lb1: 数据库读取形态集合,单形态集合为: List<String>, 遍历形态集合 id, 看是否符合. 再计算15种结果
                     List<String> allForms = getAllFormNamesByConcreteFormStrsWithoutSuffix(concreteTodayFormStrs);
                     if (formSetsMapFromDB == null) {
-                        // 初始化形态集合 必要;
-                        formSetsMapFromDB = parseFromsSetsFromDb(conn);
+                        // 初始化形态集合 必要; 已在static代码块初始化. 这里表示确认
+                        formSetsMapFromDB = parseFromsSetsFromDb();
                     }
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDB, allForms);
@@ -331,7 +339,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     String today = todayKlineRow.get(0).toString(); // 今日价格
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     // 未复权时等价于今日收盘价
-                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount"); // 今日作为基准成交额
+                    // @bugfix: 第二次遇到问题: 分时图amount单位是元, 而 原python代码常规日线图的昨日总amount, 单位为1千元
+                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000; // 今日作为基准成交额
                     Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
                     // 临时前复权作为基准close.
                     // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
@@ -662,6 +671,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     fixHappenTicks, // 片段列表
                     amountsFragments, // 片段列表
                     tickDoubleCol);
+//            if (res.get("Low1__continuous_fall_vol_percent") > 1) {
+//                Console.log("{}-{}-{}", stock, stdAmount, lowBuyDate);
+//            }
             return res;
         }
 
@@ -766,6 +778,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             Double continuousFallVolPercent = amountTotal / stdAmount;
 
+            // Console.log(continuousFallVolPercent);
             // Low相关5项完成.
             resRaw.put(StrUtil.format("Low{}__happen_tick", layer),
                     tickDoubleCol.get(happernTickOfLow + fixHappenTick));
@@ -850,9 +863,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             return belongToFormsetIds;
         }
 
-        public static ConcurrentHashMap<Long, List<String>> parseFromsSetsFromDb(Connection conn)
+        public static ConcurrentHashMap<Long, List<String>> parseFromsSetsFromDb()
                 throws SQLException { // 直接读取设定,而非用keyInt
-            String tableName = StrUtil.format(LowBuyNextHighSellDistributionAnalyze.tablenameSaveAnalyze,
+            String tableName = StrUtil.format("next{}b{}s_of_single_kline",
                     keyInts.get(0),
                     keyInts.get(1));
             DataFrame<Object> dfFormSets = DataFrame
@@ -866,7 +879,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 List<String> value = JSONUtil.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
                 res.put(key, value);
             }
-            //Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {}", tableName));
+            Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {}", tableName));
             //@noti: res.get(1L)  才行, 注意时 long, 而非int
             return res;
         }
@@ -965,7 +978,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             analyzeResultDf.add("form_set_id", Arrays.asList(formSetId.intValue()));
             analyzeResultDf.add("stat_result_algorithm", Arrays.asList(statResultAlgorithm));
-            analyzeResultDf.add("concrete_algorithm", Arrays.asList(statResultAlgorithm));
+            analyzeResultDf.add("concrete_algorithm", Arrays.asList(concreteAlgorithm));
             // 此5列, 仅此列注意一下
             analyzeResultDf.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(statDateRange)));
             analyzeResultDf.add("stat_stock_counts", Arrays.asList(stockCount));
@@ -988,8 +1001,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 5.0,
                             Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
                 } else if (formName.endsWith("continuous_fall_vol_percent")) { // 成交量需要注意
+                    Console.log(formName);
+                    Console.log(resultSingle);
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
-                            Arrays.asList(0.005, 0.05), true); // 5分钟为基准. 3和10以上为 小大.
+                            Arrays.asList(0.005, 0.05), false); // 5分钟为基准. 3和10以上为 小大.
+                    Console.log(conclusion);
                 } else {
                     throw new Exception("未知key");
                 }

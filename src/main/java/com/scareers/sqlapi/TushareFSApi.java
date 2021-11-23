@@ -26,7 +26,6 @@ import java.util.List;
  * <p>
  */
 public class TushareFSApi {
-
     public static final String STR_DONSNOT_EXIST = "doesn't exist";
     public static final List<String> FS_ALL_FIELDS = Arrays.asList("trade_time", "open", "close", "high", "low", "vol",
             "amount");
@@ -46,7 +45,7 @@ public class TushareFSApi {
                 "20180131", null);
         Console.log(dftemp);
         Console.log(interval.intervalRestart());
-        getFs1mStockPriceOneDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "000001.SZ",
+        getFs1mStockPriceOneDayAsDfFromTushare(ConnectionFactory.getConnLocalTushare1M(), "645711.SZ",
                 "20180131", null);
 
         Console.log(interval.intervalRestart());
@@ -96,11 +95,12 @@ public class TushareFSApi {
                     String.join(",", fields), belongTablename, stdDateStr + " 09:30:00",
                     stdDateStr + " 15:00:00"));
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(); // 默认红色
             if (!e.getMessage().contains(STR_DONSNOT_EXIST)) {
                 // 如果不是 数据表不存在的异常, 则抛出异常. 如果是数据表不存在, 则 返回null
                 throw e;
             }
+            return null; // 返回null,也不需要插入缓存的问题
         }
         if (res == null) {
             return null;

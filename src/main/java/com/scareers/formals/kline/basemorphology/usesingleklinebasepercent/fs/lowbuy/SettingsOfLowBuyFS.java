@@ -18,15 +18,15 @@ public class SettingsOfLowBuyFS {
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
-    public static final int stockAmountsBeCalcFS = 3;
+    public static final int stockAmountsBeCalcFS = 20;
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
-    public static final int calcLayer = 2; // 即判定3层. Low, Low2, Low3
-    public static final int processAmountParse = 8;
-    public static final int processAmountSave = 16;
-    public static final int perEpochTaskAmounts = 8;
+    public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
+    public static final int processAmountParse = 16;
+    public static final int processAmountSave = 32;
+    public static final int perEpochTaskAmounts = 32;
     public static final int gcControlEpochParse = 100;
-    public static final int gcControlEpochSave = 1000;
+    public static final int gcControlEpochSave = 200;
     public static final boolean showMemoryUsage = true;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
