@@ -73,7 +73,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
             String hardwareInfo = reportCpuMemoryDisk(true);
             MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
-                    StrUtil.format("LowBuy部分完成, 硬件信息:\n", hardwareInfo), false,
+                    StrUtil.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
                     null);
             log.info("current time");
         }
