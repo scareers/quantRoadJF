@@ -119,7 +119,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     showMemoryUsageMB();
                 }
             }
-            Console.log("results size: {}", results.size());
+            // Console.log("results size: {}", results.size());
         }
         poolOfParse.shutdown(); // 关闭线程池
         System.out.println();
@@ -340,13 +340,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     // 未复权时等价于今日收盘价
                     // @bugfix: 第二次遇到问题: 分时图amount单位是元, 而 原python代码常规日线图的昨日总amount, 单位为1千元
-                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000; // 今日作为基准成交额
+                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000.0; // 今日作为基准成交额
                     Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
                     // 临时前复权作为基准close.
                     // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
                     // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
                     // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
-                    // todo: 2021/11/19, 仅仅实现 Low和Low1, 未实现Low2, 因此仅10种结果
                     HashMap<String, Double> resultOf10AlgorithmLow = calc5ItemValusOfLowBuy(stdAmount,
                             stdCloseOfLowBuy,
                             lowBuyDate, connOfFS, stock);
@@ -1001,11 +1000,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 5.0,
                             Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
                 } else if (formName.endsWith("continuous_fall_vol_percent")) { // 成交量需要注意
-                    Console.log(formName);
-                    Console.log(resultSingle);
+//                    Console.log(formName);
+//                    Console.log(resultSingle);
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
                             Arrays.asList(0.005, 0.05), false); // 5分钟为基准. 3和10以上为 小大.
-                    Console.log(conclusion);
+//                    Console.log(conclusion);
                 } else {
                     throw new Exception("未知key");
                 }

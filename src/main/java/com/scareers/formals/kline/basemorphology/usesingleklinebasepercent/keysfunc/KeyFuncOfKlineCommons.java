@@ -385,7 +385,8 @@ public class KeyFuncOfKlineCommons {
             // Object 总体分为 ArrayList,List, List<List>, int, double 等.
             // 列表性结果, 则转换为 json, 字符串, int,double (包装类) 等不转换
             if (value instanceof List) {
-                row.add(JSONUtil.toJsonPrettyStr(value)); // 好看字符串
+//                row.add(JSONUtil.toJsonPrettyStr(value)); // 好看字符串
+                row.add(JSONUtil.toJsonStr(value)); // 好看字符串
             } else {
                 // 此时 有可能为Double.NaN, 将sql错误, 修复一下
                 if (value instanceof Double) {
