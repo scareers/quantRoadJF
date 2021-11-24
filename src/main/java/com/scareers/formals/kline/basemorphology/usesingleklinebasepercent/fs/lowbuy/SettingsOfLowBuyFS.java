@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * description:
- * // @todo: LowBuy仅仅实现了 low和low1, low2未实现.
+ * // @noti: 除LowBuy外, 本主程序还 对 HighSell 进行了平行分析.
  *
  * @author: admin
  * @date: 2021/11/14  0014-8:51
@@ -17,13 +17,12 @@ import java.util.List;
 public class SettingsOfLowBuyFS {
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
-
-    // todo: 解决bug: 为什么next0b1s中, 出手次数 2000+的, 在这里只有 29? 这么少. 是哪边出了bug
+    // 核心设置, 只需要更改次设定即可. 表示 访问哪一个 next{}b{}s_ .. 表进行分时分析
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
-    public static final int stockAmountsBeCalcFS = 20;
+    public static final int stockAmountsBeCalcFS = 2000000;
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
-    public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
+    public static final int calcLayer = 4; // 即判定3层. Low, Low2, Low3  @key: 核心设定
     public static final int processAmountParse = 16;
     public static final int processAmountSave = 32;
     public static final int perEpochTaskAmounts = 32;
