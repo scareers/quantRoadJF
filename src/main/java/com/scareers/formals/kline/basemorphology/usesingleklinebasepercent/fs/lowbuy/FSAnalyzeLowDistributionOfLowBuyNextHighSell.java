@@ -685,15 +685,15 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
          * 递归方式实现, 可控制层数, 即查找多次 Low1,2,3,4,5... / High1,2,3,4...
          *
          * @param stdAmount
-         * @param stdCloseOfLowBuy
+         * @param stdCloseOfHighSell
          * @param layer
-         * @param resRaw           最终存放结果的Map
-         * @param closesFragments  对于任意一层, 需要给定此时的 , 已被切割后的, closesCol 片段们.
-         * @param fixHappenTicks   以及给定的这些片段的 index修正值. 因为 index从该片段查找, 最终的happen_tick, 需要加上起始修正值.
+         * @param resRaw             最终存放结果的Map
+         * @param closesFragments    对于任意一层, 需要给定此时的 , 已被切割后的, closesCol 片段们.
+         * @param fixHappenTicks     以及给定的这些片段的 index修正值. 因为 index从该片段查找, 最终的happen_tick, 需要加上起始修正值.
          * @return 无返回值, 直接将计算结果, 放入参数 HashMap<String,Double> 中保存
          * @throws Exception
          */
-        private static void calc5ItemValusOfHighSellCore(Double stdAmount, Double stdCloseOfLowBuy,
+        private static void calc5ItemValusOfHighSellCore(Double stdAmount, Double stdCloseOfHighSell,
                                                          int layer,
                                                          int calcLayer,
                                                          HashMap<String, Double> resRaw,
@@ -720,88 +720,86 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 }
                 maxsForFragments.add(maxOfListDouble(closeFragment));
             }
-            Double minOfMins = maxOfListDouble(maxsForFragments);
-            if (minOfMins == null) {
+            Double maxOfmaxs = maxOfListDouble(maxsForFragments);
+            if (maxOfmaxs == null) {
                 return; // 不再能够找到最小值, 也退出.
             }
             // 注意, 构建传递到下一层的 closesFragments参数时也需要此核心变量. 保证片段之间, 有现实中的 时间先后关系!!@!
-            int indexOfFoundMin = maxsForFragments.indexOf(minOfMins); // 已找到在第几个片段, 是 下一个 Low...
+            int indexOfFoundMax = maxsForFragments.indexOf(maxOfmaxs); // 已找到在第几个片段, 是 下一个 Low...
             // 得到用于计算的片段, 和对应索引修正值, 然后, 依据原始的方式, 计算出 本层 5大结果.
-            List<Double> closeCol = closesFragments.get(indexOfFoundMin);
-            int fixHappenTick = fixHappenTicks.get(indexOfFoundMin);
-            List<Double> amountCol = amountsFragments.get(indexOfFoundMin);
+            List<Double> closeCol = closesFragments.get(indexOfFoundMax);
+            int fixHappenTick = fixHappenTicks.get(indexOfFoundMax);
+            List<Double> amountCol = amountsFragments.get(indexOfFoundMax);
 
-            Double low = minOfListDouble(closeCol);
+            Double high = maxOfListDouble(closeCol);
             // 1-1. happen_tick
             // 只不过最后再转换为Double, 目前int,方便计算, 且 tick相关均使用 tick_double列进行取值
-            int happernTickOfLow = closeCol.indexOf(low);
+            int happernTickOfHigh = closeCol.indexOf(high);
             // 1-2. value_percent
-            Double valuePercentOfLow = low / stdCloseOfLowBuy - 1;
+            Double valuePercentOfHigh = high / stdCloseOfHighSell - 1;
             // 1-3/4. dominate_left / dominate_right
-            Double dominateThreshold = ((Math
-                    .abs(valuePercentOfLow) * dominateRateKeyArg + valuePercentOfLow) + 1) * stdCloseOfLowBuy; //
+            // @noti: 注意, low是加法, high是减法, 无视正负,操作绝对值
+            Double dominateThreshold = ((valuePercentOfHigh - Math
+                    .abs(valuePercentOfHigh) * dominateRateKeyArg) + 1) * stdCloseOfHighSell;
 //            Console.log(dominateThreshold);
 //            Console.log(closeCol);
 //            Console.log(low);
             // 确定比low大
             int dominateLeft = 0; // 最小0, 最大 happernTickOfLow - 1
-            if (!(happernTickOfLow == 0)) {
-                for (int i = happernTickOfLow - 1; i >= 0; i--) {
-                    if (closeCol.get(i) > dominateThreshold) {
+            if (!(happernTickOfHigh == 0)) {
+                for (int i = happernTickOfHigh - 1; i >= 0; i--) {
+                    if (closeCol.get(i) < dominateThreshold) { // @noti: 这里是小于
                         break;
                     }
                     dominateLeft++;
                 }
             }
             int dominateRight = 0;
-            if (!(happernTickOfLow == closeCol.size() - 1)) {
-                for (int i = happernTickOfLow + 1; i < closeCol.size(); i++) {
-                    if (closeCol.get(i) > dominateThreshold) {
+            if (!(happernTickOfHigh == closeCol.size() - 1)) {
+                for (int i = happernTickOfHigh + 1; i < closeCol.size(); i++) {
+                    if (closeCol.get(i) < dominateThreshold) {
                         break;
                     }
                     dominateRight++;
                 }
             }
             // 1.5. 连续成交额占比, 包含了 low那一分钟 . continuousFallVolPercent
-            ArrayList<Integer> continuousFallIndexes = new ArrayList<>();
-            continuousFallIndexes.add(happernTickOfLow); // low那一分钟加入
-            if (!(happernTickOfLow == 0)) { // 至少1, 才有可能往前找
-                for (int i = happernTickOfLow; i > 0; i--) { // 注意>0
+            ArrayList<Integer> continuousRaiseIndexes = new ArrayList<>();
+            continuousRaiseIndexes.add(happernTickOfHigh); // low那一分钟加入
+            if (!(happernTickOfHigh == 0)) { // 至少1, 才有可能往前找
+                for (int i = happernTickOfHigh; i > 0; i--) { // 注意>0
                     Double closeAfter = closeCol.get(i);
                     Double closeBefore = closeCol.get(i - 1);
-                    if (closeAfter <= closeBefore) {
-                        continuousFallIndexes.add(i - 1); // 将前1分钟成交额加入索引列表.
+                    if (closeAfter >= closeBefore) {
+                        continuousRaiseIndexes.add(i - 1); // 将前1分钟成交额加入索引列表.
                     } else {
                         break; // 一旦不符合应当立即跳出
                     }
                 }
             }
             Double amountTotal = 0.0;
-            for (Integer i : continuousFallIndexes) {
+            for (Integer i : continuousRaiseIndexes) {
                 amountTotal += amountCol.get(i);
             }
-            Double continuousFallVolPercent = amountTotal / stdAmount;
+            Double continuousRaiseVolPercent = amountTotal / stdAmount;
 
             // Console.log(continuousFallVolPercent);
             // Low相关5项完成.
-            resRaw.put(StrUtil.format("Low{}__happen_tick", layer),
-                    tickDoubleCol.get(happernTickOfLow + fixHappenTick));
-            resRaw.put(StrUtil.format("Low{}__value_percent", layer), valuePercentOfLow);
-            resRaw.put(StrUtil.format("Low{}__dominate_left", layer), (double) dominateLeft);
-            resRaw.put(StrUtil.format("Low{}__dominate_right", layer), (double) dominateRight);
-            resRaw.put(StrUtil.format("Low{}__continuous_fall_vol_percent", layer), continuousFallVolPercent);
+            resRaw.put(StrUtil.format("High{}__happen_tick", layer),
+                    tickDoubleCol.get(happernTickOfHigh + fixHappenTick));
+            resRaw.put(StrUtil.format("High{}__value_percent", layer), valuePercentOfHigh);
+            resRaw.put(StrUtil.format("High{}__dominate_left", layer), (double) dominateLeft);
+            resRaw.put(StrUtil.format("High{}__dominate_right", layer), (double) dominateRight);
+            resRaw.put(StrUtil.format("High{}__continuous_raise_vol_percent", layer), continuousRaiseVolPercent);
 
             // 需要重新构建, 传递到下一层的参数, 主要是片段切分!!. 整体保持 物理顺序, 只将被切分的片段, 分为新的两段插入.
-
-            // 第一步, 需要找到 次低点会在哪里
-            // @noti: List.subList(0,0)  两参数可以相等, 此时,返回空列表
-            List<Double> closeColFragment1 = closeCol.subList(0, happernTickOfLow - dominateLeft);
-            List<Double> closeColFragment2 = closeCol.subList(happernTickOfLow + dominateRight + 1,
+            List<Double> closeColFragment1 = closeCol.subList(0, happernTickOfHigh - dominateLeft);
+            List<Double> closeColFragment2 = closeCol.subList(happernTickOfHigh + dominateRight + 1,
                     closeCol.size()); // 前包后不包, 实测这里需要+1
             Integer fixHappenTick1 = fixHappenTick;
-            Integer fixHappenTick2 = fixHappenTick + happernTickOfLow + dominateRight + 1;
-            List<Double> amountsFragment1 = amountCol.subList(0, happernTickOfLow - dominateLeft);
-            List<Double> amountsFragment2 = amountCol.subList(happernTickOfLow + dominateRight + 1,
+            Integer fixHappenTick2 = fixHappenTick + happernTickOfHigh + dominateRight + 1;
+            List<Double> amountsFragment1 = amountCol.subList(0, happernTickOfHigh - dominateLeft);
+            List<Double> amountsFragment2 = amountCol.subList(happernTickOfHigh + dominateRight + 1,
                     closeCol.size());
 
             List<List<Double>> closesFragmentsUpdated = new ArrayList<>(); // 构建新的参数, 在index为key时,转换为新的片段
@@ -809,7 +807,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             List<List<Double>> amountsFragmentsUpdated = new ArrayList<>();
 
             for (int i = 0; i < closesFragments.size(); i++) {
-                if (!(i == indexOfFoundMin)) {
+                if (!(i == indexOfFoundMax)) {
                     closesFragmentsUpdated.add(closesFragments.get(i));
                     fixHappenTicksUpdated.add(fixHappenTicks.get(i));
                     amountsFragmentsUpdated.add(amountsFragments.get(i));
@@ -840,7 +838,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 }
             }
 
-            calc5ItemValusOfHighSellCore(stdAmount, stdCloseOfLowBuy,
+            calc5ItemValusOfHighSellCore(stdAmount, stdCloseOfHighSell,
                     layer + 1, // 计算下一层.
                     calcLayer,
                     resRaw, // 结果对象不变, 只是增加key
@@ -1223,7 +1221,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 } else if (formName.endsWith("dominate_left") || formName.endsWith("dominate_right")) { // 左右支配的参考需要设定一下
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 5.0,
                             Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
-                } else if (formName.endsWith("continuous_fall_vol_percent")) { // 成交量需要注意
+                } else if (formName.endsWith("vol_percent")) { // 成交量需要注意
 //                    Console.log(formName);
 //                    Console.log(resultSingle);
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
@@ -1240,7 +1238,28 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             return res;
         }
 
-
+        // 对有效取值, 限制更加严格, 与上一方法 平行运行, 并不针对所有计量. 目前只针对 value_percent 即涨跌幅变量
+        private HashMap<String, DataFrame<Object>> analyzeStatsResultsRestrict() throws Exception {
+            HashMap<String, DataFrame<Object>> res = new HashMap<>();
+            for (String formName : formNamesCurrentEpoch) {
+                DataFrame<Object> conclusion = null;
+                List<Double> resultSingle = results.get(formName); // 单条结果
+                // 首先计算
+                if (formName.endsWith("value_percent")) { // 5种不同计量, 调用的参数不同
+                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 84, Arrays.asList(-0.21, 0.21), 0.0,
+                            Arrays.asList(-0.02, 0.02), true);
+                }
+                if (conclusion == null) {
+                    continue; // 没有有效统计数值, 则conclusion为null. 这里直接skip掉.  后面res.get(key) , 也要判定一下是否为null
+                }
+                res.put(formName, conclusion);
+            }
+            return res;
+        }
     }
 
 }
+
+
+
+
