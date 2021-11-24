@@ -1,0 +1,46 @@
+1.启动:
+    1.注意配置文件, 两个文件夹别设置错误了.  // 比如mysql版本不同导致的数字不一样
+    2.新建my.ini配置文件
+    3.bin加入path
+    4.新建 存放数据的文件夹, 例如  data_dir
+    5.mysqld --initialize --console          记住默认密码.  需要保存数据文件夹是空的
+    6.必须切换到 bin文件夹:    .\mysqld --install 服务名称		默认名称是mysql;
+    7.net start 服务名称
+    8.net stop 服务名称
+    9.mysql -uroot -p		输入默认密码登录
+    10.ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '新密码';  修改密码
+
+
+2.后悔: // 出了错,或者默认密码太难输入登录不上
+    1.net stop 服务名称 			需要先停止
+    2..\mysqld remove 服务名称
+    3.清空数据文件夹, 否则不能重新初始化
+    4. mysqld --initialize --console   重新来一遍
+
+
+
+3.数据迁移:
+    1. 停止服务
+    2. 将data文件夹(例如 data_dir) 下面的 所有文件删除掉
+    3.从源头, 将data文件夹下面 所有文件 复制过来
+    4.必须删除两个文件: ib_logfile0 和 ib_logfile1
+    5.重启服务即可. 他会自动生成新的 这两个文件. 如果不删除, 将启动不了
+
+FAQ:
+1.mysql 缓存相关配置.
+    show variables like '%innodb_buffer_pool%'; 显示相关设定, 默认
+
+    静态配置项:
+    innodb_buffer_pool_size=25G   // 默认需要是G的整数倍. 8*128=1G;    此设定控制最大缓存使用的内存
+    tmp_table_size=25G   // join 或者 as之类的, 会启用临时表.
+
+    show status like 'innodb_buffer_pool_read%'  
+    使用结果中 
+        innodb_buffer_pool_reads (从磁盘读) 
+        innodb_buffer_pool_read_requests(从buffer读取),   
+        各自/和, 即表示缓存能力大小. 越大则越少磁盘直接读取,越快. 一般消耗内存越多
+
+    动态调整缓存池大小:
+    SET GLOBAL innodb_buffer_pool_size = 3221225472    // 同理,需要计算一下 多少G是多少字节. 虽然会自动调整到1G整数倍.
+    SHOW STATUS WHERE Variable_name='InnoDB_buffer_pool_resize_status';  // 查看缓存池大小调整 的状态
+

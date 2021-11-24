@@ -7,7 +7,6 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.LowBuyNextHighSellDistributionAnalyze;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -662,7 +661,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             closesFragments.add(closeCol);
             fixHappenTicks.add(0);
             amountsFragments.add(amountCol); // 最开始,第0层的参数
-            calc10ItemValusOfLowBuyTemp(stdAmount, stdCloseOfLowBuy,
+            calc5ItemValusOfLowBuyCore(stdAmount, stdCloseOfLowBuy,
                     1,
                     calcLayer,
                     res,
@@ -688,14 +687,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
          * @return 无返回值, 直接将计算结果, 放入参数 HashMap<String,Double> 中保存
          * @throws Exception
          */
-        private static void calc10ItemValusOfLowBuyTemp(Double stdAmount, Double stdCloseOfLowBuy,
-                                                        int layer,
-                                                        int calcLayer,
-                                                        HashMap<String, Double> resRaw,
-                                                        List<List<Double>> closesFragments,
-                                                        List<Integer> fixHappenTicks, // 片段列表
-                                                        List<List<Double>> amountsFragments, // 片段列表
-                                                        List<Double> tickDoubleCol // 单纯转换,整列
+        private static void calc5ItemValusOfLowBuyCore(Double stdAmount, Double stdCloseOfLowBuy,
+                                                       int layer,
+                                                       int calcLayer,
+                                                       HashMap<String, Double> resRaw,
+                                                       List<List<Double>> closesFragments,
+                                                       List<Integer> fixHappenTicks, // 片段列表
+                                                       List<List<Double>> amountsFragments, // 片段列表
+                                                       List<Double> tickDoubleCol // 单纯转换,整列
         )
                 throws Exception {
             if (layer > calcLayer) {
@@ -835,7 +834,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 }
             }
 
-            calc10ItemValusOfLowBuyTemp(stdAmount, stdCloseOfLowBuy,
+            calc5ItemValusOfLowBuyCore(stdAmount, stdCloseOfLowBuy,
                     layer + 1, // 计算下一层.
                     calcLayer,
                     resRaw, // 结果对象不变, 只是增加key
