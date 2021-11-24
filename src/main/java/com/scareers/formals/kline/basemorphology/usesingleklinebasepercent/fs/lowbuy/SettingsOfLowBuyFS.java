@@ -17,6 +17,8 @@ import java.util.List;
 public class SettingsOfLowBuyFS {
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
+
+    // todo: 解决bug: 为什么next0b1s中, 出手次数 2000+的, 在这里只有 29? 这么少. 是哪边出了bug
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static final int stockAmountsBeCalcFS = 20;
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
