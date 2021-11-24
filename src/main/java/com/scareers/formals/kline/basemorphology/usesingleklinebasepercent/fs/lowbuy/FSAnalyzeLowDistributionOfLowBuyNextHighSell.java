@@ -640,7 +640,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                                                                        String stock) throws Exception {
             return calc5ItemValusOfHighSell(stdAmount, stdCloseOfHighSell,
                     highSellDate, conn,
-                    stock, SettingsOfLowBuyFS.calcLayer);
+                    stock, SettingsOfLowBuyFS.calcLayer);//
         }
 
 
