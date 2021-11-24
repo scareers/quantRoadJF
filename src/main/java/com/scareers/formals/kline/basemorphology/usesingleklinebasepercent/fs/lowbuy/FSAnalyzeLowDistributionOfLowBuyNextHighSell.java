@@ -348,15 +348,17 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     HashMap<String, Double> resultOf10AlgorithmLow = calc5ItemValusOfLowBuy(stdAmount,
                             stdCloseOfLowBuy,
                             lowBuyDate, connOfFS, stock);
-
-                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
-                    // 复权到标准今日close
-                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
-                    // 临时前复权作为基准close.
-                    // @noti: highSell 对应的10种结果
-                    HashMap<String, Double> resultOf10AlgorithmHigh = calc5ItemValusOfHighSell(stdAmount,
-                            stdCloseOfHighSell,
-                            highSellDate, connOfFS, stock);
+                    HashMap<String, Double> resultOf10AlgorithmHigh = null;
+                    if (parallelComputingHighSell) { // 核心设定项2
+                        String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
+                        // 复权到标准今日close
+                        Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
+                        // 临时前复权作为基准close.
+                        // @noti: highSell 对应的10种结果
+                        resultOf10AlgorithmHigh = calc5ItemValusOfHighSell(stdAmount,
+                                stdCloseOfHighSell,
+                                highSellDate, connOfFS, stock);
+                    }
 
                     // 开始填充结果:  @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
                     for (Long setId : belongToFormsetIds) {
@@ -366,10 +368,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                             resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
                         }
-                        for (String highKeys : resultOf10AlgorithmHigh.keySet()) {
-                            String keyFull = StrUtil.format("{}{}", prefix, highKeys);
-                            resultTemp.putIfAbsent(keyFull, new ArrayList<>());
-                            resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
+                        if (resultOf10AlgorithmHigh != null) { // 并列计算 HighSell时, 填充他.
+                            for (String highKeys : resultOf10AlgorithmHigh.keySet()) {
+                                String keyFull = StrUtil.format("{}{}", prefix, highKeys);
+                                resultTemp.putIfAbsent(keyFull, new ArrayList<>());
+                                resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
+                            }
                         }
                         //Console.log(setId);
                     }
