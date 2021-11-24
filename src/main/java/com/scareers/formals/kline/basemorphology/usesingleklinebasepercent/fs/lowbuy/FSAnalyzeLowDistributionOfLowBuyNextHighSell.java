@@ -1111,11 +1111,26 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 List<Object> row = dfFormSets.row(i);
                 Long key = Long.valueOf(row.get(0).toString());
                 List<String> value = JSONUtil.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
+                value.sort(Comparator.naturalOrder());
                 res.put(key, value);
             }
-            Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {}", tableName));
+
+            // 尝试 值有重复的, 因为原计算脚本, 对每种形态集合, 是有多条记录的. 因此需要对value去重
+            // 实测只能从 2500 降低到 2000左右
+            ConcurrentHashMap<Long, List<String>> resTemp = new ConcurrentHashMap<>();
+            List<List<String>> valuesSelected = new ArrayList<>();
+            for (Long key_ : res.keySet()) {
+                List<String> value = res.get(key_);
+                if (valuesSelected.contains(value)) {
+                    continue;
+                } else {
+                    valuesSelected.add(value); // 被选中.
+                    resTemp.put(key_, value);
+                }
+            }
+            Console.log(StrUtil.format("一次解析形态集合完成, 数据表: {} ;; 形态集合数量:{}", tableName, resTemp.size()));
             //@noti: res.get(1L)  才行, 注意时 long, 而非int
-            return res;
+            return resTemp;
         }
 
         // 同主程序
