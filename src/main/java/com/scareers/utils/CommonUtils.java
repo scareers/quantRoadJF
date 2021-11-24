@@ -122,10 +122,30 @@ public class CommonUtils {
                 continue;
             }
             if (ele < res) {
-                res = doubles.get(i);
+                res = ele;
             }
         }
         if (res.equals(Double.MAX_VALUE)) {
+            return null; // 全部时null时, 可能发生.
+        }
+        return res;
+    }
+
+    public static Double maxOfListDouble(List<Double> doubles) {
+        if (doubles.size() == 0) {
+            return null;
+        }
+        Double res = Double.MIN_VALUE;
+        for (int i = 0; i < doubles.size(); i++) {
+            Double ele = doubles.get(i);
+            if (ele == null) { // 有null时能够正确返回.
+                continue;
+            }
+            if (ele > res) {
+                res = ele;
+            }
+        }
+        if (res.equals(Double.MIN_VALUE)) {
             return null; // 全部时null时, 可能发生.
         }
         return res;
