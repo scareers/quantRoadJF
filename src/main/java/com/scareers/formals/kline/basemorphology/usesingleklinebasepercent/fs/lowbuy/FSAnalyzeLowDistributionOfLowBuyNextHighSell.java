@@ -1151,6 +1151,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 DataFrame<Object> dfTotalSave = null;
                 HashMap<String, DataFrame<Object>> analyzeResultMapTotal = // 默认参数适用 formNameRaws
                         analyzeStatsResults();
+                analyzeResultMapTotal.putAll(analyzeStatsResultsRestrict()); // 后缀__strict, 注意保存时,
                 for (String formName : formNamesCurrentEpoch) {
                     DataFrame<Object> analyzeResultDf = analyzeResultMapTotal.get(formName);
                     if (analyzeResultDf == null) { // 单条分析是可能为null的
@@ -1167,11 +1168,26 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             concreteAlgorithm,
                             formSetId,
                             statResultAlgorithm);
+                    DataFrame<Object> analyzeResultDfStrict = analyzeResultMapTotal.get(formName + "__strict");
+                    if (analyzeResultDfStrict == null) {
+                        continue;
+                    }
+                    DataFrame<Object> dfSingleSavedStrict = prepareSaveDfForAnalyzeResultStrict(analyzeResultDfStrict,
+                            concreteAlgorithm,
+                            formSetId,
+                            statResultAlgorithm);
+
                     if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
                         dfTotalSave = dfSingleSaved;
                     } else {
                         dfTotalSave = dfTotalSave.concat(dfSingleSaved); // 可能由于列不同, 而发生错误
                     }
+                    if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
+                        dfTotalSave = dfSingleSavedStrict;
+                    } else {
+                        dfTotalSave = dfTotalSave.concat(dfSingleSavedStrict); // 可能由于列不同, 而发生错误
+                    }
+
                 }
                 // dfTotalSave 应当转换为 self
                 DataFrameSelf.toSql(dfTotalSave, saveTablenameLowBuyFS, connOfSave, "append", null);
@@ -1203,8 +1219,19 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // 此5列, 仅此列注意一下
             analyzeResultDf.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(statDateRange)));
             analyzeResultDf.add("stat_stock_counts", Arrays.asList(stockCount));
-
             return analyzeResultDf;
+        }
+
+        private DataFrame<Object> prepareSaveDfForAnalyzeResultStrict(DataFrame<Object> analyzeResultDf,
+                                                                      String concreteAlgorithm, Double formSetId,
+                                                                      String statResultAlgorithm) {
+            // analyzeResultDf 添加其他需要保存的列就行了.
+            DataFrame<Object> res = prepareSaveDfForAnalyzeResult(analyzeResultDf, concreteAlgorithm, formSetId,
+                    statResultAlgorithm);
+            if (res != null) {
+                res.add("condition1", "strict"); // 添加一个标记, 表明时 严格限制了有效值range的
+            }
+            return res;
         }
 
         private HashMap<String, DataFrame<Object>> analyzeStatsResults() throws Exception {
@@ -1245,6 +1272,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 DataFrame<Object> conclusion = null;
                 List<Double> resultSingle = results.get(formName); // 单条结果
                 // 首先计算
+
                 if (formName.endsWith("value_percent")) { // 5种不同计量, 调用的参数不同
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 84, Arrays.asList(-0.21, 0.21), 0.0,
                             Arrays.asList(-0.02, 0.02), true);
@@ -1252,7 +1280,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 if (conclusion == null) {
                     continue; // 没有有效统计数值, 则conclusion为null. 这里直接skip掉.  后面res.get(key) , 也要判定一下是否为null
                 }
-                res.put(formName, conclusion);
+                res.put(formName + "__strict", conclusion);
             }
             return res;
         }
