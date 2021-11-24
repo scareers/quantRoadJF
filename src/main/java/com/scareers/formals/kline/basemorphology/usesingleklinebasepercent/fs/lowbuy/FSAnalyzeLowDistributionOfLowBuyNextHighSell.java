@@ -339,8 +339,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     // 未复权时等价于今日收盘价
                     // @bugfix: 第二次遇到问题: 分时图amount单位是元, 而 原python代码常规日线图的昨日总amount, 单位为1千元
-                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000.0; // 今日作为基准成交额
                     Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
+                    Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000.0; // 今日作为基准成交额
                     // 临时前复权作为基准close.
                     // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
                     // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
@@ -349,10 +349,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             stdCloseOfLowBuy,
                             lowBuyDate, connOfFS, stock);
 
-//                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
-//                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
+                    String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
+                    // 复权到标准今日close
+                    Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
                     // 临时前复权作为基准close.
-                    // todo: highSell 对应的10种结果
+                    // @noti: highSell 对应的10种结果
+                    HashMap<String, Double> resultOf10AlgorithmHigh = calc5ItemValusOfHighSell(stdAmount,
+                            stdCloseOfHighSell,
+                            highSellDate, connOfFS, stock);
 
                     // 开始填充结果:  @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
                     for (Long setId : belongToFormsetIds) {
@@ -361,6 +365,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             String keyFull = StrUtil.format("{}{}", prefix, lowKeys);
                             resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                             resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
+                        }
+                        for (String highKeys : resultOf10AlgorithmHigh.keySet()) {
+                            String keyFull = StrUtil.format("{}{}", prefix, highKeys);
+                            resultTemp.putIfAbsent(keyFull, new ArrayList<>());
+                            resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
                         }
                         //Console.log(setId);
                     }
@@ -1168,6 +1177,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             concreteAlgorithm,
                             formSetId,
                             statResultAlgorithm);
+                    if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
+                        dfTotalSave = dfSingleSaved;
+                    } else {
+                        dfTotalSave = dfTotalSave.concat(dfSingleSaved); // 可能由于列不同, 而发生错误
+                    }
                     DataFrame<Object> analyzeResultDfStrict = analyzeResultMapTotal.get(formName + "__strict");
                     if (analyzeResultDfStrict == null) {
                         continue;
@@ -1176,18 +1190,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             concreteAlgorithm,
                             formSetId,
                             statResultAlgorithm);
-
-                    if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
-                        dfTotalSave = dfSingleSaved;
-                    } else {
-                        dfTotalSave = dfTotalSave.concat(dfSingleSaved); // 可能由于列不同, 而发生错误
-                    }
                     if (dfTotalSave == null) { // 单个线程中, 是串行的, 不需要同步
                         dfTotalSave = dfSingleSavedStrict;
                     } else {
                         dfTotalSave = dfTotalSave.concat(dfSingleSavedStrict); // 可能由于列不同, 而发生错误
                     }
-
                 }
                 // dfTotalSave 应当转换为 self
                 DataFrameSelf.toSql(dfTotalSave, saveTablenameLowBuyFS, connOfSave, "append", null);
@@ -1229,7 +1236,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             DataFrame<Object> res = prepareSaveDfForAnalyzeResult(analyzeResultDf, concreteAlgorithm, formSetId,
                     statResultAlgorithm);
             if (res != null) {
-                res.add("condition1", "strict"); // 添加一个标记, 表明时 严格限制了有效值range的
+                res.add("condition1", Arrays.asList("strict")); // 添加一个标记, 表明时 严格限制了有效值range的
             }
             return res;
         }
@@ -1271,11 +1278,25 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             for (String formName : formNamesCurrentEpoch) {
                 DataFrame<Object> conclusion = null;
                 List<Double> resultSingle = results.get(formName); // 单条结果
-                // 首先计算
+                // 获取动态的 有效值区间, 和对应bins. 见设置类
 
                 if (formName.endsWith("value_percent")) { // 5种不同计量, 调用的参数不同
-                    conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 84, Arrays.asList(-0.21, 0.21), 0.0,
-                            Arrays.asList(-0.02, 0.02), true);
+                    if (formName.contains("Low")) {
+                        conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle,
+                                binForLow,
+                                effectiveValueRangeForLow,
+                                0.0,
+                                Arrays.asList(-0.02, 0.02), true);
+                    } else if (formName.contains("High")) {
+                        conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle,
+                                binForHigh,
+                                effectiveValueRangeForHigh,
+                                0.0,
+                                Arrays.asList(-0.02, 0.02), true);
+                    } else {
+                        Console.log(formName);
+                        throw new Exception("未知key");
+                    }
                 }
                 if (conclusion == null) {
                     continue; // 没有有效统计数值, 则conclusion为null. 这里直接skip掉.  后面res.get(key) , 也要判定一下是否为null

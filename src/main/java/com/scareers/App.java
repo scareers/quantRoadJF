@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
 import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
 
@@ -29,7 +30,7 @@ public class App {
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ");
 //        Console.log(JSONUtil.toJsonPrettyStr(temp));
 
-        HashMap<String, Double> temp2 = calc5ItemValusOfLowBuy(3346000000.0, 19.43, "20210831",
+        HashMap<String, Double> temp2 = calc5ItemValusOfHighSell(3346000000.0, 19.43, "20210901",
                 ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
         ArrayList<String> keys = new ArrayList<>(temp2.keySet());
         keys.sort(Comparator.naturalOrder());
