@@ -5,12 +5,12 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.lang.WeightRandom.WeightObj;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.json.JSONUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
+import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
 
 /**
@@ -26,29 +26,152 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
  * @date: 2021/11/25/025-9:51
  */
 public class PositionByDistribution {
+    public static final boolean showDistribution = false;
+    public static List<List<Object>> valuePercentOfLowx = Arrays.asList( // Low1/2/3 的具体值刻度
+            Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
+            Arrays.asList(-0.005, -0.015, -0.025, -0.035, -0.045, -0.055, -0.065, -0.075, -0.085, -0.095),
+            Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
+    );
+    public static List<List<Object>> weightsOfLowx = Arrays.asList( // Low1/2/3 的权重列表
+            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5),
+            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5),
+            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5)
+    );
+
     public static void main(String[] args) throws IOException {
-        WeightRandom<Double> distributionOfLow1 = getDistributionsOfLow1();
-        for (int i = 0; i < 100; i++) {
-            Console.log(distributionOfLow1.next());
+        // 1.获取三个分布 的随机数生成器. key为 low几?
+        HashMap<Integer, WeightRandom<Object>> lowWithRandom = new HashMap<>();
+        lowWithRandom.put(1, getDistributionsOfLow1());
+        lowWithRandom.put(2, getDistributionsOfLow2());
+        lowWithRandom.put(3, getDistributionsOfLow3());
+
+        // 2.简单int随机, 取得某日是 出现2个低点还是 3个低点. 当然, 2个低点, Low3生成器用不到
+
+        Integer totalAssets = 30; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
+        List<Integer> stockIds = range(30);
+        HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockLowOccurrences(stockIds, 3); // 构造单只股票,
+        // 出现了哪些Low. 且顺序随机
+        Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
+
+        List<Integer> stockPool = range(30); // 初始保存全部股票, 等待配对完成, 移除放入下列表
+        List<Integer> stockFinished = new ArrayList<>();  // 配对完成的股票. 将放入本池
+        HashMap<Integer, Double> stockWithPosition = new HashMap<>(); // 股票和对应的position, 已有仓位, 初始0
+
+        // 尝试算法: 2个一组, 共分2块钱, 意味着某只股票最多得到 2块钱的分配, 且那时必须另一只股票0, 然后两只股票达成配对完成,清除股票池
+        // @noti:  @Hypothesis: 假设 股票按顺序出现 第一次low(不论Low几), 然后第二次Low, 然后第三次Low
+
+        for (int epoch = 0; epoch < 3; epoch++) { // 最多三轮, 某些股票第三轮将没有 Lowx出现, 注意判定
+            List<Integer> stockPairSuccess = new ArrayList<>();
+            // 每一轮可能有n对股票配对成功, 这里暂存, 最后再将这些移除股票池, 然后加入完成池
+            // @noti: @key2: 使用配对策略, 因此单个股票总仓配置2,而非1. 单次仓位, 则为 2* cdf(对应分布of该值)..
+            // 完全决定本轮后的总仓位, 后面统一配对, 再做修改
+            for (Integer id : stockPool) {
+                stockWithPosition.putIfAbsent(id, 0.0); // 默认0
+                // 第epoch轮, 出现的 Low 几?
+                Integer lowx = stockLowOccurrences.get(id).get(epoch);
+                WeightRandom<Object> random = lowWithRandom.get(lowx); // 获取到随机器
+                // @key: low实际值, cdf等
+                Double actualValue = Double.parseDouble(random.next().toString());  // 具体的LOw出现时的 真实值
+                List<Object> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
+                List<Object> weightsOfLow = weightsOfLowx.get(lowx - 1);
+                Double cdfOfPoint = virtualCdfAsPosition(valuePercentOfLow, weightsOfLow, actualValue);
+
+                // @key2: 本轮后总仓位
+                Double epochTotalPosition = 2 * cdfOfPoint; // 因两两配对, 因此这里仓位使用 2作为基数. 且为该股票总仓位
+                if (stockWithPosition.get(id) < epochTotalPosition) {
+                    stockWithPosition.put(id, epochTotalPosition); // 必须新的总仓位, 大于此前轮次总仓位, 才需要修改!!
+                }
+                // 这些总仓位很初步, 可能发生超额, 需要修正配对.  如果两两配对,相当于单只股票上限低于2
+            }
+
+            // @key3: 尝试两两配对, 且修复仓位, 符合不超过2, 此时本轮 stockWithPosition 已经raw完成
+            // 1.stockWithPosition 尝试排序, 当然只能用 List 暂存. 映射无序
+            List<List<Object>> listOfOrderedStockWithPosition = mapTo2eleListOrderByPosition(stockWithPosition);
+            //todo
         }
-        List<Object> weightsOfLow1 = Arrays.asList(2., 4.0, 20., 15., 10., 5., 4., 3., 2., 0.5);
-        List<Object> valuePercentOfLow1 = Arrays
-                .asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1);
-        listOfDoubleAsLineChartSimple(weightsOfLow1, false, null, valuePercentOfLow1);
+
+
     }
 
-    public static WeightRandom<Double> getDistributionsOfLow1() {
-        List<Double> valuePercentOfLow1 = Arrays
-                .asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1);
-        List<Double> weightsOfLow1 = Arrays.asList(2., 4.0, 20., 15., 10., 5., 4., 3., 2., 0.5); // 权重之和可以不是1, 互相成比例即可
+    /**
+     * 将临时的 股票:总仓位 map, 转换为 2元素列表的列表, 且依据仓位排序, 以方便配对; 2元素分别为 Integer,Double
+     *
+     * @param stockWithPosition
+     * @return
+     */
+    public static List<List<Object>> mapTo2eleListOrderByPosition(HashMap<Integer, Double> stockWithPosition) {
+        List<List<Object>> listOfOrderedStockWithPosition = new ArrayList<>();
+        for (Integer key : stockWithPosition.keySet()) {
+            ArrayList<Object> per = new ArrayList<>();
+            per.add(key);
+            per.add(stockWithPosition.get(key));
+            listOfOrderedStockWithPosition.add(per);
+        }
+        listOfOrderedStockWithPosition.sort(Comparator.comparing(o -> ((Double) o.get(1))));// .........@noti: java也有简写
+        return listOfOrderedStockWithPosition;
+    }
 
+    public static HashMap<Integer, List<Integer>> buildStockLowOccurrences(List<Integer> stockIds, int maxLow) {
+        HashMap<Integer, List<Integer>> stockLowOccurrences = new HashMap<>();
+        for (Integer stockId : stockIds) {
+            ArrayList<Integer> occurrs = new ArrayList<>();
+            int lenth = RandomUtil.randomInt(2, maxLow + 1); // 今天某只股票出现几个 Low?
+            for (int i = 1; i < lenth + 1; i++) {
+                occurrs.add(i);
+            }
+            Collections.shuffle(occurrs); // 底层也是al,打乱low123出现顺序
+            stockLowOccurrences.put(stockId, occurrs);
+        }
+        return stockLowOccurrences; // 股票: 打乱的出现的 Low1,Low2,Low3, 自行对应, 得到对应的随机器
+    }
+
+    /**
+     * 给定 可能值, 及其权重 列表, 给定某个值, 求一个模拟的 该点 cdf !!
+     *
+     * @param valuePercentOfLow 值列表 , 要求从小到大, 或者从小到大, 即有序.  一般更不利于我们的, 放在前面.
+     * @param weightsOfLow      权重列表
+     * @param value             求该点处cdf
+     * @return 返回虚拟近似cdf ,
+     */
+    public static Double virtualCdfAsPosition(List<Object> valuePercentOfLow, List<Object> weightsOfLow, Double value) {
+        double total = 0.0;
+        Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
+        for (int i = 0; i < valuePercentOfLow.size(); i++) {
+            total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
+            if (value.equals(valuePercentOfLow.get(i))) { // 相等时,已被加入, 然后跳出
+                break;
+            }
+        }
+        double sum = weightsOfLow.stream().mapToDouble(value1 -> Double.parseDouble(value1.toString())).sum();
+        return total / sum; // 求和可能了多次
+    }
+
+    public static WeightRandom<Object> getDistributionsOfLow1() throws IOException {
+        return getActualDistributionRandom(valuePercentOfLowx.get(0), weightsOfLowx.get(0));
+    }
+
+
+    public static WeightRandom<Object> getDistributionsOfLow2() throws IOException {
+        return getActualDistributionRandom(valuePercentOfLowx.get(1), weightsOfLowx.get(1));
+    }
+
+    public static WeightRandom<Object> getDistributionsOfLow3() throws IOException {
+        return getActualDistributionRandom(valuePercentOfLowx.get(2), weightsOfLowx.get(2));
+    }
+
+    public static WeightRandom<Object> getActualDistributionRandom(List<Object> valuePercentOfLow1,
+                                                                   List<Object> weightsOfLow1) throws IOException {
         Assert.isTrue(valuePercentOfLow1.size() == weightsOfLow1.size());
         // 构建 WeightObj<Double> 列表. 以构建随机器
 
-        List<WeightObj<Double>> weightObjs = new ArrayList<>();
+        List<WeightObj<Object>> weightObjs = new ArrayList<>();
         for (int i = 0; i < valuePercentOfLow1.size(); i++) {
-            weightObjs.add(new WeightObj<>(valuePercentOfLow1.get(i), weightsOfLow1.get(i)));
+            weightObjs.add(new WeightObj<>(valuePercentOfLow1.get(i), Double.valueOf(weightsOfLow1.get(i).toString())));
+        }
+        if (showDistribution) {
+            listOfDoubleAsLineChartSimple(weightsOfLow1, false, null, valuePercentOfLow1);
         }
         return RandomUtil.weightRandom(weightObjs);
     }
 }
+
