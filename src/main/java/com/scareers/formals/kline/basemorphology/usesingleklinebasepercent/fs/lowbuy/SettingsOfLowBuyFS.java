@@ -10,6 +10,7 @@ import java.util.List;
 /**
  * description:
  * // @noti: 除LowBuy外, 本主程序还 对 HighSell 进行了平行分析.
+ * -Xmx512g -XX:MaxTenuringThreshold=0 -XX:GCTimeRatio=19 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10
  *
  * @author: admin
  * @date: 2021/11/14  0014-8:51
