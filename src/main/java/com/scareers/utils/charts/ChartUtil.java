@@ -1,11 +1,13 @@
 package com.scareers.utils.charts;
 
+import cn.hutool.core.lang.Console;
 import joinery.DataFrame;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,7 +32,7 @@ public class ChartUtil {
         df.add("c", Arrays.asList(2, 7, 4, 5));
         // 手动调用. 可调用不同的构造器
         File file = new File("c:/tempself/text.png");
-        BarChartForDf chart = new BarChartForDf(df, file);
+        BarChartForDf chart = new BarChartForDf(df, file, null);
         chart.showIt();
         chart.saveIt();
         // 静态方法, 默认调用最简化构造器
@@ -39,18 +41,36 @@ public class ChartUtil {
 
     }
 
-    public static void dfAsBarChartSimple(DataFrame<Object> df, boolean save, File file)
+    public static void listOfDoubleAsBarChartSimple(List<Double> doubles, boolean save, File file,
+                                                    List<Object> xUseColValues)
             throws IOException {
-        BarChartForDf chart = new BarChartForDf(df, file);
+        DataFrame<Object> dataFrame = new DataFrame<>();
+        dataFrame.add("temp_col", doubles);
+        dataFrame.add("xLabels", xUseColValues);
+        dfAsBarChartSimple(dataFrame, save, file, "xLabels");
+    }
+
+    public static void listOfDoubleAsLineChartSimple(List<Object> doubles, boolean save, File file,
+                                                     List<Object> xUseColValues)
+            throws IOException {
+        DataFrame<Object> dataFrame = new DataFrame<>();
+        dataFrame.add("temp_col", doubles);
+        dataFrame.add("xLabels", xUseColValues);
+        dfAsLineChartSimple(dataFrame, save, file, "xLabels");
+    }
+
+    public static void dfAsBarChartSimple(DataFrame<Object> df, boolean save, File file, String xUseCol)
+            throws IOException {
+        BarChartForDf chart = new BarChartForDf(df, file, xUseCol);
         chart.showIt();
         if (save) {
             chart.saveIt();
         }
     }
 
-    public static void dfAsLineChartSimple(DataFrame<Object> df, boolean save, File file)
+    public static void dfAsLineChartSimple(DataFrame<Object> df, boolean save, File file, String xUseCol)
             throws IOException {
-        LineChartForDf chart = new LineChartForDf(df, file);
+        LineChartForDf chart = new LineChartForDf(df, file, xUseCol);
         chart.showIt();
         if (save) {
             chart.saveIt();
@@ -63,21 +83,34 @@ public class ChartUtil {
      * @param df
      * @return
      */
-    public static CategoryDataset createDefaultCategoryDataset(DataFrame<Object> df) {
+    public static CategoryDataset createDefaultCategoryDataset(DataFrame<Object> df, String xUseCol) {
         if (df.length() == 0) {
             throw new IllegalArgumentException("df lenth 应该大于0");
         }
         df = df.convert();
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         Object[] columns = df.columns().toArray();
-        Object[] indexes = df.index().toArray();
+//
+        ArrayList<Object> xs = new ArrayList<>();
+        if (xUseCol == null) { // 未给定列作为 x轴各刻度时, 使用index
+            Object[] indexes = df.index().toArray();
+            for (Object index : indexes) {
+                xs.add(index.toString());
+            }
+        } else {
+            List<Object> xsCol = df.col(xUseCol);
+            for (Object o : xsCol) {
+                xs.add(o.toString());
+            }
+        }
+
         for (int i = 0; i < df.size(); i++) {
             if (!Number.class.isAssignableFrom(df.types().get(i))) {
                 continue; // 不是数字跳过
             }
             List<Object> col = df.col(i);
             for (int j = 0; j < col.size(); j++) {
-                dataset.addValue(((Number) df.get(j, i)).doubleValue(), columns[i].toString(), indexes[j].toString());
+                dataset.addValue(((Number) df.get(j, i)).doubleValue(), columns[i].toString(), xs.get(j).toString());
             }
         }
         return dataset;

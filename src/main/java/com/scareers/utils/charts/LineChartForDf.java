@@ -22,6 +22,7 @@ public class LineChartForDf extends ApplicationFrame {
     int width;
     int height;
     File file;
+    String xUseCol;
 
     /**
      * 完整参数构造器
@@ -42,12 +43,13 @@ public class LineChartForDf extends ApplicationFrame {
     public LineChartForDf(DataFrame<Object> df, int width, int height, String applicationTitle, String chartTitle,
                           String categoryAxisLabel,
                           String valueAxisLabel,
-                          boolean legend, boolean tooltips, boolean urls, File file)
+                          boolean legend, boolean tooltips, boolean urls, File file, String xUseCol)
             throws IOException {
         super(applicationTitle);
         this.width = width;
         this.height = height;
         this.file = file;
+        this.xUseCol = xUseCol;
 
         barChart = ChartFactory.createLineChart(
                 chartTitle,
@@ -87,41 +89,44 @@ public class LineChartForDf extends ApplicationFrame {
     }
 
     private CategoryDataset createDataset(DataFrame<Object> df) {
-        return createDefaultCategoryDataset(df);
+        return createDefaultCategoryDataset(df, xUseCol);
     }
 
     public LineChartForDf(DataFrame<Object> df, String applicationTitle, String chartTitle,
                           String categoryAxisLabel,
                           String valueAxisLabel,
-                          boolean legend, boolean tooltips, boolean urls, File file) throws IOException {
+                          boolean legend, boolean tooltips, boolean urls, File file, String xUseCol)
+            throws IOException {
         this(df, 800, 600, applicationTitle, chartTitle,
-                categoryAxisLabel, valueAxisLabel, legend, tooltips, urls, file);
+                categoryAxisLabel, valueAxisLabel, legend, tooltips, urls, file, xUseCol);
     }
 
     public LineChartForDf(DataFrame<Object> df,
                           String categoryAxisLabel,
                           String valueAxisLabel,
-                          boolean legend, boolean tooltips, boolean urls, File file) throws IOException {
+                          boolean legend, boolean tooltips, boolean urls, File file, String xUseCol)
+            throws IOException {
         this(df, "simple window title", "null title", categoryAxisLabel, valueAxisLabel, legend, tooltips, urls,
-                file);
+                file, xUseCol);
     }
 
     public LineChartForDf(DataFrame<Object> df,
 
-                          boolean legend, boolean tooltips, boolean urls, File file) throws IOException {
+                          boolean legend, boolean tooltips, boolean urls, File file, String xUseCol)
+            throws IOException {
         this(df, "simple window title", "null title", "x_value",
                 "y_value", legend, tooltips, urls,
-                file);
+                file, xUseCol);
     }
 
     public LineChartForDf(DataFrame<Object> df,
-                          File file) throws IOException {
+                          File file, String xUseCol) throws IOException {
         this(df, "simple window title", "null title",
-                "x_value", "y_value", true, true, false, file);
+                "x_value", "y_value", true, true, false, file, xUseCol);
     }
 
-    public LineChartForDf(DataFrame<Object> df) throws IOException {
+    public LineChartForDf(DataFrame<Object> df, String xUseCol) throws IOException {
         this(df, "simple window title", "null title",
-                "x_value", "y_value", true, true, false, null);
+                "x_value", "y_value", true, true, false, null, xUseCol);
     }
 }
