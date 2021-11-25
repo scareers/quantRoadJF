@@ -1,6 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent;
 /**
- * -Xmx512g -XX:+PrintGC -XX:MaxTenuringThreshold=3
+ * -Xmx512g -XX:+PrintGC -XX:MaxTenuringThreshold=3 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10
  */
 
 import cn.hutool.core.collection.ListUtil;

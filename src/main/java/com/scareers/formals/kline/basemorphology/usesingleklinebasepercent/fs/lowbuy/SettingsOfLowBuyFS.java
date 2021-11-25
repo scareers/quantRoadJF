@@ -30,7 +30,7 @@ public class SettingsOfLowBuyFS {
     public static final int processAmountParse = 8;
     public static final int processAmountSave = 32;
     public static final int perEpochTaskAmounts = 32;
-    public static final int gcControlEpochParse = 50;
+    public static final int gcControlEpochParse = 16;
     public static final int gcControlEpochSave = 200;
     public static final boolean showMemoryUsage = true;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
