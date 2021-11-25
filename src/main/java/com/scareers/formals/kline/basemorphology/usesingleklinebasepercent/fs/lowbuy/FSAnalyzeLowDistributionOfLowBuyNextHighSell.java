@@ -71,9 +71,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     saveTablenameLowBuyFS, keyInts.get(0));
 
             String hardwareInfo = reportCpuMemoryDisk(true);
-            MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
-                    StrUtil.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
-                    null);
+            try {
+                MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
+                        StrUtil.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
+                        null);
+            } catch (Exception e) {
+                e.printStackTrace(); // 防止断网
+            }
             log.info("current time");
         }
     }
@@ -336,18 +340,23 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 分时图中的 基准价格应该是当日前复权close;  而成交量使用成交额, 不存在此问题. 参见 TushareApi.qfqStockSpecialDay
                     // @specialend
                     String today = todayKlineRow.get(0).toString(); // 今日价格
-                    String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
                     // 未复权时等价于今日收盘价
                     // @bugfix: 第二次遇到问题: 分时图amount单位是元, 而 原python代码常规日线图的昨日总amount, 单位为1千元
-                    Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
                     Double stdAmount = getPriceOfSingleKline(todayKlineRow, "amount") * 1000.0; // 今日作为基准成交额
-                    // 临时前复权作为基准close.
-                    // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
-                    // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
-                    // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
-                    HashMap<String, Double> resultOf10AlgorithmLow = calc5ItemValusOfLowBuy(stdAmount,
-                            stdCloseOfLowBuy,
-                            lowBuyDate, connOfFS, stock);
+
+                    HashMap<String, Double> resultOf10AlgorithmLow = null;
+                    if (parallelComputingLowBuy) {
+                        String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
+                        Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
+                        // 临时前复权作为基准close.
+                        // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
+                        // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
+                        // 使用 Map 保存15种结果, 不返回null, 最多返回 空Map
+                        resultOf10AlgorithmLow = calc5ItemValusOfLowBuy(stdAmount,
+                                stdCloseOfLowBuy,
+                                lowBuyDate, connOfFS, stock);
+
+                    }
                     HashMap<String, Double> resultOf10AlgorithmHigh = null;
                     if (parallelComputingHighSell) { // 核心设定项2
                         String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
@@ -363,10 +372,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // 开始填充结果:  @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
                     for (Long setId : belongToFormsetIds) {
                         String prefix = setId.toString() + "__"; // 临时前缀.
-                        for (String lowKeys : resultOf10AlgorithmLow.keySet()) {
-                            String keyFull = StrUtil.format("{}{}", prefix, lowKeys);
-                            resultTemp.putIfAbsent(keyFull, new ArrayList<>());
-                            resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
+                        if (parallelComputingLowBuy) {
+                            for (String lowKeys : resultOf10AlgorithmLow.keySet()) {
+                                String keyFull = StrUtil.format("{}{}", prefix, lowKeys);
+                                resultTemp.putIfAbsent(keyFull, new ArrayList<>());
+                                resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
+                            }
                         }
                         if (resultOf10AlgorithmHigh != null) { // 并列计算 HighSell时, 填充他.
                             for (String highKeys : resultOf10AlgorithmHigh.keySet()) {

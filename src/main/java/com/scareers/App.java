@@ -1,6 +1,7 @@
 package com.scareers;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell;
@@ -30,19 +31,19 @@ public class App {
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ");
 //        Console.log(JSONUtil.toJsonPrettyStr(temp));
 
-        HashMap<String, Double> temp2 = calc5ItemValusOfHighSell(3346000000.0, 19.43, "20210901",
-                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
-        ArrayList<String> keys = new ArrayList<>(temp2.keySet());
-        keys.sort(Comparator.naturalOrder());
-
-        for (String key : keys) {
-            if (key.endsWith("happen_tick")) {
-                Console.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
-                continue;
-            }
-            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
-        }
-
+//        HashMap<String, Double> temp2 = calc5ItemValusOfHighSell(3346000000.0, 19.43, "20210901",
+//                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
+//        ArrayList<String> keys = new ArrayList<>(temp2.keySet());
+//        keys.sort(Comparator.naturalOrder());
+//
+//        for (String key : keys) {
+//            if (key.endsWith("happen_tick")) {
+//                Console.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
+//                continue;
+//            }
+//            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
+//        }
+        Console.log(RandomUtil.randomInt(10));
 //        List<String> x = Arrays.asList("abc", "xyz");
 
 
