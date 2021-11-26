@@ -114,7 +114,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
-                results.putIfAbsent(key, new ArrayList<>());
+                results.putIfAbsent(key, new ArrayList<>(8096));
                 results.get(key).addAll(resultTemp.get(key));
             }
             resultTemp.clear();
