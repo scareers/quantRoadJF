@@ -108,7 +108,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             futuresOfParse.add(f);
         }
         List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange)))  {
             // 串行不再需要使用 CountDownLatch
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
