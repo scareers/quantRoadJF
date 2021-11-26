@@ -73,6 +73,28 @@
         <!--            <version>0.9.5.2</version>-->
         <!--        </dependency>-->
         <!-- 日志组件配合c3p0 -->
+
+        <!-- https://mvnrepository.com/artifact/com.xnx3/xnx3 -->
+        <!--        按键精灵-->
+<!--        <dependency>-->
+<!--            <groupId>com.xnx3</groupId>-->
+<!--            <artifactId>xnx3</artifactId>-->
+<!--            <version>2.3</version>-->
+<!--        </dependency>-->
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.xnx3.util/xnx3-util &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.xnx3.util</groupId>-->
+<!--            <artifactId>xnx3-util</artifactId>-->
+<!--            <version>1.6</version>-->
+<!--        </dependency>-->
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/com.xnx3.weixin/xnx3-weixin &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>com.xnx3.weixin</groupId>-->
+<!--            <artifactId>xnx3-weixin</artifactId>-->
+<!--            <version>1.6</version>-->
+<!--        </dependency>-->
+
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

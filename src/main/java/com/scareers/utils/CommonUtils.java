@@ -156,7 +156,7 @@ public class CommonUtils {
         return res;
     }
 
-    public static Double sumOfListNumber(List<Double> numbers) {
+    public static Double sumOfListNumber(List<? extends Number> numbers) {
         return numbers.stream().
                 mapToDouble(Number::doubleValue).sum();
     }
@@ -177,6 +177,16 @@ public class CommonUtils {
         }
         if (res.equals(Double.MIN_VALUE)) {
             return null; // 全部时null时, 可能发生.
+        }
+        return res;
+    }
+
+    public static int countTrueOfListBooleans(List<Boolean> bools) {
+        int res = 0;
+        for (Boolean b : bools) {
+            if (b) {
+                res += 1;
+            }
         }
         return res;
     }

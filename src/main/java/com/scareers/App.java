@@ -5,6 +5,8 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell;
+import com.xnx3.robot.Robot;
+import org.apache.commons.validator.Var;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,7 +46,12 @@ public class App {
 //            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
 //        }
         Console.log(RandomUtil.randomInt(10));
-//        List<String> x = Arrays.asList("abc", "xyz");
+
+        Robot robot = new Robot();
+        robot.setSourcePath(App.class);
+
+
+        //        List<String> x = Arrays.asList("abc", "xyz");
 
 
 //

@@ -5,13 +5,11 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.lang.WeightRandom.WeightObj;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
 
 import java.io.IOException;
 import java.util.*;
 
-import static com.scareers.utils.CommonUtils.range;
-import static com.scareers.utils.CommonUtils.sumOfListNumber;
+import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
 
 /**
@@ -29,34 +27,56 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
 public class PositionByDistribution {
     public static final boolean showDistribution = false;
     public static List<List<Object>> valuePercentOfLowx = Arrays.asList( // Low1/2/3 的具体值刻度
+            Arrays.asList(-0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1, -0.11),
             Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
-            Arrays.asList(-0.005, -0.015, -0.025, -0.035, -0.045, -0.055, -0.065, -0.075, -0.085, -0.095),
             Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
     );
+    public static Double tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
+            Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
+                    .valueOf(valuePercentOfLowx.get(1).get(0).toString()));
     public static List<List<Object>> weightsOfLowx = Arrays.asList( // Low1/2/3 的权重列表
-            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5),
-            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5),
-            Arrays.asList(5., 10.0, 20., 15., 10., 4., 2., 3., 2., 0.5)
+            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
+            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
+            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.)
     );
     public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.3; // 控制单股cdf倍率, 一般不小于上限
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
 
     public static void main(String[] args) throws IOException {
-        List<Object> res = main0();
-        HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
-        Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
-        HashMap<Integer, List<Double>> stockWithActualValueAndPosition = (HashMap<Integer, List<Double>>) res.get(3);
-        Console.log(JSONUtil.toJsonPrettyStr(positions));
-        Console.log(positions.size());
-        Console.log(sumOfListNumber(new ArrayList<>(positions.values())));
-        Console.log(reachTotalLimitInLoop);
-        Console.log(res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
-        Console.log(stockWithActualValueAndPosition);
-        Console.log((Double) res.get(4));
+        mainOfLowBuy();
     }
 
-    public static List<Object> main0() throws IOException {
+    public static void mainOfLowBuy() throws IOException {
+
+        int loops = 10000;
+        List<Integer> sizes = new ArrayList<>();
+        List<Double> totolPositions = new ArrayList<>();
+        List<Boolean> reachTotalLimitInLoops = new ArrayList<>();
+        List<Integer> epochs = new ArrayList<>();
+        List<Double> weightedGlobalPrices = new ArrayList<>();
+
+        for (int i = 0; i < loops; i++) {
+            List<Object> res = mainOfLowBuyCore();
+            HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
+            Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
+            //            Console.log(JSONUtil.toJsonPrettyStr(positions));
+            //            Console.log(stockWithActualValueAndPosition);
+            sizes.add(positions.size());
+            totolPositions.add(sumOfListNumber(new ArrayList<>(positions.values())));
+            reachTotalLimitInLoops.add(reachTotalLimitInLoop);
+            epochs.add((Integer) res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
+            weightedGlobalPrices.add((Double) res.get(4));
+        }
+
+        Console.log(sizes.stream().mapToDouble(value -> value.doubleValue()).average());
+        Console.log(totolPositions.stream().mapToDouble(value -> value.doubleValue()).average());
+        Console.log(countTrueOfListBooleans(reachTotalLimitInLoops) / (double) loops);
+        Console.log(epochs.stream().mapToDouble(value -> value.doubleValue()).average());
+        Console.log(weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average());
+    }
+
+    public static List<Object> mainOfLowBuyCore() throws IOException {
         // 1.获取三个分布 的随机数生成器. key为 low几?
         HashMap<Integer, WeightRandom<Object>> lowWithRandom = new HashMap<>();
         lowWithRandom.put(1, getDistributionsOfLow1());
