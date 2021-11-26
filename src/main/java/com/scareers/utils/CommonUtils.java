@@ -1,7 +1,6 @@
 package com.scareers.utils;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
@@ -129,6 +128,37 @@ public class CommonUtils {
             return null; // 全部时null时, 可能发生.
         }
         return res;
+    }
+
+    /**
+     * 可null, 如果用
+     *
+     * @param numbers
+     * @return
+     */
+    public static Double minOfListNumber(List<Number> numbers) {
+        if (numbers.size() == 0) {
+            return null;
+        }
+        Double res = Double.MAX_VALUE;
+        for (int i = 0; i < numbers.size(); i++) {
+            Number ele = numbers.get(i);
+            if (ele == null) { // 有null时能够正确返回.
+                continue;
+            }
+            if (ele.doubleValue() < res) {
+                res = ele.doubleValue();
+            }
+        }
+        if (res.equals(Double.MAX_VALUE)) {
+            return null; // 全部时null时, 可能发生.
+        }
+        return res;
+    }
+
+    public static Double sumOfListNumber(List<Double> numbers) {
+        return numbers.stream().
+                mapToDouble(Number::doubleValue).sum();
     }
 
     public static Double maxOfListDouble(List<Double> doubles) {

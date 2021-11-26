@@ -21,8 +21,8 @@ public class SettingsOfLowBuyFS {
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     // 核心设定项2, 是否(并列)计算 HighSell,否则值计算LowBuy
     // @noti: 当只计算LowBuy, cpu能跑满100%, 同时计算HighSell时, CPU跑到70%. 16线程情况下; 原因未知. 可能因为fs缓存生效?加大线程数量到64.
-    public static final boolean parallelComputingLowBuy = true; // 是否计算lowbuy
-    public static final boolean parallelComputingHighSell = false; // 是否计算highsell
+    public static final boolean parallelComputingLowBuy = false; // 是否计算lowbuy
+    public static final boolean parallelComputingHighSell = true; // 是否计算highsell
     public static final int stockAmountsBeCalcFS = 1000000;
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
