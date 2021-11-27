@@ -71,7 +71,7 @@ public class PositionOfHighSellByDistribution {
         List<Double> weightedGlobalPrices = new ArrayList<>();
 
         for (int i = 0; i < loops; i++) {
-            List<Object> res = mainOfHighSellCore(null);
+            List<Object> res = mainOfHighSellCore(null, null);
             HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
             Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
             //            Console.log(JSONUtil.toJsonPrettyStr(positions));
@@ -145,13 +145,16 @@ public class PositionOfHighSellByDistribution {
     }
 
     /**
-     * 需要给定已有持仓, 以便卖出.
+     * 需要给定已有持仓.  参数2包含已有持仓 + 折算买入价格 (负数)
      *
-     * @param stockWithPosition
+     * @param stockWithPosition               股票:持仓
+     * @param stockWithActualValueAndPosition 股票:[持仓,折算价格]  // 相当于包含了参数1
      * @return
      * @throws IOException
      */
-    public static List<Object> mainOfHighSellCore(HashMap<Integer, Double> stockWithPosition) throws IOException {
+    public static List<Object> mainOfHighSellCore(HashMap<Integer, Double> stockWithPosition,
+                                                  HashMap<Integer, List<Double>> stockWithActualValueAndPosition)
+            throws IOException {
         // @noti: 高卖算法, 与低买有很大区别.
         // 给定已有持仓, 用一定算法, 算出高卖持仓(折算比例) (类似低买过程)
         // 用原始持仓, 减去 算法卖出持仓, 剩余仓位, 以0卖出
@@ -238,18 +241,33 @@ public class PositionOfHighSellByDistribution {
 
 
         List<Object> res = new ArrayList<>();
-        res.add(stockWithPosition); // 0元素: 原始仓位
-        res.add(stockWithHighSellActualValueAndPosition);// 高卖成功的仓位 和 价格
-        res.add(stockWithPositionRemaining); // 剩余仓位 未能成功卖出
-        res.add(stockWithHighSellActualValueAndPositionDiscountAll); // 用 0.0折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
+        res.add(stockWithPosition); // 0: 原始仓位
+        res.add(stockWithHighSellActualValueAndPosition);// 1.高卖成功的仓位 和 价格
+        res.add(stockWithPositionRemaining); // 2.剩余仓位 未能成功卖出
+        res.add(stockWithHighSellActualValueAndPositionDiscountAll); // 3.用 0.0折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
         if (showStockWithPositionFinally) {
             Console.log(JSONUtil.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
         }
+        Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice(
+                stockWithHighSellActualValueAndPosition); // 高卖成功部分折算价格
+        Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice(
+                stockWithHighSellActualValueAndPositionDiscountAll); // 折算剩余, 最终折算价格
+        res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
+        res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
+        res.add(stockWithActualValueAndPosition); // 6.原始低买时仓位+价格
+        res.add(profitOfHighSellSuccess(stockWithActualValueAndPosition,
+                stockWithHighSellActualValueAndPosition)); // 只计算高卖成功部分, 整体的 加权盈利值!!
+        // (即原始仓位也视为高卖成功那么多仓位, 无视没有卖出的)
 
-        res.add(stockWithHighSellActualValueAndPosition);
-        Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithHighSellActualValueAndPosition);
-        res.add(weightedGlobalPrice);
         return res;
+    }
+
+    private static Double profitOfHighSellSuccess(HashMap<Integer, List<Double>> stockWithActualValueAndPosition,
+                                                  HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPosition) {
+        // 仓位仅仅以高卖成功的计算, 无视原始总仓位. 计算价差后, 同样以卖出仓位作为权重.
+        HashMap<Integer, List<Double>> positionWithProfit = new HashMap<>();
+
+
     }
 
     private static HashMap<Integer, List<Double>> discountSuccessHighSellAndRemaining(
