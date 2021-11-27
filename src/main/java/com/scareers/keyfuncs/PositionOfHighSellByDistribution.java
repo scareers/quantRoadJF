@@ -100,7 +100,7 @@ public class PositionOfHighSellByDistribution {
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
         List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
                 stockWithActualValueAndPositionList.get(0));
-        Console.log(JSONUtil.toJsonPrettyStr(highResult));
+        Console.log(highResult);
     }
 
 
