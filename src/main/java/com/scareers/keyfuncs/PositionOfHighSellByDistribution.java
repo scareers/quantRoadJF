@@ -72,15 +72,14 @@ public class PositionOfHighSellByDistribution {
         List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
         for (int i = 0; i < loops; i++) {
             List<Object> res = mainOfLowBuyCore();
-            HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
-            Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
-            //            Console.log(JSONUtil.toJsonPrettyStr(positions));
-            //            Console.log(stockWithActualValueAndPosition);
+            LowBuyResultParser parser = new LowBuyResultParser(res);
+            HashMap<Integer, Double> positions = parser.getStockWithPosition();
+            Boolean reachTotalLimitInLoop = parser.getReachTotalLimitInLoop();
             sizes.add(countNonZeroValueOfMap(positions));
             totolPositions.add(sumOfListNumber(new ArrayList<>(positions.values())));
             reachTotalLimitInLoops.add(reachTotalLimitInLoop);
-            epochs.add((Integer) res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
-            weightedGlobalPrices.add((Double) res.get(4));
+            epochs.add(parser.getEpochCount()); // 跳出时执行到的轮次.  2代表判定到了 Low3
+            weightedGlobalPrices.add(parser.getWeightedGlobalPrice());
 
             stockWithPositionList.add(positions); // 仓位在 0          @noti: HighSell新增
             stockWithActualValueAndPositionList.add((HashMap<Integer, List<Double>>) res.get(3)); // 仓位+价格在 3
@@ -226,6 +225,14 @@ public class PositionOfHighSellByDistribution {
         Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice(allProfitsDiscounted);
         res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
         return res;
+    }
+
+    public static class HighSellParser {
+        List<Object> highSellRes;
+
+        public HighSellParser(List<Object> highSellRes) {
+            this.highSellRes = highSellRes;
+        }
     }
 
     public static Log log = LogFactory.get();

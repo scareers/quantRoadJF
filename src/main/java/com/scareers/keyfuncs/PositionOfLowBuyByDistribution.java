@@ -72,15 +72,14 @@ public class PositionOfLowBuyByDistribution {
 
         for (int i = 0; i < loops; i++) {
             List<Object> res = mainOfLowBuyCore();
-            HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
-            Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
-            //            Console.log(JSONUtil.toJsonPrettyStr(positions));
-            //            Console.log(stockWithActualValueAndPosition);
+            LowBuyResultParser parser = new LowBuyResultParser(res);
+            HashMap<Integer, Double> positions = parser.getStockWithPosition();
+            Boolean reachTotalLimitInLoop = parser.getReachTotalLimitInLoop();
             sizes.add(countNonZeroValueOfMap(positions));
             totolPositions.add(sumOfListNumber(new ArrayList<>(positions.values())));
             reachTotalLimitInLoops.add(reachTotalLimitInLoop);
-            epochs.add((Integer) res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
-            weightedGlobalPrices.add((Double) res.get(4));
+            epochs.add(parser.getEpochCount()); // 跳出时执行到的轮次.  2代表判定到了 Low3
+            weightedGlobalPrices.add(parser.getWeightedGlobalPrice());
         }
         Console.log("总计股票数量/资产总量: {}", totalAssets);
         Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
@@ -92,57 +91,47 @@ public class PositionOfLowBuyByDistribution {
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
     }
 
+    public static class LowBuyResultParser {
+        List<Object> lowBuyRes;
 
-    public static void initDistributions() throws SQLException {
-        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
-                "select form_set_id, (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width, avg(effective_counts) as ec\n" +
-                        "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
-                        "where effective_counts\n" +
-                        "    > 4000\n" +
-                        "  and concrete_algorithm like '%value_percent%'\n" +
-                        "  and condition1 = 'strict'\n" +
-                        "  and stat_result_algorithm like '%1%'\n" +
-                        "group by form_set_id\n" +
-                        "order by width desc");
-        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(0));
-    }
-
-    public static Log log = LogFactory.get();
-
-    public static void flushDistributions(Integer formSetId) throws SQLException {
-        Console.log(formSetId);
-        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
-                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
-                "where form_set_id = {}\n" +
-                "  and concrete_algorithm like '%value_percent%'\n" +
-                "  and condition1 = 'strict'\n" +
-                "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
-        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
-        if (dataFrame.length() < 6) {
-            log.warn("记录不足6, 解析失败");
-        }
-        List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
-        List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
-        for (int i = 1; i < 4; i++) { // Low
-            int finalI = i;
-            DataFrame<Object> dfTemp = dataFrame
-                    .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
-
-            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
-            Collections.reverse(tempValues);
-            valuePercentOfLowxTemp.add(tempValues);
-            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
-            Collections.reverse(tempWeights);
-            weightsOfLowxTemp.add(tempWeights);
+        public LowBuyResultParser(List<Object> lowBuyRes) {
+            this.lowBuyRes = lowBuyRes;
         }
 
-        valuePercentOfLowx = valuePercentOfLowxTemp;
-        weightsOfLowx = weightsOfLowxTemp;
-        tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
-                Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
-                        .valueOf(valuePercentOfLowx.get(1).get(0).toString())); // 间隔也刷新
+        /*
+        List<Object> res = new ArrayList<>();
+        res.add(stockWithPosition);
+        if (showStockWithPosition) {
+            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+        }
+        res.add(reachTotalLimitInLoop);
+        res.add(epochRaw + 1);
+        res.add(stockWithActualValueAndPosition);
+        Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
+        res.add(weightedGlobalPrice);
+         */
+        public HashMap<Integer, Double> getStockWithPosition() {
+            return (HashMap<Integer, Double>) lowBuyRes.get(0);
+        }
+
+        public Boolean getReachTotalLimitInLoop() {
+            return (Boolean) lowBuyRes.get(1);
+        }
+
+        public int getEpochCount() {
+            return (int) lowBuyRes.get(2);
+        }
+
+        public HashMap<Integer, List<Double>> getStockWithActualValueAndPosition() {
+            return (HashMap<Integer, List<Double>>) lowBuyRes.get(3);
+        }
+
+        public Double getWeightedGlobalPrice() {
+            return (Double) lowBuyRes.get(4);
+        }
+
     }
+
 
     public static List<Object> mainOfLowBuyCore() throws IOException {
         // 1.获取三个分布 的随机数生成器. key为 low几?
@@ -256,6 +245,58 @@ public class PositionOfLowBuyByDistribution {
         res.add(weightedGlobalPrice);
         return res; // 循环完成仍旧没有达到过30上限, 也返回最终的仓位分布
     }
+
+    public static void initDistributions() throws SQLException {
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
+                "select form_set_id, (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width, avg(effective_counts) as ec\n" +
+                        "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                        "where effective_counts\n" +
+                        "    > 4000\n" +
+                        "  and concrete_algorithm like '%value_percent%'\n" +
+                        "  and condition1 = 'strict'\n" +
+                        "  and stat_result_algorithm like '%1%'\n" +
+                        "group by form_set_id\n" +
+                        "order by width desc");
+        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
+        flushDistributions(formSetIds.get(0));
+    }
+
+    public static Log log = LogFactory.get();
+
+    public static void flushDistributions(Integer formSetId) throws SQLException {
+        Console.log(formSetId);
+        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
+                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                "where form_set_id = {}\n" +
+                "  and concrete_algorithm like '%value_percent%'\n" +
+                "  and condition1 = 'strict'\n" +
+                "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
+        if (dataFrame.length() < 6) {
+            log.warn("记录不足6, 解析失败");
+        }
+        List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
+        List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
+        for (int i = 1; i < 4; i++) { // Low
+            int finalI = i;
+            DataFrame<Object> dfTemp = dataFrame
+                    .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
+
+            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            Collections.reverse(tempValues);
+            valuePercentOfLowxTemp.add(tempValues);
+            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            Collections.reverse(tempWeights);
+            weightsOfLowxTemp.add(tempWeights);
+        }
+
+        valuePercentOfLowx = valuePercentOfLowxTemp;
+        weightsOfLowx = weightsOfLowxTemp;
+        tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
+                Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
+                        .valueOf(valuePercentOfLowx.get(1).get(0).toString())); // 间隔也刷新
+    }
+
 
     public static Double calcWeightedGlobalPrice(HashMap<Integer, List<Double>> stockWithActualValueAndPosition) {
         Double res = 0.0;
