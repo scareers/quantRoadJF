@@ -59,9 +59,9 @@ public class PositionOfHighSellByDistribution {
     }
 
     public static void mainOfHighSell() throws IOException, SQLException {
-        initDistributions();
-        Console.log(valuePercentOfHighx);
-        Console.log(weightsOfHighx);
+        // lowBuy初始化. 然后调用. 保存持仓结果, 以此结果再尝试高卖
+        PositionOfLowBuyByDistribution.initDistributions();
+
         int loops = perLoops;
         List<Integer> sizes = new ArrayList<>();
         List<Double> totolPositions = new ArrayList<>();
@@ -95,62 +95,14 @@ public class PositionOfHighSellByDistribution {
         Console.log("平均交易价位: {}",
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
 
+        // 高卖初始化
+        initDistributions();
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
-
-
+        List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
+                stockWithActualValueAndPositionList.get(0));
+        Console.log(JSONUtil.toJsonPrettyStr(highResult));
     }
 
-
-    public static void initDistributions() throws SQLException {
-        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
-                "select form_set_id, (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width, avg(effective_counts) as ec\n" +
-                        "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
-                        "where effective_counts\n" +
-                        "    > 4000\n" +
-                        "  and concrete_algorithm like '%value_percent%'\n" +
-                        "  and condition1 = 'strict'\n" +
-                        "  and stat_result_algorithm like '%1%'\n" +
-                        "group by form_set_id\n" +
-                        "order by width desc");
-        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(0));
-    }
-
-    public static Log log = LogFactory.get();
-
-    public static void flushDistributions(Integer formSetId) throws SQLException {
-        Console.log(formSetId);
-        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
-                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
-                "where form_set_id = {}\n" +
-                "  and concrete_algorithm like '%value_percent%'\n" +
-                "  and condition1 = 'strict'\n" +
-                "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
-        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
-        if (dataFrame.length() < 6) {
-            log.warn("记录不足6, 解析失败");
-        }
-        List<List<Object>> valuePercentOfHighxTemp = new ArrayList<>();
-        List<List<Object>> weightsOfHighxTemp = new ArrayList<>();
-
-        for (int i = 1; i < 4; i++) { //High
-            int finalI = i;
-            DataFrame<Object> dfTemp = dataFrame
-                    .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
-
-            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
-            Collections.reverse(tempValues);
-            valuePercentOfHighxTemp.add(tempValues);
-            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
-            Collections.reverse(tempWeights);
-            weightsOfHighxTemp.add(tempWeights);
-        }
-        valuePercentOfHighx = valuePercentOfHighxTemp;
-        weightsOfHighx = weightsOfHighxTemp;
-        tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
-                Math.abs(Double.valueOf(valuePercentOfHighx.get(1).get(1).toString()) - Double
-                        .valueOf(weightsOfHighx.get(1).get(0).toString())); // 间隔也刷新
-    }
 
     /**
      * 需要给定已有持仓.  参数2包含已有持仓 + 折算买入价格 (负数)
@@ -171,9 +123,9 @@ public class PositionOfHighSellByDistribution {
 
         // 1.获取三个分布 的随机数生成器. key为 low/high几?
         HashMap<Integer, WeightRandom<Object>> highWithRandom = new HashMap<>();
-        highWithRandom.put(1, getDistributionsOfLow1());
-        highWithRandom.put(2, getDistributionsOfLow2());
-        highWithRandom.put(3, getDistributionsOfLow3());
+        highWithRandom.put(1, getDistributionsOfHigh1());
+        highWithRandom.put(2, getDistributionsOfHigh2());
+        highWithRandom.put(3, getDistributionsOfHigh3());
         totalAssets = (double) stockWithPosition.size(); // 这里可能某些资产仓位0
         // 2.简单int随机, 取得某日是 出现2个低点还是 3个低点. 当然, 2个低点, Low3生成器用不到
 
@@ -276,6 +228,59 @@ public class PositionOfHighSellByDistribution {
         return res;
     }
 
+    public static Log log = LogFactory.get();
+
+    public static void initDistributions() throws SQLException {
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
+                "select form_set_id, (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width, avg(effective_counts) as ec\n" +
+                        "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                        "where effective_counts\n" +
+                        "    > 4000\n" +
+                        "  and concrete_algorithm like '%value_percent%'\n" +
+                        "  and condition1 = 'strict'\n" +
+                        "  and stat_result_algorithm like '%1%'\n" +
+                        "group by form_set_id\n" +
+                        "order by width desc");
+        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
+        flushDistributions(formSetIds.get(0));
+    }
+
+
+    public static void flushDistributions(Integer formSetId) throws SQLException {
+        Console.log(formSetId);
+        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
+                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                "where form_set_id = {}\n" +
+                "  and concrete_algorithm like '%value_percent%'\n" +
+                "  and condition1 = 'strict'\n" +
+                "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
+        if (dataFrame.length() < 6) {
+            log.warn("记录不足6, 解析失败");
+        }
+        List<List<Object>> valuePercentOfHighxTemp = new ArrayList<>();
+        List<List<Object>> weightsOfHighxTemp = new ArrayList<>();
+
+        for (int i = 1; i < 4; i++) { //High
+            int finalI = i;
+            DataFrame<Object> dfTemp = dataFrame
+                    .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
+
+            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            Collections.reverse(tempValues);
+            valuePercentOfHighxTemp.add(tempValues);
+            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            Collections.reverse(tempWeights);
+            weightsOfHighxTemp.add(tempWeights);
+        }
+        valuePercentOfHighx = valuePercentOfHighxTemp;
+        weightsOfHighx = weightsOfHighxTemp;
+        tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
+                Math.abs(Double.valueOf(valuePercentOfHighx.get(1).get(1).toString()) - Double
+                        .valueOf(weightsOfHighx.get(1).get(0).toString())); // 间隔也刷新
+    }
+
+
     private static HashMap<Integer, List<Double>> profitOfHighSell(
             HashMap<Integer, List<Double>> stockWithActualValueAndPosition,
             HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPosition) {
@@ -323,67 +328,17 @@ public class PositionOfHighSellByDistribution {
         return res;
     }
 
-    private static Double calcWeightedGlobalPrice(HashMap<Integer, List<Double>> stockWithActualValueAndPosition) {
-        Double res = 0.0;
-        for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
-            res += positionAndPrice.get(0) / totalAssets * positionAndPrice.get(1);
-        }
-        return res;
-    }
 
-    /**
-     * 将临时的 股票:总仓位 map, 转换为 2元素列表的列表, 且依据仓位排序, 以方便配对; 2元素分别为 Integer,Double
-     *
-     * @param stockWithPosition
-     * @return
-     */
-    public static List<List<Object>> mapTo2eleListOrderByPosition(HashMap<Integer, Double> stockWithPosition) {
-        List<List<Object>> listOfOrderedStockWithPosition = new ArrayList<>();
-        for (Integer key : stockWithPosition.keySet()) {
-            ArrayList<Object> per = new ArrayList<>();
-            per.add(key);
-            per.add(stockWithPosition.get(key));
-            listOfOrderedStockWithPosition.add(per);
-        }
-        listOfOrderedStockWithPosition.sort(Comparator.comparing(o -> ((Double) o.get(1))));// .........@noti: java也有简写
-        return listOfOrderedStockWithPosition;
-    }
-
-
-    /**
-     * 给定 可能值, 及其权重 列表, 给定某个值, 求一个模拟的 该点 cdf !!
-     *
-     * @param valuePercentOfLow 值列表 , 要求从小到大, 或者从小到大, 即有序.  一般更不利于我们的, 放在前面.
-     * @param weightsOfLow      权重列表
-     * @param value             求该点处cdf
-     * @return 返回虚拟近似cdf ,
-     */
-    public static Double virtualCdfAsPosition(List<Object> valuePercentOfLow, List<Object> weightsOfLow, Double value) {
-//        Console.log(valuePercentOfLow);
-//        Console.log(weightsOfLow);
-//        Console.log(value);
-        double total = 0.0;
-        Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
-        for (int i = 0; i < valuePercentOfLow.size(); i++) {
-            total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
-            if (value.equals(Double.valueOf(valuePercentOfLow.get(i).toString()))) { // 相等时,已被加入, 然后跳出
-                break;
-            }
-        }
-        double sum = weightsOfLow.stream().mapToDouble(value1 -> Double.parseDouble(value1.toString())).sum();
-        return total / sum; // 求和可能了多次
-    }
-
-    public static WeightRandom<Object> getDistributionsOfLow1() throws IOException {
+    public static WeightRandom<Object> getDistributionsOfHigh1() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(0), weightsOfHighx.get(0));
     }
 
 
-    public static WeightRandom<Object> getDistributionsOfLow2() throws IOException {
+    public static WeightRandom<Object> getDistributionsOfHigh2() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(1), weightsOfHighx.get(1));
     }
 
-    public static WeightRandom<Object> getDistributionsOfLow3() throws IOException {
+    public static WeightRandom<Object> getDistributionsOfHigh3() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(2), weightsOfHighx.get(2));
     }
 }

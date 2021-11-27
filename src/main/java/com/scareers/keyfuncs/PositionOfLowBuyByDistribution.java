@@ -257,7 +257,7 @@ public class PositionOfLowBuyByDistribution {
         return res; // 循环完成仍旧没有达到过30上限, 也返回最终的仓位分布
     }
 
-    private static Double calcWeightedGlobalPrice(HashMap<Integer, List<Double>> stockWithActualValueAndPosition) {
+    public static Double calcWeightedGlobalPrice(HashMap<Integer, List<Double>> stockWithActualValueAndPosition) {
         Double res = 0.0;
         for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
             res += positionAndPrice.get(0) / totalAssets * positionAndPrice.get(1);
