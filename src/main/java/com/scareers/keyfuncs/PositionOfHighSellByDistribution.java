@@ -15,8 +15,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
-import static com.scareers.keyfuncs.PositionOfLowBuyByDistribution.buildStockOccurrences;
-import static com.scareers.keyfuncs.PositionOfLowBuyByDistribution.getActualDistributionRandom;
+import static com.scareers.keyfuncs.PositionOfLowBuyByDistribution.*;
 import static com.scareers.utils.CommonUtils.*;
 
 /**
@@ -51,7 +50,7 @@ public class PositionOfHighSellByDistribution {
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execHighSellThreshold = 0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static Double totalAssets; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
-    public static int perLoops = 100;
+    public static int perLoops = 1;
     public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
@@ -69,9 +68,10 @@ public class PositionOfHighSellByDistribution {
         List<Boolean> reachTotalLimitInLoops = new ArrayList<>();
         List<Integer> epochs = new ArrayList<>();
         List<Double> weightedGlobalPrices = new ArrayList<>();
-
+        List<HashMap<Integer, Double>> stockWithPositionList = new ArrayList<>();
+        List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
         for (int i = 0; i < loops; i++) {
-            List<Object> res = mainOfHighSellCore(null, null);
+            List<Object> res = mainOfLowBuyCore();
             HashMap<Integer, Double> positions = (HashMap<Integer, Double>) res.get(0);
             Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
             //            Console.log(JSONUtil.toJsonPrettyStr(positions));
@@ -81,7 +81,11 @@ public class PositionOfHighSellByDistribution {
             reachTotalLimitInLoops.add(reachTotalLimitInLoop);
             epochs.add((Integer) res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
             weightedGlobalPrices.add((Double) res.get(4));
+
+            stockWithPositionList.add(positions); // 仓位在 0          @noti: HighSell新增
+            stockWithActualValueAndPositionList.add((HashMap<Integer, List<Double>>) res.get(3)); // 仓位+价格在 3
         }
+        // @noti: 这些是低买状况分析
         Console.log("总计股票数量/资产总量: {}", totalAssets);
         Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均总仓位: {}",
@@ -90,6 +94,10 @@ public class PositionOfHighSellByDistribution {
         Console.log("平均循环轮次: {}", epochs.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均交易价位: {}",
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+
+        // @noti: 使用低买结果, 尝试高卖, 并获得结果
+
+
     }
 
 
@@ -255,19 +263,32 @@ public class PositionOfHighSellByDistribution {
         res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
         res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
         res.add(stockWithActualValueAndPosition); // 6.原始低买时仓位+价格
-        res.add(profitOfHighSellSuccess(stockWithActualValueAndPosition,
-                stockWithHighSellActualValueAndPosition)); // 只计算高卖成功部分, 整体的 加权盈利值!!
-        // (即原始仓位也视为高卖成功那么多仓位, 无视没有卖出的)
-
+        HashMap<Integer, List<Double>> successPartProfits = profitOfHighSell(stockWithActualValueAndPosition,
+                stockWithHighSellActualValueAndPosition);
+        res.add(successPartProfits); // 7.只计算高卖成功部分, 仓位+盈利值
+        Double successPartProfitWeighted = calcWeightedGlobalPrice(successPartProfits);
+        res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
+        HashMap<Integer, List<Double>> allProfitsDiscounted = profitOfHighSell(stockWithActualValueAndPosition,
+                stockWithHighSellActualValueAndPositionDiscountAll);
+        res.add(allProfitsDiscounted); // 9.只计算高卖成功部分, 仓位+盈利值
+        Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice(allProfitsDiscounted);
+        res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
         return res;
     }
 
-    private static Double profitOfHighSellSuccess(HashMap<Integer, List<Double>> stockWithActualValueAndPosition,
-                                                  HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPosition) {
+    private static HashMap<Integer, List<Double>> profitOfHighSell(
+            HashMap<Integer, List<Double>> stockWithActualValueAndPosition,
+            HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPosition) {
         // 仓位仅仅以高卖成功的计算, 无视原始总仓位. 计算价差后, 同样以卖出仓位作为权重.
         HashMap<Integer, List<Double>> positionWithProfit = new HashMap<>();
-
-
+        for (Integer key : stockWithHighSellActualValueAndPosition.keySet()) {
+            Double newPosition = stockWithHighSellActualValueAndPosition.get(key).get(0);
+            Double profit =
+                    stockWithHighSellActualValueAndPosition.get(key).get(1) - stockWithActualValueAndPosition
+                            .getOrDefault(key, Arrays.asList(0.0, 0.0)).get(1);
+            positionWithProfit.put(key, Arrays.asList(newPosition, profit));
+        }
+        return positionWithProfit;
     }
 
     private static HashMap<Integer, List<Double>> discountSuccessHighSellAndRemaining(
