@@ -1,5 +1,7 @@
 package com.scareers.keyfuncs;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.util.StrUtil;
@@ -8,6 +10,7 @@ import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
 import java.io.IOException;
@@ -50,7 +53,7 @@ public class PositionOfHighSellByDistribution {
 
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execHighSellThreshold = 0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int perLoops = 20;
+    public static int perLoops = 100000;
     public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
@@ -59,6 +62,8 @@ public class PositionOfHighSellByDistribution {
     }
 
     public static void mainOfHighSell() throws IOException, SQLException {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
         // lowBuy初始化. 然后调用. 保存持仓结果, 以此结果再尝试高卖
         PositionOfLowBuyByDistribution.initDistributions();
 
@@ -70,7 +75,8 @@ public class PositionOfHighSellByDistribution {
         List<Double> weightedGlobalPrices = new ArrayList<>();
         List<HashMap<Integer, Double>> stockWithPositionList = new ArrayList<>();
         List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
-        for (int i = 0; i < loops; i++) {
+        List<Integer> loopList = range(loops);
+        for (Integer integer : Tqdm.tqdm(loopList, StrUtil.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
             HashMap<Integer, Double> positions = parser.getStockWithPosition();
@@ -94,24 +100,38 @@ public class PositionOfHighSellByDistribution {
         Console.log("平均交易价位: {}",
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
 
+        Console.log("LowBuy 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         // 高卖初始化
         initDistributions();
-        // @noti: 使用低买结果, 尝试高卖, 并获得结果
-        List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
-                stockWithActualValueAndPositionList.get(0));
+        List<Double> profits = new ArrayList<>();
 
-        HighSellParser parser = new HighSellParser(highResult);
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
-        Console.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
-        Console.log(parser.getWeightedGlobalPriceHighSellFinally());
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
-        Console.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
-        Console.log(parser.getSuccessPartProfitWeighted());
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
-        Console.log(parser.getAllProfitsDiscountedProfitWeighted());
+        // @noti: 使用低买结果, 尝试高卖, 并获得结果
+        List<Integer> loopListOfHighSell = range(stockWithPositionList.size());
+        for (Integer i : Tqdm.tqdm(loopListOfHighSell, StrUtil.format("HighSell process: "))) {
+            HashMap<Integer, Double> stockWithPosition = stockWithPositionList.get(i);
+            HashMap<Integer, List<Double>> stockWithActualValueAndPosition = stockWithActualValueAndPositionList.get(i);
+            List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
+                    stockWithActualValueAndPositionList.get(0));
+            HighSellParser parser = new HighSellParser(highResult);
+            Double equalityProfitTwoDay = parser.getAllProfitsDiscountedProfitWeighted();
+            profits.add(equalityProfitTwoDay);
+        }
+        Console.log(profits.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
+        Console.log("HighSell 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
+        /*
+            HighSellParser parser = new HighSellParser(highResult);
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
+            //        Console.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
+            //        Console.log(parser.getWeightedGlobalPriceHighSellFinally());
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
+            //        Console.log(parser.getSuccessPartProfitWeighted());
+            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
+            Console.log(parser.getAllProfitsDiscountedProfitWeighted());
+         */
 
     }
 
