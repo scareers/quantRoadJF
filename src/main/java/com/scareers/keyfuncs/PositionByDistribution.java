@@ -5,8 +5,15 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.lang.WeightRandom.WeightObj;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
+import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
+import joinery.DataFrame;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 
 import static com.scareers.utils.CommonUtils.*;
@@ -26,30 +33,38 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
  */
 public class PositionByDistribution {
     public static final boolean showDistribution = false;
-    public static List<List<Object>> valuePercentOfLowx = Arrays.asList( // Low1/2/3 的具体值刻度
-            Arrays.asList(-0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1, -0.11),
-            Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
-            Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
-    );
-    public static Double tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
-            Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
-                    .valueOf(valuePercentOfLowx.get(1).get(0).toString()));
-    public static List<List<Object>> weightsOfLowx = Arrays.asList( // Low1/2/3 的权重列表
-            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.)
-    );
-    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
-    public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
+    public static List<List<Object>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
+    public static List<List<Object>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
+    //            = Arrays.asList( // Low1/2/3 的具体值刻度
+//            Arrays.asList(-0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1, -0.11),
+//            Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
+//            Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
+//    );
+    public static List<List<Object>> weightsOfLowx;
+    public static List<List<Object>> weightsOfHighx;
+    //            = Arrays.asList( // Low1/2/3 的权重列表
+//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
+//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
+//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.)
+//    );
+    public static Double tickGap;
 
-    public static void main(String[] args) throws IOException {
+    public static Double positionUpperLimit = 1.5; // 控制上限, 一般不大于 倍率
+    public static Double positionCalcKeyArgsOfCdf = 1.8; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.008; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
+    public static int perLoops = 10000;
+    private static boolean showStockWithPosition = false;
+
+    public static void main(String[] args) throws IOException, SQLException {
         mainOfLowBuy();
     }
 
-    public static void mainOfLowBuy() throws IOException {
-
-        int loops = 10000;
+    public static void mainOfLowBuy() throws IOException, SQLException {
+        initDistributions();
+        Console.log(valuePercentOfLowx);
+        Console.log(weightsOfLowx);
+        int loops = perLoops;
         List<Integer> sizes = new ArrayList<>();
         List<Double> totolPositions = new ArrayList<>();
         List<Boolean> reachTotalLimitInLoops = new ArrayList<>();
@@ -62,18 +77,66 @@ public class PositionByDistribution {
             Boolean reachTotalLimitInLoop = (Boolean) res.get(1);
             //            Console.log(JSONUtil.toJsonPrettyStr(positions));
             //            Console.log(stockWithActualValueAndPosition);
-            sizes.add(positions.size());
+            sizes.add(countNonZeroValueOfMap(positions));
             totolPositions.add(sumOfListNumber(new ArrayList<>(positions.values())));
             reachTotalLimitInLoops.add(reachTotalLimitInLoop);
             epochs.add((Integer) res.get(2)); // 跳出时执行到的轮次.  2代表判定到了 Low3
             weightedGlobalPrices.add((Double) res.get(4));
         }
+        Console.log("总计股票数量/资产总量: {}", totalAssets);
+        Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+        Console.log("平均总仓位: {}",
+                totolPositions.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+        Console.log("未循环完成Low3,中途退出比例: {}", countTrueOfListBooleans(reachTotalLimitInLoops) / (double) loops);
+        Console.log("平均循环轮次: {}", epochs.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+        Console.log("平均交易价位: {}",
+                weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+    }
 
-        Console.log(sizes.stream().mapToDouble(value -> value.doubleValue()).average());
-        Console.log(totolPositions.stream().mapToDouble(value -> value.doubleValue()).average());
-        Console.log(countTrueOfListBooleans(reachTotalLimitInLoops) / (double) loops);
-        Console.log(epochs.stream().mapToDouble(value -> value.doubleValue()).average());
-        Console.log(weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average());
+
+    public static void initDistributions() throws SQLException {
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
+                "select form_set_id, (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width, avg(effective_counts) as ec\n" +
+                        "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                        "where effective_counts\n" +
+                        "    > 4000\n" +
+                        "  and concrete_algorithm like '%value_percent%'\n" +
+                        "  and condition1 = 'strict'\n" +
+                        "  and stat_result_algorithm like '%1%'\n" +
+                        "group by form_set_id\n" +
+                        "order by width desc");
+        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
+        flushDistributions(formSetIds.get(0));
+    }
+
+    public static void flushDistributions(Integer formSetId) throws SQLException {
+        Console.log(formSetId);
+        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
+                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                "where form_set_id = {}\n" +
+                "  and concrete_algorithm like '%value_percent%'\n" +
+                "  and condition1 = 'strict'\n" +
+                "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
+        List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
+        List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
+        for (int i = 1; i < 4; i++) {
+            int finalI = i;
+            DataFrame<Object> dfTemp = dataFrame
+                    .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
+
+            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            Collections.reverse(tempValues);
+            valuePercentOfLowxTemp.add(tempValues);
+            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            Collections.reverse(tempWeights);
+            weightsOfLowxTemp.add(tempWeights);
+        }
+        valuePercentOfLowx = valuePercentOfLowxTemp;
+        weightsOfLowx = weightsOfLowxTemp;
+        tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
+                Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
+                        .valueOf(valuePercentOfLowx.get(1).get(0).toString())); // 间隔也刷新
     }
 
     public static List<Object> mainOfLowBuyCore() throws IOException {
@@ -119,8 +182,11 @@ public class PositionByDistribution {
                 WeightRandom<Object> random = lowWithRandom.get(lowx); // 获取到随机器
                 // @key: low实际值, cdf等
                 Double actualValue = Double.parseDouble(random.next().toString());  // 具体的LOw出现时的 真实值
-                // 此值以及对应权重应当被保存
+                if (actualValue > execLowBuyThreshold) {
+                    continue; // 必须小于阈值
+                }
 
+                // 此值以及对应权重应当被保存
                 List<Object> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
                 List<Object> weightsOfLow = weightsOfLowx.get(lowx - 1);
                 Double cdfOfPoint = virtualCdfAsPosition(valuePercentOfLow, weightsOfLow, actualValue);
@@ -158,8 +224,11 @@ public class PositionByDistribution {
                     reachTotalLimitInLoop = true;
                     List<Object> res = new ArrayList<>();
                     res.add(stockWithPosition);
+                    if (showStockWithPosition) {
+                        Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+                    }
                     res.add(reachTotalLimitInLoop);
-                    res.add(epoch);
+                    res.add(epoch + 1);
                     res.add(stockWithActualValueAndPosition);
                     Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
                     res.add(weightedGlobalPrice);
@@ -172,8 +241,11 @@ public class PositionByDistribution {
         }
         List<Object> res = new ArrayList<>();
         res.add(stockWithPosition);
+        if (showStockWithPosition) {
+            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+        }
         res.add(reachTotalLimitInLoop);
-        res.add(epochRaw);
+        res.add(epochRaw + 1);
         res.add(stockWithActualValueAndPosition);
         Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
         res.add(weightedGlobalPrice);
@@ -229,11 +301,14 @@ public class PositionByDistribution {
      * @return 返回虚拟近似cdf ,
      */
     public static Double virtualCdfAsPosition(List<Object> valuePercentOfLow, List<Object> weightsOfLow, Double value) {
+//        Console.log(valuePercentOfLow);
+//        Console.log(weightsOfLow);
+//        Console.log(value);
         double total = 0.0;
         Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
             total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
-            if (value.equals(valuePercentOfLow.get(i))) { // 相等时,已被加入, 然后跳出
+            if (value.equals(Double.valueOf(valuePercentOfLow.get(i).toString()))) { // 相等时,已被加入, 然后跳出
                 break;
             }
         }

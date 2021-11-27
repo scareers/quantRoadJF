@@ -4,11 +4,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * description:
@@ -185,6 +183,17 @@ public class CommonUtils {
         int res = 0;
         for (Boolean b : bools) {
             if (b) {
+                res += 1;
+            }
+        }
+        return res;
+    }
+
+    // 字典的值非0的
+    public static int countNonZeroValueOfMap(Map<? extends Object, ? extends Number> map) {
+        int res = 0;
+        for (Object o : map.keySet()) {
+            if (map.get(o).doubleValue() != 0.0) {
                 res += 1;
             }
         }
