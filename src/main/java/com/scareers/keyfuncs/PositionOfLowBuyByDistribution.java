@@ -105,7 +105,7 @@ public class PositionOfLowBuyByDistribution {
                         "group by form_set_id\n" +
                         "order by width desc");
         List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(3));
+        flushDistributions(formSetIds.get(0));
     }
 
     public static Log log = LogFactory.get();
@@ -123,8 +123,6 @@ public class PositionOfLowBuyByDistribution {
             log.warn("记录不足6, 解析失败");
         }
         List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
-        List<List<Object>> valuePercentOfHighxTemp = new ArrayList<>();
-        List<List<Object>> weightsOfHighxTemp = new ArrayList<>();
         List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
         for (int i = 1; i < 4; i++) { // Low
             int finalI = i;
@@ -138,18 +136,7 @@ public class PositionOfLowBuyByDistribution {
             Collections.reverse(tempWeights);
             weightsOfLowxTemp.add(tempWeights);
         }
-        for (int i = 1; i < 4; i++) { //High
-            int finalI = i;
-            DataFrame<Object> dfTemp = dataFrame
-                    .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
 
-            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
-            Collections.reverse(tempValues);
-            valuePercentOfHighxTemp.add(tempValues);
-            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
-            Collections.reverse(tempWeights);
-            weightsOfHighxTemp.add(tempWeights);
-        }
         valuePercentOfLowx = valuePercentOfLowxTemp;
         weightsOfLowx = weightsOfLowxTemp;
         tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
@@ -168,7 +155,7 @@ public class PositionOfLowBuyByDistribution {
 
 
         List<Integer> stockIds = range(totalAssets.intValue());
-        HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockLowOccurrences(stockIds, 3); // 构造单只股票,
+        HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockOccurrences(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
 //        Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
 
@@ -296,7 +283,7 @@ public class PositionOfLowBuyByDistribution {
         return listOfOrderedStockWithPosition;
     }
 
-    public static HashMap<Integer, List<Integer>> buildStockLowOccurrences(List<Integer> stockIds, int maxLow) {
+    public static HashMap<Integer, List<Integer>> buildStockOccurrences(List<Integer> stockIds, int maxLow) {
         HashMap<Integer, List<Integer>> stockLowOccurrences = new HashMap<>();
         for (Integer stockId : stockIds) {
             ArrayList<Integer> occurrs = new ArrayList<>();
@@ -347,17 +334,17 @@ public class PositionOfLowBuyByDistribution {
         return getActualDistributionRandom(valuePercentOfLowx.get(2), weightsOfLowx.get(2));
     }
 
-    public static WeightRandom<Object> getActualDistributionRandom(List<Object> valuePercentOfLow1,
-                                                                   List<Object> weightsOfLow1) throws IOException {
-        Assert.isTrue(valuePercentOfLow1.size() == weightsOfLow1.size());
+    public static WeightRandom<Object> getActualDistributionRandom(List<Object> valuePercents,
+                                                                   List<Object> weights) throws IOException {
+        Assert.isTrue(valuePercents.size() == weights.size());
         // 构建 WeightObj<Double> 列表. 以构建随机器
 
         List<WeightObj<Object>> weightObjs = new ArrayList<>();
-        for (int i = 0; i < valuePercentOfLow1.size(); i++) {
-            weightObjs.add(new WeightObj<>(valuePercentOfLow1.get(i), Double.valueOf(weightsOfLow1.get(i).toString())));
+        for (int i = 0; i < valuePercents.size(); i++) {
+            weightObjs.add(new WeightObj<>(valuePercents.get(i), Double.valueOf(weights.get(i).toString())));
         }
         if (showDistribution) {
-            listOfDoubleAsLineChartSimple(weightsOfLow1, false, null, valuePercentOfLow1);
+            listOfDoubleAsLineChartSimple(weights, false, null, valuePercents);
         }
         return RandomUtil.weightRandom(weightObjs);
     }
