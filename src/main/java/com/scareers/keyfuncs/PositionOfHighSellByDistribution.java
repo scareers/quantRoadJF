@@ -1,6 +1,5 @@
 package com.scareers.keyfuncs;
 
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.util.StrUtil;
@@ -11,7 +10,6 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
 
-import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -27,6 +25,9 @@ import static com.scareers.utils.CommonUtils.*;
  * <p>
  * ----------- 问题
  * 1.给定 Low1, Low2, Low3 分布,
+ * <p>
+ * // @noti:
+ * 1. HighSell 没有 totalAsserts 概念, 总仓位, 依据传递而来的 LowBuy持仓结果, 计算总仓位. 因此LowBuy尽量满仓.
  *
  * @author: admin
  * @date: 2021/11/25/025-9:51
@@ -47,11 +48,9 @@ public class PositionOfHighSellByDistribution {
 //    );
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.3; // 控制上限, 一般不大于 倍率
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execHighSellThreshold = 0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static Double totalAssets; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
-    public static int perLoops = 1;
+    public static int perLoops = 20;
     public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
@@ -86,7 +85,7 @@ public class PositionOfHighSellByDistribution {
             stockWithActualValueAndPositionList.add((HashMap<Integer, List<Double>>) res.get(3)); // 仓位+价格在 3
         }
         // @noti: 这些是低买状况分析
-        Console.log("总计股票数量/资产总量: {}", totalAssets);
+        Console.log("总计股票数量/资产总量: {}", PositionOfLowBuyByDistribution.totalAssets);
         Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均总仓位: {}",
                 totolPositions.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
@@ -102,7 +101,17 @@ public class PositionOfHighSellByDistribution {
                 stockWithActualValueAndPositionList.get(0));
 
         HighSellParser parser = new HighSellParser(highResult);
-        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscountedProfitWeighted()));
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
+        Console.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
+        Console.log(parser.getWeightedGlobalPriceHighSellFinally());
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
+        Console.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
+        Console.log(parser.getSuccessPartProfitWeighted());
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
+        Console.log(parser.getAllProfitsDiscountedProfitWeighted());
 
     }
 
@@ -211,9 +220,9 @@ public class PositionOfHighSellByDistribution {
         if (showStockWithPositionFinally) {
             Console.log(JSONUtil.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
         }
-        Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice(
+        Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
                 stockWithHighSellActualValueAndPosition); // 高卖成功部分折算价格
-        Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice(
+        Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
                 stockWithHighSellActualValueAndPositionDiscountAll); // 折算剩余, 最终折算价格
         res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
         res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
@@ -221,13 +230,28 @@ public class PositionOfHighSellByDistribution {
         HashMap<Integer, List<Double>> successPartProfits = profitOfHighSell(stockWithActualValueAndPosition,
                 stockWithHighSellActualValueAndPosition);
         res.add(successPartProfits); // 7.只计算高卖成功部分, 仓位+盈利值
-        Double successPartProfitWeighted = calcWeightedGlobalPrice(successPartProfits);
+        Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
         res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
         HashMap<Integer, List<Double>> allProfitsDiscounted = profitOfHighSell(stockWithActualValueAndPosition,
                 stockWithHighSellActualValueAndPositionDiscountAll);
         res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
-        Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice(allProfitsDiscounted);
+        Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
         res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
+        return res;
+    }
+
+    public static Double calcWeightedGlobalPrice2(HashMap<Integer, List<Double>> stockWithActualValueAndPosition) {
+        Double res = 0.0;
+
+        // 这里总仓位, 应当使用传递来的参数的, 的position之和. LowBuy那里可以直接 30, 这里不行
+        // 且计算纯高时, 仓位并非全仓位, 只是 成功那一部分仓位!
+        Double totalAssets =
+                stockWithActualValueAndPosition.values().stream().mapToDouble(value -> value.get(0)).sum();
+        // 临时仓位之和. !!!!!
+
+        for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
+            res += positionAndPrice.get(0) / totalAssets * positionAndPrice.get(1);
+        }
         return res;
     }
 
@@ -404,6 +428,9 @@ public class PositionOfHighSellByDistribution {
             Double discountedPrice =
                     remainPosition / totalPosition * discountRemaingRate +
                             successSellPosition / totalPosition * successSellPrice; // 简单加权
+            if (discountedPrice.equals(Double.NaN)) {
+                discountedPrice = 0.0;
+            }
             res.put(key, Arrays.asList(totalPosition, discountedPrice));
         }
         return res;
