@@ -6,8 +6,9 @@ import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.lang.WeightRandom.WeightObj;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
@@ -31,7 +32,7 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
  * @author: admin
  * @date: 2021/11/25/025-9:51
  */
-public class PositionByDistribution {
+public class PositionOfHighSellByDistribution {
     public static final boolean showDistribution = false;
     public static List<List<Object>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
     public static List<List<Object>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
@@ -49,9 +50,9 @@ public class PositionByDistribution {
 //    );
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.5; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.8; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execLowBuyThreshold = -0.008; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static Double positionUpperLimit = 1.3; // 控制上限, 一般不大于 倍率
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
     public static int perLoops = 10000;
     private static boolean showStockWithPosition = false;
@@ -106,8 +107,10 @@ public class PositionByDistribution {
                         "group by form_set_id\n" +
                         "order by width desc");
         List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(0));
+        flushDistributions(formSetIds.get(3));
     }
+
+    public static Log log = LogFactory.get();
 
     public static void flushDistributions(Integer formSetId) throws SQLException {
         Console.log(formSetId);
@@ -118,9 +121,14 @@ public class PositionByDistribution {
                 "  and condition1 = 'strict'\n" +
                 "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
         DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
+        if (dataFrame.length() < 6) {
+            log.warn("记录不足6, 解析失败");
+        }
         List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
+        List<List<Object>> valuePercentOfHighxTemp = new ArrayList<>();
+        List<List<Object>> weightsOfHighxTemp = new ArrayList<>();
         List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
-        for (int i = 1; i < 4; i++) {
+        for (int i = 1; i < 4; i++) { // Low
             int finalI = i;
             DataFrame<Object> dfTemp = dataFrame
                     .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
@@ -132,7 +140,21 @@ public class PositionByDistribution {
             Collections.reverse(tempWeights);
             weightsOfLowxTemp.add(tempWeights);
         }
+        for (int i = 1; i < 4; i++) { //High
+            int finalI = i;
+            DataFrame<Object> dfTemp = dataFrame
+                    .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
+
+            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            Collections.reverse(tempValues);
+            valuePercentOfHighxTemp.add(tempValues);
+            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            Collections.reverse(tempWeights);
+            weightsOfHighxTemp.add(tempWeights);
+        }
         valuePercentOfLowx = valuePercentOfLowxTemp;
+        weightsOfLowx = weightsOfLowxTemp;
+        valuePercentOfHighx = valuePercentOfHighxTemp;
         weightsOfLowx = weightsOfLowxTemp;
         tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
                 Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
