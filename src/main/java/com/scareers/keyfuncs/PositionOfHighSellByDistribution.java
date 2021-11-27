@@ -11,6 +11,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
 
+import javax.xml.crypto.dsig.keyinfo.RetrievalMethod;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
@@ -99,7 +100,10 @@ public class PositionOfHighSellByDistribution {
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
         List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
                 stockWithActualValueAndPositionList.get(0));
-        Console.log(highResult);
+
+        HighSellParser parser = new HighSellParser(highResult);
+        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscountedProfitWeighted()));
+
     }
 
 
@@ -221,7 +225,7 @@ public class PositionOfHighSellByDistribution {
         res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
         HashMap<Integer, List<Double>> allProfitsDiscounted = profitOfHighSell(stockWithActualValueAndPosition,
                 stockWithHighSellActualValueAndPositionDiscountAll);
-        res.add(allProfitsDiscounted); // 9.只计算高卖成功部分, 仓位+盈利值
+        res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
         Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice(allProfitsDiscounted);
         res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
         return res;
@@ -233,7 +237,91 @@ public class PositionOfHighSellByDistribution {
         public HighSellParser(List<Object> highSellRes) {
             this.highSellRes = highSellRes;
         }
+
+        /**
+         * 低买传递来的参数1
+         *
+         * @return 返回原始低买后, 传递来高卖 的仓位.  股票:仓位
+         */
+        public HashMap<Integer, Double> getStockWithPosition() {
+            return (HashMap<Integer, Double>) highSellRes.get(0);
+        }
+
+        /**
+         * @return 高卖成功执行掉的 仓位和价格. 股票:[高卖成功仓位, 折算价格]
+         */
+        public HashMap<Integer, List<Double>> getStockWithHighSellActualValueAndPosition() {
+            return (HashMap<Integer, List<Double>>) highSellRes.get(1);
+        }
+
+        /**
+         * @return 最终未能成功高卖, 剩余仓位.  股票: 剩余仓位
+         */
+        public HashMap<Integer, Double> getStockWithPositionRemaining() {
+            return (HashMap<Integer, Double>) highSellRes.get(2);
+        }
+
+        /**
+         * @return 用 0.0(或者其他设置值)将剩余仓位强制卖出,
+         * 然后与高卖成功部分折算.全部卖出时的状态. 股票:[折算总仓位(等于初始),折算价格]
+         */
+        public HashMap<Integer, List<Double>> getStockWithHighSellActualValueAndPositionDiscountAll() {
+            return (HashMap<Integer, List<Double>>) highSellRes.get(3);
+        }
+
+        /**
+         * @return 仅计算高卖成功部分, 加权总折算价格    Double
+         */
+        public Double getWeightedGlobalPriceHighSellSuccess() {
+            return (Double) highSellRes.get(4);
+        }
+
+        /**
+         * @return 折算全部卖出的情况下, 最终的加权折算价格 Double
+         */
+        public Double getWeightedGlobalPriceHighSellFinally() {
+            return (Double) highSellRes.get(5);
+        }
+
+        /**
+         * 低买传递来的参数2
+         *
+         * @return 低买传递来的持仓情况. 股票:[持仓, 价格]
+         */
+        public HashMap<Integer, List<Double>> getStockWithActualValueAndPosition() {
+            return (HashMap<Integer, List<Double>>) highSellRes.get(6);
+        }
+
+        /**
+         * @return 只计算高卖成功部分, 仓位+盈利值(即高卖-低买成本).  股票:[仓位, 盈利值]
+         */
+        public HashMap<Integer, List<Double>> successHighSellPartProfits() {
+            return (HashMap<Integer, List<Double>>) highSellRes.get(7);
+        }
+
+        /**
+         * @return 只计算高卖成功部分,  加权的盈利值(假设了低买也是买的那么多仓位) Double
+         */
+        public Double getSuccessPartProfitWeighted() {
+            return (Double) highSellRes.get(8);
+        }
+
+        /**
+         * @return 全部折算卖出后, 盈利值.    股票:[仓位, 盈利值]
+         */
+        public HashMap<Integer, List<Double>> getAllProfitsDiscounted() {
+            return (HashMap<Integer, List<Double>>) highSellRes.get(9);
+        }
+
+        /**
+         * @return 全部折算卖出后, 加权盈利值 Double
+         */
+        public Double getAllProfitsDiscountedProfitWeighted() {
+            return (Double) highSellRes.get(10);
+        }
+
     }
+
 
     public static Log log = LogFactory.get();
 
@@ -348,5 +436,7 @@ public class PositionOfHighSellByDistribution {
     public static WeightRandom<Object> getDistributionsOfHigh3() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(2), weightsOfHighx.get(2));
     }
+
+
 }
 
