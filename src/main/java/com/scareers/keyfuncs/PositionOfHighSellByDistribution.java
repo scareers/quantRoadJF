@@ -53,7 +53,7 @@ public class PositionOfHighSellByDistribution {
 
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execHighSellThreshold = 0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int perLoops = 100000;
+    public static int perLoops = 10000;
     public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
@@ -66,6 +66,8 @@ public class PositionOfHighSellByDistribution {
         timer.start();
         // lowBuy初始化. 然后调用. 保存持仓结果, 以此结果再尝试高卖
         PositionOfLowBuyByDistribution.initDistributions();
+        Console.log(valuePercentOfLowx);
+        Console.log(weightsOfLowx);
 
         int loops = perLoops;
         List<Integer> sizes = new ArrayList<>();
@@ -76,7 +78,7 @@ public class PositionOfHighSellByDistribution {
         List<HashMap<Integer, Double>> stockWithPositionList = new ArrayList<>();
         List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
         List<Integer> loopList = range(loops);
-        for (Integer integer : Tqdm.tqdm(loopList, StrUtil.format("LowBuy process: "))) {
+        for (Integer i : Tqdm.tqdm(loopList, StrUtil.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
             HashMap<Integer, Double> positions = parser.getStockWithPosition();
@@ -103,6 +105,8 @@ public class PositionOfHighSellByDistribution {
         Console.log("LowBuy 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         // 高卖初始化
         initDistributions();
+        Console.log(valuePercentOfHighx);
+        Console.log(weightsOfHighx);
         List<Double> profits = new ArrayList<>();
 
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
@@ -162,7 +166,7 @@ public class PositionOfHighSellByDistribution {
         // 2.简单int随机, 取得某日是 出现2个低点还是 3个低点. 当然, 2个低点, Low3生成器用不到
 
         List<Integer> stockIds = new ArrayList<>(stockWithPosition.keySet()); // 资产列表
-        HashMap<Integer, List<Integer>> stockHighOccurrences = buildStockOccurrences(stockIds, 3); // 构造单只股票,
+        HashMap<Integer, List<Integer>> stockHighOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
         // Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, High1,2,3 出现顺序不确定. 且3可不出现
         // 股票和对应的position, 已有仓位, 初始0

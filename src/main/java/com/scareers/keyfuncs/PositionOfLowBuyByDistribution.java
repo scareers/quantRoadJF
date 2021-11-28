@@ -144,7 +144,7 @@ public class PositionOfLowBuyByDistribution {
 
 
         List<Integer> stockIds = range(totalAssets.intValue());
-        HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockOccurrences(stockIds, 3); // 构造单只股票,
+        HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
 //        Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
 
@@ -329,6 +329,35 @@ public class PositionOfLowBuyByDistribution {
         for (Integer stockId : stockIds) {
             ArrayList<Integer> occurrs = new ArrayList<>();
             int lenth = RandomUtil.randomInt(2, maxLow + 1); // 今天某只股票出现几个 Low?
+            for (int i = 1; i < lenth + 1; i++) {
+                occurrs.add(i);
+            }
+            Collections.shuffle(occurrs); // 底层也是al,打乱low123出现顺序
+            stockLowOccurrences.put(stockId, occurrs);
+        }
+        return stockLowOccurrences; // 股票: 打乱的出现的 Low1,Low2,Low3, 自行对应, 得到对应的随机器
+    }
+
+    /**
+     * 出现Low/High 123,  不固定为 2,3个. 给定权重比例 1234, 可出现 0,1,2,3 个
+     *
+     * @param stockIds
+     * @param maxLow
+     * @return
+     */
+    public static HashMap<Integer, List<Integer>> buildStockOccurrences2(List<Integer> stockIds, int maxLow) {
+        HashMap<Integer, List<Integer>> stockLowOccurrences = new HashMap<>();
+        WeightObj<Integer> x = new WeightObj<>(0, 1);
+        List<WeightObj<Integer>> weightObjList = Arrays.asList(
+                new WeightObj<>(0, 1),
+                new WeightObj<>(1, 2),
+                new WeightObj<>(2, 3),
+                new WeightObj<>(3, 4)
+        );
+        WeightRandom<Integer> random = RandomUtil.weightRandom(weightObjList);
+        for (Integer stockId : stockIds) {
+            ArrayList<Integer> occurrs = new ArrayList<>();
+            int lenth = random.next(); // 今天某只股票出现几个 Low? 可 0123个
             for (int i = 1; i < lenth + 1; i++) {
                 occurrs.add(i);
             }
