@@ -41,9 +41,9 @@ public class PositionOfHighSellByDistribution {
     public static List<List<Object>> weightsOfHighx;
     public static Double tickGap;
 
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显. 更多就不行了
-    public static final Double execHighSellThreshold = 0.005; // 必须某个值 >0.01阈值, 才可能执行高卖, 否则跳过不考虑
-    public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
+    public static final Double execHighSellThreshold = -0.01; // 必须 >0.01阈值, 才可能执行高卖,
+    public static Double discountRemaingRate = -0.03; // 未能高卖成功的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
     public static void main(String[] args) throws IOException, SQLException {
