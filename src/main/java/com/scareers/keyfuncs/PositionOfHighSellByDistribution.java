@@ -83,6 +83,7 @@ public class PositionOfHighSellByDistribution {
             stockWithActualValueAndPositionList.add((HashMap<Integer, List<Double>>) res.get(3)); // 仓位+价格在 3
         }
         // @noti: 这些是低买状况分析
+        Console.log();
         Console.log("总计股票数量/资产总量: {}", PositionOfLowBuyByDistribution.totalAssets);
         Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均总仓位: {}",

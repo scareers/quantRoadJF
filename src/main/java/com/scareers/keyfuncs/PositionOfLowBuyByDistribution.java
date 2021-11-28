@@ -209,7 +209,7 @@ public class PositionOfLowBuyByDistribution {
                     stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
                 }
                 // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
-                Double sum = stockWithPosition.values().stream().mapToDouble(value1 -> value1).sum();
+                Double sum = sumOfListNumberUseLoop(new ArrayList<>(stockWithPosition.values()));
                 if (sum > totalAssets) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好30, 并立即返回
                     Double newPosition = epochTotalPosition - (sum - totalAssets);
                     stockWithPosition.put(id, newPosition); // 修改仓位
@@ -427,7 +427,7 @@ public class PositionOfLowBuyByDistribution {
 
     public static WeightRandom<Double> getActualDistributionRandom(List<Double> valuePercents,
                                                                    List<Double> weights) throws IOException {
-        Assert.isTrue(valuePercents.size() == weights.size());
+        //Assert.isTrue(valuePercents.size() == weights.size());
         // 构建 WeightObj<Double> 列表. 以构建随机器
 
         List<WeightObj<Double>> weightObjs = new ArrayList<>();
