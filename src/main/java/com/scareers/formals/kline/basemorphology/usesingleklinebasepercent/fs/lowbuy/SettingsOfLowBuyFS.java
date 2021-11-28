@@ -28,7 +28,7 @@ public class SettingsOfLowBuyFS {
     public static final Double dominateRateKeyArg = 0.2;
     public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
     public static final int processAmountParse = 8;
-    public static final int processAmountSave = 8;
+    public static final int processAmountSave = 16;
     public static final int perEpochTaskAmounts = 32;
     public static final int gcControlEpochParse = 16;
     public static final int gcControlEpochSave = 200;
