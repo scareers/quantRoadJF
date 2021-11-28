@@ -159,6 +159,17 @@ public class CommonUtils {
                 mapToDouble(Number::doubleValue).sum();
     }
 
+    public static Double sumOfListNumberUseLoop(List<? extends Number> numbers) {
+        if (numbers.size() == 0) {
+            return null;
+        }
+        Double sum = numbers.get(0).doubleValue();
+        for (int i = 1; i < numbers.size(); i++) {
+            sum += numbers.get(i).doubleValue();
+        }
+        return sum;
+    }
+
     public static Double maxOfListDouble(List<Double> doubles) {
         if (doubles.size() == 0) {
             return null;
