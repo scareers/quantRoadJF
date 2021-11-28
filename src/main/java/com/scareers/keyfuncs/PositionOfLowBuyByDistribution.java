@@ -55,6 +55,14 @@ public class PositionOfLowBuyByDistribution {
     public static int perLoops = 10000;
     private static boolean showStockWithPosition = false;
 
+    // 核心参数1, 它用于模拟, 某只股票, 今日 出现了 多少个 Low/High,  例如0/1/2/3个, 权重控制 出现这些个数的比例
+    List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
+            new WeightObj<>(0, 1),
+            new WeightObj<>(1, 2),
+            new WeightObj<>(2, 3),
+            new WeightObj<>(3, 4)
+    );
+
     public static void main(String[] args) throws IOException, SQLException {
         mainOfLowBuy();
     }
@@ -176,6 +184,10 @@ public class PositionOfLowBuyByDistribution {
                 WeightRandom<Object> random = lowWithRandom.get(lowx); // 获取到随机器
                 // @key: low实际值, cdf等
                 Double actualValue = Double.parseDouble(random.next().toString());  // 具体的LOw出现时的 真实值
+                // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
+                // 修改以更加符合实际. 当然,这里单个区间内的无数个值, 是平均概率的. 已经十分接近实际
+                // @noti: cdf那里应当同时修改.
+                actualValue = actualValue - Math.abs(Math.random() * tickGap);
                 if (actualValue > execLowBuyThreshold) {
                     continue; // 必须小于阈值
                 }
@@ -183,7 +195,7 @@ public class PositionOfLowBuyByDistribution {
                 // 此值以及对应权重应当被保存
                 List<Object> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
                 List<Object> weightsOfLow = weightsOfLowx.get(lowx - 1);
-                Double cdfOfPoint = virtualCdfAsPosition(valuePercentOfLow, weightsOfLow, actualValue);
+                Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, actualValue);
 
                 // @key2: 本轮后总仓位
                 Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint; // 因两两配对, 因此这里仓位使用 2作为基数. 且为该股票总仓位
@@ -375,20 +387,32 @@ public class PositionOfLowBuyByDistribution {
      * @param value             求该点处cdf
      * @return 返回虚拟近似cdf ,
      */
-    public static Double virtualCdfAsPosition(List<Object> valuePercentOfLow, List<Object> weightsOfLow, Double value) {
+    public static Double virtualCdfAsPositionForLowBuy(List<Object> valuePercentOfLow, List<Object> weightsOfLow,
+                                                       Double value) {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);
         double total = 0.0;
         Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
-            total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
-            if (value.equals(Double.valueOf(valuePercentOfLow.get(i).toString()))) { // 相等时,已被加入, 然后跳出
-                break;
+            Double tick = Double.valueOf(valuePercentOfLow.get(i).toString());
+            if (tick > value) { // 前面的全部加入. 知道 本value在的 区间tick内
+                total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
+                continue; // 继续往后
             }
+            // 然后还要加入一部分..  直到<
+            if (i == 0) {
+                break;  // 会出现索引越界,注意
+            }
+            Double tickPre = Double.valueOf(valuePercentOfLow.get(i - 1).toString());
+            //假设单区间内, 概率也平均叠加, 因此, 应当加入的部分是: 0到终点处概率,  * tick距离开始的百分比
+            total += Double.parseDouble(weightsOfLow.get(i).toString()) * ((value - tickPre) / tickGap);
+            break; //一次即可跳出
         }
         double sum = weightsOfLow.stream().mapToDouble(value1 -> Double.parseDouble(value1.toString())).sum();
-        return total / sum; // 求和可能了多次
+        double res = total / sum;
+//        Console.log(res);
+        return res; // 求和可能了多次
     }
 
     public static WeightRandom<Object> getDistributionsOfLow1() throws IOException {
