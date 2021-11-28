@@ -35,32 +35,24 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
 public class PositionOfLowBuyByDistribution {
     public static final boolean showDistribution = false;
     public static List<List<Object>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
-    //            = Arrays.asList( // Low1/2/3 的具体值刻度
-//            Arrays.asList(-0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1, -0.11),
-//            Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
-//            Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
-//    );
+
     public static List<List<Object>> weightsOfLowx;
-    //            = Arrays.asList( // Low1/2/3 的权重列表
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.)
-//    );
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.3; // 控制上限, 一般不大于 倍率
+    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
     public static int perLoops = 10000;
     private static boolean showStockWithPosition = false;
 
+    public static int formSetIdControll = 0; // 通过下标, 可以控制使用哪个id
     // 核心参数1, 它用于模拟, 某只股票, 今日 出现了 多少个 Low/High,  例如0/1/2/3个, 权重控制 出现这些个数的比例
     List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
-            new WeightObj<>(0, 1),
-            new WeightObj<>(1, 2),
-            new WeightObj<>(2, 3),
-            new WeightObj<>(3, 4)
+            new WeightObj<>(0, 0),
+            new WeightObj<>(1, 0),
+            new WeightObj<>(2, 30),
+            new WeightObj<>(3, 40)
     );
 
     public static void main(String[] args) throws IOException, SQLException {
@@ -270,7 +262,7 @@ public class PositionOfLowBuyByDistribution {
                         "group by form_set_id\n" +
                         "order by width desc");
         List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(0));
+        flushDistributions(formSetIds.get(formSetIdControll));
     }
 
     public static Log log = LogFactory.get();

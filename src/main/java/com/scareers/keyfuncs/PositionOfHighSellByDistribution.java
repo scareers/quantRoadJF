@@ -37,24 +37,12 @@ import static com.scareers.utils.CommonUtils.*;
  * @date: 2021/11/25/025-9:51
  */
 public class PositionOfHighSellByDistribution {
-    public static final boolean showDistribution = false;
     public static List<List<Object>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
-    //            = Arrays.asList( // Low1/2/3 的具体值刻度
-//            Arrays.asList(-0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1, -0.11),
-//            Arrays.asList(-0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09, -0.1),
-//            Arrays.asList(0.0, -0.01, -0.02, -0.03, -0.04, -0.05, -0.06, -0.07, -0.08, -0.09)
-//    );
     public static List<List<Object>> weightsOfHighx;
-    //            = Arrays.asList( // Low1/2/3 的权重列表
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.),
-//            Arrays.asList(5., 10.0, 20., 30., 50., 50., 30., 20., 10., 5.)
-//    );
     public static Double tickGap;
 
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execHighSellThreshold = 0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int perLoops = 10000;
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显. 更多就不行了
+    public static final Double execHighSellThreshold = 0.005; // 必须某个值 >0.01阈值, 才可能执行高卖, 否则跳过不考虑
     public static Double discountRemaingRate = 0.0; // 未能高卖的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
@@ -109,6 +97,8 @@ public class PositionOfHighSellByDistribution {
         Console.log(valuePercentOfHighx);
         Console.log(weightsOfHighx);
         List<Double> profits = new ArrayList<>();
+        List<Double> highSellProfits = new ArrayList<>();
+        List<Double> highSellSuccessPercent = new ArrayList<>();
 
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
         List<Integer> loopListOfHighSell = range(stockWithPositionList.size());
@@ -120,8 +110,16 @@ public class PositionOfHighSellByDistribution {
             HighSellParser parser = new HighSellParser(highResult);
             Double equalityProfitTwoDay = parser.getAllProfitsDiscountedProfitWeighted();
             profits.add(equalityProfitTwoDay);
+            highSellProfits.add(parser.getWeightedGlobalPriceHighSellFinally()); // 纯高卖收益
+            highSellSuccessPercent.add(parser.getHighSellSuccessPositionPercent()); // 高卖成功仓位总比例
         }
-        Console.log(profits.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
+        Console.log();
+        Console.log("高卖成功仓位占原始仓位平均比例: {}",
+                highSellSuccessPercent.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
+        Console.log("纯高卖平均收益: {}",
+                highSellProfits.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
+        Console.log("低买高卖总体平均收益: {}",
+                profits.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
         Console.log("HighSell 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         /*
             HighSellParser parser = new HighSellParser(highResult);
@@ -264,6 +262,11 @@ public class PositionOfHighSellByDistribution {
         res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
         Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
         res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
+        // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
+        res.add(stockWithHighSellActualValueAndPosition.values().stream()
+                .mapToDouble(value -> value.get(0).doubleValue())
+                .sum() / stockWithHighSellActualValueAndPositionDiscountAll.values().stream()
+                .mapToDouble(value -> value.get(0).doubleValue()).sum()); // 11.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)
         return res;
     }
 
@@ -371,6 +374,9 @@ public class PositionOfHighSellByDistribution {
             return (Double) highSellRes.get(10);
         }
 
+        public Double getHighSellSuccessPositionPercent() {
+            return (Double) highSellRes.get(11);
+        }
     }
 
 
@@ -388,7 +394,7 @@ public class PositionOfHighSellByDistribution {
                         "group by form_set_id\n" +
                         "order by width desc");
         List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
-        flushDistributions(formSetIds.get(0));
+        flushDistributions(formSetIds.get(formSetIdControll));
     }
 
 
