@@ -85,6 +85,13 @@ public class CommonUtils {
         return res;
     }
 
+    /**
+     * 要求 set1 长度短一点, 更快
+     *
+     * @param set1
+     * @param set2
+     * @return
+     */
     public static boolean isIntersectOfSet(HashSet<String> set1, HashSet<String> set2) {
         // 交集
         boolean res = false;

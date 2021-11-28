@@ -7,7 +7,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
+//import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -18,6 +18,7 @@ import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.SqlUtil;
+import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
