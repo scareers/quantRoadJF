@@ -269,7 +269,7 @@ public class PositionOfLowBuyByDistribution {
 
     public static void flushDistributions(Integer formSetId) throws SQLException {
         Console.log(formSetId);
-        String sql = StrUtil.format("select stat_result_algorithm, tick_list, counts_list\n" +
+        String sql = StrUtil.format("select stat_result_algorithm, tick_list, frequency_list\n" +
                 "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
                 "where form_set_id = {}\n" +
                 "  and concrete_algorithm like '%value_percent%'\n" +
@@ -405,10 +405,11 @@ public class PositionOfLowBuyByDistribution {
             total += weightsOfLow.get(i) * ((value - tickPre) / tickGap);
             break; //一次即可跳出
         }
-        double sum = sumOfListNumberUseLoop(weightsOfLow);
-        double res = total / sum;
-//        Console.log(res);
-        return res; // 求和可能了多次
+//        double sum = sumOfListNumberUseLoop(weightsOfLow);
+//        double res = total / sum;
+////        Console.log(res);
+//        return res; // 求和可能了多次
+        return total;
     }
 
     public static WeightRandom<Double> getDistributionsOfLow1() throws IOException {
