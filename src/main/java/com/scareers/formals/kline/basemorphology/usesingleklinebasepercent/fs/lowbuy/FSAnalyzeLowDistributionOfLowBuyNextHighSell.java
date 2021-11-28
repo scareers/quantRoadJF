@@ -1,11 +1,14 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import com.google.common.collect.Sets;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
@@ -108,7 +111,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             futuresOfParse.add(f);
         }
         List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange)))  {
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
             // 串行不再需要使用 CountDownLatch
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
@@ -182,13 +185,24 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             List<Double>>> {
         // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
         public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
+        public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
 
         static {
             try {
                 formSetsMapFromDB = parseFromsSetsFromDb();
+                formSetsMapFromDBAsHashSet = parseMapToSets(formSetsMapFromDB);
             } catch (SQLException e) {
                 e.printStackTrace();
             }
+        }
+
+        private static ConcurrentHashMap<Long, HashSet<String>> parseMapToSets(
+                ConcurrentHashMap<Long, List<String>> formSetsMapFromDB) {
+            ConcurrentHashMap<Long, HashSet<String>> res = new ConcurrentHashMap<>();
+            for (Long key : formSetsMapFromDB.keySet()) {
+                res.put(key, new HashSet<>(formSetsMapFromDB.get(key)));
+            }
+            return res;
         }
 
         String stock;
@@ -322,12 +336,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // @key: 以上均为, 与主程序形态判定逻辑一致, 从这里开始, 将判定是否符合某种形态集合!
                     // lb1: 数据库读取形态集合,单形态集合为: List<String>, 遍历形态集合 id, 看是否符合. 再计算15种结果
                     List<String> allForms = getAllFormNamesByConcreteFormStrsWithoutSuffix(concreteTodayFormStrs);
-                    if (formSetsMapFromDB == null) {
-                        // 初始化形态集合 必要; 已在static代码块初始化. 这里表示确认
-                        formSetsMapFromDB = parseFromsSetsFromDb();
-                    }
+
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
-                    List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDB, allForms);
+//                    TimeInterval timer = DateUtil.timer();
+                    List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDBAsHashSet, allForms);
+//                    Console.log(timer.intervalRestart());
                     if (belongToFormsetIds.size() == 0) {
                         continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     }
@@ -1094,16 +1107,18 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             );
         }
 
-        private static List<Long> calcBelongToFormSets(ConcurrentHashMap<Long, List<String>> formSetsMapFromDB,
-                                                       List<String> allForms) {
+        private static List<Long> calcBelongToFormSets(
+                ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet,
+                List<String> allForms) {
             List<Long> belongToFormsetIds = new ArrayList<>();
-            for (Long key : formSetsMapFromDB.keySet()) {
-                List<String> value = formSetsMapFromDB.get(key);
-                // 判定交集
-                HashSet<String> inter = intersectionOfList(allForms, value);
-                //Console.log("{} --{}", allForms, value);
+            HashSet<String> allFormsSet = new HashSet<>(allForms);
+            for (Long key : formSetsMapFromDBAsHashSet.keySet()) {
+                HashSet<String> value = formSetsMapFromDBAsHashSet.get(key);
 
-                if (inter.size() > 0) {
+                // 判定是否相交
+                // if (Sets.intersection(allFormsSet, value).size() > 0) // 谷歌guaua 交集算法. 求交集最快, 但求是否相交,自写更快
+                if (isIntersectOfSet(allFormsSet, value))  // 自写函数, 遍历找1元素相交法
+                {
                     belongToFormsetIds.add(key);
                 }
             }
