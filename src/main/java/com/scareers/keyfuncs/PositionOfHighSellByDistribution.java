@@ -33,6 +33,7 @@ import static com.scareers.utils.CommonUtils.*;
  * // @noti:
  * 1. HighSell 没有 totalAsserts 概念, 总仓位, 依据传递而来的 LowBuy持仓结果, 计算总仓位. 因此LowBuy尽量满仓.
  * 2.高卖的例如 纯高卖收益, 低买高卖收益等指标, 均基于 给定原始仓位.  而非30这种总仓位. 因此低买应该尽量满仓,
+ *
  * @author: admin
  * @date: 2021/11/25/025-9:51
  */
@@ -43,7 +44,7 @@ public class PositionOfHighSellByDistribution {
 
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
     public static final Double execHighSellThreshold = -0.01; // 必须 >0.01阈值, 才可能执行高卖,
-    public static Double discountRemaingRate = -0.03; // 未能高卖成功的剩余部分, 以 0.0折算
+    public static Double discountRemaingRate = -0.099; // 未能高卖成功的剩余部分, 以 0.0折算
     private static boolean showStockWithPositionFinally = false;
 
     public static void main(String[] args) throws IOException, SQLException {
@@ -103,8 +104,6 @@ public class PositionOfHighSellByDistribution {
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
         List<Integer> loopListOfHighSell = range(stockWithPositionList.size());
         for (Integer i : Tqdm.tqdm(loopListOfHighSell, StrUtil.format("HighSell process: "))) {
-            HashMap<Integer, Double> stockWithPosition = stockWithPositionList.get(i);
-            HashMap<Integer, List<Double>> stockWithActualValueAndPosition = stockWithActualValueAndPositionList.get(i);
             List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
                     stockWithActualValueAndPositionList.get(0));
             HighSellParser parser = new HighSellParser(highResult);
@@ -116,6 +115,7 @@ public class PositionOfHighSellByDistribution {
         Console.log();
         Console.log("高卖成功仓位占原始仓位平均比例: {}",
                 highSellSuccessPercent.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
+        Console.log("未成功高卖部分 折算价格: {}", discountRemaingRate);
         Console.log("纯高卖平均收益: {}",
                 highSellProfits.stream().mapToDouble(value -> value.doubleValue()).sum() / profits.size());
         Console.log("低买高卖总体平均收益: {}",
