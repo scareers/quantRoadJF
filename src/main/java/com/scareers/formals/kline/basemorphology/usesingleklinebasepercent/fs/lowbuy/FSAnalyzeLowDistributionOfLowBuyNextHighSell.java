@@ -3,7 +3,6 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.l
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -17,6 +16,7 @@ import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.SqlUtil;
+import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 

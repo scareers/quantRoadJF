@@ -68,7 +68,7 @@ public class PositionOfHighSellByDistribution {
         List<HashMap<Integer, Double>> stockWithPositionList = new ArrayList<>();
         List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
         List<Integer> loopList = range(loops);
-        for (Integer i : Tqdm.tqdm(loopList, StrUtil.format("LowBuy process: "))) {
+        for (Integer i : Tqdm.tqdm(loopList, String.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
             HashMap<Integer, Double> positions = parser.getStockWithPosition();
