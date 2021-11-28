@@ -39,8 +39,8 @@ public class PositionOfLowBuyByDistribution {
     public static List<List<Object>> weightsOfLowx;
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static Double positionUpperLimit = 1.5; // 控制上限, 一般不大于 倍率
+    public static Double positionCalcKeyArgsOfCdf = 1.8; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static Double totalAssets = 30.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
     public static int perLoops = 10000;

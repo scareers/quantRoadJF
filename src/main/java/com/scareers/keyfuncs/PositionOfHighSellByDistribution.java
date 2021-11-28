@@ -32,7 +32,7 @@ import static com.scareers.utils.CommonUtils.*;
  * <p>
  * // @noti:
  * 1. HighSell 没有 totalAsserts 概念, 总仓位, 依据传递而来的 LowBuy持仓结果, 计算总仓位. 因此LowBuy尽量满仓.
- *
+ * 2.高卖的例如 纯高卖收益, 低买高卖收益等指标, 均基于 给定原始仓位.  而非30这种总仓位. 因此低买应该尽量满仓,
  * @author: admin
  * @date: 2021/11/25/025-9:51
  */
