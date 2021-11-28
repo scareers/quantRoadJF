@@ -38,8 +38,8 @@ import static com.scareers.utils.CommonUtils.*;
  * @date: 2021/11/25/025-9:51
  */
 public class PositionOfHighSellByDistribution {
-    public static List<List<Object>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
-    public static List<List<Object>> weightsOfHighx;
+    public static List<List<Double>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
+    public static List<List<Double>> weightsOfHighx;
     public static Double tickGap;
 
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
@@ -157,7 +157,7 @@ public class PositionOfHighSellByDistribution {
 
 
         // 1.获取三个分布 的随机数生成器. key为 low/high几?
-        HashMap<Integer, WeightRandom<Object>> highWithRandom = new HashMap<>();
+        HashMap<Integer, WeightRandom<Double>> highWithRandom = new HashMap<>();
         highWithRandom.put(1, getDistributionsOfHigh1());
         highWithRandom.put(2, getDistributionsOfHigh2());
         highWithRandom.put(3, getDistributionsOfHigh3());
@@ -187,7 +187,7 @@ public class PositionOfHighSellByDistribution {
                     continue; // 有些股票没有Low3, 需要小心越界. 这里跳过
                 }
                 Integer highx = stockHighOccurrences.get(id).get(epoch); // 出现的high几?
-                WeightRandom<Object> random = highWithRandom.get(highx); // 获取到随机器
+                WeightRandom<Double> random = highWithRandom.get(highx); // 获取到随机器
                 // @key: high实际值, cdf等
                 Double actualValue = Double.parseDouble(random.next().toString());  // 具体的High出现时的 真实值
                 actualValue = actualValue - Math.abs(Math.random() * tickGap); // 同lowBUy. 这里实际值,也应该是<的
@@ -196,8 +196,8 @@ public class PositionOfHighSellByDistribution {
                 }
 
                 // 此值以及对应权重应当被保存
-                List<Object> valuePercentOfHigh = valuePercentOfHighx.get(highx - 1); // 出现low几? 得到值列表
-                List<Object> weightsOfHigh = weightsOfHighx.get(highx - 1);
+                List<Double> valuePercentOfHigh = valuePercentOfHighx.get(highx - 1); // 出现low几? 得到值列表
+                List<Double> weightsOfHigh = weightsOfHighx.get(highx - 1);
                 Double cdfOfPoint = virtualCdfAsPositionForHighSell(valuePercentOfHigh, weightsOfHigh,
                         actualValue); // 得到卖出cdf和仓位
 
@@ -410,18 +410,22 @@ public class PositionOfHighSellByDistribution {
         if (dataFrame.length() < 6) {
             log.warn("记录不足6, 解析失败");
         }
-        List<List<Object>> valuePercentOfHighxTemp = new ArrayList<>();
-        List<List<Object>> weightsOfHighxTemp = new ArrayList<>();
+        List<List<Double>> valuePercentOfHighxTemp = new ArrayList<>();
+        List<List<Double>> weightsOfHighxTemp = new ArrayList<>();
 
         for (int i = 1; i < 4; i++) { //High
             int finalI = i;
             DataFrame<Object> dfTemp = dataFrame
                     .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
 
-            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Double> tempValues = new ArrayList<>();
+            tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
             //Collections.reverse(tempValues); // @noti: HighSell 不应该reverse
             valuePercentOfHighxTemp.add(tempValues);
-            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Double> tempWeights = new ArrayList<>();
+            tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
             //Collections.reverse(tempWeights);
             weightsOfHighxTemp.add(tempWeights);
         }
@@ -491,44 +495,44 @@ public class PositionOfHighSellByDistribution {
      * @param value
      * @return
      */
-    public static Double virtualCdfAsPositionForHighSell(List<Object> valuePercentOfLow, List<Object> weightsOfLow,
+    public static Double virtualCdfAsPositionForHighSell(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                          Double value) {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);
         double total = 0.0;
-        Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
+        //Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
-            Double tick = Double.valueOf(valuePercentOfLow.get(i).toString());
+            Double tick = valuePercentOfLow.get(i);
             if (tick < value) { // 前面的全部加入. 知道 本value在的 区间tick内
-                total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
+                total += weightsOfLow.get(i); // 相等时也需要加入, 因此先+
                 continue; // 继续往后
             }
             // 然后还要加入一部分..  直到>
             if (i == 0) {
                 break;  // 会出现索引越界,注意
             }
-            Double tickPre = Double.valueOf(valuePercentOfLow.get(i - 1).toString());
+            Double tickPre = valuePercentOfLow.get(i - 1);
             //假设单区间内, 概率也平均叠加, 因此, 应当加入的部分是: 0到终点处概率,  * tick距离开始的百分比
-            total += Double.parseDouble(weightsOfLow.get(i).toString()) * ((value - tickPre) / tickGap);
+            total += weightsOfLow.get(i) * ((value - tickPre) / tickGap);
             break; //一次即可跳出
         }
-        double sum = weightsOfLow.stream().mapToDouble(value1 -> Double.parseDouble(value1.toString())).sum();
+        double sum = weightsOfLow.stream().mapToDouble(value1 -> value1).sum();
         double res = total / sum;
 //        Console.log(res);
         return res; // 求和可能了多次
     }
 
-    public static WeightRandom<Object> getDistributionsOfHigh1() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfHigh1() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(0), weightsOfHighx.get(0));
     }
 
 
-    public static WeightRandom<Object> getDistributionsOfHigh2() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfHigh2() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(1), weightsOfHighx.get(1));
     }
 
-    public static WeightRandom<Object> getDistributionsOfHigh3() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfHigh3() throws IOException {
         return getActualDistributionRandom(valuePercentOfHighx.get(2), weightsOfHighx.get(2));
     }
 }

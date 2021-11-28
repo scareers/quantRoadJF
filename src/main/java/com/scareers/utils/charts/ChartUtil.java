@@ -50,8 +50,8 @@ public class ChartUtil {
         dfAsBarChartSimple(dataFrame, save, file, "xLabels");
     }
 
-    public static void listOfDoubleAsLineChartSimple(List<Object> doubles, boolean save, File file,
-                                                     List<Object> xUseColValues)
+    public static void listOfDoubleAsLineChartSimple(List<Double> doubles, boolean save, File file,
+                                                     List<Double> xUseColValues)
             throws IOException {
         DataFrame<Object> dataFrame = new DataFrame<>();
         dataFrame.add("temp_col", doubles);

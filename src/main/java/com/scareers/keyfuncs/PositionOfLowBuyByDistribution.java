@@ -34,9 +34,9 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
  */
 public class PositionOfLowBuyByDistribution {
     public static final boolean showDistribution = false;
-    public static List<List<Object>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
+    public static List<List<Double>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
 
-    public static List<List<Object>> weightsOfLowx;
+    public static List<List<Double>> weightsOfLowx;
     public static Double tickGap;
 
     public static Double positionUpperLimit = 1.5; // 控制上限, 一般不大于 倍率
@@ -135,7 +135,7 @@ public class PositionOfLowBuyByDistribution {
 
     public static List<Object> mainOfLowBuyCore() throws IOException {
         // 1.获取三个分布 的随机数生成器. key为 low几?
-        HashMap<Integer, WeightRandom<Object>> lowWithRandom = new HashMap<>();
+        HashMap<Integer, WeightRandom<Double>> lowWithRandom = new HashMap<>();
         lowWithRandom.put(1, getDistributionsOfLow1());
         lowWithRandom.put(2, getDistributionsOfLow2());
         lowWithRandom.put(3, getDistributionsOfLow3());
@@ -173,7 +173,7 @@ public class PositionOfLowBuyByDistribution {
                 }
                 Integer lowx = stockLowOccurrences.get(id).get(epoch);
 
-                WeightRandom<Object> random = lowWithRandom.get(lowx); // 获取到随机器
+                WeightRandom<Double> random = lowWithRandom.get(lowx); // 获取到随机器
                 // @key: low实际值, cdf等
                 Double actualValue = Double.parseDouble(random.next().toString());  // 具体的LOw出现时的 真实值
                 // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
@@ -185,8 +185,8 @@ public class PositionOfLowBuyByDistribution {
                 }
 
                 // 此值以及对应权重应当被保存
-                List<Object> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
-                List<Object> weightsOfLow = weightsOfLowx.get(lowx - 1);
+                List<Double> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
+                List<Double> weightsOfLow = weightsOfLowx.get(lowx - 1);
                 Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, actualValue);
 
                 // @key2: 本轮后总仓位
@@ -279,17 +279,21 @@ public class PositionOfLowBuyByDistribution {
         if (dataFrame.length() < 6) {
             log.warn("记录不足6, 解析失败");
         }
-        List<List<Object>> valuePercentOfLowxTemp = new ArrayList<>();
-        List<List<Object>> weightsOfLowxTemp = new ArrayList<>();
+        List<List<Double>> valuePercentOfLowxTemp = new ArrayList<>();
+        List<List<Double>> weightsOfLowxTemp = new ArrayList<>();
         for (int i = 1; i < 4; i++) { // Low
             int finalI = i;
             DataFrame<Object> dfTemp = dataFrame
                     .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
 
-            List<Object> tempValues = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Double> tempValues = new ArrayList<>();
+            tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
             Collections.reverse(tempValues);
             valuePercentOfLowxTemp.add(tempValues);
-            List<Object> tempWeights = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Double> tempWeights = new ArrayList<>();
+            tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
             Collections.reverse(tempWeights);
             weightsOfLowxTemp.add(tempWeights);
         }
@@ -379,55 +383,55 @@ public class PositionOfLowBuyByDistribution {
      * @param value             求该点处cdf
      * @return 返回虚拟近似cdf ,
      */
-    public static Double virtualCdfAsPositionForLowBuy(List<Object> valuePercentOfLow, List<Object> weightsOfLow,
+    public static Double virtualCdfAsPositionForLowBuy(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                        Double value) {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);
         double total = 0.0;
-        Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
+        //Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
-            Double tick = Double.valueOf(valuePercentOfLow.get(i).toString());
+            Double tick = valuePercentOfLow.get(i);
             if (tick > value) { // 前面的全部加入. 知道 本value在的 区间tick内
-                total += Double.parseDouble(weightsOfLow.get(i).toString()); // 相等时也需要加入, 因此先+
+                total += weightsOfLow.get(i); // 相等时也需要加入, 因此先+
                 continue; // 继续往后
             }
             // 然后还要加入一部分..  直到<
             if (i == 0) {
                 break;  // 会出现索引越界,注意
             }
-            Double tickPre = Double.valueOf(valuePercentOfLow.get(i - 1).toString());
+            Double tickPre = valuePercentOfLow.get(i - 1);
             //假设单区间内, 概率也平均叠加, 因此, 应当加入的部分是: 0到终点处概率,  * tick距离开始的百分比
-            total += Double.parseDouble(weightsOfLow.get(i).toString()) * ((value - tickPre) / tickGap);
+            total += weightsOfLow.get(i) * ((value - tickPre) / tickGap);
             break; //一次即可跳出
         }
-        double sum = weightsOfLow.stream().mapToDouble(value1 -> Double.parseDouble(value1.toString())).sum();
+        double sum = weightsOfLow.stream().mapToDouble(value1 -> value1).sum();
         double res = total / sum;
 //        Console.log(res);
         return res; // 求和可能了多次
     }
 
-    public static WeightRandom<Object> getDistributionsOfLow1() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfLow1() throws IOException {
         return getActualDistributionRandom(valuePercentOfLowx.get(0), weightsOfLowx.get(0));
     }
 
 
-    public static WeightRandom<Object> getDistributionsOfLow2() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfLow2() throws IOException {
         return getActualDistributionRandom(valuePercentOfLowx.get(1), weightsOfLowx.get(1));
     }
 
-    public static WeightRandom<Object> getDistributionsOfLow3() throws IOException {
+    public static WeightRandom<Double> getDistributionsOfLow3() throws IOException {
         return getActualDistributionRandom(valuePercentOfLowx.get(2), weightsOfLowx.get(2));
     }
 
-    public static WeightRandom<Object> getActualDistributionRandom(List<Object> valuePercents,
-                                                                   List<Object> weights) throws IOException {
+    public static WeightRandom<Double> getActualDistributionRandom(List<Double> valuePercents,
+                                                                   List<Double> weights) throws IOException {
         Assert.isTrue(valuePercents.size() == weights.size());
         // 构建 WeightObj<Double> 列表. 以构建随机器
 
-        List<WeightObj<Object>> weightObjs = new ArrayList<>();
+        List<WeightObj<Double>> weightObjs = new ArrayList<>();
         for (int i = 0; i < valuePercents.size(); i++) {
-            weightObjs.add(new WeightObj<>(valuePercents.get(i), Double.valueOf(weights.get(i).toString())));
+            weightObjs.add(new WeightObj<>(valuePercents.get(i), weights.get(i)));
         }
         if (showDistribution) {
             listOfDoubleAsLineChartSimple(weights, false, null, valuePercents);
