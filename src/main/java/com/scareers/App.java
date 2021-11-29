@@ -10,12 +10,11 @@ import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lo
 import com.xnx3.robot.Robot;
 import org.apache.commons.validator.Var;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
+import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
 
 /**
@@ -52,15 +51,27 @@ public class App {
 //        Robot robot = new Robot();
 //        robot.setSourcePath(App.class);
 
+        List<String> x = new ArrayList<>();
+        for (int i = 0; i < 128; i++) {
+            x.add("key___________" + i);
+        }
+
+        HashSet<String> y = new HashSet<>();
+        for (int i = 0; i < 2580; i++) {
+            y.add("key___________" + RandomUtil.randomInt(10000));
+        }
+
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        for (int i = 0; i < 1000; i++) {
-            StrUtil.format("abc{}", 1);
+        for (int i = 0; i < 10000; i++) {
+            isIntersectOfSet(x, y);
         }
+
         Console.log(timer.intervalRestart());
-        for (int i = 0; i < 1000; i++) {
-            String.format("abc%s", 1);
+        for (int i = 0; i < 10000; i++) {
+            isIntersectOfSetUseStream(x, y);
         }
+
         Console.log(timer.intervalRestart());
 
         //        List<String> x = Arrays.asList("abc", "xyz");

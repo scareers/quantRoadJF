@@ -117,7 +117,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             for (String key : resultTemp.keySet()) {
-                results.putIfAbsent(key, new LinkedList<>()); // 链表试一下
+                results.putIfAbsent(key, new ArrayList<>()); // 链表试一下
                 results.get(key).addAll(resultTemp.get(key));
             }
             resultTemp.clear();
@@ -390,14 +390,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                         if (parallelComputingLowBuy) {
                             for (String lowKeys : resultOf10AlgorithmLow.keySet()) {
                                 String keyFull = StrUtil.format("{}{}", prefix, lowKeys);
-                                resultTemp.putIfAbsent(keyFull, new LinkedList<>());
+                                resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                                 resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
                             }
                         }
                         if (resultOf10AlgorithmHigh != null) { // 并列计算 HighSell时, 填充他.
                             for (String highKeys : resultOf10AlgorithmHigh.keySet()) {
                                 String keyFull = StrUtil.format("{}{}", prefix, highKeys);
-                                resultTemp.putIfAbsent(keyFull, new LinkedList<>());
+                                resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                                 resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
                             }
                         }

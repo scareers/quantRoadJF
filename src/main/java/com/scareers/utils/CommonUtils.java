@@ -5,8 +5,10 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
+import org.apache.poi.hssf.record.PageBreakRecord;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 /**
  * description:
@@ -92,6 +94,12 @@ public class CommonUtils {
      * @param set2
      * @return
      */
+    public static boolean isIntersectOfSetUseStream(List<String> set1, HashSet<String> set2) {
+//        return set1.parallelStream().anyMatch(s -> set2.contains(s));
+        // 流更慢
+        return set1.stream().anyMatch(s -> set2.contains(s));
+    }
+
     public static boolean isIntersectOfSet(List<String> set1, HashSet<String> set2) {
         // 交集
         for (String key : set1) {
@@ -101,6 +109,7 @@ public class CommonUtils {
         }
         return false;
     }
+
 
     public static HashSet<String> intersectionOfList(List<String> list1, List<String> list2) {
         // 交集

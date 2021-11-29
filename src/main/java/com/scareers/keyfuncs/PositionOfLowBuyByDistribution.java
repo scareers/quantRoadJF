@@ -39,17 +39,17 @@ public class PositionOfLowBuyByDistribution {
     public static List<List<Double>> weightsOfLowx;
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.5; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.8; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static Double totalAssets = 10.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
+    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static Double totalAssets = 20.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
     public static int perLoops = 100000;
     private static boolean showStockWithPosition = false;
     public static int formSetIdControll = 1; // 通过下标, 可以控制使用哪个id
     // 核心参数1, 它用于模拟, 某只股票, 今日 出现了 多少个 Low/High,  例如0/1/2/3个, 权重控制 出现这些个数的比例
-    List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
-            new WeightObj<>(0, 0),
-            new WeightObj<>(1, 0),
+    public static List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
+            new WeightObj<>(0, 1),
+            new WeightObj<>(1, 10),
             new WeightObj<>(2, 30),
             new WeightObj<>(3, 40)
     );
@@ -355,13 +355,7 @@ public class PositionOfLowBuyByDistribution {
     public static HashMap<Integer, List<Integer>> buildStockOccurrences2(List<Integer> stockIds, int maxLow) {
         HashMap<Integer, List<Integer>> stockLowOccurrences = new HashMap<>();
         WeightObj<Integer> x = new WeightObj<>(0, 1);
-        List<WeightObj<Integer>> weightObjList = Arrays.asList(
-                new WeightObj<>(0, 1),
-                new WeightObj<>(1, 2),
-                new WeightObj<>(2, 3),
-                new WeightObj<>(3, 4)
-        );
-        WeightRandom<Integer> random = RandomUtil.weightRandom(weightObjList);
+        WeightRandom<Integer> random = RandomUtil.weightRandom(lowHighOccurrWeightList);
         for (Integer stockId : stockIds) {
             ArrayList<Integer> occurrs = new ArrayList<>();
             int lenth = random.next(); // 今天某只股票出现几个 Low? 可 0123个
