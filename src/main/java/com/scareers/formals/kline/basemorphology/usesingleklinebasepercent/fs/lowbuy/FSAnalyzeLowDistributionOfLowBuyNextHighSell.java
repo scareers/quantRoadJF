@@ -34,6 +34,7 @@ import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTu
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.SqlUtil.execSql;
 
 /**
  * description: 针对 next0b1s/1b2s等, 对 nextLow 在买入当日的 最低点出现的时间, 0-240; 分布分析.  -- 出现时间分布
@@ -58,13 +59,15 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         // 连接对象并不放在设置类
         Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
         // 未关闭连接,可复用
-        SqlUtil.execSql(SettingsOfLowBuyFS.sqlCreateSaveTableFSDistribution,
+        execSql(SettingsOfLowBuyFS.sqlCreateSaveTableFSDistribution, //建表分时分析
+                connSingleton, false);
+        execSql(sqlCreateStockSelectResult,  // 建表选股结果
                 connSingleton, false);
         for (List<String> statDateRange : dateRanges) {
             // 测试时用最新一个日期区间即可
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
-            SqlUtil.execSql(
+            execSql(
                     StrUtil.format(SettingsOfLowBuyFS.sqlDeleteExistDateRangeFS,
                             StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     connSingleton, false);
@@ -345,6 +348,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                         continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     }
 
+                    if (parallelOnlyStockSelectResult) {
+                        // 该设置控制 只执行选股. lowBuy, HighSell均无视, 因此逻辑体后continue.
+                        saveStockSelectResult(stock, todayTemp, belongToFormsetIds);
+                        // 只需要保存股票,日期,所属形态集合  因此数据库 有 stock*date 条记录. 具体值为 形态集合--id 列表
+                        continue; // 将造成 原有结果为空map, 因此执行保存也无所谓.
+                    }
+
                     // lowbuy3: 计算15项算法项*2, 以保存;  主程序中是简单的 ochl计算, 是否简单, 这里却需要访问分时图计算
                     // 注意window 原数据列: "trade_date", "open", "close", "high", "low", "vol".
                     List<Object> keyInt0LowBuyKlineRow = dfWindow.row(6 + keyInt); // 这里 keyInt==keyInts.get(0),懒得改
@@ -412,6 +422,18 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             //Console.log(resultTemp);
             return resultTemp;
+        }
+
+        private static void saveStockSelectResult(String stock, String todayTemp, List<Long> belongToFormsetIds)
+                throws Exception {
+            String sqlDeleteExists = "delete from {} where ts_code='{}' and trade_date='{}'";
+            execSql(StrUtil.format(sqlDeleteExists, saveTablenameStockSelectResult, stock, todayTemp),
+                    connOfKlineForms); // 因为mysql不能有则更新,无则插入. 因此果断删除后,重新插入
+            DataFrame<Object> dfSave = new DataFrame<>(); // 单行
+            dfSave.add("trade_date", Arrays.asList(todayTemp));
+            dfSave.add("ts_code", Arrays.asList(stock));
+            dfSave.add("form_set_ids", Arrays.asList(JSONUtil.toJsonStr(belongToFormsetIds))); // String
+            DataFrameSelf.toSql(dfSave, saveTablenameStockSelectResult, connOfKlineForms, "append", null);
         }
 
         /**

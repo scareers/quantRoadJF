@@ -21,17 +21,18 @@ public class SettingsOfLowBuyFS {
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     // 核心设定项2, 是否(并列)计算 HighSell,否则值计算LowBuy
     // @noti: 当只计算LowBuy, cpu能跑满100%, 同时计算HighSell时, CPU跑到70%. 16线程情况下; 原因未知. 可能因为fs缓存生效?加大线程数量到64.
-    public static final boolean parallelComputingLowBuy = true; // 是否计算lowbuy
-    public static final boolean parallelComputingHighSell = false; // 是否计算highsell
+    public static final boolean parallelComputingLowBuy = false; // 是否计算lowbuy
+    public static final boolean parallelComputingHighSell = true; // 是否计算highsell
+    public static final boolean parallelOnlyStockSelectResult = true; // 是否执行选股保存脚本. 当true时, 默认无视上两设置,只选股结果保存
     public static final int stockAmountsBeCalcFS = 1000000;
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
     public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
-    public static final int processAmountParse = 32;
-    public static final int processAmountSave = 16;
-    public static final int perEpochTaskAmounts = 32;
+    public static final int processAmountParse = 8;
+    public static final int processAmountSave = 8;
+    public static final int perEpochTaskAmounts = 8;
     public static final int gcControlEpochParse = 4;
-    public static final int gcControlEpochSave = 200;
+    public static final int gcControlEpochSave = 100;
     public static final boolean showMemoryUsage = true;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
@@ -103,6 +104,13 @@ public class SettingsOfLowBuyFS {
     // 删除曾经的记录,逻辑同主程序
     public static final String sqlDeleteExistDateRangeRawFSRaw = "delete from {} where stat_date_range=\'{}\'";
     public static final String sqlDeleteExistDateRangeRawFS = buildFullDeleteSql(sqlDeleteExistDateRangeRawFSRaw);
+
+    public static final String saveTablenameStockSelectResult = StrUtil.format
+            ("stock_select_result_of_formsetids_next{}b{}s", keyInts.get(0),
+                    keyInts.get(1));
+    public static final String sqlCreateStockSelectResult = StrUtil
+            .format(getSqlCreateStockSelectResultSaveTableTemplate(), saveTablenameStockSelectResult
+            );
 
     private static String buildFullDeleteSql(String sqlDeleteExistDateRangeRawFSRaw) {
         if (parallelComputingLowBuy && parallelComputingHighSell) {
@@ -246,4 +254,22 @@ public class SettingsOfLowBuyFS {
                 "    comment '分时 低买高卖 最低点最高点分布分析';\n";
         return s;
     }
+
+    public static String getSqlCreateStockSelectResultSaveTableTemplate() {
+        String s = "create table if not exists `{}`\n" +
+                "(\n" +
+                "    id int auto_increment comment 'id'\n" + " primary key,\n" +
+                "    trade_date   varchar(1024) null comment 'today: 选股日期',\n" +
+                "    ts_code     varchar(1024) null comment '某只股票',\n" +
+                "    form_set_ids     longtext null comment '该股票,该日, 所属的形态集合, 即被那些形态集合选中. json字符串Long列表',\n" +
+                "    self_notes      varchar(2048) null comment '其他备注',\n" +
+
+                "     INDEX trade_date_index (trade_date ASC),\n" +
+                "     INDEX ts_code_index (ts_code ASC)\n" +
+                ")\n" +
+                "    comment '选股结果: 日期-股票-所属形态集合id列表';\n";
+        return s;
+    }
+
+
 }
