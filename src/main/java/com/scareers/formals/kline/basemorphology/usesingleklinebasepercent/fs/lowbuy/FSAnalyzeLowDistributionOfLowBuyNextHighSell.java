@@ -1111,13 +1111,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet,
                 List<String> allForms) {
             List<Long> belongToFormsetIds = new ArrayList<>();
-            HashSet<String> allFormsSet = new HashSet<>(allForms);
+            //HashSet<String> allFormsSet = new HashSet<>(allForms);
             for (Long key : formSetsMapFromDBAsHashSet.keySet()) {
                 HashSet<String> value = formSetsMapFromDBAsHashSet.get(key);
 
                 // 判定是否相交
                 // if (Sets.intersection(allFormsSet, value).size() > 0) // 谷歌guaua 交集算法. 求交集最快, 但求是否相交,自写更快
-                if (isIntersectOfSet(allFormsSet, value))  // 自写函数, 遍历找1元素相交法
+                if (isIntersectOfSet(allForms, value))  // 自写函数, 遍历找1元素相交法
                 {
                     belongToFormsetIds.add(key);
                 }

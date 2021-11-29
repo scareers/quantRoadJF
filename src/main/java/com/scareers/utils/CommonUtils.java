@@ -92,16 +92,14 @@ public class CommonUtils {
      * @param set2
      * @return
      */
-    public static boolean isIntersectOfSet(HashSet<String> set1, HashSet<String> set2) {
+    public static boolean isIntersectOfSet(List<String> set1, HashSet<String> set2) {
         // 交集
-        boolean res = false;
         for (String key : set1) {
             if (set2.contains(key)) {
-                res = true;
-                break; // 仅仅判定是否相交, 则只需要找到一个, 即可跳出
+                return true;
             }
         }
-        return res;
+        return false;
     }
 
     public static HashSet<String> intersectionOfList(List<String> list1, List<String> list2) {

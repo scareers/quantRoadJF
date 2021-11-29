@@ -1,5 +1,7 @@
 package com.scareers;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -45,11 +47,21 @@ public class App {
 //            }
 //            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
 //        }
-        Console.log(RandomUtil.randomInt(10));
+//        Console.log(RandomUtil.randomInt(10));
 
-        Robot robot = new Robot();
-        robot.setSourcePath(App.class);
+//        Robot robot = new Robot();
+//        robot.setSourcePath(App.class);
 
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        for (int i = 0; i < 1000; i++) {
+            StrUtil.format("abc{}", 1);
+        }
+        Console.log(timer.intervalRestart());
+        for (int i = 0; i < 1000; i++) {
+            String.format("abc%s", 1);
+        }
+        Console.log(timer.intervalRestart());
 
         //        List<String> x = Arrays.asList("abc", "xyz");
 
