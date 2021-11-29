@@ -137,6 +137,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         Console.log("results size: {}", results.size());
         System.gc();
 
+        if (parallelOnlyStockSelectResult) { // 选股情况下, 不在执行保存相关
+            return;
+        }
         // --------------------------------------------------------- 保存
         Console.log("构建结果字典完成");
         Console.log("开始计算并保存");
