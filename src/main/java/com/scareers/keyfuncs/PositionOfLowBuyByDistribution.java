@@ -397,7 +397,7 @@ public class PositionOfLowBuyByDistribution {
             //假设单区间内, 概率也平均叠加, 因此, 应当加入的部分是: 0到终点处概率,  * tick距离开始的百分比
             // @bugfix: 概率应该是直线. 前概率 + 斜率*部分 * 概率差
             total += weightsOfLow.get(i - 1) + (weightsOfLow.get(i) - weightsOfLow
-                    .get(i - 1)) * ((value - tickPre) / tickGap);
+                    .get(i - 1)) * (Math.abs((value - tickPre)) / tickGap);
             break; //一次即可跳出
         }
 //        double sum = sumOfListNumberUseLoop(weightsOfLow);

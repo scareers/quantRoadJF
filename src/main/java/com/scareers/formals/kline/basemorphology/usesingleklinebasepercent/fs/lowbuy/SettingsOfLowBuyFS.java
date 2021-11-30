@@ -106,8 +106,13 @@ public class SettingsOfLowBuyFS {
     public static final String sqlDeleteExistDateRangeRawFS = buildFullDeleteSql(sqlDeleteExistDateRangeRawFSRaw);
 
     public static final String saveTablenameStockSelectResult = StrUtil.format
-            ("stock_select_result_of_formsetids_next{}b{}s", keyInts.get(0),
+            (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
                     keyInts.get(1));
+
+    public static String getSaveTablenameStockSelectResultRaw() {
+        return "stock_select_result_of_formsetids_next{}b{}s";
+    }
+
     public static final String sqlCreateStockSelectResult = StrUtil
             .format(getSqlCreateStockSelectResultSaveTableTemplate(), saveTablenameStockSelectResult
             );
