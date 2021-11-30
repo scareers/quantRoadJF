@@ -46,6 +46,7 @@ public class PositionOfLowBuyByDistribution {
     public static int perLoops = 100000;
     private static boolean showStockWithPosition = false;
     public static int formSetIdControll = 1; // 通过下标, 可以控制使用哪个id
+    public static boolean forceFirstDistributionDecidePosition = true; // 强制使用 low1/high1分布, 决定仓位,而非 Low1/2/3皆有可能
     // 核心参数1, 它用于模拟, 某只股票, 今日 出现了 多少个 Low/High,  例如0/1/2/3个, 权重控制 出现这些个数的比例
     public static List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
             new WeightObj<>(0, 1),
@@ -184,8 +185,13 @@ public class PositionOfLowBuyByDistribution {
                 }
 
                 // 此值以及对应权重应当被保存
+
                 List<Double> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
                 List<Double> weightsOfLow = weightsOfLowx.get(lowx - 1);
+                if (forceFirstDistributionDecidePosition) {
+                    valuePercentOfLow = valuePercentOfLowx.get(0);
+                    weightsOfLow = weightsOfLowx.get(0);
+                }
                 Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, actualValue);
 
                 // @key2: 本轮后总仓位

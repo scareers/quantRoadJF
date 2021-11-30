@@ -198,6 +198,10 @@ public class PositionOfHighSellByDistribution {
                 // 此值以及对应权重应当被保存
                 List<Double> valuePercentOfHigh = valuePercentOfHighx.get(highx - 1); // 出现low几? 得到值列表
                 List<Double> weightsOfHigh = weightsOfHighx.get(highx - 1);
+                if (forceFirstDistributionDecidePosition) {
+                    valuePercentOfHigh = valuePercentOfHighx.get(0);
+                    weightsOfHigh = weightsOfHighx.get(0);
+                }
                 Double cdfOfPoint = virtualCdfAsPositionForHighSell(valuePercentOfHigh, weightsOfHigh,
                         actualValue); // 得到卖出cdf和仓位
 
