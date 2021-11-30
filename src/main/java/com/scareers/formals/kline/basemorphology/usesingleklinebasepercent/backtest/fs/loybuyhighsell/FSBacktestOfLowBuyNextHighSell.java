@@ -41,6 +41,11 @@ import static com.scareers.utils.SqlUtil.execSql;
  * 5.保存单只股票, 低买各次, 高卖各次(成功), 强卖各次, 比较raw的数据
  * 5.保存单只股票, 低买平均仓位/价格, 高卖成功平均仓位/价格, 总体卖出平均价格和仓位
  * 5.保存单只股票, 当次操作的总体仓位,  盈利值.!!             // 所有仓位, 均为 该股票持仓 / 总股票数量, 即已经折算,否则不好比.
+ * 6.决定仓位的 分布: 取 Low1 和 High1 对应的分布.  按照实际来讲, 并不能像模拟那样, Low2值为模拟值且分布也是模拟分布!!
+ * 7.分布only best.
+ * 8.如果单只股票保存为一条记录, 则数据表过大, 因此  日期-形态集合id 保存. 各字段均包含所有选中的股票, 相关操作
+ * 9.边解析边保存, 不需要二次线程池.
+ *
  * <p>
  * -Xmx512g -XX:MaxTenuringThreshold=0 -XX:GCTimeRatio=19 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10
  *
