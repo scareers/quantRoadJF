@@ -33,16 +33,19 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 针对 next0b1s/1b2s等, 对 nextLow 在买入当日的 最低点出现的时间, 0-240; 分布分析.  -- 出现时间分布
- * -- 时间
- * 0 代表 09:30;  240代表 15:00 , 对应tushare分时数据, 每日 241个数据.
- * -- 分区间
- * 例如将241分钟, 中间 240间隔, 按刻分, 则分为8个区间, 规定 9:30 算作第一个区间内 30-45 算作第一个区间; 46-00 第二个
+ * description: 回测框架
+ * 1.同样:日期区间分批回测
+ * 2.对单个日期, 可得 所有 形态集合 id, 对应的选股结果!
+ * 3.单个日期, 遍历所有形态集合.
+ * 4.对单个形态集合, 当日选股结果(股票列表), 判定 明日买/后日卖, 分时图低买高卖,
+ * 5.保存单只股票, 低买各次, 高卖各次(成功), 强卖各次, 比较raw的数据
+ * 5.保存单只股票, 低买平均仓位/价格, 高卖成功平均仓位/价格, 总体卖出平均价格和仓位
+ * 5.保存单只股票, 当次操作的总体仓位,  盈利值.!!             // 所有仓位, 均为 该股票持仓 / 总股票数量, 即已经折算,否则不好比.
  * <p>
  * -Xmx512g -XX:MaxTenuringThreshold=0 -XX:GCTimeRatio=19 -XX:MinHeapFreeRatio=5 -XX:MaxHeapFreeRatio=10
  *
  * @author: admin
- * @date: 2021/11/14  0014-4:48
+ * @date: 2021/11/30
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
