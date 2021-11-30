@@ -1,4 +1,4 @@
-package com.scareers.keyfuncs;
+package com.scareers.keyfuncs.positiondecision;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;

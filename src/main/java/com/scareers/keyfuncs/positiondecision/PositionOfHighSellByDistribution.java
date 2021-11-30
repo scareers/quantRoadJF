@@ -1,8 +1,7 @@
-package com.scareers.keyfuncs;
+package com.scareers.keyfuncs.positiondecision;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.util.StrUtil;
@@ -18,7 +17,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
-import static com.scareers.keyfuncs.PositionOfLowBuyByDistribution.*;
+import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.*;
 import static com.scareers.utils.CommonUtils.*;
 
 /**

@@ -1,4 +1,4 @@
-package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy;
+package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -14,7 +14,7 @@ import java.util.List;
  * @author: admin
  * @date: 2021/11/14  0014-8:51
  */
-public class SettingsOfLowBuyFS {
+public class SettingsOfFSBacktest {
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
     // 核心设置, 只需要更改次设定即可. 表示 访问哪一个 next{}b{}s_ .. 表进行分时分析
