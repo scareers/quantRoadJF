@@ -30,8 +30,9 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 public class KlineFormsApi {
     public static Connection conn = ConnectionFactory.getConnLocalKlineForms();
     public static Cache<String, HashMap<Long, List<String>>> stockSelectPerDayCache = CacheUtil.newLRUCache(256);
+    public static Cache<String, List<List<Double>>> formSetIdDistributionsCacheByKeyInts = CacheUtil.newLRUCache(256);
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
         getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
@@ -45,6 +46,15 @@ public class KlineFormsApi {
 
         Console.log(getEffectiveDatesBetweenDateRangeHasStockSelectResult(Arrays.asList("20200101", "20210101"),
                 Arrays.asList(0, 1)).size());
+        Console.log(timer.intervalRestart());
+        Console.log(getLowBuyAndHighSellDistributionByFomsetid(167L, Arrays.asList(0, 1)).get(0));
+        Console.log(timer.intervalRestart());
+        Console.log(getLowBuyAndHighSellDistributionByFomsetid(167L, Arrays.asList(0, 1)).get(1));
+        Console.log(timer.intervalRestart());
+        Console.log(getLowBuyAndHighSellDistributionByFomsetid(167L, Arrays.asList(0, 1)).get(2));
+        Console.log(timer.intervalRestart());
+        Console.log(getLowBuyAndHighSellDistributionByFomsetid(167L, Arrays.asList(0, 1)).get(3));
+        Console.log(timer.intervalRestart());
     }
 
     /**
@@ -127,11 +137,24 @@ public class KlineFormsApi {
 
     public static Log log = LogFactory.get();
 
+
     /**
      * 通过keyInt得到fs分布表后, 给定 形态集合id, 返回 其  Low1, 和High1 的分布. (即tick和权重, 权重列表已经处理为 和为1标准)
+     *
+     * @param formSetId
+     * @param keyInts
+     * @return 返回 四元素列表, 单元素为 List<Double>,分布对应已经标准化的 Low1 tick/权重, High1 tick/权重
+     * @throws Exception
      */
-    public static void getLowBuyAndHighSellDistributionByFomsetid(Long formSetId, List<Integer> keyInts)
+    @Cached
+    public static List<List<Double>> getLowBuyAndHighSellDistributionByFomsetid(Long formSetId, List<Integer> keyInts)
             throws Exception {
+        String cacheKey = StrUtil.format("{}__{}", formSetId, keyInts);
+        List<List<Double>> res = formSetIdDistributionsCacheByKeyInts.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
         String saveTablenameLowBuyFS = StrUtil.format(SettingsOfLowBuyFS.saveTablenameLowBuyFSRaw, keyInts.get(0),
                 keyInts.get(1)); // 分时分析结果表
         String sql = StrUtil
@@ -170,7 +193,8 @@ public class KlineFormsApi {
         List<Double> weightsOfHigh1 = new ArrayList<>();
         tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(weightsOfHigh1::add);
         //Collections.reverse(tempWeights);
-
-
+        res = Arrays.asList(ticksOfLow1, weightsOfLow1, ticksOfHigh1, weightsOfHigh1);
+        formSetIdDistributionsCacheByKeyInts.put(cacheKey, res);
+        return res;
     }
 }

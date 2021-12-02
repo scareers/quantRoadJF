@@ -1,35 +1,22 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
-import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
-import joinery.DataFrame;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfKlineCommons.simpleStatAnalyzeByValueListAsDF;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
-import static com.scareers.sqlapi.KlineFormsApi.getEffectiveDatesBetweenDateRangeHasStockSelectResult;
-import static com.scareers.sqlapi.KlineFormsApi.getStockSelectResultOfTradeDate;
-import static com.scareers.sqlapi.TushareApi.*;
-import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
-import static com.scareers.utils.CommonUtils.*;
-import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
+import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -76,7 +63,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
     // 核心逻辑: 回测逻辑
     private static void fsLowBuyHighSellBacktestV1(List<String> backtestDateRange)
-            throws SQLException, ExecutionException, InterruptedException {
+            throws Exception {
         // --------------------------------------------- 解析
         Console.log("开始回测区间: {}", backtestDateRange);
         List<String> dates = getEffectiveDatesBetweenDateRangeHasStockSelectResult(backtestDateRange, keyInts);
@@ -112,49 +99,12 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
-        public void initDistributions() throws SQLException {
-            flushDistributionsOfLowBuy();
-        }
-
-
-        public void flushDistributionsOfLowBuy() throws SQLException {
-            String sql = cn.hutool.core.util.StrUtil
-                    .format("select stat_result_algorithm, tick_list, frequency_list\n" +
-                            "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
-                            "where form_set_id = {}\n" +
-                            "  and concrete_algorithm like '%value_percent%'\n" +
-                            "  and condition1 = 'strict'\n" +
-                            "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
-
-            DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
-            if (dataFrame.length() < 6) {
-                log.warn("记录不足6, 解析失败");
-            }
-            List<List<Double>> valuePercentOfLowxTemp = new ArrayList<>();
-            List<List<Double>> weightsOfLowxTemp = new ArrayList<>();
-            for (int i = 1; i < 4; i++) { // Low
-                int finalI = i;
-                DataFrame<Object> dfTemp = dataFrame
-                        .select(row -> row.get(0).toString()
-                                .equals(cn.hutool.core.util.StrUtil.format("Low{}", finalI)));
-
-                List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
-                List<Double> tempValues = new ArrayList<>();
-                tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
-                Collections.reverse(tempValues);
-                valuePercentOfLowxTemp.add(tempValues);
-                List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
-                List<Double> tempWeights = new ArrayList<>();
-                tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
-                Collections.reverse(tempWeights);
-                weightsOfLowxTemp.add(tempWeights);
-            }
-
-            valuePercentOfLowx = valuePercentOfLowxTemp;
-            weightsOfLowx = weightsOfLowxTemp;
-            tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
-                    Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
-                            .valueOf(valuePercentOfLowx.get(1).get(0).toString())); // 间隔也刷新
+        public void initDistributions() throws Exception { // 该api负责缓存, 本初始化不负责.
+            List<List<Double>> res = getLowBuyAndHighSellDistributionByFomsetid(formSetId, keyInts);
+            ticksOfLow1 = res.get(0);
+            weightsOfLow1 = res.get(1);
+            ticksOfHigh1 = res.get(2);
+            weightsOfHigh1 = res.get(3);
         }
 
 
@@ -162,15 +112,16 @@ public class FSBacktestOfLowBuyNextHighSell {
         String tradeDate;
         List<String> stockSelected;
         // new对象时, 依据 formSetId 计算出来 低买分布(权重和tick) , 高卖分布(权重和tick)
-        List<List<Double>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
-        List<List<Double>> weightsOfLowx;
-        List<List<Double>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
-        List<List<Double>> weightsOfHighx;
+        List<Double> ticksOfLow1;
+        List<Double> weightsOfLow1;
+        List<Double> ticksOfHigh1;
+        List<Double> weightsOfHigh1;
 
-        public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected) {
+        public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected) throws Exception {
             this.formSetId = formSetId;
             this.tradeDate = tradeDate;
             this.stockSelected = stockSelected;
+            initDistributions(); // 给定了formSetId, 就能初始化两大分布(四个列表) 了
         }
 
         @Override
