@@ -180,9 +180,19 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<Double, HashMap<String, BuyPoint>> buyPointsOfAllTick = convertToTickWithStockBuys(
                     stockLowBuyPointsMap);
             // @key: 开始模拟买入,  tick 从  0.0 --> 240.0   ; 在同一分钟, 都有买点的股票, 就无视先后顺序了, 随 Map 的缘
-            for (int tick = 0; tick <= 240; tick++) {
-                Double timeTick = (double) tick;
-
+            ArrayList<Double> timeTicks = new ArrayList<>(buyPointsOfAllTick.keySet());
+            timeTicks.sort(Comparator.naturalOrder()); // 已经排序. 买点可能很难分布与 240个tick都有, 所以
+            for (Double tick : timeTicks) {
+                HashMap<String, BuyPoint> buyPointsMap = buyPointsOfAllTick.get(tick);
+                if (buyPointsMap == null || buyPointsMap.size() == 0) {
+                    continue;
+                    // 需要有实际买点
+                }
+                // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
+                for (String stock : buyPointsMap.keySet()) {
+                    BuyPoint singleBuyPoint = buyPointsMap.get(stock);
+                    // cdf 仓位买入.
+                }
 
             }
 
