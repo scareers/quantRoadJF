@@ -1,15 +1,14 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.WeightRandom;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
+import joinery.DataFrame;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -17,9 +16,11 @@ import java.util.concurrent.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
 import static com.scareers.sqlapi.KlineFormsApi.*;
+import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
 import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
+import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
-import static com.scareers.utils.CommonUtils.sumOfListNumberUseLoop;
+import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -178,9 +179,31 @@ public class FSBacktestOfLowBuyNextHighSell {
          *
          * @return
          */
-        HashMap<String, List<List<Double>>> getStockLowBuyPointsMap() {
+        HashMap<String, List<List<Double>>> getStockLowBuyPointsMap(String lowBuyDate) throws Exception {
             HashMap<String, List<List<Double>>> res = new HashMap<>();
             for (String stock : stockSelected) {
+                // 因每只股票可能有所不同, 因此实时计算.!!! 该api有大缓存池 2048
+                String loyBuyDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(0);
+                DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock, loyBuyDate,
+                        fsSpecialUseFields); // Arrays.asList("trade_time", "close")
+                if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
+                    return res; // 无分时数据, 则没有计算结果
+                }
+                // 1.将 trade_time, 转换为 tickDouble.
+                List<Object> tradeTimeCol = dfFSLowBuyDay.col(0);
+                List<Double> tickDoubleCol = new ArrayList<>(); // key1列
+                tradeTimeCol.stream().forEach(value -> {
+                    tickDoubleCol.add(fsTimeStrParseToTickDouble(value.toString().substring(11, 16)));
+                }); // 构建 tick Double 列.
+                List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close"); //key2列
+
+                // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
+                Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, tradeDate, lowBuyDate,
+                        connLocalTushare);
+                // 开始遍历close, 得到买入点,
+                // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
+                // @key: 因此, 如果一只股票有多个买点, 则 价格是越来越低的, 不会变高!, 也不会相等
+
 
             }
 

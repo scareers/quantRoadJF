@@ -1,13 +1,10 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import com.google.common.collect.Sets;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
@@ -15,7 +12,6 @@ import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
-import com.scareers.utils.SqlUtil;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
@@ -375,7 +371,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     HashMap<String, Double> resultOf10AlgorithmLow = null;
                     if (parallelComputingLowBuy) {
                         String lowBuyDate = keyInt0LowBuyKlineRow.get(0).toString(); // 买入日期.
-                        Double stdCloseOfLowBuy = CloseOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
+                        Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, today, lowBuyDate, conn); //
                         // 临时前复权作为基准close.
                         // 对于时刻, 也使用 Double 0.0,1.0,2.0表示.
                         // 因此15种算法结果: low0/2/3 * percent,出现时刻,左支配数量,右支配数量,连续下跌成交量
@@ -389,7 +385,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     if (parallelComputingHighSell) { // 核心设定项2
                         String highSellDate = keyInt1HighSellKlineRow.get(0).toString(); // 卖出日期..
                         // 复权到标准今日close
-                        Double stdCloseOfHighSell = CloseOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
+                        Double stdCloseOfHighSell = closePriceOfQfqStockSpecialDay(stock, today, highSellDate, conn); //
                         // 临时前复权作为基准close.
                         // @noti: highSell 对应的10种结果
                         resultOf10AlgorithmHigh = calc5ItemValusOfHighSell(stdAmount,

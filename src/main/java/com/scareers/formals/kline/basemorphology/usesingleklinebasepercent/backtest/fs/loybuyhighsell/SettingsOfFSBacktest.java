@@ -25,6 +25,7 @@ public class SettingsOfFSBacktest {
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
     public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
+    public static Connection connLocalTushare = ConnectionFactory.getConnLocalTushare();
     public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
     public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
             keyInts.get(1));
@@ -64,6 +65,8 @@ public class SettingsOfFSBacktest {
 
     );
 
+    // 分时数据时, 仅访问close, 不访问多余字段,加速
+    public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close"); // 简单买卖回测无视掉amount
 
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
@@ -114,9 +117,6 @@ public class SettingsOfFSBacktest {
     public static final int binForLow = correspondingBins.get(keyInts.get(0));
     public static final List<Double> effectiveValueRangeForHigh = effectiveValueRanges.get(keyInts.get(1));
     public static final int binForHigh = correspondingBins.get(keyInts.get(1));
-
-    // 分时数据时, 仅访问close, 不访问多余字段,加速
-    public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close", "amount");
 
 
     // 删除曾经的记录,逻辑同主程序

@@ -31,16 +31,11 @@ import java.util.*;
  */
 public class TushareApi {
     // 不带conn的方法, 均使用次静态连接, 且不关闭次连接. 此连接一直存活.  需要显式调用静态方法 TushareApi.connClose()!
-    public static Connection connLocalTushare = null;
+    public static Connection connLocalTushare;
     public static Log log = LogFactory.get();
 
     static {
-        try {
-//            connLocalTushare = ConnectionFactory.getConnLocalTushareFromPool();
-            connLocalTushare = ConnectionFactory.getConnLocalTushare(); // 可选择连接是否从连接池获取.
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        connLocalTushare = ConnectionFactory.getConnLocalTushare(); // 可选择连接是否从连接池获取.
     }
 
     public static final String STOCK_LIST_TABLENAME = "sds_stock_list_tu_stock";
@@ -48,7 +43,8 @@ public class TushareApi {
     public static final String STOCK_PRICE_DAILY_TABLENAME_TEMPLATE = "sds_stock_price_daily_{}_tu_stock";
     public static final List<String> NOT_MAIN_BOARDS = Arrays.asList(null, "CDR", "创业板", "科创板");// 另有主板,中小板
     public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(32);
-    public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(512);
+    public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
 
 
     public static void main(String[] args) throws Exception {
@@ -313,8 +309,14 @@ public class TushareApi {
      * @param futureDate
      * @return 以未来一天为基准, 对 此前某一日收盘价做临时前复权, 返回 以前某一日close 前复权价格
      */
-    public static Double CloseOfQfqStockSpecialDay(String stock, String preTradeDate, String futureDate,
-                                                   Connection conn) throws SQLException {
+    @Cached
+    public static Double closePriceOfQfqStockSpecialDay(String stock, String preTradeDate, String futureDate,
+                                                        Connection conn) throws SQLException {
+        String cacheKey = StrUtil.format("{}__{}__{}", stock, preTradeDate, futureDate);
+        Double res = closePriceOfQfqStockSpecialDayCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
         String sqlGetAdjFactorOfOneDay = StrUtil.format("select trade_date,adj_factor from " +
                 "sds_stock_adj_factor_tu_stock " +
                 "where ts_code='{}' and trade_date='{}'", stock);
@@ -335,7 +337,9 @@ public class TushareApi {
         Double factor1 = Double.valueOf(factorPre.get(0, 1).toString());
         Double factor2 = Double.valueOf(factorFuture.get(0, 1).toString());
         // 今日价格 * 今日复权因子 == 未来实际价格(小) * 未来复权因子(大)
-        return stdClose * factor1 / factor2;
+        res = stdClose * factor1 / factor2;
+        closePriceOfQfqStockSpecialDayCache.put(cacheKey, res);
+        return res;
     }
 
     /**

@@ -57,7 +57,7 @@ public class ConnectionFactory {
 //    }
 
 
-    public static Connection getConnLocalTushare() throws SQLException {
+    public static Connection getConnLocalTushare()  {
         return connectToLocalMysqlMain("tushare");
     }
 //
