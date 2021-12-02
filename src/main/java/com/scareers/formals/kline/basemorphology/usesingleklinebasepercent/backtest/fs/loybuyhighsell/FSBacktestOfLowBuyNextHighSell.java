@@ -8,6 +8,9 @@ import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -135,6 +138,24 @@ public class FSBacktestOfLowBuyNextHighSell {
             weightsOfHigh1 = res.get(3);
         }
 
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Data
+        public static class BuyPoint { // 抽象买点 对象
+            Double timeTick;
+            Double lowPricePercent;
+            Double buyPricePercent;
+        }
+
+        @AllArgsConstructor
+        @NoArgsConstructor
+        @Data
+        public static class SellPoint { // 抽象卖点 对象
+            Double timeTick;
+            Double highPricePercent;
+            Double sellPricePercent;
+        }
+
 
         @Override
         public Void call() throws Exception {
@@ -152,8 +173,18 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 1.首先, 应该获取到, 每只股票, 的(有效折合)买点(时间和价格percent),  这一步将大量访问数据库fs数据. 然后依据时间遍历.
             // 股票: [买点1, 买点2]   买点: --> 买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
             // @key: 买点使用简单逻辑: 首先需要 低于某个值, 且 连续下降后, 下一tick上升. 买入价格 这里设定为 最低点和下一tick平均
-            HashMap<String, List<List<Double>>> stockLowBuyPointsMap = new HashMap<>();
+            // @noti: 得到所有被选中股票的 买点列表, 可能没有买点. 当时总资产需要分配 股票数量那么多
+            HashMap<String, List<BuyPoint>> stockLowBuyPointsMap = getStockLowBuyPointsMap();
+            // 将买点, 转换为 HashMap, key:value:  时间戳: 该tick 有买点的股票 {股票: 买点对象}
+            // 买点对象: List<List<Double>> , 因为每个 tick, 每只股票最多只有单个 买点, 因此该数据结构符合逻辑
+            HashMap<Double, HashMap<String, BuyPoint>> buyPointsOfAllTick = convertToTickWithStockBuys(
+                    stockLowBuyPointsMap);
+            // @key: 开始模拟买入,  tick 从  0.0 --> 240.0   ; 在同一分钟, 都有买点的股票, 就无视先后顺序了, 随 Map 的缘
+            for (int tick = 0; tick <= 240; tick++) {
+                Double timeTick = (double) tick;
 
+
+            }
 
             for (String stock : stockSelected) {
                 // 首先需要找到 keyInts 对应的 低买 高卖, 两个日期,
@@ -172,6 +203,21 @@ public class FSBacktestOfLowBuyNextHighSell {
             return null;
         }
 
+        private HashMap<Double, HashMap<String, BuyPoint>> convertToTickWithStockBuys(
+                HashMap<String, List<BuyPoint>> stockLowBuyPointsMap) {
+            HashMap<Double, HashMap<String, BuyPoint>> res = new HashMap<>();
+            for (String stock : stockLowBuyPointsMap.keySet()) {
+                List<BuyPoint> buyPointsOfStock = stockLowBuyPointsMap.get(stock);
+                for (BuyPoint buyPoint : buyPointsOfStock) {
+                    Double timeTick = buyPoint.getTimeTick();
+                    res.putIfAbsent(timeTick, new HashMap<>());
+                    res.get(timeTick).put(stock, buyPoint);
+                    // @noti: 这里能够直接修改值
+                }
+            }
+            return res;
+        }
+
         /**
          * 获取所有股票 买点列表.  key:value --> 股票:买点列表           买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
          * // @key: 买入点逻辑: 必须<某个临界值, 且 连续下跌, 下一tick上涨. 买入价格为 最低点和下一tick的平均值
@@ -179,12 +225,12 @@ public class FSBacktestOfLowBuyNextHighSell {
          *
          * @return
          */
-        HashMap<String, List<List<Double>>> getStockLowBuyPointsMap(String lowBuyDate) throws Exception {
-            HashMap<String, List<List<Double>>> res = new HashMap<>();
+        HashMap<String, List<BuyPoint>> getStockLowBuyPointsMap() throws Exception {
+            HashMap<String, List<BuyPoint>> res = new HashMap<>();
             for (String stock : stockSelected) {
                 // 因每只股票可能有所不同, 因此实时计算.!!! 该api有大缓存池 2048
-                String loyBuyDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(0);
-                DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock, loyBuyDate,
+                String lowBuyDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(0);
+                DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock, lowBuyDate,
                         fsSpecialUseFields); // Arrays.asList("trade_time", "close")
                 if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
                     return res; // 无分时数据, 则没有计算结果
@@ -203,7 +249,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 阈值是负数百分比. 计算阈值价格, 这里 需要 不大于次阈值实际价格, 才可能低买
                 Double lowBuyActualPriceThreshold = stdCloseOfLowBuy * (1 + execLowBuyThreshold);
                 // 开始遍历close, 得到买入点,
-                List<List<Double>> buyPoints = new ArrayList<>();
+                List<BuyPoint> buyPoints = new ArrayList<>();
                 // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
                 // @key: 因此, 如果一只股票有多个买点, 则 价格是越来越低的, 不会变高!, 也不会相等
                 int lenth = closeCol.size();
@@ -239,16 +285,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                             if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
                                 Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                         closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
-                                buyPoints.add(Arrays  // 买入点: 时间tick, 当前最低点,  买入价格
-                                        .asList(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                             } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
-                                Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).get(1);
+                                Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
                                 if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
                                     Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                             closeCol.get(i) + closeCol
                                                     .get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
-                                    buyPoints.add(Arrays  // 买入点: 时间tick, 当前最低点,  买入价格
-                                            .asList(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                    buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                                 }
                             }
                         }

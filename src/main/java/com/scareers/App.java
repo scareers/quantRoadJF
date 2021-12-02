@@ -56,6 +56,10 @@ public class App {
 
         //        List<String> x = Arrays.asList("abc", "xyz");
 
+        HashMap<String, HashMap<String, Double>> x = new HashMap<>();
+        x.put("xx", new HashMap<>());
+        x.get("xx").put("yy", 0.1);
+        Console.log(x);
 
 //
 //        MailUtil.send(SettingsCommon.receivers,
