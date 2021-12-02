@@ -6,16 +6,15 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
+import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.StrUtil;
 import joinery.DataFrame;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.getSaveTablenameStockSelectResultRaw;
 
@@ -27,7 +26,7 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
  */
 public class KlineFormsApi {
     public static Connection conn = ConnectionFactory.getConnLocalKlineForms();
-    public static Cache<String, HashMap<Long, List<String>>> stockSelectPerDayCache = CacheUtil.newLRUCache(64);
+    public static Cache<String, HashMap<Long, List<String>>> stockSelectPerDayCache = CacheUtil.newLRUCache(256);
 
     public static void main(String[] args) throws SQLException {
         TimeInterval timer = DateUtil.timer();
@@ -40,16 +39,20 @@ public class KlineFormsApi {
         Console.log(timer.intervalRestart());
         getStockSelectResultOfTradeDate("20220810", 172L, Arrays.asList(0, 1));
         Console.log(timer.intervalRestart());
+
+        Console.log(getEffectiveDatesBetweenDateRangeHasStockSelectResult(Arrays.asList("20200101", "20210101"),
+                Arrays.asList(0, 1)).size());
     }
 
     /**
-     * 给定日期, 返回对应keyInts,  当日 所有 形态集合 的选股结果
+     * 给定日期, 返回对应keyInts,  当日 所有 形态集合 的选股结果  HashMap,
      *
      * @param trade_date
      * @param keyInts
      * @return 当没有选股结果时, (交易日期不对), 返回空map,不会返回null
      * @throws SQLException
      */
+    @Cached(description = "形态集合选股结果已经缓存, lru256")
     public static HashMap<Long, List<String>> getStockSelectResultOfTradeDate(String trade_date, List<Integer> keyInts)
             throws SQLException {
         String cacheKey = StrUtil.format("{}_{}_{}", trade_date, keyInts.get(0), keyInts.get(1));
@@ -93,4 +96,30 @@ public class KlineFormsApi {
             throws SQLException {
         return getStockSelectResultOfTradeDate(trade_date, keyInts).get(formSetId);
     }
+
+    /**
+     * 分时回测框架调用, 给定日期区间, 在选股结果数据表中, 筛选出有选股结果的所有日期(介于日期区间,前包后不包).
+     * 同样, 需要给定 keyInts, [0,1], 即代表 next0b1s
+     * 当前数据表设定: 对应脚本的  getSaveTablenameStockSelectResultRaw() 为模板, 填充keyIntes
+     *
+     * @return
+     */
+    public static List<String> getEffectiveDatesBetweenDateRangeHasStockSelectResult(List<String> statDateRange,
+                                                                                     List<Integer> keyInts)
+            throws SQLException {
+        String tablenameTemplate = getSaveTablenameStockSelectResultRaw();
+        String saveTablenameStockSelectResult = StrUtil.format
+                (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
+                        keyInts.get(1));
+
+        DataFrame<Object> dates = DataFrame
+                .readSql(conn, StrUtil.format("select trade_date from {} where trade_date>='{}' and " +
+                        "trade_date<'{}'", saveTablenameStockSelectResult, statDateRange.get(0), statDateRange.get(1)));
+        List<String> dateList = DataFrameSelf.getColAsStringList(dates, "trade_date");
+        HashSet<String> dateSet = new HashSet<>(dateList);
+        List<String> res = new ArrayList<>(dateSet);
+        res.sort(Comparator.naturalOrder());
+        return res;
+    }
+
 }

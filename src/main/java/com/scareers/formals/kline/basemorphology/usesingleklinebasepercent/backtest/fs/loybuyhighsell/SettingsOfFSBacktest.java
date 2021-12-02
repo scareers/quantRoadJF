@@ -28,6 +28,7 @@ public class SettingsOfFSBacktest {
     public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
     public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
             saveTablenameFSBacktest);
+    public static final int processAmountOfBacktest = 8;
 
     public static final List<List<String>> dateRanges = Arrays.asList(
             // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
@@ -70,7 +71,7 @@ public class SettingsOfFSBacktest {
     // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
     public static final Double dominateRateKeyArg = 0.2;
     public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
-    public static final int processAmountParse = 8;
+
     public static final int processAmountSave = 8;
     public static final int perEpochTaskAmounts = 8;
     public static final int gcControlEpochParse = 4;

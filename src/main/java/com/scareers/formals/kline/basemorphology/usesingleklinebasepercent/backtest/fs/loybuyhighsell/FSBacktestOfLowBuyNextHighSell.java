@@ -1,7 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -9,7 +8,6 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
 import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
@@ -25,11 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfKlineCommons.simpleStatAnalyzeByValueListAsDF;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
+import static com.scareers.sqlapi.KlineFormsApi.getEffectiveDatesBetweenDateRangeHasStockSelectResult;
+import static com.scareers.sqlapi.KlineFormsApi.getStockSelectResultOfTradeDate;
 import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -75,103 +74,45 @@ public class FSBacktestOfLowBuyNextHighSell {
     }
 
     // 核心逻辑: 回测逻辑
-    private static void fsLowBuyHighSellBacktestV1(List<String> statDateRange)
+    private static void fsLowBuyHighSellBacktestV1(List<String> backtestDateRange)
             throws SQLException, ExecutionException, InterruptedException {
         // --------------------------------------------- 解析
-        Console.log("开始回测区间: {}", statDateRange);
+        Console.log("开始回测区间: {}", backtestDateRange);
+        List<String> dates = getEffectiveDatesBetweenDateRangeHasStockSelectResult(backtestDateRange, keyInts);
 
-
-        // 形态集合id__计算项: 值列表.
-        ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
-        ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(processAmountParse,
-                processAmountParse * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
-        Connection connOfParse = ConnectionFactory.getConnLocalTushare();
-        AtomicInteger parseProcess = new AtomicInteger(0);
-        ArrayList<Future<ConcurrentHashMap<String, List<Double>>>> futuresOfParse = new ArrayList<>();
-        for (String stock : stocks) {
-            // 全线程使用1个conn
-            Future<ConcurrentHashMap<String, List<Double>>> f = poolOfParse
-                    .submit(new LowBuyParseTask(stock, stockWithBoard,
-                            statDateRange, stockWithStDateRanges, connOfParse, keyInt));
-            futuresOfParse.add(f);
-        }
-        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
-            // 串行不再需要使用 CountDownLatch
-            Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
-            // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
-            ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
-            for (String key : resultTemp.keySet()) {
-                results.putIfAbsent(key, new ArrayList<>()); // 链表试一下
-                results.get(key).addAll(resultTemp.get(key));
+        ThreadPoolExecutor poolOfBacktest = new ThreadPoolExecutor(processAmountOfBacktest,
+                processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
+        for (String tradeDate : dates) {
+            HashMap<Long, List<String>> stockSelectResultPerDay = getStockSelectResultOfTradeDate(tradeDate, keyInts);
+            if (stockSelectResultPerDay.size() <= 0) {
+                log.warn("今日无选股结果(skip): {}", tradeDate);
+                continue; // 无选股结果
             }
-            resultTemp.clear();
-            if (parseProcess.incrementAndGet() % gcControlEpochParse == 0) {
-                System.gc();
-                if (showMemoryUsage) {
-                    showMemoryUsageMB();
-                }
+            // 单日的 2500+ 形态, 启用线程池执行解析保存回测结果
+            AtomicInteger backtestProcess = new AtomicInteger(0);
+            ArrayList<Future<Void>> futuresOfBacktest = new ArrayList<>();
+
+            List<Long> formSetIds = new ArrayList<>(stockSelectResultPerDay.keySet());
+            for (Long formSetId : formSetIds) {
+                Future<Void> f = poolOfBacktest
+                        .submit(new BacktestTaskOfPerDay(formSetId));
+                futuresOfBacktest.add(f);
             }
-            // Console.log("results size: {}", results.size());
-        }
-        poolOfParse.shutdown(); // 关闭线程池
-        System.out.println();
-        Console.log("results size: {}", results.size());
-        System.gc();
-
-        if (parallelOnlyStockSelectResult) { // 选股情况下, 不在执行保存相关
-            return;
-        }
-        // --------------------------------------------------------- 保存
-        Console.log("构建结果字典完成");
-        Console.log("开始计算并保存");
-        ArrayList<String> forNameRaws = new ArrayList<>(results.keySet());
-        forNameRaws.sort(Comparator.naturalOrder()); // 排序, 自然顺序
-        ThreadPoolExecutor poolOfCalc = new ThreadPoolExecutor(processAmountSave,
-                processAmountSave * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>());
-        int totalEpochAmounts = (int) Math
-                .ceil((double) results.size() / perEpochTaskAmounts);
-        List<Integer> epochs = CommonUtils.range(totalEpochAmounts);
-        Connection connOfSave = ConnectionFactory.getConnLocalKlineForms();
-        CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
-        ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
-        // 批量插入不伤ssd. 单条插入很伤ssd
-        for (Integer currentEpoch : Tqdm
-                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
-            int startIndex = currentEpoch * perEpochTaskAmounts;
-            int endIndex = (currentEpoch + 1) * perEpochTaskAmounts;
-            List<String> formNamesCurrentEpoch = forNameRaws
-                    .subList(startIndex, Math.min(endIndex, forNameRaws.size()));
-
-            Future<List<String>> f = poolOfCalc
-                    .submit(new CalcStatResultAndSaveTaskOfFSLowBuyHighSell(latchOfCalcForEpoch,
-                            connOfSave, formNamesCurrentEpoch,
-                            stocks.size(), statDateRange, results,
-                            saveTablenameLowBuyFS));
-            futuresOfSave.add(f);
-        }
-        for (Integer i : Tqdm
-                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
-            Future<List<String>> f = futuresOfSave.get(i);
-            List<String> finishedFormNames = f.get();
-            for (String formName0 : finishedFormNames) {
-                // 删除key, 节省空间
-                results.remove(formName0);
+            List<Integer> indexesOfBacktest = CommonUtils.range(futuresOfBacktest.size());
+            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtil.format("{} process: ", tradeDate))) {
+                // 串行不再需要使用 CountDownLatch
+                Future<Void> f = futuresOfBacktest.get(i);
+                Void res = f.get();
+                // todo: 可以处理返回值, 回测这里无返回值, 不需要组合成 大字典处理. 回测一天实时保存一天的结果即可
             }
+            poolOfBacktest.shutdown(); // 关闭线程池
+            System.out.println("finish");
         }
-
-        Console.log("计算并保存完成!");
-        latchOfCalcForEpoch.await();
-        //        connOfSave.close(); // 不可关闭, 因底层默认会重新获取到null连接
-        poolOfCalc.shutdown();
-        // 本轮执行完毕
     }
 
 
-    public static class LowBuyParseTask implements Callable<ConcurrentHashMap<String,
-            List<Double>>> {
+    public static class BacktestTaskOfPerDay implements Callable<Void> {
         // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
         public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
         public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
@@ -194,22 +135,10 @@ public class FSBacktestOfLowBuyNextHighSell {
             return res;
         }
 
-        String stock;
-        DataFrame<String> stockWithBoard;
-        List<String> statDateRange;
-        HashMap<String, List<List<String>>> stockWithStDateRanges;
-        Connection conn;
-        int keyInt;
+        Long formSetId;
 
-        public LowBuyParseTask(String stock, DataFrame<String> stockWithBoard, List<String> statDateRange,
-                               HashMap<String, List<List<String>>> stockWithStDateRanges, Connection connOfParse,
-                               int keyInt) {
-            this.stock = stock;
-            this.stockWithBoard = stockWithBoard;
-            this.statDateRange = statDateRange;
-            this.stockWithStDateRanges = stockWithStDateRanges;
-            this.conn = connOfParse;
-            this.keyInt = keyInt;
+        public BacktestTaskOfPerDay(Long formSetId) {
+            this.formSetId = formSetId;
         }
 
         @Override
