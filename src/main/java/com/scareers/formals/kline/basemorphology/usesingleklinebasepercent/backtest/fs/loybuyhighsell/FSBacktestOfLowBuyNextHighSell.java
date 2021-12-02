@@ -150,7 +150,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
             // 1.首先, 应该获取到, 每只股票, 的(有效折合)买点(时间和价格percent),  这一步将大量访问数据库fs数据. 然后依据时间遍历.
-            // 股票: [买点1, 买点2]   买点: --> [时间Double, 价格Double].
+            // 股票: [买点1, 买点2]   买点: --> 买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
             // @key: 买点使用简单逻辑: 首先需要 低于某个值, 且 连续下降后, 下一tick上升. 买入价格 这里设定为 最低点和下一tick平均
             HashMap<String, List<List<Double>>> stockLowBuyPointsMap = new HashMap<>();
 
@@ -200,8 +200,10 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
                 Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, tradeDate, lowBuyDate,
                         connLocalTushare);
-
+                // 阈值是负数百分比. 计算阈值价格, 这里 需要 不大于次阈值实际价格, 才可能低买
+                Double lowBuyActualPriceThreshold = stdCloseOfLowBuy * (1 + execLowBuyThreshold);
                 // 开始遍历close, 得到买入点,
+                List<List<Double>> buyPoints = new ArrayList<>();
                 // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
                 // @key: 因此, 如果一只股票有多个买点, 则 价格是越来越低的, 不会变高!, 也不会相等
                 int lenth = closeCol.size();
@@ -229,13 +231,31 @@ public class FSBacktestOfLowBuyNextHighSell {
                             }
                         }
                     }
-
+                    // 多条件限定买点, 这里不用 and, 更加清晰
                     if (continuousFallTickCount >= continuousFallTickCountThreshold) { // 连续下跌数量必须不小于阈值设定
-                        if
-
+                        if (closeCol.get(i) <= lowBuyActualPriceThreshold) { // 必须价格不大于 设定阈值计算出来的价格
+                            // 买入点, 必须 越来越低, 才符合 cdf 仓位算法!. 因此 需判定此前是否已经有买入点?
+                            Double lowPrice = closeCol.get(i) / stdCloseOfLowBuy - 1; // 低点价格
+                            if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
+                                Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+                                        closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                buyPoints.add(Arrays  // 买入点: 时间tick, 当前最低点,  买入价格
+                                        .asList(tickDoubleCol.get(i), lowPrice, buyPrice));
+                            } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
+                                Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).get(1);
+                                if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
+                                    Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+                                            closeCol.get(i) + closeCol
+                                                    .get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                    buyPoints.add(Arrays  // 买入点: 时间tick, 当前最低点,  买入价格
+                                            .asList(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                }
+                            }
+                        }
                     }
-
                 }
+                // @key: 已经得到 单只股票 所有买点列表 [时间, low价格百分比, 买入价格百分比]: buyPoints 计算完毕, 可以是空列表
+
 
 
             }
