@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfKlineCommons.simpleStatAnalyzeByValueListAsDF;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.KlineFormsApi.getEffectiveDatesBetweenDateRangeHasStockSelectResult;
@@ -79,7 +80,6 @@ public class FSBacktestOfLowBuyNextHighSell {
         // --------------------------------------------- 解析
         Console.log("开始回测区间: {}", backtestDateRange);
         List<String> dates = getEffectiveDatesBetweenDateRangeHasStockSelectResult(backtestDateRange, keyInts);
-
         ThreadPoolExecutor poolOfBacktest = new ThreadPoolExecutor(processAmountOfBacktest,
                 processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
@@ -90,13 +90,12 @@ public class FSBacktestOfLowBuyNextHighSell {
                 continue; // 无选股结果
             }
             // 单日的 2500+ 形态, 启用线程池执行解析保存回测结果
-            AtomicInteger backtestProcess = new AtomicInteger(0);
             ArrayList<Future<Void>> futuresOfBacktest = new ArrayList<>();
 
             List<Long> formSetIds = new ArrayList<>(stockSelectResultPerDay.keySet());
             for (Long formSetId : formSetIds) {
                 Future<Void> f = poolOfBacktest
-                        .submit(new BacktestTaskOfPerDay(formSetId));
+                        .submit(new BacktestTaskOfPerDay(formSetId, tradeDate, stockSelectResultPerDay.get(formSetId)));
                 futuresOfBacktest.add(f);
             }
             List<Integer> indexesOfBacktest = CommonUtils.range(futuresOfBacktest.size());
@@ -113,6 +112,26 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
+
+        public static
+
+        Long formSetId;
+        String tradeDate;
+        List<String> stockSelected;
+
+        public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected) {
+            this.formSetId = formSetId;
+            this.tradeDate = tradeDate;
+            this.stockSelected = stockSelected;
+        }
+
+        @Override
+        public Void call() {
+
+
+            return null;
+        }
+
         // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
         public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
         public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
@@ -133,41 +152,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                 res.put(key, new HashSet<>(formSetsMapFromDB.get(key)));
             }
             return res;
-        }
-
-        Long formSetId;
-
-        public BacktestTaskOfPerDay(Long formSetId) {
-            this.formSetId = formSetId;
-        }
-
-        @Override
-        public Void call() {
-            // 实际逻辑显然对应了python 的parse_single_stock() 函数
-            // 使得不会返回null. 至少会返回空的字典
-            ConcurrentHashMap<String, List<Double>> resultSingle = new ConcurrentHashMap<>(2 ^ 5);
-            try {
-                // 开始主要逻辑
-                // 添加结果到 线程安全的 总结果集
-                List<String> statDateRangeFull = CommonUtils.changeStatRangeForFull(statDateRange);
-                // 单个线程用一个 conn 对象, 用完close(), 否则线程池容量不够
-                // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
-                DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
-                        SettingsOfSingleKlineBasePercent.fieldsOfDfRaw,
-                        statDateRangeFull, conn);
-                dfRaw = dfRaw.dropna();
-                // 新知识: java不定参数等价于 数组.而非List
-                dfRaw.convert(fieldsOfDfRawClass);
-                HashSet<String> adjDates = getAdjdatesByTscodeFromTushare(stock, conn);
-                resultSingle = LowBuyAnalyzerOfPerStock(dfRaw, adjDates, stock, stockWithBoard,
-                        stockWithStDateRanges, statDateRange,
-                        conn, keyInt); // 注意: dfRaw依据fulldates获取, 而这里要传递统计区间日期
-                return resultSingle;
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                return resultSingle;
-            }
         }
 
 
