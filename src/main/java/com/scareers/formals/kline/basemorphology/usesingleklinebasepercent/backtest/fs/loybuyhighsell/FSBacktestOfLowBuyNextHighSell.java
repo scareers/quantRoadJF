@@ -255,12 +255,9 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
                 }
                 // @key: 已经得到 单只股票 所有买点列表 [时间, low价格百分比, 买入价格百分比]: buyPoints 计算完毕, 可以是空列表
-
-
-
+                res.put(stock, buyPoints);
             }
             return res;
-
         }
 
 //        public List<Object> mainOfLowBuyCore() throws IOException {
