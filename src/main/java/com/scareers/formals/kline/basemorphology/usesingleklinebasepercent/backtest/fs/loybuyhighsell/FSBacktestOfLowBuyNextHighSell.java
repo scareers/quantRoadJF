@@ -191,7 +191,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
                 for (String stock : buyPointsMap.keySet()) {
                     BuyPoint singleBuyPoint = buyPointsMap.get(stock);
-                    // cdf 仓位买入 .
+                    // cdf 仓位买入  .
                 }
 
             }
