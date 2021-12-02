@@ -5,11 +5,14 @@ import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameSelf;
+
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -45,6 +48,8 @@ public class TushareApi {
     public static final String STOCK_PRICE_DAILY_TABLENAME_TEMPLATE = "sds_stock_price_daily_{}_tu_stock";
     public static final List<String> NOT_MAIN_BOARDS = Arrays.asList(null, "CDR", "创业板", "科创板");// 另有主板,中小板
     public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(32);
+    public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(512);
+
 
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
@@ -67,7 +72,11 @@ public class TushareApi {
 //        Console.log((HashSet<String>) res0[0]);
 //        Console.log((HashSet<String>) res0[1]);
 //        Console.log((List<String>) res0[2]);
-//        Console.log(interval.intervalRestart());
+
+        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+        Console.log(interval.intervalRestart());
+        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+        Console.log(interval.intervalRestart());
 
     }
 
@@ -329,4 +338,44 @@ public class TushareApi {
         return stdClose * factor1 / factor2;
     }
 
+    /**
+     * 给定 stock, today, keyInts, 返回2个日期字符串. TushareApi
+     * 即 0, 1, 则返回 该股票今天以后, 明天和后天的 (交易日有数据) 日期, 使用日数据 nofq 表, 做有数据的日期判定
+     * // @noti: keyInts 两个值必须前小后大, 当然肯定是先买后卖. 天然有此限定
+     *
+     * @return
+     */
+    public static List<String> getKeyIntsDateByStockAndToday(String stock, String today, List<Integer> keyInts)
+            throws SQLException {
+        String cacheKey = StrUtil.format("{}__{}__{}", stock, today, keyInts);
+        List<String> res = keyIntsDateByStockAndTodayCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        String sql = StrUtil.format("select trade_date from {} where ts_code='{}' and " +
+                "trade_date>='{}' order by trade_date limit {}", StrUtil.format(STOCK_PRICE_DAILY_TABLENAME_TEMPLATE,
+                "nofq"), stock, today, keyInts.get(1) + 2); // 包括今天,且从0开始
+        DataFrame<Object> dates = DataFrame.readSql(connLocalTushare, sql);
+        List<String> dates_ = DataFrameSelf.getColAsStringList(dates, "trade_date");
+        // 找到 keyInts 对应的 两个日期.  注意因为 today可能不在以上列表中, 因此 并不一定最后一个就是我们要的 keyInt2
+        List<String> keyIntsDates = new ArrayList<>();
+        int gtThanToday = -1; // 记录已经大于today 的数量
+        for (int i = 0; i < dates_.size(); i++) {
+            String dateTemp = dates_.get(i);
+            if (dateTemp.compareTo(today) > 0) {
+                gtThanToday++;
+            }
+            if (gtThanToday == keyInts.get(0)) {
+                keyIntsDates.add(dateTemp);
+                continue;
+            }
+            if (gtThanToday == keyInts.get(1)) {
+                keyIntsDates.add(dateTemp); // 天然有先后区别, 因此使用 continue和break 不会出错
+                break;
+            }
+        }
+        keyIntsDateByStockAndTodayCache.put(cacheKey, keyIntsDates);
+        return keyIntsDates;
+    }
 }
