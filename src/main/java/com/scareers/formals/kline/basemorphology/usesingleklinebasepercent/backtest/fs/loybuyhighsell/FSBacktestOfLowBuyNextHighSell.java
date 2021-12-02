@@ -200,13 +200,46 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
                 Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, tradeDate, lowBuyDate,
                         connLocalTushare);
+
                 // 开始遍历close, 得到买入点,
                 // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
                 // @key: 因此, 如果一只股票有多个买点, 则 价格是越来越低的, 不会变高!, 也不会相等
+                int lenth = closeCol.size();
+                for (int i = 0; i < lenth; i++) {
+                    // 首先, 必须 下一个tick 是 上升的, 或者 i==最后. 否则continue
+                    boolean nextTickRaise = false; // flag: 下一tick为上升
+                    if (i == lenth - 1 || closeCol.get(i) < closeCol.get(i + 1)) {
+                        nextTickRaise = true; // 最后一tick视为 符合条件, 防止越界
+                        // 或者后一>前1.
+                    }
+                    if (!nextTickRaise) {
+                        continue; // 如果下一tick 不是上升, 则 跳过, 不是买入点
+                    }
+                    int continuousFallTickCount = 0; // 连续下跌tick数量, 包括相等 !!!
+                    // 从某个点, 往前, 连续下跌的 tick 数量, 其中 0tick的连续下降视为 250,
+                    // 即开盘视为满足 连续下跌的条件, 仅仅需要对阈值进行符合判定, 即可买入
+                    if (i == 0) {
+                        continuousFallTickCount = 241; // 假定为最大, 开盘不限定
+                    } else { // 其他tick都可以得到一个 连续下跌(包括相等) tick数量
+                        for (int j = i; j > 0; j++) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
+                            if (closeCol.get(j) <= closeCol.get(j - 1)) {
+                                continuousFallTickCount++;
+                            } else {
+                                break; // 一旦不符合, 应当跳出
+                            }
+                        }
+                    }
+
+                    if (continuousFallTickCount >= continuousFallTickCountThreshold) { // 连续下跌数量必须不小于阈值设定
+                        if
+
+                    }
+
+                }
 
 
             }
-
+            return res;
 
         }
 
