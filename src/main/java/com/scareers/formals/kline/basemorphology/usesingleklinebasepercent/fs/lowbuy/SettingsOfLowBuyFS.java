@@ -95,8 +95,8 @@ public class SettingsOfLowBuyFS {
 
     );
 
-    public static String saveTablenameLowBuyFSRow = "fs_distribution_of_lowbuy_highsell_next{}b{}s";
-    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0),
+    public static String saveTablenameLowBuyFSRaw = "fs_distribution_of_lowbuy_highsell_next{}b{}s";
+    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRaw, keyInts.get(0),
             keyInts.get(1));
     public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
     public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,

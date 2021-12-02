@@ -35,7 +35,6 @@ import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
 public class PositionOfLowBuyByDistribution {
     public static final boolean showDistribution = false;
     public static List<List<Double>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
-
     public static List<List<Double>> weightsOfLowx;
     public static Double tickGap;
 

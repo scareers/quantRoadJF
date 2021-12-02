@@ -6,8 +6,11 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
+import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.StrUtil;
 import joinery.DataFrame;
@@ -122,4 +125,52 @@ public class KlineFormsApi {
         return res;
     }
 
+    public static Log log = LogFactory.get();
+
+    /**
+     * 通过keyInt得到fs分布表后, 给定 形态集合id, 返回 其  Low1, 和High1 的分布. (即tick和权重, 权重列表已经处理为 和为1标准)
+     */
+    public static void getLowBuyAndHighSellDistributionByFomsetid(Long formSetId, List<Integer> keyInts)
+            throws Exception {
+        String saveTablenameLowBuyFS = StrUtil.format(SettingsOfLowBuyFS.saveTablenameLowBuyFSRaw, keyInts.get(0),
+                keyInts.get(1)); // 分时分析结果表
+        String sql = StrUtil
+                .format("select stat_result_algorithm, tick_list, frequency_list\n" +
+                                "from {}\n" +
+                                "where form_set_id = {}\n" +
+                                "  and concrete_algorithm like '%value_percent%'\n" +
+                                "  and condition1 = 'strict'\n" +
+                                "order by stat_result_algorithm, concrete_algorithm, condition1", saveTablenameLowBuyFS,
+                        formSetId);
+        DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+        if (dataFrame.length() < 6) {
+            log.warn("记录不足6, 解析失败");
+            throw new Exception("形态集合 分时分布解析错误. ");
+        }
+        // Low1分布
+        DataFrame<Object> dfTemp = dataFrame
+                .select(row -> row.get(0).toString().equals("Low1"));
+        List<Object> tempTicks = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+        List<Double> ticksOfLow1 = new ArrayList<>(); // 1.低买tick, 有利在后
+        tempTicks.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(ticksOfLow1::add);
+        Collections.reverse(ticksOfLow1); // Low 的tick需要反转过来, 越有利的在后面. 对应的 权重也应该反转
+
+        List<Object> weightsOfLow1Temp = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+        List<Double> weightsOfLow1 = new ArrayList<>(); // 2. 低买权重标准化, 有利在后
+        weightsOfLow1Temp.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(weightsOfLow1::add);
+        Collections.reverse(weightsOfLow1);
+
+        // High1分布
+        DataFrame<Object> dfHigh = dataFrame.select(row -> row.get(0).toString().equals("High1"));
+        List<Object> tempValues0 = JSONUtil.parseArray(dfHigh.get(0, 1).toString());
+        List<Double> ticksOfHigh1 = new ArrayList<>();
+        tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(ticksOfHigh1::add);
+        //Collections.reverse(tempValues); // @noti: HighSell 不应该reverse
+        List<Object> tempWeights0 = JSONUtil.parseArray(dfHigh.get(0, 2).toString());
+        List<Double> weightsOfHigh1 = new ArrayList<>();
+        tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(weightsOfHigh1::add);
+        //Collections.reverse(tempWeights);
+
+
+    }
 }

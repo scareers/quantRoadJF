@@ -15,6 +15,7 @@ import java.util.List;
  * @date: 2021/11/14  0014-8:51
  */
 public class SettingsOfFSBacktest {
+    public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
     public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
@@ -115,7 +116,6 @@ public class SettingsOfFSBacktest {
     // 删除曾经的记录,逻辑同主程序
 
 
-
     public static final String saveTablenameStockSelectResult = StrUtil.format
             (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
                     keyInts.get(1));
@@ -141,7 +141,6 @@ public class SettingsOfFSBacktest {
         // 此时两样都不抓取, 设置错误, 报错即可
         return null;
     }
-
 
 
     /**

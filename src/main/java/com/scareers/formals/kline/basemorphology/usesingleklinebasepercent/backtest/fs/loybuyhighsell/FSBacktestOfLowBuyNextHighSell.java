@@ -112,12 +112,60 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
+        public void initDistributions() throws SQLException {
+            flushDistributionsOfLowBuy();
+        }
 
-        public static
+
+        public void flushDistributionsOfLowBuy() throws SQLException {
+            String sql = cn.hutool.core.util.StrUtil
+                    .format("select stat_result_algorithm, tick_list, frequency_list\n" +
+                            "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                            "where form_set_id = {}\n" +
+                            "  and concrete_algorithm like '%value_percent%'\n" +
+                            "  and condition1 = 'strict'\n" +
+                            "order by stat_result_algorithm, concrete_algorithm, condition1", formSetId);
+
+            DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(), sql);
+            if (dataFrame.length() < 6) {
+                log.warn("记录不足6, 解析失败");
+            }
+            List<List<Double>> valuePercentOfLowxTemp = new ArrayList<>();
+            List<List<Double>> weightsOfLowxTemp = new ArrayList<>();
+            for (int i = 1; i < 4; i++) { // Low
+                int finalI = i;
+                DataFrame<Object> dfTemp = dataFrame
+                        .select(row -> row.get(0).toString()
+                                .equals(cn.hutool.core.util.StrUtil.format("Low{}", finalI)));
+
+                List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+                List<Double> tempValues = new ArrayList<>();
+                tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
+                Collections.reverse(tempValues);
+                valuePercentOfLowxTemp.add(tempValues);
+                List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+                List<Double> tempWeights = new ArrayList<>();
+                tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
+                Collections.reverse(tempWeights);
+                weightsOfLowxTemp.add(tempWeights);
+            }
+
+            valuePercentOfLowx = valuePercentOfLowxTemp;
+            weightsOfLowx = weightsOfLowxTemp;
+            tickGap = // @noti: tick之间间隔必须固定, 在产生随机数时需要用到, todo: 对应的cdf也需要修改.
+                    Math.abs(Double.valueOf(valuePercentOfLowx.get(1).get(1).toString()) - Double
+                            .valueOf(valuePercentOfLowx.get(1).get(0).toString())); // 间隔也刷新
+        }
+
 
         Long formSetId;
         String tradeDate;
         List<String> stockSelected;
+        // new对象时, 依据 formSetId 计算出来 低买分布(权重和tick) , 高卖分布(权重和tick)
+        List<List<Double>> valuePercentOfLowx; // @key: 列表需要对我们不利的在前
+        List<List<Double>> weightsOfLowx;
+        List<List<Double>> valuePercentOfHighx; // @key: 列表需要对我们不利的在前
+        List<List<Double>> weightsOfHighx;
 
         public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected) {
             this.formSetId = formSetId;
@@ -153,8 +201,6 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
             return res;
         }
-
-
     }
 
     public static Log log = LogFactory.get();
