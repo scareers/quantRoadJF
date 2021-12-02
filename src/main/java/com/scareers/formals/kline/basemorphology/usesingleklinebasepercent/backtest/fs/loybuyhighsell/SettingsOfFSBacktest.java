@@ -16,6 +16,12 @@ import java.util.List;
  */
 public class SettingsOfFSBacktest {
     public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五
+    // 低买设定
+    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+
+
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
     public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
