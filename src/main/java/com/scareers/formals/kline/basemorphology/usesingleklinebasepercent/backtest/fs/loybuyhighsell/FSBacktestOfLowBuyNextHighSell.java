@@ -99,18 +99,14 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
-        public void initDistributions() throws Exception { // 该api负责缓存, 本初始化不负责.
-            List<List<Double>> res = getLowBuyAndHighSellDistributionByFomsetid(formSetId, keyInts);
-            ticksOfLow1 = res.get(0);
-            weightsOfLow1 = res.get(1);
-            ticksOfHigh1 = res.get(2);
-            weightsOfHigh1 = res.get(3);
-        }
 
 
         Long formSetId;
         String tradeDate;
         List<String> stockSelected;
+
+        int totalAssets;
+
         // new对象时, 依据 formSetId 计算出来 低买分布(权重和tick) , 高卖分布(权重和tick)
         List<Double> ticksOfLow1;
         List<Double> weightsOfLow1;
@@ -121,11 +117,32 @@ public class FSBacktestOfLowBuyNextHighSell {
             this.formSetId = formSetId;
             this.tradeDate = tradeDate;
             this.stockSelected = stockSelected;
-            initDistributions(); // 给定了formSetId, 就能初始化两大分布(四个列表) 了
+
+            totalAssets = stockSelected.size();
+            initDistributions(); // 给定了formSetId, 初始化两大分布(四个列表)
         }
+
+        public void initDistributions() throws Exception {
+            // 该api负责缓存, 本初始化方法不负责. 缓存已经针对 keyInts, 放心调用
+            List<List<Double>> res = getLowBuyAndHighSellDistributionByFomsetid(formSetId, keyInts);
+            ticksOfLow1 = res.get(0);
+            weightsOfLow1 = res.get(1);
+            ticksOfHigh1 = res.get(2);
+            weightsOfHigh1 = res.get(3);
+        }
+
 
         @Override
         public Void call() {
+            // 单个形态集合, 某一天, 以及被选择的 股票列表,
+            // 现在开始, 对 单只股票尝试 明日低买, 后日高卖,或平卖, 保存相关结果
+            if (totalAssets == 0) {
+                return null; // 无选中则pass
+            }
+            for (String stock : stockSelected) {
+
+
+            }
 
 
             return null;
