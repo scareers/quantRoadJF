@@ -15,10 +15,52 @@ import java.util.List;
  * @date: 2021/11/14  0014-8:51
  */
 public class SettingsOfFSBacktest {
+    public static final List<Integer> keyInts = Arrays.asList(0, 1);
+    public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
+    public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
+    public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
+    public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
+            keyInts.get(1));
+    public static String sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate(); // todo: 保存表需要重写
+    public static String sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
+            saveTablenameFSBacktest);
+
+    public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
+    public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
+            saveTablenameFSBacktest);
+
+    public static final List<List<String>> dateRanges = Arrays.asList(
+            // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
+//            Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
+//            Arrays.asList("20031113", "20040407"), // 短暂快牛
+//            Arrays.asList("20040407", "20050603"), // 长熊市后半触底
+//
+//            Arrays.asList("20050603", "20060807"), // 牛市前段小牛
+//            Arrays.asList("20060807", "20071017"), // 超级牛市主升  10/16到6124
+//            Arrays.asList("20071017", "20081028"), // 超级熊市
+//
+//            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
+//            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
+//            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
+
+//            Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
+//            Arrays.asList("20150615", "20160128"), // 大熊市, 含救市的明显回升后, 暴跌到底
+//
+//            Arrays.asList("20160128", "20170116"), // 2年小长牛 -- 前段, 结尾下跌
+//            Arrays.asList("20170116", "20180129"), // 2年小长牛 -- 后段
+//            Arrays.asList("20180129", "20190104"), // 1年快速熊市
+//
+//            Arrays.asList("20190104", "20200203") // 1年中低位大幅振荡, 先升.
+//            Arrays.asList("20200203", "20210218"), // 开年暴跌后, 明显牛市到顶
+            Arrays.asList("20210218", "21000101") // 顶部下跌后平稳年, 尝试突破未果;;@current 2021/10/11, 到未来
+
+    );
+
+
     // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
     // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
     // 核心设置, 只需要更改次设定即可. 表示 访问哪一个 next{}b{}s_ .. 表进行分时分析
-    public static final List<Integer> keyInts = Arrays.asList(0, 1);
+
     // 核心设定项2, 是否(并列)计算 HighSell,否则值计算LowBuy
     // @noti: 当只计算LowBuy, cpu能跑满100%, 同时计算HighSell时, CPU跑到70%. 16线程情况下; 原因未知. 可能因为fs缓存生效?加大线程数量到64.
     public static final boolean parallelComputingLowBuy = false; // 是否计算lowbuy
@@ -36,8 +78,7 @@ public class SettingsOfFSBacktest {
     public static final boolean showMemoryUsage = true;
     public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
             Double.class, Double.class, Double.class};
-    public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
-    public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
+
 
     // 在 分析函数已经手动设定. 对这些参数不在显式设定, 见 analyzeStatsResults()
     //    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
@@ -68,42 +109,11 @@ public class SettingsOfFSBacktest {
 
     // 分时数据时, 仅访问close, 不访问多余字段,加速
     public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close", "amount");
-    public static final List<List<String>> dateRanges = Arrays.asList(
-            // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
-//            Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
-//            Arrays.asList("20031113", "20040407"), // 短暂快牛
-//            Arrays.asList("20040407", "20050603"), // 长熊市后半触底
-//
-//            Arrays.asList("20050603", "20060807"), // 牛市前段小牛
-//            Arrays.asList("20060807", "20071017"), // 超级牛市主升  10/16到6124
-//            Arrays.asList("20071017", "20081028"), // 超级熊市
-//
-//            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
-//            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
-//            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
 
-            Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
-            Arrays.asList("20150615", "20160128"), // 大熊市, 含救市的明显回升后, 暴跌到底
 
-            Arrays.asList("20160128", "20170116"), // 2年小长牛 -- 前段, 结尾下跌
-            Arrays.asList("20170116", "20180129"), // 2年小长牛 -- 后段
-            Arrays.asList("20180129", "20190104"), // 1年快速熊市
-
-            Arrays.asList("20190104", "20200203") // 1年中低位大幅振荡, 先升.
-//            Arrays.asList("20200203", "20210218") // 开年暴跌后, 明显牛市到顶
-//            Arrays.asList("20210218", "21000101") // 顶部下跌后平稳年, 尝试突破未果;;@current 2021/10/11, 到未来
-
-    );
-
-    public static String saveTablenameLowBuyFSRow = "fs_distribution_of_lowbuy_highsell_next{}b{}s";
-    public static String saveTablenameLowBuyFS = StrUtil.format(saveTablenameLowBuyFSRow, keyInts.get(0),
-            keyInts.get(1));
-    public static String sqlCreateSaveTableFSDistributionRaw = getSaveTableTemplate();
-    public static String sqlCreateSaveTableFSDistribution = StrUtil.format(sqlCreateSaveTableFSDistributionRaw,
-            saveTablenameLowBuyFS);
     // 删除曾经的记录,逻辑同主程序
-    public static final String sqlDeleteExistDateRangeRawFSRaw = "delete from {} where stat_date_range=\'{}\'";
-    public static final String sqlDeleteExistDateRangeRawFS = buildFullDeleteSql(sqlDeleteExistDateRangeRawFSRaw);
+
+
 
     public static final String saveTablenameStockSelectResult = StrUtil.format
             (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
@@ -131,8 +141,7 @@ public class SettingsOfFSBacktest {
         return null;
     }
 
-    public static String sqlDeleteExistDateRangeFS = StrUtil.format(sqlDeleteExistDateRangeRawFS,
-            saveTablenameLowBuyFS);
+
 
     /**
      * [暂时的字段列表
@@ -257,7 +266,7 @@ public class SettingsOfFSBacktest {
                 "     INDEX effective_counts_index (effective_counts ASC)\n" +
                 ")\n" +
                 "    comment '分时 低买高卖 最低点最高点分布分析';\n";
-        return s;
+        return null;
     }
 
     public static String getSqlCreateStockSelectResultSaveTableTemplate() {

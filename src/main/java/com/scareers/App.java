@@ -16,6 +16,7 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 
 /**
  * Hello world!
@@ -51,28 +52,7 @@ public class App {
 //        Robot robot = new Robot();
 //        robot.setSourcePath(App.class);
 
-        List<String> x = new ArrayList<>();
-        for (int i = 0; i < 128; i++) {
-            x.add("key___________" + i);
-        }
-
-        HashSet<String> y = new HashSet<>();
-        for (int i = 0; i < 2580; i++) {
-            y.add("key___________" + RandomUtil.randomInt(10000));
-        }
-
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
-        for (int i = 0; i < 10000; i++) {
-            isIntersectOfSet(x, y);
-        }
-
-        Console.log(timer.intervalRestart());
-        for (int i = 0; i < 10000; i++) {
-            isIntersectOfSetUseStream(x, y);
-        }
-
-        Console.log(timer.intervalRestart());
+        //reportCpuMemoryDiskSubThread(true);
 
         //        List<String> x = Arrays.asList("abc", "xyz");
 

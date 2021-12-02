@@ -1,8 +1,12 @@
 package com.scareers.utils;
 
+import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.scareers.settings.SettingsCommon;
+import lombok.SneakyThrows;
 import org.apache.commons.beanutils.BeanUtils;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
@@ -37,6 +41,28 @@ public class HardwareUtils {
         res += getMemInfoAsString(showInStdout);
         res += getDiskInfoAsJsonString(showInStdout);
         return res;
+    }
+
+    public static void reportCpuMemoryDiskSubThread(boolean showInStdout) throws InterruptedException {
+        Thread thread = new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    String hardwareInfo = reportCpuMemoryDisk(showInStdout);
+                    try {
+                        MailUtil.send(SettingsCommon.receivers, "硬件信息线程播报: (10分钟/次)",
+                                StrUtil.format("当前时间: {}, 硬件信息:{}\n", LocalDateTimeUtil.now().toString(), hardwareInfo),
+                                false,
+                                null);
+                    } catch (Exception e) {
+                        e.printStackTrace(); // 防止断网
+                    }
+                    Thread.sleep(1000 * 60 * 10);
+                }
+            }
+        });
+        thread.start();
     }
 
     public static String getDiskInfoAsJsonString(boolean showInStdout) {

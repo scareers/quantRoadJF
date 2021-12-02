@@ -30,6 +30,7 @@ import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTu
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -54,54 +55,32 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
-        List<String> stocks = TushareApi.getStockListFromTushareExNotMain();
-        stocks = stocks.subList(0, Math.min(stockAmountsBeCalcFS, stocks.size()));
-        DataFrame<String> stockWithBoard = TushareApi.getStockListWithBoardFromTushare();
-        List<List<String>> dateRanges = SettingsOfFSBacktest.dateRanges;
-        HashMap<String, List<List<String>>> stockWithStDateRanges = TushareApi.getStockWithStDateRanges();
-
-        // 连接对象并不放在设置类
-        Connection connSingleton = ConnectionFactory.getConnLocalKlineForms();
+        // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        execSql(SettingsOfFSBacktest.sqlCreateSaveTableFSDistribution, //建表分时分析
-                connSingleton, false);
-        execSql(sqlCreateStockSelectResult,  // 建表选股结果
-                connSingleton, false);
+        reportCpuMemoryDiskSubThread(true); // 播报硬件信息
+        execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
+                connOfKlineForms, false);
+
         for (List<String> statDateRange : dateRanges) {
-            // 测试时用最新一个日期区间即可
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             execSql(
-                    StrUtil.format(SettingsOfFSBacktest.sqlDeleteExistDateRangeFS,
+                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
                             StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
-                    connSingleton, false);
+                    connOfKlineForms, false);
             // 主逻辑.
-            // 主程序分析计算的几个参数用不到, 删除即可
-            // 主程序使用 windowUsePeriodsCoreArg=7/8/9/10,
-            // FS分析为了更加直观, 修改为 keyInt设定. 0代表next0, 即明日, 对应了主程序中的 7
-            fsLowBuyDistributionDetailAnalyze(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
-                    saveTablenameLowBuyFS, keyInts.get(0));
-
-            String hardwareInfo = reportCpuMemoryDisk(true);
-            try {
-                MailUtil.send(SettingsCommon.receivers, StrUtil.format("LowBuy部分完成: {}", statDateRange),
-                        StrUtil.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
-                        null);
-            } catch (Exception e) {
-                e.printStackTrace(); // 防止断网
-            }
+            fsLowBuyHighSellBacktestV1(statDateRange);
             log.info("current time");
         }
     }
 
-    // 核心逻辑: next0 low 分时分布详细分析
-    private static void fsLowBuyDistributionDetailAnalyze(List<String> stocks,
-                                                          HashMap<String, List<List<String>>> stockWithStDateRanges,
-                                                          DataFrame<String> stockWithBoard, List<String> statDateRange,
-                                                          String saveTablenameLowBuyFS, int keyInt)
+    // 核心逻辑: 回测逻辑
+    private static void fsLowBuyHighSellBacktestV1(List<String> statDateRange)
             throws SQLException, ExecutionException, InterruptedException {
         // --------------------------------------------- 解析
-        Console.log("构建结果字典");
+        Console.log("开始回测区间: {}", statDateRange);
+
+
         // 形态集合id__计算项: 值列表.
         ConcurrentHashMap<String, List<Double>> results = new ConcurrentHashMap<>(8);
         ThreadPoolExecutor poolOfParse = new ThreadPoolExecutor(processAmountParse,
