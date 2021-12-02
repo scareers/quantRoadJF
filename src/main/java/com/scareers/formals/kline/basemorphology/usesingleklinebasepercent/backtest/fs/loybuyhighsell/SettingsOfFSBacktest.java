@@ -70,17 +70,17 @@ public class SettingsOfFSBacktest {
     public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close", "amount");
     public static final List<List<String>> dateRanges = Arrays.asList(
             // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
-            Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
-            Arrays.asList("20031113", "20040407"), // 短暂快牛
-            Arrays.asList("20040407", "20050603"), // 长熊市后半触底
-
-            Arrays.asList("20050603", "20060807"), // 牛市前段小牛
-            Arrays.asList("20060807", "20071017"), // 超级牛市主升  10/16到6124
-            Arrays.asList("20071017", "20081028"), // 超级熊市
-
-            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
-            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
-            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
+//            Arrays.asList("20020129", "20031113"), // 5年熊市前半 3次触底大震荡
+//            Arrays.asList("20031113", "20040407"), // 短暂快牛
+//            Arrays.asList("20040407", "20050603"), // 长熊市后半触底
+//
+//            Arrays.asList("20050603", "20060807"), // 牛市前段小牛
+//            Arrays.asList("20060807", "20071017"), // 超级牛市主升  10/16到6124
+//            Arrays.asList("20071017", "20081028"), // 超级熊市
+//
+//            Arrays.asList("20081028", "20090804"), // 触底大幅反弹
+//            Arrays.asList("20090804", "20111011"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 大幅振荡含凹坑
+//            Arrays.asList("20111011", "20140721"), // 5年大幅振荡长熊市, 含后期底部平稳 -- 小幅长久下跌
 
             Arrays.asList("20140721", "20150615"), // 大牛市  6/12到 5178, 周1暴跌
             Arrays.asList("20150615", "20160128"), // 大熊市, 含救市的明显回升后, 暴跌到底
@@ -275,6 +275,4 @@ public class SettingsOfFSBacktest {
                 "    comment '选股结果: 日期-股票-所属形态集合id列表';\n";
         return s;
     }
-
-
 }
