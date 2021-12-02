@@ -196,20 +196,6 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             }
 
-            for (String stock : stockSelected) {
-                // 首先需要找到 keyInts 对应的 低买 高卖, 两个日期,
-                // 给定 stock, today, keyInts, 返回2个日期字符串. TushareApi
-                List<String> keyIntsDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts);
-                String loyBuyDate = keyIntsDate.get(0);
-                String highSellDate = keyIntsDate.get(1); // 得到买卖日期
-
-                // 开始低买, 单只股票, 参考 模拟程序. 低买逻辑基本一样, 这里简化, 分布仅使用Low1. 且 真实的买入点, 并非随机数产生买入点
-                //List<Object> res = mainOfLowBuyCore();
-
-
-            }
-
-
             return null;
         }
 
