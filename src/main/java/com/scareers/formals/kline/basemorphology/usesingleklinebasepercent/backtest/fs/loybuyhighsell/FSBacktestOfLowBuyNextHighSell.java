@@ -172,11 +172,18 @@ public class FSBacktestOfLowBuyNextHighSell {
         }
 
         /**
-         * 获取所有股票 买点列表.  key:value --> 股票:买点列表           买点: [时间Double分时, 价格]
+         * 获取所有股票 买点列表.  key:value --> 股票:买点列表           买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
+         * // @key: 买入点逻辑: 必须<某个临界值, 且 连续下跌, 下一tick上涨. 买入价格为 最低点和下一tick的平均值
+         * // @key: 但是, cdf 应该按照最低点 计算, 因此买点也保存了 那个局部最低点价格
          *
          * @return
          */
         HashMap<String, List<List<Double>>> getStockLowBuyPointsMap() {
+            HashMap<String, List<List<Double>>> res = new HashMap<>();
+            for (String stock : stockSelected) {
+
+            }
+
 
         }
 
