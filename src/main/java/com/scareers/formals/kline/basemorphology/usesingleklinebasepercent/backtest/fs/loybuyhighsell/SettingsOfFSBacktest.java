@@ -29,11 +29,12 @@ public class SettingsOfFSBacktest {
     public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
     public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
             saveTablenameFSBacktest);
-    public static final int processAmountOfBacktest = 16;
+    public static final int processAmountOfBacktest = 1;
 
     // 低买设定
     public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要
     public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
+    // @noti: 这些限制设定, 应当 / totalAsserts, 才能等价
     public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static int continuousFallTickCountThreshold = 1; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
@@ -129,6 +130,6 @@ public class SettingsOfFSBacktest {
                 "     INDEX lbhs_weighted_profit_conservative_index (lbhs_weighted_profit_conservative ASC)\n" +
                 ")\n" +
                 "    comment '分时 低买高卖 回测结果保存表';\n";
-        return null;
+        return s;
     }
 }

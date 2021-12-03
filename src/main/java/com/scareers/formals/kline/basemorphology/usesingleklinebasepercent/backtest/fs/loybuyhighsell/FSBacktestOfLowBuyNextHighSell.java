@@ -54,7 +54,7 @@ public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        reportCpuMemoryDiskSubThread(true); // 播报硬件信息
+        //reportCpuMemoryDiskSubThread(false); // 播报硬件信息
         execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
                 connOfKlineForms, false);
 
@@ -227,6 +227,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 这两项是低买原始结论.
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
                     .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
+            Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
             dfLowBuyHighSell.add("lb_position_price_map",
                     Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
@@ -375,6 +376,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     stockWithTotalPositionAndAdaptedPriceLowBuy.entrySet().stream()
                             .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
+
+            Console.log(stockHasPosition);
             List<Object> highSellPointsRes =
                     getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPriceLowBuy, stockHasPosition);
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
@@ -419,8 +422,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double lowBuyPositionTotal = stockWithTotalPositionAndAdaptedPriceLowBuy.get(stock).get(0);
                     Double epochTotalPosition =
                             positionCalcKeyArgsOfCdfHighSell * cdfOfPoint * lowBuyPositionTotal;  // 这里应该以 低买总持仓作为基数
-                    if (epochTotalPosition > lowBuyPositionTotal) { // 设置高卖上限, 为低买总持仓,
-                        epochTotalPosition = lowBuyPositionTotal; // 上限
+                    if (epochTotalPosition > lowBuyPositionTotal / totalAssets) { // 设置高卖上限, 为低买总持仓,
+                        epochTotalPosition = lowBuyPositionTotal / totalAssets; // 上限
                     }
 
                     List<Double> oldStockWithPositionAndPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
@@ -608,7 +611,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     if (i == 0) {
                         continuousRaiseTickCount = 241; // 假定为最大, 开盘不限定
                     } else { // 其他tick都可以得到一个 连续下跌(包括相等) tick数量
-                        for (int j = i; j > 0; j++) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
+                        for (int j = i; j > 0; j--) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
                             if (closeCol.get(j) >= closeCol.get(j - 1)) {
                                 continuousRaiseTickCount++;
                             } else {
@@ -641,7 +644,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // @key: 已经得到 单只股票 所有买点列表 [时间, high价格百分比, 卖出价格百分比]: sellPoints 计算完毕, 可以是空列表
                 res.put(stock, sellPoints);
             }
-
             List<Object> sellRes = new ArrayList<>();
             sellRes.add(res); // 卖点列表  HashMap<String, List<SellPoint>>
             sellRes.add(resOfSellOpenAndClose); // 开盘价和收盘价  HashMap<String, List<Double>>
@@ -696,8 +698,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice);
                     // @key2: 本轮后总仓位;  @noti: 已经将总仓位标准化为 1!!, 因此后面计算总仓位, 不需要 /资产数量
                     Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / totalAssets; // 加大标准仓位,倍率设定1
-                    if (epochTotalPosition > positionUpperLimit) { // 设置上限控制标准差.
-                        epochTotalPosition = positionUpperLimit; // 上限
+                    if (epochTotalPosition > positionUpperLimit / totalAssets) { // 设置上限控制标准差.
+                        epochTotalPosition = positionUpperLimit / totalAssets; // 上限
                     }
 
                     Double oldPositionTemp = stockWithTotalPositionAndAdaptedPrice.get(stock).get(0); // 老总仓位.
@@ -831,7 +833,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     if (i == 0) {
                         continuousFallTickCount = 241; // 假定为最大, 开盘不限定
                     } else { // 其他tick都可以得到一个 连续下跌(包括相等) tick数量
-                        for (int j = i; j > 0; j++) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
+                        for (int j = i; j > 0; j--) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
                             if (closeCol.get(j) <= closeCol.get(j - 1)) {
                                 continuousFallTickCount++;
                             } else {
