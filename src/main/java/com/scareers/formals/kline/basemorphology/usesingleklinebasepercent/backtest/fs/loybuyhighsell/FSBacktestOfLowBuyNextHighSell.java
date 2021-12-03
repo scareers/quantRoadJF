@@ -204,7 +204,21 @@ public class FSBacktestOfLowBuyNextHighSell {
                 return Arrays.asList(timeTick, highPricePercent, sellPricePercent);
             }
         }
+        /**
+         * [暂时的字段列表
+         */
+        public static String getSaveTableTemplate() {
+            String s = "create table if not exists `{}`\n" +
+                    "(\n" +
+                    "    id int auto_increment comment 'id'\n" + " primary key,\n" +
+                    "    form_set_id  int  not null comment '形态集合id, 对应next0b1s_of_single_kline 的id列,不能为空'," +
+                    "    trade_date  varchar(1024) null comment '交易日期, 对应 回测时today含义'," +
 
+                    "    stat_date_range   varchar(1024) null comment '该条记录的 统计日期区间',\n" +
+                    ")\n" +
+                    "    comment '分时 低买高卖 回测结果保存表';\n";
+            return null;
+        }
 
         @Override
         public Void call() throws Exception {
@@ -218,7 +232,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 0.首先, 一些基本字段需要保存.
             dfLowBuyHighSell.add("form_set_id", Arrays.asList(formSetId));
             dfLowBuyHighSell.add("trade_date", Arrays.asList(tradeDate));
-            dfLowBuyHighSell.add("stocks_selected", Arrays.asList(stockSelected));
+            dfLowBuyHighSell.add("stocks_selected", Arrays.asList(JSONUtil.toJsonStr(stockSelected)));
+            dfLowBuyHighSell.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(backtestDateRange)));
             dfLowBuyHighSell.add("stock_selected_count", Arrays.asList(totalAssets));
 
             // 低买开始 ********
