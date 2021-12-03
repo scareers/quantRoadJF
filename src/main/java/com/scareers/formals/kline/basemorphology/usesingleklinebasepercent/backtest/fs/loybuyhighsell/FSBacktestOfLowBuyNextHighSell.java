@@ -203,7 +203,6 @@ public class FSBacktestOfLowBuyNextHighSell {
         }
 
 
-
         @Override
         public Void call() throws Exception {
             // 单个形态集合, 某一天, 以及被选择的 股票列表,
