@@ -19,6 +19,7 @@ import java.util.concurrent.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
+import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
 import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
@@ -184,6 +185,13 @@ public class FSBacktestOfLowBuyNextHighSell {
             // @key: 开始模拟买入,  tick 从  0.0 --> 240.0   ; 在同一分钟, 都有买点的股票, 就无视先后顺序了, 随 Map 的缘
             ArrayList<Double> timeTicks = new ArrayList<>(buyPointsOfAllTick.keySet());
             timeTicks.sort(Comparator.naturalOrder()); // 已经排序. 买点可能很难分布与 240个tick都有, 所以
+
+            // @key: 结果项
+            // 股票和对应总仓位, 初始0
+
+            // 股票和对应总仓位和折算价格
+            HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = new HashMap<>();
+
             for (Double tick : timeTicks) {
                 HashMap<String, BuyPoint> buyPointsMap = buyPointsOfAllTick.get(tick);
                 if (buyPointsMap == null || buyPointsMap.size() == 0) {
@@ -192,6 +200,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                 }
                 // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
                 for (String stock : buyPointsMap.keySet()) {
+                    stockWithTotalPositionAndAdaptedPrice.putIfAbsent(stock, new ArrayList<>(Arrays.asList(0.0, 0.0)));
+
                     BuyPoint singleBuyPoint = buyPointsMap.get(stock);
                     // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
                     Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
@@ -201,66 +211,73 @@ public class FSBacktestOfLowBuyNextHighSell {
                         continue; // 必须小于等于阈值
                     }
 
-                    // 此值以及对应权重应当被保存
-
-                    List<Double> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
-                    List<Double> weightsOfLow = weightsOfLowx.get(lowx - 1);
-                    if (forceFirstDistributionDecidePosition) {
-                        valuePercentOfLow = valuePercentOfLowx.get(0);
-                        weightsOfLow = weightsOfLowx.get(0);
-                    }
-                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, buyPrice);
-
-                    // @key2: 本轮后总仓位
-                    Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint; // 因两两配对, 因此这里仓位使用 2作为基数. 且为该股票总仓位
-                    if (epochTotalPosition > positionUpperLimit) {
+                    // cdf使用low 计算.  价格使用buyPrice计算
+                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice);
+                    // @key2: 本轮后总仓位;  @noti: 已经将总仓位标准化为 1!!, 因此后面计算总仓位, 不需要 /资产数量
+                    Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / totalAssets; // 加大标准仓位,倍率设定1
+                    if (epochTotalPosition > positionUpperLimit) { // 设置上限控制标准差.
                         epochTotalPosition = positionUpperLimit; // 上限
                     }
 
-                    Double oldPositionTemp = stockWithPosition.get(id);
-                    List<Double> oldStockWithPositionAndValue = stockWithActualValueAndPosition.get(id); // 默认0,0, 已经折算
-                    if (oldPositionTemp < epochTotalPosition) {
-                        stockWithPosition.put(id, epochTotalPosition); // 必须新的总仓位, 大于此前轮次总仓位, 才需要修改!!
+                    Double oldPositionTemp = stockWithTotalPositionAndAdaptedPrice.get(stock).get(0); // 老总仓位.
+                    List<Double> oldStockWithPositionAndPrice = stockWithTotalPositionAndAdaptedPrice
+                            .get(stock); // 默认0,0, 已经折算
+                    if (oldPositionTemp < epochTotalPosition) { // 新的买点机制, 此 boolean 基本永恒 true
                         // 此时需要对 仓位和均成本进行折算. 新的一部分, 价格为 actualValue, 总仓位 epochTotalPosition.
                         // 旧的一部分, 价格 stockWithPositionAndValue.get(1), 旧总仓位 stockWithPositionAndValue.get(0)
                         // 单步折算.
                         Double weightedPrice =
-                                (oldStockWithPositionAndValue
-                                        .get(0) / epochTotalPosition) * oldStockWithPositionAndValue
-                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndValue
+                                (oldStockWithPositionAndPrice
+                                        .get(0) / epochTotalPosition) * oldStockWithPositionAndPrice
+                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice
                                         .get(0) / epochTotalPosition);
-                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
+                        stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
+                                weightedPrice));
                     }
                     // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
-                    Double sum = sumOfListNumberUseLoop(new ArrayList<>(stockWithPosition.values()));
-                    if (sum > totalAssets) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好30, 并立即返回
-                        Double newPosition = epochTotalPosition - (sum - totalAssets);
-                        stockWithPosition.put(id, newPosition); // 修改仓位
+                    Double sum =
+                            stockWithTotalPositionAndAdaptedPrice.values().stream().mapToDouble(value -> value.get(0))
+                                    .sum(); // 直接使用流计算总和,
+//                    Double sum = sumOfListNumberUseLoop(
+//                            new ArrayList<>(stockWithTotalPositionAndAdaptedPrice.values()));
+                    if (sum > 1.0) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好1, 并立即返回
+                        // 低买使用总资产.
+                        Double newPosition = epochTotalPosition - (sum - 1.0);
                         // 折算权重也需要修正.
-                        Double weightedPrice =
-                                (oldStockWithPositionAndValue.get(0) / newPosition) * oldStockWithPositionAndValue
-                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndValue.get(0) / newPosition);
-                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
+                        Double weightedPrice = // 这个老旧 仓位和价格, 是保存着的曾经. 直接用 . 新的总仓位直接用即可
+                                (oldStockWithPositionAndPrice.get(0) / newPosition) * oldStockWithPositionAndPrice
+                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
+                        stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
+                                weightedPrice));
 
-                        reachTotalLimitInLoop = true;
-                        List<Object> res = new ArrayList<>();
-                        res.add(stockWithPosition);
-                        if (showStockWithPosition) {
-                            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
-                        }
-                        res.add(reachTotalLimitInLoop);
-                        res.add(epoch + 1);
-                        res.add(stockWithActualValueAndPosition);
-                        Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
-                        res.add(weightedGlobalPrice);
-                        return res;
                     }
 
                 }
 
             }
-
+            List<Object> lowBuyResults = new ArrayList<>();
+            HashMap<String, Double> stockWithPosition = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
+            HashMap<String, Double> stockWithBuyPrice = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
+            for (String stock : stockWithTotalPositionAndAdaptedPrice.keySet()) {
+                List<Double> temp = stockWithTotalPositionAndAdaptedPrice.get(stock);
+                stockWithPosition.put(stock, temp.get(0));
+                stockWithBuyPrice.put(stock, temp.get(1));
+            }
+            lowBuyResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]}
+            lowBuyResults.add(stockWithPosition); // 1.{股票: 总仓位}
+            lowBuyResults.add(stockWithBuyPrice); // 2.{股票: 折算买入成本价}
+            Double weightedGlobalPrice = BacktestTaskOfPerDay
+                    .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
+            lowBuyResults.add(weightedGlobalPrice); // 3.全局折算加权 买入价格
             return null;
+        }
+
+        public static Double calcWeightedGlobalPrice(HashMap<String, List<Double>> stockWithActualValueAndPosition) {
+            Double res = 0.0;
+            for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
+                res += positionAndPrice.get(0) * positionAndPrice.get(1);
+            }
+            return res;
         }
 
         private HashMap<Double, HashMap<String, BuyPoint>> convertToTickWithStockBuys(

@@ -221,7 +221,8 @@ public class PositionOfLowBuyByDistribution {
                     Double weightedPrice =
                             (oldStockWithPositionAndValue.get(0) / newPosition) * oldStockWithPositionAndValue
                                     .get(1) + actualValue * (1 - oldStockWithPositionAndValue.get(0) / newPosition);
-                    stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
+                    stockWithActualValueAndPosition.put(id, Arrays.asList(newPosition, weightedPrice));
+                    // @bugfix: 这里原来写成了 epochTotalPosition, 将导致实际总仓位变大一些, 虽然结果似乎相差不大
 
                     reachTotalLimitInLoop = true;
                     List<Object> res = new ArrayList<>();
