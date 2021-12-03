@@ -111,8 +111,22 @@ public class SettingsOfFSBacktest {
                 "    hs_discount_all_profit   double null comment '高卖全部折算, 加权盈利',\n" +
                 "    hs_success_global_percent   double null comment '@key:高卖成功总仓位 占比 低买成功总仓位.',\n" +
                 "    lbhs_weighted_profit_conservative   double null comment '@key:低买高卖一次操作保守折算收益率.',\n" +
+                "    self_notes                         varchar(2048) null comment '其他备注',\n" +
 
-
+                "     INDEX form_set_id_index (form_set_id ASC),\n" +
+                "     INDEX trade_date_index (trade_date ASC),\n" +
+                "     INDEX stat_date_range_index (stat_date_range ASC),\n" +
+                "     INDEX stock_selected_count_index (stock_selected_count ASC),\n" +
+                "     INDEX lb_full_position_time_tick_index (lb_full_position_time_tick ASC),\n" +
+                "     INDEX lb_weighted_buy_price_index (lb_weighted_buy_price ASC),\n" +
+                "     INDEX lb_global_position_sum_index (lb_global_position_sum ASC),\n" +
+                "     INDEX lb_has_position_stock_count_index (lb_has_position_stock_count ASC),\n" +
+                "     INDEX hs_success_global_price_index (hs_success_global_price ASC),\n" +
+                "     INDEX hs_discount_all_global_price_index (hs_discount_all_global_price ASC),\n" +
+                "     INDEX hs_success_profit_index (hs_success_profit ASC),\n" +
+                "     INDEX hs_discount_all_profit_index (hs_discount_all_profit ASC),\n" +
+                "     INDEX hs_success_global_percent_index (hs_success_global_percent ASC),\n" +
+                "     INDEX lbhs_weighted_profit_conservative_index (lbhs_weighted_profit_conservative ASC)\n" +
                 ")\n" +
                 "    comment '分时 低买高卖 回测结果保存表';\n";
         return null;
