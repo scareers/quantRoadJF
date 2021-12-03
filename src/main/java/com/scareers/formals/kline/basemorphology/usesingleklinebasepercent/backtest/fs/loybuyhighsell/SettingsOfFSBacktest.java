@@ -84,11 +84,37 @@ public class SettingsOfFSBacktest {
         String s = "create table if not exists `{}`\n" +
                 "(\n" +
                 "    id int auto_increment comment 'id'\n" + " primary key,\n" +
-                "    form_set_id  int  not null comment '形态集合id, 对应 " + "next0b1s_of_single_kline 的id列,不能为空'," +
+                "    form_set_id  int  not null comment '形态集合id, 对应next0b1s_of_single_kline 的id列,不能为空'," +
+                "    trade_date  varchar(1024) null comment '交易日期, 对应 回测时today含义',\n" +
+                "    stocks_selected   longtext null comment '被选中股票列表',\n" +
+                "    stat_date_range   varchar(1024) null comment '回测日期区间',\n" +
+                "    stock_selected_count   double null comment '初始被选中股票数量',\n" +
 
-                "    stat_date_range   varchar(1024) null comment '该条记录的 统计日期区间',\n" +
+                "    lb_position_price_map   longtext null comment '股票的 仓位,折算价格  字典保存',\n" +
+                "    lb_full_position_time_tick   double null comment '低买达到满仓的时间',\n" +
+                "    lb_buypoints   longtext null comment '买点',\n" +
+                "    lb_weighted_buy_price   double null comment '低买全局折算价格',\n" +
+                "    lb_global_position_sum   double null comment '低买总仓位, 目标是尽量靠近1',\n" +
+                "    lb_has_position_stock_count   int null comment '低买有仓位的股票数量',\n" +
+
+                "    lb_positions   longtext null comment '低买后持仓状况',\n" +
+                "    hs_success_position_price   longtext null comment '高卖成功部分  仓位+价格',\n" +
+                "    hs_open_close   longtext null comment '高卖日 开盘价和收盘价格',\n" +
+                "    hs_sellpoints   longtext null comment '高卖点',\n" +
+                "    hs_remain_positions   longtext null comment '高卖未能成功剩余部分仓位',\n" +
+                "    hs_discount_all_position_price   longtext null comment '高卖全部收盘折算后, 仓位和价格',\n" +
+                "    hs_success_global_price   double null comment '高卖成功部分, 折算价格',\n" +
+                "    hs_discount_all_global_price   double null comment '高卖全部折算, 折算价格',\n" +
+                "    hs_success_position_profit   longtext null comment '高卖只计算成功部分,仓位+低买高卖操作收益',\n" +
+                "    hs_success_profit   double null comment '高卖只计算成功部分, 加权盈利',\n" +
+                "    hs_discount_all_position_profit   longtext null comment '高卖全部折算,仓位+低买高卖操作收益',\n" +
+                "    hs_discount_all_profit   double null comment '高卖全部折算, 加权盈利',\n" +
+                "    hs_success_global_percent   double null comment '@key:高卖成功总仓位 占比 低买成功总仓位.',\n" +
+                "    lbhs_weighted_profit_conservative   double null comment '@key:低买高卖一次操作保守折算收益率.',\n" +
+
+
                 ")\n" +
-                "    comment '分时 低买高卖 最低点最高点分布分析';\n";
+                "    comment '分时 低买高卖 回测结果保存表';\n";
         return null;
     }
 }
