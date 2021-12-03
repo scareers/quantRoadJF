@@ -460,7 +460,7 @@ public class PositionOfHighSellByDistribution {
     private static HashMap<Integer, List<Double>> discountSuccessHighSellAndRemaining(
             HashMap<Integer, Double> stockWithPositionRemaining,
             HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPosition,
-            Double discountRemaingRate) {
+            Double discountRemaingPrice) {
         HashMap<Integer, List<Double>> res = new HashMap<>();
         for (Integer key : stockWithPositionRemaining.keySet()) {
             Double remainPosition = stockWithPositionRemaining.get(key);
@@ -468,7 +468,7 @@ public class PositionOfHighSellByDistribution {
             Double successSellPrice = stockWithHighSellActualValueAndPosition.get(key).get(1);
             Double totalPosition = remainPosition + successSellPosition;
             Double discountedPrice =
-                    remainPosition / totalPosition * discountRemaingRate +
+                    remainPosition / totalPosition * discountRemaingPrice +
                             successSellPosition / totalPosition * successSellPrice; // 简单加权
             if (discountedPrice.equals(Double.NaN)) {
                 discountedPrice = 0.0;

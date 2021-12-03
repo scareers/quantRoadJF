@@ -181,23 +181,15 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 2. lb_full_position_time_tick  满仓时间
             HashMap<String, List<BuyPoint>> stockLowBuyPointsMap = (HashMap<String, List<BuyPoint>>) lowBuyResults
                     .get(2);
-            // @noti: 以下为低买引申结论
-//            HashMap<String, Double> stockWithPosition = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
-//            HashMap<String, Double> stockWithBuyPrice = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
-//            for (String stock : stockWithTotalPositionAndAdaptedPrice.keySet()) {
-//                List<Double> temp = stockWithTotalPositionAndAdaptedPrice.get(stock);
-//                stockWithPosition.put(stock, temp.get(0));
-//                stockWithBuyPrice.put(stock, temp.get(1));
-//            }
-//            lowBuyResults.add(stockWithPosition); // 1.{股票: 总仓位}
-//            lowBuyResults.add(stockWithBuyPrice); // 2.{股票: 折算买入成本价} // @noti: 为了减小数据列, 此2不再保存
             Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
             // todo: 其他保存项, 可以通过以上2项直接计算, 成为新的简单列, 方便mysql筛选查询, 这里就简单返回这两项即可
 
             // 开始高卖尝试 ************  同样有未处理仓位
             // stockWithTotalPositionAndAdaptedPrice 作为核心参数
-
+            List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPrice);
+            HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellResult
+                    .get(15); // 得到所有卖出当天股票的 开盘价和收盘价. (开盘价以 9:31计算,而非真实开盘价)
 
             return null;
         }
@@ -213,7 +205,11 @@ public class FSBacktestOfLowBuyNextHighSell {
         public List<Object> highSellExecuteCore(
                 HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy)
                 throws Exception {
-            List<Object> highSellResults = new ArrayList<>();
+            HashMap<String, Double> stockWithPositionLowBuy = new HashMap<>();
+            for (String stock : stockWithTotalPositionAndAdaptedPriceLowBuy.keySet()) {
+                List<Double> temp = stockWithTotalPositionAndAdaptedPriceLowBuy.get(stock);
+                stockWithPositionLowBuy.put(stock, temp.get(0));
+            }
 
             // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
             // 1. 同理获取 卖点map, 比起低买, 高卖还需要获取 开盘价 和 收盘价map, 以便折算
@@ -288,52 +284,147 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
             // 用原始仓位 - 高卖执行的总仓位
             // 做减法, 得到剩余未能卖出的持仓, 并且全部 以close 折算
-            HashMap<Integer, Double> stockWithPositionRemaining =
-                    subRawPositionsWithHighSellExecPositions(stockWithPosition,
-                            stockWithHighSellActualValueAndPosition);
+            HashMap<String, Double> stockWithPositionRemaining =
+                    subRawPositionsWithHighSellExecPositions(stockWithPositionLowBuy,
+                            stockWithHighSellSuccessPositionAndAdaptedPrice);
             // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
-            HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPositionDiscountAll =
-                    discountSuccessHighSellAndRemaining(stockWithPositionRemaining, stockWithHighSellActualValueAndPosition,
-                            discountRemaingRate);
-
+            HashMap<String, List<Double>> stockWithHighSellPositionAndAdaptedPriceDiscountAll =
+                    discountSuccessHighSellAndRemaining(stockWithPositionRemaining,
+                            stockWithHighSellSuccessPositionAndAdaptedPrice,
+                            openAndCloseOfHighSell);
 
             List<Object> res = new ArrayList<>();
-            res.add(stockWithPosition); // 0: 原始仓位
-            res.add(stockWithHighSellActualValueAndPosition);// 1.高卖成功的仓位 和 价格
+            res.add(stockWithPositionLowBuy); // 0: 原始仓位
+            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice);// 1.高卖成功的仓位 和 价格
             res.add(stockWithPositionRemaining); // 2.剩余仓位 未能成功卖出
-            res.add(stockWithHighSellActualValueAndPositionDiscountAll); // 3.用 0.0折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
-            if (showStockWithPositionFinally) {
-                Console.log(JSONUtil.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
-            }
+            // 3.用 收盘价折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
+            res.add(stockWithHighSellPositionAndAdaptedPriceDiscountAll);
+
             Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
-                    stockWithHighSellActualValueAndPosition); // 高卖成功部分折算价格
+                    stockWithHighSellSuccessPositionAndAdaptedPrice); // 高卖成功部分折算价格
             Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
-                    stockWithHighSellActualValueAndPositionDiscountAll); // 折算剩余, 最终折算价格
+                    stockWithHighSellPositionAndAdaptedPriceDiscountAll); // 折算剩余, 最终折算价格
             res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
             res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
-            res.add(stockWithActualValueAndPosition); // 6.原始低买时仓位+价格
-            HashMap<Integer, List<Double>> successPartProfits = profitOfHighSell(stockWithActualValueAndPosition,
-                    stockWithHighSellActualValueAndPosition);
+            res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 6.原始低买时仓位+价格
+
+            HashMap<String, List<Double>> successPartProfits = profitOfHighSell(
+                    stockWithTotalPositionAndAdaptedPriceLowBuy,
+                    stockWithHighSellSuccessPositionAndAdaptedPrice);
             res.add(successPartProfits); // 7.只计算高卖成功部分, 仓位+盈利值
             Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
             res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
-            HashMap<Integer, List<Double>> allProfitsDiscounted = profitOfHighSell(stockWithActualValueAndPosition,
-                    stockWithHighSellActualValueAndPositionDiscountAll);
+
+            HashMap<String, List<Double>> allProfitsDiscounted =
+                    profitOfHighSell(stockWithTotalPositionAndAdaptedPriceLowBuy,
+                            stockWithHighSellPositionAndAdaptedPriceDiscountAll);
             res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
             Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
             res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
+
             // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
-            res.add(stockWithHighSellActualValueAndPosition.values().stream()
+            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
                     .mapToDouble(value -> value.get(0).doubleValue())
-                    .sum() / stockWithHighSellActualValueAndPositionDiscountAll.values().stream()
+                    .sum() / stockWithHighSellPositionAndAdaptedPriceDiscountAll.values().stream()
                     .mapToDouble(value -> value.get(0).doubleValue()).sum()); // 11.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)
+            res.add(stockHighSellPointsMap); // 12. 各股票卖出点
+
+            Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
+                    .mapToDouble(value -> value.get(0)).sum();
+            Double profitDiscounted = allProfitsDiscountedProfitWeighted * totalPosition; // 总仓位1
+            res.add(totalPosition); // 13. 低买使用了的总仓位
+            res.add(profitDiscounted); // 14. 单次操作盈利 总值, 已经折算仓位使用率
+            res.add(openAndCloseOfHighSell); // 15. 卖出那天的 开盘价和收盘价.
             return res;
-
-            highSellResults.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
-            highSellResults.add(stockHighSellPointsMap); // 3. 各股票卖出点
-
-            return highSellResults;
         }
+
+        /**
+         * 高卖盈利, 高卖 - 低买
+         *
+         * @param stockWithActualValueAndPosition
+         * @param stockWithHighSellActualValueAndPosition
+         * @return
+         */
+        private static HashMap<String, List<Double>> profitOfHighSell(
+                HashMap<String, List<Double>> stockWithActualValueAndPosition,
+                HashMap<String, List<Double>> stockWithHighSellActualValueAndPosition) {
+            // 仓位仅仅以高卖成功的计算, 无视原始总仓位. 计算价差后, 同样以卖出仓位作为权重.
+            HashMap<String, List<Double>> positionWithProfit = new HashMap<>();
+            for (String key : stockWithHighSellActualValueAndPosition.keySet()) {
+                Double newPosition = stockWithHighSellActualValueAndPosition.get(key).get(0);
+                Double profit =
+                        stockWithHighSellActualValueAndPosition.get(key).get(1) - stockWithActualValueAndPosition
+                                .getOrDefault(key, Arrays.asList(0.0, 0.0)).get(1);
+                positionWithProfit.put(key, Arrays.asList(newPosition, profit));
+            }
+            return positionWithProfit;
+        }
+
+        public static Double calcWeightedGlobalPrice2(HashMap<String, List<Double>> stockWithActualValueAndPosition) {
+            Double res = 0.0;
+            // 这里总仓位, 应当使用传递来的参数的, 的position之和. LowBuy那里可以直接 30, 这里不行
+            // 且计算纯高时, 仓位并非全仓位, 只是 成功那一部分仓位!
+            Double totalAssets =
+                    stockWithActualValueAndPosition.values().stream().mapToDouble(value -> value.get(0)).sum();
+            // 临时仓位之和. !!!!!
+
+            for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
+                res += positionAndPrice.get(0) / totalAssets * positionAndPrice.get(1);
+            }
+            return res;
+        }
+
+        /**
+         * 收盘价折算剩余部分, 计算最终等价的 仓位 和 价格. 仓位全部卖出, 等同于低买传递来的持仓
+         *
+         * @param stockWithPositionRemaining
+         * @param stockWithHighSellSuccessPositionAndAdaptedPrice
+         * @param openAndCloseOfHighSell
+         * @return
+         */
+        private HashMap<String, List<Double>> discountSuccessHighSellAndRemaining(
+                HashMap<String, Double> stockWithPositionRemaining,
+                HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice,
+                HashMap<String, List<Double>> openAndCloseOfHighSell) {
+            HashMap<String, List<Double>> res = new HashMap<>();
+            for (String key : stockWithPositionRemaining.keySet()) {
+                Double discountRemaingPrice = openAndCloseOfHighSell.get(key).get(1); // 以收盘价作为折算, 当然也是百分比
+                Double remainPosition = stockWithPositionRemaining.get(key);
+                Double successSellPosition = stockWithHighSellSuccessPositionAndAdaptedPrice.get(key).get(0);
+                Double successSellPrice = stockWithHighSellSuccessPositionAndAdaptedPrice.get(key).get(1);
+                Double totalPosition = remainPosition + successSellPosition;
+                Double discountedPrice =
+                        remainPosition / totalPosition * discountRemaingPrice +
+                                successSellPosition / totalPosition * successSellPrice; // 简单加权
+                if (discountedPrice.equals(Double.NaN)) {
+                    discountedPrice = 0.0;
+                }
+                res.put(key, Arrays.asList(totalPosition, discountedPrice));
+            }
+            return res;
+        }
+
+        /**
+         * 低买总持仓 - 高卖成功那部分仓位 == 剩余未能卖出仓位
+         *
+         * @param stockWithPosition
+         * @param stockWithHighSellActualValueAndPosition
+         * @return
+         */
+        private static HashMap<String, Double> subRawPositionsWithHighSellExecPositions(
+                HashMap<String, Double> stockWithPosition,
+                HashMap<String, List<Double>> stockWithHighSellActualValueAndPosition) {
+            HashMap<String, Double> res = new HashMap<>();
+            // 做减法.得到剩余未能成功卖出仓位
+            for (String key : stockWithPosition.keySet()) {
+                //注意可能一点都没有高卖掉
+                res.put(key,
+                        stockWithPosition.get(key) - stockWithHighSellActualValueAndPosition.getOrDefault(key,
+                                Arrays.asList(0.0, 0.0)).get(0));
+            }
+            return res;
+        }
+
 
         /**
          * 获取高卖 卖点列表. map;   同理需要传递 低买后 持仓map
