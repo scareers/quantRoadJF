@@ -157,6 +157,9 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double timeTick;
             Double highPricePercent;
             Double sellPricePercent;
+
+            Double openPricePercent; // 开盘价
+            Double closePricePercent; // 收盘价
         }
 
 
@@ -316,26 +319,26 @@ public class FSBacktestOfLowBuyNextHighSell {
                             .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
             for (String stock : stockHasPosition) {
-                // 因每只股票可能有所不同, 因此实时计算.!!! 该api有大缓存池 2048
                 String highSellDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(1); // get1 是卖出日期
-                DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock, highSellDate,
+                DataFrame<Object> dfFSHighSellDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock,
+                        highSellDate,
                         fsSpecialUseFields); // Arrays.asList("trade_time", "close")
-                if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
+                if (dfFSHighSellDay == null || dfFSHighSellDay.length() == 0) {
                     return res; // 无分时数据, 则没有计算结果
                 }
                 // 1.将 trade_time, 转换为 tickDouble.
-                List<Object> tradeTimeCol = dfFSLowBuyDay.col(0);
+                List<Object> tradeTimeCol = dfFSHighSellDay.col(0);
                 List<Double> tickDoubleCol = new ArrayList<>(); // key1列
                 tradeTimeCol.stream().forEach(value -> {
                     tickDoubleCol.add(fsTimeStrParseToTickDouble(value.toString().substring(11, 16)));
                 }); // 构建 tick Double 列.
-                List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close"); //key2列
+                List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "close"); //key2列
 
                 // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
-                Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, tradeDate, highSellDate,
+                Double stdCloseOfHighSell = closePriceOfQfqStockSpecialDay(stock, tradeDate, highSellDate,
                         connLocalTushare);
-                // 阈值是负数百分比. 计算阈值价格, 这里 需要 不大于次阈值实际价格, 才可能低买
-                Double lowBuyActualPriceThreshold = stdCloseOfLowBuy * (1 + execLowBuyThreshold);
+                // 阈值是负数百分比. 计算阈值价格, 这里 需要 不小于次阈值实际价格, 才可能高卖
+                Double highSellActualPriceThreshold = stdCloseOfHighSell * (1 + execLowBuyThreshold);
                 // 开始遍历close, 得到买入点,
                 List<BuyPoint> buyPoints = new ArrayList<>();
                 // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
@@ -367,19 +370,19 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
                     // 多条件限定买点, 这里不用 and, 更加清晰
                     if (continuousFallTickCount >= continuousFallTickCountThreshold) { // 连续下跌数量必须不小于阈值设定
-                        if (closeCol.get(i) <= lowBuyActualPriceThreshold) { // 必须价格不大于 设定阈值计算出来的价格
+                        if (closeCol.get(i) <= highSellActualPriceThreshold) { // 必须价格不大于 设定阈值计算出来的价格
                             // 买入点, 必须 越来越低, 才符合 cdf 仓位算法!. 因此 需判定此前是否已经有买入点?
-                            Double lowPrice = closeCol.get(i) / stdCloseOfLowBuy - 1; // 低点价格
+                            Double lowPrice = closeCol.get(i) / stdCloseOfHighSell - 1; // 低点价格
                             if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
                                 Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                        closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                        closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfHighSell) - 1 : lowPrice;
                                 buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                             } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
                                 Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
                                 if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
                                     Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                             closeCol.get(i) + closeCol
-                                                    .get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                                    .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : lowPrice;
                                     buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                                 }
                             }
