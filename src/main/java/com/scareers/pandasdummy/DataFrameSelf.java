@@ -204,6 +204,15 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         return res;
     }
 
+    public static List<Long> getColAsLongList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = df.col(colNameOrIndex);
+        List<Long> res = new ArrayList<>();
+        for (Object o : col) {
+            res.add(Long.valueOf(o.toString()));
+        }
+        return res;
+    }
+
 }
 
 

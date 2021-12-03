@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
+import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
@@ -91,6 +92,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             ArrayList<Future<Void>> futuresOfBacktest = new ArrayList<>();
 
             List<Long> formSetIds = new ArrayList<>(stockSelectResultPerDay.keySet());
+            // 此处筛选掉极端的 formSetId.
+            formSetIds = filterFormSetIds(formSetIds);
             for (Long formSetId : formSetIds) {
                 Future<Void> f = poolOfBacktest
                         .submit(new BacktestTaskOfPerDay(formSetId, tradeDate, stockSelectResultPerDay.get(formSetId)));
@@ -106,6 +109,37 @@ public class FSBacktestOfLowBuyNextHighSell {
             poolOfBacktest.shutdown(); // 关闭线程池
             System.out.println("finish");
         }
+    }
+
+    private static List<Long> filterFormSetIds(List<Long> formSetIds) throws SQLException {
+        DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
+                StrUtil.format(
+                        "select form_set_id,\n" +
+                                "       (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width,\n" +
+                                "       max(virtual_geometry_mean)                                as\n" +
+                                "                                                                    highsell,\n" +
+                                "       min(virtual_geometry_mean)                                as lowbuy,\n" +
+                                "       avg(effective_counts)                                     as ec,\n" +
+                                "       min(stat_date_range)\n" +
+                                "from fs_distribution_of_lowbuy_highsell_next0b1s fdolhn0b1s\n" +
+                                "where effective_counts\n" +
+                                "    >={} \n" +
+                                "  and effective_counts < {} \n" +
+                                "  and concrete_algorithm like '%value_percent%'\n" +
+                                "  and stat_date_range = '[\"20210218\",\"21000101\"]'\n" +
+                                "  and condition1 = 'strict'\n" +
+                                "  and stat_result_algorithm like '%1%'\n" +
+                                "group by form_set_id\n" +
+                                "order by width desc", formSetIdsFilterArgs.get(0), formSetIdsFilterArgs.get(1)));
+        List<Long> formSetIdsSelected = DataFrameSelf.getColAsLongList(dataFrame, "form_set_id");
+
+        List<Long> res = new ArrayList<>();
+        for (Long i : formSetIds) {
+            if (formSetIdsSelected.contains(i)) {
+                res.add(i);
+            }
+        }
+        return res; // 只执行一遍, 所以不顾性能.
     }
 
 
@@ -149,6 +183,10 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double timeTick;
             Double lowPricePercent; // 低点价格
             Double buyPricePercent; // 买点价格(低点+后一 /2)
+
+            public List<Double> toList() {
+                return Arrays.asList(timeTick, lowPricePercent, buyPricePercent);
+            }
         }
 
         @AllArgsConstructor
@@ -159,6 +197,9 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double highPricePercent;
             Double sellPricePercent;
 
+            public List<Double> toList() {
+                return Arrays.asList(timeTick, highPricePercent, sellPricePercent);
+            }
         }
 
 
@@ -176,20 +217,67 @@ public class FSBacktestOfLowBuyNextHighSell {
                 return null; // 没有买点结果
             }
             // 这两项是低买原始结论.
-            HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = (HashMap<String, List<Double>>) lowBuyResults
-                    .get(0); // 1.  lb_position_price_map   股票的 仓位,折算价格  字典保存
-            Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 2. lb_full_position_time_tick  满仓时间
+            HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
+                    .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
+            Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
             HashMap<String, List<BuyPoint>> stockLowBuyPointsMap = (HashMap<String, List<BuyPoint>>) lowBuyResults
-                    .get(2);
+                    .get(2); // 2.低买买点 lb_buypoints
             Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
-                    .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
-            // todo: 其他保存项, 可以通过以上2项直接计算, 成为新的简单列, 方便mysql筛选查询, 这里就简单返回这两项即可
+                    .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPriceLowBuy);
+            Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
+                    .mapToDouble(value -> value.get(0)).sum(); // 4. 低买总仓位, 低买执行后即可获取  lb_global_position_sum
 
             // 开始高卖尝试 ************  同样有未处理仓位
             // stockWithTotalPositionAndAdaptedPrice 作为核心参数
-            List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPrice); // 1.高卖
-            HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellResult
-                    .get(15); // 得到所有卖出当天股票的 开盘价和收盘价. (开盘价以 9:31计算,而非真实开盘价)
+            // 高卖仅4项基本数据
+            List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPriceLowBuy); // 高卖
+            HashMap<String, Double> stockWithPositionLowBuy =
+                    (HashMap<String, Double>) highSellResult.get(0); // 5.低买结论衍生: 原始持仓map:  lb_positions
+            HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice =
+                    (HashMap<String, List<Double>>) highSellResult.get(1); // 6.高卖成功部分仓位和价格 hs_success_position_price
+            HashMap<String, List<Double>> openAndCloseOfHighSell =
+                    (HashMap<String, List<Double>>) highSellResult.get(2); // 7.高卖日开盘和收盘  hs_open_close
+            HashMap<String, List<SellPoint>> stockHighSellPointsMap =
+                    (HashMap<String, List<SellPoint>>) highSellResult.get(3); // 8.高卖日所有高卖点  hs_sellpoints
+            // 项返回值解析完毕
+
+            // 用原始仓位 - 高卖执行的总仓位
+            // 做减法, 得到剩余未能卖出的持仓, 并且全部 以close 折算
+            HashMap<String, Double> stockWithPositionRemaining = // 9.剩余仓位 未能成功卖出  hs_remain_positions
+                    subRawPositionsWithHighSellExecPositions(stockWithPositionLowBuy,
+                            stockWithHighSellSuccessPositionAndAdaptedPrice);
+            // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
+            // 用 收盘价折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
+            HashMap<String, List<Double>> stockWithHighSellPositionAndAdaptedPriceDiscountAll =
+                    discountSuccessHighSellAndRemaining(stockWithPositionRemaining,
+                            stockWithHighSellSuccessPositionAndAdaptedPrice,
+                            openAndCloseOfHighSell); // 10.全折算卖出: hs_discount_all_position_price
+
+//            List<Object> res = new ArrayList<>();
+            Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
+                    stockWithHighSellSuccessPositionAndAdaptedPrice); // 11. 高卖成功部分折算价格 hs_success_global_price
+            Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
+                    stockWithHighSellPositionAndAdaptedPriceDiscountAll); // 12.折算剩余, 最终折算价格 hs_discount_all_global_price
+            HashMap<String, List<Double>> successPartProfits = profitOfHighSell(
+                    stockWithTotalPositionAndAdaptedPriceLowBuy,
+                    stockWithHighSellSuccessPositionAndAdaptedPrice);// 13.只计算高卖成功部分, 仓位+盈利值 hs_success_position_profit
+            // 14.高卖成功部分, 整体的 加权盈利值!! hs_success_profit
+            Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
+
+            HashMap<String, List<Double>> allProfitsDiscounted = // 15.全部, 仓位+盈利值  hs_discount_all_position_profit
+                    profitOfHighSell(stockWithTotalPositionAndAdaptedPriceLowBuy,
+                            stockWithHighSellPositionAndAdaptedPriceDiscountAll);
+            // 16.全折算后, 整体的 加权盈利值!!   hs_discount_all_profit
+            Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
+
+            // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
+            // 17.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)  hs_success_global_percent
+            Double x = stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
+                    .mapToDouble(value -> value.get(0).doubleValue())
+                    .sum() / stockWithHighSellPositionAndAdaptedPriceDiscountAll.values().stream()
+                    .mapToDouble(value -> value.get(0).doubleValue()).sum();
+            Double profitDiscounted = allProfitsDiscountedProfitWeighted * totalPosition;
+            // 18.单次操作盈利 总值, 已经折算仓位使用率, 低买部分不公平, 算是少算收益了.   lbhs_weighted_profit
 
             return null;
         }
@@ -282,59 +370,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                     // 几乎无法全部股票恰好全部卖出, 因此, 不执行相关判定.  循环完成后, 返回前判定剩余
                 }
             }
-            // 用原始仓位 - 高卖执行的总仓位
-            // 做减法, 得到剩余未能卖出的持仓, 并且全部 以close 折算
-            HashMap<String, Double> stockWithPositionRemaining =
-                    subRawPositionsWithHighSellExecPositions(stockWithPositionLowBuy,
-                            stockWithHighSellSuccessPositionAndAdaptedPrice);
-            // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
-            HashMap<String, List<Double>> stockWithHighSellPositionAndAdaptedPriceDiscountAll =
-                    discountSuccessHighSellAndRemaining(stockWithPositionRemaining,
-                            stockWithHighSellSuccessPositionAndAdaptedPrice,
-                            openAndCloseOfHighSell);
 
             List<Object> res = new ArrayList<>();
-            res.add(stockWithPositionLowBuy); // 0: 原始仓位
-            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice);// 1.高卖成功的仓位 和 价格
-            res.add(stockWithPositionRemaining); // 2.剩余仓位 未能成功卖出
-            // 3.用 收盘价折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
-            res.add(stockWithHighSellPositionAndAdaptedPriceDiscountAll);
-
-            Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
-                    stockWithHighSellSuccessPositionAndAdaptedPrice); // 高卖成功部分折算价格
-            Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
-                    stockWithHighSellPositionAndAdaptedPriceDiscountAll); // 折算剩余, 最终折算价格
-            res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
-            res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
-            res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 6.原始低买时仓位+价格
-
-            HashMap<String, List<Double>> successPartProfits = profitOfHighSell(
-                    stockWithTotalPositionAndAdaptedPriceLowBuy,
-                    stockWithHighSellSuccessPositionAndAdaptedPrice);
-            res.add(successPartProfits); // 7.只计算高卖成功部分, 仓位+盈利值
-            Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
-            res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
-
-            HashMap<String, List<Double>> allProfitsDiscounted =
-                    profitOfHighSell(stockWithTotalPositionAndAdaptedPriceLowBuy,
-                            stockWithHighSellPositionAndAdaptedPriceDiscountAll);
-            res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
-            Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
-            res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
-
-            // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
-            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
-                    .mapToDouble(value -> value.get(0).doubleValue())
-                    .sum() / stockWithHighSellPositionAndAdaptedPriceDiscountAll.values().stream()
-                    .mapToDouble(value -> value.get(0).doubleValue()).sum()); // 11.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)
-            res.add(stockHighSellPointsMap); // 12. 各股票卖出点
-
-            Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
-                    .mapToDouble(value -> value.get(0)).sum();
-            Double profitDiscounted = allProfitsDiscountedProfitWeighted * totalPosition; // 总仓位1
-            res.add(totalPosition); // 13. 低买使用了的总仓位
-            res.add(profitDiscounted); // 14. 单次操作盈利 总值, 已经折算仓位使用率
-            res.add(openAndCloseOfHighSell); // 15. 卖出那天的 开盘价和收盘价.
+            // 因此仅仅需要 此4项作为原始数据返回, 其余的皆以此(结合低买) 计算而来
+            res.add(stockWithPositionLowBuy); // 0. 依据lowbuy传递来的参数的衍生, 原始持仓map
+            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 成功高卖map
+            res.add(openAndCloseOfHighSell); // 卖出当日的 开盘和收盘价
+            res.add(stockHighSellPointsMap); // 各股票卖出点
+            //res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 低买那里有此数据项,即参数传递而来的
             return res;
         }
 
@@ -622,9 +665,9 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
 
             lowBuyResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
-            lowBuyResults.add(reachTotalLimitTimeTick); // 2.达到满仓时的时间, 当然, 也可能240, 且不满仓
-            lowBuyResults.add(stockLowBuyPointsMap); // 3. 各股票买入点
-
+            lowBuyResults.add(reachTotalLimitTimeTick); // 1.达到满仓时的时间, 当然, 也可能240, 且不满仓
+            lowBuyResults.add(stockLowBuyPointsMap); // 2. 各股票买入点
+            // 当前仅仅返回3项原始数据. 其他数据需要调用方计算保存
             return lowBuyResults;
         }
 

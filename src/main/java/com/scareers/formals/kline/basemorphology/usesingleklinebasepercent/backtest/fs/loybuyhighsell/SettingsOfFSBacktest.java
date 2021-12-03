@@ -28,6 +28,8 @@ public class SettingsOfFSBacktest {
 
 
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
+    // 2021-最后一个周期数据, 140天出手次数在此范围才被选中
+    public static final List<Integer> formSetIdsFilterArgs = Arrays.asList(1000, 10000);
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
     public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
     public static Connection connLocalTushare = ConnectionFactory.getConnLocalTushare();
