@@ -187,7 +187,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             // 开始高卖尝试 ************  同样有未处理仓位
             // stockWithTotalPositionAndAdaptedPrice 作为核心参数
-            List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPrice);
+            List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPrice); // 1.高卖
             HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellResult
                     .get(15); // 得到所有卖出当天股票的 开盘价和收盘价. (开盘价以 9:31计算,而非真实开盘价)
 
