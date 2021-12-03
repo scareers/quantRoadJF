@@ -210,6 +210,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             if (totalAssets == 0) {
                 return null; // 无选中则pass
             }
+            // 结果df. 将被保存到数据库. Map/List将转换为 json保存. 字符串等基本类型直接保存
+            DataFrame<Object> dfLowBuyHighSell = new DataFrame<>();
 
             // 低买开始 ********
             List<Object> lowBuyResults = lowBuyExecuteCore();
@@ -219,9 +221,15 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 这两项是低买原始结论.
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
                     .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
+            dfLowBuyHighSell.add("lb_position_price_map",
+                    Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
+            dfLowBuyHighSell.add("lb_full_position_time_tick", Arrays.asList(reachTotalLimitTimeTick));
             HashMap<String, List<BuyPoint>> stockLowBuyPointsMap = (HashMap<String, List<BuyPoint>>) lowBuyResults
                     .get(2); // 2.低买买点 lb_buypoints
+            HashMap<String, List<List<Double>>> stockLowBuyPointsMapForSave =
+                    convertBuyPointsToSaveMode(stockLowBuyPointsMap); // 转换一下.
+            dfLowBuyHighSell.add("lb_buypoints", Arrays.asList(JSONUtil.toJsonStr(stockLowBuyPointsMapForSave)));
             Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPriceLowBuy);
             Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
@@ -253,7 +261,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                             stockWithHighSellSuccessPositionAndAdaptedPrice,
                             openAndCloseOfHighSell); // 10.全折算卖出: hs_discount_all_position_price
 
-//            List<Object> res = new ArrayList<>();
             Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
                     stockWithHighSellSuccessPositionAndAdaptedPrice); // 11. 高卖成功部分折算价格 hs_success_global_price
             Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
@@ -280,6 +287,17 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 18.单次操作盈利 总值, 已经折算仓位使用率, 低买部分不公平, 算是少算收益了.   lbhs_weighted_profit
 
             return null;
+        }
+
+        private HashMap<String, List<List<Double>>> convertBuyPointsToSaveMode(
+                HashMap<String, List<BuyPoint>> stockLowBuyPointsMap) {
+            HashMap<String, List<List<Double>>> res = new HashMap<>();
+            for (String key : stockLowBuyPointsMap.keySet()) {
+                List<List<Double>> temp = new ArrayList<>();
+                stockLowBuyPointsMap.get(key).stream().map(value -> value.toList()).forEach(temp::add);
+                res.put(key, temp);
+            }
+            return res;
         }
 
         /**
