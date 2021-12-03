@@ -186,6 +186,9 @@ public class FSBacktestOfLowBuyNextHighSell {
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
             // todo: 其他保存项, 可以通过以上2项直接计算, 成为新的简单列, 方便mysql筛选查询, 这里就简单返回这两项即可
 
+            // 开始高卖尝试 ************  同样有未处理仓位
+
+
             return null;
         }
 
