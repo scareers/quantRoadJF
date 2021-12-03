@@ -1,6 +1,7 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -23,6 +24,7 @@ import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
 import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
+import static com.scareers.utils.CommonUtils.sumOfListNumberUseLoop;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -191,7 +193,69 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
                 for (String stock : buyPointsMap.keySet()) {
                     BuyPoint singleBuyPoint = buyPointsMap.get(stock);
-                    // cdf 仓位买入  .
+                    // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
+                    Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
+                    Double buyPrice = singleBuyPoint.getBuyPricePercent(); // 实际买入价格
+                    // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
+                    if (buyPrice > execLowBuyThreshold) { // @noti: 凡是阈值, 一般都包含等于
+                        continue; // 必须小于等于阈值
+                    }
+
+                    // 此值以及对应权重应当被保存
+
+                    List<Double> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
+                    List<Double> weightsOfLow = weightsOfLowx.get(lowx - 1);
+                    if (forceFirstDistributionDecidePosition) {
+                        valuePercentOfLow = valuePercentOfLowx.get(0);
+                        weightsOfLow = weightsOfLowx.get(0);
+                    }
+                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, buyPrice);
+
+                    // @key2: 本轮后总仓位
+                    Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint; // 因两两配对, 因此这里仓位使用 2作为基数. 且为该股票总仓位
+                    if (epochTotalPosition > positionUpperLimit) {
+                        epochTotalPosition = positionUpperLimit; // 上限
+                    }
+
+                    Double oldPositionTemp = stockWithPosition.get(id);
+                    List<Double> oldStockWithPositionAndValue = stockWithActualValueAndPosition.get(id); // 默认0,0, 已经折算
+                    if (oldPositionTemp < epochTotalPosition) {
+                        stockWithPosition.put(id, epochTotalPosition); // 必须新的总仓位, 大于此前轮次总仓位, 才需要修改!!
+                        // 此时需要对 仓位和均成本进行折算. 新的一部分, 价格为 actualValue, 总仓位 epochTotalPosition.
+                        // 旧的一部分, 价格 stockWithPositionAndValue.get(1), 旧总仓位 stockWithPositionAndValue.get(0)
+                        // 单步折算.
+                        Double weightedPrice =
+                                (oldStockWithPositionAndValue
+                                        .get(0) / epochTotalPosition) * oldStockWithPositionAndValue
+                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndValue
+                                        .get(0) / epochTotalPosition);
+                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
+                    }
+                    // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
+                    Double sum = sumOfListNumberUseLoop(new ArrayList<>(stockWithPosition.values()));
+                    if (sum > totalAssets) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好30, 并立即返回
+                        Double newPosition = epochTotalPosition - (sum - totalAssets);
+                        stockWithPosition.put(id, newPosition); // 修改仓位
+                        // 折算权重也需要修正.
+                        Double weightedPrice =
+                                (oldStockWithPositionAndValue.get(0) / newPosition) * oldStockWithPositionAndValue
+                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndValue.get(0) / newPosition);
+                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
+
+                        reachTotalLimitInLoop = true;
+                        List<Object> res = new ArrayList<>();
+                        res.add(stockWithPosition);
+                        if (showStockWithPosition) {
+                            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+                        }
+                        res.add(reachTotalLimitInLoop);
+                        res.add(epoch + 1);
+                        res.add(stockWithActualValueAndPosition);
+                        Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
+                        res.add(weightedGlobalPrice);
+                        return res;
+                    }
+
                 }
 
             }
