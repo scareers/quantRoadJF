@@ -224,6 +224,7 @@ public class PositionOfLowBuyByDistribution {
                     stockWithActualValueAndPosition.put(id, Arrays.asList(newPosition, weightedPrice));
                     // @bugfix: 这里原来写成了 epochTotalPosition, 将导致实际总仓位变大一些, 虽然结果似乎相差不大
 
+                    // @optimize can: 可以使用 跳出两层循环, 而非强行return, 造成代码重复, 这里就不改了
                     reachTotalLimitInLoop = true;
                     List<Object> res = new ArrayList<>();
                     res.add(stockWithPosition);

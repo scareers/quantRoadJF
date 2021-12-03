@@ -187,12 +187,13 @@ public class FSBacktestOfLowBuyNextHighSell {
             timeTicks.sort(Comparator.naturalOrder()); // 已经排序. 买点可能很难分布与 240个tick都有, 所以
 
             // @key: 结果项
-            // 股票和对应总仓位, 初始0
-
             // 股票和对应总仓位和折算价格
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = new HashMap<>();
+            Double reachTotalLimitTimeTick = 0.0; // 达到满仓的 tick值!可记录大约什么时间能够满仓. 如果是最大值,则可能未能满仓
 
-            for (Double tick : timeTicks) {
+            outerLoop:
+            for (Double tick : timeTicks) { // 提前达到了满仓, 则跳出2层循环到这里
+                reachTotalLimitTimeTick = tick; // 保存一下tick
                 HashMap<String, BuyPoint> buyPointsMap = buyPointsOfAllTick.get(tick);
                 if (buyPointsMap == null || buyPointsMap.size() == 0) {
                     continue;
@@ -249,7 +250,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                                         .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
                         stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
                                 weightedPrice));
-
+                        break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
                     }
 
                 }
@@ -269,6 +270,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double weightedGlobalPrice = BacktestTaskOfPerDay
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
             lowBuyResults.add(weightedGlobalPrice); // 3.全局折算加权 买入价格
+            lowBuyResults.add(reachTotalLimitTimeTick); // 4.达到满仓时的时间, 当然, 也可能240, 且不满仓
             return null;
         }
 
