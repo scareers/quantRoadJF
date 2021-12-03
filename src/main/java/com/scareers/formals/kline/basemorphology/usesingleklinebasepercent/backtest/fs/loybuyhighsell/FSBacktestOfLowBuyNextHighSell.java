@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
+import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
@@ -236,40 +237,39 @@ public class FSBacktestOfLowBuyNextHighSell {
             // @key: 结果项
             // 股票和对应总仓位和折算价格,  这是高卖结果. 高卖需要不超过 低买已有持仓. 类似低买不超过总仓位 1.0
             HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice = new HashMap<>();
-
-            outerLoop:
-            for (Double tick : timeTicks) { // 提前达到了满仓, 则跳出2层循环到这里
-                reachTotalLimitTimeTick = tick; // 保存一下tick
-                HashMap<String, BuyPoint> buyPointsMap = buyPointsOfAllTick.get(tick);
-                if (buyPointsMap == null || buyPointsMap.size() == 0) {
+            for (Double tick : timeTicks) { // 显然是要把所有卖点都执行到的. 不存在跳出2层循环
+                HashMap<String, SellPoint> sellPointsMap = buyPointsOfAllTick.get(tick);
+                if (sellPointsMap == null || sellPointsMap.size() == 0) {
                     continue;
-                    // 需要有实际买点
+                    // 需要有实际卖点
                 }
-                // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
-                for (String stock : buyPointsMap.keySet()) {
+                // 同一分钟不同股票的卖点, 无视先后顺序, 可以接受
+                for (String stock : sellPointsMap.keySet()) {
                     stockWithHighSellSuccessPositionAndAdaptedPrice
                             .putIfAbsent(stock, new ArrayList<>(Arrays.asList(0.0, 0.0)));
 
-                    BuyPoint singleBuyPoint = buyPointsMap.get(stock);
-                    // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
-                    Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
-                    Double buyPrice = singleBuyPoint.getBuyPricePercent(); // 实际买入价格
+                    SellPoint singleBuyPoint = sellPointsMap.get(stock);
+                    // cdf 仓位卖出  . --> cdf使用highPrice低点,  其他均使用买入价格  sellPrice
+                    Double highPrice = singleBuyPoint.getHighPricePercent(); // 仅计算cdf
+                    Double sellPrice = singleBuyPoint.getSellPricePercent(); // 实际卖出价格
                     // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
-                    if (buyPrice > execLowBuyThreshold) { // @noti: 凡是阈值, 一般都包含等于
-                        continue; // 必须小于等于阈值
+                    if (sellPrice <= execHighSellThreshold) { // @noti: 凡是阈值, 一般都包含等于, 虽然计算卖点时已经计算过.这里重复嫌疑
+                        continue; // 必须大于等于阈值
                     }
 
-                    // cdf使用low 计算.  价格使用buyPrice计算
-                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice);
-                    // @key2: 本轮后总仓位;  @noti: 已经将总仓位标准化为 1!!, 因此后面计算总仓位, 不需要 /资产数量
-                    Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / totalAssets; // 加大标准仓位,倍率设定1
-                    if (epochTotalPosition > positionUpperLimit) { // 设置上限控制标准差.
-                        epochTotalPosition = positionUpperLimit; // 上限
+                    // cdf使用 high 计算.  价格使用 sellPrice计算
+                    Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, highPrice);
+                    // @key3: 高卖仓位折算!!!
+                    Double lowBuyPositionTotal = stockWithTotalPositionAndAdaptedPriceLowBuy.get(stock).get(0);
+                    Double epochTotalPosition =
+                            positionCalcKeyArgsOfCdfHighSell * cdfOfPoint * lowBuyPositionTotal;  // 这里应该以 低买总持仓作为基数
+                    if (epochTotalPosition > lowBuyPositionTotal) { // 设置高卖上限, 为低买总持仓,
+                        epochTotalPosition = lowBuyPositionTotal; // 上限
                     }
 
-                    Double oldPositionTemp = stockWithHighSellSuccessPositionAndAdaptedPrice.get(stock).get(0); // 老总仓位.
                     List<Double> oldStockWithPositionAndPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
-                            .get(stock); // 默认0,0, 已经折算
+                            .get(stock); // 默认0,0, 已经折算, 老卖出 [仓位,价格]
+                    Double oldPositionTemp = oldStockWithPositionAndPrice.get(0); // 老总仓位.
                     if (oldPositionTemp < epochTotalPosition) { // 新的买点机制, 此 boolean 基本永恒 true
                         // 此时需要对 仓位和均成本进行折算. 新的一部分, 价格为 actualValue, 总仓位 epochTotalPosition.
                         // 旧的一部分, 价格 stockWithPositionAndValue.get(1), 旧总仓位 stockWithPositionAndValue.get(0)
@@ -277,7 +277,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                         Double weightedPrice =
                                 (oldStockWithPositionAndPrice
                                         .get(0) / epochTotalPosition) * oldStockWithPositionAndPrice
-                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice
+                                        .get(1) + sellPrice * (1 - oldStockWithPositionAndPrice
                                         .get(0) / epochTotalPosition);
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
                                 weightedPrice));
@@ -295,7 +295,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                         // 折算权重也需要修正.
                         Double weightedPrice = // 这个老旧 仓位和价格, 是保存着的曾经. 直接用 . 新的总仓位直接用即可
                                 (oldStockWithPositionAndPrice.get(0) / newPosition) * oldStockWithPositionAndPrice
-                                        .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
+                                        .get(1) + sellPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
                                 weightedPrice));
                         break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
