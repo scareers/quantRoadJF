@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.parseFromsSetsFromDb;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
+import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.valuePercentOfLowx;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
@@ -243,6 +244,14 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
                     .mapToDouble(value -> value.get(0)).sum(); // 4. 低买总仓位, 低买执行后即可获取  lb_global_position_sum
             dfLowBuyHighSell.add("lb_global_position_sum", Arrays.asList(totalPosition));
+
+            // --------- 新增 低买可以统计的部分计量
+            Long hasPositionStockCount =  // 1.低买完成后 , 持仓>0, 即有所持仓的被选中股票数量!!!!!!  lb_has_position_stock_count
+                    stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream().filter(value -> value.get(0) > 0.0)
+                            .count();
+            dfLowBuyHighSell.add("lb_has_position_stock_count", Arrays.asList(hasPositionStockCount));
+            // --------- 结束
+
             // 开始高卖尝试 ************  同样有未处理仓位
             // stockWithTotalPositionAndAdaptedPrice 作为核心参数
             // 高卖仅4项基本数据
