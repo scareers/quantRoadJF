@@ -18,6 +18,7 @@ public class SettingsOfFSBacktest {
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     // 2021-最后一个周期数据, 140天出手次数在此范围才被选中
     public static final List<Integer> formSetIdsFilterArgs = Arrays.asList(1000, 10000);
+    public static final int processAmountOfBacktest = 8;
 
     public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
     public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
@@ -29,7 +30,6 @@ public class SettingsOfFSBacktest {
     public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
     public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
             saveTablenameFSBacktest);
-    public static final int processAmountOfBacktest = 1;
 
     // 低买设定
     public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要

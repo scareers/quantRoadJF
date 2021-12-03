@@ -61,10 +61,10 @@ public class FSBacktestOfLowBuyNextHighSell {
         for (List<String> statDateRange : dateRanges) {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
-//            execSql(
-//                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
-//                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
-//                    connOfKlineForms, false);
+            execSql(
+                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
+                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
             log.info("current time");
@@ -105,9 +105,9 @@ public class FSBacktestOfLowBuyNextHighSell {
                 Void res = f.get();
                 // todo: 可以处理返回值, 回测这里无返回值, 不需要组合成 大字典处理. 回测一天实时保存一天的结果即可
             }
-            poolOfBacktest.shutdown(); // 关闭线程池
             System.out.println("finish");
         }
+        poolOfBacktest.shutdown(); // 关闭线程池, 不能写在循环里面去, 否则报错 拒绝任务. 线程池大小0
     }
 
     private static List<Long> filterFormSetIds(List<Long> formSetIds) throws SQLException {
@@ -227,7 +227,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 这两项是低买原始结论.
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
                     .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
-            Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
+            //Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
             dfLowBuyHighSell.add("lb_position_price_map",
                     Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
@@ -326,8 +326,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             dfLowBuyHighSell.add("lbhs_weighted_profit_conservative", Arrays.asList(profitDiscounted));
 
             DataFrameSelf.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
-                    connLocalTushare, "append", null);
-            Console.log("success: {}", formSetId);
+                    connOfKlineForms, "append", null);
+            // Console.log("success: {}", formSetId);
             return null;
         }
 
@@ -372,9 +372,10 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
             // 1. 同理获取 卖点map, 比起低买, 高卖还需要获取 开盘价 和 收盘价map, 以便折算
-            List<String> stockHasPosition = // 都用得到
+            // 2. 高卖时, 计算剩余未能卖出的时, 将对所有股票进行计算(包含0.0仓位), 因此这里不进行筛选股票, 直接全部
+            List<String> stockHasPosition = // 包括 仓位 0.0的, 这里不进行筛选
                     stockWithTotalPositionAndAdaptedPriceLowBuy.entrySet().stream()
-                            .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
+                            .map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
 
             List<Object> highSellPointsRes =
@@ -383,7 +384,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                     (HashMap<String, List<SellPoint>>) highSellPointsRes.get(0);
             HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellPointsRes
                     .get(1);
-
             // 将卖点, 转换为 HashMap, key:value:  时间戳: 该tick 有卖点的股票 {股票: 卖点对象}
             // 卖点对象: SellPoint , 因为每个 tick, 每只股票最多只有单个 买点, 因此该数据结构符合逻辑
             HashMap<Double, HashMap<String, SellPoint>> buyPointsOfAllTick = convertToTickWithStockSells(
@@ -503,11 +503,17 @@ public class FSBacktestOfLowBuyNextHighSell {
                 HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice,
                 HashMap<String, List<Double>> openAndCloseOfHighSell) {
             HashMap<String, List<Double>> res = new HashMap<>();
+//            Console.log(openAndCloseOfHighSell.size());
+//            Console.log(stockWithPositionRemaining.size());
+
             for (String key : stockWithPositionRemaining.keySet()) {
                 Double discountRemaingPrice = openAndCloseOfHighSell.get(key).get(1); // 以收盘价作为折算, 当然也是百分比
                 Double remainPosition = stockWithPositionRemaining.get(key);
-                Double successSellPosition = stockWithHighSellSuccessPositionAndAdaptedPrice.get(key).get(0);
-                Double successSellPrice = stockWithHighSellSuccessPositionAndAdaptedPrice.get(key).get(1);
+                Double successSellPosition =
+                        stockWithHighSellSuccessPositionAndAdaptedPrice.getOrDefault(key, Arrays.asList(0.0, 0.0))
+                                .get(0);
+                Double successSellPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
+                        .getOrDefault(key, Arrays.asList(0.0, 0.0)).get(1);
                 Double totalPosition = remainPosition + successSellPosition;
                 Double discountedPrice =
                         remainPosition / totalPosition * discountRemaingPrice +
@@ -694,7 +700,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
 
                     // cdf使用low 计算.  价格使用buyPrice计算
-                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice,tickGap);
+                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice, tickGap);
                     // @key2: 本轮后总仓位;  @noti: 已经将总仓位标准化为 1!!, 因此后面计算总仓位, 不需要 /资产数量
                     Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / totalAssets; // 加大标准仓位,倍率设定1
                     if (epochTotalPosition > positionUpperLimit / totalAssets) { // 设置上限控制标准差.
