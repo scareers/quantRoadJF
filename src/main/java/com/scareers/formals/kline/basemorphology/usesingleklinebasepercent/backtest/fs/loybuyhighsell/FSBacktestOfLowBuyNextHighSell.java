@@ -1,6 +1,7 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -282,30 +283,54 @@ public class FSBacktestOfLowBuyNextHighSell {
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
                                 weightedPrice));
                     }
-                    // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
-                    Double sum =
-                            stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
-                                    .mapToDouble(value -> value.get(0))
-                                    .sum(); // 直接使用流计算总和,
-//                    Double sum = sumOfListNumberUseLoop(
-//                            new ArrayList<>(stockWithTotalPositionAndAdaptedPrice.values()));
-                    if (sum > 1.0) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好1, 并立即返回
-                        // 低买使用总资产.
-                        Double newPosition = epochTotalPosition - (sum - 1.0);
-                        // 折算权重也需要修正.
-                        Double weightedPrice = // 这个老旧 仓位和价格, 是保存着的曾经. 直接用 . 新的总仓位直接用即可
-                                (oldStockWithPositionAndPrice.get(0) / newPosition) * oldStockWithPositionAndPrice
-                                        .get(1) + sellPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
-                        stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
-                                weightedPrice));
-                        break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
-                    }
+                    // 几乎无法全部股票恰好全部卖出, 因此, 不执行相关判定.  循环完成后, 返回前判定剩余
                 }
             }
+            // 用原始仓位 - 高卖执行的总仓位
+            // 做减法, 得到剩余未能卖出的持仓, 并且全部 以close 折算
+            HashMap<Integer, Double> stockWithPositionRemaining =
+                    subRawPositionsWithHighSellExecPositions(stockWithPosition,
+                            stockWithHighSellActualValueAndPosition);
+            // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
+            HashMap<Integer, List<Double>> stockWithHighSellActualValueAndPositionDiscountAll =
+                    discountSuccessHighSellAndRemaining(stockWithPositionRemaining, stockWithHighSellActualValueAndPosition,
+                            discountRemaingRate);
+
+
+            List<Object> res = new ArrayList<>();
+            res.add(stockWithPosition); // 0: 原始仓位
+            res.add(stockWithHighSellActualValueAndPosition);// 1.高卖成功的仓位 和 价格
+            res.add(stockWithPositionRemaining); // 2.剩余仓位 未能成功卖出
+            res.add(stockWithHighSellActualValueAndPositionDiscountAll); // 3.用 0.0折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
+            if (showStockWithPositionFinally) {
+                Console.log(JSONUtil.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
+            }
+            Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
+                    stockWithHighSellActualValueAndPosition); // 高卖成功部分折算价格
+            Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
+                    stockWithHighSellActualValueAndPositionDiscountAll); // 折算剩余, 最终折算价格
+            res.add(weightedGlobalPriceHighSellSuccess); // 4.高卖成功部分, 折算价格
+            res.add(weightedGlobalPriceHighSellFinally); // 5.折算后, 总体折算高卖价格
+            res.add(stockWithActualValueAndPosition); // 6.原始低买时仓位+价格
+            HashMap<Integer, List<Double>> successPartProfits = profitOfHighSell(stockWithActualValueAndPosition,
+                    stockWithHighSellActualValueAndPosition);
+            res.add(successPartProfits); // 7.只计算高卖成功部分, 仓位+盈利值
+            Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
+            res.add(successPartProfitWeighted); // 8.高卖成功部分, 整体的 加权盈利值!!
+            HashMap<Integer, List<Double>> allProfitsDiscounted = profitOfHighSell(stockWithActualValueAndPosition,
+                    stockWithHighSellActualValueAndPositionDiscountAll);
+            res.add(allProfitsDiscounted); // 9.全部, 仓位+盈利值
+            Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
+            res.add(allProfitsDiscountedProfitWeighted); // 10.高卖成功部分, 整体的 加权盈利值!!
+            // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
+            res.add(stockWithHighSellActualValueAndPosition.values().stream()
+                    .mapToDouble(value -> value.get(0).doubleValue())
+                    .sum() / stockWithHighSellActualValueAndPositionDiscountAll.values().stream()
+                    .mapToDouble(value -> value.get(0).doubleValue()).sum()); // 11.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)
+            return res;
 
             highSellResults.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
-            highSellResults.add(reachTotalLimitTimeTick); // 2.达到满仓时的时间, 当然, 也可能240, 且不满仓
-            highSellResults.add(stockHighSellPointsMap); // 3. 各股票买入点
+            highSellResults.add(stockHighSellPointsMap); // 3. 各股票卖出点
 
             return highSellResults;
         }
