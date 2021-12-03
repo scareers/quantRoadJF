@@ -271,6 +271,11 @@ public class FSBacktestOfLowBuyNextHighSell {
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
             lowBuyResults.add(weightedGlobalPrice); // 3.全局折算加权 买入价格
             lowBuyResults.add(reachTotalLimitTimeTick); // 4.达到满仓时的时间, 当然, 也可能240, 且不满仓
+            // todo: 其他保存项, 可以通过以上5项直接计算, 成为新的简单列, 方便mysql筛选查询
+
+
+
+
             return null;
         }
 
