@@ -63,10 +63,10 @@ public class FSBacktestOfLowBuyNextHighSell {
         for (List<String> statDateRange : dateRanges) {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
-            execSql(
-                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
-                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
-                    connOfKlineForms, false);
+//            execSql(
+//                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
+//                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+//                    connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
             log.info("current time");
@@ -96,7 +96,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             formSetIds = filterFormSetIds(formSetIds);
             for (Long formSetId : formSetIds) {
                 Future<Void> f = poolOfBacktest
-                        .submit(new BacktestTaskOfPerDay(formSetId, tradeDate, stockSelectResultPerDay.get(formSetId)));
+                        .submit(new BacktestTaskOfPerDay(formSetId, tradeDate, stockSelectResultPerDay.get(formSetId)
+                                , backtestDateRange));
                 futuresOfBacktest.add(f);
             }
             List<Integer> indexesOfBacktest = CommonUtils.range(futuresOfBacktest.size());
@@ -144,11 +145,10 @@ public class FSBacktestOfLowBuyNextHighSell {
 
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
-
-
         Long formSetId;
         String tradeDate;
         List<String> stockSelected;
+        List<String> backtestDateRange;
 
         Double totalAssets; // 表示总股票数量
 
@@ -158,10 +158,12 @@ public class FSBacktestOfLowBuyNextHighSell {
         List<Double> ticksOfHigh1;
         List<Double> weightsOfHigh1;
 
-        public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected) throws Exception {
+        public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected,
+                                    List<String> backtestDateRange) throws Exception {
             this.formSetId = formSetId;
             this.tradeDate = tradeDate;
             this.stockSelected = stockSelected;
+            this.backtestDateRange = backtestDateRange;
 
             totalAssets = (double) stockSelected.size();
             initDistributions(); // 给定了formSetId, 初始化两大分布(四个列表)
@@ -212,6 +214,11 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
             // 结果df. 将被保存到数据库. Map/List将转换为 json保存. 字符串等基本类型直接保存
             DataFrame<Object> dfLowBuyHighSell = new DataFrame<>();
+            // 0.首先, 一些基本字段需要保存.
+            dfLowBuyHighSell.add("form_set_id", Arrays.asList(formSetId));
+            dfLowBuyHighSell.add("trade_date", Arrays.asList(tradeDate));
+            dfLowBuyHighSell.add("stocks_selected", Arrays.asList(stockSelected));
+            dfLowBuyHighSell.add("stock_selected_count", Arrays.asList(totalAssets));
 
             // 低买开始 ********
             List<Object> lowBuyResults = lowBuyExecuteCore();
@@ -232,21 +239,30 @@ public class FSBacktestOfLowBuyNextHighSell {
             dfLowBuyHighSell.add("lb_buypoints", Arrays.asList(JSONUtil.toJsonStr(stockLowBuyPointsMapForSave)));
             Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPriceLowBuy);
+            dfLowBuyHighSell.add("lb_weighted_buy_price", Arrays.asList(weightedGlobalPrice));
             Double totalPosition = stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream()
                     .mapToDouble(value -> value.get(0)).sum(); // 4. 低买总仓位, 低买执行后即可获取  lb_global_position_sum
-
+            dfLowBuyHighSell.add("lb_global_position_sum", Arrays.asList(totalPosition));
             // 开始高卖尝试 ************  同样有未处理仓位
             // stockWithTotalPositionAndAdaptedPrice 作为核心参数
             // 高卖仅4项基本数据
             List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPriceLowBuy); // 高卖
             HashMap<String, Double> stockWithPositionLowBuy =
                     (HashMap<String, Double>) highSellResult.get(0); // 5.低买结论衍生: 原始持仓map:  lb_positions
+            dfLowBuyHighSell.add("lb_positions", Arrays.asList(JSONUtil.toJsonStr(stockWithPositionLowBuy)));
             HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice =
                     (HashMap<String, List<Double>>) highSellResult.get(1); // 6.高卖成功部分仓位和价格 hs_success_position_price
+            dfLowBuyHighSell.add("hs_success_position_price",
+                    Arrays.asList(JSONUtil.toJsonStr(stockWithHighSellSuccessPositionAndAdaptedPrice)));
             HashMap<String, List<Double>> openAndCloseOfHighSell =
                     (HashMap<String, List<Double>>) highSellResult.get(2); // 7.高卖日开盘和收盘  hs_open_close
+            dfLowBuyHighSell.add("hs_open_close", Arrays.asList(JSONUtil.toJsonStr(openAndCloseOfHighSell)));
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
                     (HashMap<String, List<SellPoint>>) highSellResult.get(3); // 8.高卖日所有高卖点  hs_sellpoints
+            HashMap<String, List<List<Double>>> stockLowSellPointsMapForSave =
+                    convertSellPointsToSaveMode(stockHighSellPointsMap); // 转换一下.
+            dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtil.toJsonStr(stockLowSellPointsMapForSave)));
+
             // 项返回值解析完毕
 
             // 用原始仓位 - 高卖执行的总仓位
@@ -254,39 +270,68 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<String, Double> stockWithPositionRemaining = // 9.剩余仓位 未能成功卖出  hs_remain_positions
                     subRawPositionsWithHighSellExecPositions(stockWithPositionLowBuy,
                             stockWithHighSellSuccessPositionAndAdaptedPrice);
+            dfLowBuyHighSell.add("hs_remain_positions", Arrays.asList(JSONUtil.toJsonStr(stockWithPositionRemaining)));
             // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
             // 用 收盘价折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
             HashMap<String, List<Double>> stockWithHighSellPositionAndAdaptedPriceDiscountAll =
                     discountSuccessHighSellAndRemaining(stockWithPositionRemaining,
                             stockWithHighSellSuccessPositionAndAdaptedPrice,
                             openAndCloseOfHighSell); // 10.全折算卖出: hs_discount_all_position_price
+            dfLowBuyHighSell.add("hs_discount_all_position_price",
+                    Arrays.asList(JSONUtil.toJsonStr(stockWithHighSellPositionAndAdaptedPriceDiscountAll)));
 
             Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
                     stockWithHighSellSuccessPositionAndAdaptedPrice); // 11. 高卖成功部分折算价格 hs_success_global_price
+            dfLowBuyHighSell.add("hs_success_global_price", Arrays.asList(weightedGlobalPriceHighSellSuccess));
+
             Double weightedGlobalPriceHighSellFinally = calcWeightedGlobalPrice2(
                     stockWithHighSellPositionAndAdaptedPriceDiscountAll); // 12.折算剩余, 最终折算价格 hs_discount_all_global_price
+            dfLowBuyHighSell.add("hs_discount_all_global_price", Arrays.asList(weightedGlobalPriceHighSellFinally));
+
             HashMap<String, List<Double>> successPartProfits = profitOfHighSell(
                     stockWithTotalPositionAndAdaptedPriceLowBuy,
                     stockWithHighSellSuccessPositionAndAdaptedPrice);// 13.只计算高卖成功部分, 仓位+盈利值 hs_success_position_profit
+            dfLowBuyHighSell.add("hs_success_position_profit", Arrays.asList(JSONUtil.toJsonStr(successPartProfits)));
+
             // 14.高卖成功部分, 整体的 加权盈利值!! hs_success_profit
             Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
-
+            dfLowBuyHighSell.add("hs_success_profit", Arrays.asList(successPartProfitWeighted));
             HashMap<String, List<Double>> allProfitsDiscounted = // 15.全部, 仓位+盈利值  hs_discount_all_position_profit
                     profitOfHighSell(stockWithTotalPositionAndAdaptedPriceLowBuy,
                             stockWithHighSellPositionAndAdaptedPriceDiscountAll);
+            dfLowBuyHighSell
+                    .add("hs_discount_all_position_profit", Arrays.asList(JSONUtil.toJsonStr(allProfitsDiscounted)));
+
             // 16.全折算后, 整体的 加权盈利值!!   hs_discount_all_profit
             Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);
+            dfLowBuyHighSell.add("hs_discount_all_profit", Arrays.asList(allProfitsDiscountedProfitWeighted));
 
             // @add: 新增, 计量 高卖成功总仓位 / 原始总仓位 , 得到高卖成功比例
             // 17.高卖成功总仓位 / 原始传递总仓位(尽量满仓但是达不到)  hs_success_global_percent
-            Double x = stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
+            Double highSellSuccessPositionPercent = stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
                     .mapToDouble(value -> value.get(0).doubleValue())
                     .sum() / stockWithHighSellPositionAndAdaptedPriceDiscountAll.values().stream()
                     .mapToDouble(value -> value.get(0).doubleValue()).sum();
+            dfLowBuyHighSell.add("hs_success_global_percent", Arrays.asList(highSellSuccessPositionPercent));
             Double profitDiscounted = allProfitsDiscountedProfitWeighted * totalPosition;
             // 18.单次操作盈利 总值, 已经折算仓位使用率, 低买部分不公平, 算是少算收益了.   lbhs_weighted_profit
+            dfLowBuyHighSell.add("lbhs_weighted_profit", Arrays.asList(profitDiscounted));
 
+            DataFrameSelf.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
+                    connLocalTushare, "append", null);
+            Console.log("success: {}", formSetId);
             return null;
+        }
+
+        private HashMap<String, List<List<Double>>> convertSellPointsToSaveMode(
+                HashMap<String, List<SellPoint>> stockHighSellPointsMap) {
+            HashMap<String, List<List<Double>>> res = new HashMap<>();
+            for (String key : stockHighSellPointsMap.keySet()) {
+                List<List<Double>> temp = new ArrayList<>();
+                stockHighSellPointsMap.get(key).stream().map(value -> value.toList()).forEach(temp::add);
+                res.put(key, temp); // 与下一样.使用流
+            }
+            return res;
         }
 
         private HashMap<String, List<List<Double>>> convertBuyPointsToSaveMode(
@@ -361,7 +406,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
 
                     // cdf使用 high 计算.  价格使用 sellPrice计算
-                    Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, highPrice);
+                    Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, highPrice,
+                            tickGap);
                     // @key3: 高卖仓位折算!!!
                     Double lowBuyPositionTotal = stockWithTotalPositionAndAdaptedPriceLowBuy.get(stock).get(0);
                     Double epochTotalPosition =
@@ -809,133 +855,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                 }
                 // @key: 已经得到 单只股票 所有买点列表 [时间, low价格百分比, 买入价格百分比]: buyPoints 计算完毕, 可以是空列表
                 res.put(stock, buyPoints);
-            }
-            return res;
-        }
-
-//        public List<Object> mainOfLowBuyCore() throws IOException {
-//            HashMap<Integer, Double> stockWithPosition = new HashMap<>(); // 股票和对应的position, 已有仓位, 初始0
-//            // stock: [折算position, 折算value]
-//            HashMap<Integer, List<Double>> stockWithActualValueAndPosition = new HashMap<>();
-//
-//            for (int epoch = 0; epoch < 3; epoch++) { // 最多三轮, 某些股票第三轮将没有 Lowx出现, 注意判定
-//                epochRaw = epoch;
-//                // 每一轮可能有n对股票配对成功, 这里暂存, 最后再将这些移除股票池, 然后加入完成池
-//                // @noti: @key2: 使用配对策略, 因此单个股票总仓配置2,而非1. 单次仓位, 则为 2* cdf(对应分布of该值)..
-//                // 完全决定本轮后的总仓位, 后面统一配对, 再做修改
-//                for (Integer id : stockPool) { // 应当改为, 计算出 每股票的买点(包括price和时间),
-//                    // todo
-//                    stockWithPosition.putIfAbsent(id, 0.0); // 默认0
-//                    stockWithActualValueAndPosition.putIfAbsent(id, new ArrayList<>(Arrays.asList(0.0, 0.0)));
-//                    // 第epoch轮, 出现的 Low 几?
-//                    List<Integer> lows = stockLowOccurrences.get(id);
-//                    if (epoch >= lows.size()) {
-//                        continue; // 有些股票没有Low3, 需要小心越界. 这里跳过
-//                    }
-//                    Integer lowx = stockLowOccurrences.get(id).get(epoch);
-//
-//                    WeightRandom<Double> random = lowWithRandom.get(lowx); // 获取到随机器
-//                    // @key: low实际值, cdf等
-//                    Double actualValue = Double.parseDouble(random.next().toString());  // 具体的LOw出现时的 真实值
-//                    // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
-//                    // 修改以更加符合实际. 当然,这里单个区间内的无数个值, 是平均概率的. 已经十分接近实际
-//                    // @noti: cdf那里应当同时修改.
-//                    actualValue = actualValue - Math.abs(Math.random() * tickGap);
-//                    if (actualValue > execLowBuyThreshold) {
-//                        continue; // 必须小于阈值
-//                    }
-//
-//                    // 此值以及对应权重应当被保存
-//
-//                    List<Double> valuePercentOfLow = valuePercentOfLowx.get(lowx - 1); // 出现low几? 得到值列表
-//                    List<Double> weightsOfLow = weightsOfLowx.get(lowx - 1);
-//                    if (forceFirstDistributionDecidePosition) {
-//                        valuePercentOfLow = valuePercentOfLowx.get(0);
-//                        weightsOfLow = weightsOfLowx.get(0);
-//                    }
-//                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, actualValue);
-//
-//                    // @key2: 本轮后总仓位
-//                    Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint; // 因两两配对, 因此这里仓位使用 2作为基数. 且为该股票总仓位
-//                    if (epochTotalPosition > positionUpperLimit) {
-//                        epochTotalPosition = positionUpperLimit; // 上限
-//                    }
-//
-//                    Double oldPositionTemp = stockWithPosition.get(id);
-//                    List<Double> oldStockWithPositionAndValue = stockWithActualValueAndPosition.get(id); // 默认0,0, 已经折算
-//                    if (oldPositionTemp < epochTotalPosition) {
-//                        stockWithPosition.put(id, epochTotalPosition); // 必须新的总仓位, 大于此前轮次总仓位, 才需要修改!!
-//                        // 此时需要对 仓位和均成本进行折算. 新的一部分, 价格为 actualValue, 总仓位 epochTotalPosition.
-//                        // 旧的一部分, 价格 stockWithPositionAndValue.get(1), 旧总仓位 stockWithPositionAndValue.get(0)
-//                        // 单步折算.
-//                        Double weightedPrice =
-//                                (oldStockWithPositionAndValue
-//                                        .get(0) / epochTotalPosition) * oldStockWithPositionAndValue
-//                                        .get(1) + actualValue * (1 - oldStockWithPositionAndValue
-//                                        .get(0) / epochTotalPosition);
-//                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
-//                    }
-//                    // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
-//                    Double sum = sumOfListNumberUseLoop(new ArrayList<>(stockWithPosition.values()));
-//                    if (sum > totalAssets) { // 如果超上限, 则将本股票 epochTotalPosition 减小, 是的总仓位 刚好30, 并立即返回
-//                        Double newPosition = epochTotalPosition - (sum - totalAssets);
-//                        stockWithPosition.put(id, newPosition); // 修改仓位
-//                        // 折算权重也需要修正.
-//                        Double weightedPrice =
-//                                (oldStockWithPositionAndValue.get(0) / newPosition) * oldStockWithPositionAndValue
-//                                        .get(1) + actualValue * (1 - oldStockWithPositionAndValue.get(0) / newPosition);
-//                        stockWithActualValueAndPosition.put(id, Arrays.asList(epochTotalPosition, weightedPrice));
-//
-//                        reachTotalLimitInLoop = true;
-//                        List<Object> res = new ArrayList<>();
-//                        res.add(stockWithPosition);
-//                        if (showStockWithPosition) {
-//                            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
-//                        }
-//                        res.add(reachTotalLimitInLoop);
-//                        res.add(epoch + 1);
-//                        res.add(stockWithActualValueAndPosition);
-//                        Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
-//                        res.add(weightedGlobalPrice);
-//                        return res;
-//                    }
-//                }
-//
-//                // @key3: 尝试两两配对, 且修复仓位, 符合不超过2, 此时本轮 stockWithPosition 已经raw完成
-//
-//            }
-//            List<Object> res = new ArrayList<>();
-//            res.add(stockWithPosition);
-//            if (showStockWithPosition) {
-//                Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
-//            }
-//            res.add(reachTotalLimitInLoop);
-//            res.add(epochRaw + 1);
-//            res.add(stockWithActualValueAndPosition);
-//            Double weightedGlobalPrice = calcWeightedGlobalPrice(stockWithActualValueAndPosition);
-//            res.add(weightedGlobalPrice);
-//            return res; // 循环完成仍旧没有达到过30上限, 也返回最终的仓位分布
-//        }
-
-
-        // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
-        public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
-        public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
-
-        static {
-            try {
-                formSetsMapFromDB = parseFromsSetsFromDb();
-                formSetsMapFromDBAsHashSet = parseMapToSets(formSetsMapFromDB);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-
-        private static ConcurrentHashMap<Long, HashSet<String>> parseMapToSets(
-                ConcurrentHashMap<Long, List<String>> formSetsMapFromDB) {
-            ConcurrentHashMap<Long, HashSet<String>> res = new ConcurrentHashMap<>();
-            for (Long key : formSetsMapFromDB.keySet()) {
-                res.put(key, new HashSet<>(formSetsMapFromDB.get(key)));
             }
             return res;
         }

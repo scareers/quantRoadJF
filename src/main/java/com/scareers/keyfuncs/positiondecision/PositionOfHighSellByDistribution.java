@@ -502,6 +502,11 @@ public class PositionOfHighSellByDistribution {
      */
     public static Double virtualCdfAsPositionForHighSell(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                          Double value) {
+        return virtualCdfAsPositionForHighSell(valuePercentOfLow, weightsOfLow, value, tickGap);
+    }
+
+    public static Double virtualCdfAsPositionForHighSell(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
+                                                         Double value, Double tickGap) {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);

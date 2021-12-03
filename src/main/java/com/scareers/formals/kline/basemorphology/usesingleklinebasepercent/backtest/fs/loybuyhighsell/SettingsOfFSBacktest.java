@@ -15,24 +15,10 @@ import java.util.List;
  * @date: 2021/11/14  0014-8:51
  */
 public class SettingsOfFSBacktest {
-    public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五
-    // 低买设定
-    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int continuousFallTickCountThreshold = 1; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
-    // 高卖设定
-    public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
-    public static final Double execHighSellThreshold = 0.01; // 必须 >0.01阈值, 才可能执行高卖,
-    public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
-
-
     public static final List<Integer> keyInts = Arrays.asList(0, 1);
     // 2021-最后一个周期数据, 140天出手次数在此范围才被选中
     public static final List<Integer> formSetIdsFilterArgs = Arrays.asList(1000, 10000);
-    public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
-    public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
-    public static Connection connLocalTushare = ConnectionFactory.getConnLocalTushare();
+
     public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
     public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
             keyInts.get(1));
@@ -43,7 +29,22 @@ public class SettingsOfFSBacktest {
     public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
     public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
             saveTablenameFSBacktest);
-    public static final int processAmountOfBacktest = 8;
+    public static final int processAmountOfBacktest = 16;
+
+    // 低买设定
+    public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要
+    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
+    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static int continuousFallTickCountThreshold = 1; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
+    // 高卖设定
+    public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
+    public static final Double execHighSellThreshold = 0.01; // 必须 >0.01阈值, 才可能执行高卖,
+    public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
+    // 连接对象
+    public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
+    public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
+    public static Connection connLocalTushare = ConnectionFactory.getConnLocalTushare();
 
     public static final List<List<String>> dateRanges = Arrays.asList(
             // 本身同主程序. 这里对任意形态组,均可在全日期区间验证. 常设置验证最后1区间
@@ -75,128 +76,9 @@ public class SettingsOfFSBacktest {
     // 分时数据时, 仅访问close, 不访问多余字段,加速
     public static final List<String> fsSpecialUseFields = Arrays.asList("trade_time", "close"); // 简单买卖回测无视掉amount
 
-    // 即判定 next0(明日) 的 最低点的分布. 本设定对应了 LowBuyNextHighSellDistributionAnalyze. correspondingFilterAlgos
-    // 均表示 从上一级哪个结论表而分析.  比单独用一个 keyInt 更加合适
-    // 核心设置, 只需要更改次设定即可. 表示 访问哪一个 next{}b{}s_ .. 表进行分时分析
-
-    // 核心设定项2, 是否(并列)计算 HighSell,否则值计算LowBuy
-    // @noti: 当只计算LowBuy, cpu能跑满100%, 同时计算HighSell时, CPU跑到70%. 16线程情况下; 原因未知. 可能因为fs缓存生效?加大线程数量到64.
-    public static final boolean parallelComputingLowBuy = false; // 是否计算lowbuy
-    public static final boolean parallelComputingHighSell = true; // 是否计算highsell
-    public static final boolean parallelOnlyStockSelectResult = true; // 是否执行选股保存脚本. 当true时, 默认无视上两设置,只选股结果保存
-    public static final int stockAmountsBeCalcFS = 1000000;
-    // 左右支配参数. 例如对于low, 左支配阈值, 为 abs(low)*0.2 + low; 对于 High, 则== high - abs(High)*0.2
-    public static final Double dominateRateKeyArg = 0.2;
-    public static final int calcLayer = 3; // 即判定3层. Low, Low2, Low3  @key: 核心设定
-
-    public static final int processAmountSave = 8;
-    public static final int perEpochTaskAmounts = 8;
-    public static final int gcControlEpochParse = 4;
-    public static final int gcControlEpochSave = 100;
-    public static final boolean showMemoryUsage = true;
-    public static final Class[] fieldsOfDfRawClass = {String.class, Double.class, Double.class,
-            Double.class, Double.class, Double.class};
-
-
-    // 在 分析函数已经手动设定. 对这些参数不在显式设定, 见 analyzeStatsResults()
-    //    public static List<Double> smallLargeThresholdOfValuePercent = Arrays.asList(-0.03, 0.03); // 涨跌幅的3个参数. low/high同
-    //    public static List<Double> effectiveValueRangeOfValuePercent = Arrays.asList(-0.5, 0.5);
-    //    public static int binsOfValuePercent = 200;
-    //    public static List<Double> smallLargeThresholdOfAmountPercent = Arrays.asList(0.05, 0.15); // 连续成交额的3个参数.
-    //    public static List<Double> effectiveValueRangeOfAmountPercent = Arrays.asList(0.0, 1.0); // 成交量 200tick, 每个 0.5%
-    //    public static int binsOfAmountPercent = 200;
-
-    public static final List<List<Double>> effectiveValueRanges = Arrays.asList(
-            Arrays.asList(-0.11, 0.11), // 本设定暂时同主程序.
-            Arrays.asList(-0.22, 0.22),
-            Arrays.asList(-0.28, 0.34), // window lenth == 9, 即next2开始, 不再强行对称. 而改用 0.9**n/ 1.1**n折算
-            Arrays.asList(-0.36, 0.47), //
-            Arrays.asList(-0.42, 0.62), //
-            Arrays.asList(-0.46, 0.78), // 12
-            Arrays.asList(-0.54, 0.95) // 13
-    );
-    public static final List<Integer> correspondingBins = Arrays.asList(
-            44, 88, 124, 188, // next0,1,2,3
-            208, 248, 298
-    );
-    // 已经计算出实际严格使用的涨跌幅限制
-    public static final List<Double> effectiveValueRangeForLow = effectiveValueRanges.get(keyInts.get(0));
-    public static final int binForLow = correspondingBins.get(keyInts.get(0));
-    public static final List<Double> effectiveValueRangeForHigh = effectiveValueRanges.get(keyInts.get(1));
-    public static final int binForHigh = correspondingBins.get(keyInts.get(1));
-
-
-    // 删除曾经的记录,逻辑同主程序
-
-
-    public static final String saveTablenameStockSelectResult = StrUtil.format
-            (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
-                    keyInts.get(1));
-
-    public static String getSaveTablenameStockSelectResultRaw() {
-        return "stock_select_result_of_formsetids_next{}b{}s";
-    }
-
-    public static final String sqlCreateStockSelectResult = StrUtil
-            .format(getSqlCreateStockSelectResultSaveTableTemplate(), saveTablenameStockSelectResult
-            );
-
-    private static String buildFullDeleteSql(String sqlDeleteExistDateRangeRawFSRaw) {
-        if (parallelComputingLowBuy && parallelComputingHighSell) {
-            return sqlDeleteExistDateRangeRawFSRaw; // 全部删除
-        }
-        if (parallelComputingLowBuy) {
-            return sqlDeleteExistDateRangeRawFSRaw + " and stat_result_algorithm like '%Low%'";
-        }
-        if (parallelComputingHighSell) {
-            return sqlDeleteExistDateRangeRawFSRaw + " and stat_result_algorithm like '%High%'";
-        }
-        // 此时两样都不抓取, 设置错误, 报错即可
-        return null;
-    }
-
 
     /**
      * [暂时的字段列表
-     * "small_large_threshold",
-     * "samlllarge_compare_counts_percent_0",
-     * "samlllarge_compare_counts_percent_1",
-     * "samlllarge_compare_counts_percent_2",
-     * "std",
-     * "bins",
-     * "frequency_list",
-     * "outliers_counts",
-     * "max",
-     * "effective_value_range",
-     * "cdf_list",
-     * "tick_list",
-     * "reference_compare_counts_percent_0",
-     * "reference_compare_counts_percent_1",
-     * "reference_compare_counts_percent_2",
-     * "virtual_geometry_mean",
-     * "effective_counts",
-     * "total_counts",
-     * "reference_value",
-     * "min",
-     * "samlllarge_compare_counts_0",
-     * "samlllarge_compare_counts_1",
-     * "samlllarge_compare_counts_2",
-     * "reference_compare_counts_0",
-     * "reference_compare_counts_1",
-     * "reference_compare_counts_2",
-     * "mean",
-     * "effective_count_percent",
-     * "counts_list",
-     * "outliers_count_percent",
-     * "kurt",
-     * "skew"
-     * ]
-     * <p>
-     * analyzeResultDf.add("form_set_id", formSetId.intValue());
-     * analyzeResultDf.add("stat_result_algorithm", statResultAlgorithm);
-     * analyzeResultDf.add("concrete_algorithm", statResultAlgorithm);
-     * analyzeResultDf.add("stat_date_range", statDateRange);
-     * analyzeResultDf.add("stat_stock_counts", stockCount);
      */
     public static String getSaveTableTemplate() {
 
@@ -280,21 +162,5 @@ public class SettingsOfFSBacktest {
                 ")\n" +
                 "    comment '分时 低买高卖 最低点最高点分布分析';\n";
         return null;
-    }
-
-    public static String getSqlCreateStockSelectResultSaveTableTemplate() {
-        String s = "create table if not exists `{}`\n" +
-                "(\n" +
-                "    id int auto_increment comment 'id'\n" + " primary key,\n" +
-                "    trade_date   varchar(1024) null comment 'today: 选股日期',\n" +
-                "    ts_code     varchar(1024) null comment '某只股票',\n" +
-                "    form_set_ids     longtext null comment '该股票,该日, 所属的形态集合, 即被那些形态集合选中. json字符串Long列表',\n" +
-                "    self_notes      varchar(2048) null comment '其他备注',\n" +
-
-                "     INDEX trade_date_index (trade_date ASC),\n" +
-                "     INDEX ts_code_index (ts_code ASC)\n" +
-                ")\n" +
-                "    comment '选股结果: 日期-股票-所属形态集合id列表';\n";
-        return s;
     }
 }

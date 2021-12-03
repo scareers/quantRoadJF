@@ -386,6 +386,11 @@ public class PositionOfLowBuyByDistribution {
      */
     public static Double virtualCdfAsPositionForLowBuy(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                        Double value) {
+        return virtualCdfAsPositionForLowBuy(valuePercentOfLow, weightsOfLow, value, tickGap);
+    }
+
+    public static Double virtualCdfAsPositionForLowBuy(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
+                                                       Double value, Double tickGap) {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);
@@ -414,6 +419,7 @@ public class PositionOfLowBuyByDistribution {
 //        return res; // 求和可能了多次
         return total;
     }
+
 
     public static WeightRandom<Double> getDistributionsOfLow1() throws IOException {
         return getActualDistributionRandom(valuePercentOfLowx.get(0), weightsOfLowx.get(0));
