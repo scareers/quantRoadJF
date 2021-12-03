@@ -228,6 +228,17 @@ public class FSBacktestOfLowBuyNextHighSell {
                     "    lb_positions   longtext null comment '低买后持仓状况',\n" +
                     "    hs_success_position_price   longtext null comment '高卖成功部分  仓位+价格',\n" +
                     "    hs_open_close   longtext null comment '高卖日 开盘价和收盘价格',\n" +
+                    "    hs_sellpoints   longtext null comment '高卖点',\n" +
+                    "    hs_remain_positions   longtext null comment '高卖未能成功剩余部分仓位',\n" +
+                    "    hs_discount_all_position_price   longtext null comment '高卖全部收盘折算后, 仓位和价格',\n" +
+                    "    hs_success_global_price   double null comment '高卖成功部分, 折算价格',\n" +
+                    "    hs_discount_all_global_price   double null comment '高卖全部折算, 折算价格',\n" +
+                    "    hs_success_position_profit   longtext null comment '高卖只计算成功部分,仓位+低买高卖操作收益',\n" +
+                    "    hs_success_profit   double null comment '高卖只计算成功部分, 加权盈利',\n" +
+                    "    hs_discount_all_position_profit   longtext null comment '高卖全部折算,仓位+低买高卖操作收益',\n" +
+                    "    hs_discount_all_profit   double null comment '高卖全部折算, 加权盈利',\n" +
+                    "    hs_success_global_percent   double null comment '@key:高卖成功总仓位 占比 低买成功总仓位.',\n" +
+                    "    lbhs_weighted_profit   double null comment '@key:低买高卖一次操作保守折算收益率.',\n" +
 
 
                     ")\n" +
