@@ -694,7 +694,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
 
                     // cdf使用low 计算.  价格使用buyPrice计算
-                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice);
+                    Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, lowPrice,tickGap);
                     // @key2: 本轮后总仓位;  @noti: 已经将总仓位标准化为 1!!, 因此后面计算总仓位, 不需要 /资产数量
                     Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / totalAssets; // 加大标准仓位,倍率设定1
                     if (epochTotalPosition > positionUpperLimit / totalAssets) { // 设置上限控制标准差.

@@ -394,6 +394,7 @@ public class PositionOfLowBuyByDistribution {
 //        Console.log(valuePercentOfLow);
 //        Console.log(weightsOfLow);
 //        Console.log(value);
+//        Console.log(tickGap);
         double total = 0.0;
         //Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
@@ -413,10 +414,8 @@ public class PositionOfLowBuyByDistribution {
                     .get(i - 1)) * (Math.abs((value - tickPre)) / tickGap);
             break; //一次即可跳出
         }
-//        double sum = sumOfListNumberUseLoop(weightsOfLow);
-//        double res = total / sum;
-////        Console.log(res);
-//        return res; // 求和可能了多次
+
+//        Console.log(total);
         return total;
     }
 
