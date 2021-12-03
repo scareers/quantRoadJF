@@ -168,7 +168,23 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             // 低买开始 ********
             List<Object> lowBuyResults = lowBuyExecuteCore();
-
+            // 这两项是低买原始结论.
+            HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = (HashMap<String, List<Double>>) lowBuyResults
+                    .get(0); // 1.  lb_position_price_map   股票的 仓位,折算价格  字典保存
+            Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 2. lb_full_position_time_tick  满仓时间
+            // @noti: 以下为低买引申结论
+//            HashMap<String, Double> stockWithPosition = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
+//            HashMap<String, Double> stockWithBuyPrice = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
+//            for (String stock : stockWithTotalPositionAndAdaptedPrice.keySet()) {
+//                List<Double> temp = stockWithTotalPositionAndAdaptedPrice.get(stock);
+//                stockWithPosition.put(stock, temp.get(0));
+//                stockWithBuyPrice.put(stock, temp.get(1));
+//            }
+//            lowBuyResults.add(stockWithPosition); // 1.{股票: 总仓位}
+//            lowBuyResults.add(stockWithBuyPrice); // 2.{股票: 折算买入成本价} // @noti: 为了减小数据列, 此2不再保存
+            Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
+                    .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
+            // todo: 其他保存项, 可以通过以上2项直接计算, 成为新的简单列, 方便mysql筛选查询, 这里就简单返回这两项即可
 
             return null;
         }
@@ -257,22 +273,9 @@ public class FSBacktestOfLowBuyNextHighSell {
                 }
             }
 
-            HashMap<String, Double> stockWithPosition = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
-            HashMap<String, Double> stockWithBuyPrice = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
-            for (String stock : stockWithTotalPositionAndAdaptedPrice.keySet()) {
-                List<Double> temp = stockWithTotalPositionAndAdaptedPrice.get(stock);
-                stockWithPosition.put(stock, temp.get(0));
-                stockWithBuyPrice.put(stock, temp.get(1));
-            }
             lowBuyResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
-            lowBuyResults.add(stockWithPosition); // 1.{股票: 总仓位}
-            lowBuyResults.add(stockWithBuyPrice); // 2.{股票: 折算买入成本价}
-            Double weightedGlobalPrice = BacktestTaskOfPerDay
-                    .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
-            lowBuyResults.add(weightedGlobalPrice); // 3.全局折算加权 买入价格
-            lowBuyResults.add(reachTotalLimitTimeTick); // 4.达到满仓时的时间, 当然, 也可能240, 且不满仓
+            lowBuyResults.add(reachTotalLimitTimeTick); // 2.达到满仓时的时间, 当然, 也可能240, 且不满仓
 
-            // todo: 其他保存项, 可以通过以上5项直接计算, 成为新的简单列, 方便mysql筛选查询
             return lowBuyResults;
         }
 

@@ -11,6 +11,7 @@ import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class PositionOfLowBuyByDistribution {
     public static Double totalAssets = 20.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
     public static int perLoops = 100000;
     private static boolean showStockWithPosition = false;
-    public static int formSetIdControll = 1; // 通过下标, 可以控制使用哪个id
+    public static int formSetIdControll = 0; // 通过下标, 可以控制使用哪个id
     public static boolean forceFirstDistributionDecidePosition = true; // 强制使用 low1/high1分布, 决定仓位,而非 Low1/2/3皆有可能
     // 核心参数1, 它用于模拟, 某只股票, 今日 出现了 多少个 Low/High,  例如0/1/2/3个, 权重控制 出现这些个数的比例
     public static List<WeightObj<Integer>> lowHighOccurrWeightList = Arrays.asList(
@@ -68,8 +69,8 @@ public class PositionOfLowBuyByDistribution {
         List<Boolean> reachTotalLimitInLoops = new ArrayList<>();
         List<Integer> epochs = new ArrayList<>();
         List<Double> weightedGlobalPrices = new ArrayList<>();
-
-        for (int i = 0; i < loops; i++) {
+        List<Integer> loopList = range(loops);
+        for (Integer i : Tqdm.tqdm(loopList, String.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
             HashMap<Integer, Double> positions = parser.getStockWithPosition();
