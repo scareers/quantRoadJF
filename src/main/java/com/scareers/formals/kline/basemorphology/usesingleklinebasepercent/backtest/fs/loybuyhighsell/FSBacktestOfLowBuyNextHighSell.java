@@ -15,7 +15,6 @@ import lombok.NoArgsConstructor;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
@@ -158,8 +157,6 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double highPricePercent;
             Double sellPricePercent;
 
-            Double openPricePercent; // 开盘价
-            Double closePricePercent; // 收盘价
         }
 
 
@@ -214,19 +211,23 @@ public class FSBacktestOfLowBuyNextHighSell {
         public List<Object> highSellExecuteCore(HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice)
                 throws Exception {
             List<Object> highSellResults = new ArrayList<>();
-            // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
-            // 1. 同理获取 卖点
-            HashMap<String, List<SellPoint>> stockLowBuyPointsMap =
-                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPrice);
 
-            // 将买点, 转换为 HashMap, key:value:  时间戳: 该tick 有买点的股票 {股票: 买点对象}
-            // 买点对象: List<List<Double>> , 因为每个 tick, 每只股票最多只有单个 买点, 因此该数据结构符合逻辑
-            HashMap<Double, HashMap<String, BuyPoint>> buyPointsOfAllTick = convertToTickWithStockBuys(
-                    stockLowBuyPointsMap);
-            // @key: 开始模拟买入,  tick 从  0.0 --> 240.0   ; 在同一分钟, 都有买点的股票, 就无视先后顺序了, 随 Map 的缘
+            // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
+            // 1. 同理获取 卖点map, 比起低买, 高卖还需要获取 开盘价 和 收盘价map, 以便折算
+            List<Object> highSellPointsRes =
+                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPrice);
+            HashMap<String, List<SellPoint>> stockHighSellPointsMap =
+                    (HashMap<String, List<SellPoint>>) highSellPointsRes.get(0);
+            HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellPointsRes
+                    .get(1);
+
+            // 将卖点, 转换为 HashMap, key:value:  时间戳: 该tick 有卖点的股票 {股票: 卖点对象}
+            // 卖点对象: SellPoint , 因为每个 tick, 每只股票最多只有单个 买点, 因此该数据结构符合逻辑
+            HashMap<Double, HashMap<String, SellPoint>> buyPointsOfAllTick = convertToTickWithStockSells(
+                    stockHighSellPointsMap);
+            // @key: 开始模拟卖入,  tick 从  0.0 --> 240.0   ; 在同一分钟, 都有卖点的股票, 就无视先后顺序了, 随 Map 的缘
             ArrayList<Double> timeTicks = new ArrayList<>(buyPointsOfAllTick.keySet());
             timeTicks.sort(Comparator.naturalOrder()); // 已经排序. 买点可能很难分布与 240个tick都有, 所以
-
             // @key: 结果项
             // 股票和对应总仓位和折算价格
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = new HashMap<>();
@@ -298,7 +299,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             highSellResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
             highSellResults.add(reachTotalLimitTimeTick); // 2.达到满仓时的时间, 当然, 也可能240, 且不满仓
-            highSellResults.add(stockLowBuyPointsMap); // 3. 各股票买入点
+            highSellResults.add(stockHighSellPointsMap); // 3. 各股票买入点
 
             return highSellResults;
         }
@@ -310,21 +311,24 @@ public class FSBacktestOfLowBuyNextHighSell {
          * @return
          * @throws Exception
          */
-        HashMap<String, List<SellPoint>> getStockHighSellPointsMap(
+        List<Object> getStockHighSellPointsMap(
                 HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice) throws Exception {
             HashMap<String, List<SellPoint>> res = new HashMap<>();
+            // 把开盘和收盘也保存一下,多出来的卖出逻辑. stock: [open, close] 卖出当天的
+            HashMap<String, List<Double>> resOfSellOpenAndClose = new HashMap<>();
             // 需要计算哪些股票有持仓, 没有持仓的股票, 则不需要计算卖点
             List<String> stockHasPosition =
                     stockWithTotalPositionAndAdaptedPrice.entrySet().stream()
                             .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
             for (String stock : stockHasPosition) {
+                resOfSellOpenAndClose.putIfAbsent(stock, Arrays.asList(0.0, 0.0)); // 赋值时, open和close分布设置 0/1 即可
                 String highSellDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(1); // get1 是卖出日期
                 DataFrame<Object> dfFSHighSellDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock,
                         highSellDate,
                         fsSpecialUseFields); // Arrays.asList("trade_time", "close")
                 if (dfFSHighSellDay == null || dfFSHighSellDay.length() == 0) {
-                    return res; // 无分时数据, 则没有计算结果
+                    continue;
                 }
                 // 1.将 trade_time, 转换为 tickDouble.
                 List<Object> tradeTimeCol = dfFSHighSellDay.col(0);
@@ -338,61 +342,76 @@ public class FSBacktestOfLowBuyNextHighSell {
                 Double stdCloseOfHighSell = closePriceOfQfqStockSpecialDay(stock, tradeDate, highSellDate,
                         connLocalTushare);
                 // 阈值是负数百分比. 计算阈值价格, 这里 需要 不小于次阈值实际价格, 才可能高卖
-                Double highSellActualPriceThreshold = stdCloseOfHighSell * (1 + execLowBuyThreshold);
-                // 开始遍历close, 得到买入点,
-                List<BuyPoint> buyPoints = new ArrayList<>();
-                // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更高, cdf仓位应该更低才对, 因此不是买点!
-                // @key: 因此, 如果一只股票有多个买点, 则 价格是越来越低的, 不会变高!, 也不会相等
+                // 算法同.只是下面<换成>
+                Double highSellActualPriceThreshold = stdCloseOfHighSell * (1 + execHighSellThreshold);
+                // 开始遍历close, 得到卖出点,
+                List<SellPoint> sellPoints = new ArrayList<>();
+                // @key: @noti: 很明显, 按照cdf 的买入逻辑, 如果后面的 价格, 比之前价格更低, cdf卖出仓位应该更低才对, 因此不是卖点!
+                // @key: 因此, 如果一只股票有多个卖点, 则 价格是越来越高的, 不会变更低!, 也不会相等
                 int lenth = closeCol.size();
                 for (int i = 0; i < lenth; i++) {
-                    // 首先, 必须 下一个tick 是 上升的, 或者 i==最后. 否则continue
-                    boolean nextTickRaise = false; // flag: 下一tick为上升
-                    if (i == lenth - 1 || closeCol.get(i) < closeCol.get(i + 1)) {
-                        nextTickRaise = true; // 最后一tick视为 符合条件, 防止越界
+                    if (i == 1) {
+                        resOfSellOpenAndClose.get(stock).set(0, closeCol.get(i) / stdCloseOfHighSell - 1);
+                    }// 保存开盘价
+                    if (i == lenth - 1) {
+                        resOfSellOpenAndClose.get(stock).set(1, closeCol.get(i) / stdCloseOfHighSell - 1);
+                    }// 保存收盘价.
+
+
+                    // 高卖点开始
+                    // 首先, 必须 下一个tick 是 下降的, 或者 i==最后. 否则continue
+                    boolean nextTickFall = false; // flag: 下一tick为下降
+                    if (i == lenth - 1 || closeCol.get(i) > closeCol.get(i + 1)) {
+                        nextTickFall = true; // 最后一tick视为 符合条件, 防止越界
                         // 或者后一>前1.
                     }
-                    if (!nextTickRaise) {
-                        continue; // 如果下一tick 不是上升, 则 跳过, 不是买入点
+                    if (!nextTickFall) {
+                        continue; // 如果下一tick 不是下降, 则 跳过, 不是卖出点
                     }
-                    int continuousFallTickCount = 0; // 连续下跌tick数量, 包括相等 !!!
-                    // 从某个点, 往前, 连续下跌的 tick 数量, 其中 0tick的连续下降视为 250,
-                    // 即开盘视为满足 连续下跌的条件, 仅仅需要对阈值进行符合判定, 即可买入
+                    int continuousRaiseTickCount = 0; // 连续上升tick数量, 包括相等 !!!
+                    // 从某个点, 往前, 连续上升的 tick 数量, 其中 0tick的连续上升视为 241,  // 正常上限 240.
+                    // 即开盘视为满足 连续上升的条件, 仅仅需要对阈值进行符合判定, 即可买入
                     if (i == 0) {
-                        continuousFallTickCount = 241; // 假定为最大, 开盘不限定
+                        continuousRaiseTickCount = 241; // 假定为最大, 开盘不限定
                     } else { // 其他tick都可以得到一个 连续下跌(包括相等) tick数量
                         for (int j = i; j > 0; j++) { // i开始, 计算到0, 不包括0.  即 -1分钟到0分钟 不计
-                            if (closeCol.get(j) <= closeCol.get(j - 1)) {
-                                continuousFallTickCount++;
+                            if (closeCol.get(j) >= closeCol.get(j - 1)) {
+                                continuousRaiseTickCount++;
                             } else {
                                 break; // 一旦不符合, 应当跳出
                             }
                         }
                     }
                     // 多条件限定买点, 这里不用 and, 更加清晰
-                    if (continuousFallTickCount >= continuousFallTickCountThreshold) { // 连续下跌数量必须不小于阈值设定
-                        if (closeCol.get(i) <= highSellActualPriceThreshold) { // 必须价格不大于 设定阈值计算出来的价格
+                    if (continuousRaiseTickCount >= continuousRaiseTickCountThreshold) { // 连续下跌数量必须不小于阈值设定
+                        if (closeCol.get(i) >= highSellActualPriceThreshold) { // 必须价格不小于 设定阈值计算出来的价格
                             // 买入点, 必须 越来越低, 才符合 cdf 仓位算法!. 因此 需判定此前是否已经有买入点?
-                            Double lowPrice = closeCol.get(i) / stdCloseOfHighSell - 1; // 低点价格
-                            if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
-                                Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                        closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfHighSell) - 1 : lowPrice;
-                                buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
-                            } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
-                                Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
-                                if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
+                            Double highPrice = closeCol.get(i) / stdCloseOfHighSell - 1; // 高点价格
+                            if (sellPoints.size() == 0) { // 我是第一个卖点, 直接加入
+                                Double buyPrice = i != lenth - 1 ?  // 折算卖出价格. 高点和下一tick(低) 的平均值
+                                        closeCol.get(i) + closeCol
+                                                .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+                                sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice));
+                            } else { // 此前有买入点, 当前价格, 应当 高于此前最后一个高点的 高点价格, 当然是百分比
+                                Double lastLowPrice = sellPoints.get(sellPoints.size() - 1).getHighPricePercent();
+                                if (highPrice > lastLowPrice) { // 必须更大, 才可能添加, 符合 cdf仓位算法
                                     Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                             closeCol.get(i) + closeCol
-                                                    .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : lowPrice;
-                                    buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                                    .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+                                    sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice));
                                 }
                             }
                         }
                     }
                 }
-                // @key: 已经得到 单只股票 所有买点列表 [时间, low价格百分比, 买入价格百分比]: buyPoints 计算完毕, 可以是空列表
-                res.put(stock, buyPoints);
+                // @key: 已经得到 单只股票 所有买点列表 [时间, high价格百分比, 卖出价格百分比]: sellPoints 计算完毕, 可以是空列表
+                res.put(stock, sellPoints);
             }
-            return res;
+
+            List<Object> sellRes = new ArrayList<>();
+            sellRes.add(res); // 卖点列表  HashMap<String, List<SellPoint>>
+            sellRes.add(resOfSellOpenAndClose); // 开盘价和收盘价  HashMap<String, List<Double>>
+            return sellRes;
         }
 
         public List<Object> lowBuyExecuteCore() throws Exception {
@@ -512,6 +531,21 @@ public class FSBacktestOfLowBuyNextHighSell {
             return res;
         }
 
+        private HashMap<Double, HashMap<String, SellPoint>> convertToTickWithStockSells(
+                HashMap<String, List<SellPoint>> stockHighSellPointsMap) {
+            HashMap<Double, HashMap<String, SellPoint>> res = new HashMap<>();
+            for (String stock : stockHighSellPointsMap.keySet()) {
+                List<SellPoint> sellPointsOfStock = stockHighSellPointsMap.get(stock);
+                for (SellPoint sellPoint : sellPointsOfStock) {
+                    Double timeTick = sellPoint.getTimeTick();
+                    res.putIfAbsent(timeTick, new HashMap<>());
+                    res.get(timeTick).put(stock, sellPoint);
+                    // @noti: 这里能够直接修改值
+                }
+            }
+            return res;
+        }
+
         /**
          * 获取所有股票 买点列表.  key:value --> 股票:买点列表           买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
          * // @key: 买入点逻辑: 必须<某个临界值, 且 连续下跌, 下一tick上涨. 买入价格为 最低点和下一tick的平均值
@@ -527,7 +561,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 DataFrame<Object> dfFSLowBuyDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock, lowBuyDate,
                         fsSpecialUseFields); // Arrays.asList("trade_time", "close")
                 if (dfFSLowBuyDay == null || dfFSLowBuyDay.length() == 0) {
-                    return res; // 无分时数据, 则没有计算结果
+                    continue; // 无分时数据, 则没有计算结果
                 }
                 // 1.将 trade_time, 转换为 tickDouble.
                 List<Object> tradeTimeCol = dfFSLowBuyDay.col(0);
