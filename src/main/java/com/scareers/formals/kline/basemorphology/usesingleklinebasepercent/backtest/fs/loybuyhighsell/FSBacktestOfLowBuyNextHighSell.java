@@ -204,22 +204,23 @@ public class FSBacktestOfLowBuyNextHighSell {
          * 高卖核心逻辑.
          * 卖出策略分为几种: 1. 开盘无脑卖, 为了顺应现实, 使用 9:31而非9:30的价格  2.收盘无脑卖 3.尝试高卖,剩余的收盘卖出
          *
-         * @param stockWithTotalPositionAndAdaptedPrice 低买结果. map. 股票:[总仓位, 买入价格百分比]
+         * @param stockWithTotalPositionAndAdaptedPriceLowBuy 低买结果. map. 股票:[总仓位, 买入价格百分比]
          * @return
          * @throws Exception
          */
-        public List<Object> highSellExecuteCore(HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice)
+        public List<Object> highSellExecuteCore(
+                HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy)
                 throws Exception {
             List<Object> highSellResults = new ArrayList<>();
 
             // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
             // 1. 同理获取 卖点map, 比起低买, 高卖还需要获取 开盘价 和 收盘价map, 以便折算
             List<String> stockHasPosition = // 都用得到
-                    stockWithTotalPositionAndAdaptedPrice.entrySet().stream()
+                    stockWithTotalPositionAndAdaptedPriceLowBuy.entrySet().stream()
                             .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
             List<Object> highSellPointsRes =
-                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPrice, stockHasPosition);
+                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPriceLowBuy, stockHasPosition);
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
                     (HashMap<String, List<SellPoint>>) highSellPointsRes.get(0);
             HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellPointsRes
@@ -233,9 +234,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             ArrayList<Double> timeTicks = new ArrayList<>(buyPointsOfAllTick.keySet());
             timeTicks.sort(Comparator.naturalOrder()); // 已经排序. 买点可能很难分布与 240个tick都有, 所以
             // @key: 结果项
-            // 股票和对应总仓位和折算价格
-            HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice = new HashMap<>();
-            Double reachTotalLimitTimeTick = 0.0; // 达到满仓的 tick值!可记录大约什么时间能够满仓. 如果是最大值,则可能未能满仓
+            // 股票和对应总仓位和折算价格,  这是高卖结果. 高卖需要不超过 低买已有持仓. 类似低买不超过总仓位 1.0
+            HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice = new HashMap<>();
 
             outerLoop:
             for (Double tick : timeTicks) { // 提前达到了满仓, 则跳出2层循环到这里
@@ -247,7 +247,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                 }
                 // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
                 for (String stock : buyPointsMap.keySet()) {
-                    stockWithTotalPositionAndAdaptedPrice.putIfAbsent(stock, new ArrayList<>(Arrays.asList(0.0, 0.0)));
+                    stockWithHighSellSuccessPositionAndAdaptedPrice
+                            .putIfAbsent(stock, new ArrayList<>(Arrays.asList(0.0, 0.0)));
 
                     BuyPoint singleBuyPoint = buyPointsMap.get(stock);
                     // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
@@ -266,8 +267,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                         epochTotalPosition = positionUpperLimit; // 上限
                     }
 
-                    Double oldPositionTemp = stockWithTotalPositionAndAdaptedPrice.get(stock).get(0); // 老总仓位.
-                    List<Double> oldStockWithPositionAndPrice = stockWithTotalPositionAndAdaptedPrice
+                    Double oldPositionTemp = stockWithHighSellSuccessPositionAndAdaptedPrice.get(stock).get(0); // 老总仓位.
+                    List<Double> oldStockWithPositionAndPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
                             .get(stock); // 默认0,0, 已经折算
                     if (oldPositionTemp < epochTotalPosition) { // 新的买点机制, 此 boolean 基本永恒 true
                         // 此时需要对 仓位和均成本进行折算. 新的一部分, 价格为 actualValue, 总仓位 epochTotalPosition.
@@ -278,12 +279,13 @@ public class FSBacktestOfLowBuyNextHighSell {
                                         .get(0) / epochTotalPosition) * oldStockWithPositionAndPrice
                                         .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice
                                         .get(0) / epochTotalPosition);
-                        stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
+                        stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
                                 weightedPrice));
                     }
                     // 对仓位之和进行验证, 一旦第一次 超过上限, 则立即退出循环.
                     Double sum =
-                            stockWithTotalPositionAndAdaptedPrice.values().stream().mapToDouble(value -> value.get(0))
+                            stockWithHighSellSuccessPositionAndAdaptedPrice.values().stream()
+                                    .mapToDouble(value -> value.get(0))
                                     .sum(); // 直接使用流计算总和,
 //                    Double sum = sumOfListNumberUseLoop(
 //                            new ArrayList<>(stockWithTotalPositionAndAdaptedPrice.values()));
@@ -294,14 +296,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                         Double weightedPrice = // 这个老旧 仓位和价格, 是保存着的曾经. 直接用 . 新的总仓位直接用即可
                                 (oldStockWithPositionAndPrice.get(0) / newPosition) * oldStockWithPositionAndPrice
                                         .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
-                        stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
+                        stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
                                 weightedPrice));
                         break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
                     }
                 }
             }
 
-            highSellResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
+            highSellResults.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
             highSellResults.add(reachTotalLimitTimeTick); // 2.达到满仓时的时间, 当然, 也可能240, 且不满仓
             highSellResults.add(stockHighSellPointsMap); // 3. 各股票买入点
 
