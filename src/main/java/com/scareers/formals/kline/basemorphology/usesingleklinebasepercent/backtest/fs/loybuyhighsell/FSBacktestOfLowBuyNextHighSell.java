@@ -204,6 +204,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 return Arrays.asList(timeTick, highPricePercent, sellPricePercent);
             }
         }
+
         /**
          * [暂时的字段列表
          */
@@ -212,9 +213,23 @@ public class FSBacktestOfLowBuyNextHighSell {
                     "(\n" +
                     "    id int auto_increment comment 'id'\n" + " primary key,\n" +
                     "    form_set_id  int  not null comment '形态集合id, 对应next0b1s_of_single_kline 的id列,不能为空'," +
-                    "    trade_date  varchar(1024) null comment '交易日期, 对应 回测时today含义'," +
+                    "    trade_date  varchar(1024) null comment '交易日期, 对应 回测时today含义',\n" +
+                    "    stocks_selected   longtext null comment '被选中股票列表',\n" +
+                    "    stat_date_range   varchar(1024) null comment '回测日期区间',\n" +
+                    "    stock_selected_count   double null comment '初始被选中股票数量',\n" +
 
-                    "    stat_date_range   varchar(1024) null comment '该条记录的 统计日期区间',\n" +
+                    "    lb_position_price_map   longtext null comment '股票的 仓位,折算价格  字典保存',\n" +
+                    "    lb_full_position_time_tick   double null comment '低买达到满仓的时间',\n" +
+                    "    lb_buypoints   longtext null comment '买点',\n" +
+                    "    lb_weighted_buy_price   double null comment '低买全局折算价格',\n" +
+                    "    lb_global_position_sum   double null comment '低买总仓位, 目标是尽量靠近1',\n" +
+                    "    lb_has_position_stock_count   int null comment '低买有仓位的股票数量',\n" +
+
+                    "    lb_positions   longtext null comment '低买后持仓状况',\n" +
+                    "    hs_success_position_price   longtext null comment '高卖成功部分  仓位+价格',\n" +
+                    "    hs_open_close   longtext null comment '高卖日 开盘价和收盘价格',\n" +
+
+
                     ")\n" +
                     "    comment '分时 低买高卖 回测结果保存表';\n";
             return null;
