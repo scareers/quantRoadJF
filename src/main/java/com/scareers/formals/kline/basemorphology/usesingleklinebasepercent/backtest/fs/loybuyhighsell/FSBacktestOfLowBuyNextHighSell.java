@@ -377,7 +377,6 @@ public class FSBacktestOfLowBuyNextHighSell {
                             .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
                             .collect(Collectors.toList()); // 注意流的使用!!@key
 
-            Console.log(stockHasPosition);
             List<Object> highSellPointsRes =
                     getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPriceLowBuy, stockHasPosition);
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
@@ -626,15 +625,15 @@ public class FSBacktestOfLowBuyNextHighSell {
                             Double highPrice = closeCol.get(i) / stdCloseOfHighSell - 1; // 高点价格
                             if (sellPoints.size() == 0) { // 我是第一个卖点, 直接加入
                                 Double buyPrice = i != lenth - 1 ?  // 折算卖出价格. 高点和下一tick(低) 的平均值
-                                        closeCol.get(i) + closeCol
-                                                .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+                                        (closeCol.get(i) + closeCol
+                                                .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
                                 sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice));
                             } else { // 此前有买入点, 当前价格, 应当 高于此前最后一个高点的 高点价格, 当然是百分比
                                 Double lastLowPrice = sellPoints.get(sellPoints.size() - 1).getHighPricePercent();
                                 if (highPrice > lastLowPrice) { // 必须更大, 才可能添加, 符合 cdf仓位算法
                                     Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                            closeCol.get(i) + closeCol
-                                                    .get(i + 1) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+                                            (closeCol.get(i) + closeCol
+                                                    .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
                                     sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice));
                                 }
                             }
@@ -684,8 +683,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                 // 同一分钟不同股票的买点, 无视先后顺序, 可以接受
                 for (String stock : buyPointsMap.keySet()) {
                     stockWithTotalPositionAndAdaptedPrice.putIfAbsent(stock, new ArrayList<>(Arrays.asList(0.0, 0.0)));
-
                     BuyPoint singleBuyPoint = buyPointsMap.get(stock);
+
                     // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
                     Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
                     Double buyPrice = singleBuyPoint.getBuyPricePercent(); // 实际买入价格
@@ -848,14 +847,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                             Double lowPrice = closeCol.get(i) / stdCloseOfLowBuy - 1; // 低点价格
                             if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
                                 Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                        closeCol.get(i) + closeCol.get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                        (closeCol.get(i) + closeCol.get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
                                 buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                             } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
                                 Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
                                 if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
-                                    Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                            closeCol.get(i) + closeCol
-                                                    .get(i + 1) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                    Double buyPrice = (i != lenth - 1) ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+                                            (closeCol.get(i) + closeCol
+                                                    .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
                                     buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
                                 }
                             }
