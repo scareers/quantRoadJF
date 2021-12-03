@@ -1,7 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -25,7 +24,6 @@ import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
 import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
-import static com.scareers.utils.CommonUtils.sumOfListNumberUseLoop;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -169,10 +167,14 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
 
             // 低买开始 ********
-            HashMap<Integer, Double> stockWithPositionLowBuy = new HashMap<>(); // 股票和对应的position, 已有仓位, 初始0
-            HashMap<Integer, List<Double>> stockWithActualValueAndPositionLowBuy = new HashMap<>();
+            List<Object> lowBuyResults = lowBuyExecuteCore();
 
 
+            return null;
+        }
+
+        public List<Object> lowBuyExecuteCore() throws Exception {
+            List<Object> lowBuyResults = new ArrayList<>();
             // 1.首先, 应该获取到, 每只股票, 的(有效折合)买点(时间和价格percent),  这一步将大量访问数据库fs数据. 然后依据时间遍历.
             // 股票: [买点1, 买点2]   买点: --> 买点: [时间Double分时, 当时最低点(以便计算cdf), 折算购买价格]
             // @key: 买点使用简单逻辑: 首先需要 低于某个值, 且 连续下降后, 下一tick上升. 买入价格 这里设定为 最低点和下一tick平均
@@ -252,11 +254,9 @@ public class FSBacktestOfLowBuyNextHighSell {
                                 weightedPrice));
                         break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
                     }
-
                 }
-
             }
-            List<Object> lowBuyResults = new ArrayList<>();
+
             HashMap<String, Double> stockWithPosition = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
             HashMap<String, Double> stockWithBuyPrice = new HashMap<>(); // 最后从 仓位+价格字段, 获取即可,加速
             for (String stock : stockWithTotalPositionAndAdaptedPrice.keySet()) {
@@ -264,23 +264,20 @@ public class FSBacktestOfLowBuyNextHighSell {
                 stockWithPosition.put(stock, temp.get(0));
                 stockWithBuyPrice.put(stock, temp.get(1));
             }
-            lowBuyResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]}
+            lowBuyResults.add(stockWithTotalPositionAndAdaptedPrice); // 0. {股票: [总仓位, 折算买入价格]} 仓位已经标准化.
             lowBuyResults.add(stockWithPosition); // 1.{股票: 总仓位}
             lowBuyResults.add(stockWithBuyPrice); // 2.{股票: 折算买入成本价}
             Double weightedGlobalPrice = BacktestTaskOfPerDay
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPrice);
             lowBuyResults.add(weightedGlobalPrice); // 3.全局折算加权 买入价格
             lowBuyResults.add(reachTotalLimitTimeTick); // 4.达到满仓时的时间, 当然, 也可能240, 且不满仓
+
             // todo: 其他保存项, 可以通过以上5项直接计算, 成为新的简单列, 方便mysql筛选查询
-
-
-
-
-            return null;
+            return lowBuyResults;
         }
 
         public static Double calcWeightedGlobalPrice(HashMap<String, List<Double>> stockWithActualValueAndPosition) {
-            Double res = 0.0;
+            Double res = 0.0; // 加权求和
             for (List<Double> positionAndPrice : stockWithActualValueAndPosition.values()) {
                 res += positionAndPrice.get(0) * positionAndPrice.get(1);
             }
