@@ -214,8 +214,12 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             // 当尝试高卖时, 高卖逻辑与低买匹配.  剩余仓位收盘卖出
             // 1. 同理获取 卖点map, 比起低买, 高卖还需要获取 开盘价 和 收盘价map, 以便折算
+            List<String> stockHasPosition = // 都用得到
+                    stockWithTotalPositionAndAdaptedPrice.entrySet().stream()
+                            .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
+                            .collect(Collectors.toList()); // 注意流的使用!!@key
             List<Object> highSellPointsRes =
-                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPrice);
+                    getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPrice, stockHasPosition);
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
                     (HashMap<String, List<SellPoint>>) highSellPointsRes.get(0);
             HashMap<String, List<Double>> openAndCloseOfHighSell = (HashMap<String, List<Double>>) highSellPointsRes
@@ -312,15 +316,13 @@ public class FSBacktestOfLowBuyNextHighSell {
          * @throws Exception
          */
         List<Object> getStockHighSellPointsMap(
-                HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice) throws Exception {
+                HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPrice, List<String> stockHasPosition)
+                throws Exception {
             HashMap<String, List<SellPoint>> res = new HashMap<>();
             // 把开盘和收盘也保存一下,多出来的卖出逻辑. stock: [open, close] 卖出当天的
             HashMap<String, List<Double>> resOfSellOpenAndClose = new HashMap<>();
             // 需要计算哪些股票有持仓, 没有持仓的股票, 则不需要计算卖点
-            List<String> stockHasPosition =
-                    stockWithTotalPositionAndAdaptedPrice.entrySet().stream()
-                            .filter(value -> value.getValue().get(0) > 0.0).map(value -> value.getKey())
-                            .collect(Collectors.toList()); // 注意流的使用!!@key
+
             for (String stock : stockHasPosition) {
                 resOfSellOpenAndClose.putIfAbsent(stock, Arrays.asList(0.0, 0.0)); // 赋值时, open和close分布设置 0/1 即可
                 String highSellDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(1); // get1 是卖出日期
