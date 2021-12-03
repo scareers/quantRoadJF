@@ -104,8 +104,9 @@ public class PositionOfHighSellByDistribution {
         // @noti: 使用低买结果, 尝试高卖, 并获得结果
         List<Integer> loopListOfHighSell = range(stockWithPositionList.size());
         for (Integer i : Tqdm.tqdm(loopListOfHighSell, StrUtil.format("HighSell process: "))) {
-            List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(0),
-                    stockWithActualValueAndPositionList.get(0));
+            // @bugfix: 这里应该是 i,  之前固定成了0, 重大bug
+            List<Object> highResult = mainOfHighSellCore(stockWithPositionList.get(i),
+                    stockWithActualValueAndPositionList.get(i));
             HighSellParser parser = new HighSellParser(highResult);
             Double equalityProfitTwoDay = parser.getAllProfitsDiscountedProfitWeighted();
             profits.add(equalityProfitTwoDay);
