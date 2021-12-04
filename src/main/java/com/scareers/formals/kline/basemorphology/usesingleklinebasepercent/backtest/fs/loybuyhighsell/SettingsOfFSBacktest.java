@@ -37,11 +37,11 @@ public class SettingsOfFSBacktest {
     // @noti: 这些限制设定, 应当 / totalAsserts, 才能等价
     public static Double positionCalcKeyArgsOfCdf = 1.4; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int continuousFallTickCountThreshold = 1; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
+    public static int continuousFallTickCountThreshold = 2; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
     // 高卖设定
     public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
     public static final Double execHighSellThreshold = 0.005; // 必须 >0.01阈值, 才可能执行高卖,
-    public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
+    public static int continuousRaiseTickCountThreshold = 2; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
     // 连接对象
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();
     public static Connection connOfKlineForms = ConnectionFactory.getConnLocalKlineForms();
