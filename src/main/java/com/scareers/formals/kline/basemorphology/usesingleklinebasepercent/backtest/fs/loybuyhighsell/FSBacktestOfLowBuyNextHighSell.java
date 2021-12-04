@@ -451,9 +451,10 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double lowBuyPositionTotal = stockWithTotalPositionAndAdaptedPriceLowBuy.get(stock).get(0);
                     Double epochTotalPosition =
                             positionCalcKeyArgsOfCdfHighSell * cdfOfPoint * lowBuyPositionTotal;  // 这里应该以 低买总持仓作为基数
-                    if (epochTotalPosition > lowBuyPositionTotal / totalAssets) { // 设置高卖上限, 为低买总持仓,
-                        epochTotalPosition = lowBuyPositionTotal / totalAssets; // 上限
+                    if (epochTotalPosition > lowBuyPositionTotal) { // 设置高卖上限, 为低买总持仓,
+                        epochTotalPosition = lowBuyPositionTotal; // 上限
                     }
+                    // Console.log(highPrice, cdfOfPoint, lowBuyPositionTotal, epochTotalPosition);
 
                     List<Double> oldStockWithPositionAndPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
                             .get(stock); // 默认0,0, 已经折算, 老卖出 [仓位,价格]

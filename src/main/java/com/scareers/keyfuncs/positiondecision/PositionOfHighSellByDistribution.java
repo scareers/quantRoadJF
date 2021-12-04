@@ -540,7 +540,7 @@ public class PositionOfHighSellByDistribution {
 //        double res = total / sum;
 ////        Console.log(res);
 //        return res; // 求和可能了多次
-        return total;
+        return Math.min(total, 1.0);
     }
 
     public static WeightRandom<Double> getDistributionsOfHigh1() throws IOException {
