@@ -243,8 +243,15 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
                     .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
             //Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
-            dfLowBuyHighSell.add("lb_position_price_map",
-                    Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
+
+
+            try {
+                dfLowBuyHighSell.add("lb_position_price_map",
+                        Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
             dfLowBuyHighSell.add("lb_full_position_time_tick", Arrays.asList(reachTotalLimitTimeTick));
             HashMap<String, List<BuyPoint>> stockLowBuyPointsMap = (HashMap<String, List<BuyPoint>>) lowBuyResults
