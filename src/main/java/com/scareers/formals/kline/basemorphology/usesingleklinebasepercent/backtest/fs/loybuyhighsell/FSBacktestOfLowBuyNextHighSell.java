@@ -440,7 +440,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double highPrice = singleBuyPoint.getHighPricePercent(); // 仅计算cdf
                     Double sellPrice = singleBuyPoint.getSellPricePercent(); // 实际卖出价格
                     // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
-                    if (sellPrice <= execHighSellThreshold) { // @noti: 凡是阈值, 一般都包含等于, 虽然计算卖点时已经计算过.这里重复嫌疑
+                    if (highPrice <= execHighSellThreshold) { // @noti: 凡是阈值, 一般都包含等于, 虽然计算卖点时已经计算过.这里重复嫌疑
                         continue; // 必须大于等于阈值
                     }
 
@@ -725,7 +725,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
                     Double buyPrice = singleBuyPoint.getBuyPricePercent(); // 实际买入价格
                     // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
-                    if (buyPrice > execLowBuyThreshold) { // @noti: 凡是阈值, 一般都包含等于
+                    if (lowPrice > execLowBuyThreshold) { // @noti: 凡是阈值, 一般都包含等于
                         continue; // 必须小于等于阈值
                     }
 
