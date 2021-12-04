@@ -325,6 +325,21 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 18.单次操作盈利 总值, 已经折算仓位使用率, 低买部分不公平, 算是少算收益了 保守的.   lbhs_weighted_profit_conservative
             dfLowBuyHighSell.add("lbhs_weighted_profit_conservative", Arrays.asList(profitDiscounted));
 
+            for (Object o : dfLowBuyHighSell.row(0)) {
+                if (o instanceof Number) {
+                    if (o.equals(Double.NaN)) {
+
+                    }
+                }
+            }
+            dfLowBuyHighSell = dfLowBuyHighSell.apply(value -> {
+                if (value instanceof Number) {
+                    if (value.equals(Double.NaN)) {
+                        return null;
+                    }
+                }
+                return value; // 如果值时 NaN, 则保存到mysql出错, 这里判定一下, 转换为 null
+            });
             DataFrameSelf.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
                     connOfKlineForms, "append", null);
             // Console.log("success: {}", formSetId);
