@@ -87,10 +87,9 @@ public class FSBacktestOfLowBuyNextHighSell {
         ThreadPoolExecutor poolOfBacktest = new ThreadPoolExecutor(processAmountOfBacktest,
                 processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
-        TimeInterval timerEstimate = DateUtil.timer();
-        timerEstimate.start();
         List<Integer> indexes = range(dates.size());
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
+            Console.log("total process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
             String tradeDate = dates.get(index);
             HashMap<Long, List<String>> stockSelectResultPerDay = getStockSelectResultOfTradeDate(tradeDate, keyInts);
             if (stockSelectResultPerDay.size() <= 0) {
@@ -116,6 +115,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 Void res = f.get();
                 // @noti: 可以处理返回值, 回测这里无返回值, 不需要组合成 大字典处理. 回测一天实时保存一天的结果即可
             }
+
         }
         MailUtil.send(SettingsCommon.receivers,
                 StrUtil.format("部分回测完成: {} ", backtestDateRange),
