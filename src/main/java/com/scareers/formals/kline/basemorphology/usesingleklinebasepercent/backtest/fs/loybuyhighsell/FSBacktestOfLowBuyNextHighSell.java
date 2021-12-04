@@ -1,11 +1,15 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
@@ -26,6 +30,7 @@ import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
 import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
+import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -74,13 +79,19 @@ public class FSBacktestOfLowBuyNextHighSell {
     // 核心逻辑: 回测逻辑
     private static void fsLowBuyHighSellBacktestV1(List<String> backtestDateRange)
             throws Exception {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
         // --------------------------------------------- 解析
         Console.log("开始回测区间: {}", backtestDateRange);
         List<String> dates = getEffectiveDatesBetweenDateRangeHasStockSelectResult(backtestDateRange, keyInts);
         ThreadPoolExecutor poolOfBacktest = new ThreadPoolExecutor(processAmountOfBacktest,
                 processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
-        for (String tradeDate : dates) {
+        TimeInterval timerEstimate = DateUtil.timer();
+        timerEstimate.start();
+        List<Integer> indexes = range(dates.size());
+        for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
+            String tradeDate = dates.get(index);
             HashMap<Long, List<String>> stockSelectResultPerDay = getStockSelectResultOfTradeDate(tradeDate, keyInts);
             if (stockSelectResultPerDay.size() <= 0) {
                 log.warn("今日无选股结果(skip): {}", tradeDate);
@@ -98,15 +109,19 @@ public class FSBacktestOfLowBuyNextHighSell {
                                 , backtestDateRange));
                 futuresOfBacktest.add(f);
             }
-            List<Integer> indexesOfBacktest = CommonUtils.range(futuresOfBacktest.size());
-            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtil.format("{} process: ", tradeDate))) {
+            List<Integer> indexesOfBacktest = range(futuresOfBacktest.size());
+            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtil.format("{} process ", tradeDate))) {
                 // 串行不再需要使用 CountDownLatch
                 Future<Void> f = futuresOfBacktest.get(i);
                 Void res = f.get();
-                // todo: 可以处理返回值, 回测这里无返回值, 不需要组合成 大字典处理. 回测一天实时保存一天的结果即可
+                // @noti: 可以处理返回值, 回测这里无返回值, 不需要组合成 大字典处理. 回测一天实时保存一天的结果即可
             }
-            System.out.println("finish");
         }
+        MailUtil.send(SettingsCommon.receivers,
+                StrUtil.format("部分回测完成: {} ", backtestDateRange),
+                StrUtil.format("部分回测完成,耗时: {}h",
+                        (double) timer.intervalRestart() / 3600000),
+                false, null);
         poolOfBacktest.shutdown(); // 关闭线程池, 不能写在循环里面去, 否则报错 拒绝任务. 线程池大小0
     }
 
