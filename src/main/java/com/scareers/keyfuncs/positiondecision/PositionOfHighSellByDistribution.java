@@ -16,6 +16,7 @@ import joinery.DataFrame;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.*;
 import static com.scareers.utils.CommonUtils.*;
@@ -67,6 +68,7 @@ public class PositionOfHighSellByDistribution {
         List<HashMap<Integer, Double>> stockWithPositionList = new ArrayList<>();
         List<HashMap<Integer, List<Double>>> stockWithActualValueAndPositionList = new ArrayList<>();
         List<Integer> loopList = range(loops);
+        List<Double> stds = new ArrayList<>();
         for (Integer i : Tqdm.tqdm(loopList, String.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
@@ -80,6 +82,12 @@ public class PositionOfHighSellByDistribution {
 
             stockWithPositionList.add(positions); // 仓位在 0          @noti: HighSell新增
             stockWithActualValueAndPositionList.add((HashMap<Integer, List<Double>>) res.get(3)); // 仓位+价格在 3
+
+            List<Double> positionsValue = positions.values().stream().collect(Collectors.toList());
+            DataFrame<Double> dfx = new DataFrame<>();
+            dfx.add("temp", positionsValue); // 唯一一列
+            Double std = dfx.stddev().get(0, 0);
+            stds.add(std);
         }
         // @noti: 这些是低买状况分析
         Console.log();
@@ -91,7 +99,7 @@ public class PositionOfHighSellByDistribution {
         Console.log("平均循环轮次: {}", epochs.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均交易价位: {}",
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
-
+        Console.log("各股票仓位标准差: {}", stds.stream().mapToDouble(value -> value).average().getAsDouble());
         Console.log("LowBuy 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         // 高卖初始化
         initDistributions();

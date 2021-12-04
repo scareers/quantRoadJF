@@ -59,7 +59,7 @@ public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        //reportCpuMemoryDiskSubThread(false); // 播报硬件信息
+        reportCpuMemoryDiskSubThread(false); // 播报硬件信息
         execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
                 connOfKlineForms, false);
 
@@ -89,7 +89,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
         List<Integer> indexes = range(dates.size());
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
-            Console.log("total process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
+            Console.log("\ntotal process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
             String tradeDate = dates.get(index);
             HashMap<Long, List<String>> stockSelectResultPerDay = getStockSelectResultOfTradeDate(tradeDate, keyInts);
             if (stockSelectResultPerDay.size() <= 0) {

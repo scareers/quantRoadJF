@@ -17,6 +17,7 @@ import joinery.DataFrame;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.charts.ChartUtil.listOfDoubleAsLineChartSimple;
@@ -39,11 +40,11 @@ public class PositionOfLowBuyByDistribution {
     public static List<List<Double>> weightsOfLowx;
     public static Double tickGap;
 
-    public static Double positionUpperLimit = 1.2; // 控制上限, 一般不大于 倍率
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
+    public static Double positionUpperLimit = 1.3; // 控制上限, 一般不大于 倍率
+    public static Double positionCalcKeyArgsOfCdf = 1.3; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static Double totalAssets = 20.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
-    public static int perLoops = 100000;
+    public static Double totalAssets = 10.0; // 总计30块钱资产. 为了方便理解. 最终结果 /30即可
+    public static int perLoops = 10000;
     private static boolean showStockWithPosition = false;
     public static int formSetIdControll = 0; // 通过下标, 可以控制使用哪个id
     public static boolean forceFirstDistributionDecidePosition = true; // 强制使用 low1/high1分布, 决定仓位,而非 Low1/2/3皆有可能
@@ -70,6 +71,7 @@ public class PositionOfLowBuyByDistribution {
         List<Integer> epochs = new ArrayList<>();
         List<Double> weightedGlobalPrices = new ArrayList<>();
         List<Integer> loopList = range(loops);
+        List<Double> stds = new ArrayList<>();
         for (Integer i : Tqdm.tqdm(loopList, String.format("LowBuy process: "))) {
             List<Object> res = mainOfLowBuyCore();
             LowBuyResultParser parser = new LowBuyResultParser(res);
@@ -80,6 +82,12 @@ public class PositionOfLowBuyByDistribution {
             reachTotalLimitInLoops.add(reachTotalLimitInLoop);
             epochs.add(parser.getEpochCount()); // 跳出时执行到的轮次.  2代表判定到了 Low3
             weightedGlobalPrices.add(parser.getWeightedGlobalPrice());
+
+            List<Double> positionsValue = positions.values().stream().collect(Collectors.toList());
+            DataFrame<Double> dfx = new DataFrame<>();
+            dfx.add("temp", positionsValue); // 唯一一列
+            Double std = dfx.stddev().get(0, 0);
+            stds.add(std);
         }
         Console.log("总计股票数量/资产总量: {}", totalAssets);
         Console.log("平均有仓位股票数量: {}", sizes.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
@@ -89,6 +97,7 @@ public class PositionOfLowBuyByDistribution {
         Console.log("平均循环轮次: {}", epochs.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
         Console.log("平均交易价位: {}",
                 weightedGlobalPrices.stream().mapToDouble(value -> value.doubleValue()).average().getAsDouble());
+        Console.log("各股票仓位标准差: {}", stds.stream().mapToDouble(value -> value).average().getAsDouble());
     }
 
     public static class LowBuyResultParser {
