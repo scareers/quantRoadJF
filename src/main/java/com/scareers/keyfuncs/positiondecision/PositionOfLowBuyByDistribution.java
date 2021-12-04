@@ -40,7 +40,7 @@ public class PositionOfLowBuyByDistribution {
     public static List<List<Double>> weightsOfLowx;
     public static Double tickGap;
 
-    // 此2设定共同决定了 低买时的所有仓位的标准差, 且因base仓位视为1, 所以标准差, 也是 标准差 /期望值 的倍数
+    // 此2设定共同决定了 低买时的所有仓位的标准差, 且因base仓位视为1, 所以标准差, 也是 标准差 /期望值 的倍数. 回测时注意/ 1/股票数量
     public static Double positionUpperLimit = 1.35; // 控制上限, 一般不大于 倍率  .
     public static Double positionCalcKeyArgsOfCdf = 1.4; // 控制单股cdf倍率, 一般不小于上限
     public static final Double execLowBuyThreshold = -0.0; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
