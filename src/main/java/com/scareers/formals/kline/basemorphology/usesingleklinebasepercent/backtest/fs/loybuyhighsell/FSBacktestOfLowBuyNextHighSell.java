@@ -502,14 +502,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                             Arrays.asList("open", "pre_close"), tradeDate, connLocalTushare);
                     Double openPrice = Double.valueOf(dfTemp.row(0).get(0).toString());
                     Double preClosePrice = Double.valueOf(dfTemp.row(0).get(1).toString());
-                    Double openPercent = openPrice / preClosePrice - 1;
-
-                    // Double openPercent = openAndCloseOfHighSell.get(stock).get(0); // 原实现使用相对 today的收盘价.
-                    if (openPercent <= weakStockOpenPercentThreshold) { // 弱势股阈值
+                    Double openPercentThatDay = openPrice / preClosePrice - 1; // 卖出当日纯涨跌幅(相对前一天)
+                    Double openPercentRelativeToday = openAndCloseOfHighSell.get(stock).get(0); // 相对今天的收盘价 的开盘
+                    if (openPercentThatDay <= weakStockOpenPercentThreshold) { // 弱势股阈值
                         // 强制修改高卖 map 的结果!!
                         Double rawPositionOfThisStock = stockWithPositionLowBuy.get(stock); // 原始低买后该股总仓位
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock,
-                                Arrays.asList(rawPositionOfThisStock, openPercent)); // 强制修改为 高卖成功了: [所有仓位,开盘价]
+                                Arrays.asList(rawPositionOfThisStock,
+                                        openPercentRelativeToday)); // 强制修改为 高卖成功了: [所有仓位,开盘价]
                         weakStocks.add(stock);
                     }
                 }

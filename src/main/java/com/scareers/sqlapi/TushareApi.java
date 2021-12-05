@@ -219,7 +219,7 @@ public class TushareApi {
         }
 
         String sql = StrUtil.format("select {} from {} where ts_code='{}' "
-                        + " and trade_date=='{}'",
+                        + " and trade_date='{}'",
                 fieldStr, tablename, tsCode, tradeDate);
 
         res = DataFrame.readSql(connTemp, sql);
