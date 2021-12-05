@@ -502,7 +502,10 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double preClosePrice = Double.valueOf(dfTemp.row(0).get(1).toString());
                     Double openPercentThatDay = openPrice / preClosePrice - 1; // 卖出当日纯涨跌幅(相对前一天)
                     Double openPercentRelativeToday = openAndCloseOfHighSell.get(stock).get(0); // 相对今天的收盘价 的开盘
-                    if (openPercentThatDay <= weakStockOpenPercentThatDayThreshold) { // 弱势股阈值
+                    if (openPercentThatDay <= weakStockOpenPercentThatDayThreshold
+                            // 要求当日开盘涨跌幅<-2% 且 相对今日收盘涨跌幅 <-7%(部分止损意味)
+                            && openPercentRelativeToday <= weakStockOpenPercentTodayThreshold) {
+                        // 弱势股阈值
                         // 强制修改高卖 map 的结果!!
                         Double rawPositionOfThisStock = stockWithPositionLowBuy.get(stock); // 原始低买后该股总仓位
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock,
