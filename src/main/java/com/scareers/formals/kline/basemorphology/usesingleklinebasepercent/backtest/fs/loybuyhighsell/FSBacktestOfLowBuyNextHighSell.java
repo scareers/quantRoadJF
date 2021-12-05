@@ -59,7 +59,7 @@ public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        reportCpuMemoryDiskSubThread(false); // 播报硬件信息
+        //reportCpuMemoryDiskSubThread(false); // 播报硬件信息
         execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
                 connOfKlineForms, false);
 
