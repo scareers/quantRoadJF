@@ -35,9 +35,9 @@ public class SettingsOfFSBacktest {
     public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要
     public static Double positionUpperLimit = 1.6; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
     // @noti: 这些限制设定, 应当 / totalAsserts, 才能等价
-    public static Double positionCalcKeyArgsOfCdf = 1.6; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execLowBuyThreshold = -0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int continuousFallTickCountThreshold = 2; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
+    public static Double positionCalcKeyArgsOfCdf = 2.0; // 控制单股cdf倍率, 一般不小于上限
+    public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static int continuousFallTickCountThreshold = 4; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
     // 高卖设定
     public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
     public static final Double execHighSellThreshold = 0.0; // 必须 >0.01阈值, 才可能执行高卖,
@@ -95,6 +95,7 @@ public class SettingsOfFSBacktest {
                 "    lb_full_position_time_tick   double null comment '低买达到满仓的时间',\n" +
                 "    lb_buypoints   longtext null comment '买点',\n" +
                 "    lb_weighted_buy_price   double null comment '低买全局折算价格',\n" +
+                "    lb_simple_avg_buy_price   double null comment '低买简单平均价格, 无视仓位,不加权仓位',\n" +
                 "    lb_global_position_sum   double null comment '低买总仓位, 目标是尽量靠近1',\n" +
                 "    lb_has_position_stock_count   int null comment '低买有仓位的股票数量',\n" +
 

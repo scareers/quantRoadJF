@@ -59,7 +59,7 @@ public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        reportCpuMemoryDiskSubThread(false); // 播报硬件信息
+        //reportCpuMemoryDiskSubThread(false); // 播报硬件信息
         execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
                 connOfKlineForms, false);
 
@@ -271,6 +271,13 @@ public class FSBacktestOfLowBuyNextHighSell {
                     stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream().filter(value -> value.get(0) > 0.0)
                             .count();
             dfLowBuyHighSell.add("lb_has_position_stock_count", Arrays.asList(hasPositionStockCount));
+            Double simpleAvgLowBuyPrice =
+                    // 2.低买完成后, 对所有买入价格 简单平均数, 即无视仓位.  与之对比的是 lb_weighted_buy_price含有仓位,本值往往更低
+                    stockWithTotalPositionAndAdaptedPriceLowBuy.values().stream().mapToDouble(value -> value.get(1))
+                            .average().orElseGet(() -> {
+                        return Double.NaN; // 后文替换为 null, 此处无法直接设置null
+                    });
+            dfLowBuyHighSell.add("lb_simple_avg_buy_price", Arrays.asList(simpleAvgLowBuyPrice));
             // --------- 结束
 
             // 开始高卖尝试 ************  同样有未处理仓位
@@ -288,7 +295,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     (HashMap<String, List<Double>>) highSellResult.get(2); // 7.高卖日开盘和收盘  hs_open_close
             dfLowBuyHighSell.add("hs_open_close", Arrays.asList(JSONUtil.toJsonStr(openAndCloseOfHighSell)));
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
-                    (HashMap<String, List<SellPoint>>) highSellResult.get(3); // 8.高卖日所有高卖点  hs_sellpoints
+                    (HashMap<String, List<SellPoint>>) highSellResult.get(3);
+            // 8.高卖日所有高卖点  hs_sellpoints   各股票理论卖出点, 不一定有该高卖操作, 仅仅是理论上
             HashMap<String, List<List<Double>>> stockLowSellPointsMapForSave =
                     convertSellPointsToSaveMode(stockHighSellPointsMap); // 转换一下.
             dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtil.toJsonStr(stockLowSellPointsMapForSave)));
@@ -487,7 +495,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             res.add(stockWithPositionLowBuy); // 0. 依据lowbuy传递来的参数的衍生, 原始持仓map
             res.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 成功高卖map
             res.add(openAndCloseOfHighSell); // 卖出当日的 开盘和收盘价
-            res.add(stockHighSellPointsMap); // 各股票卖出点
+            res.add(stockHighSellPointsMap); // 各股票理论卖出点, 不一定有该操作
             //res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 低买那里有此数据项,即参数传递而来的
             return res;
         }
