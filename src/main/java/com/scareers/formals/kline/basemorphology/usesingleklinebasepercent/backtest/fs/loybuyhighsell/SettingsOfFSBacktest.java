@@ -39,11 +39,11 @@ public class SettingsOfFSBacktest {
     public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static int continuousFallTickCountThreshold = 4; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
     // 高卖设定
-    public static boolean forceSellOpenWeakStock = true; // 是否开盘强制卖出弱势股
+    public static boolean forceSellOpenWeakStock = false; // 是否开盘强制卖出弱势股
     public static Double weakStockOpenPercentThatDayThreshold = -0.02; // 当日真实开盘价涨跌幅小于此阈值,  且:
     public static Double weakStockOpenPercentTodayThreshold = -0.07; // 开盘价(实际是9:31,而非9:30) 低于或等于此值,相对于today 视为弱势股,可开盘卖出
     public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
-    public static final Double execHighSellThreshold = 0.0; // 必须 >0.01阈值, 才可能执行高卖,
+    public static final Double execHighSellThreshold = -0.015; // 必须 >0.01阈值, 才可能执行高卖,
     public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
     // 连接对象
     public static Connection connOfFS = ConnectionFactory.getConnLocalTushare1M();

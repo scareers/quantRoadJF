@@ -63,6 +63,7 @@ public class HardwareUtils {
                 }
             }
         });
+        thread.setDaemon(true); // 守护线程
         thread.start();
     }
 
