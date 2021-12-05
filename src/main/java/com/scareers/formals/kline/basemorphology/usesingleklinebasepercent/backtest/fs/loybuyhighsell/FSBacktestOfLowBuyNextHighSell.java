@@ -11,7 +11,6 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
@@ -33,7 +32,6 @@ import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -504,7 +502,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     Double preClosePrice = Double.valueOf(dfTemp.row(0).get(1).toString());
                     Double openPercentThatDay = openPrice / preClosePrice - 1; // 卖出当日纯涨跌幅(相对前一天)
                     Double openPercentRelativeToday = openAndCloseOfHighSell.get(stock).get(0); // 相对今天的收盘价 的开盘
-                    if (openPercentThatDay <= weakStockOpenPercentThreshold) { // 弱势股阈值
+                    if (openPercentThatDay <= weakStockOpenPercentThatDayThreshold) { // 弱势股阈值
                         // 强制修改高卖 map 的结果!!
                         Double rawPositionOfThisStock = stockWithPositionLowBuy.get(stock); // 原始低买后该股总仓位
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock,
