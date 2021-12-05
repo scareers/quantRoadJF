@@ -304,7 +304,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             List<String> weakStocks = (List<String>) highSellResult.get(4);
             dfLowBuyHighSell.add("hs_open_weak_stocks",
                     Arrays.asList(JSONUtil.toJsonStr(weakStocks)));
-            // 项返回值解析完毕
+            // 项返回值解析完 毕
 
             // 用原始仓位 - 高卖执行的总仓位
             // 做减法, 得到剩余未能卖出的持仓, 并且全部 以close 折算
