@@ -296,7 +296,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             dfLowBuyHighSell.add("hs_open_close", Arrays.asList(JSONUtil.toJsonStr(openAndCloseOfHighSell)));
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
                     (HashMap<String, List<SellPoint>>) highSellResult.get(3);
-            // 8.高卖日所有高卖点  hs_sellpoints   各股票理论卖出点, 不一定有该高卖操作, 仅仅是理论上
+            // 8.高卖日所有高卖点  hs_sellpoints   各股票理论卖出点, 不一定有该高卖操作, 仅仅是理论上最多存在这些高卖点
             HashMap<String, List<List<Double>>> stockLowSellPointsMapForSave =
                     convertSellPointsToSaveMode(stockHighSellPointsMap); // 转换一下.
             dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtil.toJsonStr(stockLowSellPointsMapForSave)));
