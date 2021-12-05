@@ -10,6 +10,7 @@ import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
+import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
@@ -495,12 +496,20 @@ public class FSBacktestOfLowBuyNextHighSell {
             List<String> weakStocks = new ArrayList<>(); // 弱势股列表, 简单判定是否开盘价格<= 某阈值
             if (forceSellOpenWeakStock) { // 开盘强制全仓卖出弱势股票
                 for (String stock : openAndCloseOfHighSell.keySet()) {
-                    Double open = openAndCloseOfHighSell.get(stock).get(0); // 开盘价
-                    if (open <= weakStockOpenPercentThreshold) { // 弱势股阈值
+                    // @update: 弱势股使用当日开盘涨跌幅, 而非对于 前日(today) 的收盘价的涨跌幅.! 更加符合常规 弱势判定
+                    DataFrame<Object> dfTemp = TushareApi.getStockPriceByTscodeAndTradeDateAsDfFromTushare(stock,
+                            "nofq",
+                            Arrays.asList("open", "pre_close"), tradeDate, connLocalTushare);
+                    Double openPrice = Double.valueOf(dfTemp.row(0).get(0).toString());
+                    Double preClosePrice = Double.valueOf(dfTemp.row(0).get(1).toString());
+                    Double openPercent = openPrice / preClosePrice - 1;
+
+                    // Double openPercent = openAndCloseOfHighSell.get(stock).get(0); // 原实现使用相对 today的收盘价.
+                    if (openPercent <= weakStockOpenPercentThreshold) { // 弱势股阈值
                         // 强制修改高卖 map 的结果!!
                         Double rawPositionOfThisStock = stockWithPositionLowBuy.get(stock); // 原始低买后该股总仓位
                         stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock,
-                                Arrays.asList(rawPositionOfThisStock, open)); // 强制修改为 高卖成功了: [所有仓位,开盘价]
+                                Arrays.asList(rawPositionOfThisStock, openPercent)); // 强制修改为 高卖成功了: [所有仓位,开盘价]
                         weakStocks.add(stock);
                     }
                 }

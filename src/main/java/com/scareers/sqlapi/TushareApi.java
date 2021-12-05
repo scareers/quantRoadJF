@@ -42,9 +42,10 @@ public class TushareApi {
     public static final String STOCK_NAMECHANGE_TABLENAME = "sds_stock_name_change_tu_stock";
     public static final String STOCK_PRICE_DAILY_TABLENAME_TEMPLATE = "sds_stock_price_daily_{}_tu_stock";
     public static final List<String> NOT_MAIN_BOARDS = Arrays.asList(null, "CDR", "创业板", "科创板");// 另有主板,中小板
-    public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(32);
+    public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(64);
     public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(4096);
 
 
     public static void main(String[] args) throws Exception {
@@ -177,6 +178,52 @@ public class TushareApi {
             sql = sql.replace("and trade_date<", "and trade_date<=");
         }
         DataFrame<Object> res = DataFrame.readSql(connTemp, sql);
+        return res;
+    }
+
+    /**
+     * 单日结果
+     *
+     * @param tsCode
+     * @param fq
+     * @param fields
+     * @param conn
+     * @return
+     * @throws SQLException
+     */
+    public static DataFrame<Object> getStockPriceByTscodeAndTradeDateAsDfFromTushare(String tsCode, String fq,
+                                                                                     List<String> fields,
+                                                                                     String tradeDate,
+                                                                                     Connection conn
+    )
+            throws SQLException {
+        String cacheKey = StrUtil.format("{}__{}__{}__{}", tsCode, fq, fields, tradeDate);
+        DataFrame<Object> res = stockPriceOneDayCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        String tablename = StrUtil.format(STOCK_PRICE_DAILY_TABLENAME_TEMPLATE, fq);
+        String fieldStr = null;
+        if (fields == null) {
+            fieldStr = "*";
+        } else {
+            fieldStr = StrUtil.join(",", fields);
+        }
+
+        Connection connTemp;
+        if (conn == null) {
+            connTemp = connLocalTushare; // 可使用不同的连接对象. 且均不关闭
+        } else {
+            connTemp = conn;
+        }
+
+        String sql = StrUtil.format("select {} from {} where ts_code='{}' "
+                        + " and trade_date=='{}'",
+                fieldStr, tablename, tsCode, tradeDate);
+
+        res = DataFrame.readSql(connTemp, sql);
+        stockPriceOneDayCache.put(cacheKey, res);
         return res;
     }
 
