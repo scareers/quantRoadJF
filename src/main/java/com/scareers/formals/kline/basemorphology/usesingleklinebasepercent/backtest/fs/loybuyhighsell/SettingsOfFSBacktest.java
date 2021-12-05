@@ -39,6 +39,8 @@ public class SettingsOfFSBacktest {
     public static final Double execLowBuyThreshold = -0.01; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
     public static int continuousFallTickCountThreshold = 4; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
     // 高卖设定
+    public static boolean forceSellOpenWeakStock = true; // 是否开盘强制卖出弱势股
+    public static Double weakStockOpenPercentThreshold = -0.005; // 开盘价(实际是9:31,而非9:30) 低于或等于此值, 视为弱势股,可开盘卖出
     public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
     public static final Double execHighSellThreshold = 0.0; // 必须 >0.01阈值, 才可能执行高卖,
     public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
@@ -103,6 +105,7 @@ public class SettingsOfFSBacktest {
                 "    hs_success_position_price   longtext null comment '高卖成功部分  仓位+价格',\n" +
                 "    hs_open_close   longtext null comment '高卖日 开盘价和收盘价格',\n" +
                 "    hs_sellpoints   longtext null comment '高卖点',\n" +
+                "    hs_open_weak_stocks   longtext null comment '高卖当日,开盘弱势股票.开盘价低于等于某阈值',\n" +
                 "    hs_remain_positions   longtext null comment '高卖未能成功剩余部分仓位',\n" +
                 "    hs_discount_all_position_price   longtext null comment '高卖全部收盘折算后, 仓位和价格',\n" +
                 "    hs_success_global_price   double null comment '高卖成功部分, 折算价格',\n" +

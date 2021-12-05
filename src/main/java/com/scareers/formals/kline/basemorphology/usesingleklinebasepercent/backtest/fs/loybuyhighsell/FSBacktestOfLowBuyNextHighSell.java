@@ -300,7 +300,10 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<String, List<List<Double>>> stockLowSellPointsMapForSave =
                     convertSellPointsToSaveMode(stockHighSellPointsMap); // 转换一下.
             dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtil.toJsonStr(stockLowSellPointsMapForSave)));
-
+            // @adding: 8.1: 开盘弱势股列表高卖当日
+            List<String> weakStocks = (List<String>) highSellResult.get(4);
+            dfLowBuyHighSell.add("hs_open_weak_stocks",
+                    Arrays.asList(JSONUtil.toJsonStr(weakStocks)));
             // 项返回值解析完毕
 
             // 用原始仓位 - 高卖执行的总仓位
@@ -489,6 +492,19 @@ public class FSBacktestOfLowBuyNextHighSell {
                     // 几乎无法全部股票恰好全部卖出, 因此, 不执行相关判定.  循环完成后, 返回前判定剩余
                 }
             }
+            List<String> weakStocks = new ArrayList<>(); // 弱势股列表, 简单判定是否开盘价格<= 某阈值
+            if (forceSellOpenWeakStock) { // 开盘强制全仓卖出弱势股票
+                for (String stock : openAndCloseOfHighSell.keySet()) {
+                    Double open = openAndCloseOfHighSell.get(stock).get(0); // 开盘价
+                    if (open <= weakStockOpenPercentThreshold) { // 弱势股阈值
+                        // 强制修改高卖 map 的结果!!
+                        Double rawPositionOfThisStock = stockWithPositionLowBuy.get(stock); // 原始低买后该股总仓位
+                        stockWithHighSellSuccessPositionAndAdaptedPrice.put(stock,
+                                Arrays.asList(rawPositionOfThisStock, open)); // 强制修改为 高卖成功了: [所有仓位,开盘价]
+                        weakStocks.add(stock);
+                    }
+                }
+            }
 
             List<Object> res = new ArrayList<>();
             // 因此仅仅需要 此4项作为原始数据返回, 其余的皆以此(结合低买) 计算而来
@@ -498,6 +514,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             res.add(openAndCloseOfHighSell); // 卖出当日的 开盘和收盘价
             res.add(stockHighSellPointsMap); // 各股票理论卖出点, 不一定有该操作
             //res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 低买那里有此数据项,即参数传递而来的
+            res.add(weakStocks); // @adding: 新增弱势股列表, 即使不开盘卖出弱势股, 本结论依旧有意义
             return res;
         }
 
