@@ -421,7 +421,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             List<String> stockHasPosition = // 包括 仓位 0.0的, 这里不进行筛选
                     stockWithTotalPositionAndAdaptedPriceLowBuy.entrySet().stream()
                             .map(value -> value.getKey())
-                            .collect(Collectors.toList()); // 注意流的使用!!@key
+                            .collect(Collectors.toList()); // 注意流的使用!!@key 且无 filter
 
             List<Object> highSellPointsRes =
                     getStockHighSellPointsMap(stockWithTotalPositionAndAdaptedPriceLowBuy, stockHasPosition);
@@ -493,7 +493,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             List<Object> res = new ArrayList<>();
             // 因此仅仅需要 此4项作为原始数据返回, 其余的皆以此(结合低买) 计算而来
             res.add(stockWithPositionLowBuy); // 0. 依据lowbuy传递来的参数的衍生, 原始持仓map
-            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 成功高卖map
+            // @key: 高卖本质仅仅返回此核心map. 以此计算其余所有保存项. 因此, 加入开盘卖出弱势股票机制, 只需要修改此map.
+            res.add(stockWithHighSellSuccessPositionAndAdaptedPrice); // 成功高卖map.
             res.add(openAndCloseOfHighSell); // 卖出当日的 开盘和收盘价
             res.add(stockHighSellPointsMap); // 各股票理论卖出点, 不一定有该操作
             //res.add(stockWithTotalPositionAndAdaptedPriceLowBuy); // 低买那里有此数据项,即参数传递而来的
