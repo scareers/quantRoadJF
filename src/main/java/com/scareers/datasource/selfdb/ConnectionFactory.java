@@ -74,6 +74,10 @@ public class ConnectionFactory {
         return connectToLocalMysqlMain("kline_forms");
     }
 
+    public static Connection getConnLocalMindgo1M() {
+        return connectToLocalMysqlMain("mindgo_1m");
+    }
+
 //    public static Connection getConnLocalKlineFormsFromPool() throws SQLException {
 //        if (localKlineFormsConnPool == null) {
 //            localKlineFormsConnPool = new ComboPooledDataSource("localKlineForms");
