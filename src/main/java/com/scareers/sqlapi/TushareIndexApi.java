@@ -43,13 +43,13 @@ public class TushareIndexApi {
         getIndexDailyPricesByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), null);
         Console.log(interval.intervalRestart());
 
-        Console.log(getIndexDailyClosesByTradeDate("000001.SH", "20200106"));
+        Console.log(getIndexDailyCloseByTradeDate("000001.SH", "20200106"));
         Console.log(interval.intervalRestart());
 
-        Console.log(getIndexDailyClosesByTradeDate("000001.SH", "20200106"));
+        Console.log(getIndexDailyCloseByTradeDate("000001.SH", "20200106"));
         Console.log(interval.intervalRestart());
 
-        Console.log(getIndexDailyClosesByTradeDate("000001.SH", "20200106"));
+        Console.log(getIndexDailyCloseByTradeDate("000001.SH", "20200106"));
         Console.log(interval.intervalRestart());
 
         Console.log(getIndexSingleColumnAsMapByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), "open"));
@@ -128,7 +128,7 @@ public class TushareIndexApi {
      * @return
      * @throws SQLException
      */
-    public static Double getIndexDailyClosesByTradeDate(String indexCode, String tradeDate)
+    public static Double getIndexDailyCloseByTradeDate(String indexCode, String tradeDate)
             throws SQLException {
         String cacheKey = StrUtil.format("{}__{}", indexCode, tradeDate);
         Double res = indexClosePriceOneDayCache.get(cacheKey);
