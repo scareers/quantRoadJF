@@ -1051,10 +1051,13 @@ public class FSBacktestOfLowBuyNextHighSell {
                         Arrays.asList("close")); // 指数本质作为数据表名称, 分时同样取 close字段
                 // 已转化为 000001_sh
                 // 注意, tick 需要减1, 才能匹配到对应分钟close
+                //Console.log(tick, belongIndexTemp, lowBuyOrHighSellDate);
+                //Console.log(dfTemp);
                 price = Double.valueOf(dfTemp.row(tick - 1).get(0).toString());
             }
             // 然后需要获取昨日 close, 当日就是 today,  --> tradeDate
             double preClose = TushareIndexApi.getIndexDailyCloseByTradeDate(belongIndex, tradeDate);
+            //Console.log(price / preClose - 1);
             return price / preClose - 1;
         }
 

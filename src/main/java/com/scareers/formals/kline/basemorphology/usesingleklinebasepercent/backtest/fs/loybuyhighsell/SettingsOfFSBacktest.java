@@ -20,7 +20,7 @@ public class SettingsOfFSBacktest {
     public static final List<Integer> formSetIdsFilterArgs = Arrays.asList(1000, 10000);
     public static final int processAmountOfBacktest = 8;
     public static final int exit = 1000000; // 方便debug, 控制进度, 越大则无限制.回测多少天?
-    public static final boolean forceSecrity = true; // 强制使得回测不能运行
+    public static final boolean forceSecrity = false; // 强制使得回测不能运行
 
     public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
     public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
