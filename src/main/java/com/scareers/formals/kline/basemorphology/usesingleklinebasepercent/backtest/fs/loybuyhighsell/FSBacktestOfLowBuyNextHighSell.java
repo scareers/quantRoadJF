@@ -75,7 +75,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
-            log.info("current time");
+            log.info("current time") ;
         }
     }
 
