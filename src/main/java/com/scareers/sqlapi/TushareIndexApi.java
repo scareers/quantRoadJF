@@ -29,6 +29,7 @@ public class TushareIndexApi {
 
     public static Cache<String, Double> indexClosePriceOneDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(1024);
+    public static Cache<String, HashMap<String, Double>> indexSingleColumnDateRangeCache = CacheUtil.newLRUCache(1024);
 
 
     public static void main(String[] args) throws Exception {
@@ -50,10 +51,15 @@ public class TushareIndexApi {
 
         Console.log(getIndexDailyClosesByTradeDate("000001.SH", "20200106"));
         Console.log(interval.intervalRestart());
+
+        Console.log(getIndexSingleColumnAsMapByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), "open"));
+        Console.log(interval.intervalRestart());
+        Console.log(getIndexSingleColumnAsMapByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), "open"));
+        Console.log(interval.intervalRestart());
     }
 
     /**
-     * 给定日期区间, 返回map.  key:value-> 日期:close价格
+     * 给定日期区间, 返回df
      *
      * @param dateRange
      * @param indexCode 目前只支持两大指数. 000001.SH  399001.SZ            @2021/12/8
@@ -80,6 +86,37 @@ public class TushareIndexApi {
                 "  and trade_date < '{}'", fieldsStr, indexCode, dateRange.get(0), dateRange.get(1));
         res = DataFrame.readSql(connLocalTushare, sql);
         indexClosesPriceDateRangeCache.put(cacheKey, res);
+        return res;
+    }
+
+    /**
+     * 给定日期区间, 返回map.  key:value-> 日期:close价格
+     *
+     * @param dateRange
+     * @param indexCode 目前只支持两大指数. 000001.SH  399001.SZ            @2021/12/8
+     * @return
+     */
+    public static HashMap<String, Double> getIndexSingleColumnAsMapByDateRange(String indexCode,
+                                                                               List<String> dateRange,
+                                                                               String field)
+            throws SQLException {
+        String cacheKey = StrUtil.format("{}__{}__{}", indexCode, dateRange, field);
+        HashMap<String, Double> res = indexSingleColumnDateRangeCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        String sql = StrUtil.format("select trade_date,{}\n" +
+                "from sds_index_daily_tu_index sidti\n" +
+                "where ts_code = '{}'\n" +
+                "  and trade_date >= '{}'\n" +
+                "  and trade_date < '{}'", field, indexCode, dateRange.get(0), dateRange.get(1));
+        DataFrame<Object> dfTemp = DataFrame.readSql(connLocalTushare, sql);
+        res = new HashMap<>();
+        for (int i = 0; i < dfTemp.length(); i++) {
+            List<Object> row = dfTemp.row(i);
+            res.put(row.get(0).toString(), Double.valueOf(row.get(1).toString()));
+        }
+        indexSingleColumnDateRangeCache.put(cacheKey, res);
         return res;
     }
 

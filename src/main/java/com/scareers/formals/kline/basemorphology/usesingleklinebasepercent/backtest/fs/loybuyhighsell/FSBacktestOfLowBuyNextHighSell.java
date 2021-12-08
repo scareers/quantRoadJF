@@ -11,6 +11,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
+import com.scareers.sqlapi.TushareIndexApi;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
@@ -24,15 +25,14 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.connLocalTushare;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.sqlapi.KlineFormsApi.*;
-import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
-import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
+import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -111,7 +111,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             for (Long formSetId : formSetIds) {
                 Future<Void> f = poolOfBacktest
                         .submit(new BacktestTaskOfPerDay(formSetId, tradeDate, stockSelectResultPerDay.get(formSetId)
-                                , backtestDateRange));
+                                , backtestDateRange, backtestDateRange));
                 futuresOfBacktest.add(f);
             }
             List<Integer> indexesOfBacktest = range(futuresOfBacktest.size());
@@ -165,9 +165,10 @@ public class FSBacktestOfLowBuyNextHighSell {
 
     public static class BacktestTaskOfPerDay implements Callable<Void> {
         Long formSetId;
-        String tradeDate;
+        String tradeDate; // 相当于today
         List<String> stockSelected;
         List<String> backtestDateRange;
+        List<String> dateRange;
 
         Double totalAssets; // 表示总股票数量
 
@@ -178,11 +179,12 @@ public class FSBacktestOfLowBuyNextHighSell {
         List<Double> weightsOfHigh1;
 
         public BacktestTaskOfPerDay(Long formSetId, String tradeDate, List<String> stockSelected,
-                                    List<String> backtestDateRange) throws Exception {
+                                    List<String> backtestDateRange, List<String> dateRange) throws Exception {
             this.formSetId = formSetId;
             this.tradeDate = tradeDate;
             this.stockSelected = stockSelected;
             this.backtestDateRange = backtestDateRange;
+            this.dateRange = dateRange;
 
             totalAssets = (double) stockSelected.size();
             initDistributions(); // 给定了formSetId, 初始化两大分布(四个列表)
@@ -205,7 +207,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             Double lowPricePercent; // 低点价格, 实际低点价格百分比表示
             Double buyPricePercent; // 买点价格(低点+后一 /2)
 
-            // 当时, 此买点的股票, 所属两大指数(上证或深成), 当刻涨跌幅. 9:30视为当日open   @2021/12/08
+            // @2021/12/08 当时, 此买点的股票, 所属两大指数(上证或深成), 当刻涨跌幅. 9:30视为当日open
             Double indexBelongPricePercentAtThatTime;
 
 
@@ -939,14 +941,21 @@ public class FSBacktestOfLowBuyNextHighSell {
                             if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
                                 Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                         (closeCol.get(i) + closeCol.get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
-                                buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                // @update: 加入当时对应指数的涨跌幅. 9:30, 则为当日 open 的涨跌幅
+                                Double indexPricePercent = getCurrentBelongIndexPricePercentLowBuy(i, stock,
+                                        lowBuyDate);
+                                buyPoints
+                                        .add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice, indexPricePercent));
                             } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
                                 Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
                                 if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
                                     Double buyPrice = (i != lenth - 1) ?  // 折算买入价格. 低点和下一tick(高) 的平均值
                                             (closeCol.get(i) + closeCol
                                                     .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
-                                    buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice));
+                                    Double indexPricePercent = getCurrentBelongIndexPricePercentLowBuy(i, stock,
+                                            lowBuyDate); // 对应
+                                    buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice,
+                                            indexPricePercent));
                                 }
                             }
                         }
@@ -957,6 +966,24 @@ public class FSBacktestOfLowBuyNextHighSell {
             }
             return res;
         }
+
+        private Double getCurrentBelongIndexPricePercentLowBuy(int tick, String stock, String lowBuyDate)
+                throws Exception {
+            // 上证6开头, 深证 0或者3.当然这里全主板全0
+            String belongIndex = stock.startsWith("6") ? "000001.SH" : "399001.SZ";
+            Double price; // 时刻的价格
+            if (tick == 0) { // 读取当日open
+                // 开盘作为值, map已经缓存
+                HashMap<String, Double> indexOpens = TushareIndexApi.getIndexSingleColumnAsMapByDateRange(belongIndex,
+                        dateRange, "open");
+                price = indexOpens.get(lowBuyDate);
+            }else{
+
+            }
+
+
+        }
+
     }
 
     public static Log log = LogFactory.get();

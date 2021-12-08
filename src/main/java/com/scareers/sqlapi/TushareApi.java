@@ -14,6 +14,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameSelf;
 
 import joinery.DataFrame;
+import org.apache.commons.lang.ObjectUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -46,6 +47,7 @@ public class TushareApi {
     public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(4096);
+    public static HashMap<String, String> stockWithBoardAsMapCache;
 
 
     public static void main(String[] args) throws Exception {
@@ -70,9 +72,14 @@ public class TushareApi {
 //        Console.log((HashSet<String>) res0[1]);
 //        Console.log((List<String>) res0[2]);
 
-        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+//        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+//        Console.log(interval.intervalRestart());
+//        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+//        Console.log(interval.intervalRestart());
+
+        Console.log(getStockWithBoardAsMapFromTushare());
         Console.log(interval.intervalRestart());
-        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+        getStockWithBoardAsMapFromTushare();
         Console.log(interval.intervalRestart());
 
     }
@@ -85,6 +92,20 @@ public class TushareApi {
         // 后面将放在ConcurrentHashMap, 要求不为null
         res = res.select(values -> values.get(0) != null && values.get(1) != null);
         return res.cast(String.class);
+    }
+
+    public static HashMap<String, String> getStockWithBoardAsMapFromTushare() throws Exception {
+        if (stockWithBoardAsMapCache != null) {
+            return stockWithBoardAsMapCache;
+        }
+        DataFrame<String> dfTemp = getStockListWithBoardFromTushare();
+        HashMap<String, String> res = new HashMap<>();
+        for (int i = 0; i < dfTemp.length(); i++) {
+            List<String> row = dfTemp.row(i);
+            res.put(row.get(0), row.get(1));
+        }
+        stockWithBoardAsMapCache = res; // 放入缓存. 全股票
+        return res;
     }
 
     public static DataFrame<String> getStockListWithCnNameFromTushare() throws Exception {
