@@ -2,15 +2,12 @@ package com.scareers.sqlapi;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
-import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
-import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -31,20 +28,18 @@ public class TushareIndexApi {
     }
 
     public static Cache<String, Double> indexClosePriceOneDayCache = CacheUtil.newLRUCache(2048);
-    public static Cache<String, HashMap<String, Double>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(1024);
+    public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(1024);
 
 
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
         interval.start();
 //        指数日线行情
-        Console.log(getIndexDailyClosesByDateRange("000001.SH", Arrays.asList("20200101", "20210101")));
+        getIndexDailyPricesByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), null);
         Console.log(interval.intervalRestart());
-        Console.log(getIndexDailyClosesByDateRange("000001.SH", Arrays.asList("20200101", "20210101")));
+        getIndexDailyPricesByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), null);
         Console.log(interval.intervalRestart());
-        Console.log(getIndexDailyClosesByDateRange("000001.SH", Arrays.asList("20200101", "20210101")));
-        Console.log(interval.intervalRestart());
-        Console.log(getIndexDailyClosesByDateRange("000001.SH", Arrays.asList("20200101", "20210101")));
+        getIndexDailyPricesByDateRange("000001.SH", Arrays.asList("20200101", "20210101"), null);
         Console.log(interval.intervalRestart());
 
         Console.log(getIndexDailyClosesByTradeDate("000001.SH", "20200106"));
@@ -64,24 +59,26 @@ public class TushareIndexApi {
      * @param indexCode 目前只支持两大指数. 000001.SH  399001.SZ            @2021/12/8
      * @return
      */
-    public static HashMap<String, Double> getIndexDailyClosesByDateRange(String indexCode, List<String> dateRange)
+    public static DataFrame<Object> getIndexDailyPricesByDateRange(String indexCode, List<String> dateRange,
+                                                                   List<String> fields)
             throws SQLException {
-        String cacheKey = StrUtil.format("{}__{}", indexCode, dateRange);
-        HashMap<String, Double> res = indexClosesPriceDateRangeCache.get(cacheKey);
+        String fieldsStr;
+        if (fields == null) {
+            fieldsStr = "*";
+        } else {
+            fieldsStr = StrUtil.join(",", fields);
+        }
+        String cacheKey = StrUtil.format("{}__{}__{}", indexCode, dateRange, fieldsStr);
+        DataFrame<Object> res = indexClosesPriceDateRangeCache.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new HashMap<>();
-        String sql = StrUtil.format("select trade_date,close\n" +
+        String sql = StrUtil.format("select {}\n" +
                 "from sds_index_daily_tu_index sidti\n" +
                 "where ts_code = '{}'\n" +
                 "  and trade_date >= '{}'\n" +
-                "  and trade_date < '{}'", indexCode, dateRange.get(0), dateRange.get(1));
-        DataFrame<Object> dfTemp = DataFrame.readSql(connLocalTushare, sql);
-        for (int i = 0; i < dfTemp.length(); i++) {
-            List<Object> row = dfTemp.row(i);
-            res.put(row.get(0).toString(), Double.valueOf(row.get(1).toString()));
-        }
+                "  and trade_date < '{}'", fieldsStr, indexCode, dateRange.get(0), dateRange.get(1));
+        res = DataFrame.readSql(connLocalTushare, sql);
         indexClosesPriceDateRangeCache.put(cacheKey, res);
         return res;
     }

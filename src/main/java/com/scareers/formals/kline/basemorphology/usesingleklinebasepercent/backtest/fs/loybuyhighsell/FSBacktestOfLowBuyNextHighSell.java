@@ -75,7 +75,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
-            log.info("current time") ;
+            log.info("current time");
         }
     }
 
@@ -202,11 +202,15 @@ public class FSBacktestOfLowBuyNextHighSell {
         @Data
         public static class BuyPoint { // 抽象买点 对象
             Double timeTick;
-            Double lowPricePercent; // 低点价格
+            Double lowPricePercent; // 低点价格, 实际低点价格百分比表示
             Double buyPricePercent; // 买点价格(低点+后一 /2)
 
+            // 当时, 此买点的股票, 所属两大指数(上证或深成), 当刻涨跌幅. 9:30视为当日open   @2021/12/8
+            Double indexBelongPricePercentAtThatTime;
+
+
             public List<Double> toList() {
-                return Arrays.asList(timeTick, lowPricePercent, buyPricePercent);
+                return Arrays.asList(timeTick, lowPricePercent, buyPricePercent, indexBelongPricePercentAtThatTime);
             }
         }
 
