@@ -60,6 +60,7 @@ public class TushareIndexApi {
 
     /**
      * 给定日期区间, 返回df
+     * 区间已经往后延迟一个月
      *
      * @param dateRange
      * @param indexCode 目前只支持两大指数. 000001.SH  399001.SZ            @2021/12/8
@@ -79,11 +80,16 @@ public class TushareIndexApi {
         if (res != null) {
             return res;
         }
+        Integer monthTemp = Integer.valueOf(dateRange.get(1).substring(4, 6)) + 1; // 往后一个月
+        String endMonth = monthTemp > 9 ? monthTemp.toString() : "0" + monthTemp;
+        String endDate = StrUtil.format("{}{}{}", dateRange.get(1).substring(0, 4),
+                endMonth,
+                dateRange.get(1).substring(6, 8));
         String sql = StrUtil.format("select {}\n" +
                 "from sds_index_daily_tu_index sidti\n" +
                 "where ts_code = '{}'\n" +
                 "  and trade_date >= '{}'\n" +
-                "  and trade_date < '{}'", fieldsStr, indexCode, dateRange.get(0), dateRange.get(1));
+                "  and trade_date <= '{}'", fieldsStr, indexCode, dateRange.get(0), endDate);
         res = DataFrame.readSql(connLocalTushare, sql);
         indexClosesPriceDateRangeCache.put(cacheKey, res);
         return res;
@@ -91,6 +97,7 @@ public class TushareIndexApi {
 
     /**
      * 给定日期区间, 返回map.  key:value-> 日期:close价格
+     * 区间已经往后延迟一个月
      *
      * @param dateRange
      * @param indexCode 目前只支持两大指数. 000001.SH  399001.SZ            @2021/12/8
@@ -105,11 +112,17 @@ public class TushareIndexApi {
         if (res != null) {
             return res;
         }
+        Integer monthTemp = Integer.valueOf(dateRange.get(1).substring(4, 6)) + 1; // 往后一个月
+        String endMonth = monthTemp > 9 ? monthTemp.toString() : "0" + monthTemp;
+        String endDate = StrUtil.format("{}{}{}", dateRange.get(1).substring(0, 4),
+                endMonth,
+                dateRange.get(1).substring(6, 8));
+
         String sql = StrUtil.format("select trade_date,{}\n" +
                 "from sds_index_daily_tu_index sidti\n" +
                 "where ts_code = '{}'\n" +
                 "  and trade_date >= '{}'\n" +
-                "  and trade_date < '{}'", field, indexCode, dateRange.get(0), dateRange.get(1));
+                "  and trade_date <= '{}'", field, indexCode, dateRange.get(0), endDate);
         DataFrame<Object> dfTemp = DataFrame.readSql(connLocalTushare, sql);
         res = new HashMap<>();
         for (int i = 0; i < dfTemp.length(); i++) {
