@@ -32,7 +32,7 @@ public class SqlUtil {
 
     public static boolean execSql(String sql, Connection conn, boolean closeConn) throws Exception {
         Statement s = conn.createStatement();
-        // Console.log(sql);  //
+        // Console.log(sql);  // 注意
         boolean rs = s.execute(sql);
         if (closeConn) {
             conn.close();
