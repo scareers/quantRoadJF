@@ -64,10 +64,11 @@ public class FSBacktestOfLowBuyNextHighSell {
         for (int i = 0; i < argOfIndexLowBuys.length; i++) {
             Double lowbuyArg = argOfIndexLowBuys[i];
             for (int j = 0; j < argOfIndexHighSells.length; j++) {
-                Double highSellArg = argOfIndexHighSells[i];
+                Double highSellArg = argOfIndexHighSells[j];
 
                 Console.log("current settings: lowbuy: {}  highsell: {}", lowbuyArg, highSellArg);
                 flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
+                Console.log(saveTablenameFSBacktest);
                 main0(); // 因同一进程, 因此相关sql查询结果已经被缓存
                 // @warning: 注意内存使用.    缓存了太多东西
             }

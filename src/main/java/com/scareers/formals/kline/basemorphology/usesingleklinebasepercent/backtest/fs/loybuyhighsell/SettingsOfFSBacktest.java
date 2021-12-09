@@ -38,6 +38,10 @@ public class SettingsOfFSBacktest {
             Double indexBelongThatTimePriceEnhanceArgHighSell0) {
         flushSettingsCore(); // 先重置, 再修改新的参数
 
+        // 指数当时tick加成
+        indexBelongThatTimePriceEnhanceArgLowBuy = indexBelongThatTimePriceEnhanceArgLowBuy0;
+        indexBelongThatTimePriceEnhanceArgHighSell = indexBelongThatTimePriceEnhanceArgHighSell0;
+
         Console.log("刷新设置项: {} {}", indexBelongThatTimePriceEnhanceArgLowBuy0,
                 indexBelongThatTimePriceEnhanceArgHighSell0);
         // 修改数据表相关设定
@@ -53,9 +57,6 @@ public class SettingsOfFSBacktest {
                 saveTablenameFSBacktest);
 
 
-        // 指数当时tick加成
-        indexBelongThatTimePriceEnhanceArgLowBuy = indexBelongThatTimePriceEnhanceArgLowBuy0;
-        indexBelongThatTimePriceEnhanceArgHighSell = indexBelongThatTimePriceEnhanceArgHighSell0;
     }
 
     /**
