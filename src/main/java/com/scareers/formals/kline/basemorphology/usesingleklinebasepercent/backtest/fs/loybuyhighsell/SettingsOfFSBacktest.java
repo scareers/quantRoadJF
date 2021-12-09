@@ -20,8 +20,11 @@ public class SettingsOfFSBacktest {
     // 2021-最后一个周期数据, 140天出手次数在此范围才被选中
     public static final List<Integer> formSetIdsFilterArgs = Arrays.asList(1000, 10000);
     public static final int processAmountOfBacktest = 8;
+
+    //方便debug
+    public static final int start = 8;// 方便debug, 控制起始位置
     public static final int exit = 1000000; // 方便debug, 控制进度, 越大则无限制.回测多少天?
-    public static final boolean forceSecrity = false; // 强制使得回测不能运行
+    public static final boolean forceSecrity = false; // 强制使得回测不能运行,
 
     static {
         flushSettingsCore(); // 可变参数初始化.  固定参数不变

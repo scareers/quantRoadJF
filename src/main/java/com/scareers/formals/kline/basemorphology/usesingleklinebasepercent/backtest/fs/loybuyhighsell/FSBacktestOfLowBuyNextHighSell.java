@@ -58,13 +58,13 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
-        double[] argOfindexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        double[] argOfindexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        double[] argOfIndexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        double[] argOfIndexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
 
-        for (int i = 0; i < argOfindexLowBuys.length; i++) {
-            Double lowbuyArg = argOfindexLowBuys[i];
-            for (int j = 0; j < argOfindexHighSells.length; j++) {
-                Double highSellArg = argOfindexHighSells[i];
+        for (int i = 0; i < argOfIndexLowBuys.length; i++) {
+            Double lowbuyArg = argOfIndexLowBuys[i];
+            for (int j = 0; j < argOfIndexHighSells.length; j++) {
+                Double highSellArg = argOfIndexHighSells[i];
 
                 Console.log("current settings: lowbuy: {}  highsell: {}", lowbuyArg, highSellArg);
                 flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
@@ -113,6 +113,9 @@ public class FSBacktestOfLowBuyNextHighSell {
         List<Integer> indexes = range(dates.size());
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
             Console.log("\ntotal process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
+            if (index <= start) {
+                continue; // 可设定起始值, 方便debug
+            }
             if (index + 1 >= exit) {
                 System.exit(1);
             }
@@ -284,8 +287,22 @@ public class FSBacktestOfLowBuyNextHighSell {
                 dfLowBuyHighSell.add("lb_position_price_map",
                         Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
             } catch (Exception e) {
+                log.warn("发生异常");
                 e.printStackTrace();
-                return null;
+                Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
+/*              // 已经修复, 权重计算为NaN的bug.  此时因price为0.0, 因此权重设置为0, 不影响后续计算
+                // 此时一般是 Double 有无限大的数, 无法被转换. NaN, 因此遍历且改变
+                HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuyTemp = new HashMap<>();
+                for (String key : stockWithTotalPositionAndAdaptedPriceLowBuy.keySet()) {
+                    stockWithTotalPositionAndAdaptedPriceLowBuyTemp.put(key,
+                            stockWithTotalPositionAndAdaptedPriceLowBuy.get(key).stream()
+                                    .map(value -> value.equals(Double.NaN) ? null : value).collect(Collectors.toList())
+                    );
+                }// 将 NaN 转换为null 然后再, 但是将会发生 空指针异常
+                dfLowBuyHighSell.add("lb_position_price_map",
+                        Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuyTemp)));
+*/
+                //return null;
             }
             Double reachTotalLimitTimeTick = (Double) lowBuyResults.get(1); // 1. lb_full_position_time_tick  满仓时间
             dfLowBuyHighSell.add("lb_full_position_time_tick", Arrays.asList(reachTotalLimitTimeTick));
@@ -843,6 +860,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                                         .get(0) / epochTotalPosition) * oldStockWithPositionAndPrice
                                         .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice
                                         .get(0) / epochTotalPosition);
+                        weightedPrice = weightedPrice.equals(Double.NaN) ? 0.0 : weightedPrice;
                         stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(epochTotalPosition,
                                 weightedPrice));
                     }
@@ -859,6 +877,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                         Double weightedPrice = // 这个老旧 仓位和价格, 是保存着的曾经. 直接用 . 新的总仓位直接用即可
                                 (oldStockWithPositionAndPrice.get(0) / newPosition) * oldStockWithPositionAndPrice
                                         .get(1) + buyPrice * (1 - oldStockWithPositionAndPrice.get(0) / newPosition);
+                        weightedPrice = weightedPrice.equals(Double.NaN) ? 0.0 : weightedPrice;
                         stockWithTotalPositionAndAdaptedPrice.put(stock, Arrays.asList(newPosition,
                                 weightedPrice));
                         break outerLoop; // 此时所有资金已经用掉, 我们可以提前结束双层循环. 完成低买整个过程
