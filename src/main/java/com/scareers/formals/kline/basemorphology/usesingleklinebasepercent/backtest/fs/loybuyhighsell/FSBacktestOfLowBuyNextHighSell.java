@@ -113,7 +113,7 @@ public class FSBacktestOfLowBuyNextHighSell {
         List<Integer> indexes = range(dates.size());
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
             Console.log("\ntotal process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
-            if (index <= start) {
+            if (index < start) {
                 continue; // 可设定起始值, 方便debug
             }
             if (index + 1 >= exit) {
