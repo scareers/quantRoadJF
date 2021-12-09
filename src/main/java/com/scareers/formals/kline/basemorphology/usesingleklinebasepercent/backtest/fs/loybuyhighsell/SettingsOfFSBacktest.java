@@ -1,5 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 
@@ -33,6 +34,9 @@ public class SettingsOfFSBacktest {
             Double indexBelongThatTimePriceEnhanceArgLowBuy0,
             Double indexBelongThatTimePriceEnhanceArgHighSell0) {
         flushSettingsCore(); // 先重置, 再修改新的参数
+
+        Console.log("刷新设置项: {} {}", indexBelongThatTimePriceEnhanceArgLowBuy0,
+                indexBelongThatTimePriceEnhanceArgHighSell0);
         // 修改数据表相关设定
         saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_{}_{}";
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
@@ -41,7 +45,7 @@ public class SettingsOfFSBacktest {
         sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
         sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
                 saveTablenameFSBacktest);
-        sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
+        sqlDeleteExistDateRangeFSRaw = "delete from `{}` where stat_date_range=\'{}\'";
         sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
                 saveTablenameFSBacktest);
 
@@ -58,6 +62,7 @@ public class SettingsOfFSBacktest {
      * @noti: 注意一些少量的依赖关系.
      */
     public static void flushSettingsCore() {
+
         settingTablenameRelative(); // 保存数据表相关设定
 
         // cdf时tick距离. 千分之5
@@ -81,6 +86,7 @@ public class SettingsOfFSBacktest {
         execHighSellThreshold = -0.01;
         continuousRaiseTickCountThreshold = 1;
     }
+
 
     public static void settingTablenameRelative() { // 保存数据表相关设定
         saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";

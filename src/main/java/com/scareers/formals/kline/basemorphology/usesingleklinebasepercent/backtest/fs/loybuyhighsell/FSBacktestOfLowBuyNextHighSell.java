@@ -58,8 +58,8 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
-        double[] argOfindexLowBuys = {};
-        double[] argOfindexHighSells = {};
+        double[] argOfindexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        double[] argOfindexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
 
         for (int i = 0; i < argOfindexLowBuys.length; i++) {
             Double lowbuyArg = argOfindexLowBuys[i];

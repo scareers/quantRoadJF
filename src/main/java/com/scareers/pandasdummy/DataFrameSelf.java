@@ -109,7 +109,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         if ("fail".equals(ifExists)) {
             throw new SQLException(String.format("数据表已存在,写入失败: %s", "ifExists==fail"));
         } else if ("replace".equals(ifExists)) {
-            conn.createStatement().execute(String.format("drop table if exists %s", tablename));
+            conn.createStatement().execute(String.format("drop table if exists `%s`", tablename));
             // 删除原来的表
         }
         // replace 和 append 模式, 都需要尝试建表
@@ -121,7 +121,7 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         //        conn.setAutoCommit(false);
         // 将调用prest.executeBatch(), 手动提交
         // 第二个%s是字段列表, 第三个是 相同数量的 ?
-        String sqlSave = "insert into {}({}) values ({})";
+        String sqlSave = "insert into `{}`({}) values ({})";
         ArrayList<String> questionMarks = new ArrayList<>();
         for (int i = 0; i < df.columns().size(); i++) {
             questionMarks.add("?");
