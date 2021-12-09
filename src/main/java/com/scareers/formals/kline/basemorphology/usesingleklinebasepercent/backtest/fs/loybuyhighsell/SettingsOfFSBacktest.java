@@ -23,7 +23,32 @@ public class SettingsOfFSBacktest {
     public static final boolean forceSecrity = false; // 强制使得回测不能运行
 
     static {
-        flushSettings(); // 可变参数初始化.  固定参数不变
+        flushSettingsCore(); // 可变参数初始化.  固定参数不变
+    }
+
+    /**
+     * 当对某参数进行回测时, 调用此方法, 可刷新对应参数, 当然需要传递参数过来
+     */
+    public static void flushSettingsOfIndexBelongThatTimePriceEnhanceArg(
+            Double indexBelongThatTimePriceEnhanceArgLowBuy0,
+            Double indexBelongThatTimePriceEnhanceArgHighSell0) {
+        flushSettingsCore(); // 先重置, 再修改新的参数
+        // 修改数据表相关设定
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_{}_{}";
+        saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
+                keyInts.get(1), indexBelongThatTimePriceEnhanceArgLowBuy0, indexBelongThatTimePriceEnhanceArgHighSell0);
+        // 因数据表刷新, 因此删除和创建sql也需要刷新
+        sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
+        sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
+                saveTablenameFSBacktest);
+        sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
+        sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
+                saveTablenameFSBacktest);
+
+
+        // 指数当时tick加成
+        indexBelongThatTimePriceEnhanceArgLowBuy = indexBelongThatTimePriceEnhanceArgLowBuy0;
+        indexBelongThatTimePriceEnhanceArgHighSell = indexBelongThatTimePriceEnhanceArgHighSell0;
     }
 
     /**
@@ -32,7 +57,32 @@ public class SettingsOfFSBacktest {
      *
      * @noti: 注意一些少量的依赖关系.
      */
-    public static void flushSettings() {
+    public static void flushSettingsCore() {
+        settingTablenameRelative(); // 保存数据表相关设定
+
+        // cdf时tick距离. 千分之5
+        tickGap = 0.005;
+        // 常规低买参数
+        positionUpperLimit = 1.2;
+        positionCalcKeyArgsOfCdf = 1.3;
+        execLowBuyThreshold = +0.005;
+        continuousFallTickCountThreshold = 1;
+
+        // 指数当时tick加成
+        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
+        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
+
+        // 开盘强卖参数
+        forceSellOpenWeakStock = false;
+        weakStockOpenPercentThatDayThreshold = -0.02;
+        weakStockOpenPercentTodayThreshold = -0.07;
+        // 常规高卖参数
+        positionCalcKeyArgsOfCdfHighSell = 1.2;
+        execHighSellThreshold = -0.01;
+        continuousRaiseTickCountThreshold = 1;
+    }
+
+    public static void settingTablenameRelative() { // 保存数据表相关设定
         saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
                 keyInts.get(1));
@@ -42,53 +92,7 @@ public class SettingsOfFSBacktest {
         sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
         sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
                 saveTablenameFSBacktest);
-
-        tickGap = 0.005;
-        positionUpperLimit = 1.3;
-        positionCalcKeyArgsOfCdf = 1.5;
-        execLowBuyThreshold = -0.005;
-        continuousFallTickCountThreshold = 2;
-
-        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
-        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
-
-        forceSellOpenWeakStock = false;
-        weakStockOpenPercentThatDayThreshold = -0.02;
-        weakStockOpenPercentTodayThreshold = -0.07;
-        positionCalcKeyArgsOfCdfHighSell = 1.5;
-        execHighSellThreshold = -0.0;
-        continuousRaiseTickCountThreshold = 1;
     }
-
-    public static void flushSettings2(String saveTablenameFSBacktestRaw,) {
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
-        saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
-                keyInts.get(1));
-        sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
-        sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
-                saveTablenameFSBacktest);
-        sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
-        sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
-                saveTablenameFSBacktest);
-
-        tickGap = 0.005;
-        positionUpperLimit = 1.3;
-        positionCalcKeyArgsOfCdf = 1.5;
-        execLowBuyThreshold = -0.005;
-        continuousFallTickCountThreshold = 2;
-
-        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
-        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
-
-        forceSellOpenWeakStock = false;
-        weakStockOpenPercentThatDayThreshold = -0.02;
-        weakStockOpenPercentTodayThreshold = -0.07;
-        positionCalcKeyArgsOfCdfHighSell = 1.5;
-        execHighSellThreshold = -0.0;
-        continuousRaiseTickCountThreshold = 1;
-    }
-
-
 
 
     public static String saveTablenameFSBacktestRaw;

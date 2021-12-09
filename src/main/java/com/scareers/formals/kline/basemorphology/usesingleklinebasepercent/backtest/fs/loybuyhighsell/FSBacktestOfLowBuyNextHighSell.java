@@ -58,6 +58,22 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
+        double[] argOfindexLowBuys = {};
+        double[] argOfindexHighSells = {};
+
+        for (int i = 0; i < argOfindexLowBuys.length; i++) {
+            Double lowbuyArg = argOfindexLowBuys[i];
+            for (int j = 0; j < argOfindexHighSells.length; j++) {
+                Double highSellArg = argOfindexHighSells[i];
+
+                Console.log("current settings: lowbuy: {}  highsell: {}", lowbuyArg, highSellArg);
+                flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
+                main0(); // 因同一进程, 因此相关sql查询结果已经被缓存
+            }
+        }
+    }
+
+    public static void main0() throws Exception {
         if (forceSecrity) {
             throw new Exception("强制不能运行本回测, 请修改设定");
         }
@@ -1059,7 +1075,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             double preClose = TushareIndexApi.getIndexDailyCloseByTradeDate(belongIndex, tradeDate);
             //Console.log(price / preClose - 1);
             if (price == null) {
-                Console.log(tick, belongIndex, lowBuyOrHighSellDate,stock);
+                Console.log(tick, belongIndex, lowBuyOrHighSellDate, stock);
             }
             return price / preClose - 1;
         }
