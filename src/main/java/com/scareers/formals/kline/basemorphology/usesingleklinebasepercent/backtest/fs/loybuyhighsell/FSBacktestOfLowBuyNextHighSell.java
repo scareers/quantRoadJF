@@ -69,6 +69,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 Console.log("current settings: lowbuy: {}  highsell: {}", lowbuyArg, highSellArg);
                 flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
                 main0(); // 因同一进程, 因此相关sql查询结果已经被缓存
+                // @warning: 注意内存使用.    缓存了太多东西
             }
         }
     }
