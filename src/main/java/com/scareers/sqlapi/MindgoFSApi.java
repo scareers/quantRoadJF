@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class MindgoFSApi {
     public static Connection conn = ConnectionFactory.getConnLocalMindgo1M();
-    public static Cache<String, DataFrame<Object>> indexFSBYSingleDateCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, DataFrame<Object>> indexFSBYSingleDateCache = CacheUtil.newLRUCache(8096);
 
     public static void main(String[] args) throws SQLException {
         TimeInterval timer = DateUtil.timer();

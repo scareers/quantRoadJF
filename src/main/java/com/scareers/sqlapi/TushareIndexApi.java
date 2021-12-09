@@ -27,9 +27,9 @@ public class TushareIndexApi {
         connLocalTushare = ConnectionFactory.getConnLocalTushare(); // 可选择连接是否从连接池获取.
     }
 
-    public static Cache<String, Double> indexClosePriceOneDayCache = CacheUtil.newLRUCache(2048);
-    public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, HashMap<String, Double>> indexSingleColumnDateRangeCache = CacheUtil.newLRUCache(1024);
+    public static Cache<String, Double> indexClosePriceOneDayCache = CacheUtil.newLRUCache(32768);
+    public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(32768);
+    public static Cache<String, HashMap<String, Double>> indexSingleColumnDateRangeCache = CacheUtil.newLRUCache(32768);
 
 
     public static void main(String[] args) throws Exception {

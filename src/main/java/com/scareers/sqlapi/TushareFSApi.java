@@ -31,8 +31,8 @@ public class TushareFSApi {
             "amount");
     // using cache for one day fs1m of stock.
     // the first time: conn object init, so == 500ms;  normal first ==30ms, using cache==10ms
-    public static Cache<String, DataFrame<Object>> stockPriceFsOneDayCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, DataFrame<Object>> stockPriceFsDateRangeCache = CacheUtil.newLRUCache(64);
+    public static Cache<String, DataFrame<Object>> stockPriceFsOneDayCache = CacheUtil.newLRUCache(32768);
+    public static Cache<String, DataFrame<Object>> stockPriceFsDateRangeCache = CacheUtil.newLRUCache(32768);
 
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
