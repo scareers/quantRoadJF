@@ -1058,6 +1058,9 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 然后需要获取昨日 close, 当日就是 today,  --> tradeDate
             double preClose = TushareIndexApi.getIndexDailyCloseByTradeDate(belongIndex, tradeDate);
             //Console.log(price / preClose - 1);
+            if (price == null) {
+                Console.log(tick, belongIndex, lowBuyOrHighSellDate,stock);
+            }
             return price / preClose - 1;
         }
 
