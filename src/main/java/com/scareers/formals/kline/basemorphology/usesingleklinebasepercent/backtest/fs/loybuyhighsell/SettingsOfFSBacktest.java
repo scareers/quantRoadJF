@@ -22,38 +22,103 @@ public class SettingsOfFSBacktest {
     public static final int exit = 1000000; // 方便debug, 控制进度, 越大则无限制.回测多少天?
     public static final boolean forceSecrity = false; // 强制使得回测不能运行
 
-    public static String saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
-    public static String saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
-            keyInts.get(1));
-    public static String sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate(); // todo: 保存表需要重写
-    public static String sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
-            saveTablenameFSBacktest);
+    static {
+        flushSettings(); // 可变参数初始化.  固定参数不变
+    }
 
-    public static final String sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
-    public static String sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
-            saveTablenameFSBacktest);
+    /**
+     * 刷新参数方法.
+     * 对于几乎不会变的参数, 不在本函数刷新, 一旦设定, 至少在一次运行, 那些参数固定
+     *
+     * @noti: 注意一些少量的依赖关系.
+     */
+    public static void flushSettings() {
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
+        saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
+                keyInts.get(1));
+        sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
+        sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
+                saveTablenameFSBacktest);
+        sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
+        sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
+                saveTablenameFSBacktest);
+
+        tickGap = 0.005;
+        positionUpperLimit = 1.3;
+        positionCalcKeyArgsOfCdf = 1.5;
+        execLowBuyThreshold = -0.005;
+        continuousFallTickCountThreshold = 2;
+
+        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
+        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
+
+        forceSellOpenWeakStock = false;
+        weakStockOpenPercentThatDayThreshold = -0.02;
+        weakStockOpenPercentTodayThreshold = -0.07;
+        positionCalcKeyArgsOfCdfHighSell = 1.5;
+        execHighSellThreshold = -0.0;
+        continuousRaiseTickCountThreshold = 1;
+    }
+
+    public static void flushSettings2(String saveTablenameFSBacktestRaw,) {
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
+        saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
+                keyInts.get(1));
+        sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
+        sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
+                saveTablenameFSBacktest);
+        sqlDeleteExistDateRangeFSRaw = "delete from {} where stat_date_range=\'{}\'";
+        sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
+                saveTablenameFSBacktest);
+
+        tickGap = 0.005;
+        positionUpperLimit = 1.3;
+        positionCalcKeyArgsOfCdf = 1.5;
+        execLowBuyThreshold = -0.005;
+        continuousFallTickCountThreshold = 2;
+
+        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
+        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
+
+        forceSellOpenWeakStock = false;
+        weakStockOpenPercentThatDayThreshold = -0.02;
+        weakStockOpenPercentTodayThreshold = -0.07;
+        positionCalcKeyArgsOfCdfHighSell = 1.5;
+        execHighSellThreshold = -0.0;
+        continuousRaiseTickCountThreshold = 1;
+    }
+
+
+
+
+    public static String saveTablenameFSBacktestRaw;
+    public static String saveTablenameFSBacktest;
+    public static String sqlCreateSaveTableFSBacktestRaw;
+    public static String sqlCreateSaveTableFSBacktest;
+    public static String sqlDeleteExistDateRangeFSRaw;
+    public static String sqlDeleteExistDateRangeFSBacktest;
 
     // 低买设定
-    public static Double tickGap = 0.005; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要
-    public static Double positionUpperLimit = 1.3; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
+    public static Double tickGap; // 分时分布的tick, 间隔是 0.005, 千分之五 . 主要是cdf用. 虽然可以实时计算, 没必要
+    public static Double positionUpperLimit; // 控制上限, 一般不大于 倍率, 当然, 这些倍率都是对于 1只股票1块钱而言
     // @noti: 这些限制设定, 应当 / totalAsserts, 才能等价
-    public static Double positionCalcKeyArgsOfCdf = 1.5; // 控制单股cdf倍率, 一般不小于上限
-    public static final Double execLowBuyThreshold = -0.005; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
-    public static int continuousFallTickCountThreshold = 2; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
+    public static Double positionCalcKeyArgsOfCdf; // 控制单股cdf倍率, 一般不小于上限
+    public static Double execLowBuyThreshold; // 必须某个值 <= -0.1阈值, 才可能执行低买, 否则跳过不考虑
+    public static int continuousFallTickCountThreshold; // 低买时, 连续下跌数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2
 
     // lb1: 大盘当时tick的涨跌幅加成算法.  两参数为0, 则相当于无此加成. 正数则符合现实意义, 也可尝试负数; 低买高卖参数可不同
-    public static Double indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
-    public static Double indexBelongThatTimePriceEnhanceArgHighSell = -0.5;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
+    public static Double indexBelongThatTimePriceEnhanceArgLowBuy;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
+    public static Double indexBelongThatTimePriceEnhanceArgHighSell;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
 
     // 高卖设定
     // 1.强制开盘卖出弱势股设定. 弱势股定义: 开盘价真实涨跌幅<阈值 且 小于相对于today涨跌幅阈值
-    public static boolean forceSellOpenWeakStock = false; // 是否开盘强制卖出弱势股
-    public static Double weakStockOpenPercentThatDayThreshold = -0.02; // 当日真实开盘价涨跌幅小于此阈值,  且:
-    public static Double weakStockOpenPercentTodayThreshold = -0.07; // 开盘价(实际是9:31,而非9:30) 低于或等于此值,相对于today 视为弱势股,可开盘卖出
+    public static boolean forceSellOpenWeakStock; // 是否开盘强制卖出弱势股
+    public static Double weakStockOpenPercentThatDayThreshold; // 当日真实开盘价涨跌幅小于此阈值,  且:
+    public static Double weakStockOpenPercentTodayThreshold; // 开盘价(实际是9:31,而非9:30) 低于或等于此值,相对于today 视为弱势股,可开盘卖出
 
-    public static Double positionCalcKeyArgsOfCdfHighSell = 1.5; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
-    public static final Double execHighSellThreshold = -0.0; // 必须 >0.01阈值, 才可能执行高卖,
-    public static int continuousRaiseTickCountThreshold = 1; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
+    public static Double positionCalcKeyArgsOfCdfHighSell; // 控制单股cdf倍率, 卖出速度.  1-2之间变化明显.
+    public static Double execHighSellThreshold; // 必须 >0.01阈值, 才可能执行高卖,
+    public static int continuousRaiseTickCountThreshold; // 高卖时, 连续上升数量的阈值, 应当不小于这个数量, 才考虑卖. 1最宽容,可考虑2,包含相等
 
 
     // 连接对象
