@@ -34,6 +34,7 @@ import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
+import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -58,8 +59,12 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
-        double[] argOfIndexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        reportCpuMemoryDiskSubThread(false); // 播报硬件信息
+        double[] argOfIndexLowBuys = {0.0, 1.0, 3.0, 5.0};
         double[] argOfIndexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+
+        // todo: -1 -3~5.0 开始.
+        // 当前: 0.0 -5.0~5.0完整..
 
         for (int i = 0; i < argOfIndexLowBuys.length; i++) {
             Double lowbuyArg = argOfIndexLowBuys[i];
@@ -83,7 +88,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
         // 股票列表也不需要, 因为直接读取了选股结果 股票列表
         // 未关闭连接,可复用
-        //reportCpuMemoryDiskSubThread(false); // 播报硬件信息
+
         execSql(sqlCreateSaveTableFSBacktest, // 建表分时回测
                 connOfKlineForms, false);
 
@@ -152,6 +157,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 StrUtil.format("部分回测完成,耗时: {}h",
                         (double) timer.intervalRestart() / 3600000),
                 false, null);
+        System.gc();
         poolOfBacktest.shutdown(); // 关闭线程池, 不能写在循环里面去, 否则报错 拒绝任务. 线程池大小0
     }
 

@@ -43,9 +43,9 @@ public class TushareApi {
     public static final String STOCK_PRICE_DAILY_TABLENAME_TEMPLATE = "sds_stock_price_daily_{}_tu_stock";
     public static final List<String> NOT_MAIN_BOARDS = Arrays.asList(null, "CDR", "创业板", "科创板");// 另有主板,中小板
     public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(256);
-    public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(1024);
+    public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(2048);
     public static HashMap<String, String> stockWithBoardAsMapCache;
 
 

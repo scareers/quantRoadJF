@@ -29,8 +29,8 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
  */
 public class KlineFormsApi {
     public static Connection conn = ConnectionFactory.getConnLocalKlineForms();
-    public static Cache<String, HashMap<Long, List<String>>> stockSelectPerDayCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, List<List<Double>>> formSetIdDistributionsCacheByKeyInts = CacheUtil.newLRUCache(1024);
+    public static Cache<String, HashMap<Long, List<String>>> stockSelectPerDayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, List<List<Double>>> formSetIdDistributionsCacheByKeyInts = CacheUtil.newLRUCache(2048);
 
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();

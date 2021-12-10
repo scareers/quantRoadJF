@@ -44,7 +44,7 @@ public class HardwareUtils {
     }
 
     public static void reportCpuMemoryDiskSubThread(boolean showInStdout) throws InterruptedException {
-        Thread.sleep(1000 * 10); // 10s后发送
+        Thread.sleep(1000 * 15); // 10s后发送
         Thread thread = new Thread(new Runnable() {
             @SneakyThrows
             @Override
@@ -59,7 +59,7 @@ public class HardwareUtils {
                     } catch (Exception e) {
                         e.printStackTrace(); // 防止断网
                     }
-                    Thread.sleep(1000 * 60 * 10);
+                    Thread.sleep(1000 * 60 * 15);
                 }
             }
         });

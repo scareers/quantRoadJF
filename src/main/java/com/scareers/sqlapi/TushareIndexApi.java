@@ -28,8 +28,8 @@ public class TushareIndexApi {
     }
 
     public static Cache<String, Double> indexClosePriceOneDayCache = CacheUtil.newLRUCache(2048);
-    public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(1024);
-    public static Cache<String, HashMap<String, Double>> indexSingleColumnDateRangeCache = CacheUtil.newLRUCache(1024);
+    public static Cache<String, DataFrame<Object>> indexClosesPriceDateRangeCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, HashMap<String, Double>> indexSingleColumnDateRangeCache = CacheUtil.newLRUCache(2048);
 
 
     public static void main(String[] args) throws Exception {

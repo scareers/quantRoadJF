@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -54,8 +55,17 @@ public class FSUtil {
         return fsTicks.get(tickDouble.intValue());
     }
 
+    public static HashMap<String, Double> cacheMap = new HashMap<>();
+
     public static Double fsTimeStrParseToTickDouble(String tickTimeStr) {
+        Double res = cacheMap.get(tickTimeStr);
+        if (res != null) {
+            return res;
+        }
+
         Integer index = fsTicks.indexOf(tickTimeStr);
-        return index.doubleValue();
+        res = index.doubleValue();
+        cacheMap.put(tickTimeStr, res); // 241个缓存
+        return res;
     }
 }
