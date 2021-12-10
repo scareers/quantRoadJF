@@ -125,6 +125,10 @@ public class FSBacktestOfLowBuyNextHighSell {
             if (index + 1 >= exit) {
                 System.exit(1);
             }
+            if (index % gcFreqDays == 0) {
+                System.gc();
+            }
+
             String tradeDate = dates.get(index);
             HashMap<Long, List<String>> stockSelectResultPerDay = getStockSelectResultOfTradeDate(tradeDate, keyInts);
             if (stockSelectResultPerDay.size() <= 0) {
