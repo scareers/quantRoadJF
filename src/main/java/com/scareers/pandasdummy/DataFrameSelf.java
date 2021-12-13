@@ -178,7 +178,12 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     }
 
     public static List<Double> getColAsDoubleList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col = df.col(colNameOrIndex);
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
         List<Double> res = new ArrayList<>();
         for (Object o : col) {
             res.add(Double.valueOf(o.toString()));
@@ -187,7 +192,12 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     }
 
     public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col = df.col(colNameOrIndex);
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
         List<String> res = new ArrayList<>();
         for (Object o : col) {
             res.add(o.toString());
@@ -196,7 +206,12 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     }
 
     public static List<Integer> getColAsIntegerList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col = df.col(colNameOrIndex);
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
         List<Integer> res = new ArrayList<>();
         for (Object o : col) {
             res.add(Integer.valueOf(o.toString()));
@@ -205,13 +220,32 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     }
 
     public static List<Long> getColAsLongList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col = df.col(colNameOrIndex);
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
         List<Long> res = new ArrayList<>();
         for (Object o : col) {
             res.add(Long.valueOf(o.toString()));
         }
         return res;
     }
+
+//    public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
+//        List<Object> col;
+//        try {
+//            col = df.col(colNameOrIndex);
+//        } catch (Exception e) {
+//            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+//        }
+//        List<String> res = new ArrayList<>();
+//        for (Object o : col) {
+//            res.add(o.toString());
+//        }
+//        return res;
+//    }
 
 }
 
