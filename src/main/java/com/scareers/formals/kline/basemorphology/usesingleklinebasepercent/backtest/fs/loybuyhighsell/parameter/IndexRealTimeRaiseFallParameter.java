@@ -27,7 +27,14 @@ public class IndexRealTimeRaiseFallParameter {
         tables = tables.stream().filter(value -> value.startsWith("fs_backtest_lowbuy_highsell_next0b1s"))
                 .collect(Collectors.toList());
 
-        String
+        String sql = StrUtil.format("select avg(lb_weighted_buy_price)             as bp,\n" +
+                "       avg(lb_simple_avg_buy_price)           as simplebp,\n" +
+                "       avg(lb_global_position_sum)            as position,\n" +
+                "       avg(lb_has_position_stock_count)       as stockcount,\n" +
+                "       avg(hs_success_global_percent)         as hss,\n" +
+                "       avg(hs_success_global_price)           as hsp,\n" +
+                "       avg(lbhs_weighted_profit_conservative) as profit\n" +
+                "from `fs_backtest_lowbuy_highsell_next0b1s_-5.0_-5.0`",);
 
     }
 
