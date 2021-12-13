@@ -1,0 +1,398 @@
+{
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_1.0": {
+    "hsp": 0.03428032134437629,
+    "hss": 0.4042363199401846,
+    "bp": -0.017575319328139088,
+    "stockcount": 26.5018,
+    "simplebp": -0.0186213925519896,
+    "position": 0.7375712093644304,
+    "profit": 0.00860825513211411
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_0.0": {
+    "hsp": 0.03354706486032984,
+    "hss": 0.4218446896018637,
+    "bp": -0.01757531932813909,
+    "stockcount": 26.5018,
+    "simplebp": -0.018621392551989607,
+    "position": 0.7375712093644301,
+    "profit": 0.008509402426310212
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_3.0": {
+    "hsp": 0.0366766150301995,
+    "hss": 0.3783072436394032,
+    "bp": -0.017575319328139095,
+    "stockcount": 26.5018,
+    "simplebp": -0.0186213925519896,
+    "position": 0.7375712093644303,
+    "profit": 0.008733765649452436
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_5.0": {
+    "hsp": 0.03918098087622712,
+    "hss": 0.36333593946460124,
+    "bp": -0.017575319328139088,
+    "stockcount": 26.5018,
+    "simplebp": -0.018621392551989604,
+    "position": 0.7375712093644303,
+    "profit": 0.008794861125662008
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_3.0": {
+    "hsp": 0.037225967289186535,
+    "hss": 0.3696719056855355,
+    "bp": -0.017891682488917315,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073742,
+    "position": 0.7165282999681464,
+    "profit": 0.00868686266383876
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_1.0": {
+    "hsp": 0.034560649663613115,
+    "hss": 0.398594169887174,
+    "bp": -0.01789168248891732,
+    "stockcount": 26.6589,
+    "simplebp": -0.01895497439907374,
+    "position": 0.7165282999681465,
+    "profit": 0.008545273005172702
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_-5.0": {
+    "hsp": 0.035401273002411277,
+    "hss": 0.4607705718226562,
+    "bp": -0.01789168248891732,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073732,
+    "position": 0.7165282999681463,
+    "profit": 0.008030669509703513
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_0.0": {
+    "hsp": 0.03372600769836599,
+    "hss": 0.4182217496472521,
+    "bp": -0.01789168248891732,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073732,
+    "position": 0.7165282999681463,
+    "profit": 0.00842025118070884
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_-3.0": {
+    "hsp": 0.03431414698809107,
+    "hss": 0.4547431498104028,
+    "bp": -0.017891682488917315,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073732,
+    "position": 0.7165282999681464,
+    "profit": 0.008102293516292408
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_5.0": {
+    "hsp": 0.03992003566388507,
+    "hss": 0.35322533682629853,
+    "bp": -0.01789168248891732,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073742,
+    "position": 0.7165282999681464,
+    "profit": 0.008757299948584846
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_0.0_-1.0": {
+    "hsp": 0.033480010996441795,
+    "hss": 0.43603292951419576,
+    "bp": -0.017891682488917315,
+    "stockcount": 26.6589,
+    "simplebp": -0.018954974399073732,
+    "position": 0.7165282999681464,
+    "profit": 0.008284709378659029
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_5.0": {
+    "hsp": 0.03878921895098628,
+    "hss": 0.3657321050747068,
+    "bp": -0.017135487833966255,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015623,
+    "position": 0.7409845658588922,
+    "profit": 0.008787507647685362
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_-3.0": {
+    "hsp": 0.03432691322274164,
+    "hss": 0.4544461695976423,
+    "bp": -0.01717858227580229,
+    "stockcount": 26.6707,
+    "simplebp": -0.018714462167847893,
+    "position": 0.6945443498389361,
+    "profit": 0.007881434127388093
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_-5.0": {
+    "hsp": 0.0348957959448101,
+    "hss": 0.4600522544675083,
+    "bp": -0.015457961897975799,
+    "stockcount": 26.6486,
+    "simplebp": -0.018183037380062005,
+    "position": 0.66446715751112,
+    "profit": 0.007330462717503921
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_3.0": {
+    "hsp": 0.0363554067646037,
+    "hss": 0.3803400300293452,
+    "bp": -0.01713548783396626,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015626,
+    "position": 0.7409845658588924,
+    "profit": 0.008730996929768173
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_-5.0": {
+    "hsp": 0.03537367345714148,
+    "hss": 0.46088668992568466,
+    "bp": -0.017178582275802292,
+    "stockcount": 26.6707,
+    "simplebp": -0.018714462167847893,
+    "position": 0.694544349838936,
+    "profit": 0.007812670697553517
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_0.0": {
+    "hsp": 0.03336078620413803,
+    "hss": 0.42285761305004543,
+    "bp": -0.017135487833966255,
+    "stockcount": 26.3436,
+    "simplebp": -0.01840905214801563,
+    "position": 0.7409845658588923,
+    "profit": 0.008526297917982623
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_1.0": {
+    "hsp": 0.03405779922764132,
+    "hss": 0.4057323812918411,
+    "bp": -0.01713548783396626,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015626,
+    "position": 0.7409845658588923,
+    "profit": 0.00861563848338089
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_5.0": {
+    "hsp": 0.04005210959257335,
+    "hss": 0.3395220770150232,
+    "bp": -0.0154579618979758,
+    "stockcount": 26.6486,
+    "simplebp": -0.018183037380062005,
+    "position": 0.66446715751112,
+    "profit": 0.008162979271084525
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_-5.0": {
+    "hsp": 0.035379339605334,
+    "hss": 0.45980819971157727,
+    "bp": -0.017575319328139088,
+    "stockcount": 26.5018,
+    "simplebp": -0.0186213925519896,
+    "position": 0.7375712093644304,
+    "profit": 0.008176582813684682
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_5.0_-3.0": {
+    "hsp": 0.03350958774514054,
+    "hss": 0.481215755840465,
+    "bp": -0.012643510728383314,
+    "stockcount": 26.8169,
+    "simplebp": -0.016444961369107506,
+    "position": 0.6382086811381573,
+    "profit": 0.008301489654472232
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_1.0": {
+    "hsp": 0.03446103886938339,
+    "hss": 0.3903573538014031,
+    "bp": -0.015457961897975799,
+    "stockcount": 26.6486,
+    "simplebp": -0.01818303738006201,
+    "position": 0.6644671575111201,
+    "profit": 0.007927158710695284
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_5.0_-5.0": {
+    "hsp": 0.034434139586242675,
+    "hss": 0.45959286937899707,
+    "bp": -0.014268306006258101,
+    "stockcount": 26.4797,
+    "simplebp": -0.017762471957554316,
+    "position": 0.6496503358433836,
+    "profit": 0.007039554788265699
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_-1.0": {
+    "hsp": 0.03348083214162239,
+    "hss": 0.4371500135467483,
+    "bp": -0.017938902637053375,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022563,
+    "position": 0.7285221095101931,
+    "profit": 0.00833870774552744
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_3.0": {
+    "hsp": 0.03727951817864974,
+    "hss": 0.35784045107108997,
+    "bp": -0.0154579618979758,
+    "stockcount": 26.6486,
+    "simplebp": -0.01818303738006201,
+    "position": 0.66446715751112,
+    "profit": 0.008084844736961687
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_-1.0": {
+    "hsp": 0.03337122197857155,
+    "hss": 0.4378002375435328,
+    "bp": -0.01757531932813909,
+    "stockcount": 26.5018,
+    "simplebp": -0.0186213925519896,
+    "position": 0.7375712093644301,
+    "profit": 0.008402840628295553
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_-5.0": {
+    "hsp": 0.03520048955505461,
+    "hss": 0.45989066614455343,
+    "bp": -0.01713548783396625,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015623,
+    "position": 0.7409845658588924,
+    "profit": 0.008217606084998233
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_-3.0": {
+    "hsp": 0.03389074095436715,
+    "hss": 0.45289338665013334,
+    "bp": -0.0154579618979758,
+    "stockcount": 26.6486,
+    "simplebp": -0.01818303738006201,
+    "position": 0.6644671575111201,
+    "profit": 0.007402858514948258
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_-3.0": {
+    "hsp": 0.03436474671548132,
+    "hss": 0.4548887805865759,
+    "bp": -0.017938902637053375,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022567,
+    "position": 0.728522109510193,
+    "profit": 0.00816515193699416
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_-3.0": {
+    "hsp": 0.03427007569906716,
+    "hss": 0.4545413100514039,
+    "bp": -0.01757531932813909,
+    "stockcount": 26.5018,
+    "simplebp": -0.018621392551989604,
+    "position": 0.7375712093644303,
+    "profit": 0.008243636047295187
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_-3.0": {
+    "hsp": 0.034083069672030654,
+    "hss": 0.4547500823847997,
+    "bp": -0.017135487833966255,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015626,
+    "position": 0.7409845658588923,
+    "profit": 0.008282192474395546
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_-1.0": {
+    "hsp": 0.033219221455496085,
+    "hss": 0.43173373924092,
+    "bp": -0.015457961897975799,
+    "stockcount": 26.6486,
+    "simplebp": -0.018183037380062005,
+    "position": 0.66446715751112,
+    "profit": 0.00760639623758569
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_3.0_0.0": {
+    "hsp": 0.03354422026705627,
+    "hss": 0.41208901317958,
+    "bp": -0.015457961897975802,
+    "stockcount": 26.6486,
+    "simplebp": -0.01818303738006201,
+    "position": 0.6644671575111201,
+    "profit": 0.0077723603604462985
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_-5.0": {
+    "hsp": 0.03546714442035468,
+    "hss": 0.46053592728828474,
+    "bp": -0.017938902637053368,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022563,
+    "position": 0.728522109510193,
+    "profit": 0.008095142914237768
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_-1.0": {
+    "hsp": 0.03355170965928962,
+    "hss": 0.4347223019512375,
+    "bp": -0.01717858227580229,
+    "stockcount": 26.6707,
+    "simplebp": -0.018714462167847893,
+    "position": 0.6945443498389364,
+    "profit": 0.008067127594714884
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_0.0": {
+    "hsp": 0.0338167012031444,
+    "hss": 0.416040721943885,
+    "bp": -0.017178582275802292,
+    "stockcount": 26.6707,
+    "simplebp": -0.01871446216784789,
+    "position": 0.6945443498389361,
+    "profit": 0.008210441363325657
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_1.0": {
+    "hsp": 0.034680472142829065,
+    "hss": 0.3954520534496692,
+    "bp": -0.01717858227580229,
+    "stockcount": 26.6707,
+    "simplebp": -0.01871446216784789,
+    "position": 0.6945443498389359,
+    "profit": 0.008342478041906052
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_3.0": {
+    "hsp": 0.03742234146841845,
+    "hss": 0.36502085545796403,
+    "bp": -0.01717858227580229,
+    "stockcount": 26.6707,
+    "simplebp": -0.018714462167847896,
+    "position": 0.694544349838936,
+    "profit": 0.008484542187740047
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_1.0_5.0": {
+    "hsp": 0.04016123366960681,
+    "hss": 0.34785703804279666,
+    "bp": -0.017178582275802292,
+    "stockcount": 26.6707,
+    "simplebp": -0.0187144621678479,
+    "position": 0.6945443498389361,
+    "profit": 0.008558402101574438
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_3.0": {
+    "hsp": 0.03705011084620025,
+    "hss": 0.37403298301645005,
+    "bp": -0.017938902637053368,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022567,
+    "position": 0.7285221095101931,
+    "profit": 0.008719081516430555
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_5.0": {
+    "hsp": 0.03967135721481882,
+    "hss": 0.35824219550857683,
+    "bp": -0.017938902637053375,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022567,
+    "position": 0.7285221095101931,
+    "profit": 0.008787930785330288
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-5.0_-1.0": {
+    "hsp": 0.03319903801345202,
+    "hss": 0.43834934341012494,
+    "bp": -0.017135487833966255,
+    "stockcount": 26.3436,
+    "simplebp": -0.018409052148015626,
+    "position": 0.7409845658588923,
+    "profit": 0.008430689212707454
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_1.0": {
+    "hsp": 0.03448790089751262,
+    "hss": 0.40151237775003423,
+    "bp": -0.017938902637053375,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022563,
+    "position": 0.728522109510193,
+    "profit": 0.00857950272652572
+  },
+  "fs_backtest_lowbuy_highsell_next0b1s_index_percent_-1.0_0.0": {
+    "hsp": 0.033694244371693126,
+    "hss": 0.420208181517857,
+    "bp": -0.017938902637053375,
+    "stockcount": 26.6196,
+    "simplebp": -0.018862965402022567,
+    "position": 0.728522109510193,
+    "profit": 0.008463780192015715
+  }
+}
