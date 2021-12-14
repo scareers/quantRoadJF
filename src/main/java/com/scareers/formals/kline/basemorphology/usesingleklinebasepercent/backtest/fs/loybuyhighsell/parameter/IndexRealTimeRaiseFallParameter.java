@@ -3,14 +3,11 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.back
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.StrUtil;
 import joinery.DataFrame;
-import org.apache.poi.hssf.usermodel.HSSFName;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,19 +26,46 @@ public class IndexRealTimeRaiseFallParameter {
     public static Connection klineForms = ConnectionFactory.getConnLocalKlineForms();
 
     public static void main(String[] args) throws Exception {
-        List<String> tables = getAllTables(klineForms);
-        tables = tables.stream().filter(value -> value.startsWith("fs_backtest_lowbuy_highsell_next0b1s"))
-                .collect(Collectors.toList());
-//        String sql = "select avg(lb_weighted_buy_price)             as bp,\n" +
-//                "       avg(lb_simple_avg_buy_price)           as simplebp,\n" +
-//                "       avg(lb_global_position_sum)            as position,\n" +
-//                "       avg(lb_has_position_stock_count)       as stockcount,\n" +
-//                "       avg(hs_success_global_percent)         as hss,\n" +
-//                "       avg(hs_success_global_price)           as hsp,\n" +
-//                "       avg(lbhs_weighted_profit_conservative) as profit\n" +
-//                "from `{}`";
-// avg
+        singleTableAllAvg();
+    }
 
+    public static void singleTableGroupByFormsetidAvg() throws Exception {
+        List<String> tables = getResultTables();
+        // //单表 分form_set_id,  全日期 avg
+        String sql = "select form_set_id,\n" +
+                "       avg(lb_weighted_buy_price)             as bp,\n" +
+                "       avg(lb_simple_avg_buy_price)           as simplebp,\n" +
+                "       avg(lb_global_position_sum)            as position,\n" +
+                "       avg(lb_has_position_stock_count)       as stockcount,\n" +
+                "       avg(hs_success_global_percent)         as hss,\n" +
+                "       avg(hs_success_global_price)           as hsp,\n" +
+                "       avg(lbhs_weighted_profit_conservative) as profit\n" +
+                "from `fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_3.0` `fblhn0b1sip-5.0-3.0`\n" +
+                "group by form_set_id\n" +
+                "order by profit desc";
+
+        List<String> columns = Arrays.asList("bp", "simplebp", "position", "stockcount", "hss", "hsp", "profit");
+        HashMap<String, HashMap<String, Double>> res = new HashMap<>();
+        for (String table : tables) {
+            Console.log("parseing: {}", table);
+            HashMap<String, Double> singleRes = new HashMap<>();
+            String fullSql = StrUtil.format(sql, table);
+            DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
+            int colCount = dfTemp.size();
+            for (int i = 0; i < colCount; i++) {
+                Double value = Double.valueOf(dfTemp.col(i).get(0).toString());
+                String key = columns.get(i);
+                singleRes.put(key, value);
+            }
+            res.put(table, singleRes);
+        }
+        Console.log(JSONUtil.toJsonPrettyStr(res));
+
+    }
+
+    public static void singleTableAllAvg() throws Exception {
+        List<String> tables = getResultTables();
+        // //单表全avg
         String sql = "select avg(lb_weighted_buy_price)             as bp,\n" +
                 "       avg(lb_simple_avg_buy_price)           as simplebp,\n" +
                 "       avg(lb_global_position_sum)            as position,\n" +
@@ -50,7 +74,6 @@ public class IndexRealTimeRaiseFallParameter {
                 "       avg(hs_success_global_price)           as hsp,\n" +
                 "       avg(lbhs_weighted_profit_conservative) as profit\n" +
                 "from `{}`";
-// max, 需要 groupby
 
         List<String> columns = Arrays.asList("bp", "simplebp", "position", "stockcount", "hss", "hsp", "profit");
         HashMap<String, HashMap<String, Double>> res = new HashMap<>();
@@ -71,13 +94,18 @@ public class IndexRealTimeRaiseFallParameter {
         Console.log(JSONUtil.toJsonPrettyStr(res));
     }
 
+    public static List<String> getResultTables() throws SQLException {
+        List<String> tables = getAllTables(klineForms);
+        tables = tables.stream().filter(value -> value.startsWith("fs_backtest_lowbuy_highsell_next0b1s"))
+                .collect(Collectors.toList());
+        return tables;
+    }
+
     public static void renameAllTable() throws Exception {
         if (true) {
             throw new Exception("本函数不再调用;已经改过名了");
         }
-        List<String> tables = getAllTables(klineForms);
-        tables = tables.stream().filter(value -> value.startsWith("fs_backtest_lowbuy_highsell_next0b1s"))
-                .collect(Collectors.toList());
+        List<String> tables = getResultTables();
         int prefixLenth = "fs_backtest_lowbuy_highsell_next0b1s".length();
         for (String tablename : tables) {
             String newTablename = StrUtil.format("{}_{}{}", tablename.substring(0, prefixLenth), "index_percent",
