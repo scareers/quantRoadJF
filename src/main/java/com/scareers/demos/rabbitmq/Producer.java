@@ -6,6 +6,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.scareers.utils.StrUtil;
 
+import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
 import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
 import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
@@ -30,8 +31,8 @@ public class Producer {
             // 发送消息
             String msg = StrUtil.format("time: {}", System.currentTimeMillis());
             Console.log("java 端生产消息: {}", msg);
-            // 生产者, 生产到 j2p 队列!!
-            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, null,
+            // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
+            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg.getBytes());
         }
 
