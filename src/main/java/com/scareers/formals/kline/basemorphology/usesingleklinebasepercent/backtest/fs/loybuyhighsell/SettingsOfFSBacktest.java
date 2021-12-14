@@ -123,7 +123,7 @@ public class SettingsOfFSBacktest {
 
     // lb1: 大盘当时tick的涨跌幅加成算法.  两参数为0, 则相当于无此加成. 正数则符合现实意义, 也可尝试负数; 低买高卖参数可不同
     public static Double indexBelongThatTimePriceEnhanceArgLowBuy;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
-    public static Double indexBelongThatTimePriceEnhanceArgHighSell;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
+    public static Double indexBelongThatTimePriceEnhanceArgHighSell;   // 对大盘当时涨跌幅, 计入 仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
 
     // 高卖设定
     // 1.强制开盘卖出弱势股设定. 弱势股定义: 开盘价真实涨跌幅<阈值 且 小于相对于today涨跌幅阈值
