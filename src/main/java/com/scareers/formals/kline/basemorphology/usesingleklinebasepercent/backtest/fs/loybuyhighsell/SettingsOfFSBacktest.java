@@ -68,13 +68,18 @@ public class SettingsOfFSBacktest {
      */
     public static void flushSettingsCore() {
 
+        /*
+        第一组: 1.2/1.3/ -0.01(高卖阈值)
+        第二组: 1.4/1.6/-0.02(高卖阈值)
+         */
+
         settingTablenameRelative(); // 保存数据表相关设定
 
         // cdf时tick距离. 千分之5
         tickGap = 0.005;
         // 常规低买参数
-        positionUpperLimit = 1.2;
-        positionCalcKeyArgsOfCdf = 1.3;
+        positionUpperLimit = 1.4;
+        positionCalcKeyArgsOfCdf = 1.6;
         execLowBuyThreshold = +0.005;
         continuousFallTickCountThreshold = 1;
 
@@ -88,7 +93,7 @@ public class SettingsOfFSBacktest {
         weakStockOpenPercentTodayThreshold = -0.07;
         // 常规高卖参数
         positionCalcKeyArgsOfCdfHighSell = 1.2;
-        execHighSellThreshold = -0.01;
+        execHighSellThreshold = -0.02;
         continuousRaiseTickCountThreshold = 1;
     }
 

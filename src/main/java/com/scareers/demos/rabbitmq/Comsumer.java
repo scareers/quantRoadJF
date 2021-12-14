@@ -1,12 +1,14 @@
 package com.scareers.demos.rabbitmq;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
 
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
+import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
+import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_p2j_exchange;
+import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**
  * description:
@@ -19,12 +21,7 @@ public class Comsumer {
         // 建立连接
         Connection conn = connectToRbServer();
         Channel channel = conn.createChannel();
-
-        AMQP.Exchange.DeclareOk result = channel.exchangeDeclare("test_exchange1", "fanout", true);
-        AMQP.Queue.DeclareOk result2 = channel.queueDeclare("test_queue1", true, false, false, null);
-        Console.log(result);
-        Console.log(result2);
-        channel.queueBind("test_queue1", "test_exchange1", "test_key1");
+        initDualChannel(channel);
 
         System.out.println(" Waiting for message....");
         // 创建消费者
@@ -35,11 +32,11 @@ public class Comsumer {
                 String msg = new String(body, "UTF-8");
                 System.out.println(StrUtil.format("received: {}  ; current: {}", msg,
                         System.currentTimeMillis()));
+                channel.basicAck(envelope.getDeliveryTag(), false);
             }
         };
 
-        // 开始获取消息
-        // String queue, boolean autoAck, Consumer callback
-        channel.basicConsume("test_queue1", false, consumer);
+        // 消费者, 消费 p2j 的队列..
+        channel.basicConsume(ths_trader_p2j_queue, false, consumer);
     }
 }

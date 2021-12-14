@@ -7,6 +7,9 @@ import com.rabbitmq.client.Connection;
 import com.scareers.utils.StrUtil;
 
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
+import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
+import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
+import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
 
 
 /**
@@ -17,26 +20,21 @@ import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
  * @date: 2021/12/14/014-12:52
  */
 public class Producer {
-    private final static String EXCHANGE_NAME = "java_test3";
-
     public static void main(String[] args) throws Exception {
         // 建立连接
         Connection conn = connectToRbServer();
         Channel channel = conn.createChannel();
-
-        AMQP.Exchange.DeclareOk result = channel.exchangeDeclare("test_exchange1", "fanout", true);
-        AMQP.Queue.DeclareOk result2 = channel.queueDeclare("test_queue1", true, false, false, null);
-        Console.log(result);
-        Console.log(result2);
-        channel.queueBind("test_queue1", "test_exchange1", "test_key1");
+        initDualChannel(channel);
 
         for (int i = 0; i < 10; i++) {
             // 发送消息
             String msg = StrUtil.format("time: {}", System.currentTimeMillis());
-
-            // String exchange, String routingKey, BasicProperties props, byte[] body
-            channel.basicPublish("test_exchange1", "test_key1", null, msg.getBytes());
+            Console.log("java 端生产消息: {}", msg);
+            // 生产者, 生产到 j2p 队列!!
+            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, null,
+                    msg.getBytes());
         }
+
 
         channel.close();
         conn.close();

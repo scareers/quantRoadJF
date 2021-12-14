@@ -25,4 +25,5 @@ public class SettingsOfRb {
     public static String ths_trader_p2j_exchange = "ths_trader_p2j_exchange";
     public static String ths_trader_p2j_queue = "ths_trader_p2j_queue";
     public static String ths_trader_p2j_routing_key = "ths_trader_p2j_routing_key";
+
 }
