@@ -35,7 +35,7 @@ public class RbUtils {
     }
 
     /**
-     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通道
+     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道
      *
      * @param channel
      * @return
