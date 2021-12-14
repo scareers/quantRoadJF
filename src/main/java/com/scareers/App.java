@@ -21,6 +21,8 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
  */
 public class App {
     public static void main(String[] args) throws Exception {
+        String x= "\u5356\u4e00";
+        System.out.println(x);
 //        DataFrame<Object> df_ = new DataFrame<>();
 //        df_.add("a", ListUtil.of("abc", "xyz"));
 //        df_.add("b", ListUtil.of("2.0", "1.0"));
@@ -54,10 +56,10 @@ public class App {
 
         //        List<String> x = Arrays.asList("abc", "xyz");
 
-        HashMap<String, HashMap<String, Double>> x = new HashMap<>();
-        x.put("xx", new HashMap<>());
-        x.get("xx").put("yy", 0.1);
-        Console.log(x);
+//        HashMap<String, HashMap<String, Double>> x = new HashMap<>();
+//        x.put("xx", new HashMap<>());
+//        x.get("xx").put("yy", 0.1);
+//        Console.log(x);
 
 //
 //        MailUtil.send(SettingsCommon.receivers,
