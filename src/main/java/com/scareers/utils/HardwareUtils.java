@@ -43,7 +43,7 @@ public class HardwareUtils {
         return res;
     }
 
-    public static void reportCpuMemoryDiskSubThread(boolean showInStdout) throws InterruptedException {
+    public static void reportCpuMemoryDiskSubThread(boolean showInStdout, int interval) throws InterruptedException {
         Thread.sleep(1000 * 15); // 10s后发送
         Thread thread = new Thread(new Runnable() {
             @SneakyThrows
@@ -52,19 +52,23 @@ public class HardwareUtils {
                 while (true) {
                     String hardwareInfo = reportCpuMemoryDisk(showInStdout);
                     try {
-                        MailUtil.send(SettingsCommon.receivers, "硬件信息线程播报: (10分钟/次)",
+                        MailUtil.send(SettingsCommon.receivers, StrUtil.format("硬件信息线程播报: ({}分钟/次)", interval),
                                 StrUtil.format("当前时间: {}, 硬件信息:{}\n", LocalDateTimeUtil.now().toString(), hardwareInfo),
                                 false,
                                 null);
                     } catch (Exception e) {
                         e.printStackTrace(); // 防止断网
                     }
-                    Thread.sleep(1000 * 60 * 15);
+                    Thread.sleep(1000 * 60 * interval);
                 }
             }
         });
         thread.setDaemon(true); // 守护线程
         thread.start();
+    }
+
+    public static void reportCpuMemoryDiskSubThread(boolean showInStdout) throws InterruptedException {
+        reportCpuMemoryDiskSubThread(showInStdout, 15);// 默认15
     }
 
     public static String getDiskInfoAsJsonString(boolean showInStdout) {

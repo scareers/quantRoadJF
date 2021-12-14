@@ -26,7 +26,7 @@ public class Producer {
         Channel channel = conn.createChannel();
         initDualChannel(channel);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 5; i++) {
             // 发送消息
             String msg = StrUtil.format("time: {}", System.currentTimeMillis());
             Console.log("java 端生产消息: {}", msg);
