@@ -1,16 +1,21 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.parameter;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.utils.StrUtil;
 import joinery.DataFrame;
+import lombok.Value;
+import org.apache.poi.util.IOUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import static com.scareers.sqlapi.CommonSqlApi.getAllTables;
@@ -26,7 +31,7 @@ public class IndexRealTimeRaiseFallParameter {
     public static Connection klineForms = ConnectionFactory.getConnLocalKlineForms();
 
     public static void main(String[] args) throws Exception {
-        singleTableAllAvg();
+        singleTableGroupByFormsetidAvg();
     }
 
     public static void singleTableGroupByFormsetidAvg() throws Exception {
@@ -40,27 +45,40 @@ public class IndexRealTimeRaiseFallParameter {
                 "       avg(hs_success_global_percent)         as hss,\n" +
                 "       avg(hs_success_global_price)           as hsp,\n" +
                 "       avg(lbhs_weighted_profit_conservative) as profit\n" +
-                "from `fs_backtest_lowbuy_highsell_next0b1s_index_percent_-3.0_3.0` `fblhn0b1sip-5.0-3.0`\n" +
+                "from `{}` `fblhn0b1sip-5.0-3.0`\n" +
                 "group by form_set_id\n" +
                 "order by profit desc";
-
-        List<String> columns = Arrays.asList("bp", "simplebp", "position", "stockcount", "hss", "hsp", "profit");
-        HashMap<String, HashMap<String, Double>> res = new HashMap<>();
+        //"form_set_id"
+        List<String> columns = Arrays
+                .asList("bp", "simplebp", "position", "stockcount", "hss", "hsp", "profit");
+        HashMap<String, HashMap<Integer, HashMap<String, Double>>> res = new HashMap<>();
         for (String table : tables) {
-            Console.log("parseing: {}", table);
-            HashMap<String, Double> singleRes = new HashMap<>();
+            Console.log("parsing: {}", table);
             String fullSql = StrUtil.format(sql, table);
             DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
-            int colCount = dfTemp.size();
-            for (int i = 0; i < colCount; i++) {
-                Double value = Double.valueOf(dfTemp.col(i).get(0).toString());
-                String key = columns.get(i);
-                singleRes.put(key, value);
-            }
-            res.put(table, singleRes);
-        }
-        Console.log(JSONUtil.toJsonPrettyStr(res));
 
+            HashMap<Integer, HashMap<String, Double>> resOfPerFormsetid = new HashMap<>();
+
+            for (int i = 0; i < dfTemp.length(); i++) {
+                List<Object> row = dfTemp.row(i);
+                HashMap<String, Double> singleRecord = new HashMap<>();
+                for (int j = 0; j < columns.size(); j++) {
+                    String key = columns.get(j);
+                    Double value = Double.valueOf(row.get(1 + j).toString());
+                    singleRecord.put(key, value);
+                }
+                Integer formSetId = Integer.valueOf(row.get(0).toString());
+                resOfPerFormsetid.put(formSetId, singleRecord);
+            }
+            res.put(table, resOfPerFormsetid);
+
+        }
+
+        Console.log(JSONUtil.toJsonPrettyStr(res));
+        Console.log("开始写入json文件");
+        FileWriter writer = new FileWriter("singleTableGroupByFormsetidAvg.json");
+        writer.write(JSONUtil.toJsonPrettyStr(res));
+        Console.log("finish");
     }
 
     public static void singleTableAllAvg() throws Exception {
@@ -92,6 +110,10 @@ public class IndexRealTimeRaiseFallParameter {
         }
 
         Console.log(JSONUtil.toJsonPrettyStr(res));
+        Console.log("开始写入json文件");
+        FileWriter writer = new FileWriter("singleTableAllAvg.json");
+        writer.write(JSONUtil.toJsonPrettyStr(res));
+        Console.log("finish");
     }
 
     public static List<String> getResultTables() throws SQLException {
