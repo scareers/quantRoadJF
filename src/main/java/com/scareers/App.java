@@ -3,6 +3,8 @@ package com.scareers;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.Snowflake;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -21,8 +23,16 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        String x= "\u5356\u4e00";
+        String x = "\u5356\u4e00";
         System.out.println(x);
+
+        Snowflake snowflake = IdUtil.getSnowflake(1, 1);
+        long id = snowflake.nextId(); // 雪花算法, 但是不同次运行能够生成相同id
+        Console.log(id);
+
+        String id2 = IdUtil.objectId();
+        Console.log(id2); // 类似于uuid version1, mongodb使用的id生成策略, 选用此种方式
+
 //        DataFrame<Object> df_ = new DataFrame<>();
 //        df_.add("a", ListUtil.of("abc", "xyz"));
 //        df_.add("b", ListUtil.of("2.0", "1.0"));
