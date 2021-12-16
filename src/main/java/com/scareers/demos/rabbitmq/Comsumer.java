@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import static com.scareers.demos.rabbitmq.Producer.orderJsonStrConfig;
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
 import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
 import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_p2j_exchange;
@@ -37,7 +38,7 @@ public class Comsumer {
                                        byte[] body) throws IOException {
 //                String msg = new String(body, StandardCharsets.);
                 String msg = new String(body, StandardCharsets.UTF_8);
-                Map<String, Object> message = JSONUtil.parseObj(msg);
+                Map<String, Object> message = JSONUtil.parseObj(msg, orderJsonStrConfig);
                 // json解析, 自动将 \\u  unicode字符解析为汉字
                 Console.log(message);
 //                System.out.println(StrUtil.format("received: {}  ; current: {}", msg,

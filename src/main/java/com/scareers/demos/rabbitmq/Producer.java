@@ -46,14 +46,15 @@ public class Producer {
 
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg;
-            int state = RandomUtil.randomInt(10);
-            if (state < 4) {
-                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
-            } else if (state < 8) {
-                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
-            } else {
-                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
-            }
+            msg = orderAsJsonStr(generateNoArgsOrder("get_hold_stocks_info", true));
+//            int state = RandomUtil.randomInt(10);
+//            if (state < 4) {
+//                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
+//            } else if (state < 8) {
+//                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
+//            } else {
+//                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
+//            }
             Console.log("java 端生产消息: {}", msg);
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg.getBytes(StandardCharsets.UTF_8));
@@ -103,10 +104,11 @@ public class Producer {
      * @param orderType
      * @return
      */
-    public static HashMap<String, Object> generateNoArgsOrder(String orderType) {
+    public static HashMap<String, Object> generateNoArgsOrder(String orderType, boolean timer) {
         HashMap<String, Object> order = new HashMap<>();
         order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
         order.put("order_type", orderType);
+        order.put("timer", timer);
         return order;
     }
 
