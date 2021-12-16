@@ -41,12 +41,13 @@ public class Producer {
         Channel channel = conn.createChannel();
         initDualChannel(channel);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 1; i++) {
             // 发送消息
 
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg;
-            msg = orderAsJsonStr(generateNoArgsOrder("get_hold_stocks_info", true));
+            msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
+//            msg = orderAsJsonStr(generateNoArgsOrder("get_hold_stocks_info", true));
 //            int state = RandomUtil.randomInt(10);
 //            if (state < 4) {
 //                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
@@ -58,6 +59,27 @@ public class Producer {
             Console.log("java 端生产消息: {}", msg);
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg.getBytes(StandardCharsets.UTF_8));
+        }
+
+        for (int i = 0; i < 1; i++) {
+            // 发送消息
+
+            // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
+            String msg2;
+//            msg2 = orderAsJsonStr(generateNoArgsOrder("cancel_buy", true));
+            msg2 = orderAsJsonStr(generateOrder("cancel_buy", "600090",
+                    null, null, true, null, null));
+//            int state = RandomUtil.randomInt(10);
+//            if (state < 4) {
+//                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
+//            } else if (state < 8) {
+//                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
+//            } else {
+//                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
+//            }
+            Console.log("java 端生产消息: {}", msg2);
+            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
+                    msg2.getBytes(StandardCharsets.UTF_8));
         }
 
         channel.close();
