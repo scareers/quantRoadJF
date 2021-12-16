@@ -1,12 +1,14 @@
 package com.scareers.demos.rabbitmq;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
@@ -45,14 +47,16 @@ public class Producer {
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg;
             int state = RandomUtil.randomInt(10);
-            if (state < 5) {
-                msg = generateSimpleSellOrderAsStr("600090", 100, 1.30, true);
+            if (state < 4) {
+                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
+            } else if (state < 8) {
+                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
             } else {
-                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.30, true);
+                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
             }
             Console.log("java 端生产消息: {}", msg);
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-                    msg.getBytes());
+                    msg.getBytes(StandardCharsets.UTF_8));
         }
 
         channel.close();
@@ -77,6 +81,7 @@ public class Producer {
                                                         boolean timer, List<String> otherKeys,
                                                         List<Object> otherValues) {
         HashMap<String, Object> order = new HashMap<>();
+        order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
         order.put("order_type", orderType);
         order.put("stock_code", stockCode);
         order.put("amounts", amounts);
@@ -88,6 +93,20 @@ public class Producer {
                 order.put(otherKeys.get(i), otherValues.get(i));
             }
         }
+        return order;
+    }
+
+    /**
+     * 简易方法, 生成某些对应api无参数的 订单. 例如 get_account_funds_infos() 获取账号9项资产数据, 不需要额外的参数.
+     * 此时订单, 仅包含 orderType 和 自动生成的 raw_order_id
+     *
+     * @param orderType
+     * @return
+     */
+    public static HashMap<String, Object> generateNoArgsOrder(String orderType) {
+        HashMap<String, Object> order = new HashMap<>();
+        order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.put("order_type", orderType);
         return order;
     }
 

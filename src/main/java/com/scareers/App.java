@@ -23,7 +23,7 @@ import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
  */
 public class App {
     public static void main(String[] args) throws Exception {
-        String x = "\u5356\u4e00";
+        String x = "\u51fa\u73b0\u4e86\u5f02\u5e38, \u5f02\u5e38\u6808" ;
         System.out.println(x);
 
         Snowflake snowflake = IdUtil.getSnowflake(1, 1);

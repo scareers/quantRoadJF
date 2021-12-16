@@ -1,9 +1,15 @@
 package com.scareers.demos.rabbitmq;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
+import com.google.common.base.Utf8;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
 import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
@@ -29,9 +35,13 @@ public class Comsumer {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
-                String msg = new String(body, "UTF-8");
-                System.out.println(StrUtil.format("received: {}  ; current: {}", msg,
-                        System.currentTimeMillis()));
+//                String msg = new String(body, StandardCharsets.);
+                String msg = new String(body, StandardCharsets.UTF_8);
+                Map<String, Object> message = JSONUtil.parseObj(msg);
+                // json解析, 自动将 \\u  unicode字符解析为汉字
+                Console.log(message);
+//                System.out.println(StrUtil.format("received: {}  ; current: {}", msg,
+//                        System.currentTimeMillis()));
                 channel.basicAck(envelope.getDeliveryTag(), false);
             }
         };
