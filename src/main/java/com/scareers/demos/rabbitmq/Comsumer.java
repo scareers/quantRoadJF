@@ -38,7 +38,12 @@ public class Comsumer {
                                        byte[] body) throws IOException {
 //                String msg = new String(body, StandardCharsets.);
                 String msg = new String(body, StandardCharsets.UTF_8);
-                Map<String, Object> message = JSONUtil.parseObj(msg, orderJsonStrConfig);
+                Map<String, Object> message = null;
+                try {
+                    message = JSONUtil.parseObj(msg, orderJsonStrConfig);
+                } catch (Exception e) {
+                    e.printStackTrace(); // 某一天调试是, response返回了None, 导致 null, json解析不了. 要求必须 {开头
+                }
                 // json解析, 自动将 \\u  unicode字符解析为汉字
                 Console.log(message);
 //                System.out.println(StrUtil.format("received: {}  ; current: {}", msg,

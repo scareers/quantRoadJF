@@ -46,7 +46,7 @@ public class Producer {
 
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg;
-            msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
+            msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
 //            msg = orderAsJsonStr(generateNoArgsOrder("get_hold_stocks_info", true));
 //            int state = RandomUtil.randomInt(10);
 //            if (state < 4) {
@@ -56,9 +56,9 @@ public class Producer {
 //            } else {
 //                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
 //            }
-            Console.log("java 端生产消息: {}", msg);
-            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-                    msg.getBytes(StandardCharsets.UTF_8));
+//            Console.log("java 端生产消息: {}", msg);
+//            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
+//                    msg.getBytes(StandardCharsets.UTF_8));
         }
 
         for (int i = 0; i < 1; i++) {
@@ -67,8 +67,7 @@ public class Producer {
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg2;
 //            msg2 = orderAsJsonStr(generateNoArgsOrder("cancel_buy", true));
-            msg2 = orderAsJsonStr(generateOrder("cancel_buy", "600090",
-                    null, null, true, null, null));
+            msg2 = orderAsJsonStr(generateCancelOneOrder("2510897966"));
 //            int state = RandomUtil.randomInt(10);
 //            if (state < 4) {
 //                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
@@ -131,6 +130,15 @@ public class Producer {
         order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
         order.put("order_type", orderType);
         order.put("timer", timer);
+        return order;
+    }
+
+    public static HashMap<String, Object> generateCancelOneOrder(String actualOrderId) {
+        HashMap<String, Object> order = new HashMap<>();
+        order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.put("order_type", "cancel_one_order"); // 对应的python api
+        order.put("timer", true);
+        order.put("order_id", actualOrderId);
         return order;
     }
 
