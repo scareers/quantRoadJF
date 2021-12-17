@@ -2,15 +2,16 @@ package com.scareers.demos.rabbitmq;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
@@ -21,6 +22,8 @@ import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_ke
 
 /**
  * description: rabbitmq 纯api.
+ * // @noti: 每个python下单key_api, 均对应本类一个静态下单方法
+ * // @noti: java端, 订单使用 JSONObject实现, 是 Map<String,Object> 的子类
  *
  * @noti: 不使用 amqp整合 springboot, 自行调用底层api, 能获得更多自由度. 且依赖性更低, 更加灵活. 代码量不会过大.
  * @author: admin
@@ -44,21 +47,12 @@ public class Producer {
         for (int i = 0; i < 1; i++) {
             // 发送消息
 
+
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg;
             msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
-//            msg = orderAsJsonStr(generateNoArgsOrder("get_hold_stocks_info", true));
-//            int state = RandomUtil.randomInt(10);
-//            if (state < 4) {
-//                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
-//            } else if (state < 8) {
-//                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
-//            } else {
-//                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
-//            }
-//            Console.log("java 端生产消息: {}", msg);
-//            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-//                    msg.getBytes(StandardCharsets.UTF_8));
+            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
+                    msg.getBytes(StandardCharsets.UTF_8));
         }
 
         for (int i = 0; i < 1; i++) {
@@ -66,16 +60,8 @@ public class Producer {
 
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             String msg2;
-//            msg2 = orderAsJsonStr(generateNoArgsOrder("cancel_buy", true));
             msg2 = orderAsJsonStr(generateCancelOneOrder("2510897966"));
-//            int state = RandomUtil.randomInt(10);
-//            if (state < 4) {
-//                msg = generateSimpleSellOrderAsStr("600090", 100, 1.25, true);
-//            } else if (state < 8) {
-//                msg = generateSimpleBuyOrderAsStr("600090", 100, 1.25, true);
-//            } else {
-//                msg = orderAsJsonStr(generateNoArgsOrder("get_account_funds_infos"));
-//            }
+
             Console.log("java 端生产消息: {}", msg2);
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg2.getBytes(StandardCharsets.UTF_8));
@@ -87,9 +73,9 @@ public class Producer {
 
 
     /**
-     * 构造order基本函数.  order使用 HashMap<String,Object> 类型.
+     * 构造买卖order基本函数.  order使用 HashMap<String,Object> 类型.
      *
-     * @param orderType   订单类型
+     * @param type        订单类型: 买/卖
      * @param stockCode   股票代码
      * @param amounts     数量Number
      * @param price       价格
@@ -98,86 +84,137 @@ public class Producer {
      * @param otherValues 对应的其他 value列表, 注意需要lenth长度一样. (虽然能写成按照lenth短的来)
      * @return
      */
-    public static HashMap<String, Object> generateOrder(String orderType, String stockCode, Number amounts,
-                                                        Double price,
-                                                        boolean timer, List<String> otherKeys,
-                                                        List<Object> otherValues) {
+    public static Map<String, Object> generateBuySellOrder(String type, String stockCode, Number amounts,
+                                                           Double price,
+                                                           boolean timer, List<String> otherKeys,
+                                                           List<Object> otherValues) {
+        assert Arrays.asList("buy", "sell").contains(type);
         HashMap<String, Object> order = new HashMap<>();
         order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.put("order_type", orderType);
+        order.put("order_type", type); // 恰好api也为buy/sell
+
         order.put("stock_code", stockCode);
         order.put("amounts", amounts);
         order.put("price", price);
         order.put("timer", timer);
+
         if (otherKeys != null && otherValues != null) {
             assert otherKeys.size() == otherValues.size();
             for (int i = 0; i < otherKeys.size(); i++) {
                 order.put(otherKeys.get(i), otherValues.get(i));
             }
-        }
+        } // 保留的其余 键值对
         return order;
     }
 
     /**
-     * 简易方法, 生成某些对应api无参数的 订单. 例如 get_account_funds_infos() 获取账号9项资产数据, 不需要额外的参数.
-     * 此时订单, 仅包含 orderType 和 自动生成的 raw_order_id
+     * 快捷生成买入订单, 多余键值对为 null
      *
-     * @param orderType
+     * @param stockCode
+     * @param amounts
+     * @param price
+     * @param timer
      * @return
      */
-    public static HashMap<String, Object> generateNoArgsOrder(String orderType, boolean timer) {
+    public static Map<String, Object> generateBuyOrderQuick(String stockCode,
+                                                            Number amounts,
+                                                            Double price,
+                                                            boolean timer) {
+        return generateBuySellOrder("buy", stockCode, amounts, price, timer, null, null);
+    }
+
+    /**
+     * 快捷生成卖出订单, 多余键值对为 null
+     *
+     * @param stockCode
+     * @param amounts
+     * @param price
+     * @param timer
+     * @return
+     */
+    public static Map<String, Object> generateSellOrderQuick(String stockCode,
+                                                             Number amounts,
+                                                             Double price,
+                                                             boolean timer) {
+        return generateBuySellOrder("sell", stockCode, amounts, price, timer, null, null);
+    }
+
+
+    /**
+     * 撤单单一id 的订单. id是同花顺交易软件id, 而非java生成的订单objectId
+     *
+     * @param thsRawOrderId 交易软件自动生成的订单id
+     * @param timer
+     * @return
+     */
+    public static Map<String, Object> generateCancelConcreteOrder(Object thsRawOrderId,
+                                                                  boolean timer) {
+        assert thsRawOrderId != null;
         HashMap<String, Object> order = new HashMap<>();
         order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.put("order_type", orderType);
-        order.put("timer", timer);
+        order.put("order_type", "cancel_a_concrete_order"); // 对应的python api, 撤单某个具体id的订单
+        order.put("order_id", thsRawOrderId); // 不可null
+        order.put("timer", timer); // 时间字段
         return order;
     }
 
-    public static HashMap<String, Object> generateCancelOneOrder(String actualOrderId) {
+
+    /**
+     * 三种批量撤单函数.  cancel_all, /buy /sell
+     * 快捷: generateCancelAllOrder/generateCancelBuyOrder/generateCancelSellOrder
+     *
+     * @param type
+     * @param stockCode
+     * @param timer
+     * @return
+     */
+    public static Map<String, Object> generateCancelBatchOrder(String type, String stockCode,
+                                                               boolean timer) {
+        assert Arrays.asList("buy", "sell", "all").contains(type); // 三种批量撤单类型
         HashMap<String, Object> order = new HashMap<>();
         order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.put("order_type", "cancel_one_order"); // 对应的python api
-        order.put("timer", true);
-        order.put("order_id", actualOrderId);
+        order.put("order_type", "cancel_" + type); // 对应的python api
+        order.put("stock_code", stockCode); // 可null
+        order.put("timer", timer); // 时间字段
+        return order;
+    }
+
+    public static Map<String, Object> generateCancelAllOrder(String stockCode,
+                                                             boolean timer) {
+        return generateCancelBatchOrder("all", stockCode, timer);
+    }
+
+    public static Map<String, Object> generateCancelBuyOrder(String stockCode,
+                                                             boolean timer) {
+        return generateCancelBatchOrder("buy", stockCode, timer);
+    }
+
+    public static Map<String, Object> generateCancelSellOrder(String stockCode,
+                                                              boolean timer) {
+        return generateCancelBatchOrder("sell", stockCode, timer);
+    }
+
+    /**
+     * 构造无特别参数查询函数, 因 目前两个查询函数均不需要参数, 因此 NoArgs
+     * 当前可使用查询api:
+     * //----> get_hold_stocks_info    账号股票持仓汇总数据
+     * //----> get_account_funds_info  9项账号资金数据
+     *
+     * @param orderType
+     * @param timer
+     * @return
+     */
+    public static Map<String, Object> generateNoArgsQueryOrder(String orderType,
+                                                               boolean timer) {
+        HashMap<String, Object> order = new HashMap<>();
+        order.put("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.put("order_type", orderType); // 对应的python api
+        order.put("timer", timer); // 时间字段
         return order;
     }
 
     public static String orderAsJsonStr(HashMap<String, Object> order) {
         return JSONUtil.toJsonStr(order, orderJsonStrConfig);
     }
-
-    public static String generateOrderAsJsonStr(String orderType, String stockCode, Number amounts,
-                                                Double price,
-                                                boolean timer, List<String> otherKeys,
-                                                List<Object> otherValues) {
-        HashMap<String, Object> order = generateOrder(orderType, stockCode,
-                amounts, price, timer, otherKeys, otherValues);
-        return orderAsJsonStr(order);
-    }
-
-    public static String generateOrderAsPrettyJsonStr(String orderType, String stockCode, Number amounts,
-                                                      Double price,
-                                                      boolean timer, List<String> otherKeys,
-                                                      List<Object> otherValues) {
-        HashMap<String, Object> order = generateOrder(orderType, stockCode,
-                amounts, price, timer, otherKeys, otherValues);
-        return JSONUtil.toJsonPrettyStr(order);
-    }
-
-
-    public static String generateSimpleBuyOrderAsStr(String stockCode, Number amounts,
-                                                     Double price,
-                                                     boolean timer) {
-        return generateOrderAsJsonStr("buy", stockCode, amounts,
-                price, timer, null, null);
-    }
-
-    public static String generateSimpleSellOrderAsStr(String stockCode, Number amounts,
-                                                      Double price,
-                                                      boolean timer) {
-        return generateOrderAsJsonStr("sell", stockCode, amounts,
-                price, timer, null, null);
-    }
-
 
 }
