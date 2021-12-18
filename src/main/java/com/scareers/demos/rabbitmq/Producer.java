@@ -199,6 +199,7 @@ public class Producer {
      * 当前可使用查询api:
      * //----> get_hold_stocks_info    账号股票持仓汇总数据
      * //----> get_account_funds_info  9项账号资金数据
+     * //----> get_unsolds_not_yet  获取当前尚未完全成交的挂单
      *
      * @param orderType
      * @param timer
