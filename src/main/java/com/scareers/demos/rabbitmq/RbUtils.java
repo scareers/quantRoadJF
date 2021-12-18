@@ -1,12 +1,16 @@
 package com.scareers.demos.rabbitmq;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.rabbitmq.client.*;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -24,43 +28,93 @@ import static com.scareers.demos.rabbitmq.Producer.*;
  * @date: 2021/12/14/014-13:44
  */
 public class RbUtils {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        Connection conn = connectToRbServer();
+        Channel channelProducer = conn.createChannel();
+        initDualChannel(channelProducer);
+
+        Channel channelComsumer = conn.createChannel();
+        initDualChannel(channelComsumer);
+
+        System.out.println(timer.intervalRestart());
+        execBuySellOrder(channelProducer, channelComsumer, "buy",
+                "600090", 100, null, true, null, null);
+
+
+        Thread.sleep(5000);
+
+        execBuySellOrder(channelProducer, channelComsumer, "buy",
+                "600090", 100, null, true, null, null);
+
+
+        Console.log("ok");
+        channelProducer.close();
+        channelComsumer.close();
+        conn.close();
 
     }
 
+    public static List<JSONObject> comsumeUntilSuccessState(Channel channelComsumer)
+            throws IOException, InterruptedException {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        List<JSONObject> responses = new ArrayList<>(); // 保留响应解析成的JO
+        List<String> reponsesRaw = new ArrayList<>(); // 保留响应原始字符串
+
+        final boolean[] finish = {false};
+        Consumer consumer = new DefaultConsumer(channelComsumer) {
+            @SneakyThrows
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+                                       byte[] body) throws IOException {
+                String msg = new String(body, StandardCharsets.UTF_8);
+                reponsesRaw.add(msg);
+                JSONObject message = null;
+                try {
+                    message = JSONUtil.parseObj(msg, orderJsonStrConfig);
+                } catch (Exception e) {
+                    e.printStackTrace(); // 某一天调试是, response返回了None, 导致 null, json解析不了. 要求必须 {开头
+                }
+                responses.add(message); // 可能null, 此时需要访问 responsesRaw
+                Console.log("确认收到来自python消息: {}", message);
+                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
+
+                if (message != null) {
+                    Object state = message.get("state");
+                    if (!"retrying".equals(state.toString())) {
+                        channelComsumer.basicCancel(consumerTag);
+                        finish[0] = true;
+                    }
+                }
+            }
+
+
+        };
+        // 消费者, 消费 p2j 的队列..
+        // 将阻塞, 直到 取消消费?
+
+        String consumerTag = channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
+        while (!finish[0]) {
+            Thread.sleep(1); // 只能自行阻塞?
+        }
+        Console.log("执行完成耗时: {}", timer.intervalRestart());
+        return responses;
+    }
 
     public static void execBuySellOrder(Channel channelProducer,
                                         Channel channelComsumer,
                                         String type, String stockCode, Number amounts,
                                         Double price,
                                         boolean timer, List<String> otherKeys,
-                                        List<Object> otherValues) throws IOException {
+                                        List<Object> otherValues) throws IOException, InterruptedException {
         JSONObject order = generateBuySellOrder(type, stockCode, amounts, price, timer, otherKeys, otherValues);
         String orderMsg = orderAsJsonStr(order);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 orderMsg.getBytes(StandardCharsets.UTF_8));
-
-
-        Consumer consumer = new DefaultConsumer(channelComsumer) {
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                       byte[] body) throws IOException {
-                String msg = new String(body, StandardCharsets.UTF_8);
-                Map<String, Object> message = null;
-                try {
-                    message = JSONUtil.parseObj(msg, orderJsonStrConfig);
-                } catch (Exception e) {
-                    e.printStackTrace(); // 某一天调试是, response返回了None, 导致 null, json解析不了. 要求必须 {开头
-                }
-                // json解析, 自动将 \\u  unicode字符解析为汉字
-                Console.log(message);
-                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
-            }
-        };
-
-        // 消费者, 消费 p2j 的队列..
-        channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
-
+        List<JSONObject> reponses = comsumeUntilSuccessState(channelComsumer);
+        Console.log(reponses);
     }
 
 
@@ -75,6 +129,8 @@ public class RbUtils {
         // 用户
         factory.setUsername(username);
         factory.setPassword(password);
+        factory.setRequestedHeartbeat(0);
+
         // 建立连接
         Connection conn = factory.newConnection();
         return conn;
