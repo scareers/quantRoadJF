@@ -60,14 +60,12 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         reportCpuMemoryDiskSubThread(false); // 播报硬件信息
-        double[] argOfIndexLowBuys = {-1.0};
+        double[] argOfIndexLowBuys = {0.0};
 //        double[] argOfIndexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        double[] argOfIndexHighSells = { 3.0, 5.0};
+        double[] argOfIndexHighSells = {1.0, 3.0, 5.0};
 //        double[] argOfIndexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        // todo: -1.0 3.0开始.
         // todo: 0.0,1.0
         // todo: 单 1.0 5.0
-        // todo: 可能 -1.0 -3.0
 
 
         for (int i = 0; i < argOfIndexLowBuys.length; i++) {
