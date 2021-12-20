@@ -43,16 +43,13 @@ public class RbUtils {
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
-        ThreadUtil.execute(() -> {
-            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
-        });
-        Thread.sleep(1000); // 运行python仿真程序,并稍作等待
+
+        startPythonApp();
+
         sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
         waitUtilPythonReady(channelComsumer); // 等待python握手信息.
         log.warn("success: java<->python 握手成功");
 
-
-        // 确认收到启动成功的消息.
 
         TimeInterval timer = DateUtil.timer();
         timer.start();
@@ -62,10 +59,14 @@ public class RbUtils {
 
         Console.log(timer.intervalRestart());
 
-        Console.log("ok");
-
         closeDualChannelAndConn();
+    }
 
+    public static void startPythonApp() throws InterruptedException {
+        ThreadUtil.execAsync(() -> {
+            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
+        }, true);
+        Thread.sleep(1000); // 运行python仿真程序,并稍作等待
     }
 
     public static void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
@@ -83,6 +84,19 @@ public class RbUtils {
     }
 
 
+    /**
+     * java端握手消息代码
+     * handshake.set("handshake_java_side", "java get ready");
+     * handshake.set("handshake_python_side", "and you?");
+     * handshake.set("timestamp", System.currentTimeMillis());
+     * <p>
+     * python 回复消息:
+     * handshake_success_response = dict(
+     * handshake_java_side="java get ready",
+     * handshake_python_side='python get ready',
+     * timestamp=int(time.time() * 1000)
+     * )
+     */
     private static void waitUtilPythonReady(Channel channelComsumer) throws IOException, InterruptedException {
         final boolean[] handshakeSuccess = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
@@ -90,9 +104,34 @@ public class RbUtils {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
-                Thread.sleep(10 * 1000);
-                channelComsumer.basicCancel(consumerTag);
-                handshakeSuccess[0] = true;
+                String msg = new String(body, StandardCharsets.UTF_8);
+                JSONObject message = null;
+                try {
+                    message = JSONUtil.parseObj(msg, orderJsonStrConfig);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);
+                    channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
+                    return;
+                }
+
+                if ("java get ready".equals(message.get("handshake_java_side"))) {
+                    if ("python get ready".equals(message.get("handshake_python_side"))) {
+                        Long timeStamp = Long.valueOf(message.get("timestamp").toString());
+                        log.warn("handshake success: 收到来自python的握手成功回复, 时间: {}", timeStamp);
+                        log.warn("握手成功!");
+                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
+                        channelComsumer.basicCancel(consumerTag);
+                        handshakeSuccess[0] = true;
+                        return;
+                    } else {
+                        log.error("ack: 握手消息::python尚未准备好::自动消费清除: {}", message);
+                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
+                        return;
+                    }
+                }
+                log.error("ack: 历史遗留::非握手消息::自动消费清除: {}", message);
+                channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
             }
         };
         channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
