@@ -1,13 +1,9 @@
 package com.scareers.gui.rabbitmq;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.json.XML;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.utils.log.LogUtils;
@@ -20,8 +16,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 import static com.scareers.gui.rabbitmq.Producer.*;
+import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
  * description: rabbitmq 工具类. 对于每个order api, 使用串行方式调用
@@ -44,22 +40,27 @@ public class RbUtils {
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
 
-        startPythonApp();
+//        startPythonApp(); // 是否自启动python程序
+        handshake(); // 是否握手
 
-        sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
-        waitUtilPythonReady(channelComsumer); // 等待python握手信息.
-        log.warn("success: java<->python 握手成功");
+        log.warn("handshake success: java<->python 握手成功");
 
-
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
 
         execBuySellOrder(channelProducer, channelComsumer, "buy",
                 "000001", 100, null, true, null, null);
 
-        Console.log(timer.intervalRestart());
+//        execBuySellOrder(channelProducer, channelComsumer, "buy",
+//                "000001", 100, null, true, null, null);
+//
+//        execBuySellOrder(channelProducer, channelComsumer, "buy",
+//                "000001", 100, null, true, null, null);
 
         closeDualChannelAndConn();
+    }
+
+    public static void handshake() throws IOException, InterruptedException {
+        sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
+        waitUtilPythonReady(channelComsumer); // 等待python握手信息.
     }
 
     public static void startPythonApp() throws InterruptedException {
@@ -118,8 +119,7 @@ public class RbUtils {
                 if ("java get ready".equals(message.get("handshake_java_side"))) {
                     if ("python get ready".equals(message.get("handshake_python_side"))) {
                         Long timeStamp = Long.valueOf(message.get("timestamp").toString());
-                        log.warn("handshake success: 收到来自python的握手成功回复, 时间: {}", timeStamp);
-                        log.warn("握手成功!");
+                        log.warn("handshaking: 收到来自python的握手成功回复, 时间: {}", timeStamp);
                         channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
                         channelComsumer.basicCancel(consumerTag);
                         handshakeSuccess[0] = true;
@@ -207,7 +207,7 @@ public class RbUtils {
         // 消费者, 消费 p2j 的队列..
         // 将阻塞, 直到 取消消费?
 
-        String consumerTag = channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
+        channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
         while (!finish[0]) {
             Thread.sleep(1); // 只能自行阻塞?
         }
@@ -230,7 +230,7 @@ public class RbUtils {
     }
 
     public static void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
-        log.info("send: 发送消息到python: {}", jsonMsg);
+        log.info("send request: to python: {}", jsonMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));
     }
@@ -251,7 +251,7 @@ public class RbUtils {
 
         // 建立连接
         Connection conn = factory.newConnection();
-        log.info("连接到rabbitmq...");
+        log.info("connecting: 连接到rabbitmq...");
         return conn;
     }
 

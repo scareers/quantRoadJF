@@ -50,7 +50,6 @@ public class Producer {
             JSONObject order = generateSellOrderQuick("600090", 100, 1.25, true);
             String msg;
             msg = orderAsJsonStr(order);
-            Console.log();
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg.getBytes(StandardCharsets.UTF_8));
         }

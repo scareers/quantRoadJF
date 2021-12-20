@@ -7,6 +7,8 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.LoggingEvent;
 
+import java.lang.management.ManagementFactory;
+
 /**
  * description:
  *
@@ -15,6 +17,14 @@ import org.apache.log4j.spi.LoggingEvent;
  */
 public class LogUtils {
     public static Log log = getLogger();
+
+    public static void main(String[] args) {
+        // 常态四级即可
+        log.debug("xxx");
+        log.info("xxx");
+        log.warn("xxx");
+        log.error("xxx");
+    }
 
     public static Log getLogger(Class clazz) {
         LogFactory.setCurrentLogFactory(new Log4jLogFactory());
