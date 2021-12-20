@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import static com.scareers.gui.rabbitmq.Producer.orderJsonStrConfig;
+import static com.scareers.gui.rabbitmq.OrderFactory.orderJsonStrConfig;
 import static com.scareers.gui.rabbitmq.RbUtils.connectToRbServer;
 import static com.scareers.gui.rabbitmq.RbUtils.initDualChannel;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
@@ -32,18 +32,15 @@ public class Comsumer {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
-//                String msg = new String(body, StandardCharsets.);
                 String msg = new String(body, StandardCharsets.UTF_8);
                 Map<String, Object> message = null;
                 try {
                     message = JSONUtil.parseObj(msg, orderJsonStrConfig);
                 } catch (Exception e) {
-                    e.printStackTrace(); // 某一天调试是, response返回了None, 导致 null, json解析不了. 要求必须 {开头
+                    e.printStackTrace(); // 例如 response返回了None,
                 }
                 // json解析, 自动将 \\u  unicode字符解析为汉字
                 Console.log(message);
-//                System.out.println(StrUtil.format("received: {}  ; current: {}", msg,
-//                        System.currentTimeMillis()));
                 channel.basicAck(envelope.getDeliveryTag(), false);
             }
         };

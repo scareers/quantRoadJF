@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.rabbitmq.Producer.*;
+import static com.scareers.gui.rabbitmq.OrderFactory.*;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
@@ -48,12 +48,6 @@ public class RbUtils {
 
         execBuySellOrder(channelProducer, channelComsumer, "buy",
                 "000001", 100, null, true, null, null);
-
-//        execBuySellOrder(channelProducer, channelComsumer, "buy",
-//                "000001", 100, null, true, null, null);
-//
-//        execBuySellOrder(channelProducer, channelComsumer, "buy",
-//                "000001", 100, null, true, null, null);
 
         closeDualChannelAndConn();
     }
