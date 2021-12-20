@@ -29,7 +29,7 @@ public class MysqlApi {
         Connection connection = ConnectionFactory.getConnLocalTushare();
         System.out.println(getDiskUsageOfDB("kline_forms", connection).toString(100));
 
-//        Console.log(getMemoryUsageOfBuffer(connection));
+//        Console.com.scareers.log(getMemoryUsageOfBuffer(connection));
 
         Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
         setBufferPoolSizeGB(20, connection);

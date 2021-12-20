@@ -25,6 +25,11 @@
             <artifactId>amqp-client</artifactId>
             <version>5.13.1</version>
         </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.15</version>
+        </dependency>
 
 
         <!--        WEKA：WEKA是一个可用于数据挖掘任务的机器学习算法集合。该算法可以直接应用到数据集或从自己的Java代码调用。 WEKA包含数据预处理，分类，回归，聚类，关联规则，和可视化工具。它也非常适用于开发新的机器学习方案。-->

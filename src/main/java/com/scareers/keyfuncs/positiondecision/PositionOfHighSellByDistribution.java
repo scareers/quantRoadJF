@@ -132,17 +132,17 @@ public class PositionOfHighSellByDistribution {
         Console.log("HighSell 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         /*
             HighSellParser parser = new HighSellParser(highResult);
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
-            //        Console.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
-            //        Console.log(parser.getWeightedGlobalPriceHighSellFinally());
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
-            //        Console.log(parser.getSuccessPartProfitWeighted());
-            //        Console.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
-            Console.log(parser.getAllProfitsDiscountedProfitWeighted());
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
+            //        Console.com.scareers.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
+            //        Console.com.scareers.log(parser.getWeightedGlobalPriceHighSellFinally());
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
+            //        Console.com.scareers.log(parser.getSuccessPartProfitWeighted());
+            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
+            Console.com.scareers.log(parser.getAllProfitsDiscountedProfitWeighted());
          */
 
     }
@@ -176,7 +176,7 @@ public class PositionOfHighSellByDistribution {
         List<Integer> stockIds = new ArrayList<>(stockWithPosition.keySet()); // 资产列表
         HashMap<Integer, List<Integer>> stockHighOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
-        // Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, High1,2,3 出现顺序不确定. 且3可不出现
+        // Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, High1,2,3 出现顺序不确定. 且3可不出现
         // 股票和对应的position, 已有仓位, 初始0
         // stock: [折算position, 折算value]
         // 专门保存卖出的仓位.以及折算
@@ -515,9 +515,9 @@ public class PositionOfHighSellByDistribution {
 
     public static Double virtualCdfAsPositionForHighSell(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                          Double value, Double tickGap) {
-//        Console.log(valuePercentOfLow);
-//        Console.log(weightsOfLow);
-//        Console.log(value);
+//        Console.com.scareers.log(valuePercentOfLow);
+//        Console.com.scareers.log(weightsOfLow);
+//        Console.com.scareers.log(value);
         double total = 0.0;
         //Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
@@ -538,7 +538,7 @@ public class PositionOfHighSellByDistribution {
         }
 //        double sum = sumOfListNumberUseLoop(weightsOfLow);
 //        double res = total / sum;
-////        Console.log(res);
+////        Console.com.scareers.log(res);
 //        return res; // 求和可能了多次
         return Math.min(total, 1.0);
     }

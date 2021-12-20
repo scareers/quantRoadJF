@@ -1,4 +1,4 @@
-package com.scareers.demos.rabbitmq;
+package com.scareers.gui.rabbitmq;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
@@ -13,10 +13,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
-import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
-import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
-import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
+import static com.scareers.gui.rabbitmq.RbUtils.connectToRbServer;
+import static com.scareers.gui.rabbitmq.RbUtils.initDualChannel;
+import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
+import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
 
 
 /**
@@ -91,6 +91,7 @@ public class Producer {
         assert Arrays.asList("buy", "sell").contains(type);
         JSONObject order = new JSONObject();
         order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.set("timestamp", System.currentTimeMillis());
         order.set("order_type", type); // 恰好api也为buy/sell
 
         order.set("stock_code", stockCode);
@@ -152,6 +153,7 @@ public class Producer {
         assert thsRawOrderId != null;
         JSONObject order = new JSONObject();
         order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.set("timestamp", System.currentTimeMillis());
         order.set("order_type", "cancel_a_concrete_order"); // 对应的python api, 撤单某个具体id的订单
         order.set("order_id", thsRawOrderId.toString()); // 不可null, 可 Double
         order.set("timer", timer); // 时间字段
@@ -173,6 +175,7 @@ public class Producer {
         assert Arrays.asList("buy", "sell", "all").contains(type); // 三种批量撤单类型
         JSONObject order = new JSONObject();
         order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.set("timestamp", System.currentTimeMillis());
         order.set("order_type", "cancel_" + type); // 对应的python api
         order.set("stock_code", stockCode); // 可null
         order.set("timer", timer); // 时间字段
@@ -209,6 +212,7 @@ public class Producer {
                                                       boolean timer) {
         JSONObject order = new JSONObject();
         order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
+        order.set("timestamp", System.currentTimeMillis());
         order.set("order_type", orderType); // 对应的python api
         order.set("timer", timer); // 时间字段
         return order;

@@ -60,12 +60,10 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         reportCpuMemoryDiskSubThread(false); // 播报硬件信息
-        double[] argOfIndexLowBuys = {0.0};
+        double[] argOfIndexLowBuys = {1.0};
 //        double[] argOfIndexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        double[] argOfIndexHighSells = {1.0, 3.0, 5.0};
+        double[] argOfIndexHighSells = {5.0};
 //        double[] argOfIndexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        // todo: 0.0,1.0
-        // todo: 单 1.0 5.0
 
 
         for (int i = 0; i < argOfIndexLowBuys.length; i++) {
@@ -293,7 +291,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 这两项是低买原始结论.
             HashMap<String, List<Double>> stockWithTotalPositionAndAdaptedPriceLowBuy = (HashMap<String, List<Double>>) lowBuyResults
                     .get(0); // 0.  lb_position_price_map   股票的 仓位,折算价格  字典保存
-            //Console.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
+            //Console.com.scareers.log(stockWithTotalPositionAndAdaptedPriceLowBuy);
 
 
             try {
@@ -440,7 +438,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             });
             DataFrameSelf.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
                     connOfKlineForms, "append", null);
-            // Console.log("success: {}", formSetId);
+            // Console.com.scareers.log("success: {}", formSetId);
             return null;
         }
 
@@ -538,7 +536,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     if (epochTotalPosition > lowBuyPositionTotal) { // 设置高卖上限, 为低买总持仓,
                         epochTotalPosition = lowBuyPositionTotal; // 上限
                     }
-                    // Console.log(highPrice, cdfOfPoint, lowBuyPositionTotal, epochTotalPosition);
+                    // Console.com.scareers.log(highPrice, cdfOfPoint, lowBuyPositionTotal, epochTotalPosition);
 
                     List<Double> oldStockWithPositionAndPrice = stockWithHighSellSuccessPositionAndAdaptedPrice
                             .get(stock); // 默认0,0, 已经折算, 老卖出 [仓位,价格]
@@ -644,8 +642,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                 HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice,
                 HashMap<String, List<Double>> openAndCloseOfHighSell) {
             HashMap<String, List<Double>> res = new HashMap<>();
-//            Console.log(openAndCloseOfHighSell.size());
-//            Console.log(stockWithPositionRemaining.size());
+//            Console.com.scareers.log(openAndCloseOfHighSell.size());
+//            Console.com.scareers.log(stockWithPositionRemaining.size());
 
             for (String key : stockWithPositionRemaining.keySet()) {
                 Double discountRemaingPrice = openAndCloseOfHighSell.get(key).get(1); // 以收盘价作为折算, 当然也是百分比
@@ -1100,13 +1098,13 @@ public class FSBacktestOfLowBuyNextHighSell {
                         Arrays.asList("close")); // 指数本质作为数据表名称, 分时同样取 close字段
                 // 已转化为 000001_sh
                 // 注意, tick 需要减1, 才能匹配到对应分钟close
-                //Console.log(tick, belongIndexTemp, lowBuyOrHighSellDate);
-                //Console.log(dfTemp);
+                //Console.com.scareers.log(tick, belongIndexTemp, lowBuyOrHighSellDate);
+                //Console.com.scareers.log(dfTemp);
                 price = Double.valueOf(dfTemp.row(tick - 1).get(0).toString());
             }
             // 然后需要获取昨日 close, 当日就是 today,  --> tradeDate
             double preClose = TushareIndexApi.getIndexDailyCloseByTradeDate(belongIndex, tradeDate);
-            //Console.log(price / preClose - 1);
+            //Console.com.scareers.log(price / preClose - 1);
             if (price == null) {
                 Console.log(tick, belongIndex, lowBuyOrHighSellDate, stock);
             }

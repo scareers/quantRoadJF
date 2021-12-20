@@ -35,8 +35,8 @@ public class Generator {
 //                    .stream()
 //                    .forEach(allIndexCombinations::add);
 //        }
-//        Console.log(allIndexCombinations);
-//        Console.log(allIndexCombinations.size());
+//        Console.com.scareers.log(allIndexCombinations);
+//        Console.com.scareers.log(allIndexCombinations.size());
 
 
     }

@@ -1,4 +1,4 @@
-package com.scareers.demos.rabbitmq;
+package com.scareers.gui.rabbitmq;
 
 /**
  * description:

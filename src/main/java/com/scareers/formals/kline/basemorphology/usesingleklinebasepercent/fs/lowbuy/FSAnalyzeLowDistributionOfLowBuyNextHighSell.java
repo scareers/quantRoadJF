@@ -126,7 +126,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     showMemoryUsageMB();
                 }
             }
-            // Console.log("results size: {}", results.size());
+            // Console.com.scareers.log("results size: {}", results.size());
         }
         poolOfParse.shutdown(); // 关闭线程池
         System.out.println();
@@ -342,7 +342,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
 //                    TimeInterval timer = DateUtil.timer();
                     List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDBAsHashSet, allForms);
-//                    Console.log(timer.intervalRestart());
+//                    Console.com.scareers.log(timer.intervalRestart());
                     if (belongToFormsetIds.size() == 0) {
                         continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
                     }
@@ -410,7 +410,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                                 resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
                             }
                         }
-                        //Console.log(setId);
+                        //Console.com.scareers.log(setId);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -419,7 +419,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     Console.log(dfRaw.slice(i, i + 3));
                 }
             }
-            //Console.log(resultTemp);
+            //Console.com.scareers.log(resultTemp);
             return resultTemp;
         }
 
@@ -520,9 +520,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // 1-3/4. dominate_left / dominate_right
             Double dominateThreshold = ((Math
                     .abs(valuePercentOfLow) * dominateRateKeyArg + valuePercentOfLow) + 1) * stdCloseOfLowBuy; //
-//            Console.log(dominateThreshold);
-//            Console.log(closeCol);
-//            Console.log(low);
+//            Console.com.scareers.log(dominateThreshold);
+//            Console.com.scareers.log(closeCol);
+//            Console.com.scareers.log(low);
             // 确定比low大
             int dominateLeft = 0; // 最小0, 最大 happernTickOfLow - 1
             if (!(happernTickOfLow == 0)) {
@@ -597,11 +597,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     Double min1 = minOfListDouble(closeColOfLow2Fragment1);
                     Double min2 = minOfListDouble(closeColOfLow2Fragment2);
                     if (min1 <= min2) {
-//                        Console.log("fragment1 selected");
+//                        Console.com.scareers.log("fragment1 selected");
                         closeColOfLow2Actual = closeColOfLow2Fragment1; // 两段最小相等, 则选择片段1
                         amountColActual = amountCol.subList(0, happernTickOfLow - dominateLeft);
                     } else {
-//                        Console.log("fragment2 selected");
+//                        Console.com.scareers.log("fragment2 selected");
                         closeColOfLow2Actual = closeColOfLow2Fragment2;
                         fixHappenTick = happernTickOfLow + dominateRight + 1;
                         amountColActual = amountCol.subList(happernTickOfLow + dominateRight + 1,
@@ -609,19 +609,19 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     }
                 }
             }
-//            Console.log(closeColOfLow2Actual);
+//            Console.com.scareers.log(closeColOfLow2Actual);
             // Low2 5项目开始, 4项算法完全相同,只是close列变为了片段. 出现tick则需要+ 修正值(片段1,片段2显然不同),
             Double low2 = minOfListDouble(closeColOfLow2Actual);
             // 1-1. happen_tick , 最终结果需要 + 修正值 fixHappenTick
-//            Console.log(low2);
+//            Console.com.scareers.log(low2);
             int happernTickOfLow2 = closeColOfLow2Actual.indexOf(low2);
-//            Console.log(happernTickOfLow2);
+//            Console.com.scareers.log(happernTickOfLow2);
             // 1-2. value_percent
             Double valuePercentOfLow2 = low2 / stdCloseOfLowBuy - 1;
             // 1-3/4. dominate_left / dominate_right
             Double dominateThreshold2 = ((Math
                     .abs(valuePercentOfLow2) * dominateRateKeyArg + valuePercentOfLow2) + 1) * stdCloseOfLowBuy; //
-//            Console.log(dominateThreshold2);
+//            Console.com.scareers.log(dominateThreshold2);
             int dominateLeft2 = 0; // 最小0, 最大 happernTickOfLow - 1
             if (!(happernTickOfLow2 == 0)) {
                 for (int i = happernTickOfLow2 - 1; i >= 0; i--) {
@@ -631,7 +631,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     dominateLeft2++;
                 }
             }
-//            Console.log(dominateLeft2);
+//            Console.com.scareers.log(dominateLeft2);
             int dominateRight2 = 0;
             if (!(happernTickOfLow2 == closeColOfLow2Actual.size() - 1)) {
                 for (int i = happernTickOfLow2 + 1; i < closeColOfLow2Actual.size(); i++) {
@@ -641,11 +641,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     dominateRight2++;
                 }
             }
-//            Console.log(dominateRight2);
+//            Console.com.scareers.log(dominateRight2);
             // 1.5. 连续成交额占比, 包含了 low那一分钟 . continuousFallVolPercent
             ArrayList<Integer> continuousFallIndexes2 = new ArrayList<>();
             continuousFallIndexes2.add(happernTickOfLow2); // low那一分钟加入
-//            Console.log(happernTickOfLow2);
+//            Console.com.scareers.log(happernTickOfLow2);
             if (!(happernTickOfLow2 == 0)) { // 至少1, 才有可能往前找
                 for (int i = happernTickOfLow2; i > 0; i--) { // 注意>0
                     Double closeAfter = closeColOfLow2Actual.get(i);
@@ -657,13 +657,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     }
                 }
             }
-//            Console.log(continuousFallIndexes2);
+//            Console.com.scareers.log(continuousFallIndexes2);
             Double amountTotal2 = 0.0;
             for (Integer i : continuousFallIndexes2) {
-//                Console.log(amountTotal2);
+//                Console.com.scareers.log(amountTotal2);
                 amountTotal2 += amountColActual.get(i); // 注意.
             }
-//            Console.log(amountTotal2);
+//            Console.com.scareers.log(amountTotal2);
             Double continuousFallVolPercent2 = amountTotal2 / stdAmount;
 
             // Low相关5项完成.
@@ -674,7 +674,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             res.put("Low2__continuous_fall_vol_percent", continuousFallVolPercent2);
 
 
-//            Console.log(res);
+//            Console.com.scareers.log(res);
             return res;
         }
 
@@ -717,8 +717,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             // 字段列表: Arrays.asList("trade_time", "close", "amount");  + "tick_double
             //dfFSLowBuyDay.add("tick_double", tickDoubleCol); // 核心函数不用df, 用分开的列, 因此无需添加
-//            Console.log(dfFSLowBuyDay.toString(300));
-//            Console.log(dfFSLowBuyDay.types());
+//            Console.com.scareers.log(dfFSLowBuyDay.toString(300));
+//            Console.com.scareers.log(dfFSLowBuyDay.types());
             // 1.high, 相关
             List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "close");
             List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "amount");
@@ -801,9 +801,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // @noti: 注意, low是加法, high是减法, 无视正负,操作绝对值
             Double dominateThreshold = ((valuePercentOfHigh - Math
                     .abs(valuePercentOfHigh) * dominateRateKeyArg) + 1) * stdCloseOfHighSell;
-//            Console.log(dominateThreshold);
-//            Console.log(closeCol);
-//            Console.log(low);
+//            Console.com.scareers.log(dominateThreshold);
+//            Console.com.scareers.log(closeCol);
+//            Console.com.scareers.log(low);
             // 确定比low大
             int dominateLeft = 0; // 最小0, 最大 happernTickOfLow - 1
             if (!(happernTickOfHigh == 0)) {
@@ -843,7 +843,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             Double continuousRaiseVolPercent = amountTotal / stdAmount;
 
-            // Console.log(continuousFallVolPercent);
+            // Console.com.scareers.log(continuousFallVolPercent);
             // Low相关5项完成.
             resRaw.put(StrUtil.format("High{}__happen_tick", layer),
                     tickDoubleCol.get(happernTickOfHigh + fixHappenTick));
@@ -931,8 +931,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             // 字段列表: Arrays.asList("trade_time", "close", "amount");  + "tick_double
             //dfFSLowBuyDay.add("tick_double", tickDoubleCol);
-//            Console.log(dfFSLowBuyDay.toString(300));
-//            Console.log(dfFSLowBuyDay.types());
+//            Console.com.scareers.log(dfFSLowBuyDay.toString(300));
+//            Console.com.scareers.log(dfFSLowBuyDay.types());
             // 1.low, 相关
             List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close");
             List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "amount");
@@ -953,7 +953,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     amountsFragments, // 片段列表
                     tickDoubleCol);
 //            if (res.get("Low1__continuous_fall_vol_percent") > 1) {
-//                Console.log("{}-{}-{}", stock, stdAmount, lowBuyDate);
+//                Console.com.scareers.log("{}-{}-{}", stock, stdAmount, lowBuyDate);
 //            }
             return res;
         }
@@ -1017,9 +1017,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             // 1-3/4. dominate_left / dominate_right
             Double dominateThreshold = ((Math
                     .abs(valuePercentOfLow) * dominateRateKeyArg + valuePercentOfLow) + 1) * stdCloseOfLowBuy; //
-//            Console.log(dominateThreshold);
-//            Console.log(closeCol);
-//            Console.log(low);
+//            Console.com.scareers.log(dominateThreshold);
+//            Console.com.scareers.log(closeCol);
+//            Console.com.scareers.log(low);
             // 确定比low大
             int dominateLeft = 0; // 最小0, 最大 happernTickOfLow - 1
             if (!(happernTickOfLow == 0)) {
@@ -1059,7 +1059,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             }
             Double continuousFallVolPercent = amountTotal / stdAmount;
 
-            // Console.log(continuousFallVolPercent);
+            // Console.com.scareers.log(continuousFallVolPercent);
             // Low相关5项完成.
             resRaw.put(StrUtil.format("Low{}__happen_tick", layer),
                     tickDoubleCol.get(happernTickOfLow + fixHappenTick));
@@ -1324,11 +1324,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 241, Arrays.asList(-1.0, 240.0), 5.0,
                             Arrays.asList(2.0, 8.0), false); // 5分钟为基准. 3和10以上为 小大.
                 } else if (formName.endsWith("vol_percent")) { // 成交量需要注意
-//                    Console.log(formName);
-//                    Console.log(resultSingle);
+//                    Console.com.scareers.log(formName);
+//                    Console.com.scareers.log(resultSingle);
                     conclusion = simpleStatAnalyzeByValueListAsDF(resultSingle, 200, Arrays.asList(0.0, 1.0), 0.01,
                             Arrays.asList(0.005, 0.05), false); // 5分钟为基准. 3和10以上为 小大.
-//                    Console.log(conclusion);
+//                    Console.com.scareers.log(conclusion);
                 } else {
                     throw new Exception("未知key");
                 }

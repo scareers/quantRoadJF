@@ -1,23 +1,27 @@
-package com.scareers.demos.rabbitmq;
+package com.scareers.gui.rabbitmq;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import cn.hutool.json.XML;
+import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
+import com.scareers.utils.log.LogUtils;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.demos.rabbitmq.SettingsOfRb.*;
-import static com.scareers.demos.rabbitmq.Producer.*;
+import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
+import static com.scareers.gui.rabbitmq.Producer.*;
 
 /**
  * description: rabbitmq 工具类. 对于每个order api, 使用串行方式调用
@@ -28,40 +32,46 @@ import static com.scareers.demos.rabbitmq.Producer.*;
  * @date: 2021/12/14/014-13:44
  */
 public class RbUtils {
+    // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
+    public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
+            "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
+
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
+        ThreadUtil.execute(() -> {
+            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
+        });
+        Thread.sleep(2000); // 稍作等待
+
+        // 确认收到启动成功的消息.
+
         Connection conn = connectToRbServer();
         Channel channelProducer = conn.createChannel();
         initDualChannel(channelProducer);
 
+
         Channel channelComsumer = conn.createChannel();
         initDualChannel(channelComsumer);
-
-        System.out.println(timer.intervalRestart());
-        execBuySellOrder(channelProducer, channelComsumer, "buy",
-                "600090", 100, null, true, null, null);
-
-
-        Thread.sleep(5000);
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
 
         execBuySellOrder(channelProducer, channelComsumer, "buy",
-                "600090", 100, null, true, null, null);
+                "000001", 100, null, true, null, null);
 
+        Console.log(timer.intervalRestart());
 
         Console.log("ok");
         channelProducer.close();
         channelComsumer.close();
         conn.close();
-
     }
 
-    public static List<JSONObject> comsumeUntilSuccessState(Channel channelComsumer)
+    private static final Log log = LogUtils.getLogger(RbUtils.class);
+
+
+    public static List<JSONObject> comsumeUntilSuccessState(Channel channelComsumer, String rawOrderId)
             throws IOException, InterruptedException {
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
+
         List<JSONObject> responses = new ArrayList<>(); // 保留响应解析成的JO
-        List<String> reponsesRaw = new ArrayList<>(); // 保留响应原始字符串
 
         final boolean[] finish = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
@@ -70,27 +80,48 @@ public class RbUtils {
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
                 String msg = new String(body, StandardCharsets.UTF_8);
-                reponsesRaw.add(msg);
                 JSONObject message = null;
                 try {
                     message = JSONUtil.parseObj(msg, orderJsonStrConfig);
                 } catch (Exception e) {
-                    e.printStackTrace(); // 某一天调试是, response返回了None, 导致 null, json解析不了. 要求必须 {开头
+                    e.printStackTrace();
+                    log.warn("nack: 收到来自python的消息, 但解析为 JSONObject 失败: {}", msg);
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    return;
                 }
-                responses.add(message); // 可能null, 此时需要访问 responsesRaw
-                Console.log("确认收到来自python消息: {}", message);
-                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
+                JSONObject rawOrderFromResponse = null;
+                try {
+                    rawOrderFromResponse = ((JSONObject) message.get("raw_order"));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    log.warn("nack: 收到来自python的消息, 但从响应获取 raw_order 失败: {}", message);
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    return;
+                }
+                if (rawOrderFromResponse == null) {
+                    log.warn("nack: 收到来自python的消息, 但从响应获取 raw_order 为null: {}", message);
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    return;
+                }
 
-                if (message != null) {
-                    Object state = message.get("state");
-                    if (!"retrying".equals(state.toString())) {
-                        channelComsumer.basicCancel(consumerTag);
-                        finish[0] = true;
-                    }
+                String rawOrderIdOfResponse = rawOrderFromResponse.getStr("raw_order_id");
+                if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
+                    log.warn("nack: 收到来自python的消息, 但 raw_order_id不匹配: should: {}, receive: {}", rawOrderId,
+                            rawOrderIdOfResponse);
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    return;
+                }
+
+                log.info("ack: 确认收到来自python消息: {}", message);
+                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
+                responses.add(message); // 可能null, 此时需要访问 responsesRaw
+
+                Object state = message.get("state");
+                if (!"retrying".equals(state.toString())) {
+                    channelComsumer.basicCancel(consumerTag);
+                    finish[0] = true;
                 }
             }
-
-
         };
         // 消费者, 消费 p2j 的队列..
         // 将阻塞, 直到 取消消费?
@@ -99,22 +130,23 @@ public class RbUtils {
         while (!finish[0]) {
             Thread.sleep(1); // 只能自行阻塞?
         }
-        Console.log("执行完成耗时: {}", timer.intervalRestart());
         return responses;
     }
 
-    public static void execBuySellOrder(Channel channelProducer,
-                                        Channel channelComsumer,
-                                        String type, String stockCode, Number amounts,
-                                        Double price,
-                                        boolean timer, List<String> otherKeys,
-                                        List<Object> otherValues) throws IOException, InterruptedException {
+    public static List<JSONObject> execBuySellOrder(Channel channelProducer,
+                                                    Channel channelComsumer,
+                                                    String type, String stockCode, Number amounts,
+                                                    Double price,
+                                                    boolean timer, List<String> otherKeys,
+                                                    List<Object> otherValues) throws IOException, InterruptedException {
         JSONObject order = generateBuySellOrder(type, stockCode, amounts, price, timer, otherKeys, otherValues);
         String orderMsg = orderAsJsonStr(order);
+        String rawOrderId = order.getStr("raw_order_id");
+        log.info("发送消息到python: {}", orderMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 orderMsg.getBytes(StandardCharsets.UTF_8));
-        List<JSONObject> reponses = comsumeUntilSuccessState(channelComsumer);
-        Console.log(reponses);
+        List<JSONObject> res = comsumeUntilSuccessState(channelComsumer, rawOrderId);
+        return res;
     }
 
 

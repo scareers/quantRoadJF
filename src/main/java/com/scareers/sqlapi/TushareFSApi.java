@@ -54,15 +54,15 @@ public class TushareFSApi {
 //        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(),
 //                "000001.SZ", "20181030",
 //                "20190230", true, null);
-//        Console.log(interval.intervalRestart());
+//        Console.com.scareers.log(interval.intervalRestart());
 //        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
 //                "20181130",
 //                "20190230", true, null);
-//        Console.log(interval.intervalRestart());
+//        Console.com.scareers.log(interval.intervalRestart());
 //        getFs1mStockPriceByDateRangeAsDfFromTushare(ConnectionFactory.getConnLocalTushare1MFromPool(), "000001.SZ",
 //                "20181130",
 //                "20190230", true, null);
-//        Console.log(interval.intervalRestart());
+//        Console.com.scareers.log(interval.intervalRestart());
 
     }
 

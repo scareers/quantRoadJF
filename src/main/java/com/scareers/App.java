@@ -37,13 +37,13 @@ public class App {
 //        df_.add("a", ListUtil.of("abc", "xyz"));
 //        df_.add("b", ListUtil.of("2.0", "1.0"));
 //
-//        Console.log(df_);
-//        Console.log(df_.types());
+//        Console.com.scareers.log(df_);
+//        Console.com.scareers.log(df_.types());
 //        List<Object> col1 = df_.col(0);
-//        Console.log(col1.get(0) instanceof String);
+//        Console.com.scareers.log(col1.get(0) instanceof String);
 //        HashMap<String, Double> temp = calc10ItemValusOfLowBuyDeprecated(3346000000.0, 19.43, "20210831",
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ");
-//        Console.log(JSONUtil.toJsonPrettyStr(temp));
+//        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(temp));
 
 //        HashMap<String, Double> temp2 = calc5ItemValusOfHighSell(3346000000.0, 19.43, "20210901",
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
@@ -52,12 +52,12 @@ public class App {
 //
 //        for (String key : keys) {
 //            if (key.endsWith("happen_tick")) {
-//                Console.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
+//                Console.com.scareers.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
 //                continue;
 //            }
-//            Console.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
+//            Console.com.scareers.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
 //        }
-//        Console.log(RandomUtil.randomInt(10));
+//        Console.com.scareers.log(RandomUtil.randomInt(10));
 
 //        Robot robot = new Robot();
 //        robot.setSourcePath(App.class);
@@ -69,7 +69,7 @@ public class App {
 //        HashMap<String, HashMap<String, Double>> x = new HashMap<>();
 //        x.put("xx", new HashMap<>());
 //        x.get("xx").put("yy", 0.1);
-//        Console.log(x);
+//        Console.com.scareers.log(x);
 
 //
 //        MailUtil.send(SettingsCommon.receivers,
@@ -109,21 +109,21 @@ public class App {
 //        }
 //
 //        Object x = "abc";
-//        Console.log(x instanceof String);
+//        Console.com.scareers.log(x instanceof String);
 //        Double nan = Double.NaN;
-//        Console.log(Double.compare(1, Double.NaN));
+//        Console.com.scareers.log(Double.compare(1, Double.NaN));
 //
-//        Console.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
-//        Console.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
-//        Console.log(Math.pow(2.1867241478865562, 5));
+//        Console.com.scareers.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
+//        Console.com.scareers.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
+//        Console.com.scareers.log(Math.pow(2.1867241478865562, 5));
 //
 //        DataFrame<Double> df = new DataFrame<>();
 //        df.add(Arrays.asList(1.0));
 //        df = df.apply(value -> {
 //            return value + 1;
 //        });
-//        Console.log(df);
-//        Console.log(df.kurt());
+//        Console.com.scareers.log(df);
+//        Console.com.scareers.log(df.kurt());
 
 
 //        DataFrameSelf<Object> df = new DataFrameSelf<>("a", "b");
@@ -131,11 +131,11 @@ public class App {
 
 //        df.append(Arrays.asList(1, 2));
 //        df.append(Arrays.asList(3, 4));
-//        Console.log(df.mean());
-//        Console.log(df.mean().getClass().getName());
-//        Console.log(df.mean().get(0, 0));
-//        Console.log(df.skew().get(0, 0).getClass().getName());
-//        Console.log(df.skew().get(0, 0).getClass().getName());
+//        Console.com.scareers.log(df.mean());
+//        Console.com.scareers.log(df.mean().getClass().getName());
+//        Console.com.scareers.log(df.mean().get(0, 0));
+//        Console.com.scareers.log(df.skew().get(0, 0).getClass().getName());
+//        Console.com.scareers.log(df.skew().get(0, 0).getClass().getName());
 
 
 //        System.out.println(df.col("a")); // 注意无法直接打印 df, 只能打印 行,列 List,元素Object,  等等
@@ -154,7 +154,7 @@ public class App {
 //        String zodiac = DateUtil.getZodiac(Month.OCTOBER.getValue(), 22);
 //        System.out.println(zodiac);
 //        System.out.println(DateUtil.getChineseZodiac(1990));
-//        Console.log(new Date());
+//        Console.com.scareers.log(new Date());
 //
 //
 //        System.out.println(System.getProperty("user.dir"));
@@ -165,7 +165,7 @@ public class App {
 //        ClassPathResource resource = new ClassPathResource("test.properties");
 //        Properties properties = new Properties();
 //        properties.load(resource.getStream());
-//        Console.log("Properties: {}", properties);
+//        Console.com.scareers.log("Properties: {}", properties);
 //
 //        String str = "abcde" +
 //                "fgh" + (1 ^ 2);

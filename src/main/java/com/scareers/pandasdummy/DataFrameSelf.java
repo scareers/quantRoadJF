@@ -140,14 +140,14 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
                 stmt.setObject(c, value);
             }
             stmt.addBatch();
-            //Console.log(stmt.toString()); //可以看到sql语句
+            //Console.com.scareers.log(stmt.toString()); //可以看到sql语句
         }
 
         try {
             stmt.executeBatch();
         } catch (SQLException e) {
             e.printStackTrace();
-//            Console.log(df);
+//            Console.com.scareers.log(df);
             throw e;
         } finally {
 

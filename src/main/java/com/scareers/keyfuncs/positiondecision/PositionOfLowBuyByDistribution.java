@@ -112,7 +112,7 @@ public class PositionOfLowBuyByDistribution {
         List<Object> res = new ArrayList<>();
         res.add(stockWithPosition);
         if (showStockWithPosition) {
-            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+            Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
         }
         res.add(reachTotalLimitInLoop);
         res.add(epochRaw + 1);
@@ -156,7 +156,7 @@ public class PositionOfLowBuyByDistribution {
         List<Integer> stockIds = range(totalAssets.intValue());
         HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
-//        Console.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
+//        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
 
         List<Integer> stockPool = range(totalAssets.intValue()); // 初始保存全部股票, 等待配对完成, 移除放入下列表
         HashMap<Integer, Double> stockWithPosition = new HashMap<>(); // 股票和对应的position, 已有仓位, 初始0
@@ -401,10 +401,10 @@ public class PositionOfLowBuyByDistribution {
 
     public static Double virtualCdfAsPositionForLowBuy(List<Double> valuePercentOfLow, List<Double> weightsOfLow,
                                                        Double value, Double tickGap) {
-//        Console.log(valuePercentOfLow);
-//        Console.log(weightsOfLow);
-//        Console.log(value);
-//        Console.log(tickGap);
+//        Console.com.scareers.log(valuePercentOfLow);
+//        Console.com.scareers.log(weightsOfLow);
+//        Console.com.scareers.log(value);
+//        Console.com.scareers.log(tickGap);
         double total = 0.0;
         //Assert.isTrue(valuePercentOfLow.size() == weightsOfLow.size());
         for (int i = 0; i < valuePercentOfLow.size(); i++) {
@@ -425,7 +425,7 @@ public class PositionOfLowBuyByDistribution {
             break; //一次即可跳出
         }
 
-//        Console.log(total);
+//        Console.com.scareers.log(total);
         return total;
     }
 

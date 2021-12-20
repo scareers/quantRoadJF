@@ -1,21 +1,17 @@
-package com.scareers.demos.rabbitmq;
+package com.scareers.gui.rabbitmq;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.google.common.base.Utf8;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import static com.scareers.demos.rabbitmq.Producer.orderJsonStrConfig;
-import static com.scareers.demos.rabbitmq.RbUtils.connectToRbServer;
-import static com.scareers.demos.rabbitmq.RbUtils.initDualChannel;
-import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_p2j_exchange;
-import static com.scareers.demos.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
+import static com.scareers.gui.rabbitmq.Producer.orderJsonStrConfig;
+import static com.scareers.gui.rabbitmq.RbUtils.connectToRbServer;
+import static com.scareers.gui.rabbitmq.RbUtils.initDualChannel;
+import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**
  * description:

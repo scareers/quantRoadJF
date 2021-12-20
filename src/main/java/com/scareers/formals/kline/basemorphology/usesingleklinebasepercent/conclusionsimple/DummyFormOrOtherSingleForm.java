@@ -54,8 +54,8 @@ public class DummyFormOrOtherSingleForm {
                                 "            order by Adates", keyInt, keyInt, keyInt, keyInt, keyInt, keyInt,
                         targetForm,
                         keyInt, algorithm));
-//                Console.log(dfTemp);
-//                Console.log(dfTemp.columns());
+//                Console.com.scareers.log(dfTemp);
+//                Console.com.scareers.log(dfTemp.columns());
                 dfs.add(dfTemp);
             }
 

@@ -465,7 +465,7 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param concreteTodayFormStrs
      * @return
      */
-    //                Console.log(allIndexCombinations.size()); // 全索引组合128种
+    //                Console.com.scareers.log(allIndexCombinations.size()); // 全索引组合128种
     public static ArrayList<List<Integer>> allIndexCombinations = null; // 缓存加速
 
     public static List<String> getAllFormNamesByConcreteFormStrs(List<String> concreteTodayFormStrs) {
@@ -729,7 +729,7 @@ public class KeyFuncOfSingleKlineBasePercent {
             for (int i = 0; i < stockWithBoard.length(); i++) {
                 // 430057.BJ -- null , ConcurrentHashMap要求key/value都不为null.
                 // 这里我们最好从源头, 把  stockWithBoard筛选股票的
-                //Console.log("{} -- {}", (String) stockWithBoard.get(i, 0), (String) stockWithBoard.get(i, 1));
+                //Console.com.scareers.log("{} -- {}", (String) stockWithBoard.get(i, 0), (String) stockWithBoard.get(i, 1));
                 stockWithBoardAsDict.put((String) stockWithBoard.get(i, 0), (String) stockWithBoard.get(i, 1));
             }
         }

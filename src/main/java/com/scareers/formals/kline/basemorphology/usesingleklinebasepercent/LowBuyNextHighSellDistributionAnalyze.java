@@ -207,13 +207,13 @@ public class LowBuyNextHighSellDistributionAnalyze {
             // 高卖限制
             DataFrame<Object> dfOfHighLimitConditon = getHighConditionLimitDf(tablenameHighSell, highArgs,
                     validateDateRange);
-            //            Console.log(dfOfHighLimitConditon);
+            //            Console.com.scareers.log(dfOfHighLimitConditon);
             System.gc();
             for (List<Double> lowArgs : lowKeyArgsList) {
                 log.info(StrUtil.format("HighSell selected forms count: {}", dfOfHighLimitConditon.length()));
                 DataFrame<Object> dfOfLowLimitConditon = getLowConditionLimitDf(tablenameLowBuy, lowArgs,
                         validateDateRange); // 低买
-                //                Console.log(dfOfLowLimitConditon);
+                //                Console.com.scareers.log(dfOfLowLimitConditon);
                 log.info(StrUtil.format("LowBuy selected forms count: {}", dfOfLowLimitConditon.length()));
 
                 HashSet<String> selectedForms = getSelectFormsSet(dfOfHighLimitConditon, dfOfLowLimitConditon);
@@ -308,7 +308,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
                         null);
                 // 单条记录保存了
                 DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
-                //                Console.log(resultSingle);
+                //                Console.com.scareers.log(resultSingle);
                 Console.log("selected forms counts: {}", selectedForms.size());
                 Console.log("actual selected counts: {}", calcedForms.size());
             } catch (Exception e) {
@@ -326,7 +326,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //                String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
 //                String info = StrUtil
 //                        .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
-//                log.info(StrUtil.format("start: {}", info));
+//                com.scareers.log.info(StrUtil.format("start: {}", info));
 //                String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
 //                        intTable); // 通常对作为条件的两个表, 都做四项计算
 //
@@ -355,9 +355,9 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //                        null);
 //                // 单条记录保存了
 //                DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
-//                Console.log(resultSingle);
-//                Console.log("selected forms counts: {}", selectedForms.size());
-//                Console.log("actual selected counts: {}", calcedForms.size());
+//                Console.com.scareers.log(resultSingle);
+//                Console.com.scareers.log("selected forms counts: {}", selectedForms.size());
+//                Console.com.scareers.log("actual selected counts: {}", calcedForms.size());
 //            }
 //        }
 //    }
@@ -403,7 +403,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 continue; // 最后一个日期区间, 不是需要验证的区间
             }
 
-            //            Console.log(df_);
+            //            Console.com.scareers.log(df_);
             //            System.exit(1);
             List<Object> colOfEarnings = df_.col("virtual_geometry_mean");
             List<Object> colOfEffectiveCounts = df_.col("effective_counts");
@@ -450,7 +450,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
                 "             where form_name ='{}'\n" +
                 "                   and stat_result_algorithm = '{}'\n" +
                 "             order by stat_date_range", resultTableName, formName, resultAlgorithm);
-        // Console.log(sqlTemp);
+        // Console.com.scareers.log(sqlTemp);
         df_ = DataFrame.readSql(connection, sqlTemp);
         df_ = df_.convert(String.class, Double.class, Double.class, Integer.class, Integer.class, Double.class,
                 Double.class); // 数量也强行转换为 double

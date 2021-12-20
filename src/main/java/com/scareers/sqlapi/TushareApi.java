@@ -52,29 +52,29 @@ public class TushareApi {
     public static void main(String[] args) throws Exception {
         TimeInterval interval = new TimeInterval();
         interval.start();
-//        Console.log(getStockListFromTushare(false, false, true, NOT_MAIN_BOARDS).size());
-//        Console.log(
+//        Console.com.scareers.log(getStockListFromTushare(false, false, true, NOT_MAIN_BOARDS).size());
+//        Console.com.scareers.log(
 //                getStockPriceByTscodeAndDaterangeAsDfFromTushare("000001.SZ", "nofq", null,
 //                        Arrays.asList("20190101", "20200101"), null));
-//        Console.log(getStockWithStDateRanges());
+//        Console.com.scareers.log(getStockWithStDateRanges());
 
-//        Console.log(getAdjdatesByTscodeFromTushare("000001.SZ", ConnectionFactory.getConnLocalTushareFromPool()));
+//        Console.com.scareers.log(getAdjdatesByTscodeFromTushare("000001.SZ", ConnectionFactory.getConnLocalTushareFromPool()));
 
 //        Connection conn = ConnectionFactory.getConnLocalTushareFromPool();
 //        Object[] res = getReachPriceLimitDates("999999.SZ");
-//        Console.log((HashSet<String>) res[0]);
-//        Console.log((HashSet<String>) res[1]);
-//        Console.log((List<String>) res[2]);
-//        Console.log(interval.intervalRestart());
+//        Console.com.scareers.log((HashSet<String>) res[0]);
+//        Console.com.scareers.log((HashSet<String>) res[1]);
+//        Console.com.scareers.log((List<String>) res[2]);
+//        Console.com.scareers.log(interval.intervalRestart());
 //        Object[] res0 = getReachPriceLimitDates("000153.SZ");
-//        Console.log((HashSet<String>) res0[0]);
-//        Console.log((HashSet<String>) res0[1]);
-//        Console.log((List<String>) res0[2]);
+//        Console.com.scareers.log((HashSet<String>) res0[0]);
+//        Console.com.scareers.log((HashSet<String>) res0[1]);
+//        Console.com.scareers.log((List<String>) res0[2]);
 
-//        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
-//        Console.log(interval.intervalRestart());
-//        Console.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
-//        Console.log(interval.intervalRestart());
+//        Console.com.scareers.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+//        Console.com.scareers.log(interval.intervalRestart());
+//        Console.com.scareers.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
+//        Console.com.scareers.log(interval.intervalRestart());
 
         Console.log(getStockWithBoardAsMapFromTushare());
         Console.log(interval.intervalRestart());
@@ -274,7 +274,7 @@ public class TushareApi {
                 "where ts_code='{}' " +
                 "order by trade_date", stock);
         DataFrame<Object> dfAdjFactors = DataFrame.readSql(conn, sqlGetAdjFactors);
-        //Console.log(dfAdjFactors.types()); // 默认全部是String
+        //Console.com.scareers.log(dfAdjFactors.types()); // 默认全部是String
         dfAdjFactors = dfAdjFactors.convert(String.class, Double.class);
         HashSet<String> res = new HashSet<>();
         if (dfAdjFactors.length() <= 1) {
@@ -298,9 +298,9 @@ public class TushareApi {
      * 计算某只股票的所有涨停日期和跌停日期, 得到集合. 并计算对应的 有效的 计算 日期区间
      * -- 该函数没传递conn, 手动获取/关闭conn
      * <p>
-     * Console.log((HashSet<String>) res[0]);
-     * Console.log((HashSet<String>) res[1]);
-     * Console.log((List<String>) res[2]);
+     * Console.com.scareers.log((HashSet<String>) res[0]);
+     * Console.com.scareers.log((HashSet<String>) res[1]);
+     * Console.com.scareers.log((List<String>) res[2]);
      *
      * @param stock
      * @return Object[], 元素0为HashSet<String>,保存涨停日期, 1为跌停日期集合. 2 为本函数有效的计算日期区间,可返回null
@@ -336,7 +336,7 @@ public class TushareApi {
             dfJoined = dfJoined.dropna();
             dfJoined.convert(String.class, Double.class, Double.class, String.class, Double.class);
             //            trade_date_left	    up_limit	  down_limit	  trade_date_right	close 5列,注意索引
-//            Console.log(dfJoined);
+//            Console.com.scareers.log(dfJoined);
             for (int i = 0; i < dfJoined.length(); i++) {
                 // 4列依次 trade_date, up_limit,down_limit,close. 注意下标
                 if ((Double) dfJoined.get(i, 1) <= (Double) dfJoined.get(i, 4)) {

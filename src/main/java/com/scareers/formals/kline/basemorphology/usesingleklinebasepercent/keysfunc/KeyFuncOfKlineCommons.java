@@ -202,7 +202,7 @@ public class KeyFuncOfKlineCommons {
             ArrayList<Integer> smallLargeCompareCounts = new ArrayList<>();
             int ltSmall = 0, betweenSmallLarge = 0, gtLarge = 0;
             for (Double i : effectiveResults) {
-                // Console.log(i, smallLargeThreshold.get(0), smallLargeThreshold.get(1));
+                // Console.com.scareers.log(i, smallLargeThreshold.get(0), smallLargeThreshold.get(1));
                 if (i <= smallLargeThreshold.get(0)) {
                     ltSmall++;
                 } else if (i >= smallLargeThreshold.get(1)) {
@@ -307,7 +307,7 @@ public class KeyFuncOfKlineCommons {
             }
             int index = (int) Math.ceil((NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
                     .doubleValue())) - 1; // 注意逻辑还是比较绕, 基本上不能少
-//            Console.log(value, effectiveValueRange.get(0), perRangeWidth,
+//            Console.com.scareers.log(value, effectiveValueRange.get(0), perRangeWidth,
 //                    NumberUtil.round((value - effectiveValueRange.get(0)) / perRangeWidth, 5)
 //                            .doubleValue(), index);
 
