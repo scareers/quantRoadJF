@@ -35,22 +35,26 @@ public class RbUtils {
     // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
+    private static final Log log = LogUtils.getLogger();
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
-        ThreadUtil.execute(() -> {
-            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
-        });
-        Thread.sleep(2000); // 稍作等待
-
-        // 确认收到启动成功的消息.
-
         Connection conn = connectToRbServer();
         Channel channelProducer = conn.createChannel();
         initDualChannel(channelProducer);
-
-
         Channel channelComsumer = conn.createChannel();
         initDualChannel(channelComsumer);
+
+        ThreadUtil.execute(() -> {
+            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
+        });
+        Thread.sleep(1000); // 稍作等待
+        sendMessageToPython(channelProducer, buildHandshakeMsg());
+
+        waitUtilPythonReady(channelComsumer);
+
+
+        // 确认收到启动成功的消息.
+
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
@@ -65,7 +69,26 @@ public class RbUtils {
         conn.close();
     }
 
-    private static final Log log = LogUtils.getLogger(RbUtils.class);
+    private static void waitUtilPythonReady(Channel channelComsumer) throws IOException {
+        Consumer consumer = new DefaultConsumer(channelComsumer) {
+            @SneakyThrows
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
+                                       byte[] body) throws IOException {
+
+
+            }
+        };
+        channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
+    }
+
+    public static String buildHandshakeMsg() {
+        JSONObject handshake = new JSONObject();
+        handshake.set("handshake_java_side", "java get ready");
+        handshake.set("handshake_python_side", "and you?");
+        handshake.set("timestamp", System.currentTimeMillis());
+        return JSONUtil.toJsonStr(handshake);
+    }
 
 
     public static List<JSONObject> comsumeUntilSuccessState(Channel channelComsumer, String rawOrderId)
@@ -133,6 +156,7 @@ public class RbUtils {
         return responses;
     }
 
+
     public static List<JSONObject> execBuySellOrder(Channel channelProducer,
                                                     Channel channelComsumer,
                                                     String type, String stockCode, Number amounts,
@@ -142,11 +166,15 @@ public class RbUtils {
         JSONObject order = generateBuySellOrder(type, stockCode, amounts, price, timer, otherKeys, otherValues);
         String orderMsg = orderAsJsonStr(order);
         String rawOrderId = order.getStr("raw_order_id");
-        log.info("发送消息到python: {}", orderMsg);
-        channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-                orderMsg.getBytes(StandardCharsets.UTF_8));
+        sendMessageToPython(channelProducer, orderMsg);
         List<JSONObject> res = comsumeUntilSuccessState(channelComsumer, rawOrderId);
         return res;
+    }
+
+    public static void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
+        log.info("send: 发送消息到python: {}", jsonMsg);
+        channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
+                jsonMsg.getBytes(StandardCharsets.UTF_8));
     }
 
 
@@ -165,6 +193,7 @@ public class RbUtils {
 
         // 建立连接
         Connection conn = factory.newConnection();
+        log.info("连接到rabbitmq...");
         return conn;
     }
 
