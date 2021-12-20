@@ -36,21 +36,20 @@ public class RbUtils {
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
     private static final Log log = LogUtils.getLogger();
+    public static Channel channelComsumer;
+    public static Channel channelProducer;
+    public static Connection connOfRabbitmq;
+
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
-        Connection conn = connectToRbServer();
-        Channel channelProducer = conn.createChannel();
-        initDualChannel(channelProducer);
-        Channel channelComsumer = conn.createChannel();
-        initDualChannel(channelComsumer);
-
+        initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         ThreadUtil.execute(() -> {
             RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
         });
-        Thread.sleep(1000); // 稍作等待
-        sendMessageToPython(channelProducer, buildHandshakeMsg());
-
-        waitUtilPythonReady(channelComsumer);
+        Thread.sleep(1000); // 运行python仿真程序,并稍作等待
+        sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
+        waitUtilPythonReady(channelComsumer); // 等待python握手信息.
+        log.warn("success: java<->python 握手成功");
 
 
         // 确认收到启动成功的消息.
@@ -64,22 +63,42 @@ public class RbUtils {
         Console.log(timer.intervalRestart());
 
         Console.log("ok");
-        channelProducer.close();
-        channelComsumer.close();
-        conn.close();
+
+        closeDualChannelAndConn();
+
     }
 
-    private static void waitUtilPythonReady(Channel channelComsumer) throws IOException {
+    public static void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
+        connOfRabbitmq = connectToRbServer();
+        channelProducer = connOfRabbitmq.createChannel();
+        initDualChannel(channelProducer);
+        channelComsumer = connOfRabbitmq.createChannel();
+        initDualChannel(channelComsumer);
+    }
+
+    public static void closeDualChannelAndConn() throws IOException, TimeoutException {
+        channelProducer.close();
+        channelComsumer.close();
+        connOfRabbitmq.close();
+    }
+
+
+    private static void waitUtilPythonReady(Channel channelComsumer) throws IOException, InterruptedException {
+        final boolean[] handshakeSuccess = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
             @SneakyThrows
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
-
-
+                Thread.sleep(10 * 1000);
+                channelComsumer.basicCancel(consumerTag);
+                handshakeSuccess[0] = true;
             }
         };
         channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
+        while (!handshakeSuccess[0]) {
+            Thread.sleep(1); // 只能自行阻塞?
+        }
     }
 
     public static String buildHandshakeMsg() {
