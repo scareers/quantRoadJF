@@ -25,7 +25,7 @@ import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
  * @author: admin
  * @date: 2021/12/14/014-12:52
  */
-public class Producer {
+public class ProducerSimple {
     public static void main(String[] args) throws Exception {
         // 建立连接
         Connection conn = connectToRbServer();

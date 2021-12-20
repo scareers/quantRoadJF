@@ -43,18 +43,37 @@ public class RbUtils {
 //        startPythonApp(); // 是否自启动python程序
         handshake(); // 是否握手
 
-        log.warn("handshake success: java<->python 握手成功");
+        JSONObject order = generateBuySellOrder("buy", "000001", 100, null, true, null, null);
+        execOrderUtilSuccess(order); // 执行 order
 
 
-        execBuySellOrder(channelProducer, channelComsumer, "buy",
-                "000001", 100, null, true, null, null);
+        JSONObject orderCancelAll = generateCancelBatchOrder("all", null, true);
+        execOrderUtilSuccess(orderCancelAll);
 
-        closeDualChannelAndConn();
+        closeDualChannelAndConn(); // 关闭连接
     }
+
+    public static List<JSONObject> execBuySellOrder(String type, String stockCode, Number amounts,
+                                                    Double price,
+                                                    boolean timer, List<String> otherKeys,
+                                                    List<Object> otherValues) throws IOException, InterruptedException {
+        JSONObject order = generateBuySellOrder(type, stockCode, amounts, price, timer, otherKeys, otherValues);
+        return execOrderUtilSuccess(order);
+    }
+
+    public static List<JSONObject> execOrderUtilSuccess(JSONObject order)
+            throws IOException, InterruptedException {
+        String orderMsg = orderAsJsonStr(order);
+        String rawOrderId = order.getStr("raw_order_id");
+        sendMessageToPython(channelProducer, orderMsg);
+        return comsumeUntilSuccessState(rawOrderId);
+    }
+
 
     public static void handshake() throws IOException, InterruptedException {
         sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
         waitUtilPythonReady(channelComsumer); // 等待python握手信息.
+        log.warn("handshake success: java<->python 握手成功");
     }
 
     public static void startPythonApp() throws InterruptedException {
@@ -143,11 +162,10 @@ public class RbUtils {
     }
 
 
-    public static List<JSONObject> comsumeUntilSuccessState(Channel channelComsumer, String rawOrderId)
+    public static List<JSONObject> comsumeUntilSuccessState(String rawOrderId)
             throws IOException, InterruptedException {
 
         List<JSONObject> responses = new ArrayList<>(); // 保留响应解析成的JO
-
         final boolean[] finish = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
             @SneakyThrows
@@ -187,7 +205,7 @@ public class RbUtils {
                     return;
                 }
 
-                log.info("ack: 确认收到来自python消息: {}", message);
+                log.info("receive response ack: from python: {}", message);
                 channelComsumer.basicAck(envelope.getDeliveryTag(), false);
                 responses.add(message); // 可能null, 此时需要访问 responsesRaw
 
@@ -208,20 +226,6 @@ public class RbUtils {
         return responses;
     }
 
-
-    public static List<JSONObject> execBuySellOrder(Channel channelProducer,
-                                                    Channel channelComsumer,
-                                                    String type, String stockCode, Number amounts,
-                                                    Double price,
-                                                    boolean timer, List<String> otherKeys,
-                                                    List<Object> otherValues) throws IOException, InterruptedException {
-        JSONObject order = generateBuySellOrder(type, stockCode, amounts, price, timer, otherKeys, otherValues);
-        String orderMsg = orderAsJsonStr(order);
-        String rawOrderId = order.getStr("raw_order_id");
-        sendMessageToPython(channelProducer, orderMsg);
-        List<JSONObject> res = comsumeUntilSuccessState(channelComsumer, rawOrderId);
-        return res;
-    }
 
     public static void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
         log.info("send request: to python: {}", jsonMsg);

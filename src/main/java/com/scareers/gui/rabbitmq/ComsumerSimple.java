@@ -19,7 +19,7 @@ import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
  * @author: admin
  * @date: 2021/12/14/014-12:59
  */
-public class Comsumer {
+public class ComsumerSimple {
     public static void main(String[] args) throws Exception {
         // 建立连接
         Connection conn = connectToRbServer();
