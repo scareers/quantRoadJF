@@ -12,7 +12,6 @@ import com.scareers.utils.StrUtil;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
-import org.w3c.dom.ls.LSException;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -35,7 +34,9 @@ import static com.scareers.utils.SqlUtil.execSql;
  * 实现2: 该api为分页api. 实测可以更改单页数量到 5000. 同样需指定 market和code . 本质上两个api 返回值相同
  * https://push2ex.eastmoney.com/getStockFenShi?pagesize=5000&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&cb=jQuery112405998333817754311_1640090463418&pageindex=0&id=3990011&sort=1&ft=1&code=399001&market=0&_=1640090463419
  * <p>
- * // @noti: 目前使用实现2. 两个url基本相同.
+ * // @noti: 目前使用实现2. 两个url基本相同.  均使用单次访问的方式, url1直接设定 -x, url2设定单页内容 5000条
+ * <p>
+ * // @see: StockApi.getFSTransaction()
  *
  * @author: admin
  * @date: 2021/12/21/021-15:26:04
@@ -50,15 +51,15 @@ public class FSTransactionFetcher {
     public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static String keyUrlTemplate = "https://push2ex.eastmoney.com/getStockFenShi" +
-            "?pagesize=5000" +
+            "?pagesize={}" +  // 单页数量, 调整至5000获取所有. 标准 240分钟*(60/3) 最多 4800条
             "&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj" +
-            "&cb=jQuery112405998333817754311_1640090463418" +
-            "&pageindex=0" +
-            "&id=3990011" +
-            "&sort=1&ft=1" +
-            "&code=399001" +
-            "&market=0" +
-            "&_=1640090463419";
+            "&cb=jQuery112405998333817754311_{}" + // 时间戳1, 毫秒
+            "&pageindex=0" +  // 为了方便, 此参数不变. 均访问第0页
+            "&id=3990011" + // code+1
+            "&sort=1&ft=1" + // 升序
+            "&code=399001" + // code2
+            "&market=0" +  // 市场代码, 0深1沪
+            "&_=1640090463419"; // 时间戳2
     public static int threadPoolCorePoolSize = 16;
     private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPool;
@@ -115,6 +116,7 @@ public class FSTransactionFetcher {
             maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
         }
         log.warn("init process And datas: 初始化完成");
+
     }
 
     public FSTransactionFetcher(StockPoolFactory stockPoolFactory) {
@@ -171,14 +173,12 @@ public class FSTransactionFetcher {
                 "            time_tick  varchar(128)   null,\n" +
                 "            price      double null,\n" +
                 "            vol        double null,\n" +
-                "            amount        double null,\n" +
-                "            bs         int null,\n" +
+                "            bs         varchar(8) null,\n" +
                 "            index stock_code_index (stock_code ASC),\n" +
                 "            index market_index (market ASC),\n" +
                 "            index time_tick_index (time_tick ASC),\n" +
                 "            index bs_index (bs ASC),\n" +
                 "            index price_index (price ASC),\n" +
-                "            index amount_index (amount ASC),\n" +
                 "            index vol_index (vol ASC)\n" +
                 "        );", saveTableName);
         execSql(sql, connSave);
@@ -227,4 +227,6 @@ public class FSTransactionFetcher {
             return null;
         }
     }
+
+
 }
