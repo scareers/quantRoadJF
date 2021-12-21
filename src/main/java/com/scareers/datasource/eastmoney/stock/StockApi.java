@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.getAsStr;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
 
 /**
  * description:
@@ -60,7 +61,7 @@ public class StockApi {
      * @return
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
-                                                     Integer market) {
+                                                     Integer market, int timeout) {
         DataFrame<Object> res = new DataFrame<>(
                 Arrays.asList("stock_code", "market", "time_tick", "price", "vol", "bs"));
         String keyUrlTemplate = "https://push2.eastmoney.com/api/qt/stock/details/get" +
@@ -80,7 +81,7 @@ public class StockApi {
 
         String response = null;
         try {
-            response = getAsStr(fullUrl);
+            response = getAsStr(fullUrl, timeout);
         } catch (Exception e) {
             e.printStackTrace();
             log.warn("get exception: 访问http失败");
@@ -109,6 +110,11 @@ public class StockApi {
             res.append(row);
         }
         return res;
+    }
+
+    public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
+                                                     Integer market) {
+        return getFSTransaction(lastRecordAmounts, stockCodeSimple, market, DEFAULT_TIMEOUT);
     }
 
 

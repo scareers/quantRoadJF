@@ -50,16 +50,6 @@ public class FSTransactionFetcher {
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static String keyUrlTemplate = "https://push2ex.eastmoney.com/getStockFenShi" +
-            "?pagesize={}" +  // 单页数量, 调整至5000获取所有. 标准 240分钟*(60/3) 最多 4800条
-            "&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj" +
-            "&cb=jQuery112405998333817754311_{}" + // 时间戳1, 毫秒
-            "&pageindex=0" +  // 为了方便, 此参数不变. 均访问第0页
-            "&id=3990011" + // code+1
-            "&sort=1&ft=1" + // 升序
-            "&code=399001" + // code2
-            "&market=0" +  // 市场代码, 0深1沪
-            "&_=1640090463419"; // 时间戳2
     public static int threadPoolCorePoolSize = 16;
     private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPool;
@@ -70,7 +60,6 @@ public class FSTransactionFetcher {
 
     public static void main(String[] args) throws Exception {
         initThreadPool();
-
         FSTransactionFetcher fetcher = new FSTransactionFetcher(new StockPoolForFSTransaction());
         boolean shouldFetchToday = fetcher.newDayDecide();
         // yyyy-MM-dd HH:mm:ss.SSS
@@ -85,9 +74,9 @@ public class FSTransactionFetcher {
         List<Integer> indexes = CommonUtils.range(stockPool.size());
         List<Future<Void>> futures = new ArrayList<>();
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
-            StockBean stockSrcId = stockPool.get(index);
+            StockBean stock = stockPool.get(index);
             Future<Void> f = threadPool
-                    .submit(new FetchOneStockTask(stockSrcId));
+                    .submit(new FetchOneStockTask(stock));
             futures.add(f);
         }
         for (Future<Void> future : futures) {
@@ -209,10 +198,10 @@ public class FSTransactionFetcher {
     }
 
     public static class FetchOneStockTask implements Callable<Void> {
-        StockBean stockSrcId;
+        StockBean stock;
 
-        public FetchOneStockTask(StockBean stockSrcId) {
-            this.stockSrcId = stockSrcId;
+        public FetchOneStockTask(StockBean stock) {
+            this.stock = stock;
         }
 
         /**
@@ -223,7 +212,7 @@ public class FSTransactionFetcher {
          */
         @Override
         public Void call() throws Exception {
-            Console.log(stockSrcId);
+            Console.log(stock);
             return null;
         }
     }

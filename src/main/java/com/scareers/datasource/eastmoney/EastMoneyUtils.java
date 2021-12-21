@@ -23,17 +23,15 @@ public class EastMoneyUtils {
                 ;
     }
 
-    public static HttpRequest addDefaultSettings(HttpRequest request) {
-        return addDefaultSettings(request, DEFAULT_TIMEOUT);
+    public static HttpResponse get(String url, int timeout) {
+        return addDefaultSettings(HttpRequest.get(url), timeout).execute();
     }
 
-    public static HttpResponse get(String url) {
-        return addDefaultSettings(HttpRequest.get(url)).execute();
+    public static String getAsStr(String url, int timeout) {
+        return get(url, timeout).body();
     }
-
-
 
     public static String getAsStr(String url) {
-        return get(url).body();
+        return get(url, DEFAULT_TIMEOUT).body();
     }
 }
