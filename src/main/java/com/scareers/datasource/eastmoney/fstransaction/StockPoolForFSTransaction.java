@@ -1,5 +1,7 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
+import cn.hutool.core.lang.Console;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -15,17 +17,18 @@ import java.util.stream.Collectors;
  * @date: 2021/12/21/021-18:16:14
  */
 public class StockPoolForFSTransaction implements StockPoolFactory {
+
+
     @Override
-    public List<String> createStockPool() {
-        List<String> stockPool = new ArrayList<>();
-        stockPool.add("1.000001"); // 上证指数
-        stockPool.add("0.000001");  // 平安银行
-
-        stockPool.add("1.000002");  // A股指数
-        stockPool.add("0.000002");  // 万科A
-
-        stockPool.add("0.399001");  // 深证成指
-        stockPool.add("1.000153");  // 丰原药业
+    public List<StockBean> createStockPool() {
+        List<StockBean> stockPool = new ArrayList<>();
+        stockPool.add(new StockBean("000001", 1));// 上证指数
+        stockPool.add(new StockBean("000001", 0));// 平安银行
+        stockPool.add(new StockBean("000002", 1));// A股指数
+        stockPool.add(new StockBean("000002", 0));// 万科A
+        stockPool.add(new StockBean("399001", 0));// 深证成指
+        stockPool.add(new StockBean("000153", 0));// 丰原药业
+        stockPool.add(new StockBean("600037", 1));// 歌华有线
         // 去重 + 线程安全
         return new CopyOnWriteArrayList<>(stockPool.stream().distinct().collect(Collectors.toList()));
     }

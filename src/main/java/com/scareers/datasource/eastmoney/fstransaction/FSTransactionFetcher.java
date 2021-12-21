@@ -24,6 +24,8 @@ import static com.scareers.utils.SqlUtil.execSql;
 
 /**
  * description: 获取dfcf: tick数据3s.
+ * /*
+ * <p>
  * 实现1:该api来自于 dfcf 行情页面的 分时成交(个股) 或者 分笔(指数) 页面.
  * https://push2.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&fltt=2&cb=jQuery35107646502669044317_1640077292479&pos=-5900&secid=0.600000&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1640077292670
  * <p>
@@ -32,33 +34,38 @@ import static com.scareers.utils.SqlUtil.execSql;
  * <p>
  * 实现2: 该api为分页api. 实测可以更改单页数量到 5000. 同样需指定 market和code . 本质上两个api 返回值相同
  * https://push2ex.eastmoney.com/getStockFenShi?pagesize=5000&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&cb=jQuery112405998333817754311_1640090463418&pageindex=0&id=3990011&sort=1&ft=1&code=399001&market=0&_=1640090463419
+ * <p>
+ * // @noti: 目前使用实现2. 两个url基本相同.
  *
  * @author: admin
  * @date: 2021/12/21/021-15:26:04
  */
 public class FSTransactionFetcher {
     // 实例属性
-    private List<String> stockPool;
+    private List<StockBean> stockPool;
     private StockPoolFactory stockPoolFactory;
 
     // 静态属性
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static String keyUrlTemplate = "https://push2.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4" +
-            "&fields2=f51,f52,f53,f54,f55&fltt=2" +
-            "&cb=jQuery35107646502669044317_{}" +  // 尾部为毫秒时间戳
-            "&pos=-{}" + // 为倒数多少条数据? 标准四小时上限为 4800, 数据时间升序
-            "&secid={}" + // 安全id, 见类文档  0.600000
-            "&ut=fa5fd1943c7b386f172d6893dbfba10b" +
-            "&_={}"; // 时间戳2. 比上一多一点时间, 建议 random 毫秒
+    public static String keyUrlTemplate = "https://push2ex.eastmoney.com/getStockFenShi" +
+            "?pagesize=5000" +
+            "&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj" +
+            "&cb=jQuery112405998333817754311_1640090463418" +
+            "&pageindex=0" +
+            "&id=3990011" +
+            "&sort=1&ft=1" +
+            "&code=399001" +
+            "&market=0" +
+            "&_=1640090463419";
     public static int threadPoolCorePoolSize = 16;
     private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPool;
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
-    public static ConcurrentHashMap<String, String> processes = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<StockBean, String> processes = new ConcurrentHashMap<>();
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
-    public static ConcurrentHashMap<String, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws Exception {
         initThreadPool();
@@ -71,12 +78,13 @@ public class FSTransactionFetcher {
             saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
         }
         createSaveTable(saveTableName);
-        List<String> stockPool = fetcher.getStockPool();
+
+        List<StockBean> stockPool = fetcher.getStockPool();
         initProcessAndRawDatas(saveTableName, stockPool);
         List<Integer> indexes = CommonUtils.range(stockPool.size());
         List<Future<Void>> futures = new ArrayList<>();
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
-            String stockSrcId = stockPool.get(index);
+            StockBean stockSrcId = stockPool.get(index);
             Future<Void> f = threadPool
                     .submit(new FetchOneStockTask(stockSrcId));
             futures.add(f);
@@ -91,20 +99,20 @@ public class FSTransactionFetcher {
     /**
      * 从数据库读取今日已被抓取数据,可能空. 并填充 进度map和初始数据map
      */
-    private static void initProcessAndRawDatas(String saveTableName, List<String> stockPool) throws SQLException {
+    private static void initProcessAndRawDatas(String saveTableName, List<StockBean> stockPool) throws SQLException {
         String sqlSelectAll = StrUtil.format("select * from `{}`", saveTableName);
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
-        for (String stockSecId : stockPool) {
-            List<String> fragments = StrUtil.split(stockSecId, ".");
+        for (StockBean stock : stockPool) {
             DataFrame<Object> datasOfOneStock =
-                    dfAll.select(value -> value.get(0).toString().equals(fragments.get(0)) && value.get(1).toString()
-                            .equals(fragments.get(1)));
-            fsTransactionDatas.put(stockSecId, datasOfOneStock); // 可空
+                    dfAll.select(value -> value.get(0).toString().equals(stock.getStockCodeSimple()) && value.get(1)
+                            .toString()
+                            .equals(stock.getMarket().toString()));
+            fsTransactionDatas.put(stock, datasOfOneStock); // 可空
+            processes.putIfAbsent(stock, "09:00:00"); // 默认值
 
-            processes.putIfAbsent(stockSecId, "09:00:00"); // 默认值
             List<String> timeTicks = DataFrameSelf.getColAsStringList(datasOfOneStock, "time_tick");
             Optional<String> maxTick = timeTicks.stream().max(Comparator.naturalOrder());
-            maxTick.ifPresent(s -> processes.put(stockSecId, s)); // 修改.
+            maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
         }
         log.warn("init process And datas: 初始化完成");
     }
@@ -185,11 +193,11 @@ public class FSTransactionFetcher {
         this.stockPoolFactory = stockPoolFactory;
     }
 
-    public List<String> getStockPool() {
+    public List<StockBean> getStockPool() {
         return stockPool;
     }
 
-    public void setStockPool(List<String> stockPool) {
+    public void setStockPool(List<StockBean> stockPool) {
         this.stockPool = stockPool;
     }
 
@@ -201,9 +209,9 @@ public class FSTransactionFetcher {
     }
 
     public static class FetchOneStockTask implements Callable<Void> {
-        String stockSrcId;
+        StockBean stockSrcId;
 
-        public FetchOneStockTask(String stockSrcId) {
+        public FetchOneStockTask(StockBean stockSrcId) {
             this.stockSrcId = stockSrcId;
         }
 
