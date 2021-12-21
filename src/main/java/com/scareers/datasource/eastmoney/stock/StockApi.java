@@ -98,9 +98,9 @@ public class StockApi {
             log.warn("get exception: 获取数据错误.常因 data字段为null");
             return res;
         }
-        log.info("get success: 获取json成功: {}.{}", market, stockCodeSimple);
+        log.debug("get success: 获取json成功: {}.{}", market, stockCodeSimple);
         JSONArray dataCore = data.getJSONArray("details");
-        Console.log(dataCore);
+        log.debug("data raw: {}", dataCore);
         for (Object o : dataCore) {
             String line = o.toString();
             List<String> values = StrUtil.split(line, ",");

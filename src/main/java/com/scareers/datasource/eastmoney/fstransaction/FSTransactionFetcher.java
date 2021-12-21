@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
@@ -50,13 +51,14 @@ public class FSTransactionFetcher {
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static int threadPoolCorePoolSize = 16;
+    public static int threadPoolCorePoolSize = 1;
     private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPool;
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
     public static ConcurrentHashMap<StockBean, String> processes = new ConcurrentHashMap<>();
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
     public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
+    public static long redundancyRecords = 20; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
 
     public static void main(String[] args) throws Exception {
         initThreadPool();
@@ -76,13 +78,12 @@ public class FSTransactionFetcher {
         for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
             StockBean stock = stockPool.get(index);
             Future<Void> f = threadPool
-                    .submit(new FetchOneStockTask(stock));
+                    .submit(new FetchOneStockTask(stock, saveTableName));
             futures.add(f);
         }
         for (Future<Void> future : futures) {
             future.get();
         }
-
         threadPool.shutdown();
     }
 
@@ -105,7 +106,6 @@ public class FSTransactionFetcher {
             maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
         }
         log.warn("init process And datas: 初始化完成");
-
     }
 
     public FSTransactionFetcher(StockPoolFactory stockPoolFactory) {
@@ -199,9 +199,11 @@ public class FSTransactionFetcher {
 
     public static class FetchOneStockTask implements Callable<Void> {
         StockBean stock;
+        String saveTableName;
 
-        public FetchOneStockTask(StockBean stock) {
+        public FetchOneStockTask(StockBean stock, String saveTableName) {
             this.stock = stock;
+            this.saveTableName = saveTableName;
         }
 
         /**
@@ -212,8 +214,33 @@ public class FSTransactionFetcher {
          */
         @Override
         public Void call() throws Exception {
-            Console.log(stock);
+            String process = processes.get(stock); // 进度, time_tick表示
+            DataFrame<Object> dataOriginal = fsTransactionDatas.get(stock); // 原全数据.
+            // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
+            int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + redundancyRecords);
+            DataFrame<Object> dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
+                    stock.getMarket());
+            // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
+            HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameSelf.getColAsStringList(dataOriginal,
+                    "time_tick"));
+            DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()));
+            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
+            DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
+            fsTransactionDatas.put(stock, dfCurrentAll);
+            String processNew =
+                    (DataFrameSelf.getColAsStringList(dfCurrentAll, "time_tick")).stream()
+                            .max(Comparator.naturalOrder()).get();
+            processes.put(stock, processNew);
+            log.info("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
             return null;
+        }
+
+        public long calcCountsBetweenNowAndProcess(String process) {
+            DateTime now = DateUtil.date();
+            String today = DateUtil.today();
+            DateTime processTick = DateUtil.parse(today + " " + process);
+            long between = DateUtil.between(processTick, now, DateUnit.SECOND, false);
+            return between / 3 + 1;
         }
     }
 
