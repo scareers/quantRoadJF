@@ -2,14 +2,11 @@ package com.scareers.datasource.eastmoney.stock;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
-import com.scareers.datasource.eastmoney.fstransaction.StockPoolFactory;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.utils.StrUtil;
 import com.scareers.utils.log.LogUtils;
@@ -19,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.getAsStr;
 
 /**
  * description:
@@ -80,7 +77,16 @@ public class StockApi {
                 System.currentTimeMillis() - RandomUtil.randomInt(1000),
                 System.currentTimeMillis()
         );
-        String response = getAsStr(fullUrl);
+
+        String response = null;
+        try {
+            response = getAsStr(fullUrl);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.warn("get exception: 访问http失败");
+            return res;
+        }
+
         response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
         JSONObject responseJson = JSONUtil.parseObj(response);
         JSONObject data = null;
@@ -91,7 +97,7 @@ public class StockApi {
             log.warn("get exception: 获取数据错误.常因 data字段为null");
             return res;
         }
-        log.info("获取json成功: {}.{}", market, stockCodeSimple);
+        log.info("get success: 获取json成功: {}.{}", market, stockCodeSimple);
         JSONArray dataCore = data.getJSONArray("details");
         Console.log(dataCore);
         for (Object o : dataCore) {
