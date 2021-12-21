@@ -231,7 +231,7 @@ public class FSTransactionFetcher {
                     "time_tick"));
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()));
             DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-            threadPoolOfSave.execute(() -> {
+            threadPoolOfSave.submit(() -> {
                 try { // 保存使用另外线程池, 不阻塞主线程池
                     DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
                 } catch (SQLException e) {
