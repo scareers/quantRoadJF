@@ -1,9 +1,8 @@
-package com.scareers.datasource.eastmoney.realtimetransaction;
+package com.scareers.datasource.eastmoney.fstransaction;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtil;
@@ -13,6 +12,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -29,6 +32,10 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/21/021-15:26:04
  */
 public class FSTransactionFetcher {
+    // 实例属性
+    public StockPoolFactory stockPoolFactory;
+
+    // 静态属性
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
@@ -39,9 +46,14 @@ public class FSTransactionFetcher {
             "&secid={}" + // 安全id, 见类文档  0.600000
             "&ut=fa5fd1943c7b386f172d6893dbfba10b" +
             "&_={}"; // 时间戳2. 比上一多一点时间, 建议 random 毫秒
+    public static int threadPoolCorePoolSize = 16;
+    private static final Log log = LogUtils.getLogger();
+    public static ThreadPoolExecutor threadPool;
+
 
     public static void main(String[] args) throws Exception {
-        FSTransactionFetcher fetcher = new FSTransactionFetcher();
+        initThreadPool();
+        FSTransactionFetcher fetcher = new FSTransactionFetcher(new StockPoolForFSTransaction());
         boolean shouldFetchToday = fetcher.newDayDecide();
         // yyyy-MM-dd HH:mm:ss.SSS
         String saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
@@ -49,10 +61,18 @@ public class FSTransactionFetcher {
             saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
         }
         fetcher.createSaveTable(saveTableName);
+        List<String> stockPool = fetcher.stockPoolFactory.createStockPool(); // 该实现线程安全
+
 
     }
 
-    private static final Log log = LogUtils.getLogger();
+    public FSTransactionFetcher(StockPoolFactory stockPoolFactory) {
+        this.stockPoolFactory = stockPoolFactory;
+    }
+
+    public FSTransactionFetcher() {
+    }
+
 
     public boolean newDayDecide() throws InterruptedException, SQLException {
         DateTime now = DateUtil.date();
@@ -112,5 +132,21 @@ public class FSTransactionFetcher {
                 "        );", saveTableName);
         execSql(sql, connSave);
         log.info("create table: 创建数据表成功: {}", saveTableName);
+    }
+
+    public StockPoolFactory getStockPoolFactory() {
+        return stockPoolFactory;
+    }
+
+    public void setStockPoolFactory(StockPoolFactory stockPoolFactory) {
+        this.stockPoolFactory = stockPoolFactory;
+    }
+
+
+    public static void initThreadPool() {
+        threadPool = new ThreadPoolExecutor(threadPoolCorePoolSize,
+                threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
+        log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
     }
 }
