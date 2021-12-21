@@ -31,6 +31,7 @@ public class ConnectionFactory {
 //        getConnLocalStocktestFromPool();
         Console.log("************");
 //        getConnLocalKlineFormsFromPool();
+        getConnLocalFSTransactionFromEastmoney();
 
     }
 
@@ -87,6 +88,9 @@ public class ConnectionFactory {
 
     public static Connection getConnLocalTushare1M() {
         return connectToLocalMysqlMain("tushare_1m");
+    }
+    public static Connection getConnLocalFSTransactionFromEastmoney() {
+        return connectToLocalMysqlMain("fs_transaction_from_eastmoney");
     }
 
 //    public static Connection getConnLocalTushare1MFromPool() throws SQLException {
