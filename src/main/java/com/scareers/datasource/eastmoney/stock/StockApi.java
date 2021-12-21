@@ -28,12 +28,11 @@ import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIME
 public class StockApi {
     private static final Log log = LogUtils.getLogger();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         List<StockBean> stocks = new StockPoolForFSTransaction().createStockPool();
         for (StockBean stock : stocks) {
             Console.log(getFSTransaction(100, stock.getStockCodeSimple(), stock.getMarket()));
         }
-
     }
 
     /**
@@ -95,7 +94,7 @@ public class StockApi {
             data = (JSONObject) responseJson.get("data");
         } catch (Exception e) {
             e.printStackTrace();
-            log.warn("get exception: 获取数据错误.常因 data字段为null");
+            log.warn("get exception: 获取数据错误.常因 data字段为null, stock: {}.{}", market, stockCodeSimple);
             return res;
         }
         log.debug("get success: 获取json成功: {}.{}", market, stockCodeSimple);

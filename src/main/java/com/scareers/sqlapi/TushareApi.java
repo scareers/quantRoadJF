@@ -102,6 +102,12 @@ public class TushareApi {
         return res.cast(String.class);
     }
 
+    /**
+     * TODO: 2021/12/22/022 使用所属板判定市场,数据有错误!
+     *
+     * @return
+     * @throws Exception
+     */
     public static HashMap<String, String> getStockWithBoardAsMapFromTushare() throws Exception {
         if (stockWithBoardAsMapCache != null) {
             return stockWithBoardAsMapCache;

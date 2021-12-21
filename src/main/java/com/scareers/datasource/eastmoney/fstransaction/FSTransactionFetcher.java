@@ -3,14 +3,12 @@ package com.scareers.datasource.eastmoney.fstransaction;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtil;
-import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
@@ -49,11 +47,12 @@ public class FSTransactionFetcher {
 
     // 静态属性
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
-    public static final List<String> newDayTimeThreshold = Arrays.asList("17:00", "18:00");
+    public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static int threadPoolCorePoolSize = 1;
+    public static int threadPoolCorePoolSize = 8;
     private static final Log log = LogUtils.getLogger();
-    public static ThreadPoolExecutor threadPool;
+    public static ThreadPoolExecutor threadPoolOfFetch;
+    public static ThreadPoolExecutor threadPoolOfSave;
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
     public static ConcurrentHashMap<StockBean, String> processes = new ConcurrentHashMap<>();
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
@@ -70,21 +69,25 @@ public class FSTransactionFetcher {
             saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
         }
         createSaveTable(saveTableName);
-
         List<StockBean> stockPool = fetcher.getStockPool();
         initProcessAndRawDatas(saveTableName, stockPool);
-        List<Integer> indexes = CommonUtils.range(stockPool.size());
-        List<Future<Void>> futures = new ArrayList<>();
-        for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("process: "))) {
-            StockBean stock = stockPool.get(index);
-            Future<Void> f = threadPool
-                    .submit(new FetchOneStockTask(stock, saveTableName));
-            futures.add(f);
+        log.warn("start: 开始抓取数据...");
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        while (true) {
+            List<Future<Void>> futures = new ArrayList<>();
+            for (StockBean stock : stockPool) {
+                Future<Void> f = threadPoolOfFetch
+                        .submit(new FetchOneStockTask(stock, saveTableName));
+                futures.add(f);
+            }
+            //Tqdm.tqdm(futures, "process: ")
+            for (Future<Void> future : futures) {
+                future.get();
+            }
+            log.warn("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
         }
-        for (Future<Void> future : futures) {
-            future.get();
-        }
-        threadPool.shutdown();
+//        threadPool.shutdown();
     }
 
     /**
@@ -108,7 +111,7 @@ public class FSTransactionFetcher {
         log.warn("init process And datas: 初始化完成");
     }
 
-    public FSTransactionFetcher(StockPoolFactory stockPoolFactory) {
+    public FSTransactionFetcher(StockPoolFactory stockPoolFactory) throws Exception {
         this.stockPoolFactory = stockPoolFactory;
         this.stockPool = this.stockPoolFactory.createStockPool();
     }
@@ -191,7 +194,10 @@ public class FSTransactionFetcher {
     }
 
     public static void initThreadPool() {
-        threadPool = new ThreadPoolExecutor(threadPoolCorePoolSize,
+        threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
+                threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
+        threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
         log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
@@ -225,12 +231,27 @@ public class FSTransactionFetcher {
                     "time_tick"));
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()));
             DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-            DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
+            threadPoolOfSave.execute(() -> {
+                try { // 保存使用另外线程池, 不阻塞主线程
+                    DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            });
             fsTransactionDatas.put(stock, dfCurrentAll);
-            String processNew =
+            Optional<String> processNew =
                     (DataFrameSelf.getColAsStringList(dfCurrentAll, "time_tick")).stream()
-                            .max(Comparator.naturalOrder()).get();
-            processes.put(stock, processNew);
+                            .max(Comparator.naturalOrder());
+            if (processNew.isPresent()) {
+                processes.put(stock, processNew.get());
+            } else {
+                // 例如停牌则没有数据
+//                Console.log(dfCurrentAll);
+//                Console.log(dataOriginal);
+//                Console.log(dfTemp);
+//                Console.log(stock);
+                processes.put(stock, "09:00:00");
+            }
             log.info("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
             return null;
         }
@@ -240,9 +261,7 @@ public class FSTransactionFetcher {
             String today = DateUtil.today();
             DateTime processTick = DateUtil.parse(today + " " + process);
             long between = DateUtil.between(processTick, now, DateUnit.SECOND, false);
-            return between / 3 + 1;
+            return Math.min(between / 3 + 1, 5000); // 上限5000
         }
     }
-
-
 }
