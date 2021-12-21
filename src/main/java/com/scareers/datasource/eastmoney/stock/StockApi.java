@@ -52,7 +52,10 @@ public class StockApi {
      * "&code={}" + // code2
      * "&market={}" +  // 市场代码, 0深1沪
      * "&_={}"; // 时间戳2
+     * <p>
+     * // @using
      * https://push2.eastmoney.com/api/qt/stock/details/get?ut=fa5fd1943c7b386f172d6893dbfba10b&fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&pos=-1400&secid=0.000153&cb=jQuery112409885675811656662_1640099646776&_=1640099646777
+     * // @noti: 升序, 但是最新 x 条数据
      *
      * @param lastRecordAmounts 单页数量,
      * @param stockCodeSimple   股票/指数简单代码, 不再赘述
