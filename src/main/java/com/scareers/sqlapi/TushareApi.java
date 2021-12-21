@@ -46,6 +46,7 @@ public class TushareApi {
     public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, String> preTradeDateCache = CacheUtil.newLRUCache(2048);
     public static HashMap<String, String> stockWithBoardAsMapCache;
 
 
@@ -76,9 +77,17 @@ public class TushareApi {
 //        Console.com.scareers.log(getKeyIntsDateByStockAndToday("000001.SZ", "20210104", Arrays.asList(1, 2)));
 //        Console.com.scareers.log(interval.intervalRestart());
 
-        Console.log(getStockWithBoardAsMapFromTushare());
+//        Console.log(getStockWithBoardAsMapFromTushare());
+//        Console.log(interval.intervalRestart());
+//        getStockWithBoardAsMapFromTushare();
+
+        Console.log(getPreTradeDate("20211221"));
         Console.log(interval.intervalRestart());
-        getStockWithBoardAsMapFromTushare();
+        Console.log(getPreTradeDate("20211220"));
+        Console.log(interval.intervalRestart());
+        Console.log(getPreTradeDate("20211218"));
+        Console.log(interval.intervalRestart());
+        Console.log(isTradeDate("20211217"));
         Console.log(interval.intervalRestart());
 
     }
@@ -448,5 +457,46 @@ public class TushareApi {
         }
         keyIntsDateByStockAndTodayCache.put(cacheKey, keyIntsDates);
         return keyIntsDates;
+    }
+
+    /**
+     * 判定是否是 上交所SSE 交易日
+     *
+     * @param date
+     * @return
+     */
+    public static boolean isTradeDate(String date) throws SQLException {
+        String sql = StrUtil.format("select is_open from sds_trade_dates_tu_stock where cal_date='{}' and " +
+                "exchange='SSE'", date);
+        DataFrame<Object> dataFrame = DataFrame.readSql(connLocalTushare, sql);
+        if ("1".equals(dataFrame.get(0, 0).toString())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    /**
+     * 给定某个日期, 查找上一个交易日 SSE上交所! 这里对两个交易所进行对比验证.
+     * // SSE上交所,SZSE深交所
+     * // TODO: 目前该数据表只有上交所数据?
+     *
+     * @param date "20211221" 形式
+     * @return
+     */
+    public static String getPreTradeDate(String date) throws SQLException {
+        String res = preTradeDateCache.get(date);
+        if (res != null) {
+            return res;
+        }
+
+        String sql = StrUtil
+                .format("select pretrade_date from sds_trade_dates_tu_stock where cal_date='{}' and exchange='SSE'",
+                        date);
+        DataFrame<Object> dataFrame = DataFrame.readSql(connLocalTushare, sql);
+        res = dataFrame.get(0, 0).toString(); // 常态仅仅1条结果,可能 is_open 字段为 0,则今日非交易日.
+        preTradeDateCache.put(date, res);
+        return res;
     }
 }
