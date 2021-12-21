@@ -231,13 +231,15 @@ public class FSTransactionFetcher {
                     "time_tick"));
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()));
             DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-            threadPoolOfSave.submit(() -> {
-                try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
-                    DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            });
+            if (dfTemp.length() > 0) { // 若存在纯新数据
+                threadPoolOfSave.submit(() -> {
+                    try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
+                        DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
             fsTransactionDatas.put(stock, dfCurrentAll);
             Optional<String> processNew =
                     (DataFrameSelf.getColAsStringList(dfCurrentAll, "time_tick")).stream()
