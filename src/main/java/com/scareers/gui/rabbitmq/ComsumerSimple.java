@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static com.scareers.gui.rabbitmq.OrderFactory.orderJsonStrConfig;
-import static com.scareers.gui.rabbitmq.RbUtil.connectToRbServer;
-import static com.scareers.gui.rabbitmq.RbUtil.initDualChannel;
+import static com.scareers.gui.ths.simulation.Trader.connectToRbServer;
+import static com.scareers.gui.ths.simulation.Trader.initDualChannel;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**

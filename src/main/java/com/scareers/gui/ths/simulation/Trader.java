@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq;
+package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
@@ -24,14 +24,14 @@ import static com.scareers.gui.rabbitmq.OrderFactory.*;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
- * description: rabbitmq 工具类. 对于每个order api, 使用串行方式调用
+ * description: ths 自动交易程序
  * 即 java发送消息 --> python执行 --> python发送结果 --> java收到retrying继续等待,直到success --> java执行完毕.
  * 将 API 封装为串行
  *
  * @author: admin
  * @date: 2021/12/14/014-13:44
  */
-public class RbUtil {
+public class Trader {
     // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
@@ -56,7 +56,6 @@ public class RbUtil {
         handshake(); // 握手可控
         // 等待第一次抓取完成.
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
-
 
 
         JSONObject order = generateBuySellOrder("buy", "000001", 100, null, true, null, null);
