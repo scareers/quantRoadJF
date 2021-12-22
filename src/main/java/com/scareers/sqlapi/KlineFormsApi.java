@@ -12,7 +12,7 @@ import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS;
 import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -68,14 +68,15 @@ public class KlineFormsApi {
     @Cached(description = "形态集合选股结果已经缓存, lru256")
     public static HashMap<Long, List<String>> getStockSelectResultOfTradeDate(String trade_date, List<Integer> keyInts)
             throws SQLException {
-        String cacheKey = StrUtil.format("{}_{}_{}", trade_date, keyInts.get(0), keyInts.get(1));
+        String cacheKey = StrUtilSelf.format("{}_{}_{}", trade_date, keyInts.get(0), keyInts.get(1));
         HashMap<Long, List<String>> res = stockSelectPerDayCache.get(cacheKey);
         if (res != null) {
             return res;
         }
 
-        String tableName = StrUtil.format(getSaveTablenameStockSelectResultRaw(), keyInts.get(0), keyInts.get(1));
-        String sql = StrUtil.format("select ts_code,form_set_ids from {} where trade_date='{}'", tableName, trade_date);
+        String tableName = StrUtilSelf.format(getSaveTablenameStockSelectResultRaw(), keyInts.get(0), keyInts.get(1));
+        String sql = StrUtilSelf
+                .format("select ts_code,form_set_ids from {} where trade_date='{}'", tableName, trade_date);
         DataFrame<Object> dfTemp = DataFrame.readSql(conn, sql);
 
         res = new HashMap<>();
@@ -121,12 +122,12 @@ public class KlineFormsApi {
                                                                                      List<Integer> keyInts)
             throws SQLException {
         String tablenameTemplate = getSaveTablenameStockSelectResultRaw();
-        String saveTablenameStockSelectResult = StrUtil.format
+        String saveTablenameStockSelectResult = StrUtilSelf.format
                 (getSaveTablenameStockSelectResultRaw(), keyInts.get(0),
                         keyInts.get(1));
 
         DataFrame<Object> dates = DataFrame
-                .readSql(conn, StrUtil.format("select trade_date from {} where trade_date>='{}' and " +
+                .readSql(conn, StrUtilSelf.format("select trade_date from {} where trade_date>='{}' and " +
                         "trade_date<'{}'", saveTablenameStockSelectResult, statDateRange.get(0), statDateRange.get(1)));
         List<String> dateList = DataFrameSelf.getColAsStringList(dates, "trade_date");
         HashSet<String> dateSet = new HashSet<>(dateList);
@@ -149,15 +150,15 @@ public class KlineFormsApi {
     @Cached
     public static List<List<Double>> getLowBuyAndHighSellDistributionByFomsetid(Long formSetId, List<Integer> keyInts)
             throws Exception {
-        String cacheKey = StrUtil.format("{}__{}", formSetId, keyInts);
+        String cacheKey = StrUtilSelf.format("{}__{}", formSetId, keyInts);
         List<List<Double>> res = formSetIdDistributionsCacheByKeyInts.get(cacheKey);
         if (res != null) {
             return res;
         }
 
-        String saveTablenameLowBuyFS = StrUtil.format(SettingsOfLowBuyFS.saveTablenameLowBuyFSRaw, keyInts.get(0),
+        String saveTablenameLowBuyFS = StrUtilSelf.format(SettingsOfLowBuyFS.saveTablenameLowBuyFSRaw, keyInts.get(0),
                 keyInts.get(1)); // 分时分析结果表
-        String sql = StrUtil
+        String sql = StrUtilSelf
                 .format("select stat_result_algorithm, tick_list, frequency_list\n" +
                                 "from {}\n" +
                                 "where form_set_id = {}\n" +

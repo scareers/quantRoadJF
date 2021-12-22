@@ -52,10 +52,10 @@ public class App {
 //
 //        for (String key : keys) {
 //            if (key.endsWith("happen_tick")) {
-//                Console.com.scareers.log(StrUtil.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
+//                Console.com.scareers.log(StrUtilSelf.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
 //                continue;
 //            }
-//            Console.com.scareers.log(StrUtil.format("{} --> {}", key, temp2.get(key)));
+//            Console.com.scareers.log(StrUtilSelf.format("{} --> {}", key, temp2.get(key)));
 //        }
 //        Console.com.scareers.log(RandomUtil.randomInt(10));
 
@@ -169,9 +169,9 @@ public class App {
 //
 //        String str = "abcde" +
 //                "fgh" + (1 ^ 2);
-//        String strSub1 = StrUtil.sub(str, 2, 3); //strSub1 -> c
-//        String strSub2 = StrUtil.sub(str, 2, -3); //strSub2 -> cde
-//        String strSub3 = StrUtil.sub(str, 3, 2); //strSub2 -> c
+//        String strSub1 = StrUtilSelf.sub(str, 2, 3); //strSub1 -> c
+//        String strSub2 = StrUtilSelf.sub(str, 2, -3); //strSub2 -> cde
+//        String strSub3 = StrUtilSelf.sub(str, 3, 2); //strSub2 -> c
 //        System.out.println(strSub1);
 //
 ////        System.out.println(RuntimeUtil.execForStr("systeminfo"));

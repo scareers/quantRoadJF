@@ -13,7 +13,7 @@ import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.MindgoFSApi;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.sqlapi.TushareIndexApi;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 import lombok.AllArgsConstructor;
@@ -96,8 +96,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             execSql(
-                    StrUtil.format(sqlDeleteExistDateRangeFSBacktest,
-                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    StrUtilSelf.format(sqlDeleteExistDateRangeFSBacktest,
+                            StrUtilSelf.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
@@ -117,7 +117,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
         List<Integer> indexes = range(dates.size());
-        for (Integer index : Tqdm.tqdm(indexes, StrUtil.format("{} total process ", backtestDateRange))) {
+        for (Integer index : Tqdm.tqdm(indexes, StrUtilSelf.format("{} total process ", backtestDateRange))) {
             Console.log("\ntotal process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
             if (index < start) {
                 continue; // 可设定起始值, 方便debug
@@ -148,7 +148,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 futuresOfBacktest.add(f);
             }
             List<Integer> indexesOfBacktest = range(futuresOfBacktest.size());
-            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtil.format("{} process ", tradeDate))) {
+            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtilSelf.format("{} process ", tradeDate))) {
                 // 串行不再需要使用 CountDownLatch
                 Future<Void> f = futuresOfBacktest.get(i);
                 Void res = f.get();
@@ -157,8 +157,8 @@ public class FSBacktestOfLowBuyNextHighSell {
 
         }
         MailUtil.send(SettingsCommon.receivers,
-                StrUtil.format("部分回测完成: {} ", backtestDateRange),
-                StrUtil.format("部分回测完成,耗时: {}h",
+                StrUtilSelf.format("部分回测完成: {} ", backtestDateRange),
+                StrUtilSelf.format("部分回测完成,耗时: {}h",
                         (double) timer.intervalRestart() / 3600000),
                 false, null);
         System.gc();
@@ -167,7 +167,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
     private static List<Long> filterFormSetIds(List<Long> formSetIds) throws SQLException {
         DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
-                StrUtil.format(
+                StrUtilSelf.format(
                         "select form_set_id,\n" +
                                 "       (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width,\n" +
                                 "       max(virtual_geometry_mean)                                as\n" +

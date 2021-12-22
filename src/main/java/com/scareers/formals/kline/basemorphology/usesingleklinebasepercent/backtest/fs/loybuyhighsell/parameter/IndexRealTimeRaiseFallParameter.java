@@ -1,21 +1,17 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.parameter;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import joinery.DataFrame;
-import lombok.Value;
-import org.apache.poi.util.IOUtils;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import static com.scareers.sqlapi.CommonSqlApi.getAllTables;
@@ -54,7 +50,7 @@ public class IndexRealTimeRaiseFallParameter {
         HashMap<String, HashMap<Integer, HashMap<String, Double>>> res = new HashMap<>();
         for (String table : tables) {
             Console.log("parsing: {}", table);
-            String fullSql = StrUtil.format(sql, table);
+            String fullSql = StrUtilSelf.format(sql, table);
             DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
 
             HashMap<Integer, HashMap<String, Double>> resOfPerFormsetid = new HashMap<>();
@@ -98,7 +94,7 @@ public class IndexRealTimeRaiseFallParameter {
         for (String table : tables) {
             Console.log("parseing: {}", table);
             HashMap<String, Double> singleRes = new HashMap<>();
-            String fullSql = StrUtil.format(sql, table);
+            String fullSql = StrUtilSelf.format(sql, table);
             DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
             int colCount = dfTemp.size();
             for (int i = 0; i < colCount; i++) {
@@ -130,7 +126,7 @@ public class IndexRealTimeRaiseFallParameter {
         List<String> tables = getResultTables();
         int prefixLenth = "fs_backtest_lowbuy_highsell_next0b1s".length();
         for (String tablename : tables) {
-            String newTablename = StrUtil.format("{}_{}{}", tablename.substring(0, prefixLenth), "index_percent",
+            String newTablename = StrUtilSelf.format("{}_{}{}", tablename.substring(0, prefixLenth), "index_percent",
                     tablename.substring(prefixLenth, tablename.length()));
             renameTable(klineForms, tablename, newTablename);
         }

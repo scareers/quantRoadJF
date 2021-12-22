@@ -3,20 +3,15 @@ package com.scareers.utils;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
-import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.scareers.settings.SettingsCommon;
 import lombok.SneakyThrows;
-import org.apache.commons.beanutils.BeanUtils;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
-import oshi.hardware.HWDiskStore;
 
 import java.lang.reflect.InvocationTargetException;
-import java.sql.ResultSet;
 import java.text.DecimalFormat;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -52,8 +47,9 @@ public class HardwareUtils {
                 while (true) {
                     String hardwareInfo = reportCpuMemoryDisk(showInStdout);
                     try {
-                        MailUtil.send(SettingsCommon.receivers, StrUtil.format("硬件信息线程播报: ({}分钟/次)", interval),
-                                StrUtil.format("当前时间: {}, 硬件信息:{}\n", LocalDateTimeUtil.now().toString(), hardwareInfo),
+                        MailUtil.send(SettingsCommon.receivers, StrUtilSelf.format("硬件信息线程播报: ({}分钟/次)", interval),
+                                StrUtilSelf
+                                        .format("当前时间: {}, 硬件信息:{}\n", LocalDateTimeUtil.now().toString(), hardwareInfo),
                                 false,
                                 null);
                     } catch (Exception e) {

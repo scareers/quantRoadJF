@@ -7,7 +7,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
-//import cn.hutool.core.util.StrUtil;
+//import cn.hutool.core.util.StrUtilSelf;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -18,7 +18,7 @@ import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.SqlUtil;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
@@ -59,7 +59,7 @@ public class SingleKlineFormsBase {
             timer.start();
 
             log.info("current time");
-            log.warn(StrUtil.format("start windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg));
+            log.warn(StrUtilSelf.format("start windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg));
             // 刷新相关设定:
             SettingsOfSingleKlineBasePercent.refreshWindowUsePeriodRelativeSettings(windowUsePeriodsCoreArg);
             main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
@@ -68,8 +68,8 @@ public class SingleKlineFormsBase {
             // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
             // 设定的所有都不需要变, 只有 周期数需要改变
             MailUtil.send(SettingsCommon.receivers,
-                    StrUtil.format("全部解析完成,windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg),
-                    StrUtil.format("全部解析完成,耗时: {}h",
+                    StrUtilSelf.format("全部解析完成,windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg),
+                    StrUtilSelf.format("全部解析完成,耗时: {}h",
                             (double) timer.intervalRestart() / 3600000),
                     false, null);
             Console.log("耗时: windowUsePeriodsCoreArg: {} , {} ", windowUsePeriodsCoreArg,
@@ -102,16 +102,16 @@ public class SingleKlineFormsBase {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             SqlUtil.execSql(
-                    StrUtil.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
-                            StrUtil.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    StrUtilSelf.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
+                            StrUtilSelf.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
 
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     bigChangeThreshold, bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
             String hardwareInfo = reportCpuMemoryDisk(true);
-            MailUtil.send(SettingsCommon.receivers, StrUtil.format("部分解析完成: {}", statDateRange),
-                    StrUtil.format("部分解析完成, 硬件信息:{}\n", hardwareInfo), false,
+            MailUtil.send(SettingsCommon.receivers, StrUtilSelf.format("部分解析完成: {}", statDateRange),
+                    StrUtilSelf.format("部分解析完成, 硬件信息:{}\n", hardwareInfo), false,
                     null);
             log.info("current time");
         }
@@ -156,7 +156,7 @@ public class SingleKlineFormsBase {
             futuresOfParse.add(f);
         }
         List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtil.format("{} process: ", statDateRange))) {
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtilSelf.format("{} process: ", statDateRange))) {
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             //            synchronized (results) {
@@ -204,7 +204,7 @@ public class SingleKlineFormsBase {
         ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
         // 批量插入不伤ssd. 单条插入很伤ssd
         for (Integer currentEpoch : Tqdm
-                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             List<String> formNamesCurrentEpoch = forNameRaws
@@ -219,7 +219,7 @@ public class SingleKlineFormsBase {
         }
         AtomicInteger saveProcess = new AtomicInteger(0);
         for (Integer i : Tqdm
-                .tqdm(epochs, StrUtil.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
             Future<List<String>> f = futuresOfSave.get(i);
             List<String> finishedFormNames = f.get();
             for (String formName0 : finishedFormNames) {
@@ -294,7 +294,7 @@ public class SingleKlineFormsBase {
                     int splitIndex = formName.lastIndexOf("__");
                     String formNamePure = formName.substring(0, splitIndex);
                     String statResultAlgorithm = formName.substring(splitIndex + 2);
-                    List<String> conditions = StrUtil.split(formNamePure, "__");
+                    List<String> conditions = StrUtilSelf.split(formNamePure, "__");
                     String condition1 = null;
                     String condition2 = null;
                     String condition3 = null;

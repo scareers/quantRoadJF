@@ -1,17 +1,18 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.thread.GlobalThreadPool;
+import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.sqlapi.TushareApi;
+import com.scareers.utils.log.LogUtils;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
-
-import static com.scareers.sqlapi.TushareApi.getStockListWithBoardFromTushare;
 
 /**
  * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
@@ -26,10 +27,15 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
         Console.log(new StockPoolForFSTransaction().createStockPool());
     }
 
+    private static final Log log = LogUtils.getLogger();
+
     @Override
     public List<StockBean> createStockPool() throws Exception {
-//        return stockPoolTest();
-        return stockPoolFromTushare(0, 100);
+        log.warn("start init stockPool: 开始初始化股票池...");
+        List<StockBean> res = stockPoolFromTushare(0, 100);
+        log.warn("finish init stockPool: 完成初始化股票池...");
+        GlobalThreadPool.shutdown(false); // 关闭hutool全局线程池, 但是不能再使用了
+        return res;
     }
 
 
@@ -47,19 +53,22 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     }
 
     public static List<StockBean> stockPoolFromTushare(int start, int end) throws Exception {
+        // https://searchapi.eastmoney.com/api/suggest/get?input=000001&type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=3
         HashMap<String, String> stocks = TushareApi.getStockWithBoardAsMapFromTushare();
         List<StockBean> res = new ArrayList<>();
-        for (String stock : stocks.keySet()) {
+        List<String> stockList = new ArrayList<>(stocks.keySet());
+        for (int i = Math.max(0, start); i < Math.min(stockList.size(), end); i++) {
+            String stock = stockList.get(i);
             if (!stock.endsWith("SZ") && !stock.endsWith("SH")) {
                 continue;
             }
-            String stockCodeSimple = StrUtil.sub(stock, 0, 6);
-            int market = 0;
-            if (stock.startsWith("6")) {
-                market = 1; // 沪
+            String secId = new EmSecurityIdBean(stock.substring(0, 6), false).getAStockSecId();
+            if (secId == null) { // 无对应的指数 code
+                continue;
             }
-            res.add(new StockBean(stockCodeSimple, market));
+            res.add(new StockBean(secId));
         }
-        return res.subList(start, end);
+        return res;
     }
 }
+

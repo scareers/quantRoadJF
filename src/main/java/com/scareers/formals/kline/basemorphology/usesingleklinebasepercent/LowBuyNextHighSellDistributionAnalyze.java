@@ -323,11 +323,11 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //            throws SQLException {
 //        for (Integer intTable : correspondingFilterAlgos) {
 //            for (String algorithmRaw : algorithmRawList) {
-//                String resultAlgorithm = StrUtil.format("Next{}{}", intTable, algorithmRaw);
-//                String info = StrUtil
+//                String resultAlgorithm = StrUtilSelf.format("Next{}{}", intTable, algorithmRaw);
+//                String info = StrUtilSelf
 //                        .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
-//                com.scareers.log.info(StrUtil.format("start: {}", info));
-//                String resultTableName = StrUtil.format("filtered_single_kline_from_next{}__excybkcb",
+//                com.scareers.log.info(StrUtilSelf.format("start: {}", info));
+//                String resultTableName = StrUtilSelf.format("filtered_single_kline_from_next{}__excybkcb",
 //                        intTable); // 通常对作为条件的两个表, 都做四项计算
 //
 //                HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,

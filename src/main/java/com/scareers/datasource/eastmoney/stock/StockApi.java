@@ -2,22 +2,24 @@ package com.scareers.datasource.eastmoney.stock;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.addDefaultSettings;
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.getAsStr;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
+import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 /**
  * description:
@@ -36,20 +38,7 @@ public class StockApi {
     }
 
     /**
-     * dfcf, 获取分时成交api.
-     * <p>
-     * // @deprecated
-     * String keyUrlTemplate = "https://push2ex.eastmoney.com/getStockFenShi" +
-     * "?pagesize={}" +  // 单页数量, 调整至5000获取所有. 标准 240分钟*(60/3) 最多 4800条
-     * "&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj" +
-     * "&cb=jQuery112405998333817754311_{}" + // 时间戳1, 毫秒
-     * "&pageindex=0" +  // 为了方便, 此参数不变. 均访问第0页
-     * "&id={}1" + // code+1
-     * "&sort={}&ft=1" + // 升序
-     * "&code={}" + // code2
-     * "&market={}" +  // 市场代码, 0深1沪
-     * "&_={}"; // 时间戳2
-     * <p>
+     * 获取分时成交
      * // @using
      * https://push2.eastmoney.com/api/qt/stock/details/get?ut=fa5fd1943c7b386f172d6893dbfba10b&fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&pos=-1400&secid=0.000153&cb=jQuery112409885675811656662_1640099646776&_=1640099646777
      * // @noti: 升序, 但是最新 x 条数据
@@ -57,59 +46,44 @@ public class StockApi {
      * @param lastRecordAmounts 单页数量,
      * @param stockCodeSimple   股票/指数简单代码, 不再赘述
      * @param market            0 深市  1 沪市    (上交所暂时 0)
-     * @return
+     * @return 出错则返回空df, 不抛出异常
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
                                                      Integer market, int timeout) {
-        DataFrame<Object> res = new DataFrame<>(
-                Arrays.asList("stock_code", "market", "time_tick", "price", "vol", "bs"));
-        String keyUrlTemplate = "https://push2.eastmoney.com/api/qt/stock/details/get" +
-                "?ut=fa5fd1943c7b386f172d6893dbfba10b&fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55" +
-                "&pos=-{}" +
-                "&secid={}.{}" +
-                "&cb=jQuery112409885675811656662_{}" +
-                "&_={}";
-
-        String fullUrl = StrUtil.format(keyUrlTemplate,
-                lastRecordAmounts,
-                market,
-                stockCodeSimple,
-                System.currentTimeMillis() - RandomUtil.randomInt(1000),
-                System.currentTimeMillis()
-        );
-
-        String response = null;
+        List<String> columns = Arrays.asList("stock_code", "market", "time_tick", "price", "vol", "bs");
+        DataFrame<Object> res = new DataFrame<>(columns);
+        String keyUrl = "https://push2.eastmoney.com/api/qt/stock/details/get";
+        String response;
         try {
-            response = getAsStr(fullUrl, timeout);
+            Map<String, Object> params = new HashMap<>(); // 参数map
+            params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+            params.put("fields1", "f1,f2,f3,f4");
+            params.put("fields2", "f51,f52,f53,f54,f55");
+            params.put("pos", StrUtil.format("-{}", lastRecordAmounts));
+            params.put("secid", StrUtil.format("{}.{}", market, stockCodeSimple));
+            params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
+                    System.currentTimeMillis() - RandomUtil.randomInt(1000)));
+            params.put("_", System.currentTimeMillis());
+
+            response = getAsStr(keyUrl, params, timeout);
         } catch (Exception e) {
             e.printStackTrace();
-            log.warn("get exception: 访问http失败");
+            log.warn("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
             return res;
         }
 
-        response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
-        JSONObject responseJson = JSONUtil.parseObj(response);
-        JSONObject data = null;
         try {
-            data = (JSONObject) responseJson.get("data");
+            res = jsonStrToDf(response, "(", ")", columns,
+                    Arrays.asList("data", "details"), String.class, Arrays.asList(3),
+                    Arrays.asList(stockCodeSimple, market));
         } catch (Exception e) {
             e.printStackTrace();
-            log.warn("get exception: 获取数据错误.常因 data字段为null, stock: {}.{}", market, stockCodeSimple);
-            return res;
-        }
-        log.debug("get success: 获取json成功: {}.{}", market, stockCodeSimple);
-        JSONArray dataCore = data.getJSONArray("details");
-        log.debug("data raw: {}", dataCore);
-        for (Object o : dataCore) {
-            String line = o.toString();
-            List<String> values = StrUtil.split(line, ",");
-            values.remove(3); // 删除倒数第二字段
-            List<Object> row = new ArrayList<>(Arrays.asList(stockCodeSimple, market));
-            row.addAll(values);
-            res.append(row);
+            log.warn("get exception: 获取数据错误. stock: {}.{}", market, stockCodeSimple);
+            log.warn("raw data: 原始响应字符串: {}", response);
         }
         return res;
     }
+
 
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
                                                      Integer market) {

@@ -1,6 +1,5 @@
 package com.scareers.gui.rabbitmq;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONObject;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -9,8 +8,8 @@ import java.nio.charset.StandardCharsets;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.OrderFactory.*;
-import static com.scareers.gui.rabbitmq.RbUtils.connectToRbServer;
-import static com.scareers.gui.rabbitmq.RbUtils.initDualChannel;
+import static com.scareers.gui.rabbitmq.RbUtil.connectToRbServer;
+import static com.scareers.gui.rabbitmq.RbUtil.initDualChannel;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
 

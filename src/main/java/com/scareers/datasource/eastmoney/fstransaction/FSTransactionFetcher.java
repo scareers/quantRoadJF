@@ -8,7 +8,7 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.StrUtil;
+import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
@@ -50,7 +50,7 @@ public class FSTransactionFetcher {
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static int threadPoolCorePoolSize = 8;
+    public static int threadPoolCorePoolSize = 16;
     private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
@@ -60,6 +60,11 @@ public class FSTransactionFetcher {
     public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
     public static long redundancyRecords = 20; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
+    public static DateTime limitTick = DateUtil.parse(DateUtil.today() + " " + "15:10:00"); // tick时间上限
+
+    public static void main(String[] args) throws Exception {
+        startFetch();
+    }
 
     public static void startFetch() throws Exception {
         initThreadPool();
@@ -100,7 +105,7 @@ public class FSTransactionFetcher {
      * 从数据库读取今日已被抓取数据,可能空. 并填充 进度map和初始数据map
      */
     private static void initProcessAndRawDatas(String saveTableName, List<StockBean> stockPool) throws SQLException {
-        String sqlSelectAll = StrUtil.format("select * from `{}`", saveTableName);
+        String sqlSelectAll = StrUtilSelf.format("select * from `{}`", saveTableName);
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
         for (StockBean stock : stockPool) {
             DataFrame<Object> datasOfOneStock =
@@ -164,7 +169,7 @@ public class FSTransactionFetcher {
      * @throws Exception
      */
     public static void createSaveTable(String saveTableName) throws Exception {
-        String sql = StrUtil.format("create table if not exists `{}`\n" +
+        String sql = StrUtilSelf.format("create table if not exists `{}`\n" +
                 "        (\n" +
                 "            stock_code varchar(128)   null,\n" +
                 "            market int null,\n" +
@@ -268,7 +273,13 @@ public class FSTransactionFetcher {
             DateTime now = DateUtil.date();
             String today = DateUtil.today();
             DateTime processTick = DateUtil.parse(today + " " + process);
-            long between = DateUtil.between(processTick, now, DateUnit.SECOND, false);
+
+            long between;
+            if (DateUtil.between(now, limitTick, DateUnit.SECOND, false) < 0) { // now超过4点
+                between = DateUtil.between(processTick, limitTick, DateUnit.SECOND, false);
+            } else {
+                between = DateUtil.between(processTick, now, DateUnit.SECOND, false);
+            }
             return Math.min(between / 3 + 1, 5000); // 上限5000
         }
     }

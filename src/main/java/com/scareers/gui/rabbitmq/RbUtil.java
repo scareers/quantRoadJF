@@ -1,5 +1,7 @@
 package com.scareers.gui.rabbitmq;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
@@ -16,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BooleanSupplier;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.OrderFactory.*;
@@ -30,7 +31,7 @@ import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
  * @author: admin
  * @date: 2021/12/14/014-13:44
  */
-public class RbUtils {
+public class RbUtil {
     // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
@@ -56,12 +57,17 @@ public class RbUtils {
         // 等待第一次抓取完成.
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
 
+
+
         JSONObject order = generateBuySellOrder("buy", "000001", 100, null, true, null, null);
         execOrderUtilSuccess(order); // 执行 order
 
         JSONObject orderCancelAll = generateCancelBatchOrder("all", null, true);
         execOrderUtilSuccess(orderCancelAll);
 
+        Console.log(DateUtil.now());
+        Console.log(FSTransactionFetcher.processes);
+        Console.log(FSTransactionFetcher.fsTransactionDatas);
         closeDualChannelAndConn(); // 关闭连接
     }
 
