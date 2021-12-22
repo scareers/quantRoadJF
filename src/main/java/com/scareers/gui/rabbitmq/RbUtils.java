@@ -6,6 +6,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
+import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+import com.scareers.utils.CommonUtils;
 import com.scareers.utils.log.LogUtils;
 import lombok.SneakyThrows;
 
@@ -14,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.OrderFactory.*;
@@ -37,15 +40,24 @@ public class RbUtils {
     public static Connection connOfRabbitmq;
 
 
-    public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
-        initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
+    public static void main(String[] args) throws Exception {
+        ThreadUtil.execAsync(() -> {
+            try {
+                FSTransactionFetcher.startFetch();
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("error: 数据获取程序出现错误!");
+            }
+        }, true); // 数据获取程序运行
 
-//        startPythonApp(); // 是否自启动python程序
-        handshake(); // 是否握手
+        initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
+        // startPythonApp(); // 是否自启动python程序
+        handshake(); // 握手可控
+        // 等待第一次抓取完成.
+        CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
 
         JSONObject order = generateBuySellOrder("buy", "000001", 100, null, true, null, null);
         execOrderUtilSuccess(order); // 执行 order
-
 
         JSONObject orderCancelAll = generateCancelBatchOrder("all", null, true);
         execOrderUtilSuccess(orderCancelAll);
@@ -164,11 +176,9 @@ public class RbUtils {
 
     public static List<JSONObject> comsumeUntilSuccessState(String rawOrderId)
             throws IOException, InterruptedException {
-
         List<JSONObject> responses = new ArrayList<>(); // 保留响应解析成的JO
         final boolean[] finish = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
-            @SneakyThrows
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {

@@ -61,7 +61,7 @@ public class FSTransactionFetcher {
     public static long redundancyRecords = 20; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
 
-    public static void main(String[] args) throws Exception {
+    public static void startFetch() throws Exception {
         initThreadPool();
         FSTransactionFetcher fetcher = new FSTransactionFetcher(new StockPoolForFSTransaction());
         boolean shouldFetchToday = fetcher.newDayDecide();
