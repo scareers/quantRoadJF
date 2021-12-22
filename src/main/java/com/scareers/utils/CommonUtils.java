@@ -8,6 +8,8 @@ import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysf
 import org.apache.poi.hssf.record.PageBreakRecord;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 /**
@@ -235,6 +237,17 @@ public class CommonUtils {
             }
         }
         return res;
+    }
+
+    public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval)
+            throws TimeoutException, InterruptedException {
+        long start = System.currentTimeMillis();
+        while (!booleanSupplier.getAsBoolean()) {
+            if (System.currentTimeMillis() - start > timeout) {
+                throw new TimeoutException("等待超时");
+            }
+            Thread.sleep(interval);
+        }
     }
 
 }

@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -58,6 +59,7 @@ public class FSTransactionFetcher {
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
     public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
     public static long redundancyRecords = 20; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
+    public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
 
     public static void main(String[] args) throws Exception {
         initThreadPool();
@@ -85,9 +87,13 @@ public class FSTransactionFetcher {
             for (Future<Void> future : futures) {
                 future.get();
             }
+            if (!firstTimeFinish.get()) {
+                log.warn("finish first: 首次抓取完成...");
+            }
             log.warn("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
+            firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
         }
-//        threadPool.shutdown();
+        //        threadPool.shutdown();
     }
 
     /**
