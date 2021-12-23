@@ -124,6 +124,7 @@ public class OrderFactory {
      * @return
      */
     public static Order generateNoArgsQueryOrder(String orderType) {
+        Objects.requireNonNull(orderType);
         return new QueryNoArgsOrder(orderType);
     }
 }

@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher.fsTransactionDatas;
-import static com.scareers.gui.rabbitmq.OrderFactory.generateCancelAllOrder;
+import static com.scareers.gui.rabbitmq.OrderFactory.generateCancelConcreteOrder;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
@@ -59,10 +58,10 @@ public class Trader {
         // 等待第一次抓取完成.
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
 
-        Order order = generateCancelAllOrder(null);
-//        Order order = generateCancelAllOrder(null);
+        Order order = generateCancelConcreteOrder("2524723278");
         List<JSONObject> res = execOrderUtilSuccess(order);
         Console.log(res);
+
 
         while (true) {
 //            Console.log(fsTransactionDatas);
