@@ -1,12 +1,16 @@
 package com.scareers.gui.rabbitmq;
 
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.json.JSON;
 import cn.hutool.json.JSONConfig;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.scareers.gui.rabbitmq.order.BuyOrder;
+import com.scareers.gui.rabbitmq.order.SellOrder;
+import org.apache.http.util.Asserts;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * description:
@@ -15,48 +19,31 @@ import java.util.List;
  * @date: 2021/12/21/021-1:13
  */
 public class OrderFactory {
-    public static JSONConfig orderJsonStrConfig;
-
-    static {
-        orderJsonStrConfig = JSONConfig.create();
-        orderJsonStrConfig.setOrder(true); // 使用链表map而已. 不保证转换字符串后有序
-        orderJsonStrConfig.setIgnoreNullValue(false); // 保留所有null值
-    }
-
     /**
      * 构造买卖order基本函数.  order使用 JSONObject 类型.
      *
-     * @param type        订单类型: 买/卖
-     * @param stockCode   股票代码
-     * @param amounts     数量Number
-     * @param price       价格
-     * @param timer       是否打印耗时日志
-     * @param otherKeys   其他key 列表
-     * @param otherValues 对应的其他 value列表, 注意需要lenth长度一样. (虽然能写成按照lenth短的来)
+     * @param type      订单类型: 买/卖
+     * @param stockCode 股票代码
+     * @param amounts   数量Number
+     * @param price     价格
+     * @param timer     是否打印耗时日志
      * @return
      */
-    public static JSONObject generateBuySellOrder(String type, String stockCode, Number amounts,
-                                                  Double price,
-                                                  boolean timer, List<String> otherKeys,
-                                                  List<Object> otherValues) {
-        assert Arrays.asList("buy", "sell").contains(type);
-        JSONObject order = new JSONObject();
-        order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.set("timestamp", System.currentTimeMillis());
-        order.set("order_type", type); // 恰好api也为buy/sell
-
-        order.set("stock_code", stockCode);
-        order.set("amounts", amounts);
-        order.set("price", price);
-        order.set("timer", timer);
-
-        if (otherKeys != null && otherValues != null) {
-            assert otherKeys.size() == otherValues.size();
-            for (int i = 0; i < otherKeys.size(); i++) {
-                order.set(otherKeys.get(i), otherValues.get(i));
-            }
-        } // 保留的其余 键值对
-        return order;
+    public static JSON generateBuySellOrder(String type,
+                                            String stockCode, Number amounts,
+                                            Double price,
+                                            boolean timer) throws Exception {
+        Assert.isTrue(Arrays.asList("buy", "sell").contains(type));
+        Map<String, Object> params = new HashMap<>();
+        params.put("stock_code", stockCode);
+        params.put("amounts", amounts);
+        params.put("price", price);
+        params.put("timer", timer);
+        if ("buy".equals(type)) {
+            return new BuyOrder(params).prepare();
+        } else {
+            return new SellOrder(params).prepare();
+        }
     }
 
     /**
