@@ -5,7 +5,6 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.*;
 import cn.hutool.log.Log;
-import com.scareers.utils.JsonUtil;
 import com.scareers.utils.log.LogUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -112,7 +111,8 @@ public class Order {
 
     private void checkParamsKeySet() throws Exception {
         for (String paramName : params.keySet()) {
-            if ("rawOrderId".equals(rawOrderId) || "orderType".equals(rawOrderId) || "timestamp".equals(rawOrderId)) {
+            if ("rawOrderId".equals(rawOrderId) || "orderType".equals(rawOrderId) || "timestamp".equals(
+                    rawOrderId)) {
                 throw new Exception(StrUtil.format("参数map错误: key错误: {}", paramName));
             }
         }

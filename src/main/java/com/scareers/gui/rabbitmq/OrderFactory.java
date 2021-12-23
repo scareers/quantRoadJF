@@ -33,7 +33,7 @@ public class OrderFactory {
                                               Double price) throws Exception {
         Assert.isTrue(Arrays.asList("buy", "sell").contains(type));
         Map<String, Object> params = new HashMap<>();
-        params.put("stock_code", stockCode);
+        params.put("stockCode", stockCode);
         params.put("amounts", amounts);
         params.put("price", price);
         if ("buy".equals(type)) {

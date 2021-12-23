@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -59,6 +60,7 @@ public class FSTransactionFetcher {
     public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
     public static DateTime limitTick = DateUtil.parse(DateUtil.today() + " " + "15:10:00"); // tick时间上限
     public static int timeout = 1000;
+    public static boolean stopFetch = false;
 
     public static void main(String[] args) throws Exception {
         startFetch();
@@ -80,7 +82,7 @@ public class FSTransactionFetcher {
         log.warn("start: 开始抓取数据...");
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        while (true) {
+        while (!stopFetch) {
             List<Future<Void>> futures = new ArrayList<>();
             for (StockBean stock : stockPool) {
                 Future<Void> f = threadPoolOfFetch
@@ -96,7 +98,8 @@ public class FSTransactionFetcher {
             log.warn("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
             firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
         }
-        //        threadPool.shutdown();
+        threadPoolOfFetch.shutdown();
+        threadPoolOfSave.shutdown();
     }
 
     /**
@@ -191,6 +194,11 @@ public class FSTransactionFetcher {
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
         log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
+    }
+
+    public static void stopFetch() {
+        // 关闭线程池即可
+        stopFetch = true;
     }
 
     public static class FetchOneStockTask implements Callable<Void> {
