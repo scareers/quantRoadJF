@@ -9,8 +9,10 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.log.LogUtils;
+import joinery.DataFrame;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
+import static com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher.fsTransactionDatas;
 import static com.scareers.gui.rabbitmq.OrderFactory.*;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
@@ -56,6 +59,16 @@ public class Trader {
         handshake(); // 握手可控
         // 等待第一次抓取完成.
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
+
+        while (true) {
+            Console.log(fsTransactionDatas);
+            break;
+//            for (StockBean stock : fsTransactionDatas.keySet()) {
+//                DataFrame<Object> fsTransactions = fsTransactionDatas.get(stock);
+//
+//
+//            }
+        }
 
 
         JSONObject order = generateBuySellOrder("buy", "000001", 100, null, true, null, null);

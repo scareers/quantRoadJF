@@ -32,7 +32,8 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     @Override
     public List<StockBean> createStockPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
-        List<StockBean> res = stockPoolFromTushare(0, 100);
+//        List<StockBean> res = stockPoolFromTushare(0, 100);
+        List<StockBean> res = stockPoolTest();
         log.warn("finish init stockPool: 完成初始化股票池...");
         GlobalThreadPool.shutdown(false); // 关闭hutool全局线程池, 但是不能再使用了
         return res;
