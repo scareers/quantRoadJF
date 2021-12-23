@@ -40,23 +40,25 @@ public class Order {
         orderJsonStrConfig.setIgnoreNullValue(false); // 保留所有null值
     }
 
-
     private String rawOrderId; //java全局唯一id
     private String orderType; // 核心订单类型, 对应python操作api
     private long timestamp; // 生成时间戳
     private Map<String, Object> params; // 订单api需要的其他参数map
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
+    private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
+    private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
 
     public static void main(String[] args) throws Exception {
         Order x = new BuyOrder(new HashMap<>());
         Console.log(x.toJsonPrettyStr());
-        Console.log(x.getParams());
     }
 
 
     private Order() {
         this.rawOrderId = IdUtil.objectId();
         this.timestamp = System.currentTimeMillis();
+        this.timer = true;
+        this.otherRawMessages = new HashMap<>();
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
@@ -88,7 +90,15 @@ public class Order {
         checkParamsKeySet();
         order.putAll(params);
         order.set("lifePoints", lifePoints.stream().map(value -> value.asJson()).collect(Collectors.toList()));
+        order.set("timer", timer);
+        order.set("otherRawMessages", otherRawMessages);
         return order;
+    }
+
+    @SneakyThrows
+    @Override
+    public String toString() {
+        return toJsonPrettyStr();
     }
 
     public String toJsonStr() throws Exception {

@@ -1,16 +1,15 @@
 package com.scareers.gui.rabbitmq;
 
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.json.JSON;
-import cn.hutool.json.JSONConfig;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.scareers.gui.rabbitmq.order.BuyOrder;
+import com.scareers.gui.rabbitmq.order.Order;
+import com.scareers.gui.rabbitmq.order.QueryNoArgsOrder;
 import com.scareers.gui.rabbitmq.order.SellOrder;
-import org.apache.http.util.Asserts;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * description:
@@ -26,56 +25,50 @@ public class OrderFactory {
      * @param stockCode 股票代码
      * @param amounts   数量Number
      * @param price     价格
-     * @param timer     是否打印耗时日志
      * @return
      */
-    public static JSON generateBuySellOrder(String type,
-                                            String stockCode, Number amounts,
-                                            Double price,
-                                            boolean timer) throws Exception {
+    private static Order generateBuySellOrder(String type,
+                                              String stockCode,
+                                              Number amounts,
+                                              Double price) throws Exception {
         Assert.isTrue(Arrays.asList("buy", "sell").contains(type));
         Map<String, Object> params = new HashMap<>();
         params.put("stock_code", stockCode);
         params.put("amounts", amounts);
         params.put("price", price);
-        params.put("timer", timer);
         if ("buy".equals(type)) {
-            return new BuyOrder(params).prepare();
+            return new BuyOrder(params);
         } else {
-            return new SellOrder(params).prepare();
+            return new SellOrder(params);
         }
     }
 
     /**
-     * 快捷生成买入订单, 多余键值对为 null
+     * 快捷生成买入订单
      *
      * @param stockCode
      * @param amounts
      * @param price
-     * @param timer
      * @return
      */
-    public static JSONObject generateBuyOrderQuick(String stockCode,
-                                                   Number amounts,
-                                                   Double price,
-                                                   boolean timer) {
-        return generateBuySellOrder("buy", stockCode, amounts, price, timer, null, null);
+    public static Order generateBuyOrderQuick(String stockCode,
+                                              Number amounts,
+                                              Double price) throws Exception {
+        return generateBuySellOrder("buy", stockCode, amounts, price);
     }
 
     /**
-     * 快捷生成卖出订单, 多余键值对为 null
+     * 快捷生成卖出订单
      *
      * @param stockCode
      * @param amounts
      * @param price
-     * @param timer
      * @return
      */
-    public static JSONObject generateSellOrderQuick(String stockCode,
-                                                    Number amounts,
-                                                    Double price,
-                                                    boolean timer) {
-        return generateBuySellOrder("sell", stockCode, amounts, price, timer, null, null);
+    public static Order generateSellOrderQuick(String stockCode,
+                                               Number amounts,
+                                               Double price) throws Exception {
+        return generateBuySellOrder("sell", stockCode, amounts, price);
     }
 
 
@@ -83,19 +76,13 @@ public class OrderFactory {
      * 撤单单一id 的订单. id是同花顺交易软件id, 而非java生成的订单objectId
      *
      * @param thsRawOrderId 交易软件自动生成的订单id
-     * @param timer
      * @return
      */
-    public static JSONObject generateCancelConcreteOrder(Object thsRawOrderId,
-                                                         boolean timer) {
-        assert thsRawOrderId != null;
-        JSONObject order = new JSONObject();
-        order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.set("timestamp", System.currentTimeMillis());
-        order.set("order_type", "cancel_a_concrete_order"); // 对应的python api, 撤单某个具体id的订单
-        order.set("order_id", thsRawOrderId.toString()); // 不可null, 可 Double
-        order.set("timer", timer); // 时间字段
-        return order;
+    public static Order generateCancelConcreteOrder(Object thsRawOrderId) {
+        Objects.requireNonNull(thsRawOrderId);
+        Map<String, Object> params = new HashMap<>();
+        params.put("orderId", thsRawOrderId.toString());
+        return new Order("cancel_a_concrete_order", params);
     }
 
 
@@ -105,34 +92,25 @@ public class OrderFactory {
      *
      * @param type
      * @param stockCode
-     * @param timer
      * @return
      */
-    public static JSONObject generateCancelBatchOrder(String type, String stockCode,
-                                                      boolean timer) {
-        assert Arrays.asList("buy", "sell", "all").contains(type); // 三种批量撤单类型
-        JSONObject order = new JSONObject();
-        order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.set("timestamp", System.currentTimeMillis());
-        order.set("order_type", "cancel_" + type); // 对应的python api
-        order.set("stock_code", stockCode); // 可null
-        order.set("timer", timer); // 时间字段
-        return order;
+    private static Order generateCancelBatchOrder(String type, String stockCode) {
+        Assert.isTrue(Arrays.asList("buy", "sell", "all").contains(type)); // 三种批量撤单类型
+        Map<String, Object> params = new HashMap<>();
+        params.put("stockCode", stockCode);
+        return new Order("cancel_" + type, params);
     }
 
-    public static JSONObject generateCancelAllOrder(String stockCode,
-                                                    boolean timer) {
-        return generateCancelBatchOrder("all", stockCode, timer);
+    public static Order generateCancelAllOrder(String stockCode) {
+        return generateCancelBatchOrder("all", stockCode);
     }
 
-    public static JSONObject generateCancelBuyOrder(String stockCode,
-                                                    boolean timer) {
-        return generateCancelBatchOrder("buy", stockCode, timer);
+    public static Order generateCancelBuyOrder(String stockCode) {
+        return generateCancelBatchOrder("buy", stockCode);
     }
 
-    public static JSONObject generateCancelSellOrder(String stockCode,
-                                                     boolean timer) {
-        return generateCancelBatchOrder("sell", stockCode, timer);
+    public static Order generateCancelSellOrder(String stockCode) {
+        return generateCancelBatchOrder("sell", stockCode);
     }
 
     /**
@@ -143,26 +121,9 @@ public class OrderFactory {
      * //----> get_unsolds_not_yet  获取当前尚未完全成交的挂单
      *
      * @param orderType
-     * @param timer
      * @return
      */
-    public static JSONObject generateNoArgsQueryOrder(String orderType,
-                                                      boolean timer) {
-        JSONObject order = new JSONObject();
-        order.set("raw_order_id", IdUtil.objectId()); // 核心id采用 objectid
-        order.set("timestamp", System.currentTimeMillis());
-        order.set("order_type", orderType); // 对应的python api
-        order.set("timer", timer); // 时间字段
-        return order;
-    }
-
-    /**
-     * 使用默认配置, 转换json
-     *
-     * @param order
-     * @return
-     */
-    public static String orderAsJsonStr(JSONObject order) {
-        return JSONUtil.toJsonStr(order, orderJsonStrConfig);
+    public static Order generateNoArgsQueryOrder(String orderType) {
+        return new QueryNoArgsOrder(orderType);
     }
 }
