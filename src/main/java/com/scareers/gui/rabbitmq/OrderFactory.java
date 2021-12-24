@@ -57,6 +57,14 @@ public class OrderFactory {
         return generateBuySellOrder("buy", stockCode, amounts, price);
     }
 
+    public static Order generateBuyOrderQuick(String stockCode,
+                                              Number amounts,
+                                              Double price, long priority) throws Exception {
+        Order res = generateBuyOrderQuick(stockCode, amounts, price);
+        res.setPriority(priority);
+        return res;
+    }
+
     /**
      * 快捷生成卖出订单
      *
@@ -71,6 +79,14 @@ public class OrderFactory {
         return generateBuySellOrder("sell", stockCode, amounts, price);
     }
 
+    public static Order generateSellOrderQuick(String stockCode,
+                                               Number amounts,
+                                               Double price, long priority) throws Exception {
+        Order res = generateSellOrderQuick(stockCode, amounts, price);
+        res.setPriority(priority);
+        return res;
+    }
+
 
     /**
      * 撤单单一id 的订单. id是同花顺交易软件id, 而非java生成的订单objectId
@@ -83,6 +99,12 @@ public class OrderFactory {
         Map<String, Object> params = new HashMap<>();
         params.put("orderId", thsRawOrderId.toString());
         return new Order("cancel_a_concrete_order", params);
+    }
+
+    public static Order generateCancelConcreteOrder(Object thsRawOrderId, long priority) {
+        Order res = generateCancelConcreteOrder(thsRawOrderId);
+        res.setPriority(priority);
+        return res;
     }
 
 
@@ -105,12 +127,30 @@ public class OrderFactory {
         return generateCancelBatchOrder("all", stockCode);
     }
 
+    public static Order generateCancelAllOrder(String stockCode, long priority) {
+        Order res = generateCancelAllOrder(stockCode);
+        res.setPriority(priority);
+        return res;
+    }
+
     public static Order generateCancelBuyOrder(String stockCode) {
         return generateCancelBatchOrder("buy", stockCode);
     }
 
+    public static Order generateCancelBuyOrder(String stockCode, long priority) {
+        Order res = generateCancelBuyOrder(stockCode);
+        res.setPriority(priority);
+        return res;
+    }
+
     public static Order generateCancelSellOrder(String stockCode) {
         return generateCancelBatchOrder("sell", stockCode);
+    }
+
+    public static Order generateCancelSellOrder(String stockCode, long priority) {
+        Order res = generateCancelSellOrder(stockCode);
+        res.setPriority(priority);
+        return res;
     }
 
     /**
@@ -126,5 +166,11 @@ public class OrderFactory {
     public static Order generateNoArgsQueryOrder(String orderType) {
         Objects.requireNonNull(orderType);
         return new QueryNoArgsOrder(orderType);
+    }
+
+    public static Order generateNoArgsQueryOrder(String orderType, long priority) {
+        Order res = generateNoArgsQueryOrder(orderType);
+        res.setPriority(priority);
+        return res;
     }
 }

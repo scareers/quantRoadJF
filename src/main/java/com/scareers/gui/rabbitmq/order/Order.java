@@ -6,10 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.*;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtils;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,9 +26,16 @@ import java.util.stream.Collectors;
  * @date: 2021/12/23/023-18:17:58
  */
 @Data
+@AllArgsConstructor
+@Builder
 public class Order {
     // 转换为jsonStr时配置
     public static JSONConfig orderJsonStrConfig;
+    public static long PRIORITY_LOWEST = 10000; // 5大优先级常量
+    public static long PRIORITY_LOW = 9000;
+    public static long PRIORITY_MEDIUM = 5000;
+    public static long PRIORITY_HIGH = 1000;
+    public static long PRIORITY_HIGHEST = 0;
 
     static {
         orderJsonStrConfig = JSONConfig.create();
@@ -46,6 +50,7 @@ public class Order {
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
+    private long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
 
     public static void main(String[] args) throws Exception {
         Order x = new BuyOrder(new HashMap<>());
@@ -53,11 +58,16 @@ public class Order {
     }
 
 
-    private Order() {
-        this.rawOrderId = IdUtil.objectId();
-        this.timestamp = System.currentTimeMillis();
-        this.timer = true;
-        this.otherRawMessages = new HashMap<>();
+    public Order() {
+        // 常态仅 orderType null, 参数空map
+        this(IdUtil.objectId(),
+                null,
+                System.currentTimeMillis(),
+                new HashMap<>(),
+                null,
+                true,
+                new HashMap<>(),
+                PRIORITY_LOWEST);
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
@@ -67,16 +77,25 @@ public class Order {
         this();
         Objects.requireNonNull(orderType); // orderType 绝对不可null
         this.orderType = orderType;
-        if (params == null) { // params 可null, 自动生成空map
-            params = new HashMap<>();
+        if (params != null) { // params 可null, 自动生成空map
+            this.params = params;
         }
-        this.params = params;
         this.lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("生成完成,订单对象已确定类型: {}", orderType)));
+    }
+
+    public Order(String orderType, Map<String, Object> params, long priority) {
+        this(orderType, params);
+        this.priority = priority;
     }
 
     public Order(String orderType) {
         this(orderType, null);
     }
+
+    public Order(String orderType, long priority) {
+        this(orderType, null, priority);
+    }
+
 
     public JSON prepare() throws Exception {
         JSONObject order = new JSONObject();
@@ -86,6 +105,7 @@ public class Order {
         }
         order.set("orderType", orderType);
         order.set("timestamp", timestamp);
+        order.set("priority", priority);
         checkParamsKeySet();
         order.putAll(params);
         order.set("lifePoints", lifePoints.stream().map(value -> value.asJson()).collect(Collectors.toList()));
@@ -184,6 +204,7 @@ public class Order {
             return description;
         }
     }
+
 
     private static final Log log = LogUtils.getLogger();
 }
