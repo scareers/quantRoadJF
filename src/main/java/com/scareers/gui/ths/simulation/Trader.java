@@ -1,3 +1,25 @@
+/**
+ * ths 自动交易程序子系统:(主要面向过程编程)
+ * 1.数据获取系统:
+ * 1.FSTransactionFetcher 获取dc实时成交数据,3stick. 数据存储于静态属性. 异步存储于mysql
+ * 2.eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块
+ * 2.订单生成系统: Order 作为基类, OrderFactory 作为快捷生产的工厂类
+ * 3.订单发送与响应接收(交易操作系统): 通过rabbitmq作为中间件, 与python交互.
+ * 单个订单, 收发一次, 封装为一次交易过程, 串行.
+ * 4.订单优先级执行器系统: 所有订单应进入优先级队列, 由订单执行器, 统一依据优先级调度, 常态优先执行buy/sell订单
+ * 5.账户状态监控系统:
+ * 不断发送查询api, 以尽可能快速更新账户信息, 使得订单发送前较为合理资金调度
+ * 6.成交状态监控系统:
+ * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
+ * 7.各大系统对应订单生命周期:
+ * * --> new  (纯新生,无参数构造器new,尚未决定类型)
+ * * --> generated(类型,参数已准备好,可prepare)
+ * * --> wait_execute(入(执行队列)队后等待执行)
+ * * --> executing(已发送python,执行中,等待响应)
+ * * --> finish_execute(已接收到python响应)
+ * * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
+ * * --> finish (订单彻底完成)
+ */
 package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.date.DateUtil;
@@ -26,7 +48,7 @@ import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
  * description: ths 自动交易程序
- * 即 java发送消息 --> python执行 --> python发送结果 --> java收到retrying继续等待,直到success --> java执行完毕.
+ * java发送消息 --> python执行 --> python发送结果 --> java收到retrying继续等待,直到success --> java执行完毕.
  * 将 API 封装为串行
  *
  * @author: admin
@@ -58,27 +80,15 @@ public class Trader {
         // 等待第一次抓取完成.
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
 
+        // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
+
         Order order = generateCancelConcreteOrder("2524723278");
         List<JSONObject> res = execOrderUtilSuccess(order);
         Console.log(res);
 
 
-        while (true) {
-//            Console.log(fsTransactionDatas);
-            break;
-//            for (StockBean stock : fsTransactionDatas.keySet()) {
-//                DataFrame<Object> fsTransactions = fsTransactionDatas.get(stock);
-//
-//
-//            }
-        }
-
-
-        Console.log(DateUtil.now());
-//        Console.log(FSTransactionFetcher.processes);
-//        Console.log(FSTransactionFetcher.fsTransactionDatas);
         closeDualChannelAndConn(); // 关闭连接
-        FSTransactionFetcher.stopFetch();
+        FSTransactionFetcher.stopFetch(); // 停止数据抓取
     }
 
 
