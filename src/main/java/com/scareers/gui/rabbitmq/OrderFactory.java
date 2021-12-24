@@ -159,6 +159,8 @@ public class OrderFactory {
      * //----> get_hold_stocks_info    账号股票持仓汇总数据
      * //----> get_account_funds_info  9项账号资金数据
      * //----> get_unsolds_not_yet  获取当前尚未完全成交的挂单
+     * //----> get_today_clinch_orders  获取所有今日成交订单列表
+     * //----> get_today_consign_orders  获取所有今日委托过的订单列表
      *
      * @param orderType
      * @return

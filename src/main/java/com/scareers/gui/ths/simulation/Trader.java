@@ -101,10 +101,19 @@ public class Trader {
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         startOrderExecutor();
         Thread.sleep(200);
+
+        // 启动账户资金刷新程序
+
+        // 启动
+
+        // 启动主策略下单
         startDummyStrategy();
         Thread.sleep(200);
+
+        // 启动成交状况检测
         startCheckTransactionStatus();
         Thread.sleep(200);
+
 
         manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等
 
@@ -461,3 +470,4 @@ public class Trader {
     }
 
 }
+// 540922819
