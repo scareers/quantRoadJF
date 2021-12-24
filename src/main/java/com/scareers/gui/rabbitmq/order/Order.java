@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Data
 @AllArgsConstructor
 @Builder
-public class Order {
+public class Order implements Comparable {
     // 转换为jsonStr时配置
     public static JSONConfig orderJsonStrConfig;
     public static long PRIORITY_LOWEST = 10000; // 5大优先级常量
@@ -43,14 +43,14 @@ public class Order {
         orderJsonStrConfig.setIgnoreNullValue(false); // 保留所有null值
     }
 
-    private String rawOrderId; //java全局唯一id
+    private String rawOrderId; //java全局唯一id, 决定了equals和hashcode
     private String orderType; // 核心订单类型, 对应python操作api
     private long timestamp; // 生成时间戳
     private Map<String, Object> params; // 订单api需要的其他参数map
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
-    private long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
+    private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
 
     public static void main(String[] args) throws Exception {
         Order x = new BuyOrder(new HashMap<>());
@@ -128,6 +128,21 @@ public class Order {
         return JSONUtil.toJsonPrettyStr(prepare());
     }
 
+    @SneakyThrows
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Order) {
+            return this.rawOrderId.equals(((Order) obj).getRawOrderId());
+        } else {
+            throw new Exception("Order 对象只能与Order对象进行 equals 判定");
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return rawOrderId.hashCode();
+    }
+
 
     private void checkParamsKeySet() throws Exception {
         for (String paramName : params.keySet()) {
@@ -135,6 +150,16 @@ public class Order {
                     rawOrderId)) {
                 throw new Exception(StrUtil.format("参数map错误: key错误: {}", paramName));
             }
+        }
+    }
+
+    @SneakyThrows
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof Order) {
+            return this.priority.compareTo(((Order) o).priority);
+        } else {
+            throw new Exception("Order 对象只能与Order对象进行比较");
         }
     }
 

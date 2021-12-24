@@ -24,6 +24,7 @@ package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
@@ -32,6 +33,8 @@ import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
 import com.scareers.gui.rabbitmq.order.Order;
+import com.scareers.gui.rabbitmq.order.Order.LifePoint;
+import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.log.LogUtils;
 import lombok.SneakyThrows;
@@ -40,7 +43,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.OrderFactory.generateCancelConcreteOrder;
@@ -63,6 +66,15 @@ public class Trader {
     public static Channel channelProducer;
     public static Connection connOfRabbitmq;
 
+    /**
+     * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
+     */
+    public static PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
+    /**
+     * 核心检测订单执行状态线程安全队列. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
+     */
+    public static BlockingQueue<Order> ordersWaitForCheckTransactionStatus = new LinkedBlockingQueue<>();
+
 
     public static void main(String[] args) throws Exception {
         ThreadUtil.execAsync(() -> {
@@ -82,6 +94,7 @@ public class Trader {
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
 
+
         Order order = generateCancelConcreteOrder("2524723278");
         List<JSONObject> res = execOrderUtilSuccess(order);
         Console.log(res);
@@ -89,6 +102,27 @@ public class Trader {
 
         closeDualChannelAndConn(); // 关闭连接
         FSTransactionFetcher.stopFetch(); // 停止数据抓取
+    }
+
+    /**
+     * 订单执行器! 将死循环线程安全优先级队列, 执行订单, 并获得响应!
+     * 订单周期变化: wait_execute --> executing --> finish_execute
+     * 并放入 成交监控队列
+     *
+     * @return
+     */
+    public static VoidFunc startOrderExecutor() throws Exception {
+        while (true) {
+            Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
+            log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
+                    order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
+            order.getLifePoints().add(new LifePoint(LifePointStatus.EXECUTING, "开始执行订单"));
+            List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
+            order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成"));
+            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
+                    "等待check完成"));
+            ordersWaitForCheckTransactionStatus.put(order);
+        }
     }
 
 
