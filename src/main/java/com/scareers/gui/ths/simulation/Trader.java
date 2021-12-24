@@ -336,7 +336,7 @@ public class Trader {
     }
 
     /**
-     * retrying则持续等待, 否则返回执行结果, 可能 success, fail,error
+     * retrying则持续等待, 否则返回执行结果, 可能 success, fail(执行正确, 订单本身原因失败),error(代码未实现)
      *
      * @param rawOrderId
      * @return
