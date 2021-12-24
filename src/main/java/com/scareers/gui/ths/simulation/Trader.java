@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.*;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
@@ -112,10 +113,20 @@ public class Trader {
     }
 
     private static void manualInteractive() {
+        Scanner input = new Scanner(System.in);
+        while (true) {
+            String info = input.next();
+            if ("q".equals(info)) {
+                break;
+            }
+            if ("s".equals(info)) {
+                System.out.println(ordersFinished);
+            }
+        }
+
     }
 
     private static void startCheckTransactionStatus() {
-
         Thread checkTask = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -229,7 +240,7 @@ public class Trader {
         String orderMsg = order.toJsonStr();
         String rawOrderId = order.getRawOrderId();
         sendMessageToPython(channelProducer, orderMsg);
-        return comsumeUntilSuccessState(rawOrderId);
+        return comsumeUntilNotRetryingState(rawOrderId);
     }
 
 
@@ -324,8 +335,15 @@ public class Trader {
         return JSONUtil.toJsonStr(handshake);
     }
 
-
-    public static List<JSONObject> comsumeUntilSuccessState(String rawOrderId)
+    /**
+     * retrying则持续等待, 否则返回执行结果, 可能 success, fail,error
+     *
+     * @param rawOrderId
+     * @return
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public static List<JSONObject> comsumeUntilNotRetryingState(String rawOrderId)
             throws IOException, InterruptedException {
         List<JSONObject> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
         final boolean[] finish = {false};
