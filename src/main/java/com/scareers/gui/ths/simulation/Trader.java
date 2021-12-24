@@ -105,10 +105,13 @@ public class Trader {
         startCheckTransactionStatus();
         Thread.sleep(200);
 
-        Thread.sleep(1000000000); // 等待退出.
+        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等
 
         closeDualChannelAndConn(); // 关闭连接
         FSTransactionFetcher.stopFetch(); // 停止数据抓取
+    }
+
+    private static void manualInteractive() {
     }
 
     private static void startCheckTransactionStatus() {
