@@ -95,7 +95,7 @@ public class FSTransactionFetcher {
             if (!firstTimeFinish.get()) {
                 log.warn("finish first: 首次抓取完成...");
             }
-            log.warn("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
+            log.debug("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
             firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
         }
         threadPoolOfFetch.shutdown();
@@ -256,7 +256,7 @@ public class FSTransactionFetcher {
 //                Console.log(stock);
                 processes.put(stock, "09:00:00");
             }
-            log.info("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
+            log.debug("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
             return null;
         }
 

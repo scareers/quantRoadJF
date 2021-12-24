@@ -74,7 +74,12 @@ public class Trader {
      */
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap
             = new ConcurrentHashMap<>();
-
+    /**
+     * check 后, 将被放入完成队列. check信息, 将被放入 order.生命周期 check_transaction_status的描述中.
+     * 最后将生命周期设置为finish, 放入此Map
+     */
+    public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
+            = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws Exception {
         ThreadUtil.execAsync(() -> {
@@ -107,23 +112,42 @@ public class Trader {
     }
 
     private static void startCheckTransactionStatus() {
-        for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.keySet().iterator(); iterator.hasNext(); ) {
-            Order order = (Order) iterator.next();
-            List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
 
-            // check逻辑, 这里简单模拟
-            if (responses.size() == 0) {
-                log.error("执行失败: {}", order.getRawOrderId());
-            }
-            JSONObject response = responses.get(responses.size() - 1);
-            if ("success".equals(response.getStr("state"))) {
-                log.info("执行成功: {}", order.getRawOrderId());
-            } else {
-                log.error("执行失败: {}", order.getRawOrderId());
-                log.info(JSONUtil.parseArray(responses).toStringPretty());
-            }
-        }
+        Thread checkTask = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.keySet().iterator(); iterator
+                            .hasNext(); ) {
+                        Order order = (Order) iterator.next();
+                        List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
 
+                        // check逻辑, 这里简单模拟
+                        if (responses.size() == 0) {
+                            log.error("执行失败: {}", order.getRawOrderId());
+                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+                        }
+                        JSONObject response = responses.get(responses.size() - 1);
+                        if ("success".equals(response.getStr("state"))) {
+                            log.info("执行成功: {}", order.getRawOrderId());
+                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功"));
+                        } else {
+                            log.error("执行失败: {}", order.getRawOrderId());
+                            log.info(JSONUtil.parseArray(responses).toStringPretty());
+                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+                        }
+                        ordersWaitForCheckTransactionStatusMap.remove(order);
+                        order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH, "订单完成"));
+                        ordersFinished.put(order, responses); // 先删除, 后添加
+                    }
+                }
+            }
+        });
+        checkTask.setDaemon(true);
+        checkTask.setPriority(Thread.MAX_PRIORITY);
+        checkTask.setName("checkTransStatus");
+        checkTask.start();
+        log.warn("check start: 开始check订单成交状况");
     }
 
     /**
