@@ -83,9 +83,11 @@ public class Order implements Comparable {
         this.lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("生成完成,订单对象已确定类型: {}", orderType)));
     }
 
-    public Order(String orderType, Map<String, Object> params, long priority) {
+    public Order(String orderType, Map<String, Object> params, Long priority) {
         this(orderType, params);
-        this.priority = priority;
+        if (priority != null) {
+            this.priority = priority;
+        }
     }
 
     public Order(String orderType) {

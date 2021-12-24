@@ -59,7 +59,7 @@ public class OrderFactory {
 
     public static Order generateBuyOrderQuick(String stockCode,
                                               Number amounts,
-                                              Double price, long priority) throws Exception {
+                                              Double price, Long priority) throws Exception {
         Order res = generateBuyOrderQuick(stockCode, amounts, price);
         res.setPriority(priority);
         return res;
@@ -81,7 +81,7 @@ public class OrderFactory {
 
     public static Order generateSellOrderQuick(String stockCode,
                                                Number amounts,
-                                               Double price, long priority) throws Exception {
+                                               Double price, Long priority) throws Exception {
         Order res = generateSellOrderQuick(stockCode, amounts, price);
         res.setPriority(priority);
         return res;
@@ -101,7 +101,7 @@ public class OrderFactory {
         return new Order("cancel_a_concrete_order", params);
     }
 
-    public static Order generateCancelConcreteOrder(Object thsRawOrderId, long priority) {
+    public static Order generateCancelConcreteOrder(Object thsRawOrderId, Long priority) {
         Order res = generateCancelConcreteOrder(thsRawOrderId);
         res.setPriority(priority);
         return res;
@@ -127,7 +127,7 @@ public class OrderFactory {
         return generateCancelBatchOrder("all", stockCode);
     }
 
-    public static Order generateCancelAllOrder(String stockCode, long priority) {
+    public static Order generateCancelAllOrder(String stockCode, Long priority) {
         Order res = generateCancelAllOrder(stockCode);
         res.setPriority(priority);
         return res;
@@ -137,7 +137,7 @@ public class OrderFactory {
         return generateCancelBatchOrder("buy", stockCode);
     }
 
-    public static Order generateCancelBuyOrder(String stockCode, long priority) {
+    public static Order generateCancelBuyOrder(String stockCode, Long priority) {
         Order res = generateCancelBuyOrder(stockCode);
         res.setPriority(priority);
         return res;
@@ -147,7 +147,7 @@ public class OrderFactory {
         return generateCancelBatchOrder("sell", stockCode);
     }
 
-    public static Order generateCancelSellOrder(String stockCode, long priority) {
+    public static Order generateCancelSellOrder(String stockCode, Long priority) {
         Order res = generateCancelSellOrder(stockCode);
         res.setPriority(priority);
         return res;
@@ -168,7 +168,7 @@ public class OrderFactory {
         return new QueryNoArgsOrder(orderType);
     }
 
-    public static Order generateNoArgsQueryOrder(String orderType, long priority) {
+    public static Order generateNoArgsQueryOrder(String orderType, Long priority) {
         Order res = generateNoArgsQueryOrder(orderType);
         res.setPriority(priority);
         return res;

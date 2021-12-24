@@ -22,16 +22,15 @@
  */
 package com.scareers.gui.ths.simulation;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.rabbitmq.order.Order.LifePoint;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
@@ -42,6 +41,7 @@ import lombok.SneakyThrows;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -71,9 +71,10 @@ public class Trader {
      */
     public static PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
     /**
-     * 核心检测订单执行状态线程安全队列. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
+     * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
+     * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    public static BlockingQueue<Order> ordersWaitForCheckTransactionStatus = new LinkedBlockingQueue<>();
+    public static ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap = new LinkedBlockingQueue<>();
 
 
     public static void main(String[] args) throws Exception {
@@ -93,15 +94,62 @@ public class Trader {
         CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
+        startOrderExecutor();
+        Thread.sleep(200);
+        startDummyStrategy();
+        Thread.sleep(200);
+        startCheckTransactionStatus();
+        Thread.sleep(200);
 
-
-        Order order = generateCancelConcreteOrder("2524723278");
-        List<JSONObject> res = execOrderUtilSuccess(order);
-        Console.log(res);
-
+        Thread.sleep(1000000000); // 等待退出.
 
         closeDualChannelAndConn(); // 关闭连接
         FSTransactionFetcher.stopFetch(); // 停止数据抓取
+    }
+
+    private static void startCheckTransactionStatus() {
+        for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.iterator(); iterator.hasNext(); ) {
+            Order order = iterator.next();
+        }
+
+    }
+
+    /**
+     * 虚拟的策略, 随机生成订单, 放入队列执行
+     */
+    public static void startDummyStrategy() {
+        Thread strategyTask = new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
+                    Thread.sleep(sleep * 1000);
+                    Order order = null;
+                    int type = RandomUtil.randomInt(12);
+                    if (type < 3) {
+                        order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGHEST);
+                    } else if (type < 6) {
+                        order = OrderFactory.generateSellOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGH);
+                    } else if (type < 8) {
+                        order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_MEDIUM);
+                    } else if (type < 10) {
+                        order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_LOWEST);
+                    } else {
+                        order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
+                    }
+                    order.getLifePoints().add(new LifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列"));
+                    log.info("order generated: 已生成订单: {}", order.toJsonStr());
+                    ordersWaitForExecution.put(order);
+                }
+            }
+        });
+
+        strategyTask.setDaemon(true);
+        strategyTask.setPriority(Thread.MAX_PRIORITY);
+        strategyTask.setName("dummyStrategy");
+        strategyTask.start();
+        log.warn("start: dummyStrategy 开始执行策略生成订单...");
     }
 
     /**
@@ -111,18 +159,29 @@ public class Trader {
      *
      * @return
      */
-    public static VoidFunc startOrderExecutor() throws Exception {
-        while (true) {
-            Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
-            log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
-                    order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
-            order.getLifePoints().add(new LifePoint(LifePointStatus.EXECUTING, "开始执行订单"));
-            List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
-            order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成"));
-            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
-                    "等待check完成"));
-            ordersWaitForCheckTransactionStatus.put(order);
-        }
+    public static void startOrderExecutor() {
+        Thread orderExecuteTask = new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
+                    log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
+                            order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
+                    order.getLifePoints().add(new LifePoint(LifePointStatus.EXECUTING, "开始执行订单"));
+                    List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
+                    order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成"));
+                    order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
+                            "等待check完成"));
+                    ordersWaitForCheckTransactionStatusMap.put(order, responses);
+                }
+            }
+        });
+        orderExecuteTask.setDaemon(true);
+        orderExecuteTask.setPriority(Thread.MAX_PRIORITY);
+        orderExecuteTask.setName("orderExecutor");
+        orderExecuteTask.start();
+        log.warn("start: orderExecutor 开始按优先级执行订单...");
     }
 
 
@@ -229,7 +288,7 @@ public class Trader {
 
     public static List<JSONObject> comsumeUntilSuccessState(String rawOrderId)
             throws IOException, InterruptedException {
-        List<JSONObject> responses = new ArrayList<>(); // 保留响应解析成的JO
+        List<JSONObject> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
         final boolean[] finish = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
             @Override
