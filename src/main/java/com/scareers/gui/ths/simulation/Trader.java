@@ -40,13 +40,11 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.rabbitmq.OrderFactory.generateCancelConcreteOrder;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
 
 /**
@@ -108,8 +106,21 @@ public class Trader {
     }
 
     private static void startCheckTransactionStatus() {
-        for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.iterator(); iterator.hasNext(); ) {
-            Order order = iterator.next();
+        for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.keySet().iterator(); iterator.hasNext(); ) {
+            Order order = (Order) iterator.next();
+            List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
+
+            // check逻辑, 这里简单模拟
+            if (responses.size() == 0) {
+                log.error("执行失败: {}", order.getRawOrderId());
+            }
+            JSONObject response = responses.get(responses.size() - 1);
+            if ("success".equals(response.getStr("state"))) {
+                log.info("执行成功: {}", order.getRawOrderId());
+            } else {
+                log.error("执行失败: {}", order.getRawOrderId());
+                log.info(JSONUtil.parseArray(responses).toStringPretty());
+            }
         }
 
     }
