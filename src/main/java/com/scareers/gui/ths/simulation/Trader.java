@@ -72,7 +72,8 @@ public class Trader {
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    public static ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap = new LinkedBlockingQueue<>();
+    public static ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap
+            = new ConcurrentHashMap<>();
 
 
     public static void main(String[] args) throws Exception {
