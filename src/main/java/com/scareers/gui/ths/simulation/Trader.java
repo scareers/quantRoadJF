@@ -36,13 +36,12 @@ import com.scareers.gui.rabbitmq.order.Order.LifePoint;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.log.LogUtils;
+import joinery.DataFrame;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
@@ -81,6 +80,7 @@ public class Trader {
      */
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
+    public static long accountStatesFlushGlobalInterval = 5000; // 账户状态检测程序sleep
 
     public static void main(String[] args) throws Exception {
         ThreadUtil.execAsync(() -> {
@@ -102,16 +102,14 @@ public class Trader {
         startOrderExecutor();
         Thread.sleep(200);
 
-        // 启动账户资金刷新程序
+        // 启动成交状况检测
+        startCheckTransactionStatus();
+        Thread.sleep(200);
 
-        // 启动
+        // 启动账户资金获取程序
 
         // 启动主策略下单
         startDummyStrategy();
-        Thread.sleep(200);
-
-        // 启动成交状况检测
-        startCheckTransactionStatus();
         Thread.sleep(200);
 
 
@@ -133,6 +131,118 @@ public class Trader {
             }
         }
 
+    }
+
+    /**
+     * 账号状态监控类. 当前 5项数据
+     * // @noti:5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以高优先级放入待执行队列. 实际执行由待执行队列进行调度
+     * // @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 换 和check程序之后执行,
+     * 且需要等待5项数据第一次更新!
+     * // @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
+     * // @noti: 访问 DataFrame<Object> 时, 需要对其进行强制同步. 即 synchronized(currentHolds){}
+     */
+    public static class AccountStates {
+        public static ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
+        public static DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
+        public static DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
+        public static DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
+        public static DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
+
+        public static final List<String> orderTypes = Arrays
+                .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
+                        "get_today_clinch_orders", "get_today_consign_orders"); // 常量
+
+        public static void startFlush() throws Exception {
+
+            while (true) {
+                // 刷新5项数据,对队列进行遍历,若存在对应类型订单, 则跳过, 否则下单
+
+                List<String> alreadyInQueue = new ArrayList<>();
+                Iterator iterator = ordersWaitForExecution.iterator();
+                while (iterator.hasNext()) {
+                    Order order = (Order) iterator.next();
+                    if (orderTypes.contains(order.getOrderType())) {
+                        // 得到已在队列中的类型. 对其余类型进行补齐
+                        alreadyInQueue.add(order.getOrderType());
+                    }
+                }
+
+                for (String orderType : orderTypes) {
+                    if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
+                        switch (orderType) {
+                            case "get_account_funds_info":
+                                flushNineBaseFundsData(null);
+                                break;
+                            case "get_hold_stocks_info":
+                                flushCurrentHolds(null);
+                                break;
+                            case "get_unsolds_not_yet":
+                                flushCanCancels(null);
+                                break;
+                            case "get_today_clinch_orders":
+                                flushTodayClinchs(null);
+                                break;
+                            case "get_today_consign_orders":
+                                flushTodayConsigns(null);
+                                break;
+                            default:
+                                throw new Exception("error orderType");
+                        }
+                    }
+                }
+            }
+
+        }
+
+
+        public static String flushItem(String orderType, Long priority) throws Exception {
+            if (priority == null) {
+                priority = Order.PRIORITY_LOWEST;
+            }
+            Order order = OrderFactory.generateNoArgsQueryOrder(orderType, priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
+        }
+
+        public static String flushNineBaseFundsData(Long priority) throws Exception {
+            return flushItem("get_account_funds_info", priority);
+        }
+
+        public static String flushCurrentHolds(Long priority) throws Exception {
+            return flushItem("get_hold_stocks_info", priority);
+        }
+
+        public static String flushCanCancels(Long priority) throws Exception {
+            return flushItem("get_unsolds_not_yet", priority);
+        }
+
+        public static String flushTodayClinchs(Long priority) throws Exception {
+            return flushItem("get_today_clinch_orders", priority);
+        }
+
+        public static String flushTodayConsigns(Long priority) throws Exception {
+            return flushItem("get_today_consign_orders", priority);
+        }
+
+        public static String flushNineBaseFundsDataImmediately() throws Exception {
+            return flushItem("get_account_funds_info", Order.PRIORITY_HIGH / 2);
+        }
+
+        public static String flushCurrentHoldsImmediately() throws Exception {
+            return flushItem("get_hold_stocks_info", Order.PRIORITY_HIGH / 2);
+        }
+
+        public static String flushCanCancelsImmediately() throws Exception {
+            return flushItem("get_unsolds_not_yet", Order.PRIORITY_HIGH / 2);
+        }
+
+        public static String flushTodayClinchsImmediately() throws Exception {
+            return flushItem("get_today_clinch_orders", Order.PRIORITY_HIGH / 2);
+        }
+
+        public static String flushTodayConsignsImmediately() throws Exception {
+            return flushItem("get_today_consign_orders", Order.PRIORITY_HIGH / 2);
+        }
     }
 
     private static void startCheckTransactionStatus() {
@@ -197,9 +307,7 @@ public class Trader {
                     } else {
                         order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
                     }
-                    order.getLifePoints().add(new LifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列"));
-                    log.info("order generated: 已生成订单: {}", order.toJsonStr());
-                    ordersWaitForExecution.put(order);
+                    putOrderToWaitExecute(order);
                 }
             }
         });
@@ -209,6 +317,12 @@ public class Trader {
         strategyTask.setName("dummyStrategy");
         strategyTask.start();
         log.warn("start: dummyStrategy 开始执行策略生成订单...");
+    }
+
+    public static void putOrderToWaitExecute(Order order) throws Exception {
+        order.getLifePoints().add(new LifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列"));
+        log.info("order generated: 已生成订单: {}", order.toJsonStr());
+        ordersWaitForExecution.put(order);
     }
 
     /**
