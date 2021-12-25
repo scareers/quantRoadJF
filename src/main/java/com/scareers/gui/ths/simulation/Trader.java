@@ -477,7 +477,7 @@ public class Trader {
                                 AccountStates.checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
                             }
 
-                            // todo: 其余类型的订单, check 应当由主策略决定, 因此实际由主策略实现. 这里仅分发!
+                            // todo: 其余类型的订单, check 应当 由主策略决定, 因此实际由主策略实现. 这里仅分发!
                             mainStrategy.checkOrder(order, responses, orderType);
                         }
                     }
