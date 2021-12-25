@@ -480,16 +480,14 @@ public class Trader {
                             JSONObject response = responses.get(responses.size() - 1);
                             if ("success".equals(response.getStr("state"))) {
                                 log.info("执行成功: {}", order.getRawOrderId());
-                                order.getLifePoints()
-                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功"));
+                                order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
                             } else {
                                 log.error("执行失败: {}", order.getRawOrderId());
                                 log.info(JSONUtil.parseArray(responses).toStringPretty());
-                                order.getLifePoints()
-                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+                                order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
                             }
                             ordersWaitForCheckTransactionStatusMap.remove(order);
-                            order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH, "订单完成"));
+                            order.addLifePoint(LifePointStatus.FINISH, "订单完成");
                             ordersFinished.put(order, responses); // 先删除, 后添加
                         }
                     }
@@ -563,7 +561,7 @@ public class Trader {
     }
 
     public static void putOrderToWaitExecute(Order order) throws Exception {
-        order.getLifePoints().add(new LifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列"));
+        order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列");
         log.info("order generated: 已生成订单: {}", order.toJsonStr());
         ordersWaitForExecution.put(order);
     }
@@ -584,11 +582,11 @@ public class Trader {
                     Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
                     log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
                             order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
-                    order.getLifePoints().add(new LifePoint(LifePointStatus.EXECUTING, "开始执行订单"));
+                    order.addLifePoint(LifePointStatus.EXECUTING, "开始执行订单");
                     List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
-                    order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成"));
-                    order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
-                            "等待check完成"));
+                    order.addLifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成");
+                    order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
+                            "等待check完成");
                     ordersWaitForCheckTransactionStatusMap.put(order, responses);
                 }
             }
