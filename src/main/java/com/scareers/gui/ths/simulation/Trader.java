@@ -134,7 +134,7 @@ public class Trader {
                 break;
             }
             if ("s".equals(info)) {
-
+                AccountStates.showFields();
             }
         }
 
@@ -150,6 +150,7 @@ public class Trader {
      */
     public static class AccountStates {
         public static ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
+        // {冻结金额=363.48, 总资产=177331.42, 可用金额=57078.94, 资金余额=57442.42, 可取金额=0.0, 当日盈亏比=-0.017, 当日盈亏=-3059.0, 股票市值=119889.0, 持仓盈亏=-7915.0}
         public static DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
         public static DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
         public static DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
