@@ -82,7 +82,7 @@ public class Trader {
      */
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
-    public static long accountStatesFlushGlobalInterval = 5000; // 账户状态检测程序slee
+    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序slee
     // p
 
     public static void main(String[] args) throws Exception {
@@ -112,7 +112,7 @@ public class Trader {
 
         // 启动账户资金获取程序
         AccountStates.startFlush();
-        waitUtil(AccountStates::alreadyInitialized, 20 * 1000, 100, "等待首次账户资金状态刷新完成"); // 需要等待初始化完成!
+        waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "等待首次账户资金状态刷新完成"); // 需要等待初始化完成!
         log.warn("finish: 首次账户资金状态刷新完成");
 
         // 正式启动主策略下单
@@ -325,7 +325,14 @@ public class Trader {
             }
         }
 
-        public static String reFlush(String fieldName) throws Exception {
+        /**
+         * 重入队列, 优先级较高. 订单对象已经改变
+         *
+         * @param fieldName
+         * @return
+         * @throws Exception
+         */
+        public static void reFlush(String fieldName) throws Exception {
             switch (fieldName) {
                 case "currentHolds":
                     flushCurrentHolds(Order.PRIORITY_HIGH + 5);
@@ -345,7 +352,39 @@ public class Trader {
                 default:
                     throw new Exception("error fieldName");
             }
-            return null;
+        }
+
+        /**
+         * 最终的更新逻辑, 两字段赋值
+         *
+         * @param fieldName
+         * @param newData
+         */
+        public static void realFlushFieldAndTimestamp(String fieldName, DataFrame<Object> newData) throws Exception {
+            switch (fieldName) {
+                case "currentHolds":
+                    currentHolds = newData;
+                    currentHoldsFlushTimestamp = System.currentTimeMillis();
+                    break;
+                case "canCancels":
+                    canCancels = newData;
+                    canCancelsFlushTimestamp = System.currentTimeMillis();
+                    break;
+                case "todayClinchs":
+                    todayClinchs = newData;
+                    todayClinchsFlushTimestamp = System.currentTimeMillis();
+                    break;
+                case "todayConsigns":
+                    todayConsigns = newData;
+                    todayConsignsFlushTimestamp = System.currentTimeMillis();
+                    break;
+                //case "nineBaseFundsData": // 不会出现
+                //nineBaseFundsData = newData;
+                //nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
+                //break;
+                default:
+                    throw new Exception("error fieldName");
+            }
         }
 
         /**
@@ -382,17 +421,17 @@ public class Trader {
                     ; // 强制高优先级重入队列!因此队列中可能存在2个
                     return;
                 }
-                fieldBeUpdate = dfTemp;
-                if (fieldBeUpdate.size() == 0) {
+                if (dfTemp.size() == 0) {
                     log.warn("empty df: 当前持仓数据为空");
                 }
-                fieldUpdateTimestamp = System.currentTimeMillis();
+                realFlushFieldAndTimestamp(fieldName, dfTemp);
                 log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
             } else {
                 log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
                 reFlush(fieldName);
             }
         }
+
 
         public static void updateCurrentHolds(Order order, List<JSONObject> responses) throws Exception {
             updateDfFields(order, responses, "currentHolds", "当前持仓股票列表",
