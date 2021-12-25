@@ -226,7 +226,7 @@ public class Order implements Comparable, Serializable {
         lifePoints.add(new LifePoint(LifePointStatus.GENERATED,
                 StrUtil.format("生成完成,订单对象已确定类型: {}", res.getOrderType()))); // 生成
         res.setLifePoints(lifePoints);
-        res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字-1)
+        res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字 -1)
         res.setResendTimes(res.getResendTimes() + 1); // 重发次数+1
         return res;
     }
