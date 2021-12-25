@@ -109,7 +109,7 @@ public class Trader {
         OrderExecutor.start();
 
         // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等
-        Checker.startCheckTransactionStatus();
+        Checker.startCheckTransactionStatus(mainStrategy);
 
         // 启动账户资金获取程序
         AccountStates.startFlush();
@@ -184,6 +184,38 @@ public class Trader {
             Console.log("AccountStates.canCancels:\n{}\n", canCancels.toString(100));
             Console.log("AccountStates.todayClinchs:\n{}\n", todayClinchs.toString(100));
             Console.log("AccountStates.todayConsigns:\n{}\n", todayConsigns.toString(100));
+        }
+
+
+        /**
+         * 账号状态相关api check逻辑, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
+         *
+         * @param order
+         * @param responses
+         * @param orderType
+         * @throws Exception
+         */
+        public static void checkForAccountStates(Order order, List<JSONObject> responses, String orderType)
+                throws Exception {
+            switch (orderType) {
+                case "get_account_funds_info":
+                    AccountStates.updateNineBaseFundsData(order, responses);
+                    break;
+                case "get_hold_stocks_info":
+                    AccountStates.updateCurrentHolds(order, responses);
+                    break;
+                case "get_unsolds_not_yet":
+                    AccountStates.updateCanCancels(order, responses);
+                    break;
+                case "get_today_clinch_orders":
+                    AccountStates.updateTodayClinchs(order, responses);
+                    break;
+                case "get_today_consign_orders":
+                    AccountStates.updateTodayConsigns(order, responses);
+                    break;
+                default:
+                    throw new Exception("error orderType");
+            }
         }
 
         /**
@@ -429,7 +461,7 @@ public class Trader {
      * // @noti: 典型的: buy/sell 订单的check逻辑, 应当由 主策略实现!
      */
     public static class Checker {
-        public static void startCheckTransactionStatus() {
+        public static void startCheckTransactionStatus(Strategy mainStrategy) {
             Thread checkTask = new Thread(new Runnable() {
                 @SneakyThrows
                 @Override
@@ -442,22 +474,11 @@ public class Trader {
 
                             String orderType = order.getOrderType();
                             if (AccountStates.orderTypes.contains(orderType)) {
-                                checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
+                                AccountStates.checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
                             }
 
                             // todo: 其余类型的订单, check 应当由主策略决定, 因此实际由主策略实现. 这里仅分发!
-                            JSONObject response = responses.get(responses.size() - 1);
-                            if ("success".equals(response.getStr("state"))) {
-                                log.info("执行成功: {}", order.getRawOrderId());
-                                order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
-                            } else {
-                                log.error("执行失败: {}", order.getRawOrderId());
-                                log.info(JSONUtil.parseArray(responses).toStringPretty());
-                                order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
-                            }
-                            ordersWaitForCheckTransactionStatusMap.remove(order);
-                            order.addLifePoint(LifePointStatus.FINISH, "订单完成");
-                            ordersFinished.put(order, responses); // 先删除, 后添加
+                            mainStrategy.checkOrder(order, responses, orderType);
                         }
                     }
                 }
@@ -469,36 +490,6 @@ public class Trader {
             log.warn("check start: 开始check订单成交状况");
         }
 
-        /**
-         * 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
-         *
-         * @param order
-         * @param responses
-         * @param orderType
-         * @throws Exception
-         */
-        public static void checkForAccountStates(Order order, List<JSONObject> responses, String orderType)
-                throws Exception {
-            switch (orderType) {
-                case "get_account_funds_info":
-                    AccountStates.updateNineBaseFundsData(order, responses);
-                    break;
-                case "get_hold_stocks_info":
-                    AccountStates.updateCurrentHolds(order, responses);
-                    break;
-                case "get_unsolds_not_yet":
-                    AccountStates.updateCanCancels(order, responses);
-                    break;
-                case "get_today_clinch_orders":
-                    AccountStates.updateTodayClinchs(order, responses);
-                    break;
-                case "get_today_consign_orders":
-                    AccountStates.updateTodayConsigns(order, responses);
-                    break;
-                default:
-                    throw new Exception("error orderType");
-            }
-        }
     }
 
 

@@ -1,6 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy;
 
+import cn.hutool.json.JSONObject;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
+import com.scareers.gui.rabbitmq.order.Order;
 
 import java.util.List;
 
@@ -13,6 +15,21 @@ import java.util.List;
 public class LowBuyHighSellStrategy extends Strategy {
     public LowBuyHighSellStrategy(String strategyName) {
         super(strategyName);
+    }
+
+    @Override
+    protected void checkBuyOrder(Order order, List<JSONObject> responses, String orderType) {
+
+    }
+
+    @Override
+    protected void checkSellOrder(Order order, List<JSONObject> responses, String orderType) {
+
+    }
+
+    @Override
+    protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
+
     }
 
     @Override

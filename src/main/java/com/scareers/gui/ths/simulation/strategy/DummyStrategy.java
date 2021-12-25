@@ -1,6 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
@@ -13,13 +15,39 @@ import java.util.List;
 
 
 /**
- * description: 虚拟的策略, 随机生成订单, 放入队列执行
+ * description: 虚拟的策略, 随机生成订单, 放入队列执行. check 逻辑也相同
  *
  * @author: admin
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
     private static final Log log = LogUtils.getLogger();
+
+    @Override
+    protected void checkBuyOrder(Order order, List<JSONObject> responses, String orderType) {
+        checkOtherOrder(order, responses, orderType);
+    }
+
+    @Override
+    protected void checkSellOrder(Order order, List<JSONObject> responses, String orderType) {
+        checkOtherOrder(order, responses, orderType);
+    }
+
+    @Override
+    protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
+        JSONObject response = responses.get(responses.size() - 1);
+        if ("success".equals(response.getStr("state"))) {
+            log.info("执行成功: {}", order.getRawOrderId());
+            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
+        } else {
+            log.error("执行失败: {}", order.getRawOrderId());
+            log.info(JSONUtil.parseArray(responses).toStringPretty());
+            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
+        }
+        Trader.ordersWaitForCheckTransactionStatusMap.remove(order);
+        order.addLifePoint(Order.LifePointStatus.FINISH, "订单完成");
+        Trader.ordersFinished.put(order, responses); // 先删除, 后添加
+    }
 
     @Override
     protected void startCore() throws Exception {

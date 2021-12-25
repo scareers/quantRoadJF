@@ -1,8 +1,12 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.lang.func.VoidFunc;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
+import com.scareers.gui.rabbitmq.order.Order;
+import com.scareers.gui.ths.simulation.Trader;
 import com.scareers.utils.log.LogUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,6 +40,31 @@ public abstract class Strategy {
      * 每个策略, 需要首先获取自身股票池
      */
     protected abstract List<StockBean> initStockPool();
+
+    /**
+     * 针对 buy 订单check逻辑. 检测成交是否完成等
+     */
+    protected abstract void checkBuyOrder(Order order, List<JSONObject> responses, String orderType);
+
+    /**
+     * 针对 sell 订单check逻辑. 检测成交是否完成等
+     */
+    protected abstract void checkSellOrder(Order order, List<JSONObject> responses, String orderType);
+
+    /**
+     * 针对 其余类型 订单check逻辑.较少 检测成交是否完成等
+     */
+    protected abstract void checkOtherOrder(Order order, List<JSONObject> responses, String orderType);
+
+    public void checkOrder(Order order, List<JSONObject> responses, String orderType) {
+        if ("buy".equals(orderType)) {
+            checkBuyOrder(order, responses, orderType);
+        } else if ("sell".equals(orderType)) {
+            checkSellOrder(order, responses, orderType);
+        } else {
+            checkOtherOrder(order, responses, orderType);
+        }
+    }
 
     /**
      * 默认实现即 新建守护线程执行核心逻辑
