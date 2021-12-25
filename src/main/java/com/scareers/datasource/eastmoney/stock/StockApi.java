@@ -64,8 +64,8 @@ public class StockApi {
 
             response = getAsStr(keyUrl, params, timeout);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.warn("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
+            // e.printStackTrace();
+            log.error("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
             return res;
         }
 
