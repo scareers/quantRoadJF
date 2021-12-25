@@ -166,12 +166,34 @@ public class Order implements Comparable {
     }
 
 
+    /**
+     * 添加生命周期对象, 对应了 LifePoint 4个构造器
+     *
+     * @param status
+     */
+    public void addLifePoint(LifePointStatus status) {
+        this.getLifePoints().add(new LifePoint(status));
+    }
+
+    public void addLifePoint(LifePointStatus status, String description) {
+        this.getLifePoints().add(new LifePoint(status, description));
+    }
+
+    public void addLifePoint(LifePointStatus status, String description, String payload) {
+        this.getLifePoints().add(new LifePoint(status, description, payload));
+    }
+
+    public void addLifePoint(LifePointStatus status, String description, String payload, String notes) {
+        this.getLifePoints().add(new LifePoint(status, description, payload, notes));
+    }
+
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
     public static class LifePoint { // 生命周期中, 某一时刻点
-        LifePointStatus status;
         Long timestamp;
+        LifePointStatus status;
         String description;
         String payload;
         String notes;
@@ -189,6 +211,11 @@ public class Order implements Comparable {
         public LifePoint(LifePointStatus status, String description, String payload) {
             this(status, description);
             this.payload = payload;
+        }
+
+        public LifePoint(LifePointStatus status, String description, String payload, String notes) {
+            this(status, description, payload);
+            this.notes = notes;
         }
 
         public JSON asJson() {

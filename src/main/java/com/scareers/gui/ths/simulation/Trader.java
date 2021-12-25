@@ -35,7 +35,6 @@ import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.rabbitmq.order.Order.LifePoint;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
-import com.scareers.utils.CommonUtils;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -43,11 +42,14 @@ import lombok.SneakyThrows;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
-import static com.scareers.utils.CommonUtils.*;
+import static com.scareers.utils.CommonUtils.waitUtil;
 
 /**
  * description: ths 自动交易程序
@@ -475,13 +477,6 @@ public class Trader {
                                 checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
                             }
 
-
-                            // check逻辑, 这里简单模拟
-                            if (responses.size() == 0) {
-                                log.error("执行失败: {}", order.getRawOrderId());
-                                order.getLifePoints()
-                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
-                            }
                             JSONObject response = responses.get(responses.size() - 1);
                             if ("success".equals(response.getStr("state"))) {
                                 log.info("执行成功: {}", order.getRawOrderId());
