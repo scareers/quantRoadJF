@@ -423,10 +423,10 @@ public class Trader {
 
     /**
      * 对订单执行结果进行判定监控check!
-     * <p>
      * 收到python响应后, 放入check Map, 等待 结果 check!
-     * <p>
      * // @noti: 约定: 订单重发, 均构造类似订单
+     * // @noti: 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
+     * // @noti: 典型的: buy/sell 订单的check逻辑, 应当由 主策略实现!
      */
     public static class Checker {
         public static void startCheckTransactionStatus() {
@@ -470,7 +470,7 @@ public class Trader {
         }
 
         /**
-         * 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现!
+         * 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
          *
          * @param order
          * @param responses
