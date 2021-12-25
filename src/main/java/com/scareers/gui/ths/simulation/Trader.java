@@ -100,6 +100,7 @@ public class Trader {
         handshake(); // 握手可控
         // 等待第一次抓取完成.
         waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); // 等待第一次完成
+        log.warn("finish: 第一次tick数据抓取完成");
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         startOrderExecutor();
@@ -112,6 +113,7 @@ public class Trader {
         // 启动账户资金获取程序
         AccountStates.startFlush();
         waitUtil(AccountStates::alreadyInitialized, 20 * 1000, 100, "等待首次账户资金状态刷新完成"); // 需要等待初始化完成!
+        log.warn("finish: 首次账户资金状态刷新完成");
 
         // 正式启动主策略下单
         startDummyStrategy();
