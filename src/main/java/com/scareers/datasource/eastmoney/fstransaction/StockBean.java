@@ -1,6 +1,5 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;

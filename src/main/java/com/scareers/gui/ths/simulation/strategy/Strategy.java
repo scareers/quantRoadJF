@@ -1,8 +1,14 @@
 package com.scareers.gui.ths.simulation.strategy;
 
+import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.utils.log.LogUtils;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+
+import java.util.List;
 
 /**
  * description: 策略抽象类. 子类只需要实现 startCore() 方法. 策略核心逻辑
@@ -10,20 +16,26 @@ import lombok.SneakyThrows;
  * @author: admin
  * @date: 2021/12/26/026-03:19:41
  */
+@Data
+@NoArgsConstructor
 public abstract class Strategy {
     private String strategyName; // 策略名称, 线程同名
+    private List<StockBean> stockPool; // 股票池. 使用东方财富股票代码
 
     public Strategy(String strategyName) {
         this.strategyName = strategyName;
-    }
-
-    public Strategy() {
+        this.stockPool = initStockPool(); // 构建器自动初始化股票池!
     }
 
     /**
      * 策略开始处理执行. 核心实现
      */
     protected abstract void startCore() throws Exception;
+
+    /**
+     * 每个策略, 需要首先获取自身股票池
+     */
+    protected abstract List<StockBean> initStockPool();
 
     /**
      * 默认实现即 新建守护线程执行核心逻辑

@@ -1,12 +1,13 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.fstransaction.StockBean;
+import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
-import com.scareers.utils.log.LogUtils;
-import lombok.SneakyThrows;
+
+import java.util.List;
 
 
 /**
@@ -17,7 +18,7 @@ import lombok.SneakyThrows;
  */
 public class DummyStrategy extends Strategy {
     @Override
-    public void startCore() throws Exception {
+    protected void startCore() throws Exception {
         while (true) {
             int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
             Thread.sleep(sleep * 1000);
@@ -36,6 +37,11 @@ public class DummyStrategy extends Strategy {
             }
             Trader.putOrderToWaitExecute(order);
         }
+    }
+
+    @Override
+    protected List<StockBean> initStockPool() {
+        return StockPoolForFSTransaction.stockPoolTest();
     }
 
     public DummyStrategy(String strategyName) {

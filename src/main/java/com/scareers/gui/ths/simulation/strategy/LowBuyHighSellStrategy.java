@@ -1,14 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy;
 
-import cn.hutool.core.util.RandomUtil;
-import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
-import com.scareers.gui.rabbitmq.OrderFactory;
-import com.scareers.gui.rabbitmq.order.Order;
-import com.scareers.gui.ths.simulation.Trader;
-import joinery.DataFrame;
 
-import static com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher.fsTransactionDatas;
+import java.util.List;
 
 /**
  * description: 低买高卖
@@ -22,7 +16,13 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
-    public void startCore() throws Exception {
+    protected void startCore() throws Exception {
         // 低买高卖
+    }
+
+    @Override
+    protected List<StockBean> initStockPool() {
+        // return StockPoolForFSTransaction.stockPoolTest();
+        return null;
     }
 }

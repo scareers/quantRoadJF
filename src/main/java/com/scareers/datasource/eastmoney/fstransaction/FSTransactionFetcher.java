@@ -64,16 +64,16 @@ public class FSTransactionFetcher {
     public static boolean stopFetch = false;
 
     public static void main(String[] args) throws Exception {
-        startFetch();
+        startFetch(StockPoolForFSTransaction.stockPoolTest()); // 测试股票池
         Thread.sleep(1000000);
     }
 
-    public static void startFetch() throws Exception {
+    public static void startFetch(List<StockBean> stockPool) throws Exception {
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
-                startFetch0();
+                startFetch0(stockPool);
             }
         });
         fsFetchTask.setDaemon(true);
@@ -83,9 +83,8 @@ public class FSTransactionFetcher {
         log.warn("FSTransFetcher start: 开始持续获取实时成交数据");
     }
 
-    public static void startFetch0() throws Exception {
+    public static void startFetch0(List<StockBean> stockPool) throws Exception {
         initThreadPool();
-        StockPoolFactory stockPoolFactory = new StockPoolForFSTransaction();
         boolean shouldFetchToday = newDayDecide();
         // yyyy-MM-dd HH:mm:ss.SSS
         String saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
@@ -93,8 +92,6 @@ public class FSTransactionFetcher {
             saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
         }
         createSaveTable(saveTableName);
-        List<StockBean> stockPool = stockPoolFactory.createStockPool();
-        ;
         initProcessAndRawDatas(saveTableName, stockPool);
         log.warn("start: 开始抓取数据...");
         TimeInterval timer = DateUtil.timer();

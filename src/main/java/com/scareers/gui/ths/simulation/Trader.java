@@ -35,6 +35,7 @@ import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.DummyStrategy;
+import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -87,20 +88,18 @@ public class Trader {
     public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序slee
 
     /**
-     * 主策略类. startDealWith()方法 开始执行策略. 一般调用 strategy 包中某具体实现.startDealWith() 方法
+     * 主策略类. 管理具体实现
      */
     public static class MainStrategy {
-        /**
-         * 开始处理
-         */
-        public static void startDealWith() {
-            new DummyStrategy(DummyStrategy.class.getName()).startDealWith();
-            // 此处调用真实策略 .startDealWith()
+        public static Strategy createStrategy() {
+            return new DummyStrategy(DummyStrategy.class.getName());
         }
     }
 
     public static void main(String[] args) throws Exception {
-        FSTransactionFetcher.startFetch();
+        Strategy mainStrategy = MainStrategy.createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
+        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池
+
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
         handshake(); // 与python握手可控
@@ -117,7 +116,7 @@ public class Trader {
         waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成"); // 需要等待初始化完成!
 
         // 正式启动主策略下单
-        MainStrategy.startDealWith();
+        mainStrategy.startDealWith();
 
         manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.
 
