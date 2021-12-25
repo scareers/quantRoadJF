@@ -244,7 +244,7 @@ public class CommonUtils {
     public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval, String description)
             throws TimeoutException, InterruptedException {
         if (description != null) {
-            LogUtils.log.warn("wait util: {}", description);
+            LogUtils.log.warn("wait util: 等待: {}", description);
         }
         TimeInterval timer = DateUtil.timer();
         timer.start();
@@ -256,6 +256,9 @@ public class CommonUtils {
             Thread.sleep(interval);
         }
         LogUtils.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
+        if (description != null) {
+            LogUtils.log.warn("wait util: 完成: {}", description);
+        }
     }
 
 }

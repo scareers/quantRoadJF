@@ -101,34 +101,25 @@ public class Trader {
 
     public static void main(String[] args) throws Exception {
         FSTransactionFetcher.startFetch();
-        Thread.sleep(100);
-
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
         handshake(); // 与python握手可控
-        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); //
-        // 等待第一次完成
-        log.warn("finish: 第一次tick数据抓取完成");
+        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "第一次tick数据抓取完成"); //
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         OrderExecutor.start();
-        Thread.sleep(100);
 
         // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等
         Checker.startCheckTransactionStatus();
-        Thread.sleep(100);
 
         // 启动账户资金获取程序
         AccountStates.startFlush();
-        waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "等待首次账户资金状态刷新完成"); // 需要等待初始化完成!
-        log.warn("finish: 首次账户资金状态刷新完成");
+        waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成"); // 需要等待初始化完成!
 
         // 正式启动主策略下单
         MainStrategy.startDealWith();
-        Thread.sleep(100);
 
-
-        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等
+        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.
 
         closeDualChannelAndConn(); // 关闭连接
         FSTransactionFetcher.stopFetch(); // 停止数据抓取
