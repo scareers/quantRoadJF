@@ -53,6 +53,13 @@ public abstract class Strategy {
      */
     protected abstract void checkOtherOrder(Order order, List<JSONObject> responses, String orderType);
 
+    /**
+     * check. 默认实现为简单分发为3个抽象方法
+     *
+     * @param order
+     * @param responses
+     * @param orderType
+     */
     public void checkOrder(Order order, List<JSONObject> responses, String orderType) {
         if ("buy".equals(orderType)) {
             checkBuyOrder(order, responses, orderType);
