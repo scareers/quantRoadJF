@@ -58,7 +58,7 @@ public class FSTransactionFetcher {
     public static ConcurrentHashMap<StockBean, String> processes = new ConcurrentHashMap<>();
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
     public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
-    public static long redundancyRecords = 20; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
+    public static long redundancyRecords = 10; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
     public static DateTime limitTick = DateUtil.parse(DateUtil.today() + " " + "15:10:00"); // tick时间上限
     public static int timeout = 1000;

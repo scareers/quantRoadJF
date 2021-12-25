@@ -98,7 +98,7 @@ public class Trader {
 
     public static void main(String[] args) throws Exception {
         Strategy mainStrategy = MainStrategy.createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
-        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池
+        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. fsTransactionDatas
 
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
