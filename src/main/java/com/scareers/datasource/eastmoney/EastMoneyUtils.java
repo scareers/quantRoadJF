@@ -141,7 +141,7 @@ public class EastMoneyUtils {
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(8,
                 16 * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("EmIdQuery", null, true)
+                ThreadUtil.newNamedThreadFactory("EmIdQueryPool-", null, true)
         );
         ConcurrentHashMap<String, Future<JSONArray>> futures = new ConcurrentHashMap<>();
         for (String simpleCode : simpleCodes) {

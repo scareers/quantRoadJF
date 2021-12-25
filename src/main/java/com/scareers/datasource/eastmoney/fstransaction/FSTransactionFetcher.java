@@ -205,12 +205,12 @@ public class FSTransactionFetcher {
         threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("FSFetcher", null, true)
+                ThreadUtil.newNamedThreadFactory("FSFetcherPool-", null, true)
         ); // 唯一线程池, 一直不shutdown
         threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("FSTSave", null, true)
+                ThreadUtil.newNamedThreadFactory("FSTSavePool-", null, true)
         ); // 唯一线程池, 一直不shutdown
         log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
     }
