@@ -56,7 +56,8 @@ public class Order implements Comparable, Serializable {
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
     private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
-    private boolean isResend; // 是否是某情况下check后的 重发对象? 默认false
+
+    private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
 
     public static void main(String[] args) throws Exception {
         Order x = new BuyOrder(new HashMap<>());
@@ -78,7 +79,7 @@ public class Order implements Comparable, Serializable {
                 true,
                 new HashMap<>(),
                 PRIORITY_LOWEST,
-                false);
+                0L);
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
@@ -225,8 +226,8 @@ public class Order implements Comparable, Serializable {
         lifePoints.add(new LifePoint(LifePointStatus.GENERATED,
                 StrUtil.format("生成完成,订单对象已确定类型: {}", res.getOrderType()))); // 生成
         res.setLifePoints(lifePoints);
-        res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1
-        res.setResend(isResend); // 重发!!
+        res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字-1)
+        res.setResendTimes(res.getResendTimes() + 1); // 重发次数+1
         return res;
     }
 

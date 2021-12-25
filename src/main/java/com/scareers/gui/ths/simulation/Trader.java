@@ -524,6 +524,8 @@ public class Trader {
         log.warn("start: dummyStrategy 开始执行策略生成订单...");
     }
 
+
+
     public static void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列");
         log.info("order generated: 已生成订单: {}", order.toJsonStr());
