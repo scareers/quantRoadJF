@@ -46,6 +46,7 @@ import java.util.concurrent.*;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
+import static com.scareers.utils.CommonUtils.*;
 
 /**
  * description: ths 自动交易程序
@@ -80,7 +81,8 @@ public class Trader {
      */
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
-    public static long accountStatesFlushGlobalInterval = 5000; // 账户状态检测程序sleep
+    public static long accountStatesFlushGlobalInterval = 5000; // 账户状态检测程序slee
+    // p
 
     public static void main(String[] args) throws Exception {
         ThreadUtil.execAsync(() -> {
@@ -96,21 +98,23 @@ public class Trader {
         // startPythonApp(); // 是否自启动python程序
         handshake(); // 握手可控
         // 等待第一次抓取完成.
-        CommonUtils.waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100); // 等待第一次完成
+        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); // 等待第一次完成
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         startOrderExecutor();
-        Thread.sleep(200);
+        Thread.sleep(100);
 
         // 启动成交状况检测
-        startCheckTransactionStatus();
-        Thread.sleep(200);
+        Checker.startCheckTransactionStatus();
+        Thread.sleep(100);
 
         // 启动账户资金获取程序
+        AccountStates.startFlush();
+        waitUtil(AccountStates::alreadyInitialized, 20 * 1000, 100, "等待首次账户资金状态刷新完成"); // 需要等待初始化完成!
 
-        // 启动主策略下单
+        // 正式启动主策略下单
         startDummyStrategy();
-        Thread.sleep(200);
+        Thread.sleep(100);
 
 
         manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等
@@ -139,7 +143,7 @@ public class Trader {
      * // @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 换 和check程序之后执行,
      * 且需要等待5项数据第一次更新!
      * // @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
-     * // @noti: 访问 DataFrame<Object> 时, 需要对其进行强制同步. 即 synchronized(currentHolds){}
+     * // @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量. 即使静态变量被更新, 依然不影响
      */
     public static class AccountStates {
         public static ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
@@ -152,6 +156,23 @@ public class Trader {
                 .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
                         "get_today_clinch_orders", "get_today_consign_orders"); // 常量
 
+        /**
+         * 已被第一次初始化, 需要等待
+         *
+         * @return
+         */
+        public static boolean alreadyInitialized() {
+            return nineBaseFundsData
+                    .size() > 0 && currentHolds != null
+                    && canCancels != null && todayClinchs != null && todayConsigns != null;
+            // 五项不为null, 已被初始化
+        }
+
+        /**
+         * 刷新账户信息. 仅将订单放入队列.
+         *
+         * @throws Exception
+         */
         public static void startFlush() throws Exception {
 
             while (true) {
@@ -171,25 +192,26 @@ public class Trader {
                     if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
                         switch (orderType) {
                             case "get_account_funds_info":
-                                flushNineBaseFundsData(null);
+                                flushNineBaseFundsDataImmediately();
                                 break;
                             case "get_hold_stocks_info":
-                                flushCurrentHolds(null);
+                                flushCurrentHoldsImmediately();
                                 break;
                             case "get_unsolds_not_yet":
-                                flushCanCancels(null);
+                                flushCanCancelsImmediately();
                                 break;
                             case "get_today_clinch_orders":
-                                flushTodayClinchs(null);
+                                flushTodayClinchsImmediately();
                                 break;
                             case "get_today_consign_orders":
-                                flushTodayConsigns(null);
+                                flushTodayConsignsImmediately();
                                 break;
                             default:
                                 throw new Exception("error orderType");
                         }
                     }
                 }
+                Thread.sleep(accountStatesFlushGlobalInterval);
             }
 
         }
@@ -204,6 +226,13 @@ public class Trader {
             return order.getRawOrderId();
         }
 
+        /**
+         * 10大下单方法. 可提供优先级
+         *
+         * @param priority
+         * @return
+         * @throws Exception
+         */
         public static String flushNineBaseFundsData(Long priority) throws Exception {
             return flushItem("get_account_funds_info", priority);
         }
@@ -225,62 +254,98 @@ public class Trader {
         }
 
         public static String flushNineBaseFundsDataImmediately() throws Exception {
-            return flushItem("get_account_funds_info", Order.PRIORITY_HIGH / 2);
+            return flushNineBaseFundsData(Order.PRIORITY_MEDIUM / 2 + 1);
         }
 
         public static String flushCurrentHoldsImmediately() throws Exception {
-            return flushItem("get_hold_stocks_info", Order.PRIORITY_HIGH / 2);
+            return flushCurrentHolds(Order.PRIORITY_MEDIUM / 2 + 5);
         }
 
         public static String flushCanCancelsImmediately() throws Exception {
-            return flushItem("get_unsolds_not_yet", Order.PRIORITY_HIGH / 2);
+            return flushCanCancels(Order.PRIORITY_MEDIUM / 2 + 4);
         }
 
         public static String flushTodayClinchsImmediately() throws Exception {
-            return flushItem("get_today_clinch_orders", Order.PRIORITY_HIGH / 2);
+            return flushTodayClinchs(Order.PRIORITY_MEDIUM / 2 + 3);
         }
 
         public static String flushTodayConsignsImmediately() throws Exception {
-            return flushItem("get_today_consign_orders", Order.PRIORITY_HIGH / 2);
+            return flushTodayConsigns(Order.PRIORITY_MEDIUM / 2 + 2);
         }
+
+        /**
+         * update: 实际的更新操作, 将被 check程序调用, 真正的执行更新数据,此时已从python获取响应
+         */
+        public static void updateNineBaseFundsData(Map<String, Double> newData) {
+            nineBaseFundsData.putAll(newData);
+        }
+
+        public static void updateCurrentHolds(DataFrame<Object> newData) throws Exception {
+            currentHolds = newData;
+        }
+
+        public static void updateCanCancels(DataFrame<Object> newData) throws Exception {
+            canCancels = newData;
+        }
+
+        public static void updateTodayClinchs(DataFrame<Object> newData) throws Exception {
+            todayClinchs = newData;
+        }
+
+        public static void updateTodayConsigns(DataFrame<Object> newData) throws Exception {
+            todayConsigns = newData;
+        }
+
     }
 
-    private static void startCheckTransactionStatus() {
-        Thread checkTask = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.keySet().iterator(); iterator
-                            .hasNext(); ) {
-                        Order order = (Order) iterator.next();
-                        List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
+    /**
+     * 收到python响应后, 放入check Map, 等待 结果 check!
+     */
+    public static class Checker {
+        public static void startCheckTransactionStatus() {
+            Thread checkTask = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        for (Iterator iterator = ordersWaitForCheckTransactionStatusMap.keySet().iterator(); iterator
+                                .hasNext(); ) {
+                            Order order = (Order) iterator.next();
+                            List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
 
-                        // check逻辑, 这里简单模拟
-                        if (responses.size() == 0) {
-                            log.error("执行失败: {}", order.getRawOrderId());
-                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+
+
+                            // check逻辑, 这里简单模拟
+                            if (responses.size() == 0) {
+                                log.error("执行失败: {}", order.getRawOrderId());
+                                order.getLifePoints()
+                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+                            }
+                            JSONObject response = responses.get(responses.size() - 1);
+                            if ("success".equals(response.getStr("state"))) {
+                                log.info("执行成功: {}", order.getRawOrderId());
+                                order.getLifePoints()
+                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功"));
+                            } else {
+                                log.error("执行失败: {}", order.getRawOrderId());
+                                log.info(JSONUtil.parseArray(responses).toStringPretty());
+                                order.getLifePoints()
+                                        .add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
+                            }
+                            ordersWaitForCheckTransactionStatusMap.remove(order);
+                            order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH, "订单完成"));
+                            ordersFinished.put(order, responses); // 先删除, 后添加
                         }
-                        JSONObject response = responses.get(responses.size() - 1);
-                        if ("success".equals(response.getStr("state"))) {
-                            log.info("执行成功: {}", order.getRawOrderId());
-                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功"));
-                        } else {
-                            log.error("执行失败: {}", order.getRawOrderId());
-                            log.info(JSONUtil.parseArray(responses).toStringPretty());
-                            order.getLifePoints().add(new LifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败"));
-                        }
-                        ordersWaitForCheckTransactionStatusMap.remove(order);
-                        order.getLifePoints().add(new LifePoint(LifePointStatus.FINISH, "订单完成"));
-                        ordersFinished.put(order, responses); // 先删除, 后添加
                     }
                 }
-            }
-        });
-        checkTask.setDaemon(true);
-        checkTask.setPriority(Thread.MAX_PRIORITY);
-        checkTask.setName("checkTransStatus");
-        checkTask.start();
-        log.warn("check start: 开始check订单成交状况");
+            });
+            checkTask.setDaemon(true);
+            checkTask.setPriority(Thread.MAX_PRIORITY);
+            checkTask.setName("checkTransStatus");
+            checkTask.start();
+            log.warn("check start: 开始check订单成交状况");
+        }
+
+
     }
 
     /**

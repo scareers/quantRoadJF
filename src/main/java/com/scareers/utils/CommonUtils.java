@@ -5,6 +5,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
+import com.scareers.utils.log.LogUtils;
 import org.apache.poi.hssf.record.PageBreakRecord;
 
 import java.util.*;
@@ -239,8 +240,11 @@ public class CommonUtils {
         return res;
     }
 
-    public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval)
+    public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval, String description)
             throws TimeoutException, InterruptedException {
+        if (description != null) {
+            LogUtils.log.warn("wait util: {}", description);
+        }
         long start = System.currentTimeMillis();
         while (!booleanSupplier.getAsBoolean()) {
             if (System.currentTimeMillis() - start > timeout) {
