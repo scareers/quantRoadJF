@@ -7,7 +7,6 @@ import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.log.LogUtils;
 
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -16,13 +15,11 @@ import java.util.stream.Collectors;
 
 /**
  * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
- * // todo: debug仅测试.
  *
  * @author: admin
  * @date: 2021/12/21/021-18:16:14
  */
 public class StockPoolForFSTransaction implements StockPoolFactory {
-
     public static void main(String[] args) throws Exception {
         Console.log(new StockPoolForFSTransaction().createStockPool());
     }

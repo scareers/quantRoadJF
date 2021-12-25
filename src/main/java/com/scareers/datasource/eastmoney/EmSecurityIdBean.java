@@ -29,16 +29,10 @@ public class EmSecurityIdBean {
     String stockCodeSimple;
     JSONArray queryResults;
 
-    public EmSecurityIdBean(String stockCodeSimple, boolean lazy) {
+
+    public EmSecurityIdBean(String stockCodeSimple, JSONArray queryResults) {
         this.stockCodeSimple = stockCodeSimple;
-        if (!lazy) {
-            try {
-                this.queryResults = querySecurityId(stockCodeSimple);
-            } catch (Exception e) {
-                e.printStackTrace();
-                log.warn("new EmSecurityIdBean fail: 构造器执行异常");
-            }
-        }
+        this.queryResults = queryResults;
     }
 
     private void checkQueryResults() throws ExecutionException, InterruptedException { // 死循环查询
@@ -79,5 +73,24 @@ public class EmSecurityIdBean {
             }
         }
         return null;
+    }
+
+    public String getStockCodeSimple() {
+        return stockCodeSimple;
+    }
+
+    public void setStockCodeSimple(String stockCodeSimple) {
+        this.stockCodeSimple = stockCodeSimple;
+    }
+
+    public JSONArray getQueryResults() {
+        return queryResults;
+    }
+
+    public void setQueryResults(JSONArray queryResults) {
+        this.queryResults = queryResults;
+    }
+
+    public EmSecurityIdBean() {
     }
 }

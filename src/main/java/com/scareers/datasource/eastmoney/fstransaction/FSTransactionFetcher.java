@@ -6,6 +6,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.func.VoidFunc;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
@@ -203,10 +204,14 @@ public class FSTransactionFetcher {
     public static void initThreadPool() {
         threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
+                new LinkedBlockingQueue<>(),
+                ThreadUtil.newNamedThreadFactory("FSFetcher", null, true)
+        ); // 唯一线程池, 一直不shutdown
         threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
                 threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
+                new LinkedBlockingQueue<>(),
+                ThreadUtil.newNamedThreadFactory("FSTSave", null, true)
+        ); // 唯一线程池, 一直不shutdown
         log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
     }
 
