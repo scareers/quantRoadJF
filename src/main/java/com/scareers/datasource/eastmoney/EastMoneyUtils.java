@@ -168,6 +168,7 @@ public class EastMoneyUtils {
                 log.warn("fail em stockId query: 东方财富股票id查询失败: {}!", stockCodeSimple);
             }
         }
+        poolExecutor.shutdown();
         return beans;
     }
 
