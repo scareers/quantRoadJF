@@ -142,6 +142,7 @@ public class Trader {
      * 且需要等待5项数据第一次更新!
      * // @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
      * // @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量. 即使静态变量被更新, 依然不影响
+     * // @noti: 因5大方法均无需特殊参数, 重发时, 均直接从订单工厂生成纯新订单, 而非从原订单深copy而来! 速度更快
      */
     public static class AccountStates {
         public static ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
