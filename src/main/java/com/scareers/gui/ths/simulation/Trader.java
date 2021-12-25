@@ -192,46 +192,56 @@ public class Trader {
          * @throws Exception
          */
         public static void startFlush() throws Exception {
+            Thread accoutStatesFlushTask = new Thread(new Runnable() {
+                @SneakyThrows
+                @Override
+                public void run() {
+                    while (true) {
+                        // 刷新5项数据,对队列进行遍历,若存在对应类型订单, 则跳过, 否则下单
 
-            while (true) {
-                // 刷新5项数据,对队列进行遍历,若存在对应类型订单, 则跳过, 否则下单
-
-                List<String> alreadyInQueue = new ArrayList<>();
-                Iterator iterator = ordersWaitForExecution.iterator();
-                while (iterator.hasNext()) {
-                    Order order = (Order) iterator.next();
-                    if (orderTypes.contains(order.getOrderType())) {
-                        // 得到已在队列中的类型. 对其余类型进行补齐
-                        alreadyInQueue.add(order.getOrderType());
-                    }
-                }
-
-                for (String orderType : orderTypes) {
-                    if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
-                        switch (orderType) {
-                            case "get_account_funds_info":
-                                flushNineBaseFundsDataImmediately();
-                                break;
-                            case "get_hold_stocks_info":
-                                flushCurrentHoldsImmediately();
-                                break;
-                            case "get_unsolds_not_yet":
-                                flushCanCancelsImmediately();
-                                break;
-                            case "get_today_clinch_orders":
-                                flushTodayClinchsImmediately();
-                                break;
-                            case "get_today_consign_orders":
-                                flushTodayConsignsImmediately();
-                                break;
-                            default:
-                                throw new Exception("error orderType");
+                        List<String> alreadyInQueue = new ArrayList<>();
+                        Iterator iterator = ordersWaitForExecution.iterator();
+                        while (iterator.hasNext()) {
+                            Order order = (Order) iterator.next();
+                            if (orderTypes.contains(order.getOrderType())) {
+                                // 得到已在队列中的类型. 对其余类型进行补齐
+                                alreadyInQueue.add(order.getOrderType());
+                            }
                         }
+
+                        for (String orderType : orderTypes) {
+                            if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
+                                switch (orderType) {
+                                    case "get_account_funds_info":
+                                        flushNineBaseFundsDataImmediately();
+                                        break;
+                                    case "get_hold_stocks_info":
+                                        flushCurrentHoldsImmediately();
+                                        break;
+                                    case "get_unsolds_not_yet":
+                                        flushCanCancelsImmediately();
+                                        break;
+                                    case "get_today_clinch_orders":
+                                        flushTodayClinchsImmediately();
+                                        break;
+                                    case "get_today_consign_orders":
+                                        flushTodayConsignsImmediately();
+                                        break;
+                                    default:
+                                        throw new Exception("error orderType");
+                                }
+                            }
+                        }
+                        Thread.sleep(accountStatesFlushGlobalInterval);
                     }
                 }
-                Thread.sleep(accountStatesFlushGlobalInterval);
-            }
+            });
 
+            accoutStatesFlushTask.setDaemon(true);
+            accoutStatesFlushTask.setPriority(Thread.MAX_PRIORITY);
+            accoutStatesFlushTask.setName("accoutStatesFlush");
+            accoutStatesFlushTask.start();
+            log.warn("accoutStatesFlush start: 开始持续更新账户资金股票等状况");
         }
 
         public static String flushItem(String orderType, Long priority) throws Exception {
