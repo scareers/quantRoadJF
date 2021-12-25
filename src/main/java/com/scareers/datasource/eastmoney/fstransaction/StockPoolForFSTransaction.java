@@ -34,7 +34,6 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
         List<StockBean> res = stockPoolFromTushare(0, 100);
 //        List<StockBean> res = stockPoolTest();
         log.warn("finish init stockPool: 完成初始化股票池...");
-
         return res;
     }
 
@@ -53,8 +52,6 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     }
 
     public static List<StockBean> stockPoolFromTushare(int start, int end) throws Exception {
-
-        // https://searchapi.eastmoney.com/api/suggest/get?input=000001&type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=3
         HashMap<String, String> stocks = TushareApi.getStockWithBoardAsMapFromTushare();
         List<StockBean> res = new ArrayList<>();
         List<String> stockList = new ArrayList<>(stocks.keySet());
