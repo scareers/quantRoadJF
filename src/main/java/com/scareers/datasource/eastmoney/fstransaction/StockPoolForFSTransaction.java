@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeans;
+
 /**
  * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
  *
@@ -29,10 +31,10 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     @Override
     public List<StockBean> createStockPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
-//        List<StockBean> res = stockPoolFromTushare(0, 100);
-        List<StockBean> res = stockPoolTest();
+        List<StockBean> res = stockPoolFromTushare(0, 100);
+//        List<StockBean> res = stockPoolTest();
         log.warn("finish init stockPool: 完成初始化股票池...");
-        GlobalThreadPool.shutdown(false); // 关闭hutool全局线程池, 但是不能再使用了
+
         return res;
     }
 
@@ -51,21 +53,25 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     }
 
     public static List<StockBean> stockPoolFromTushare(int start, int end) throws Exception {
+
         // https://searchapi.eastmoney.com/api/suggest/get?input=000001&type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=3
         HashMap<String, String> stocks = TushareApi.getStockWithBoardAsMapFromTushare();
         List<StockBean> res = new ArrayList<>();
         List<String> stockList = new ArrayList<>(stocks.keySet());
-        for (int i = Math.max(0, start); i < Math.min(stockList.size(), end); i++) {
-            String stock = stockList.get(i);
-            if (!stock.endsWith("SZ") && !stock.endsWith("SH")) {
-                continue;
-            }
-            String secId = new EmSecurityIdBean(stock.substring(0, 6), false).getAStockSecId();
+        stockList =
+                stockList.stream().distinct().filter(stock -> stock.endsWith("SZ") || stock.endsWith("SH"))
+                        .collect(Collectors.toList());
+        List<EmSecurityIdBean> rawBeans = querySecurityIdsToBeans(stockList.subList(Math.max(0, start),
+                Math.min(stockList.size(), end)));
+        for (EmSecurityIdBean bean : rawBeans) {
+            String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
             if (secId == null) { // 无对应的指数 code
                 continue;
             }
             res.add(new StockBean(secId));
         }
+        res.add(new StockBean("1.000001"));
+        res.add(new StockBean("0.399001")); // 两大指数
         return res;
     }
 }

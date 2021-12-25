@@ -1,11 +1,13 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
+import com.scareers.utils.log.LogUtils;
 
 import java.util.List;
 
@@ -17,6 +19,8 @@ import java.util.List;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
+    private static final Log log = LogUtils.getLogger();
+
     @Override
     protected void startCore() throws Exception {
         while (true) {
@@ -41,7 +45,10 @@ public class DummyStrategy extends Strategy {
 
     @Override
     protected List<StockBean> initStockPool() {
-        return StockPoolForFSTransaction.stockPoolTest();
+        log.warn("start init stockPool: 开始初始化股票池...");
+        List<StockBean> res = StockPoolForFSTransaction.stockPoolTest();
+        log.warn("finish init stockPool: 完成初始化股票池...");
+        return res;
     }
 
     public DummyStrategy(String strategyName) {

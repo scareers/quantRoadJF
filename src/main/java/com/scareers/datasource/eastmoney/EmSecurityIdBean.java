@@ -57,7 +57,6 @@ public class EmSecurityIdBean {
         for (int i = 0; i < queryResults.size(); i++) {
             JSONObject ele = queryResults.getJSONObject(i);
             if ("AStock".equals(ele.get("Classify").toString()) || "23".equals(ele.get("Classify").toString())) {
-
                 return ele.get("QuoteID").toString();
             }
         }
