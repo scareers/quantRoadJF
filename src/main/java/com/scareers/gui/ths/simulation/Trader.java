@@ -23,6 +23,7 @@
 package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.RuntimeUtil;
@@ -135,6 +136,7 @@ public class Trader {
 
     }
 
+
     /**
      * 账号状态监控类. 当前 5项数据
      * // @noti:5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以高优先级放入待执行队列. 实际执行由待执行队列进行调度
@@ -142,7 +144,6 @@ public class Trader {
      * 且需要等待5项数据第一次更新!
      * // @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
      * // @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量. 即使静态变量被更新, 依然不影响
-     * // @noti: 因5大方法均无需特殊参数, 重发时, 均直接从订单工厂生成纯新订单, 而非从原订单深copy而来! 速度更快
      */
     public static class AccountStates {
         public static ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
@@ -304,7 +305,7 @@ public class Trader {
             JSONObject resFinal = TraderUtil.findFinalResponse(responses);
             if (resFinal == null) {
                 log.error("flush fail: AccountStates.nineBaseFundsData: 响应不正确,全为retrying状态, 任务重入队列!!");
-                reFlush("nineBaseFundsData"); // 强制高优先级重入队列!因此队列中可能存在2个
+                OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
                 return;
             }
             // 响应正确, 该响应唯一情况:
@@ -318,38 +319,10 @@ public class Trader {
                 nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
             } else {
                 log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
-                reFlush("nineBaseFundsData"); // 强制高优先级重入队列!因此队列中可能存在2个
+                OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
             }
         }
 
-        /**
-         * 重入队列, 优先级较高. 订单对象已经改变
-         *
-         * @param fieldName
-         * @return
-         * @throws Exception
-         */
-        public static void reFlush(String fieldName) throws Exception {
-            switch (fieldName) {
-                case "currentHolds":
-                    flushCurrentHolds(Order.PRIORITY_HIGH + 5);
-                    break;
-                case "canCancels":
-                    flushCanCancels(Order.PRIORITY_HIGH + 4);
-                    break;
-                case "todayClinchs":
-                    flushTodayClinchs(Order.PRIORITY_HIGH + 3);
-                    break;
-                case "todayConsigns":
-                    flushTodayConsigns(Order.PRIORITY_HIGH + 2);
-                    break;
-                case "nineBaseFundsData":
-                    flushNineBaseFundsData(Order.PRIORITY_HIGH + 1);
-                    break;
-                default:
-                    throw new Exception("error fieldName");
-            }
-        }
 
         /**
          * 最终的更新逻辑, 两字段赋值
@@ -393,13 +366,12 @@ public class Trader {
          * @param fieldName
          */
         public static void updateDfFields(Order order, List<JSONObject> responses, String fieldName,
-                                          String successDescription, DataFrame<Object> fieldBeUpdate,
-                                          Long fieldUpdateTimestamp) throws Exception {
+                                          String successDescription) throws Exception {
             JSONObject resFinal = TraderUtil.findFinalResponse(responses);
 
             if (resFinal == null) {
                 log.error("flush fail: AccountStates.{}: 响应不正确,全为retrying状态, 相同新任务重入队列!!", fieldName);
-                reFlush(fieldName); // 强制高优先级重入队列!因此队列中可能存在2个
+                OrderExecutor.reSendOrder(order);
                 return;
             }
             // 响应正确, 该响应2种情况: 即使无数据, 仅返回表头, 也解析为 dfo, 赋值.
@@ -414,8 +386,8 @@ public class Trader {
                 DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal); // 解析必然!
                 if (dfTemp == null) {
                     log.error("flush fail: AccountStates.{}: payload为null, 相同新任务重入队列!!", fieldName);
-                    reFlush(fieldName);
-                    ; // 强制高优先级重入队列!因此队列中可能存在2个
+                    OrderExecutor.reSendOrder(order);
+                    // 强制高优先级重入队列!因此队列中可能存在2个
                     return;
                 }
                 if (dfTemp.size() == 0) {
@@ -425,29 +397,25 @@ public class Trader {
                 log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
             } else {
                 log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
-                reFlush(fieldName);
+                OrderExecutor.reSendOrder(order);
             }
         }
 
 
         public static void updateCurrentHolds(Order order, List<JSONObject> responses) throws Exception {
-            updateDfFields(order, responses, "currentHolds", "当前持仓股票列表",
-                    currentHolds, currentHoldsFlushTimestamp);
+            updateDfFields(order, responses, "currentHolds", "当前持仓股票列表");
         }
 
         public static void updateCanCancels(Order order, List<JSONObject> responses) throws Exception {
-            updateDfFields(order, responses, "canCancels", "当前可撤单股票列表",
-                    canCancels, canCancelsFlushTimestamp);
+            updateDfFields(order, responses, "canCancels", "当前可撤单股票列表");
         }
 
         public static void updateTodayClinchs(Order order, List<JSONObject> responses) throws Exception {
-            updateDfFields(order, responses, "todayClinchs", "今日成交订单列表",
-                    todayClinchs, todayClinchsFlushTimestamp);
+            updateDfFields(order, responses, "todayClinchs", "今日成交订单列表");
         }
 
         public static void updateTodayConsigns(Order order, List<JSONObject> responses) throws Exception {
-            updateDfFields(order, responses, "todayConsigns", "今日委托订单列表",
-                    todayConsigns, todayConsignsFlushTimestamp);
+            updateDfFields(order, responses, "todayConsigns", "今日委托订单列表");
         }
     }
 
@@ -592,6 +560,23 @@ public class Trader {
             orderExecuteTask.setName("orderExecutor");
             orderExecuteTask.start();
             log.warn("start: orderExecutor 开始按优先级执行订单...");
+        }
+
+        /**
+         * // @key3: 核心重发订单方法. 将使用深拷贝方式, 对订单类型和参数 不进行改变!
+         *
+         * @param order
+         */
+        public static void reSendOrder(Order order, Long priority) throws Exception {
+            Order newOrder = order.deepCopyToNewOrder(true);
+            if (priority != null) { // 默认实现优先级将-1,增加1.  可直接传递
+                newOrder.setPriority(priority);
+            }
+            putOrderToWaitExecute(newOrder);
+        }
+
+        public static void reSendOrder(Order order) throws Exception {
+            reSendOrder(order, null);
         }
     }
 
