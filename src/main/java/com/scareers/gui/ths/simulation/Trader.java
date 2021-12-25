@@ -22,6 +22,7 @@
  */
 package com.scareers.gui.ths.simulation;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.RuntimeUtil;
@@ -131,7 +132,7 @@ public class Trader {
                 break;
             }
             if ("s".equals(info)) {
-                System.out.println(ordersFinished);
+
             }
         }
 
@@ -173,6 +174,14 @@ public class Trader {
                     .size() > 0 && currentHolds != null
                     && canCancels != null && todayClinchs != null && todayConsigns != null;
             // 五项不为null, 已被初始化
+        }
+
+        public static void showFields() {
+            Console.log("AccountStates.nineBaseFundsData:\n{}\n", nineBaseFundsData);
+            Console.log("AccountStates.currentHolds:\n{}\n", currentHolds.toString(100));
+            Console.log("AccountStates.canCancels:\n{}\n", canCancels.toString(100));
+            Console.log("AccountStates.todayClinchs:\n{}\n", todayClinchs.toString(100));
+            Console.log("AccountStates.todayConsigns:\n{}\n", todayConsigns.toString(100));
         }
 
         /**
@@ -372,12 +381,6 @@ public class Trader {
                 reFlush(fieldName);
             }
         }
-        /*
-                public static DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
-        public static DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
-        public static DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
-        public static DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
-         */
 
         public static void updateCurrentHolds(Order order, List<JSONObject> responses) throws Exception {
             updateDfFields(order, responses, "currentHolds", "当前持仓股票列表",
