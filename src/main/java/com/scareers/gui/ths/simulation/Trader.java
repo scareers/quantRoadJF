@@ -136,6 +136,7 @@ public class Trader {
 
     /**
      * 账号状态监控类. 当前 5项数据
+     * <p>
      * // @noti:5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以高优先级放入待执行队列. 实际执行由待执行队列进行调度
      * // @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 换 和check程序之后执行,
      * 且需要等待5项数据第一次更新!
@@ -417,7 +418,10 @@ public class Trader {
     }
 
     /**
+     * 对订单执行结果进行判定监控check!
+     * <p>
      * 收到python响应后, 放入check Map, 等待 结果 check!
+     * <p>
      * // @noti: 约定: 订单重发, 均构造类似订单
      */
     public static class Checker {
@@ -526,14 +530,15 @@ public class Trader {
         ordersWaitForExecution.put(order);
     }
 
+
+    /**
+     * 订单执行器! 将死循环线程安全优先级队列, 执行订单, 并获得响应!
+     * 订单周期变化: wait_execute --> executing --> finish_execute
+     * 并放入 成交监控队列
+     *
+     * @return
+     */
     public static class OrderExecutor {
-        /**
-         * 订单执行器! 将死循环线程安全优先级队列, 执行订单, 并获得响应!
-         * 订单周期变化: wait_execute --> executing --> finish_execute
-         * 并放入 成交监控队列
-         *
-         * @return
-         */
         public static void start() {
             Thread orderExecuteTask = new Thread(new Runnable() {
                 @SneakyThrows
