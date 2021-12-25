@@ -152,6 +152,13 @@ public class Trader {
         public static DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
         public static DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
 
+        public static Long nineBaseFundsDataFlushTimestamp = null; // 五大接口刷新时间戳! long, 实际被刷新后更新.
+        public static Long currentHoldsFlushTimestamp = null; // 均为 毫秒  System.currentTimeMillis()
+
+        public static Long canCancelsFlushTimestamp = null;
+        public static Long todayClinchsFlushTimestamp = null;
+        public static Long todayConsignsFlushTimestamp = null;
+
         public static final List<String> orderTypes = Arrays
                 .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
                         "get_today_clinch_orders", "get_today_consign_orders"); // 常量
@@ -216,7 +223,6 @@ public class Trader {
 
         }
 
-
         public static String flushItem(String orderType, Long priority) throws Exception {
             if (priority == null) {
                 priority = Order.PRIORITY_LOWEST;
@@ -276,26 +282,122 @@ public class Trader {
         /**
          * update: 实际的更新操作, 将被 check程序调用, 真正的执行更新数据,此时已从python获取响应
          */
-        public static void updateNineBaseFundsData(Map<String, Double> newData) {
-            nineBaseFundsData.putAll(newData);
+        public static void updateNineBaseFundsData(Order order, List<JSONObject> responses) throws Exception {
+            JSONObject resFinal = TraderUtil.findFinalResponse(responses);
+            if (resFinal == null) {
+                log.error("flush fail: AccountStates.nineBaseFundsData: 响应不正确,全为retrying状态, 任务重入队列!!");
+                reFlush("nineBaseFundsData"); // 强制高优先级重入队列!因此队列中可能存在2个
+                return;
+            }
+            // 响应正确, 该响应唯一情况:
+            // response = dict(state="success", description='获取账号9项资金数据成功', payload=result, rawOrder=order)
+            if ("success".equals(resFinal.getStr("state"))) {
+                Map<String, Object> results = resFinal.getJSONObject("payload");
+                for (String key : results.keySet()) {
+                    nineBaseFundsData.put(key, Double.valueOf(results.get(key).toString()));
+                }
+                log.debug("flush success: AccountStates.nineBaseFundsData: 已更新账户9项基本资金数据");
+                nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
+            } else {
+                log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
+                reFlush("nineBaseFundsData"); // 强制高优先级重入队列!因此队列中可能存在2个
+            }
         }
 
-        public static void updateCurrentHolds(DataFrame<Object> newData) throws Exception {
-            currentHolds = newData;
+        public static String reFlush(String fieldName) throws Exception {
+            switch (fieldName) {
+                case "currentHolds":
+                    flushCurrentHolds(Order.PRIORITY_HIGH + 5);
+                    break;
+                case "canCancels":
+                    flushCanCancels(Order.PRIORITY_HIGH + 4);
+                    break;
+                case "todayClinchs":
+                    flushTodayClinchs(Order.PRIORITY_HIGH + 3);
+                    break;
+                case "todayConsigns":
+                    flushTodayConsigns(Order.PRIORITY_HIGH + 2);
+                    break;
+                case "nineBaseFundsData":
+                    flushNineBaseFundsData(Order.PRIORITY_HIGH + 1);
+                    break;
+                default:
+                    throw new Exception("error fieldName");
+            }
+            return null;
         }
 
-        public static void updateCanCancels(DataFrame<Object> newData) throws Exception {
-            canCancels = newData;
+        /**
+         * 四大df字段,更新逻辑相同, 均为读取payload, 转换df后更新
+         * 注意, 重入队列的订单, 已经是新的订单对象, 非原订单 !!
+         *
+         * @param order
+         * @param responses
+         * @param fieldName
+         */
+        public static void updateDfFields(Order order, List<JSONObject> responses, String fieldName,
+                                          String successDescription, DataFrame<Object> fieldBeUpdate,
+                                          Long fieldUpdateTimestamp) throws Exception {
+            JSONObject resFinal = TraderUtil.findFinalResponse(responses);
+
+            if (resFinal == null) {
+                log.error("flush fail: AccountStates.{}: 响应不正确,全为retrying状态, 相同新任务重入队列!!", fieldName);
+                reFlush(fieldName); // 强制高优先级重入队列!因此队列中可能存在2个
+                return;
+            }
+            // 响应正确, 该响应2种情况: 即使无数据, 仅返回表头, 也解析为 dfo, 赋值.
+            // 4大df字段基本相同, 仅描述不同
+            /*
+                response = dict(state="success", description='当前并没有持仓股票',
+                        payload=results_lines, rawOrder=order)
+                response = dict(state="success", description=f'获取账号股票持仓信息成功',
+                        payload=results_lines, rawOrder=order)
+             */
+            if ("success".equals(resFinal.getStr("state"))) {
+                DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal); // 解析必然!
+                if (dfTemp == null) {
+                    log.error("flush fail: AccountStates.{}: payload为null, 相同新任务重入队列!!", fieldName);
+                    reFlush(fieldName);
+                    ; // 强制高优先级重入队列!因此队列中可能存在2个
+                    return;
+                }
+                fieldBeUpdate = dfTemp;
+                if (fieldBeUpdate.size() == 0) {
+                    log.warn("empty df: 当前持仓数据为空");
+                }
+                fieldUpdateTimestamp = System.currentTimeMillis();
+                log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
+            } else {
+                log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
+                reFlush(fieldName);
+            }
+        }
+        /*
+                public static DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
+        public static DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
+        public static DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
+        public static DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
+         */
+
+        public static void updateCurrentHolds(Order order, List<JSONObject> responses) throws Exception {
+            updateDfFields(order, responses, "currentHolds", "当前持仓股票列表",
+                    currentHolds, currentHoldsFlushTimestamp);
         }
 
-        public static void updateTodayClinchs(DataFrame<Object> newData) throws Exception {
-            todayClinchs = newData;
+        public static void updateCanCancels(Order order, List<JSONObject> responses) throws Exception {
+            updateDfFields(order, responses, "canCancels", "当前可撤单股票列表",
+                    canCancels, canCancelsFlushTimestamp);
         }
 
-        public static void updateTodayConsigns(DataFrame<Object> newData) throws Exception {
-            todayConsigns = newData;
+        public static void updateTodayClinchs(Order order, List<JSONObject> responses) throws Exception {
+            updateDfFields(order, responses, "todayClinchs", "今日成交订单列表",
+                    todayClinchs, todayClinchsFlushTimestamp);
         }
 
+        public static void updateTodayConsigns(Order order, List<JSONObject> responses) throws Exception {
+            updateDfFields(order, responses, "todayConsigns", "今日委托订单列表",
+                    todayConsigns, todayConsignsFlushTimestamp);
+        }
     }
 
     /**
@@ -304,6 +406,7 @@ public class Trader {
     public static class Checker {
         public static void startCheckTransactionStatus() {
             Thread checkTask = new Thread(new Runnable() {
+                @SneakyThrows
                 @Override
                 public void run() {
                     while (true) {
@@ -312,6 +415,10 @@ public class Trader {
                             Order order = (Order) iterator.next();
                             List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
 
+                            String orderType = order.getOrderType();
+                            if (AccountStates.orderTypes.contains(orderType)) {
+                                checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
+                            }
 
 
                             // check逻辑, 这里简单模拟
@@ -345,7 +452,28 @@ public class Trader {
             log.warn("check start: 开始check订单成交状况");
         }
 
-
+        public static void checkForAccountStates(Order order, List<JSONObject> responses, String orderType)
+                throws Exception {
+            switch (orderType) {
+                case "get_account_funds_info":
+                    AccountStates.updateNineBaseFundsData(order, responses);
+                    break;
+                case "get_hold_stocks_info":
+                    AccountStates.updateCurrentHolds(order, responses);
+                    break;
+                case "get_unsolds_not_yet":
+                    AccountStates.updateCanCancels(order, responses);
+                    break;
+                case "get_today_clinch_orders":
+                    AccountStates.updateTodayClinchs(order, responses);
+                    break;
+                case "get_today_consign_orders":
+                    AccountStates.updateTodayConsigns(order, responses);
+                    break;
+                default:
+                    throw new Exception("error orderType");
+            }
+        }
     }
 
     /**
