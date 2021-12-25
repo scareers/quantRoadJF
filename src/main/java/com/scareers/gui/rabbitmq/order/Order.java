@@ -171,28 +171,30 @@ public class Order implements Comparable {
     @NoArgsConstructor
     public static class LifePoint { // 生命周期中, 某一时刻点
         LifePointStatus status;
+        Long timestamp;
         String description;
         String payload;
         String notes;
 
         public LifePoint(LifePointStatus status) {
             this.status = status;
+            this.timestamp = System.currentTimeMillis();
         }
 
         public LifePoint(LifePointStatus status, String description) {
-            this.status = status;
+            this(status);
             this.description = description;
         }
 
         public LifePoint(LifePointStatus status, String description, String payload) {
-            this.status = status;
-            this.description = description;
+            this(status, description);
             this.payload = payload;
         }
 
         public JSON asJson() {
             JSONObject lifePoint = new JSONObject();
             lifePoint.set("status", status.toString());
+            lifePoint.set("timestamp", timestamp);
             lifePoint.set("description", description);
             lifePoint.set("payload", payload);
             lifePoint.set("notes", notes);

@@ -240,7 +240,7 @@ public class Trader {
 
             accoutStatesFlushTask.setDaemon(true);
             accoutStatesFlushTask.setPriority(Thread.MAX_PRIORITY);
-            accoutStatesFlushTask.setName("accoutStatesFlush");
+            accoutStatesFlushTask.setName("accoutStateFlush");
             accoutStatesFlushTask.start();
             log.warn("accoutStatesFlush start: 开始持续更新账户资金股票等状况");
         }
