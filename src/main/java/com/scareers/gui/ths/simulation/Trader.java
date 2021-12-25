@@ -88,27 +88,20 @@ public class Trader {
     // p
 
     public static void main(String[] args) throws Exception {
-        ThreadUtil.execAsync(() -> {
-            try {
-                FSTransactionFetcher.startFetch();
-            } catch (Exception e) {
-                e.printStackTrace();
-                log.error("error: 数据获取程序出现错误!");
-            }
-        }, true); // 数据获取程序运行
+        FSTransactionFetcher.startFetch();
+        Thread.sleep(100);
 
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
-        // startPythonApp(); // 是否自启动python程序
-        handshake(); // 握手可控
-        // 等待第一次抓取完成.
+        // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
+        handshake(); // 与python握手可控
         waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); // 等待第一次完成
         log.warn("finish: 第一次tick数据抓取完成");
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
-        startOrderExecutor();
+        OrderExecutor.start();
         Thread.sleep(100);
 
-        // 启动成交状况检测
+        // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等
         Checker.startCheckTransactionStatus();
         Thread.sleep(100);
 
@@ -459,6 +452,7 @@ public class Trader {
 
     /**
      * 收到python响应后, 放入check Map, 等待 结果 check!
+     * // @noti: 约定: 订单重发, 均构造类似订单
      */
     public static class Checker {
         public static void startCheckTransactionStatus() {
@@ -566,36 +560,38 @@ public class Trader {
         ordersWaitForExecution.put(order);
     }
 
-    /**
-     * 订单执行器! 将死循环线程安全优先级队列, 执行订单, 并获得响应!
-     * 订单周期变化: wait_execute --> executing --> finish_execute
-     * 并放入 成交监控队列
-     *
-     * @return
-     */
-    public static void startOrderExecutor() {
-        Thread orderExecuteTask = new Thread(new Runnable() {
-            @SneakyThrows
-            @Override
-            public void run() {
-                while (true) {
-                    Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
-                    log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
-                            order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
-                    order.addLifePoint(LifePointStatus.EXECUTING, "开始执行订单");
-                    List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
-                    order.addLifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成");
-                    order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
-                            "等待check完成");
-                    ordersWaitForCheckTransactionStatusMap.put(order, responses);
+    public static class OrderExecutor {
+        /**
+         * 订单执行器! 将死循环线程安全优先级队列, 执行订单, 并获得响应!
+         * 订单周期变化: wait_execute --> executing --> finish_execute
+         * 并放入 成交监控队列
+         *
+         * @return
+         */
+        public static void start() {
+            Thread orderExecuteTask = new Thread(new Runnable() {
+                @SneakyThrows
+                @Override
+                public void run() {
+                    while (true) {
+                        Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
+                        log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}",
+                                order.getRawOrderId(), order.getPriority(), order.getOrderType(), order.getParams());
+                        order.addLifePoint(LifePointStatus.EXECUTING, "开始执行订单");
+                        List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
+                        order.addLifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成");
+                        order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
+                                "等待check完成");
+                        ordersWaitForCheckTransactionStatusMap.put(order, responses);
+                    }
                 }
-            }
-        });
-        orderExecuteTask.setDaemon(true);
-        orderExecuteTask.setPriority(Thread.MAX_PRIORITY);
-        orderExecuteTask.setName("orderExecutor");
-        orderExecuteTask.start();
-        log.warn("start: orderExecutor 开始按优先级执行订单...");
+            });
+            orderExecuteTask.setDaemon(true);
+            orderExecuteTask.setPriority(Thread.MAX_PRIORITY);
+            orderExecuteTask.setName("orderExecutor");
+            orderExecuteTask.start();
+            log.warn("start: orderExecutor 开始按优先级执行订单...");
+        }
     }
 
 

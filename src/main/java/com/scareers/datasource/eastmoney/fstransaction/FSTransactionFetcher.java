@@ -13,6 +13,7 @@ import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -64,9 +65,25 @@ public class FSTransactionFetcher {
 
     public static void main(String[] args) throws Exception {
         startFetch();
+        Thread.sleep(1000000);
     }
 
     public static void startFetch() throws Exception {
+        Thread fsFetchTask = new Thread(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                startFetch0();
+            }
+        });
+        fsFetchTask.setDaemon(true);
+        fsFetchTask.setPriority(Thread.MAX_PRIORITY);
+        fsFetchTask.setName("FSTransFetcher");
+        fsFetchTask.start();
+        log.warn("FSTransFetcher start: 开始持续获取实时成交数据");
+    }
+
+    public static void startFetch0() throws Exception {
         initThreadPool();
         StockPoolFactory stockPoolFactory = new StockPoolForFSTransaction();
         boolean shouldFetchToday = newDayDecide();

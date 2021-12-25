@@ -2,12 +2,14 @@ package com.scareers.gui.rabbitmq.order;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.*;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtils;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
  * --> finish_execute(已接收到python响应)
  * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
  * --> finish (订单彻底完成)
+ * <p>
+ * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
  *
  * @author: admin
  * @date: 2021/12/23/023-18:17:58
@@ -28,7 +32,8 @@ import java.util.stream.Collectors;
 @Data
 @AllArgsConstructor
 @Builder
-public class Order implements Comparable {
+public class Order implements Comparable, Serializable {
+    private static final long serialVersionUID = 123121545L;
     // 转换为jsonStr时配置
     public static JSONConfig orderJsonStrConfig;
     public static long PRIORITY_LOWEST = 10000; // 5大优先级常量
@@ -51,10 +56,15 @@ public class Order implements Comparable {
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
     private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
+    private boolean isResend; // 是否是某情况下check后的 重发对象? 默认false
 
     public static void main(String[] args) throws Exception {
         Order x = new BuyOrder(new HashMap<>());
         Console.log(x.toJsonPrettyStr());
+
+        Console.log(x.deepCopy());
+
+        Console.log(x.toJsonPrettyStr().equals(x.deepCopy().toJsonPrettyStr()));
     }
 
 
@@ -67,7 +77,8 @@ public class Order implements Comparable {
                 null,
                 true,
                 new HashMap<>(),
-                PRIORITY_LOWEST);
+                PRIORITY_LOWEST,
+                false);
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
@@ -187,11 +198,49 @@ public class Order implements Comparable {
         this.getLifePoints().add(new LifePoint(status, description, payload, notes));
     }
 
+    /**
+     * 纯深拷贝. private
+     *
+     * @return
+     */
+    private Order deepCopy() {
+        return ObjectUtil.cloneByStream(this);
+    }
+
+    /**
+     * // @key2: 订单深拷贝方法, 对某些属性进行合理的改变
+     * 典型用于, 当需要重发订单时, 需要对原订单进行拷贝, 但是几乎只保留 订单类型和参数, 其余属性需要刷新!
+     * --> 保留的属性: 订单类型, 参数
+     * --> 刷新为初始化的属性: 全局id, 生成时间戳, 生命周期列表,优先级-1,
+     * // @key: 该方法并未使用 新建对象, 仅修改订单类型和参数的方式. 直接copy较为健壮
+     *
+     * @return 新订单对象!
+     */
+    public Order deepCopyToNewOrder(boolean isResend) {
+        Order res = ObjectUtil.cloneByStream(this);
+        res.setRawOrderId(IdUtil.objectId());
+        res.setTimestamp(System.currentTimeMillis());
+        List<LifePoint> lifePoints = new ArrayList<>();
+        lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
+        lifePoints.add(new LifePoint(LifePointStatus.GENERATED,
+                StrUtil.format("生成完成,订单对象已确定类型: {}", res.getOrderType()))); // 生成
+        res.setLifePoints(lifePoints);
+        res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1
+        res.setResend(isResend); // 重发!!
+        return res;
+    }
+
+    public Order deepCopyToNewOrder() {
+        return deepCopyToNewOrder(true); // 默认copy时为重发对象!!
+    }
+
 
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class LifePoint { // 生命周期中, 某一时刻点
+    public static class LifePoint implements Serializable { // 生命周期中, 某一时刻点
+        private static final long serialVersionUID = 1454451855L;
+
         Long timestamp;
         LifePointStatus status;
         String description;
@@ -239,15 +288,16 @@ public class Order implements Comparable {
      * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
      * --> finish (订单彻底完成)
      */
-    public enum LifePointStatus {
+    public enum LifePointStatus implements Serializable {
         NEW("new"),
         GENERATED("generated"),
         WAIT_EXECUTE("wait_execute"),
         EXECUTING("executing"),
         FINISH_EXECUTE("finish_execute"),
         CHECK_TRANSACTION_STATUS("check_transaction_status"),
-        FINISH("finish"),
-        ;
+        FINISH("finish");
+
+        private static final long serialVersionUID = 101241855L;
 
         private String description; // 文字描述
 
