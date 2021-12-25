@@ -1,12 +1,9 @@
 package com.scareers.gui.ths.simulation.strategy;
 
-import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.gui.rabbitmq.order.Order;
-import com.scareers.gui.ths.simulation.Trader;
 import com.scareers.utils.log.LogUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
