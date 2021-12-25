@@ -25,7 +25,6 @@ public abstract class Strategy {
      */
     protected abstract void startCore() throws Exception;
 
-
     /**
      * 默认实现即 新建守护线程执行核心逻辑
      */

@@ -16,11 +16,6 @@ import lombok.SneakyThrows;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
-
-    public DummyStrategy(String strategyName) {
-        super(strategyName);
-    }
-
     @Override
     public void startCore() throws Exception {
         while (true) {
@@ -41,5 +36,9 @@ public class DummyStrategy extends Strategy {
             }
             Trader.putOrderToWaitExecute(order);
         }
+    }
+
+    public DummyStrategy(String strategyName) {
+        super(strategyName);
     }
 }
