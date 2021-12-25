@@ -1,6 +1,7 @@
 package com.scareers.utils;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
@@ -245,6 +246,8 @@ public class CommonUtils {
         if (description != null) {
             LogUtils.log.warn("wait util: {}", description);
         }
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
         long start = System.currentTimeMillis();
         while (!booleanSupplier.getAsBoolean()) {
             if (System.currentTimeMillis() - start > timeout) {
@@ -252,6 +255,7 @@ public class CommonUtils {
             }
             Thread.sleep(interval);
         }
+        LogUtils.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
     }
 
 }

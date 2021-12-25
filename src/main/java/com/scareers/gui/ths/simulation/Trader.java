@@ -34,6 +34,7 @@ import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
+import com.scareers.gui.ths.simulation.strategy.DummyStrategy;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -84,7 +85,19 @@ public class Trader {
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
     public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序slee
-    // p
+
+    /**
+     * 主策略类. startDealWith()方法 开始执行策略. 一般调用 strategy 包中某具体实现.startDealWith() 方法
+     */
+    public static class MainStrategy {
+        /**
+         * 开始处理
+         */
+        public static void startDealWith() {
+            new DummyStrategy(DummyStrategy.class.getName()).startDealWith();
+            // 此处调用真实策略 .startDealWith()
+        }
+    }
 
     public static void main(String[] args) throws Exception {
         FSTransactionFetcher.startFetch();
@@ -93,7 +106,8 @@ public class Trader {
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
         handshake(); // 与python握手可控
-        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); // 等待第一次完成
+        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "等待第一次tick数据抓取完成"); //
+        // 等待第一次完成
         log.warn("finish: 第一次tick数据抓取完成");
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
@@ -110,7 +124,7 @@ public class Trader {
         log.warn("finish: 首次账户资金状态刷新完成");
 
         // 正式启动主策略下单
-        startDummyStrategy();
+        MainStrategy.startDealWith();
         Thread.sleep(100);
 
 
@@ -487,43 +501,6 @@ public class Trader {
             }
         }
     }
-
-    /**
-     * 虚拟的策略, 随机生成订单, 放入队列执行
-     */
-    public static void startDummyStrategy() {
-        Thread strategyTask = new Thread(new Runnable() {
-            @SneakyThrows
-            @Override
-            public void run() {
-                while (true) {
-                    int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-                    Thread.sleep(sleep * 1000);
-                    Order order = null;
-                    int type = RandomUtil.randomInt(12);
-                    if (type < 3) {
-                        order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGHEST);
-                    } else if (type < 6) {
-                        order = OrderFactory.generateSellOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGH);
-                    } else if (type < 8) {
-                        order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_MEDIUM);
-                    } else if (type < 10) {
-                        order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_LOWEST);
-                    } else {
-                        order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-                    }
-                    putOrderToWaitExecute(order);
-                }
-            }
-        });
-
-        strategyTask.setDaemon(true);
-        strategyTask.setPriority(Thread.MAX_PRIORITY);
-        strategyTask.setName("dummyStrategy");
-        strategyTask.start();
-        log.warn("start: dummyStrategy 开始执行策略生成订单...");
-    }
-
 
 
     public static void putOrderToWaitExecute(Order order) throws Exception {
