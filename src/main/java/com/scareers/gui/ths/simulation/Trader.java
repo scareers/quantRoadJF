@@ -122,7 +122,7 @@ public class Trader {
         manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.
 
         closeDualChannelAndConn(); // 关闭连接
-        FSTransactionFetcher.stopFetch(); // 停止数据抓取
+        FSTransactionFetcher.stopFetch(); // 停止数据抓 取
     }
 
     private static void manualInteractive() {
