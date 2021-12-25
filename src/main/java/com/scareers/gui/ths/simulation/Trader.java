@@ -98,7 +98,7 @@ public class Trader {
 
     public static void main(String[] args) throws Exception {
         Strategy mainStrategy = MainStrategy.createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
-        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. fsTransactionDatas
+        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
 
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
@@ -468,6 +468,14 @@ public class Trader {
             log.warn("check start: 开始check订单成交状况");
         }
 
+        /**
+         * 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现!
+         *
+         * @param order
+         * @param responses
+         * @param orderType
+         * @throws Exception
+         */
         public static void checkForAccountStates(Order order, List<JSONObject> responses, String orderType)
                 throws Exception {
             switch (orderType) {
