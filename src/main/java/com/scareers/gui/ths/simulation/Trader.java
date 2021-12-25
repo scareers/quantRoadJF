@@ -23,7 +23,6 @@
 package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.RuntimeUtil;
@@ -34,7 +33,6 @@ import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
-import com.scareers.gui.rabbitmq.order.Order.LifePoint;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
@@ -133,7 +131,6 @@ public class Trader {
                 AccountStates.showFields();
             }
         }
-
     }
 
 
