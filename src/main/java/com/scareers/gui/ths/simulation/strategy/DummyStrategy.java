@@ -34,6 +34,11 @@ public class DummyStrategy extends Strategy {
     }
 
     @Override
+    protected List<String> stockSelect() {
+        return null;
+    }
+
+    @Override
     protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
@@ -44,9 +49,7 @@ public class DummyStrategy extends Strategy {
             log.info(JSONUtil.parseArray(responses).toStringPretty());
             order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
         }
-        Trader.ordersWaitForCheckTransactionStatusMap.remove(order);
-        order.addLifePoint(Order.LifePointStatus.FINISH, "订单完成");
-        Trader.ordersFinished.put(order, responses); // 先删除, 后添加
+        Trader.successFinishOrder(order, responses);
     }
 
     @Override

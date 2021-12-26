@@ -137,6 +137,12 @@ public class Trader {
         }
     }
 
+    public static void successFinishOrder(Order order, List<JSONObject> responses) {
+        Trader.ordersWaitForCheckTransactionStatusMap.remove(order);
+        order.addLifePoint(Order.LifePointStatus.FINISH, "订单完成");
+        Trader.ordersFinished.put(order, responses); // 先删除, 后添加
+    }
+
 
     /**
      * 账号状态监控类. 当前 5项数据

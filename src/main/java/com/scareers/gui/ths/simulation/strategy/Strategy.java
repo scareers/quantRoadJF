@@ -39,6 +39,11 @@ public abstract class Strategy {
     protected abstract List<StockBean> initStockPool();
 
     /**
+     * 选股方法. 通常需要加上各大指数, 最终将构建股票池
+     */
+    protected abstract List<String> stockSelect();
+
+    /**
      * 针对 buy 订单check逻辑. 检测成交是否完成等
      */
     protected abstract void checkBuyOrder(Order order, List<JSONObject> responses, String orderType);

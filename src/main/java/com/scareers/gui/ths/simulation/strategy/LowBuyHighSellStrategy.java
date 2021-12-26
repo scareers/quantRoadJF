@@ -33,6 +33,11 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
+    protected List<String> stockSelect() {
+        return null;
+    }
+
+    @Override
     protected void startCore() throws Exception {
         // 低买高卖
     }
