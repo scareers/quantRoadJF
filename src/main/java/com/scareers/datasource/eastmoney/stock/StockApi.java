@@ -57,15 +57,13 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 //        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
         Console.log(timer.intervalRestart());
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
         Console.log(timer.intervalRestart());
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
         Console.log(timer.intervalRestart());
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
-        Console.log(timer.intervalRestart());
-        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1"));
+        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2));
 
 
     }
@@ -246,7 +244,7 @@ public class StockApi {
                     System.currentTimeMillis() - RandomUtil.randomInt(1000)));
             params.put("_", System.currentTimeMillis());
 
-            response = getAsStrUseHutool(keyUrl, params, timeout);
+            response = getAsStrUseHutool(keyUrl, params, timeout, 1);
         } catch (Exception e) {
             // e.printStackTrace();
             log.error("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
@@ -364,7 +362,8 @@ public class StockApi {
     public static ConcurrentHashMap<String, DataFrame<Object>> getQuoteHistory(List<String> stockCodesSimple,
                                                                                String begDate,
                                                                                String endDate,
-                                                                               String klType, String fq)
+                                                                               String klType, String fq,
+                                                                               int retrySingle)
             throws ExecutionException, InterruptedException {
         /*
                               beg: str = '19000101',
@@ -397,7 +396,7 @@ public class StockApi {
                     String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
                     String response = null;
                     try {
-                        response = getAsStrUseHutool(url, params, 2000);
+                        response = getAsStrUseHutool(url, params, 2000, retrySingle);
                     } catch (Exception e) {
                         return null;
                     }
