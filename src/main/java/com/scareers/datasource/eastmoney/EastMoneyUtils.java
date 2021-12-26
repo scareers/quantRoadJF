@@ -4,36 +4,35 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.GlobalThreadPool;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.Header;
-import cn.hutool.http.HttpRequest;
+import cn.hutool.http.Method;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONNull;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.utils.log.LogUtils;
-import joinery.DataFrame;
 
-import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.*;
-import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 
 /**
  * description:
+ * // noti: 不同的api, 因底层设计不同, 可能需要使用不同实现.
  *
  * @author: admin
  * @date: 2021/12/21/021-22:31:30
  */
 public class EastMoneyUtils {
-    // dc 代码查询结果全缓存, 且线程安全, 因常线程池批量调用
+    // dc 代码查询结果全缓存, 且线程安全, 因常线程池批量调用  getAsStrUseHutool/getAsStrUseKevin 使用不同库. 具体api自己试
     public static ConcurrentHashMap<String, JSONArray> quoteCache = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        Console.log(querySecurityId("300719"));
+        Console.log(querySecurityId("000001"));
         GlobalThreadPool.shutdown(false);
     }
 
@@ -45,21 +44,17 @@ public class EastMoneyUtils {
      * @return
      */
     public static HttpRequest addDefaultSettings(HttpRequest request, int timeout) {
-        return request.header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
-                .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
-                .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
-                .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
-                .timeout(timeout)
+        return request.header("User-Agent", HEADER_VALUE_OF_USER_AGENT)
+                .header("Accept", HEADER_VALUE_OF_ACCEPT)
+                .header("Accept-Language", HEADER_VALUE_OF_ACCEPT_LANGUAGE)
+                .header("Referer", HEADER_VALUE_OF_REFERER)
+                .connectTimeout(timeout)
+                .readTimeout(timeout)
                 ;
     }
 
     public static HttpRequest addDefaultSettings(HttpRequest request) {
-        return request.header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
-                .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
-                .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
-                .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
-                .timeout(DEFAULT_TIMEOUT)
-                ;
+        return addDefaultSettings(request, DEFAULT_TIMEOUT);
     }
 
     /**
@@ -70,11 +65,29 @@ public class EastMoneyUtils {
      * @param timeout
      * @return
      */
-    public static String getAsStr(String url, Map<String, Object> params, int timeout) {
-        HttpRequest request = new HttpRequest(url);
-        request = addDefaultSettings(request, timeout); // 默认请求头
-        request.form(params); // 参数
+    public static String getAsStrUseHutool(String url, Map<String, Object> params, int timeout) {
+        cn.hutool.http.HttpRequest request =
+                new cn.hutool.http.HttpRequest(url)
+                        .method(Method.GET)
+                        .form(params)
+                        .timeout(timeout)
+                        .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
+                        .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
+                        .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
+                        .header(Header.REFERER, HEADER_VALUE_OF_REFERER);
         return request.execute().body();
+    }
+
+    /**
+     * get 快捷
+     *
+     * @param url
+     * @param params
+     * @param timeout
+     * @return
+     */
+    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout) {
+        return addDefaultSettings(HttpRequest.get(url), timeout).form(params).body();
     }
 
 
@@ -104,7 +117,8 @@ public class EastMoneyUtils {
         String response = null;
         for (int i = 0; i < 3; i++) {
             try {
-                response = getAsStr(url, params, 2000);
+                response = getAsStrUseHutool(url, params, 2000);
+                Console.log(response);
             } catch (Exception e) {
                 e.printStackTrace();
             }
