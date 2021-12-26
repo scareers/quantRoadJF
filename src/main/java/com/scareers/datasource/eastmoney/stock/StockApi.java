@@ -3,6 +3,7 @@ package com.scareers.datasource.eastmoney.stock;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
@@ -11,15 +12,11 @@ import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.getAsStrUseHutool;
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.getAsStrUseKevin;
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
@@ -35,6 +32,8 @@ public class StockApi {
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
 
+    public static ThreadPoolExecutor poolExecutor;
+
 
     public static void main(String[] args) throws Exception {
 //        List<StockBean> stocks = new StockPoolForFSTransaction().createStockPool();
@@ -44,7 +43,7 @@ public class StockApi {
 
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("科创板"));
+        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
         Console.log(timer.intervalRestart());
 
     }
@@ -270,5 +269,98 @@ public class StockApi {
         return dfTemp;
     }
 
+    /**
+     * 获取k线. 复刻 efinance   get_quote_history
+     * <p>
+     * 获取股票的 K 线数据
+     * <p>
+     * Parameters
+     * ----------
+     * stock_codes : Union[str,List[str]]
+     * 股票代码、名称 或者 股票代码、名称构成的列表
+     * beg : str, optional
+     * 开始日期，默认为 ``'19000101'`` ，表示 1900年1月1日
+     * end : str, optional
+     * 结束日期，默认为 ``'20500101'`` ，表示 2050年1月1日
+     * klt : int, optional
+     * 行情之间的时间间隔，默认为 ``101`` ，可选示例如下
+     * <p>
+     * - ``1`` : 分钟
+     * - ``5`` : 5 分钟
+     * - ``15`` : 15 分钟
+     * - ``30`` : 30 分钟
+     * - ``60`` : 60 分钟
+     * - ``101`` : 日
+     * - ``102`` : 周
+     * - ``103`` : 月
+     * <p>
+     * fqt : int, optional
+     * 复权方式，默认为 ``1`` ，可选示例如下
+     * <p>
+     * - ``0`` : 不复权
+     * - ``1`` : 前复权
+     * - ``2`` : 后复权
+     * <p>
+     * Returns
+     * -------
+     * Union[DataFrame, Dict[str, DataFrame]]
+     * 股票的 K 线数据
+     * <p>
+     * - ``DataFrame`` : 当 ``stock_codes`` 是 ``str`` 时
+     * - ``Dict[str, DataFrame]`` : 当 ``stock_codes`` 是 ``List[str]`` 时
+     * <p>
+     * Examples
+     *
+     * @return
+     */
+    public static ConcurrentHashMap<String, DataFrame<Object>> getQuoteHistory(List<String> stockCodesSimple,
+                                                                               String begDate,
+                                                                               String endDate,
+                                                                               String klType, String fq)
+            throws ExecutionException, InterruptedException {
+        /*
+                              beg: str = '19000101',
+                      end: str = '20500101',
+                      klt: int = 101,
+                      fqt: int = 1,
+         */
+        if (poolExecutor == null) {
+            poolExecutor = new ThreadPoolExecutor(8, 32, 10000, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
+
+        }
+
+        HashMap<String, Future<DataFrame<Object>>> futures = new HashMap<>();
+        for (String stock : stockCodesSimple) {
+            futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
+                @Override
+                public DataFrame<Object> call() throws Exception {
+                    List<String> fields = Arrays.asList("f12", "f14", "f3", "f2", "f15", "f16", "f17", "f4", "f8",
+                            "f10", "f9", "f5", "f6", "f18", "f20", "f21", "f13");
+                    String fieldsStr = StrUtil.join(",", fields);
+                    String quoteId = querySecurityIdSimple(stock);
+
+                    HashMap<String, Object> params = new HashMap<>();
+                    params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
+                    params.put("fields2", fieldsStr);
+                    params.put("beg", begDate);
+                    params.put("end", endDate);
+                    params.put("rtntype", "6");
+                    params.put("secid", quoteId);
+                    params.put("klt", klType);
+                    params.put("fqt", fq);
+
+                    String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
+                    String response = getAsStrUseHutool(url, params, 4000);
+                    return null;
+                }
+            }));
+        }
+        ConcurrentHashMap<String, DataFrame<Object>> res = new ConcurrentHashMap<>();
+        for (String stock : futures.keySet()) {
+            res.put(stock, futures.get(stock).get());
+        }
+        return res;
+    }
 
 }

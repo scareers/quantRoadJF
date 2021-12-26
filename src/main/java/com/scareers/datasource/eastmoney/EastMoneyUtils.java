@@ -34,6 +34,8 @@ public class EastMoneyUtils {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         Console.log(querySecurityId("000001"));
         GlobalThreadPool.shutdown(false);
+
+        Console.log(querySecurityIdSimple("000001"));
     }
 
     /**
@@ -139,6 +141,18 @@ public class EastMoneyUtils {
         quoteCache.put(simpleCode, res);
         return res;
     }
+
+    /**
+     * 简单返回第一个结果 QuoteID 字段  0.000001
+     *
+     * @param simpleCode
+     * @return
+     */
+    public static String querySecurityIdSimple(String simpleCode) {
+        JSONArray response = querySecurityId(simpleCode);
+        return response.getJSONObject(0).getStr("QuoteID");
+    }
+
 
     /**
      * 批量查询简单股票代码, 获取 em 查询结果.  返回  EmSecurityIdBean 对象!!
