@@ -60,24 +60,43 @@ public class EastMoneyUtils {
     }
 
     /**
-     * get 快捷
+     * get 快捷;  将最多重试三次抛出异常
      *
      * @param url
      * @param params
      * @param timeout
      * @return
      */
+    public static String getAsStrUseHutool(String url, Map<String, Object> params, int timeout, int retry) {
+        String res = null;
+        int i = 0;
+        while (true) {
+            i++;
+            try {
+                cn.hutool.http.HttpRequest request =
+                        new cn.hutool.http.HttpRequest(url)
+                                .method(Method.GET)
+                                .form(params)
+                                .timeout(timeout)
+                                .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
+                                .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
+                                .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
+                                .header(Header.REFERER, HEADER_VALUE_OF_REFERER);
+                res = request.execute().body();
+            } catch (Exception e) {
+                if (i >= retry) {
+                    throw e;
+                }
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
+    }
+
     public static String getAsStrUseHutool(String url, Map<String, Object> params, int timeout) {
-        cn.hutool.http.HttpRequest request =
-                new cn.hutool.http.HttpRequest(url)
-                        .method(Method.GET)
-                        .form(params)
-                        .timeout(timeout)
-                        .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
-                        .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
-                        .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
-                        .header(Header.REFERER, HEADER_VALUE_OF_REFERER);
-        return request.execute().body();
+        return getAsStrUseHutool(url, params, timeout, 3);
     }
 
     /**
@@ -88,8 +107,27 @@ public class EastMoneyUtils {
      * @param timeout
      * @return
      */
+    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout, int retry) {
+        String res = null;
+        int i = 0;
+        while (true) {
+            i++;
+            try {
+                res = addDefaultSettings(HttpRequest.get(url), timeout).form(params).body();
+            } catch (Exception e) {
+                if (i >= retry) {
+                    throw e;
+                }
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
+    }
+
     public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout) {
-        return addDefaultSettings(HttpRequest.get(url), timeout).form(params).body();
+        return getAsStrUseKevin(url, params, timeout, 3);
     }
 
 
@@ -120,7 +158,6 @@ public class EastMoneyUtils {
         for (int i = 0; i < 3; i++) {
             try {
                 response = getAsStrUseHutool(url, params, 2000);
-                Console.log(response);
             } catch (Exception e) {
                 e.printStackTrace();
             }

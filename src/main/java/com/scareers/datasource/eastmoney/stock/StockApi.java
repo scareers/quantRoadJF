@@ -6,13 +6,17 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -30,10 +34,18 @@ public class StockApi {
     private static final Log log = LogUtils.getLogger();
     public static ConcurrentHashMap<String, String> FS_DICT = new ConcurrentHashMap<>();
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
+    public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
 
     public static ThreadPoolExecutor poolExecutor;
 
+    public static void checkPoolExecutor() {
+        if (poolExecutor == null) {
+            poolExecutor = new ThreadPoolExecutor(8, 32, 10000, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
+
+        }
+    }
 
     public static void main(String[] args) throws Exception {
 //        List<StockBean> stocks = new StockPoolForFSTransaction().createStockPool();
@@ -41,10 +53,20 @@ public class StockApi {
 //            Console.log(getFSTransaction(100, stock.getStockCodeSimple(), stock.getMarket()));
 //        }
 
+
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
+//        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
         Console.log(timer.intervalRestart());
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        Console.log(timer.intervalRestart());
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        Console.log(timer.intervalRestart());
+        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1");
+        Console.log(timer.intervalRestart());
+        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1"));
+
 
     }
 
@@ -52,6 +74,32 @@ public class StockApi {
         initFSDICT();
         initEASTMONEYQUOTEFIELDS();
         initMARKETNUMBERDICT();
+        initEASTMONEYKLINEFIELDS();
+    }
+
+    /**
+     * # 股票、ETF、债券 K 线表头
+     * EASTMONEY_KLINE_FIELDS = {
+     * 'f51': '日期',
+     * 'f52': '开盘',
+     * 'f53': '收盘',
+     * 'f54': '最高',
+     * 'f55': '最低',
+     * 'f56': '成交量',
+     * 'f57': '成交额',
+     * 'f58': '振幅',
+     * 'f59': '涨跌幅',
+     * 'f60': '涨跌额',
+     * 'f61': '换手率'
+     * <p>
+     * }
+     */
+    private static void initEASTMONEYKLINEFIELDS() {
+        String rawJsonFromPython = "{\"f51\": \"\\u65e5\\u671f\", \"f52\": \"\\u5f00\\u76d8\", \"f53\": \"\\u6536\\u76d8\", \"f54\": \"\\u6700\\u9ad8\", \"f55\": \"\\u6700\\u4f4e\", \"f56\": \"\\u6210\\u4ea4\\u91cf\", \"f57\": \"\\u6210\\u4ea4\\u989d\", \"f58\": \"\\u632f\\u5e45\", \"f59\": \"\\u6da8\\u8dcc\\u5e45\", \"f60\": \"\\u6da8\\u8dcc\\u989d\", \"f61\": \"\\u6362\\u624b\\u7387\"}\n";
+        Map<String, Object> temp = JSONUtil.parseObj(rawJsonFromPython);
+        for (String key : temp.keySet()) {
+            EASTMONEY_KLINE_FIELDS.put(key, temp.get(key).toString());
+        }
     }
 
     private static void initMARKETNUMBERDICT() {
@@ -324,21 +372,17 @@ public class StockApi {
                       klt: int = 101,
                       fqt: int = 1,
          */
-        if (poolExecutor == null) {
-            poolExecutor = new ThreadPoolExecutor(8, 32, 10000, TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
 
-        }
-
+        checkPoolExecutor();
         HashMap<String, Future<DataFrame<Object>>> futures = new HashMap<>();
         for (String stock : stockCodesSimple) {
             futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    List<String> fields = Arrays.asList("f12", "f14", "f3", "f2", "f15", "f16", "f17", "f4", "f8",
-                            "f10", "f9", "f5", "f6", "f18", "f20", "f21", "f13");
-                    String fieldsStr = StrUtil.join(",", fields);
-                    String quoteId = querySecurityIdSimple(stock);
+                    String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
+                    List<String> fields = StrUtil.split(fieldsStr, ",");
+                    JSONArray quoteRes = querySecurityId(stock);
+                    String quoteId = quoteRes.getJSONObject(0).getStr("QuoteID");
 
                     HashMap<String, Object> params = new HashMap<>();
                     params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
@@ -351,14 +395,29 @@ public class StockApi {
                     params.put("fqt", fq);
 
                     String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
-                    String response = getAsStrUseHutool(url, params, 4000);
-                    return null;
+                    String response = null;
+                    try {
+                        response = getAsStrUseHutool(url, params, 2000);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                    DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
+                            fields.stream().map(value -> EASTMONEY_KLINE_FIELDS.get(value).toString())
+                                    .collect(Collectors.toList()),
+                            Arrays.asList("data", "klines"), String.class, Arrays.asList(),
+                            Arrays.asList());
+                    dfTemp = dfTemp.add("股票代码", values -> quoteRes.getJSONObject(0).getStr("Code"));
+                    dfTemp = dfTemp.add("股票名称", values -> quoteRes.getJSONObject(0).getStr("Name"));
+                    return dfTemp;
                 }
             }));
         }
         ConcurrentHashMap<String, DataFrame<Object>> res = new ConcurrentHashMap<>();
         for (String stock : futures.keySet()) {
-            res.put(stock, futures.get(stock).get());
+            DataFrame<Object> dfTemp = futures.get(stock).get();
+            if (dfTemp != null) {
+                res.put(stock, dfTemp);
+            }
         }
         return res;
     }
