@@ -21,6 +21,8 @@ import java.util.List;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
+    public static String stockSelectResultSaveTableName = "stock_select_result_of_lbhs_test";
+
     private static final Log log = LogUtils.getLogger();
 
     @Override
@@ -35,7 +37,19 @@ public class DummyStrategy extends Strategy {
 
     @Override
     protected List<String> stockSelect() {
+        String sqlIsStockSelectedToday = "";
+
+
         return null;
+    }
+
+
+    @Override
+    protected List<StockBean> initStockPool() {
+        log.warn("start init stockPool: 开始初始化股票池...");
+        List<StockBean> res = StockPoolForFSTransaction.stockPoolTest();
+        log.warn("finish init stockPool: 完成初始化股票池...");
+        return res;
     }
 
     @Override
@@ -74,13 +88,6 @@ public class DummyStrategy extends Strategy {
         }
     }
 
-    @Override
-    protected List<StockBean> initStockPool() {
-        log.warn("start init stockPool: 开始初始化股票池...");
-        List<StockBean> res = StockPoolForFSTransaction.stockPoolTest();
-        log.warn("finish init stockPool: 完成初始化股票池...");
-        return res;
-    }
 
     public DummyStrategy(String strategyName) {
         super(strategyName);
