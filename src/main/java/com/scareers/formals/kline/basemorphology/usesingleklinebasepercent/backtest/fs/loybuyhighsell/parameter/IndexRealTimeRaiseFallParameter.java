@@ -33,7 +33,7 @@ public class IndexRealTimeRaiseFallParameter {
 
     public static void main(String[] args) throws Exception {
         singleTableGroupByFormsetidAvg();
-
+//
 //        renameAllTable();
     }
 
@@ -80,7 +80,8 @@ public class IndexRealTimeRaiseFallParameter {
         Console.log(JSONUtil.toJsonPrettyStr(res));
         Console.log("开始写入json文件");
 
-        File file = FileUtil.file("results/IndexRealTimeRaiseFallParameter/singleTableGroupByFormsetidAvg_scale1.21.3" +
+        File file = FileUtil.file("results/IndexRealTimeRaiseFallParameter/" +
+                "singleTableGroupByFormsetidAvg_scale1.41.61.2" +
                 ".json");
         Console.log(file.getAbsolutePath());
         FileWriter writer = new FileWriter(file);
@@ -127,7 +128,7 @@ public class IndexRealTimeRaiseFallParameter {
 
     public static List<String> getResultTables() throws SQLException {
         List<String> tables = getAllTables(klineForms);
-        tables = tables.stream().filter(value -> value.startsWith("fs_bk_lbhs_next0b1s_indexper_scale1.21.3"))
+        tables = tables.stream().filter(value -> value.startsWith("fs_bk_lbhs_next0b1s_indexper_scale1.41.61.2"))
                 .collect(Collectors.toList());
         return tables;
     }
@@ -137,12 +138,11 @@ public class IndexRealTimeRaiseFallParameter {
             throw new Exception("本函数不再调用;已经改过名了");
         }
         List<String> tables = getResultTables();
-        int prefixLenth = "fs_backtest_lowbuy_highsell_next0b1s".length();
+        int prefixLenth = "fs_bk_lbhs_next0b1s_indexper_scale1.21.3".length();
         for (String tablename : tables) {
-            String newTablename = StrUtilSelf.format("{}_{}{}",
-                    "fs_bk_lbhs_next0b1s_indexper",
-//                    tablename.substring(0, prefixLenth),
-                    "scale1.41.6",
+            String newTablename = StrUtilSelf.format("{}{}{}",
+                    "fs_bk_lbhs_next0b1s_indexper_scale1.21.31.2",
+                    "",
                     tablename.substring(prefixLenth, tablename.length()));
             renameTable(klineForms, tablename, newTablename);
         }
