@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
@@ -149,6 +150,9 @@ public class DummyStrategy extends Strategy {
         // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
         HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
                 stockSelectResultSaveTableName);
+        HashMap<Long, HashSet<String>> stockSelectResultAsSet = new HashMap<>();
+        stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
+                new HashSet<>(stockSelectResult.get(value)))); // 转换hs
 
         // @key:
         // 1.给定形态集合 列表,  各自有对应的选股结果. 首先, 我们依据股票出现次数, 配合股票数量,得到最终整合的选股结果!
@@ -160,20 +164,33 @@ public class DummyStrategy extends Strategy {
         }
         HashMap<String, Integer> stockSelectCountMap = new HashMap<>(); // 计算每只股票有多少个formset 选中了?
         for (Long forSetId : useFormSetIds) {
-            List<String> stockSelected = stockSelectResult.get(forSetId);
-            if (stockSelected == null) {
+            HashSet<String> stockSelectedSet = stockSelectResultAsSet.get(forSetId);
+            if (stockSelectedSet == null) {
                 log.info("formSetId no stockSelectResult: 今日无选股结果: {}", forSetId);
                 continue;
             }
-            HashSet<String> stockSelectedSet = new HashSet<>(stockSelected);
             for (String stock : stockSelectedSet) {
                 stockSelectCountMap.putIfAbsent(stock, 0); // 初始0次
                 stockSelectCountMap.put(stock, stockSelectCountMap.get(stock) + 1); // 计数+1
             }
         }
 
-        // 总次数
+        // 总次数, 开始计算 formset 分布的权重
         double totalCount = stockSelectCountMap.values().stream().mapToDouble(value -> value.doubleValue()).sum();
+        HashMap<Long, Double> formSerDistributionWeightMap = new HashMap<>(); // 分布权重, 可综合所有形态集合的分布,合成总分布
+        for (Long forSetId : useFormSetIds) {
+            HashSet<String> stockSelectedSet = stockSelectResultAsSet.get(forSetId);
+            if (stockSelectedSet == null) {
+                formSerDistributionWeightMap.put(forSetId, 0.0); // 无选股结果, 则分布权重 0.0
+                continue;
+            }
+            formSerDistributionWeightMap.put(forSetId, stockSelectedSet.size() / totalCount); // 权重
+        }
+        Assert.isTrue(Math.abs(
+                formSerDistributionWeightMap.values().stream().mapToDouble(value -> value).sum() - 1.0) < 0.005);//权重和1
+
+        Console.log(formSerDistributionWeightMap);
+        Console.log(stockSelectCountMap);
 
 
         return null;
