@@ -122,12 +122,18 @@ public class CommonUtils {
         return intersectionOfSet(set1, set2);
     }
 
-    public static HashSet<Object> subtractionOfSet(HashSet<Object> set1, HashSet<Object> set2) {
+    public static HashSet<String> subtractionOfSet(HashSet<String> set1, HashSet<String> set2) {
         // 差集
-        HashSet<Object> res = new HashSet<>();
-        res.addAll(set1);
+        HashSet<String> res = new HashSet<>(set1);
         res.removeAll(set2);
         return res;
+    }
+
+    public static HashSet<String> subtractionOfList(List<String> list1, List<String> list2) {
+        // 差集
+        HashSet<String> set1 = new HashSet<>(list1);
+        HashSet<String> set2 = new HashSet<>(list2);
+        return subtractionOfSet(set1, set2);
     }
 
     public static HashSet<Object> aggregateOfSet(HashSet<Object> set1, HashSet<Object> set2) {

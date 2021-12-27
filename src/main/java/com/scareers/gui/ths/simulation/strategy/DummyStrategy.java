@@ -18,8 +18,13 @@ import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
 import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
+import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
+import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
 
 
@@ -33,6 +38,7 @@ public class DummyStrategy extends Strategy {
     public static String stockSelectResultSaveTableName = "stock_select_result_of_lbhs_test";
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static long hasStockSelectResultTodayThreshold = 1000; // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行
+    public static List<String> stockSelectMarkets = Arrays.asList(); // 选股板块, 从当刻截面数据获取股票所有列表,以便选股
 
     private static final Log log = LogUtils.getLogger();
 
@@ -65,7 +71,34 @@ public class DummyStrategy extends Strategy {
         return null;
     }
 
+    /**
+     * 单日选股逻辑, 参考:
+     *
+     * @see com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell
+     * :320 行
+     */
     private void stockSelect0() {
+        /*
+                            List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
+                            yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
+
+                                     if (parallelOnlyStockSelectResult) {
+                        // 该设置控制 只执行选股. lowBuy, HighSell均无视, 因此逻辑体后continue.
+                        saveStockSelectResult(stock, todayTemp, belongToFormsetIds);
+                        // 只需要保存股票,日期,所属形态集合  因此数据库 有 stock*date 条记录. 具体值为 形态集合--id 列表
+                        continue; // 将造成 原有结果为空map, 因此执行保存也无所谓.
+                    }
+         */
+
+        List<String> allHSAstock = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
+        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
+        List<String> scientificCreationMarket =
+                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
+                        "股票代码");
+        HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
+                pioneerMarket)),
+                scientificCreationMarket); // 两次差集操作, 获取所有主板股票
+
 
     }
 

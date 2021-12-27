@@ -1128,7 +1128,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             );
         }
 
-        private static List<Long> calcBelongToFormSets(
+        public static List<Long> calcBelongToFormSets(
                 ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet,
                 List<String> allForms) {
             List<Long> belongToFormsetIds = new ArrayList<>();

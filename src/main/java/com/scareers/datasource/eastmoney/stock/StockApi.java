@@ -10,18 +10,17 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
+import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 /**
@@ -54,18 +53,35 @@ public class StockApi {
 //        }
 
 
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
-//        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-        Console.log(timer.intervalRestart());
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-        Console.log(timer.intervalRestart());
-        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-        Console.log(timer.intervalRestart());
-        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2));
+//        TimeInterval timer = DateUtil.timer();
+//        timer.start();
+////        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
+//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
+//        Console.log(timer.intervalRestart());
+//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
+//        Console.log(timer.intervalRestart());
+//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
+//        Console.log(timer.intervalRestart());
+//        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2));
 
 
+//        Console.log(getRealtimeQuotes(Arrays.asList("沪A", "深A")));
+//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+//        Console.log(getRealtimeQuotes(Arrays.asList("创业板")));
+//        Console.log(getRealtimeQuotes(Arrays.asList("科创板")));
+
+
+        List<String> allHSAstock = DataFrameSelf
+                .getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
+        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
+        List<String> scientificCreationMarket =
+                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
+                        "股票代码");
+        HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
+                pioneerMarket)),
+                scientificCreationMarket); // 两次差集操作
+
+        Console.log(mainboardStocks);
     }
 
     static {
@@ -311,7 +327,6 @@ public class StockApi {
         );
         dfTemp = dfTemp.rename("代码", "股票代码");
         dfTemp = dfTemp.rename("名称", "股票名称");
-        Console.log(dfTemp);
         return dfTemp;
     }
 
