@@ -13,7 +13,7 @@ import java.util.List;
  * @date: 2021/12/22/022-20:54:25
  */
 public class LowBuyHighSellStrategy extends Strategy {
-    public LowBuyHighSellStrategy(String strategyName) {
+    public LowBuyHighSellStrategy(String strategyName) throws Exception {
         super(strategyName);
     }
 

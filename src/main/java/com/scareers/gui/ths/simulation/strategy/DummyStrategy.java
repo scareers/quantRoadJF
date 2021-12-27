@@ -75,7 +75,7 @@ public class DummyStrategy extends Strategy {
     private static final Log log = LogUtils.getLogger();
 
     public static void main(String[] args) throws Exception {
-        new DummyStrategy("xx").stockSelect();
+        new DummyStrategy("xx");
     }
 
     @Override
@@ -88,7 +88,91 @@ public class DummyStrategy extends Strategy {
         checkOtherOrder(order, responses, orderType);
     }
 
-    public static void initUseFormSetIds() throws FileNotFoundException {
+    @Override
+    protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
+        JSONObject response = responses.get(responses.size() - 1);
+        if ("success".equals(response.getStr("state"))) {
+            log.info("执行成功: {}", order.getRawOrderId());
+            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
+        } else {
+            log.error("执行失败: {}", order.getRawOrderId());
+            log.info(JSONUtil.parseArray(responses).toStringPretty());
+            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
+        }
+        Trader.successFinishOrder(order, responses);
+    }
+
+    @Override
+    protected void startCore() throws Exception {
+        while (true) {
+            int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
+            Thread.sleep(sleep * 1000);
+            Order order = null;
+            int type = RandomUtil.randomInt(12);
+            if (type < 3) {
+                order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGHEST);
+            } else if (type < 6) {
+                order = OrderFactory.generateSellOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGH);
+            } else if (type < 8) {
+                order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_MEDIUM);
+            } else if (type < 10) {
+                order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_LOWEST);
+            } else {
+                order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
+            }
+            Trader.putOrderToWaitExecute(order);
+        }
+    }
+
+
+    @Override
+    protected List<StockBean> initStockPool() throws Exception {
+        log.warn("start init stockPool: 开始尝试初始化股票池...");
+        // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+        stockSelect();
+        log.warn("stock select result: 最终选股结果: {}", stockSelectCountMapFinal.keySet());
+        log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
+
+
+        List<StockBean> res = StockPoolForFSTransaction // 已经加入两大指数, 构建股票池. Bean
+                .stockListFromSimpleStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
+        log.warn("finish init stockPool: 完成初始化股票池...");
+        return res;
+    }
+
+
+    @Override
+    protected List<String> stockSelect() throws Exception {
+        execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
+                connOfStockSelectResult); // 不存在则建表
+        String today = DateUtil.today();
+        String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
+                stockSelectResultSaveTableName, today);
+        DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
+        long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
+        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
+            stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
+        }
+        // 获取选股结果, api均已缓存
+        // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
+        HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
+                stockSelectResultSaveTableName);
+        HashMap<Long, HashSet<String>> stockSelectResultAsSet = new HashMap<>();
+        stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
+                new HashSet<>(stockSelectResult.get(value)))); // 转换hs
+
+
+        // 自动调整参数 profitLimitOfFormSetIdFilter, 使得选股数量接近 suitableSelectStockCount
+        decideTheMostSuitableFormSetIds(stockSelectResultAsSet);
+        // 此时参数已调整好, 最后获取最终确定的 选股结果!!
+        confirmStockSelectResult(stockSelectResultAsSet);
+        // 确定后两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+
+        return null;
+    }
+
+
+    private static void initUseFormSetIds() throws FileNotFoundException {
         // 初始化使用到的 形态集合id列表.
         // 这里提供文件名称, classpath文件. json. 解析到 profit字段最大的一些 formSetId
 
@@ -123,39 +207,9 @@ public class DummyStrategy extends Strategy {
                 formSetsStrs.stream().map(valur -> Long.valueOf(valur.substring(valur.indexOf("$$") + 2)))
                         .distinct().collect(Collectors.toList());
         useFormSetIds = formSetIds;
-        log.warn("init useFormSetIds success: 选中形态集合数量: {}", useFormSetIds.size());
+        log.debug("init useFormSetIds success: 选中形态集合数量: {}", useFormSetIds.size());
     }
 
-    @Override
-    protected List<String> stockSelect() throws Exception {
-        execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
-                connOfStockSelectResult); // 不存在则建表
-        String today = DateUtil.today();
-        String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
-                stockSelectResultSaveTableName, today);
-        DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
-        long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
-        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
-            stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
-        }
-        // 获取选股结果, api均已缓存
-        // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
-        HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
-                stockSelectResultSaveTableName);
-        HashMap<Long, HashSet<String>> stockSelectResultAsSet = new HashMap<>();
-        stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
-                new HashSet<>(stockSelectResult.get(value)))); // 转换hs
-
-
-        // 自动调整参数 profitLimitOfFormSetIdFilter, 使得选股数量接近 suitableSelectStockCount
-        decideTheMostSuitableFormSetIds(stockSelectResultAsSet);
-        // 此时参数已调整好, 最后获取最终确定的 选股结果!!
-        confirmStockSelectResult(stockSelectResultAsSet);
-        // 确定后两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
-
-
-        return null;
-    }
 
     private void decideTheMostSuitableFormSetIds(HashMap<Long, HashSet<String>> stockSelectResultAsSet)
             throws FileNotFoundException {
@@ -367,51 +421,7 @@ public class DummyStrategy extends Strategy {
     }
 
 
-    @Override
-    protected List<StockBean> initStockPool() {
-        log.warn("start init stockPool: 开始初始化股票池...");
-        List<StockBean> res = StockPoolForFSTransaction.stockPoolTest();
-        log.warn("finish init stockPool: 完成初始化股票池...");
-        return res;
-    }
-
-    @Override
-    protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
-        JSONObject response = responses.get(responses.size() - 1);
-        if ("success".equals(response.getStr("state"))) {
-            log.info("执行成功: {}", order.getRawOrderId());
-            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
-        } else {
-            log.error("执行失败: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toStringPretty());
-            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
-        }
-        Trader.successFinishOrder(order, responses);
-    }
-
-    @Override
-    protected void startCore() throws Exception {
-        while (true) {
-            int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-            Thread.sleep(sleep * 1000);
-            Order order = null;
-            int type = RandomUtil.randomInt(12);
-            if (type < 3) {
-                order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGHEST);
-            } else if (type < 6) {
-                order = OrderFactory.generateSellOrderQuick("600090", 100, 1.21, Order.PRIORITY_HIGH);
-            } else if (type < 8) {
-                order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_MEDIUM);
-            } else if (type < 10) {
-                order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_LOWEST);
-            } else {
-                order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-            }
-            Trader.putOrderToWaitExecute(order);
-        }
-    }
-
-    public DummyStrategy(String strategyName) {
+    public DummyStrategy(String strategyName) throws Exception {
         super(strategyName);
     }
 

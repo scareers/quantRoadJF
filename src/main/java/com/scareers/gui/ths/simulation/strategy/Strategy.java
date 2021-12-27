@@ -23,28 +23,18 @@ public abstract class Strategy {
     private String strategyName; // 策略名称, 线程同名
     private List<StockBean> stockPool; // 股票池. 使用东方财富股票代码
 
-    public Strategy(String strategyName) {
+    public Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
     }
 
     /**
-     * 策略开始处理执行. 核心实现
+     * 策略开始处理执行. 核心实现!!!  即下单
      */
     protected abstract void startCore() throws Exception;
 
     /**
-     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect()
-     */
-    protected abstract List<StockBean> initStockPool();
-
-    /**
-     * 选股方法. 通常需要加上各大指数, 最终将构建股票池
-     */
-    protected abstract List<String> stockSelect() throws Exception;
-
-    /**
-     * 针对 buy 订单check逻辑. 检测成交是否完成等
+     * 针对 buy 订单check逻辑. 检测成交是否完成等  // 处理三大类型淡订单
      */
     protected abstract void checkBuyOrder(Order order, List<JSONObject> responses, String orderType);
 
@@ -57,6 +47,17 @@ public abstract class Strategy {
      * 针对 其余类型 订单check逻辑.较少 检测成交是否完成等
      */
     protected abstract void checkOtherOrder(Order order, List<JSONObject> responses, String orderType);
+
+    /**
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), 两大初始化方法
+     */
+    protected abstract List<StockBean> initStockPool() throws Exception;
+
+    /**
+     * 选股方法. 通常需要加上各大指数, 最终将构建股票池
+     */
+    protected abstract List<String> stockSelect() throws Exception;
+
 
     /**
      * check. 默认实现为简单分发为3个抽象方法

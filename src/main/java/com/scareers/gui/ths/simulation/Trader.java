@@ -91,7 +91,7 @@ public class Trader {
      * 主策略类. 管理具体实现
      */
     public static class MainStrategy {
-        public static Strategy createStrategy() {
+        public static Strategy createStrategy() throws Exception {
             return new DummyStrategy(DummyStrategy.class.getName());
         }
     }
