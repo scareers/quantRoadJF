@@ -1,8 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
@@ -17,7 +15,6 @@ import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
@@ -26,19 +23,14 @@ import com.scareers.sqlapi.KlineFormsApi;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -53,7 +45,17 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class DummyStrategy extends Strategy {
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
-    public static double profitLimitOfFormSetIdFilter = 0.015;  // @key5: 筛选formset的 profit阈值>=
+    // @key5: 筛选formset的 profit阈值>=, 设置初始值后,将自动适配, 以使得选股数量接近  suitableSelectStockCount
+    public static double profitLimitOfFormSetIdFilter = 0.013; // 自动适配
+    public static double profitAdjustTick = 0.00025; // 自动适配时, profit参数 往大/小 调整的数量
+    public static int suitableSelectStockCount = 30;  // @key5: 建议最终选股结果的数量, 将自动调控 profit参数放松放宽筛选条件
+    // 当找到合适的参数, 是否偏好更多选股结果? 若是, 则最终选股>=suitableSelectStockCount,
+    // 否则, 比较两个距离的大小, 选择更加接近的一方.  即可能不论true或者false, 选股结果相同!!
+    public static boolean preferenceMoreStock = false;
+
+    public static HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重Map
+    public static HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
+
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
@@ -121,14 +123,6 @@ public class DummyStrategy extends Strategy {
                 formSetsStrs.stream().map(valur -> Long.valueOf(valur.substring(valur.indexOf("$$") + 2)))
                         .distinct().collect(Collectors.toList());
         useFormSetIds = formSetIds;
-        // // show:...
-        //        Console.log(formSetsStrs);
-        //        Console.log(formSetsStrs.size());
-        //        Console.log(formSetIds.size());
-        //        for (String formsetId : formSetsStrs) {
-        //            Console.log(gatherMap.get(formsetId).get("profit"));
-        //        }
-
         log.warn("init useFormSetIds success: 选中形态集合数量: {}", useFormSetIds.size());
     }
 
@@ -152,19 +146,83 @@ public class DummyStrategy extends Strategy {
         stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
                 new HashSet<>(stockSelectResult.get(value)))); // 转换hs
 
+
+        // 自动调整参数 profitLimitOfFormSetIdFilter, 使得选股数量接近 suitableSelectStockCount
+        decideTheMostSuitableFormSetIds(stockSelectResultAsSet);
+        // 此时参数已调整好, 最后获取最终确定的 选股结果!!
+        confirmStockSelectResult(stockSelectResultAsSet);
+        // 确定后两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+
+
+        return null;
+    }
+
+    private void decideTheMostSuitableFormSetIds(HashMap<Long, HashSet<String>> stockSelectResultAsSet)
+            throws FileNotFoundException {
         // @key:
         // 1.给定形态集合 列表,  各自有对应的选股结果. 首先, 我们依据股票出现次数, 配合股票数量,得到最终整合的选股结果!
         // 2.得到确定的选股结果后, 每只股票出现了多少次? 总和.  formSet的权重, 由 其选股结果中, 被最终选择到了的股票 数量 / 总数
         // 3.即可得到  {formSetId: 策略最终加权形态集合的 加权权重.}
         // 4.后期可依据权重确定 加权概率分布!!!!!!!!!
-        if (useFormSetIds == null) {
-            initUseFormSetIds(); // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
-        }
-        HashMap<String, Integer> stockSelectCountMap = new HashMap<>(); // 计算每只股票有多少个formset 选中了?
+        // decideTheMostSuitableFormSetIds
+
+        int selectCount = getStockSelectCountCurrentFilterArgOfProfit(stockSelectResultAsSet);
+        if (selectCount > suitableSelectStockCount) {
+            int selectCountPre = selectCount;
+            while (true) {
+                profitLimitOfFormSetIdFilter += profitAdjustTick; // 更加严格的调整, 使得选股结果更少!
+                int selectCountLess = getStockSelectCountCurrentFilterArgOfProfit(stockSelectResultAsSet);
+                if (selectCountPre >= suitableSelectStockCount && selectCountLess < suitableSelectStockCount) {
+                    // 此时已达到临界, 再 profitLimitOfFormSetIdFilter 如果选小的,则不调整, 否则, 倒回去
+                    if (preferenceMoreStock) { // 偏好更多股票选中?
+                        profitLimitOfFormSetIdFilter -= profitAdjustTick; // 回滚1tick参数.
+                        break;
+                    }
+
+                    if (selectCountPre - suitableSelectStockCount < suitableSelectStockCount - selectCountLess) {
+                        // 多的更接近, 则参数回滚,得到更多结果
+                        profitLimitOfFormSetIdFilter -= profitAdjustTick; // 回滚1tick参数.
+                    }
+                    break; // 退出
+                } else {
+                    // 此时应当继续.
+                    selectCountPre = selectCountLess;
+                }
+            }
+        } else if (selectCount < suitableSelectStockCount) { // 往大调整以增加选股数量
+            int selectCountPre = selectCount;
+            while (true) {
+                profitLimitOfFormSetIdFilter -= profitAdjustTick; // 更加宽松的调整, 使得选股结果更多!
+                int selectCountMore = getStockSelectCountCurrentFilterArgOfProfit(stockSelectResultAsSet);
+                if (selectCountPre < suitableSelectStockCount && selectCountMore >= suitableSelectStockCount) {
+                    if (!preferenceMoreStock) { // 偏好更少股票选中?
+                        profitLimitOfFormSetIdFilter += profitAdjustTick; // 回滚1tick参数.
+                        break;
+                    }
+                    //此时已达到临界, 再 profitLimitOfFormSetIdFilter 如果选小的, 则不调整, 否则, 倒回去
+                    if (suitableSelectStockCount - selectCountPre < selectCountMore - suitableSelectStockCount) {
+                        profitLimitOfFormSetIdFilter += profitAdjustTick; // 少的更接近, 则参数回滚
+                    }
+                    break; // 退出
+                } else {
+                    // 此时应当继续.
+                    selectCountPre = selectCountMore;
+                }
+            }
+        } // 若相等则不调整  profitLimitOfFormSetIdFilter
+    }
+
+    private int getStockSelectCountCurrentFilterArgOfProfit(HashMap<Long, HashSet<String>> stockSelectResultAsSet
+    )
+            throws FileNotFoundException {
+        initUseFormSetIds(); // profitLimitOfFormSetIdFilter 自动调整
+        // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
+        // 计算每只股票有多少个formset 选中了?
+        HashMap<String, Integer> stockSelectCountMap = new HashMap<>();
         for (Long forSetId : useFormSetIds) {
             HashSet<String> stockSelectedSet = stockSelectResultAsSet.get(forSetId);
             if (stockSelectedSet == null) {
-                log.info("formSetId no stockSelectResult: 今日无选股结果: {}", forSetId);
+                log.info("formSetId no stockSelectResult: 无选股结果: {}", forSetId);
                 continue;
             }
             for (String stock : stockSelectedSet) {
@@ -172,10 +230,31 @@ public class DummyStrategy extends Strategy {
                 stockSelectCountMap.put(stock, stockSelectCountMap.get(stock) + 1); // 计数+1
             }
         }
+        return stockSelectCountMap.size();
+    }
 
+    private void confirmStockSelectResult(HashMap<Long, HashSet<String>> stockSelectResultAsSet)
+            throws FileNotFoundException {
+        initUseFormSetIds(); // profitLimitOfFormSetIdFilter 自动调整
+        // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
+        // 计算每只股票有多少个formset 选中了?
+        HashMap<String, Integer> stockSelectCountMap = new HashMap<>();
+        HashMap<Long, Double> formSerDistributionWeightMap = new HashMap<>();
+        for (Long forSetId : useFormSetIds) {
+            HashSet<String> stockSelectedSet = stockSelectResultAsSet.get(forSetId);
+            if (stockSelectedSet == null) {
+                log.info("formSetId no stockSelectResult: 无选股结果: {}", forSetId);
+                continue;
+            }
+            for (String stock : stockSelectedSet) {
+                stockSelectCountMap.putIfAbsent(stock, 0); // 初始0次
+                stockSelectCountMap.put(stock, stockSelectCountMap.get(stock) + 1); // 计数+1
+            }
+        }
         // 总次数, 开始计算 formset 分布的权重
         double totalCount = stockSelectCountMap.values().stream().mapToDouble(value -> value.doubleValue()).sum();
-        HashMap<Long, Double> formSerDistributionWeightMap = new HashMap<>(); // 分布权重, 可综合所有形态集合的分布,合成总分布
+
+        // 分布权重, 可综合所有形态集合的分布,合成总分布
         for (Long forSetId : useFormSetIds) {
             HashSet<String> stockSelectedSet = stockSelectResultAsSet.get(forSetId);
             if (stockSelectedSet == null) {
@@ -186,12 +265,9 @@ public class DummyStrategy extends Strategy {
         }
         Assert.isTrue(Math.abs(
                 formSerDistributionWeightMap.values().stream().mapToDouble(value -> value).sum() - 1.0) < 0.005);//权重和1
-
-        Console.log(formSerDistributionWeightMap);
-        Console.log(stockSelectCountMap);
-
-
-        return null;
+        // 此时已确定选股结果, 以及今日 formSet 的分布权重
+        formSerDistributionWeightMapFinal = formSerDistributionWeightMap;
+        stockSelectCountMapFinal = stockSelectCountMap;
     }
 
     /**
