@@ -1,6 +1,9 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.file.FileWriter;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
@@ -22,11 +25,15 @@ import com.scareers.sqlapi.KlineFormsApi;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
@@ -44,7 +51,8 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class DummyStrategy extends Strategy {
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
-    public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!  todo
+    public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
+    public static double profitLimitOfFormSetIdFilter = 0.015;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
@@ -64,7 +72,9 @@ public class DummyStrategy extends Strategy {
     private static final Log log = LogUtils.getLogger();
 
     public static void main(String[] args) throws Exception {
-        new DummyStrategy("xx").stockSelect();
+//        new DummyStrategy("xx").stockSelect();
+
+        initUseFormSetIds();
     }
 
     @Override
@@ -75,6 +85,52 @@ public class DummyStrategy extends Strategy {
     @Override
     protected void checkSellOrder(Order order, List<JSONObject> responses, String orderType) {
         checkOtherOrder(order, responses, orderType);
+    }
+
+    public static void initUseFormSetIds() throws FileNotFoundException {
+        // 初始化使用到的 形态集合id列表.
+        // 这里提供文件名称, classpath文件. json. 解析到 profit字段最大的一些 formSetId
+
+        String jsonStr = ResourceUtil.readUtf8Str("results/IndexRealTimeRaiseFallParameter/" +
+                "singleTableGroupByFormsetidAvg_scale1.41.61.2" +
+                ".json");
+        JSONObject datas = JSONUtil.parseObj(jsonStr);
+        Map<String, Map<String, Double>> gatherMap = new HashMap<>(); // 汇总, key为  数据表$$form_set_id
+        for (String tableName : datas.keySet()) {
+            JSONObject argGroupData = datas.getJSONObject(tableName);
+            for (String forSetIdStr : argGroupData.keySet()) {
+                String gatherKey = tableName + "$$" + forSetIdStr;
+                HashMap<String, Object> value = new HashMap<>(argGroupData.getJSONObject(forSetIdStr));
+                HashMap<String, Double> realValue = new HashMap<>();
+                value.keySet().stream().forEach(key -> realValue.put(key, Double.valueOf(value.get(key).toString())));
+                gatherMap.put(gatherKey, realValue);
+            }
+        }
+
+        List<String> formSetsStrs = new ArrayList<>(gatherMap.keySet());
+        formSetsStrs =
+                formSetsStrs.stream().sorted(Comparator.comparing(value -> (gatherMap.get(value).get("profit"))))
+                        .collect(Collectors.toList());// 排序, 依据profit
+        Collections.reverse(formSetsStrs); // 倒排
+
+
+        long gt15Count = formSetsStrs.stream()
+                .mapToDouble(value -> Double.valueOf(gatherMap.get(value).get("profit").toString()))
+                .filter(value -> value >= profitLimitOfFormSetIdFilter).count();
+        formSetsStrs = formSetsStrs.subList(0, (int) gt15Count); // 筛选>= 0.015的
+        List<Long> formSetIds =
+                formSetsStrs.stream().map(valur -> Long.valueOf(valur.substring(valur.indexOf("$$") + 2)))
+                        .distinct().collect(Collectors.toList());
+        useFormSetIds = formSetIds;
+        // // show:...
+        //        Console.log(formSetsStrs);
+        //        Console.log(formSetsStrs.size());
+        //        Console.log(formSetIds.size());
+        //        for (String formsetId : formSetsStrs) {
+        //            Console.log(gatherMap.get(formsetId).get("profit"));
+        //        }
+
+        log.warn("init useFormSetIds success: 选中形态集合数量: {}", useFormSetIds.size());
     }
 
     @Override
@@ -98,8 +154,10 @@ public class DummyStrategy extends Strategy {
         // 1.给定形态集合 列表,  各自有对应的选股结果. 首先, 我们依据股票出现次数, 配合股票数量,得到最终整合的选股结果!
         // 2.得到确定的选股结果后, 每只股票出现了多少次? 总和.  formSet的权重, 由 其选股结果中, 被最终选择到了的股票 数量 / 总数
         // 3.即可得到  {formSetId: 策略最终加权形态集合的 加权权重.}
-        // 4.后期可依据权重确定 加权概率分布!!!!!!!!! todo
-
+        // 4.后期可依据权重确定 加权概率分布!!!!!!!!!
+        if (useFormSetIds == null) {
+            initUseFormSetIds(); // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
+        }
 
 
         return null;
