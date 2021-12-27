@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.strategy;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
@@ -26,6 +27,8 @@ import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.keyInts;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.getPriceOfSingleKline;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.parseConditionsAsStrsSimple;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -139,8 +142,42 @@ public class DummyStrategy extends Strategy {
             }
             Console.log(dfWindow);
             Console.log(dfWindow.length()); // 6
-            // todo: 调用选股方法
+            List<Object> pre5dayKlineRow = dfWindow.row(0);
+            List<Object> yesterdayKlineRow = dfWindow.row(4);
+            List<Object> todayKlineRow = dfWindow.row(5);
+            boolean[] reachPriceLimit = calcReachPriceLimit(todayKlineRow, yesterdayKlineRow, dfWindow);
+            parseConditionsAsStrsSimple(dfWindow, pre5dayKlineRow, yesterdayKlineRow, todayKlineRow, reachPriceLimit);
+
+            // todo
         }
+    }
+
+    public static boolean[] calcReachPriceLimit(List<Object> todayKlineRow, List<Object> yesterdayKlineRow,
+                                                DataFrame<Object> dfWindow) {
+        /*
+          	trade_date	open	close	high	 low	   vol	      amount	   振幅	  涨跌幅	  涨跌额	 换手率	昨日收盘	  股票代码	股票名称
+            0	2021-12-17	4.54	4.46 	4.54	4.45	182884	81887987.00 	2.00 	-0.89	-0.04	1.15	0   	000976	华铁股份
+         */
+
+        Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
+        Double yesterdayClose = getPriceOfSingleKline(yesterdayKlineRow, "close");
+        List<Object> colName = dfWindow.col("股票名称");
+        String stockName = colName.get(colName.size() - 1).toString();
+        Double priceLimit = 0.1; // 全是主板
+        if (stockName.startsWith("*")) {
+            priceLimit = 0.05;
+        }
+        Double priceLimitMax = NumberUtil.round(yesterdayClose * (1 + priceLimit), 2).doubleValue();
+        Double priceLimitMin = NumberUtil.round(yesterdayClose * (1 - priceLimit), 2).doubleValue();
+
+        boolean[] res = {false, false};
+        if (priceLimitMax.equals(todayClose)) {
+            res[0] = true;
+        }
+        if (priceLimitMin.equals(todayClose)) {
+            res[1] = true;
+        }
+        return res;
     }
 
 

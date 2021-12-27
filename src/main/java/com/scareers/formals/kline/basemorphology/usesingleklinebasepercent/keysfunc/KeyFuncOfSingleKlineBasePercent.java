@@ -653,6 +653,125 @@ public class KeyFuncOfSingleKlineBasePercent {
         return conditionsCalced;
     }
 
+    /**
+     * 简单版本: 见上面, 适用于 实时数据时, 当天选股的状态!
+     * <p>
+     *
+     * @param dfWindow          同样 6 + n 日k线窗口
+     * @param pre5dayKlineRow
+     * @param yesterdayKlineRow
+     * @param todayKlineRow     几条k线
+     * @param reachPriceLimit   是否"today"达到涨跌停? 替换上api的 stockWithBoard   [涨停了?,跌停了?]
+     *                          // @param stock             简单6位, 无tushare后缀, 不再需要.
+     *                          // @param isSt              是否st?  替代了上api的 stockWithStDateRanges, 不再需要, 用于判定涨跌停的
+     *                          // @param simpleMode 不再需要, 判定涨跌停
+     *                          // @param skipPriceLimit 永不跳过涨跌停判定
+     * @return
+     * @throws SQLException 不再抛出
+     * @see parseConditionsAsStrs()
+     */
+    public static List<String> parseConditionsAsStrsSimple(DataFrame<Object> dfWindow,
+                                                           List<Object> pre5dayKlineRow,
+                                                           List<Object> yesterdayKlineRow,
+                                                           List<Object> todayKlineRow,
+                                                           boolean[] reachPriceLimit) {
+        ;
+        // 简单访问项目
+        Double todayOpen = getPriceOfSingleKline(todayKlineRow, "open");
+        Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
+        Double todayHigh = getPriceOfSingleKline(todayKlineRow, "high");
+        Double todayLow = getPriceOfSingleKline(todayKlineRow, "low");
+        Double todayVol = getPriceOfSingleKline(todayKlineRow, "vol");
+        Double yesterdayClose = getPriceOfSingleKline(yesterdayKlineRow, "close");
+
+        Double upperPoint = Math.max(todayOpen, todayClose);
+        Double lowerPoint = Math.min(todayOpen, todayClose);
+        // 判定结果为 7条件.
+        List<String> conditionsCalced = Arrays.asList("-", "-", "-", "-", "-", "-", "-");
+        // 1.开盘涨跌百分比判定
+        Double todayOpenPercent = todayOpen / yesterdayClose - 1;
+        List<String> todayOpenPercentConditionList = getConditionNamesForNodeList(todayOpenRangeList,
+                conditionNames.get(0));
+        for (int i = 0; i < todayOpenPercentConditionList.size() - 1; i++) {
+            if (todayOpenPercent < todayOpenRangeList.get(i + 1) && todayOpenPercent >= todayOpenRangeList.get(i)) {
+                conditionsCalced.set(0, todayOpenPercentConditionList.get(i));
+                break;
+            }
+        }
+
+        // 2.实体判定
+        Double entity_ = (todayClose - todayOpen) / yesterdayClose;
+        List<String> entityConditionList = getConditionNamesForNodeList(entityRangeList, conditionNames.get(1));
+        for (int i = 0; i < entityConditionList.size() - 1; i++) {
+            if (entity_ < entityRangeList.get(i + 1) && entity_ >= entityRangeList.get(i)) {
+                conditionsCalced.set(1, entityConditionList.get(i));
+                break;
+            }
+        }
+        // 3.上影线判定
+        Double upperShadow = (todayHigh - upperPoint) / yesterdayClose;
+        List<String> upperShadowConditionList = getConditionNamesForNodeList(upperShadowRangeList,
+                conditionNames.get(2));
+        for (int i = 0; i < upperShadowConditionList.size() - 1; i++) {
+            if (upperShadow < upperShadowRangeList.get(i + 1) && upperShadow >= upperShadowRangeList.get(i)) {
+                conditionsCalced.set(2, upperShadowConditionList.get(i));
+                break;
+            }
+        }
+        // 4.下影线判定
+        Double lowerShadow = (lowerPoint - todayLow) / yesterdayClose;
+        List<String> lowerShadowConditionList = getConditionNamesForNodeList(lowerShadowRangeList,
+                conditionNames.get(3));
+        for (int i = 0; i < lowerShadowConditionList.size() - 1; i++) {
+            if (lowerShadow < lowerShadowRangeList.get(i + 1) && lowerShadow >= lowerShadowRangeList.get(i)) {
+                conditionsCalced.set(3, lowerShadowConditionList.get(i));
+                break;
+            }
+        }
+        // 5. 涨跌停判定
+        boolean closeReachPriceLimitMax = reachPriceLimit[0];
+        boolean closeReachPriceLimitMin = reachPriceLimit[1];
+        if (closeReachPriceLimitMax) {
+            if (closeReachPriceLimitMin) {
+                conditionsCalced.set(4, conditionNames.get(4) + "[1,1]"); // 不可能
+            } else {
+                conditionsCalced.set(4, conditionNames.get(4) + "[1,0]");
+            }
+        } else {
+            if (closeReachPriceLimitMin) {
+                conditionsCalced.set(4, conditionNames.get(4) + "[0,1]");
+            } else {
+                conditionsCalced.set(4, conditionNames.get(4) + "[0,0]");
+            }
+        }
+
+        // 6.前5日涨幅判定
+        Double pre5dayPercent = todayClose / getPriceOfSingleKline(pre5dayKlineRow, "close") - 1;
+        List<String> pre5dayPercentConditionList = getConditionNamesForNodeList(pre5dayPercentRangeList,
+                conditionNames.get(5));
+        for (int i = 0; i < pre5dayPercentConditionList.size() - 1; i++) {
+            if (pre5dayPercent < pre5dayPercentRangeList.get(i + 1) && pre5dayPercent >= pre5dayPercentRangeList
+                    .get(i)) {
+                conditionsCalced.set(5, pre5dayPercentConditionList.get(i));
+                break;
+            }
+        }
+
+        // 7.今日成交量 / 前五日平均成交量: 使用 vol列, 而非amount金额. 注意需要 df_window 复权形式一样. 要么无复权,要么全部后复权
+        Double volToPre5day = todayVol / (Double) dfWindow.slice(0, 5, fieldsOfDfRaw.indexOf("vol"),
+                fieldsOfDfRaw.indexOf("vol") + 1).mean().get(0, 0);
+        // .mean() 也得到了df, 这里只有唯一一个了
+        List<String> volToPre5dayConditionList = getConditionNamesForNodeList(volToPre5dayAvgRangeList,
+                conditionNames.get(6));
+        for (int i = 0; i < volToPre5dayConditionList.size() - 1; i++) {
+            if (volToPre5day < volToPre5dayAvgRangeList.get(i + 1) && volToPre5day >= volToPre5dayAvgRangeList.get(i)) {
+                conditionsCalced.set(6, volToPre5dayConditionList.get(i));
+                break;
+            }
+        }
+        return conditionsCalced;
+    }
+
     public static Double getPriceOfSingleKline(List<Object> klineRow, String whichPrice) {
         return Double.valueOf(klineRow.get(fieldsOfDfRaw.indexOf(whichPrice)).toString());
     }

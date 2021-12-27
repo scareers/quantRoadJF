@@ -123,6 +123,8 @@ public class StockApi {
      * 'f61': '换手率'
      * <p>
      * }
+     * <p>
+     * 'f18': '昨日收盘', ???
      */
     private static void initEASTMONEYKLINEFIELDS() {
         String rawJsonFromPython = "{\"f51\": \"\\u65e5\\u671f\", \"f52\": \"\\u5f00\\u76d8\", \"f53\": \"\\u6536\\u76d8\", \"f54\": \"\\u6700\\u9ad8\", \"f55\": \"\\u6700\\u4f4e\", \"f56\": \"\\u6210\\u4ea4\\u91cf\", \"f57\": \"\\u6210\\u4ea4\\u989d\", \"f58\": \"\\u632f\\u5e45\", \"f59\": \"\\u6da8\\u8dcc\\u5e45\", \"f60\": \"\\u6da8\\u8dcc\\u989d\", \"f61\": \"\\u6362\\u624b\\u7387\"}\n";
@@ -130,6 +132,7 @@ public class StockApi {
         for (String key : temp.keySet()) {
             EASTMONEY_KLINE_FIELDS.put(key, temp.get(key).toString());
         }
+        // EASTMONEY_KLINE_FIELDS.put("f18", "昨日收盘");  // 无此字段
     }
 
     private static void initMARKETNUMBERDICT() {
