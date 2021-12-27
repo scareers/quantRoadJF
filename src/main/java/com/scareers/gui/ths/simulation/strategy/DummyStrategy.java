@@ -44,6 +44,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class DummyStrategy extends Strategy {
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
+    public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!  todo
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
