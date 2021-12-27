@@ -133,6 +133,8 @@ public class DummyStrategy extends Strategy {
         log.warn("stock select result: 最终选股结果: {}", stockSelectCountMapFinal.keySet());
         log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
 
+        // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
+
 
         List<StockBean> res = StockPoolForFSTransaction // 已经加入两大指数, 构建股票池. Bean
                 .stockListFromSimpleStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
