@@ -34,7 +34,7 @@ public abstract class Strategy {
     protected abstract void startCore() throws Exception;
 
     /**
-     * 每个策略, 需要首先获取自身股票池
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect()
      */
     protected abstract List<StockBean> initStockPool();
 

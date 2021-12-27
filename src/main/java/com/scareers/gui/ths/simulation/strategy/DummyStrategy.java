@@ -43,7 +43,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
-    public static int stockSelectedExecAmounts = 100; // 选股遍历股票数量, 方便debug
+    public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
@@ -127,7 +127,7 @@ public class DummyStrategy extends Strategy {
                                 .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size())),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
-                        "101", "1", 2, false);
+                        "101", "1", 3, false);
 
         // int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
         for (String stock : datasMap.keySet()) {

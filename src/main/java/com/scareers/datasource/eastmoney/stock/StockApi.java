@@ -48,7 +48,7 @@ public class StockApi {
 
     public static void checkPoolExecutor() {
         if (poolExecutor == null) {
-            poolExecutor = new ThreadPoolExecutor(8, 32, 10000, TimeUnit.SECONDS,
+            poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
 
         }
