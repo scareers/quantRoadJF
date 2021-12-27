@@ -35,7 +35,7 @@ public class KlineFormsApi {
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
+        KlineFormsApi.getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
         Console.log(timer.intervalRestart());
         getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
         Console.log(timer.intervalRestart());
@@ -66,15 +66,19 @@ public class KlineFormsApi {
      * @throws SQLException
      */
     @Cached(description = "形态集合选股结果已经缓存, lru256")
-    public static HashMap<Long, List<String>> getStockSelectResultOfTradeDate(String trade_date, List<Integer> keyInts)
+    public static HashMap<Long, List<String>> getStockSelectResultOfTradeDate(String trade_date, List<Integer> keyInts,
+                                                                              String tableName)
             throws SQLException {
-        String cacheKey = StrUtilSelf.format("{}_{}_{}", trade_date, keyInts.get(0), keyInts.get(1));
+        if (tableName == null) {
+            tableName = StrUtilSelf
+                    .format(getSaveTablenameStockSelectResultRaw(), keyInts.get(0), keyInts.get(1));
+        }
+
+        String cacheKey = StrUtilSelf.format("{}_{}_{}", trade_date, keyInts.get(0), keyInts.get(1), tableName);
         HashMap<Long, List<String>> res = stockSelectPerDayCache.get(cacheKey);
         if (res != null) {
             return res;
         }
-
-        String tableName = StrUtilSelf.format(getSaveTablenameStockSelectResultRaw(), keyInts.get(0), keyInts.get(1));
         String sql = StrUtilSelf
                 .format("select ts_code,form_set_ids from {} where trade_date='{}'", tableName, trade_date);
         DataFrame<Object> dfTemp = DataFrame.readSql(conn, sql);
@@ -96,6 +100,12 @@ public class KlineFormsApi {
         return res;
     }
 
+    @Cached(description = "形态集合选股结果已经缓存, lru256")
+    public static HashMap<Long, List<String>> getStockSelectResultOfTradeDate(String trade_date, List<Integer> keyInts)
+            throws SQLException {
+        return getStockSelectResultOfTradeDate(trade_date, keyInts, null);
+    }
+
     /**
      * 给定日期和具体形态集合, 返回 当日该形态集合 的选股结果列表. 因原方法不会返回null,可放心调用. 可能返回null
      *
@@ -109,6 +119,12 @@ public class KlineFormsApi {
                                                                Long formSetId, List<Integer> keyInts)
             throws SQLException {
         return getStockSelectResultOfTradeDate(trade_date, keyInts).get(formSetId);
+    }
+
+    public static List<String> getStockSelectResultOfTradeDate(String trade_date,
+                                                               Long formSetId, List<Integer> keyInts, String tableName)
+            throws SQLException {
+        return getStockSelectResultOfTradeDate(trade_date, keyInts, tableName).get(formSetId);
     }
 
     /**

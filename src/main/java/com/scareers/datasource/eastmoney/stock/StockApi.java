@@ -14,6 +14,7 @@ import cn.hutool.log.Log;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
+import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 /**
@@ -412,13 +414,8 @@ public class StockApi {
                                                                                boolean isIndex
     )
             throws ExecutionException, InterruptedException {
-        /*
-                              beg: str = '19000101',
-                      end: str = '20500101',
-                      klt: int = 101,
-                      fqt: int = 1,
-         */
 
+        log.info("klines gets batch: 线程池批量获取k线, 股票数量: {}", stockCodesSimple.size());
         checkPoolExecutor();
         HashMap<String, Future<DataFrame<Object>>> futures = new HashMap<>();
         for (String stock : stockCodesSimple) {
@@ -430,12 +427,15 @@ public class StockApi {
             }));
         }
         ConcurrentHashMap<String, DataFrame<Object>> res = new ConcurrentHashMap<>();
-        for (String stock : futures.keySet()) {
+        List<Integer> integers = range(futures.keySet().size());
+        for (String stock : Tqdm.tqdm(stockCodesSimple, "process: ")) {
             DataFrame<Object> dfTemp = futures.get(stock).get();
             if (dfTemp != null) {
                 res.put(stock, dfTemp);
             }
         }
+        Console.log();
+        log.info("finish klines gets batch: 线程池批量获取k线完成");
         return res;
     }
 

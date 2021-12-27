@@ -18,6 +18,7 @@ import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
 import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.sqlapi.KlineFormsApi;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
@@ -42,12 +43,13 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
-    public static long hasStockSelectResultTodayThreshold = 1000; // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行
+    public static int stockSelectedExecAmounts = 100; // 选股遍历股票数量, 方便debug
+    // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
+    public static long hasStockSelectResultTodayThreshold = 1000;
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
     public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
     public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
             keyInts.get(0), keyInts.get(1));
-    public static int stockSelectedExecAmounts = 10; // 选股遍历股票数量, 方便debug
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
             // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
@@ -61,8 +63,7 @@ public class DummyStrategy extends Strategy {
     private static final Log log = LogUtils.getLogger();
 
     public static void main(String[] args) throws Exception {
-//        new DummyStrategy("xx").stockSelect0();
-        stockSelect0();
+        new DummyStrategy("xx").stockSelect();
     }
 
     @Override
@@ -79,13 +80,19 @@ public class DummyStrategy extends Strategy {
     protected List<String> stockSelect() throws Exception {
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
+        String today = DateUtil.today();
         String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
-                stockSelectResultSaveTableName, DateUtil.today());
+                stockSelectResultSaveTableName, today);
         DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
         long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
         if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
             stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
         }
+        // 获取选股结果, api均已缓存
+        // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
+        HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
+                stockSelectResultSaveTableName);
+
 
         return null;
     }
@@ -96,7 +103,7 @@ public class DummyStrategy extends Strategy {
      * @see com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell
      * :320 行
      */
-    private static void stockSelect0() throws Exception {
+    private void stockSelect0() throws Exception {
         log.warn("stock select today: 执行今日选股主逻辑. keyInts: {}", keyInts);
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
@@ -113,7 +120,7 @@ public class DummyStrategy extends Strategy {
         String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.  // yyyy-MM-dd
         String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
-        log.warn("stock amounts: 以获取两市主板股票数量: {}", mainboardStocks.size());
+        log.warn("stock amounts: 已获取两市主板股票数量: {}", mainboardStocks.size());
         ConcurrentHashMap<String, DataFrame<Object>> datasMap =
                 StockApi.getQuoteHistory(
                         new ArrayList<>(mainboardStocks)
@@ -153,12 +160,13 @@ public class DummyStrategy extends Strategy {
                     belongToFormsetIds,
                     stockSelectResultSaveTableName,
                     connOfStockSelectResult);
-            log.info("stock select result saving: {} -- {} ", today, stock);
+            log.debug("stock select result saving: {} -- {} ", today, stock);
         }
+        log.warn("stock select finish: 完成执行今日选股主逻辑. keyInts: {}", keyInts);
     }
 
-    public static boolean[] calcReachPriceLimit(List<Object> todayKlineRow, List<Object> yesterdayKlineRow,
-                                                DataFrame<Object> dfWindow) {
+    private boolean[] calcReachPriceLimit(List<Object> todayKlineRow, List<Object> yesterdayKlineRow,
+                                          DataFrame<Object> dfWindow) {
         /*
           	trade_date	open	close	high	 low	   vol	      amount	   振幅	  涨跌幅	  涨跌额	 换手率	昨日收盘	  股票代码	股票名称
             0	2021-12-17	4.54	4.46 	4.54	4.45	182884	81887987.00 	2.00 	-0.89	-0.04	1.15	0   	000976	华铁股份
@@ -169,7 +177,7 @@ public class DummyStrategy extends Strategy {
         List<Object> colName = dfWindow.col("股票名称");
         String stockName = colName.get(5).toString();
         Double priceLimit = 0.1; // 全是主板
-        if (stockName.startsWith("*")) {
+        if (stockName.contains("ST")) {
             priceLimit = 0.05;
         }
         Double priceLimitMax = NumberUtil.round(yesterdayClose * (1 + priceLimit), 2).doubleValue();
