@@ -112,7 +112,8 @@ public class DummyStrategy extends Strategy {
                 scientificCreationMarket); // 两次差集操作, 获取所有主板股票
         // 开始选股. 首先获取近 几日 window数据, 当然, 这里我们多获取几日, 截取最后 n个.  截取2个月
         String today = DateUtil.format(DateUtil.date(), SIMPLE_DATE_FORMAT);
-        String twoMonthAgo = DateUtil.format(DateUtil.offsetMonth(DateUtil.date(), 2), SIMPLE_DATE_FORMAT);
+        String twoMonthAgo = DateUtil.format(DateUtil.offsetMonth(DateUtil.date(), -2), SIMPLE_DATE_FORMAT);
+        Console.log(twoMonthAgo);
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
         ConcurrentHashMap<String, DataFrame<Object>> datasMap =
                 StockApi.getQuoteHistory(new ArrayList<>(mainboardStocks),
