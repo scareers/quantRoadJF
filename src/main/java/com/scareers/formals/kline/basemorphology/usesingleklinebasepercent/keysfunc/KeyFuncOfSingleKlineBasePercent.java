@@ -1,5 +1,6 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
@@ -758,8 +759,10 @@ public class KeyFuncOfSingleKlineBasePercent {
         }
 
         // 7.今日成交量 / 前五日平均成交量: 使用 vol列, 而非amount金额. 注意需要 df_window 复权形式一样. 要么无复权,要么全部后复权
-        Double volToPre5day = todayVol / (Double) dfWindow.slice(0, 5, fieldsOfDfRaw.indexOf("vol"),
-                fieldsOfDfRaw.indexOf("vol") + 1).mean().get(0, 0);
+        // @noti: new: trade_date	open	close	high	 low	  vol	     amount  成交量在 5, 不使用查找了
+        DataFrame<Double> dfTemp = new DataFrame<>();
+        dfTemp.add("vol", DataFrameSelf.getColAsDoubleList(dfWindow.slice(0, 5), "vol"));
+        Double volToPre5day = todayVol / dfTemp.mean().get(0, 0);
         // .mean() 也得到了df, 这里只有唯一一个了
         List<String> volToPre5dayConditionList = getConditionNamesForNodeList(volToPre5dayAvgRangeList,
                 conditionNames.get(6));

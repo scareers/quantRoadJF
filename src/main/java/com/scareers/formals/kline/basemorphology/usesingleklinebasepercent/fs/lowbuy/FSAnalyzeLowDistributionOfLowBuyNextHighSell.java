@@ -14,6 +14,7 @@ import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.CommonUtils;
 import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.Tqdm;
+import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -188,6 +189,10 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         // @key: 从数据库获取的 2000+形态集合.的字典.  形态集合id: 已解析json的字符串列表.
         public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
         public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
+
+        static {
+            initMaps();
+        }
 
         public static void initMaps() {
             try {
@@ -1189,7 +1194,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     resTemp.put(key_, value);
                 }
             }
-            Console.log(StrUtilSelf.format("一次解析形态集合完成, 数据表: {} ;; 形态集合数量:{}", tableName, resTemp.size()));
+            log.info(StrUtilSelf.format("form_sets parse: 解析形态集合完成, 数据源表: {} ; 形态集合数量:{}", tableName, resTemp.size()));
             //@noti: res.get(1L)  才行, 注意时 long, 而非int
             return resTemp;
         }
@@ -1209,7 +1214,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
     }
 
-    public static Log log = LogFactory.get();
+    private static final Log log = LogUtils.getLogger();
 
     public static class CalcStatResultAndSaveTaskOfFSLowBuyHighSell implements Callable<List<String>> {
         CountDownLatch latchOfCalcForEpoch;

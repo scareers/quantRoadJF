@@ -45,7 +45,7 @@ public class DummyStrategy extends Strategy {
     public static long hasStockSelectResultTodayThreshold = 1000; // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
     public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
-    public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_test_{}b{}s",
+    public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
             keyInts.get(0), keyInts.get(1));
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
@@ -96,18 +96,9 @@ public class DummyStrategy extends Strategy {
      * :320 行
      */
     private static void stockSelect0() throws Exception {
-        /*
-                            List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
-                            yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
-
-                                     if (parallelOnlyStockSelectResult) {
-                        // 该设置控制 只执行选股. lowBuy, HighSell均无视, 因此逻辑体后continue.
-                        saveStockSelectResult(stock, todayTemp, belongToFormsetIds);
-                        // 只需要保存股票,日期,所属形态集合  因此数据库 有 stock*date 条记录. 具体值为 形态集合--id 列表
-                        continue; // 将造成 原有结果为空map, 因此执行保存也无所谓.
-                    }
-         */
-
+        log.warn("stock select today: 执行今日选股主逻辑. keyInts: {}", keyInts);
+        execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
+                connOfStockSelectResult); // 不存在则建表
         List<String> allHSAstock = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
         List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
         List<String> scientificCreationMarket =
@@ -143,8 +134,6 @@ public class DummyStrategy extends Strategy {
             for (int i = 0; i <= windowUsePeriodsCoreArg - dfWindow.length(); i++) {
                 dfWindow = dfWindow.append(Arrays.asList()); // 添加几行空值, 模拟未来数据, 以便调用原方法. 无需强行等列的al
             }
-            Console.log(dfWindow);
-            Console.log(dfWindow.length()); // 6
             List<Object> pre5dayKlineRow = dfWindow.row(0);
             List<Object> yesterdayKlineRow = dfWindow.row(4);
             List<Object> todayKlineRow = dfWindow.row(5);
@@ -152,8 +141,7 @@ public class DummyStrategy extends Strategy {
             List<String> concreteTodayFormStrs = parseConditionsAsStrsSimple(dfWindow, pre5dayKlineRow,
                     yesterdayKlineRow, todayKlineRow, reachPriceLimit);
             List<String> allForms = getAllFormNamesByConcreteFormStrsWithoutSuffix(concreteTodayFormStrs);
-            ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet =
-                    parseMapToSets(parseFromsSetsFromDb(keyInts, connOfKlineForms)); // 不依靠 static 块
+
             List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDBAsHashSet, allForms);
             if (belongToFormsetIds.size() == 0) {
                 continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
@@ -162,8 +150,7 @@ public class DummyStrategy extends Strategy {
                     belongToFormsetIds,
                     stockSelectResultSaveTableName,
                     connOfStockSelectResult);
-
-
+            log.info("stock select result saving: {} -- {} ", today, stock);
         }
     }
 
@@ -177,7 +164,7 @@ public class DummyStrategy extends Strategy {
         Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
         Double yesterdayClose = getPriceOfSingleKline(yesterdayKlineRow, "close");
         List<Object> colName = dfWindow.col("股票名称");
-        String stockName = colName.get(colName.size() - 1).toString();
+        String stockName = colName.get(5).toString();
         Double priceLimit = 0.1; // 全是主板
         if (stockName.startsWith("*")) {
             priceLimit = 0.05;
