@@ -99,6 +99,9 @@ public class DummyStrategy extends Strategy {
         // 2.得到确定的选股结果后, 每只股票出现了多少次? 总和.  formSet的权重, 由 其选股结果中, 被最终选择到了的股票 数量 / 总数
         // 3.即可得到  {formSetId: 策略最终加权形态集合的 加权权重.}
         // 4.后期可依据权重确定 加权概率分布!!!!!!!!! todo
+
+
+
         return null;
     }
 

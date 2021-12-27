@@ -82,6 +82,7 @@ public class IndexRealTimeRaiseFallParameter {
 
         File file = FileUtil.file("results/IndexRealTimeRaiseFallParameter/singleTableGroupByFormsetidAvg_scale1.21.3" +
                 ".json");
+        Console.log(file.getAbsolutePath());
         FileWriter writer = new FileWriter(file);
         writer.write(JSONUtil.toJsonPrettyStr(res));
         Console.log("finish");
