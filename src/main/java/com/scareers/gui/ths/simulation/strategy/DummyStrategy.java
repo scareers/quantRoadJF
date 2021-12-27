@@ -47,7 +47,7 @@ public class DummyStrategy extends Strategy {
     public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
     public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
             keyInts.get(0), keyInts.get(1));
-    public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
+    public static int stockSelectedExecAmounts = 10; // 选股遍历股票数量, 方便debug
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
             // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
@@ -83,7 +83,7 @@ public class DummyStrategy extends Strategy {
                 stockSelectResultSaveTableName, DateUtil.today());
         DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
         long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
-        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) {
+        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
             stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
         }
 
@@ -113,6 +113,7 @@ public class DummyStrategy extends Strategy {
         String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.  // yyyy-MM-dd
         String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
+        log.warn("stock amounts: 以获取两市主板股票数量: {}", mainboardStocks.size());
         ConcurrentHashMap<String, DataFrame<Object>> datasMap =
                 StockApi.getQuoteHistory(
                         new ArrayList<>(mainboardStocks)
@@ -121,7 +122,7 @@ public class DummyStrategy extends Strategy {
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
                         "101", "1", 2, false);
 
-        int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
+        // int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
         for (String stock : datasMap.keySet()) {
             DataFrame<Object> dfRaw = datasMap.get(stock); // dfRaw的日期默认为 yyyy-MM-dd, 虽然起止参数是 yyyyMMdd 形式
             dfRaw = dfRaw.rename(new HashMap<>(fieldsRenameDict));
@@ -133,10 +134,9 @@ public class DummyStrategy extends Strategy {
             }
             DataFrame<Object> dfWindow = dfRaw.slice(dfRaw.length() - 6, dfRaw.length());
             dfWindow = dfWindow.resetIndex();
-
-            for (int i = 0; i <= windowUsePeriodsCoreArg - dfWindow.length(); i++) {
-                dfWindow = dfWindow.append(Arrays.asList()); // 添加几行空值, 模拟未来数据, 以便调用原方法. 无需强行等列的al
-            }
+            //for (int i = 0; i <= windowUsePeriodsCoreArg - dfWindow.length(); i++) { // @update: 不需要
+            //    dfWindow = dfWindow.append(Arrays.asList()); // 添加几行空值, 模拟未来数据, 以便调用原方法. 无需强行等列的al
+            //}
             List<Object> pre5dayKlineRow = dfWindow.row(0);
             List<Object> yesterdayKlineRow = dfWindow.row(4);
             List<Object> todayKlineRow = dfWindow.row(5);
