@@ -158,6 +158,22 @@ public class DummyStrategy extends Strategy {
         if (useFormSetIds == null) {
             initUseFormSetIds(); // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
         }
+        HashMap<String, Integer> stockSelectCountMap = new HashMap<>(); // 计算每只股票有多少个formset 选中了?
+        for (Long forSetId : useFormSetIds) {
+            List<String> stockSelected = stockSelectResult.get(forSetId);
+            if (stockSelected == null) {
+                log.info("formSetId no stockSelectResult: 今日无选股结果: {}", forSetId);
+                continue;
+            }
+            HashSet<String> stockSelectedSet = new HashSet<>(stockSelected);
+            for (String stock : stockSelectedSet) {
+                stockSelectCountMap.putIfAbsent(stock, 0); // 初始0次
+                stockSelectCountMap.put(stock, stockSelectCountMap.get(stock) + 1); // 计数+1
+            }
+        }
+
+        // 总次数
+        double totalCount = stockSelectCountMap.values().stream().mapToDouble(value -> value.doubleValue()).sum();
 
 
         return null;
