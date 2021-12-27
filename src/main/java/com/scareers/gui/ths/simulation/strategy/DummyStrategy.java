@@ -47,6 +47,7 @@ public class DummyStrategy extends Strategy {
     public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
     public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
             keyInts.get(0), keyInts.get(1));
+    public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
             // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
@@ -113,7 +114,9 @@ public class DummyStrategy extends Strategy {
         String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
         ConcurrentHashMap<String, DataFrame<Object>> datasMap =
-                StockApi.getQuoteHistory(new ArrayList<>(mainboardStocks).subList(0, 10),
+                StockApi.getQuoteHistory(
+                        new ArrayList<>(mainboardStocks)
+                                .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size())),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
                         "101", "1", 2, false);
