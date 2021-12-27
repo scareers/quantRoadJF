@@ -1,12 +1,17 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.parameter;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileWriter;
+import cn.hutool.core.io.resource.Resource;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.utils.StrUtilSelf;
 import joinery.DataFrame;
 
+import java.io.File;
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -28,6 +33,8 @@ public class IndexRealTimeRaiseFallParameter {
 
     public static void main(String[] args) throws Exception {
         singleTableGroupByFormsetidAvg();
+
+//        renameAllTable();
     }
 
     public static void singleTableGroupByFormsetidAvg() throws Exception {
@@ -72,9 +79,15 @@ public class IndexRealTimeRaiseFallParameter {
 
         Console.log(JSONUtil.toJsonPrettyStr(res));
         Console.log("开始写入json文件");
-        FileWriter writer = new FileWriter("singleTableGroupByFormsetidAvg.json");
+
+        File file = FileUtil.file("results/IndexRealTimeRaiseFallParameter/singleTableGroupByFormsetidAvg_scale1.21.3" +
+                ".json");
+        Console.log(file.getAbsolutePath());
+        FileWriter writer = new FileWriter(file);
         writer.write(JSONUtil.toJsonPrettyStr(res));
         Console.log("finish");
+
+
     }
 
     public static void singleTableAllAvg() throws Exception {
@@ -114,7 +127,7 @@ public class IndexRealTimeRaiseFallParameter {
 
     public static List<String> getResultTables() throws SQLException {
         List<String> tables = getAllTables(klineForms);
-        tables = tables.stream().filter(value -> value.startsWith("fs_backtest_lowbuy_highsell_next0b1s"))
+        tables = tables.stream().filter(value -> value.startsWith("fs_bk_lbhs_next0b1s_indexper_scale1.21.3"))
                 .collect(Collectors.toList());
         return tables;
     }
@@ -126,7 +139,10 @@ public class IndexRealTimeRaiseFallParameter {
         List<String> tables = getResultTables();
         int prefixLenth = "fs_backtest_lowbuy_highsell_next0b1s".length();
         for (String tablename : tables) {
-            String newTablename = StrUtilSelf.format("{}_{}{}", tablename.substring(0, prefixLenth), "index_percent",
+            String newTablename = StrUtilSelf.format("{}_{}{}",
+                    "fs_bk_lbhs_next0b1s_indexper",
+//                    tablename.substring(0, prefixLenth),
+                    "scale1.41.6",
                     tablename.substring(prefixLenth, tablename.length()));
             renameTable(klineForms, tablename, newTablename);
         }
