@@ -30,9 +30,11 @@ public class EmSecurityIdBean {
     JSONArray queryResults;
 
 
-    public EmSecurityIdBean(String stockCodeSimple, JSONArray queryResults) {
+    public EmSecurityIdBean(String stockCodeSimple, JSONArray queryResults)
+            throws ExecutionException, InterruptedException {
         this.stockCodeSimple = stockCodeSimple;
         this.queryResults = queryResults;
+        checkQueryResults();
     }
 
     private void checkQueryResults() throws ExecutionException, InterruptedException { // 死循环查询
@@ -52,8 +54,7 @@ public class EmSecurityIdBean {
     }
 
     // "QuoteID" --> 0.000001 23科创板
-    public String getAStockSecId() throws ExecutionException, InterruptedException {
-        checkQueryResults();
+    public String getAStockSecId() {
         for (int i = 0; i < queryResults.size(); i++) {
             JSONObject ele = queryResults.getJSONObject(i);
             if ("AStock".equals(ele.get("Classify").toString()) || "23".equals(ele.get("Classify").toString())) {
@@ -63,12 +64,53 @@ public class EmSecurityIdBean {
         return null;
     }
 
-    public String getIndexSecId() throws ExecutionException, InterruptedException {
-        checkQueryResults();
+    // "QuoteID" --> 0.000001 23科创板
+    public String getAStockCode() {
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if ("AStock".equals(ele.get("Classify").toString()) || "23".equals(ele.get("Classify").toString())) {
+                return ele.get("Code").toString();
+            }
+        }
+        return null;
+    }
+
+    // "QuoteID" --> 0.000001 23科创板
+    public String getAStockName() {
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if ("AStock".equals(ele.get("Classify").toString()) || "23".equals(ele.get("Classify").toString())) {
+                return ele.get("Name").toString();
+            }
+        }
+        return null;
+    }
+
+    public String getIndexSecId() {
         for (int i = 0; i < queryResults.size(); i++) {
             JSONObject ele = queryResults.getJSONObject(i);
             if ("Index".equals(ele.get("Classify").toString())) {
                 return ele.get("QuoteID").toString();
+            }
+        }
+        return null;
+    }
+
+    public String getIndexCode() {
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if ("Index".equals(ele.get("Classify").toString())) {
+                return ele.get("Code").toString();
+            }
+        }
+        return null;
+    }
+
+    public String getIndexName() {
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if ("Index".equals(ele.get("Classify").toString())) {
+                return ele.get("Name").toString();
             }
         }
         return null;

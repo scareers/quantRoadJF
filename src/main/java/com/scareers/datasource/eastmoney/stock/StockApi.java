@@ -1,7 +1,6 @@
 package com.scareers.datasource.eastmoney.stock;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -10,17 +9,20 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
-import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 /**
@@ -87,6 +89,11 @@ public class StockApi {
                 StockApi.getQuoteHistory(Arrays.asList("000001", "000002"),
                         "20211027", "20211224", "101", "1", 2, false);
         Console.log(datasMap);
+
+        String today = DateUtil.today();
+        String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.
+        Console.log(today);
+        Console.log(pre7TradeDate);
     }
 
     static {
@@ -428,7 +435,7 @@ public class StockApi {
     /**
      * 单股票k线
      *
-     * @param stock
+     * @param stock       @noti: 绝对传递 simple模式, 是否指数有  isIndex 参数控制
      * @param begDate
      * @param endDate
      * @param klType
@@ -439,16 +446,13 @@ public class StockApi {
      */
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean quoteIdMode) {
+                                                          int retrySingle, boolean quoteIdMode, boolean isIndex)
+            throws ExecutionException, InterruptedException {
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
         JSONArray quoteRes = querySecurityId(stock);
-        String quoteId = null;
-        if (quoteIdMode) {
-            quoteId = stock;
-        } else {
-            quoteId = quoteRes.getJSONObject(0).getStr("QuoteID");
-        }
+        EmSecurityIdBean bean = new EmSecurityIdBean(stock, quoteRes);
+        String quoteId = isIndex ? bean.getIndexSecId() : bean.getAStockSecId();
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
@@ -472,27 +476,47 @@ public class StockApi {
                         .collect(Collectors.toList()),
                 Arrays.asList("data", "klines"), String.class, Arrays.asList(),
                 Arrays.asList());
-        dfTemp = dfTemp.add("股票代码", values -> quoteRes.getJSONObject(0).getStr("Code"));
-        dfTemp = dfTemp.add("股票名称", values -> quoteRes.getJSONObject(0).getStr("Name"));
+
+        dfTemp = dfTemp.add("股票代码", values -> isIndex ? bean.getIndexCode() : bean.getAStockCode());
+        dfTemp = dfTemp.add("股票名称", values -> isIndex ? bean.getIndexName() : bean.getAStockName());
         return dfTemp;
     }
 
+    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
+                                                          String endDate, String klType, String fq,
+                                                          int retrySingle, boolean quoteIdMode)
+            throws ExecutionException, InterruptedException {
+        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, quoteIdMode, false);
+    }
+
     /**
-     * 给定一个具体日期, 8位形式.  返回上一个交易日的日期,
+     * 给定一个具体日期, yyyy-MM-dd形式, 因为em默认日期格式是这样, 方便比较.  返回上n个交易日的日期,
      * 原理上查询 上证指数 所有历史日k线, 获取得到日期列表. 倒序遍历即可
+     * 返回  yyyy-MM-dd形式
      *
      * @param todayDate
      * @return
      */
-    public static String getPreTradeDateStrict(String todayDate) {
-        DataFrame<Object> dfTemp = getQuoteHistorySingle("1.000001", "19900101", "21000101", "101", "1", 3, true);
+    public static String getPreNTradeDateStrict(String todayDate, int n)
+            throws ExecutionException, InterruptedException {
+        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, true);
         List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
-                return dates.get(i);
+                // 此时i为  上 1 交易日. 因此..
+                try {
+                    return dates.get(i + 1 - n);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null; // 索引越界
+                }
             }
         }
         return null;
+    }
+
+    public static String getPreNTradeDateStrict(String todayDate) throws ExecutionException, InterruptedException {
+        return getPreNTradeDateStrict(todayDate, 1); // 默认获取today上一交易日
     }
 
 }
