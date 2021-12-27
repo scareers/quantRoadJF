@@ -1,5 +1,7 @@
 package com.scareers.datasource.eastmoney.stock;
 
+import cn.hutool.cache.Cache;
+import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -9,6 +11,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.scareers.annotations.Cached;
 import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.log.LogUtils;
@@ -37,6 +40,7 @@ public class StockApi {
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
+    public static Cache<String, DataFrame<Object>> getQuoteHistorySingleCache = CacheUtil.newLRUCache(1024);//k线
 
     public static ThreadPoolExecutor poolExecutor;
 
@@ -392,7 +396,7 @@ public class StockApi {
      * @param klType
      * @param fq
      * @param retrySingle
-     * @param quoteIdMode      给的股票代码列表, 是否是 quoteId 模式,  1.000001 代表上证指数
+     * @param isIndex          给的股票代码列表, 是否指数??
      * @return
      * @throws ExecutionException
      * @throws InterruptedException
@@ -402,7 +406,7 @@ public class StockApi {
                                                                                String endDate,
                                                                                String klType, String fq,
                                                                                int retrySingle,
-                                                                               boolean quoteIdMode
+                                                                               boolean isIndex
     )
             throws ExecutionException, InterruptedException {
         /*
@@ -418,7 +422,7 @@ public class StockApi {
             futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, quoteIdMode);
+                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex);
                 }
             }));
         }
@@ -444,10 +448,17 @@ public class StockApi {
      * @param quoteIdMode
      * @return
      */
+    @Cached
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean quoteIdMode, boolean isIndex)
+                                                          int retrySingle, boolean isIndex)
             throws ExecutionException, InterruptedException {
+        String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
+                isIndex);
+        DataFrame<Object> res = getQuoteHistorySingleCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
         JSONArray quoteRes = querySecurityId(stock);
@@ -478,15 +489,16 @@ public class StockApi {
                 Arrays.asList());
 
         dfTemp = dfTemp.add("股票代码", values -> isIndex ? bean.getIndexCode() : bean.getAStockCode());
-        dfTemp = dfTemp.add("股票名称", values -> isIndex ? bean.getIndexName() : bean.getAStockName());
-        return dfTemp;
+        res = dfTemp.add("股票名称", values -> isIndex ? bean.getIndexName() : bean.getAStockName());
+        getQuoteHistorySingleCache.put(cacheKey, res);
+        return res;
     }
 
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean quoteIdMode)
+                                                          int retrySingle)
             throws ExecutionException, InterruptedException {
-        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, quoteIdMode, false);
+        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false);
     }
 
     /**
@@ -499,7 +511,7 @@ public class StockApi {
      */
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws ExecutionException, InterruptedException {
-        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, true);
+        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true);
         List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日

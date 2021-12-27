@@ -113,30 +113,33 @@ public class DummyStrategy extends Strategy {
         // 开始选股. 首先获取近 几日 window数据, 当然, 这里我们多获取1日, 截取最后 n个.  截取2个月
         String today = DateUtil.today(); // yyyy-MM-dd
         String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.  // yyyy-MM-dd
+        String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
         ConcurrentHashMap<String, DataFrame<Object>> datasMap =
-                StockApi.getQuoteHistory(new ArrayList<>(mainboardStocks),
-                        pre7TradeDate, today, "101", "1", 2, false);
+                StockApi.getQuoteHistory(new ArrayList<>(mainboardStocks).subList(0, 10),
+                        pre7TradeDate.replace("-", ""),
+                        pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
+                        "101", "1", 2, false);
 
-        Console.log(datasMap);
         int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
-        String preTradeDate = StockApi.getPreNTradeDateStrict(today, 1);
         for (String stock : datasMap.keySet()) {
             DataFrame<Object> dfRaw = datasMap.get(stock); // dfRaw的日期默认为 yyyy-MM-dd, 虽然起止参数是 yyyyMMdd 形式
             dfRaw = dfRaw.rename(new HashMap<>(fieldsRenameDict));
-            if (dfRaw.size() < 6) { // 两个月至少需要 6天数据
+            if (dfRaw.length() < 6) { // 两个月至少需要 6天数据, 有7天数据, 1天冗余. 即7天内不能停牌1天以上
                 continue;
             }
-            if (!(dfRaw.get(dfRaw.length() - 1, 0).toString().equals(preTradeDate))) {
+            if (!(dfRaw.get(dfRaw.length() - 1, 0).toString().equals(pre1TradeDate))) {
                 continue; // 该股票上一交易日, 并非上一个开盘日, 例如停牌的无视
             }
             DataFrame<Object> dfWindow = dfRaw.slice(dfRaw.length() - 6, dfRaw.length());
+            dfWindow = dfWindow.resetIndex();
+
+            for (int i = 0; i <= windowUsePeriodsCoreArg - dfWindow.length(); i++) {
+                dfWindow = dfWindow.append(Arrays.asList()); // 添加几行空值, 模拟未来数据, 以便调用原方法. 无需强行等列的al
+            }
             Console.log(dfWindow);
             Console.log(dfWindow.length()); // 6
-            for (int i = 0; i < windowUsePeriodsCoreArg - dfWindow.length(); i++) {
-                dfWindow.append(Arrays.asList("")); // 添加几行空值, 模拟未来数据, 以便调用原方法
-            }
-
+            // todo: 调用选股方法
         }
     }
 
