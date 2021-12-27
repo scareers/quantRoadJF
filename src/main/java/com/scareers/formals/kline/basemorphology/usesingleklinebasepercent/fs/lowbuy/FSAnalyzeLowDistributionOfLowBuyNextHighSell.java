@@ -189,16 +189,17 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         public static ConcurrentHashMap<Long, List<String>> formSetsMapFromDB;
         public static ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet;
 
-        static {
+        public static void initMaps() {
             try {
-                formSetsMapFromDB = parseFromsSetsFromDb();
+                formSetsMapFromDB = parseFromsSetsFromDb(keyInts, connOfKlineForms);
                 formSetsMapFromDBAsHashSet = parseMapToSets(formSetsMapFromDB);
+                // formSetsMapFromDBAsHashSet = parseMapToSets(parseFromsSetsFromDb(keyInts, connOfKlineForms));
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
 
-        private static ConcurrentHashMap<Long, HashSet<String>> parseMapToSets(
+        public static ConcurrentHashMap<Long, HashSet<String>> parseMapToSets(
                 ConcurrentHashMap<Long, List<String>> formSetsMapFromDB) {
             ConcurrentHashMap<Long, HashSet<String>> res = new ConcurrentHashMap<>();
             for (Long key : formSetsMapFromDB.keySet()) {
@@ -341,6 +342,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
                     // lowbuy2: 计算属于那些形态集合? 给出 id列表, 如果id列表空,显然不需要浪费时间计算 15个结果值.
 //                    TimeInterval timer = DateUtil.timer();
+                    if (formSetsMapFromDBAsHashSet == null) { // 懒加载
+                        initMaps();
+                    }
                     List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDBAsHashSet, allForms);
 //                    Console.com.scareers.log(timer.intervalRestart());
                     if (belongToFormsetIds.size() == 0) {
@@ -423,7 +427,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             return resultTemp;
         }
 
-        private static void saveStockSelectResult(String stock, String todayTemp, List<Long> belongToFormsetIds)
+        public static void saveStockSelectResult(String stock, String todayTemp, List<Long> belongToFormsetIds)
+                throws Exception {
+            saveStockSelectResult(stock, todayTemp, belongToFormsetIds, saveTablenameStockSelectResult,
+                    connOfKlineForms);
+        }
+
+        public static void saveStockSelectResult(String stock, String todayTemp, List<Long> belongToFormsetIds,
+                                                 String saveTablenameStockSelectResult, Connection connOfKlineForms)
                 throws Exception {
             String sqlDeleteExists = "delete from {} where ts_code='{}' and trade_date='{}'";
             execSql(StrUtilSelf.format(sqlDeleteExists, saveTablenameStockSelectResult, stock, todayTemp),
@@ -1146,7 +1157,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             return belongToFormsetIds;
         }
 
-        public static ConcurrentHashMap<Long, List<String>> parseFromsSetsFromDb()
+        public static ConcurrentHashMap<Long, List<String>> parseFromsSetsFromDb(List<Integer> keyInts,
+                                                                                 Connection connOfKlineForms)
                 throws SQLException { // 直接读取设定,而非用keyInt
             String tableName = StrUtilSelf.format("next{}b{}s_of_single_kline",
                     keyInts.get(0),

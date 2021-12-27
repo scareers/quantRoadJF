@@ -13,6 +13,7 @@ import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
@@ -21,14 +22,15 @@ import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.keyInts;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.getPriceOfSingleKline;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.parseConditionsAsStrsSimple;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -40,11 +42,12 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
-    public static String stockSelectResultSaveTableName = "stock_select_result_of_lbhs_test";
-    public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static long hasStockSelectResultTodayThreshold = 1000; // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行
     public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
-    public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定
+    public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
+    public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_test_{}b{}s",
+            keyInts.get(0), keyInts.get(1));
+    public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
             // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
             .asList("trade_date", "open", "close", "high", "low", "vol", "amount"); // 股票日k线数据列
@@ -76,7 +79,7 @@ public class DummyStrategy extends Strategy {
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
         String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
-                stockSelectResultSaveTableName, DateUtil.format(DateUtil.date(), SIMPLE_DATE_FORMAT));
+                stockSelectResultSaveTableName, DateUtil.today());
         DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
         long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
         if (resultCountOfToday <= hasStockSelectResultTodayThreshold) {
@@ -92,7 +95,7 @@ public class DummyStrategy extends Strategy {
      * @see com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell
      * :320 行
      */
-    private static void stockSelect0() throws ExecutionException, InterruptedException {
+    private static void stockSelect0() throws Exception {
         /*
                             List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
                             yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
@@ -146,9 +149,21 @@ public class DummyStrategy extends Strategy {
             List<Object> yesterdayKlineRow = dfWindow.row(4);
             List<Object> todayKlineRow = dfWindow.row(5);
             boolean[] reachPriceLimit = calcReachPriceLimit(todayKlineRow, yesterdayKlineRow, dfWindow);
-            parseConditionsAsStrsSimple(dfWindow, pre5dayKlineRow, yesterdayKlineRow, todayKlineRow, reachPriceLimit);
+            List<String> concreteTodayFormStrs = parseConditionsAsStrsSimple(dfWindow, pre5dayKlineRow,
+                    yesterdayKlineRow, todayKlineRow, reachPriceLimit);
+            List<String> allForms = getAllFormNamesByConcreteFormStrsWithoutSuffix(concreteTodayFormStrs);
+            ConcurrentHashMap<Long, HashSet<String>> formSetsMapFromDBAsHashSet =
+                    parseMapToSets(parseFromsSetsFromDb(keyInts, connOfKlineForms)); // 不依靠 static 块
+            List<Long> belongToFormsetIds = calcBelongToFormSets(formSetsMapFromDBAsHashSet, allForms);
+            if (belongToFormsetIds.size() == 0) {
+                continue; // 如果id列表空,显然不需要浪费时间计算 15个结果值.
+            }
+            saveStockSelectResult(stock, today, // 注意这里保存的是 真正的 today 的日期. 10位
+                    belongToFormsetIds,
+                    stockSelectResultSaveTableName,
+                    connOfStockSelectResult);
 
-            // todo
+
         }
     }
 
