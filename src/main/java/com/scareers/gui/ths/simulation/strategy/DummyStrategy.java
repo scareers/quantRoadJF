@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
@@ -9,6 +10,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
 import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
+import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
@@ -18,12 +20,12 @@ import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 
 import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.keyInts;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -38,12 +40,22 @@ public class DummyStrategy extends Strategy {
     public static String stockSelectResultSaveTableName = "stock_select_result_of_lbhs_test";
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static long hasStockSelectResultTodayThreshold = 1000; // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行
-    public static List<String> stockSelectMarkets = Arrays.asList(); // 选股板块, 从当刻截面数据获取股票所有列表,以便选股
+    public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
+    public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定
+    public static final List<String> fieldsOfDfRaw = Arrays
+            // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
+            .asList("trade_date", "open", "close", "high", "low", "vol", "amount"); // 股票日k线数据列
+    // 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	  振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
+    public static Map<String, Object> fieldsRenameDict = Dict.create().set("日期", "trade_date").set("开盘", "open")
+            .set("收盘", "close")
+            .set("最高", "high").set("最低", "low").set("成交量", "vol").set("成交额", "amount");
+
 
     private static final Log log = LogUtils.getLogger();
 
     public static void main(String[] args) throws Exception {
-        new DummyStrategy("xx").stockSelect();
+//        new DummyStrategy("xx").stockSelect0();
+        stockSelect0();
     }
 
     @Override
@@ -61,7 +73,7 @@ public class DummyStrategy extends Strategy {
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
         String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
-                stockSelectResultSaveTableName, DateUtil.today().replace("-", ""));
+                stockSelectResultSaveTableName, DateUtil.format(DateUtil.date(), SIMPLE_DATE_FORMAT));
         DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
         long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
         if (resultCountOfToday <= hasStockSelectResultTodayThreshold) {
@@ -77,7 +89,7 @@ public class DummyStrategy extends Strategy {
      * @see com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell
      * :320 行
      */
-    private void stockSelect0() {
+    private static void stockSelect0() throws ExecutionException, InterruptedException {
         /*
                             List<String> concreteTodayFormStrs = parseConditionsAsStrs(stock, dfWindow, pre5dayKlineRow,
                             yesterdayKlineRow, todayKlineRow, stockWithStDateRanges, stockWithBoard);
@@ -98,8 +110,34 @@ public class DummyStrategy extends Strategy {
         HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
                 pioneerMarket)),
                 scientificCreationMarket); // 两次差集操作, 获取所有主板股票
+        // 开始选股. 首先获取近 几日 window数据, 当然, 这里我们多获取几日, 截取最后 n个.  截取2个月
+        String today = DateUtil.format(DateUtil.date(), SIMPLE_DATE_FORMAT);
+        String twoMonthAgo = DateUtil.format(DateUtil.offsetMonth(DateUtil.date(), 2), SIMPLE_DATE_FORMAT);
+        // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
+        ConcurrentHashMap<String, DataFrame<Object>> datasMap =
+                StockApi.getQuoteHistory(new ArrayList<>(mainboardStocks),
+                        twoMonthAgo, today, "101", "1", 2, false);
 
+        Console.log(datasMap);
+        int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
+        String preTradeDate = StockApi.getPreTradeDateStrict(today);
+        for (String stock : datasMap.keySet()) {
+            DataFrame<Object> dfRaw = datasMap.get(stock);
+            dfRaw = dfRaw.rename(new HashMap<>(fieldsRenameDict));
+            if (dfRaw.size() < 6) { // 两个月至少需要 6天数据
+                continue;
+            }
+            if (!(dfRaw.get(dfRaw.length() - 1, 0).toString().equals(preTradeDate))) {
+                continue; // 该股票上一交易日, 并非上一个开盘日, 例如停牌的无视
+            }
+            DataFrame<Object> dfWindow = dfRaw.slice(dfRaw.length() - 6, dfRaw.length());
+            Console.log(dfWindow);
+            Console.log(dfWindow.length()); // 6
+            for (int i = 0; i < windowUsePeriodsCoreArg - dfWindow.length(); i++) {
+                dfWindow.append(Arrays.asList("")); // 添加几行空值, 模拟未来数据, 以便调用原方法
+            }
 
+        }
     }
 
 
@@ -146,7 +184,6 @@ public class DummyStrategy extends Strategy {
             Trader.putOrderToWaitExecute(order);
         }
     }
-
 
     public DummyStrategy(String strategyName) {
         super(strategyName);

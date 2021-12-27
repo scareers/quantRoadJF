@@ -71,17 +71,22 @@ public class StockApi {
 //        Console.log(getRealtimeQuotes(Arrays.asList("科创板")));
 
 
-        List<String> allHSAstock = DataFrameSelf
-                .getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
-        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
-        List<String> scientificCreationMarket =
-                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
-                        "股票代码");
-        HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
-                pioneerMarket)),
-                scientificCreationMarket); // 两次差集操作
+//        List<String> allHSAstock = DataFrameSelf
+//                .getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
+//        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
+//        List<String> scientificCreationMarket =
+//                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
+//                        "股票代码");
+//        HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
+//                pioneerMarket)),
+//                scientificCreationMarket); // 两次差集操作
+//
+//        Console.log(mainboardStocks);
 
-        Console.log(mainboardStocks);
+        ConcurrentHashMap<String, DataFrame<Object>> datasMap =
+                StockApi.getQuoteHistory(Arrays.asList("000001", "000002"),
+                        "20211027", "20211224", "101", "1", 2, false);
+        Console.log(datasMap);
     }
 
     static {
@@ -332,6 +337,7 @@ public class StockApi {
 
     /**
      * 获取k线. 复刻 efinance   get_quote_history
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
      * <p>
      * 获取股票的 K 线数据
      * <p>
@@ -371,14 +377,26 @@ public class StockApi {
      * - ``Dict[str, DataFrame]`` : 当 ``stock_codes`` 是 ``List[str]`` 时
      * <p>
      * Examples
+     * // @noti: 前后两日期都包含, 且天然升序!
      *
+     * @param stockCodesSimple
+     * @param begDate
+     * @param endDate
+     * @param klType
+     * @param fq
+     * @param retrySingle
+     * @param quoteIdMode      给的股票代码列表, 是否是 quoteId 模式,  1.000001 代表上证指数
      * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
      */
     public static ConcurrentHashMap<String, DataFrame<Object>> getQuoteHistory(List<String> stockCodesSimple,
                                                                                String begDate,
                                                                                String endDate,
                                                                                String klType, String fq,
-                                                                               int retrySingle)
+                                                                               int retrySingle,
+                                                                               boolean quoteIdMode
+    )
             throws ExecutionException, InterruptedException {
         /*
                               beg: str = '19000101',
@@ -393,36 +411,7 @@ public class StockApi {
             futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
-                    List<String> fields = StrUtil.split(fieldsStr, ",");
-                    JSONArray quoteRes = querySecurityId(stock);
-                    String quoteId = quoteRes.getJSONObject(0).getStr("QuoteID");
-
-                    HashMap<String, Object> params = new HashMap<>();
-                    params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
-                    params.put("fields2", fieldsStr);
-                    params.put("beg", begDate);
-                    params.put("end", endDate);
-                    params.put("rtntype", "6");
-                    params.put("secid", quoteId);
-                    params.put("klt", klType);
-                    params.put("fqt", fq);
-
-                    String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
-                    String response = null;
-                    try {
-                        response = getAsStrUseHutool(url, params, 2000, retrySingle);
-                    } catch (Exception e) {
-                        return null;
-                    }
-                    DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
-                            fields.stream().map(value -> EASTMONEY_KLINE_FIELDS.get(value).toString())
-                                    .collect(Collectors.toList()),
-                            Arrays.asList("data", "klines"), String.class, Arrays.asList(),
-                            Arrays.asList());
-                    dfTemp = dfTemp.add("股票代码", values -> quoteRes.getJSONObject(0).getStr("Code"));
-                    dfTemp = dfTemp.add("股票名称", values -> quoteRes.getJSONObject(0).getStr("Name"));
-                    return dfTemp;
+                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, quoteIdMode);
                 }
             }));
         }
@@ -434,6 +423,76 @@ public class StockApi {
             }
         }
         return res;
+    }
+
+    /**
+     * 单股票k线
+     *
+     * @param stock
+     * @param begDate
+     * @param endDate
+     * @param klType
+     * @param fq
+     * @param retrySingle
+     * @param quoteIdMode
+     * @return
+     */
+    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
+                                                          String endDate, String klType, String fq,
+                                                          int retrySingle, boolean quoteIdMode) {
+        String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
+        List<String> fields = StrUtil.split(fieldsStr, ",");
+        JSONArray quoteRes = querySecurityId(stock);
+        String quoteId = null;
+        if (quoteIdMode) {
+            quoteId = stock;
+        } else {
+            quoteId = quoteRes.getJSONObject(0).getStr("QuoteID");
+        }
+
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
+        params.put("fields2", fieldsStr);
+        params.put("beg", begDate);
+        params.put("end", endDate);
+        params.put("rtntype", "6");
+        params.put("secid", quoteId);
+        params.put("klt", klType);
+        params.put("fqt", fq);
+
+        String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
+        String response = null;
+        try {
+            response = getAsStrUseHutool(url, params, 2000, retrySingle);
+        } catch (Exception e) {
+            return null;
+        }
+        DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
+                fields.stream().map(value -> EASTMONEY_KLINE_FIELDS.get(value).toString())
+                        .collect(Collectors.toList()),
+                Arrays.asList("data", "klines"), String.class, Arrays.asList(),
+                Arrays.asList());
+        dfTemp = dfTemp.add("股票代码", values -> quoteRes.getJSONObject(0).getStr("Code"));
+        dfTemp = dfTemp.add("股票名称", values -> quoteRes.getJSONObject(0).getStr("Name"));
+        return dfTemp;
+    }
+
+    /**
+     * 给定一个具体日期, 8位形式.  返回上一个交易日的日期,
+     * 原理上查询 上证指数 所有历史日k线, 获取得到日期列表. 倒序遍历即可
+     *
+     * @param todayDate
+     * @return
+     */
+    public static String getPreTradeDateStrict(String todayDate) {
+        DataFrame<Object> dfTemp = getQuoteHistorySingle("1.000001", "19900101", "21000101", "101", "1", 3, true);
+        List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
+        for (int i = dates.size() - 1; i >= 0; i--) {
+            if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
+                return dates.get(i);
+            }
+        }
+        return null;
     }
 
 }

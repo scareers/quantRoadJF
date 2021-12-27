@@ -51,10 +51,22 @@ public class JsonUtil {
         }
         jsonStr = jsonStr.substring(start, end);
         JSONObject json = JSONUtil.parseObj(jsonStr);
-        for (int i = 0; i < paths.size() - 1; i++) {
-            json = json.getJSONObject(paths.get(i));
+
+
+        JSONArray datas = null;
+        try {
+//            datas = json.getByPath(StrUtil.join(",", paths), JSONArray.class);
+            for (int i = 0; i < paths.size() - 1; i++) {
+                json = json.getJSONObject(paths.get(i));
+            }
+            datas = json.getJSONArray(paths.get(paths.size() - 1));
+        } catch (Exception e) {
+            Console.log(json); // 典型的json没有数据的情况下
+//            throw e;
+            return res;
         }
-        JSONArray datas = json.getJSONArray(paths.get(paths.size() - 1));
+
+
         if (clazz == String.class) {
             for (Object o : datas) {
                 String row = o.toString();
