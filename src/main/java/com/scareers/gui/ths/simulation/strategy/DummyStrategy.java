@@ -3,7 +3,6 @@ package com.scareers.gui.ths.simulation.strategy;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -30,10 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.keyInts;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
-import static com.scareers.sqlapi.KlineFormsApi.getLowBuyAndHighSellDistributionByFomsetid;
 import static com.scareers.utils.CommonUtils.equalApproximately;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -46,6 +43,8 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/26/026-03:21:08
  */
 public class DummyStrategy extends Strategy {
+    // 手动额外强制不选中的股票列表. 仅简单排除股票池, 不对其他任何逻辑造成影响, 取前6位为代码
+    public static List<String> forceManualExcludeStocks = Arrays.asList();
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
     // @key5: 筛选formset的 profit阈值>=, 设置初始值后,将自动适配, 以使得选股数量接近  suitableSelectStockCount
@@ -55,6 +54,7 @@ public class DummyStrategy extends Strategy {
     // 当找到合适的参数, 是否偏好更多选股结果? 若是, 则最终选股>=suitableSelectStockCount,
     // 否则, 比较两个距离的大小, 选择更加接近的一方.  即可能不论true或者false, 选股结果相同!!
     public static boolean preferenceMoreStock = false;
+//    public static List<String> forceManualExcludeStocks = Arrays.asList("002028.sz");
 
     public static HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重Map
     public static HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
@@ -137,7 +137,7 @@ public class DummyStrategy extends Strategy {
         log.warn("start init stockPool: 开始尝试初始化股票池...");
         // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
         stockSelect();
-        log.warn("stock select result: 最终选股结果: {}", stockSelectCountMapFinal.keySet());
+        log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
         log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
 
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
@@ -403,9 +403,16 @@ public class DummyStrategy extends Strategy {
             formSerDistributionWeightMap.put(forSetId, stockSelectedSet.size() / totalCount); // 权重
         }
         // 此时已确定选股结果, 以及今日 formSet 的分布权重
+
+        for (String stockForceExclude : forceManualExcludeStocks) {
+            stockSelectCountMap.remove(stockForceExclude.substring(0, 6));
+        }
+
         formSerDistributionWeightMapFinal = formSerDistributionWeightMap;
         stockSelectCountMapFinal = stockSelectCountMap;
         Assert.isTrue(equalApproximately(formSerDistributionWeightMapFinal.values(), 1.0, 0.005));//权重和1
+
+
     }
 
     /**
