@@ -44,6 +44,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 public class DummyStrategy extends Strategy {
     // 手动额外强制不选中的股票列表. 仅简单排除股票池, 不对其他任何逻辑造成影响, 取前6位为代码
+//    public static List<String> forceManualExcludeStocks = Arrays.asList("002028.sz");
     public static List<String> forceManualExcludeStocks = Arrays.asList();
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
@@ -54,7 +55,6 @@ public class DummyStrategy extends Strategy {
     // 当找到合适的参数, 是否偏好更多选股结果? 若是, 则最终选股>=suitableSelectStockCount,
     // 否则, 比较两个距离的大小, 选择更加接近的一方.  即可能不论true或者false, 选股结果相同!!
     public static boolean preferenceMoreStock = false;
-//    public static List<String> forceManualExcludeStocks = Arrays.asList("002028.sz");
 
     public static HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重Map
     public static HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
