@@ -160,7 +160,7 @@ public class FSTransactionFetcher {
             res = true;
         } else {
             // 此时介于两者之间, 应当等待到 今日开始的时间阈值
-            log.warn("wait: 当前时间介于昨日今日判定阈值设定之间, 需等待到: {}, 等待时间: {} 秒 / {}小时",
+            log.error("wait: 当前时间介于昨日今日判定阈值设定之间, 需等待到: {}, 等待时间: {} 秒 / {}小时",
                     newDayTimeThreshold.get(1), ltAfter, ((double) ltAfter) / 3600);
             log.warn("waiting ...");
             Thread.sleep(ltAfter * 1000);

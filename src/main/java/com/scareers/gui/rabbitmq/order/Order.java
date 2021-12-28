@@ -286,7 +286,8 @@ public class Order implements Comparable, Serializable {
      * --> wait_execute(入(执行队列)队后等待执行)
      * --> executing(已发送python,执行中,等待响应)
      * --> finish_execute(已接收到python响应)
-     * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
+     * --> wait_check_transaction_status(等待确认成交状态, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
+     * --> checking(checking中, 例如等待成交中., 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
      * --> finish (订单彻底完成)
      */
     public enum LifePointStatus implements Serializable {
@@ -295,7 +296,8 @@ public class Order implements Comparable, Serializable {
         WAIT_EXECUTE("wait_execute"),
         EXECUTING("executing"),
         FINISH_EXECUTE("finish_execute"),
-        CHECK_TRANSACTION_STATUS("check_transaction_status"),
+        WAIT_CHECK_TRANSACTION_STATUS("wait_check_transaction_status"),
+        CHECKING("checking"),
         FINISH("finish");
 
         private static final long serialVersionUID = 101241855L;

@@ -103,7 +103,7 @@ public class Trader {
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
         handshake(); // 与python握手可控
-        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 10000, 100, "第一次tick数据抓取完成"); //
+        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         OrderExecutor.start();
@@ -137,10 +137,14 @@ public class Trader {
         }
     }
 
-    public static void successFinishOrder(Order order, List<JSONObject> responses) {
+    public static void successFinishOrder(Order order, List<JSONObject> responses, String description) {
         Trader.ordersWaitForCheckTransactionStatusMap.remove(order);
-        order.addLifePoint(Order.LifePointStatus.FINISH, "订单完成");
+        order.addLifePoint(Order.LifePointStatus.FINISH, description);
         Trader.ordersFinished.put(order, responses); // 先删除, 后添加
+    }
+
+    public static void successFinishOrder(Order order, List<JSONObject> responses) {
+        successFinishOrder(order, responses, "订单完成");
     }
 
 
@@ -526,7 +530,7 @@ public class Trader {
                         order.addLifePoint(LifePointStatus.EXECUTING, "开始执行订单");
                         List<JSONObject> responses = execOrderUtilSuccess(order);  // 响应列表, 常态仅一个元素. retrying才会多个
                         order.addLifePoint(LifePointStatus.FINISH_EXECUTE, "执行订单完成");
-                        order.addLifePoint(LifePointStatus.CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
+                        order.addLifePoint(LifePointStatus.WAIT_CHECK_TRANSACTION_STATUS, "订单进入check队列, " +
                                 "等待check完成");
                         ordersWaitForCheckTransactionStatusMap.put(order, responses);
                     }

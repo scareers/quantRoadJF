@@ -45,7 +45,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class DummyStrategy extends Strategy {
     // 手动额外强制不选中的股票列表. 仅简单排除股票池, 不对其他任何逻辑造成影响, 取前6位为代码
 //    public static List<String> forceManualExcludeStocks = Arrays.asList("002028.sz");
-    public static List<String> forceManualExcludeStocks = Arrays.asList();
+    public static List<String> forceManualExcludeStocks = Collections.emptyList();
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
     public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
     // @key5: 筛选formset的 profit阈值>=, 设置初始值后,将自动适配, 以使得选股数量接近  suitableSelectStockCount
@@ -100,11 +100,11 @@ public class DummyStrategy extends Strategy {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
-            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行成功");
+            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
             log.info(JSONUtil.parseArray(responses).toStringPretty());
-            order.addLifePoint(Order.LifePointStatus.CHECK_TRANSACTION_STATUS, "执行失败");
+            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行失败");
         }
         Trader.successFinishOrder(order, responses);
     }
