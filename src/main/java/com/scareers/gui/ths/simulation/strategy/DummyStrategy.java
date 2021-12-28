@@ -30,8 +30,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.keyInts;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
+import static com.scareers.sqlapi.KlineFormsApi.getLowBuyAndHighSellDistributionByFomsetid;
+import static com.scareers.utils.CommonUtils.equalApproximately;
 import static com.scareers.utils.CommonUtils.subtractionOfList;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -55,6 +58,10 @@ public class DummyStrategy extends Strategy {
 
     public static HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重Map
     public static HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
+    public static List<Double> ticksOfLow1GlobalFinal = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
+    public static List<Double> weightsOfLow1GlobalFinal = null; // 44数据
+    public static List<Double> ticksOfHigh1GlobalFinal = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
+    public static List<Double> weightsOfHigh1GlobalFinal = null; // 88数据
 
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
@@ -134,12 +141,88 @@ public class DummyStrategy extends Strategy {
         log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
 
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
-
-
+        initFinalDistribution(); // 计算等价分布
+        log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
         List<StockBean> res = StockPoolForFSTransaction // 已经加入两大指数, 构建股票池. Bean
                 .stockListFromSimpleStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
+    }
+
+    /**
+     * 更新全局加权  分布四项列表
+     * ticksOfLow1GlobalFinal = ticksOfLow1Global; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
+     * weightsOfLow1GlobalFinal = weightsOfLow1Global; // 44数据
+     * ticksOfHigh1GlobalFinal = ticksOfHigh1Global; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
+     * weightsOfHigh1GlobalFinal = weightsOfHigh1Global; // 88数据
+     *
+     * @throws Exception
+     * @noti: 调用方保证, 所有 formSet 的 tick和weight 列表size相同!
+     */
+    private void initFinalDistribution() throws Exception {
+        List<Double> ticksOfLow1Global = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
+        List<Double> weightsOfLow1Global = null; // 44数据
+        List<Double> ticksOfHigh1Global = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
+        List<Double> weightsOfHigh1Global = null; // 88数据
+
+        for (Long formSetId : formSerDistributionWeightMapFinal.keySet()) {
+            List<List<Double>> distributionSingle =
+                    KlineFormsApi.getLowBuyAndHighSellDistributionByFomsetid(formSetId, keyInts);
+            if (ticksOfLow1Global == null) {
+                ticksOfLow1Global = distributionSingle.get(0);
+            }
+            if (ticksOfHigh1Global == null) {
+                ticksOfHigh1Global = distributionSingle.get(2);
+            }
+            Assert.isTrue(ticksOfLow1Global.size() == distributionSingle.get(0).size());
+            Assert.isTrue(ticksOfHigh1Global.size() == distributionSingle.get(2).size());
+
+            double weight = formSerDistributionWeightMapFinal.get(formSetId);
+            // 权重列表 进行再次加权!
+            List<Double> weightsTwiceOfLow1 =
+                    distributionSingle.get(1).stream().map(value -> value * weight)
+                            .collect(Collectors.toList());
+            List<Double> weightsTwiceOfHigh1 =
+                    distributionSingle.get(3).stream().map(value -> value * weight)
+                            .collect(Collectors.toList());
+            // 加总到最终权重列表!
+            if (weightsOfLow1Global == null) {
+                weightsOfLow1Global = weightsTwiceOfLow1;
+            }
+            if (weightsOfHigh1Global == null) {
+                weightsOfHigh1Global = weightsTwiceOfHigh1;
+                continue; // 首次不需要叠加
+            }
+
+            Assert.isTrue(weightsOfLow1Global.size() == weightsTwiceOfLow1.size());
+            Assert.isTrue(weightsOfHigh1Global.size() == weightsTwiceOfHigh1.size());
+
+            // 权重叠加
+            List<Double> weightsOfLow1GlobalTemp = new ArrayList<>();
+            for (int i = 0; i < weightsOfLow1Global.size(); i++) {
+                weightsOfLow1GlobalTemp.add(weightsOfLow1Global.get(i) + weightsTwiceOfLow1.get(i));
+            }
+            weightsOfLow1Global = weightsOfLow1GlobalTemp;
+
+            List<Double> weightsOfHigh1GlobalTemp = new ArrayList<>();
+            for (int i = 0; i < weightsOfHigh1Global.size(); i++) {
+                weightsOfHigh1GlobalTemp.add(weightsOfHigh1Global.get(i) + weightsTwiceOfHigh1.get(i));
+            }
+            weightsOfHigh1Global = weightsOfHigh1GlobalTemp;
+        }
+
+        // 更新全局分布!!!
+        ticksOfLow1GlobalFinal = ticksOfLow1Global; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
+        weightsOfLow1GlobalFinal = weightsOfLow1Global; // 44数据
+        ticksOfHigh1GlobalFinal = ticksOfHigh1Global; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
+        weightsOfHigh1GlobalFinal = weightsOfHigh1Global; // 88数据
+
+        Assert.isTrue(equalApproximately(weightsOfLow1GlobalFinal, 1.0, 0.001));//权重和1
+        Assert.isTrue(equalApproximately(weightsOfHigh1GlobalFinal, 1.0, 0.001));//权重和1
+        log.debug("show: 低买tick: {}", ticksOfLow1GlobalFinal);
+        log.debug("show: 低买分布: {}", weightsOfLow1GlobalFinal);
+        log.debug("show: 高卖tick: {}", ticksOfHigh1GlobalFinal);
+        log.debug("show: 高卖分布: {}", weightsOfHigh1GlobalFinal);
     }
 
 
@@ -319,11 +402,10 @@ public class DummyStrategy extends Strategy {
             }
             formSerDistributionWeightMap.put(forSetId, stockSelectedSet.size() / totalCount); // 权重
         }
-        Assert.isTrue(Math.abs(
-                formSerDistributionWeightMap.values().stream().mapToDouble(value -> value).sum() - 1.0) < 0.005);//权重和1
         // 此时已确定选股结果, 以及今日 formSet 的分布权重
         formSerDistributionWeightMapFinal = formSerDistributionWeightMap;
         stockSelectCountMapFinal = stockSelectCountMap;
+        Assert.isTrue(equalApproximately(formSerDistributionWeightMapFinal.values(), 1.0, 0.005));//权重和1
     }
 
     /**

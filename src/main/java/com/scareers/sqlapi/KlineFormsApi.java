@@ -35,17 +35,17 @@ public class KlineFormsApi {
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        KlineFormsApi.getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
-        Console.log(timer.intervalRestart());
-        getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
-        Console.log(timer.intervalRestart());
-        getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
-        Console.log(timer.intervalRestart());
-        getStockSelectResultOfTradeDate("20220810", 172L, Arrays.asList(0, 1));
-        Console.log(timer.intervalRestart());
-
-        Console.log(getEffectiveDatesBetweenDateRangeHasStockSelectResult(Arrays.asList("20200101", "20210101"),
-                Arrays.asList(0, 1)).size());
+//        KlineFormsApi.getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
+//        Console.log(timer.intervalRestart());
+//        getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
+//        Console.log(timer.intervalRestart());
+//        getStockSelectResultOfTradeDate("20220810", Arrays.asList(0, 1));
+//        Console.log(timer.intervalRestart());
+//        getStockSelectResultOfTradeDate("20220810", 172L, Arrays.asList(0, 1));
+//        Console.log(timer.intervalRestart());
+//
+//        Console.log(getEffectiveDatesBetweenDateRangeHasStockSelectResult(Arrays.asList("20200101", "20210101"),
+//                Arrays.asList(0, 1)).size());
         Console.log(timer.intervalRestart());
         Console.log(getLowBuyAndHighSellDistributionByFomsetid(167L, Arrays.asList(0, 1)).get(0));
         Console.log(timer.intervalRestart());
@@ -113,7 +113,7 @@ public class KlineFormsApi {
      * @param formSetId
      * @param keyInts
      * @return
-     * @throws SQLException
+     * @throws SQLException .
      */
     public static List<String> getStockSelectResultOfTradeDate(String trade_date,
                                                                Long formSetId, List<Integer> keyInts)
@@ -161,7 +161,8 @@ public class KlineFormsApi {
      * @param formSetId
      * @param keyInts
      * @return 返回 四元素列表, 单元素为 List<Double>,分布对应已经标准化的 Low1 tick/权重, High1 tick/权重
-     * @throws Exception
+     * @throws Exception ..
+     * @noti: 权重已经处理和为1标准化
      */
     @Cached
     public static List<List<Double>> getLowBuyAndHighSellDistributionByFomsetid(Long formSetId, List<Integer> keyInts)

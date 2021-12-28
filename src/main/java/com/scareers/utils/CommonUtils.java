@@ -267,4 +267,16 @@ public class CommonUtils {
         }
     }
 
+    /**
+     * 判定 double 列表, 之和 约等于 某个值
+     *
+     * @param doubles
+     * @param equalTo   约等于多少
+     * @param deviation 允许误差, abs
+     * @return
+     */
+    public static boolean equalApproximately(Collection<Double> doubles, double equalTo, double deviation) {
+        return Math.abs(
+                doubles.stream().mapToDouble(value -> value).sum() - 1.0) < 0.005;
+    }
 }
