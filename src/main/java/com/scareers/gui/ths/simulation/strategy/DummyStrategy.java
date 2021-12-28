@@ -219,10 +219,10 @@ public class DummyStrategy extends Strategy {
 
         Assert.isTrue(equalApproximately(weightsOfLow1GlobalFinal, 1.0, 0.001));//权重和1
         Assert.isTrue(equalApproximately(weightsOfHigh1GlobalFinal, 1.0, 0.001));//权重和1
-        log.debug("show: 低买tick: {}", ticksOfLow1GlobalFinal);
-        log.debug("show: 低买分布: {}", weightsOfLow1GlobalFinal);
-        log.debug("show: 高卖tick: {}", ticksOfHigh1GlobalFinal);
-        log.debug("show: 高卖分布: {}", weightsOfHigh1GlobalFinal);
+        log.info("show: 低买tick: {}", ticksOfLow1GlobalFinal);
+        log.info("show: 低买分布: {}", weightsOfLow1GlobalFinal);
+        log.info("show: 高卖tick: {}", ticksOfHigh1GlobalFinal);
+        log.info("show: 高卖分布: {}", weightsOfHigh1GlobalFinal);
     }
 
 
