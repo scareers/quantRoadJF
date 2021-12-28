@@ -24,7 +24,6 @@ package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -34,7 +33,7 @@ import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
 import com.scareers.gui.rabbitmq.OrderFactory;
 import com.scareers.gui.rabbitmq.order.Order;
 import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
-import com.scareers.gui.ths.simulation.strategy.DummyStrategy;
+import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
@@ -92,7 +91,7 @@ public class Trader {
      */
     public static class MainStrategy {
         public static Strategy createStrategy() throws Exception {
-            return new DummyStrategy(DummyStrategy.class.getName());
+            return new LowBuyHighSellStrategy(LowBuyHighSellStrategy.class.getName());
         }
     }
 
