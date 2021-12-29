@@ -147,7 +147,7 @@ public class LowBuyHighSellStrategy extends Strategy {
      */
     @Override
     public void initYesterdayHolds() throws Exception {
-        execSql("create table stock_yesterday_holds_and_account_info if not exists\n" +
+        execSql(StrUtil.format("create table stock_yesterday_holds_and_account_info if not exists\n {}" +
                         "(\n" +
                         "    trade_date                       varchar(128) null,\n" +
                         "    yesterday_holds                  longtext     null comment 'json, 昨日收盘持仓二维数组, 含表头',\n" +
@@ -155,7 +155,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                         "    record_time                      varchar(128) null comment '本条记录的时间, 需要注意一下. 字符串含毫秒'" +
                         " INDEX trade_date_index (trade_date ASC)" +
                         ")\n" +
-                        "    comment '保存昨日收盘后, 持仓, 以及资金状态, 作为今日初始状态';\n"
+                        "    comment '保存昨日收盘后, 持仓, 以及资金状态, 作为今日初始状态';\n", tableNameOfYesterdayStockHoldsAndAccountsInfoBefore)
                 , connOfStockSelectResult);
         String today = DateUtil.today();
         String sql = StrUtil
