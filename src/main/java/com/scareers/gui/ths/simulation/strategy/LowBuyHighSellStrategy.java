@@ -123,6 +123,11 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     @Override
     protected void startCore() throws Exception {
+        super.startCore();
+    }
+
+    @Override
+    protected void buyDecision() throws Exception {
         while (true) {
             int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
             Thread.sleep(sleep * 1000);
@@ -141,6 +146,11 @@ public class LowBuyHighSellStrategy extends Strategy {
             }
             Trader.putOrderToWaitExecute(order);
         }
+    }
+
+    @Override
+    protected void sellDecision() throws Exception {
+
     }
 
     /**

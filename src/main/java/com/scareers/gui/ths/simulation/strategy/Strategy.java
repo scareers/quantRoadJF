@@ -29,9 +29,24 @@ public abstract class Strategy {
     }
 
     /**
-     * 策略开始处理执行. 核心实现!!!  即下单
+     * 策略开始处理执行. 核心实现!!!  即下单.  默认实现为 死循环调用 买卖决策函数
+     * 默认先尝试卖, 回笼资金, 后买. 影响不大.
      */
-    protected abstract void startCore() throws Exception;
+    protected void startCore() throws Exception {
+        while (true) {
+            sellDecision(); //
+            buyDecision();
+        }
+    }
+
+    /**
+     * 买卖决策
+     *
+     * @throws Exception
+     */
+    protected abstract void buyDecision() throws Exception;
+
+    protected abstract void sellDecision() throws Exception;
 
     /**
      * 针对 buy 订单check逻辑. 检测成交是否完成等  // 处理三大类型淡订单
