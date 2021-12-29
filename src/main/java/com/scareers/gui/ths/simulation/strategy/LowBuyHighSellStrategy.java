@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.strategy;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -72,6 +73,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     public static String tableNameOfYesterdayStockHoldsAndAccountsInfoBefore = "stock_yesterday_holds_and_account_info";
     public static DataFrame<Object> yesterdayStockHoldsBeSell; // 持仓数据二维数组, 含表头, 昨日收盘时.
     public static ConcurrentHashMap<String, Double> yesterdayNineBaseFundsData; // 9项基本数据, 昨日收盘时
+    public static String STR_SEC_CODE = "证券代码"; // 获取代码列需要
 
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000;
@@ -147,12 +149,12 @@ public class LowBuyHighSellStrategy extends Strategy {
      */
     @Override
     public void initYesterdayHolds() throws Exception {
-        execSql(StrUtil.format("create table stock_yesterday_holds_and_account_info if not exists\n {}" +
+        execSql(StrUtil.format("create table if not exists\n {}" +
                         "(\n" +
                         "    trade_date                       varchar(128) null,\n" +
                         "    yesterday_holds                  longtext     null comment 'json, 昨日收盘持仓二维数组, 含表头',\n" +
                         "    yesterday_nine_account_fund_info longtext     null comment '9项基本数据',\n" +
-                        "    record_time                      varchar(128) null comment '本条记录的时间, 需要注意一下. 字符串含毫秒'" +
+                        "    record_time                      varchar(128) null comment '本条记录的时间, 需要注意一下. 字符串含毫秒'," +
                         " INDEX trade_date_index (trade_date ASC)" +
                         ")\n" +
                         "    comment '保存昨日收盘后, 持仓, 以及资金状态, 作为今日初始状态';\n", tableNameOfYesterdayStockHoldsAndAccountsInfoBefore)
@@ -189,9 +191,10 @@ public class LowBuyHighSellStrategy extends Strategy {
         tempMap.keySet().stream()
                 .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));
         log.warn("init success: 昨日持仓与账户资金状况, 初始化完成");
-
-        List<String> stocksYesterdayHolds = DataFrameSelf.getColAsStringList(yesterdayStockHoldsBeSell, "股票代码");
-        log.warn("count: 昨日收盘后持有股票数量: {}", stocksYesterdayHolds.size());
+        List<String> stocksYesterdayHolds = DataFrameSelf.getColAsStringList(yesterdayStockHoldsBeSell, STR_SEC_CODE);
+        log.warn("after yesterday close: 昨日收盘后持有股票数量: {} ;代码: {}", stocksYesterdayHolds.size(), stocksYesterdayHolds);
+        log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
+        log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
         this.getStockPool().addAll(stockListFromSimpleStockList(stocksYesterdayHolds, false));
         log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: ", this.getStockPool().size());
     }
