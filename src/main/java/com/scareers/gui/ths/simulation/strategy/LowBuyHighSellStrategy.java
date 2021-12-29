@@ -128,24 +128,22 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     @Override
     protected void buyDecision() throws Exception {
-        while (true) {
-            int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-            Thread.sleep(sleep * 1000);
-            Order order = null;
-            int type = RandomUtil.randomInt(12);
-            if (type < 3) {
-                order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-            } else if (type < 6) {
-                order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-            } else if (type < 8) {
-                order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-            } else if (type < 10) {
-                order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
-            } else {
-                order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-            }
-            Trader.putOrderToWaitExecute(order);
+        int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
+        Thread.sleep(sleep * 1000);
+        Order order = null;
+        int type = RandomUtil.randomInt(12);
+        if (type < 3) {
+            order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
+        } else if (type < 6) {
+            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
+        } else if (type < 8) {
+            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
+        } else if (type < 10) {
+            order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
+        } else {
+            order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
         }
+        Trader.putOrderToWaitExecute(order);
     }
 
     @Override
