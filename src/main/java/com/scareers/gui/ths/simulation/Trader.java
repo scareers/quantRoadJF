@@ -97,12 +97,11 @@ public class Trader {
 
     public static void main(String[] args) throws Exception {
         Strategy mainStrategy = MainStrategy.createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
-        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
+
 
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
         handshake(); // 与python握手可控
-        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         OrderExecutor.start();
@@ -114,6 +113,11 @@ public class Trader {
         AccountStates.startFlush();
         waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成"); // 需要等待初始化完成!
 
+        mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
+
+        // fs成交开始抓取, 股票池包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓(for sell)
+        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
+        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
         // 正式启动主策略下单
         mainStrategy.startDealWith();
 
@@ -253,20 +257,41 @@ public class Trader {
                         for (String orderType : orderTypes) {
                             if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
                                 switch (orderType) {
+                                    // 第一次将以最高优先级刷新
                                     case "get_account_funds_info":
-                                        flushNineBaseFundsDataImmediately();
+                                        if (nineBaseFundsData.size() == 0) {
+                                            flushNineBaseFundsDataImmediately();
+                                        } else {
+                                            flushNineBaseFundsData(Order.PRIORITY_MEDIUM / 2);
+                                        }
                                         break;
                                     case "get_hold_stocks_info":
-                                        flushCurrentHoldsImmediately();
+                                        if (currentHolds == null) {
+                                            flushCurrentHoldsImmediately();
+                                        } else {
+                                            flushCurrentHolds(Order.PRIORITY_MEDIUM / 2);
+                                        }
                                         break;
                                     case "get_unsolds_not_yet":
-                                        flushCanCancelsImmediately();
+                                        if (canCancels == null) {
+                                            flushCanCancelsImmediately();
+                                        } else {
+                                            flushCanCancels(Order.PRIORITY_MEDIUM / 2);
+                                        }
                                         break;
                                     case "get_today_clinch_orders":
-                                        flushTodayClinchsImmediately();
+                                        if (todayClinchs == null) {
+                                            flushTodayClinchsImmediately();
+                                        } else {
+                                            flushTodayClinchs(Order.PRIORITY_MEDIUM / 2);
+                                        }
                                         break;
                                     case "get_today_consign_orders":
-                                        flushTodayConsignsImmediately();
+                                        if (todayConsigns == null) {
+                                            flushTodayConsignsImmediately();
+                                        } else {
+                                            flushTodayConsigns(Order.PRIORITY_MEDIUM / 2);
+                                        }
                                         break;
                                     default:
                                         throw new Exception("error orderType");
@@ -322,23 +347,23 @@ public class Trader {
         }
 
         public static String flushNineBaseFundsDataImmediately() throws Exception {
-            return flushNineBaseFundsData(Order.PRIORITY_MEDIUM / 2 + 1);
+            return flushNineBaseFundsData(0L);
         }
 
         public static String flushCurrentHoldsImmediately() throws Exception {
-            return flushCurrentHolds(Order.PRIORITY_MEDIUM / 2 + 5);
+            return flushCurrentHolds(0L);
         }
 
         public static String flushCanCancelsImmediately() throws Exception {
-            return flushCanCancels(Order.PRIORITY_MEDIUM / 2 + 4);
+            return flushCanCancels(0L);
         }
 
         public static String flushTodayClinchsImmediately() throws Exception {
-            return flushTodayClinchs(Order.PRIORITY_MEDIUM / 2 + 3);
+            return flushTodayClinchs(0L);
         }
 
         public static String flushTodayConsignsImmediately() throws Exception {
-            return flushTodayConsigns(Order.PRIORITY_MEDIUM / 2 + 2);
+            return flushTodayConsigns(0L);
         }
 
         /**

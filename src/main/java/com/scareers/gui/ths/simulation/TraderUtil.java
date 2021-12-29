@@ -47,12 +47,17 @@ public class TraderUtil {
      * @return
      */
     public static DataFrame<Object> payloadArrayToDf(JSONObject response) {
-        DataFrame<Object> res;
         JSONArray datas = response.getJSONArray("payload");
         if (JSONNull.NULL.equals(datas)) { // 注意 NULL 为单例, equals方法将判定null以及是否为解析的单例 JSONNull.NULL
             log.warn("payload empty: 响应payload字段为空, 无法解析为df");
             return null; // 返回null, 调用方应判定
         }
+        // 因python api的保证, 必然至少有1行数据, 为表头, 因此不对此做判定
+        return payloadArrayToDf(datas);
+    }
+
+    public static DataFrame<Object> payloadArrayToDf(JSONArray datas) {
+        DataFrame<Object> res;
         // 因python api的保证, 必然至少有1行数据, 为表头, 因此不对此做判定
         List<Object> headers = datas.getJSONArray(0);
         res = new DataFrame<>(headers);

@@ -40,7 +40,14 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
         return res;
     }
 
-    public static List<StockBean> stockListFromSimpleStockList(List<String> stockList)
+    /**
+     * @param stockList
+     * @param addTwoIndex 添加两大指数
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    public static List<StockBean> stockListFromSimpleStockList(List<String> stockList, boolean addTwoIndex)
             throws ExecutionException, InterruptedException {
         List<StockBean> res = new ArrayList<>();
         List<EmSecurityIdBean> rawBeans = querySecurityIdsToBeans(stockList);
@@ -51,9 +58,17 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
             }
             res.add(new StockBean(secId));
         }
-        res.add(new StockBean("1.000001"));
-        res.add(new StockBean("0.399001")); // 两大指数
+        if (addTwoIndex) {
+            res.add(new StockBean("1.000001"));
+            res.add(new StockBean("0.399001")); // 两大指数
+        }
         return new CopyOnWriteArrayList<>(res.stream().distinct().collect(Collectors.toList()));
+    }
+
+
+    public static List<StockBean> stockListFromSimpleStockList(List<String> stockList)
+            throws ExecutionException, InterruptedException {
+        return stockListFromSimpleStockList(stockList, true);
     }
 
     public static List<StockBean> stockPoolTest() {

@@ -58,6 +58,16 @@ public abstract class Strategy {
      */
     protected abstract List<String> stockSelect() throws Exception;
 
+    /**
+     * 获取今日开盘前已经持仓股票列表. 将账号初始状态和昨日已经持仓状态, 保存到数据库.
+     * 并将昨日持仓股票列表 加入 stockPool, 以便fs抓取!
+     * 注意需要 waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成");
+     * 后执行.
+     * <p>
+     * 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
+     */
+    public abstract void initYesterdayHolds() throws Exception;
+
 
     /**
      * check. 默认实现为简单分发为3个抽象方法

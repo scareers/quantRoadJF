@@ -233,6 +233,27 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
         return res;
     }
 
+    /**
+     * dfo 转换为二维列表, 可控制是否包含表头
+     * 方便json保存.
+     * 反向为: TraderUtil.payloadArrayToDf  // 包含header
+     *
+     * @param df
+     * @param withHeader
+     * @return
+     */
+    public static List<List<Object>> to2DList(DataFrame<Object> dfRaw, boolean withHeader) {
+        List<List<Object>> res = new ArrayList<>();
+
+        if (withHeader) {
+            res.add(new ArrayList<>(dfRaw.columns()));
+        }
+        for (int i = 0; i < dfRaw.length(); i++) {
+            res.add(dfRaw.row(i));
+        }
+        return res;
+    }
+
 //    public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
 //        List<Object> col;
 //        try {
