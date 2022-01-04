@@ -314,7 +314,7 @@ public class Trader {
             if (priority == null) {
                 priority = Order.PRIORITY_LOWEST;
             }
-            Order order = OrderFactory.generateNoArgsQueryOrder(orderType, priority);
+            Order order = OrderFactory.generateDefaultArgsQueryOrder(orderType, priority);
             putOrderToWaitExecute(order);
             return order.getRawOrderId();
         }

@@ -1,10 +1,7 @@
 package com.scareers.gui.rabbitmq;
 
 import cn.hutool.core.lang.Assert;
-import com.scareers.gui.rabbitmq.order.BuyOrder;
-import com.scareers.gui.rabbitmq.order.Order;
-import com.scareers.gui.rabbitmq.order.QueryNoArgsOrder;
-import com.scareers.gui.rabbitmq.order.SellOrder;
+import com.scareers.gui.rabbitmq.order.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -88,6 +85,25 @@ public class OrderFactory {
     }
 
 
+    public static Order generateWaitOneBeFlushedOrder(String waitFlushOrderId,
+                                                      int timeoutThreshold,
+                                                      boolean canCancelOnly) throws Exception {
+        Assert.isTrue(waitFlushOrderId != null);
+        Map<String, Object> params = new HashMap<>();
+        params.put("waitFlushOrderId", waitFlushOrderId);
+        params.put("timeoutThreshold", timeoutThreshold);
+        params.put("canCancelOnly", canCancelOnly);
+        return new WaitOneBeFlushOrder(params);
+    }
+
+    public static Order generateWaitOneBeFlushedOrderQuick(String waitFlushOrderId,
+                                                           int timeoutThreshold,
+                                                           boolean canCancelOnly, Long priority) throws Exception {
+        Order order = generateWaitOneBeFlushedOrder(waitFlushOrderId, timeoutThreshold, canCancelOnly);
+        order.setPriority(priority);
+        return order;
+    }
+
     /**
      * 撤单单一id 的订单. id是同花顺交易软件id, 而非java生成的订单objectId
      *
@@ -116,6 +132,14 @@ public class OrderFactory {
      * @param stockCode
      * @return
      */
+    private static Order generateCancelBatchOrder(String type, String stockCode, String waitFlushOrderId) {
+        Assert.isTrue(Arrays.asList("buy", "sell", "all").contains(type)); // 三种批量撤单类型
+        Map<String, Object> params = new HashMap<>();
+        params.put("stockCode", stockCode);
+        params.put("waitFlushOrderId", waitFlushOrderId); // 可显式等待某id被刷新
+        return new Order("cancel_" + type, params);
+    }
+
     private static Order generateCancelBatchOrder(String type, String stockCode) {
         Assert.isTrue(Arrays.asList("buy", "sell", "all").contains(type)); // 三种批量撤单类型
         Map<String, Object> params = new HashMap<>();
@@ -133,6 +157,16 @@ public class OrderFactory {
         return res;
     }
 
+    public static Order generateCancelAllOrder(String stockCode, String waitFlushOrderId) {
+        return generateCancelBatchOrder("all", stockCode, waitFlushOrderId);
+    }
+
+    public static Order generateCancelAllOrder(String stockCode, String waitFlushOrderId, Long priority) {
+        Order res = generateCancelAllOrder(stockCode, waitFlushOrderId);
+        res.setPriority(priority);
+        return res;
+    }
+
     public static Order generateCancelBuyOrder(String stockCode) {
         return generateCancelBatchOrder("buy", stockCode);
     }
@@ -143,12 +177,32 @@ public class OrderFactory {
         return res;
     }
 
+    public static Order generateCancelBuyOrder(String stockCode, String waitFlushOrderId) {
+        return generateCancelBatchOrder("buy", stockCode, waitFlushOrderId);
+    }
+
+    public static Order generateCancelBuyOrder(String stockCode, String waitFlushOrderId, Long priority) {
+        Order res = generateCancelBuyOrder(stockCode, waitFlushOrderId);
+        res.setPriority(priority);
+        return res;
+    }
+
     public static Order generateCancelSellOrder(String stockCode) {
         return generateCancelBatchOrder("sell", stockCode);
     }
 
     public static Order generateCancelSellOrder(String stockCode, Long priority) {
         Order res = generateCancelSellOrder(stockCode);
+        res.setPriority(priority);
+        return res;
+    }
+
+    public static Order generateCancelSellOrder(String stockCode, String waitFlushOrderId) {
+        return generateCancelBatchOrder("sell", stockCode, waitFlushOrderId);
+    }
+
+    public static Order generateCancelSellOrder(String stockCode, String waitFlushOrderId, Long priority) {
+        Order res = generateCancelSellOrder(stockCode, waitFlushOrderId);
         res.setPriority(priority);
         return res;
     }
@@ -165,13 +219,13 @@ public class OrderFactory {
      * @param orderType
      * @return
      */
-    public static Order generateNoArgsQueryOrder(String orderType) {
+    public static Order generateDefaultArgsQueryOrder(String orderType) {
         Objects.requireNonNull(orderType);
-        return new QueryNoArgsOrder(orderType);
+        return new QueryDefaultArgsOrder(orderType);
     }
 
-    public static Order generateNoArgsQueryOrder(String orderType, Long priority) {
-        Order res = generateNoArgsQueryOrder(orderType);
+    public static Order generateDefaultArgsQueryOrder(String orderType, Long priority) {
+        Order res = generateDefaultArgsQueryOrder(orderType);
         res.setPriority(priority);
         return res;
     }
