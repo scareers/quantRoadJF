@@ -1,6 +1,5 @@
-package com.scareers.gui.rabbitmq.order;
+package com.scareers.gui.ths.simulation.order;
 
-import javax.sound.midi.Soundbank;
 import java.util.Map;
 
 /**
@@ -9,13 +8,11 @@ import java.util.Map;
  * @author: admin
  * @date: 2021/12/23/023-19:37:36
  */
-public class BuyOrder extends Order {
+public class SellOrder extends Order {
     public static long DEFAULT_PRIORITY = Order.PRIORITY_HIGH;
 
-    public BuyOrder(Map<String, Object> params) {
-        super("buy", params);
+    public SellOrder(Map<String, Object> params) {
+        super("sell", params);
         this.setPriority(DEFAULT_PRIORITY);
     }
 }
-
-

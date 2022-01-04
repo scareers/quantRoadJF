@@ -1,7 +1,7 @@
-package com.scareers.gui.rabbitmq;
+package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Assert;
-import com.scareers.gui.rabbitmq.order.*;
+import com.scareers.gui.ths.simulation.order.*;
 
 import java.util.Arrays;
 import java.util.HashMap;

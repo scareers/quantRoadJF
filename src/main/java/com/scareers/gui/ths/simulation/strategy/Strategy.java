@@ -3,7 +3,7 @@ package com.scareers.gui.ths.simulation.strategy;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.fstransaction.StockBean;
-import com.scareers.gui.rabbitmq.order.Order;
+import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;

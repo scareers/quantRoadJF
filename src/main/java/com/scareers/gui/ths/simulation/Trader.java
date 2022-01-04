@@ -30,15 +30,13 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
-import com.scareers.gui.rabbitmq.OrderFactory;
-import com.scareers.gui.rabbitmq.order.Order;
-import com.scareers.gui.rabbitmq.order.Order.LifePointStatus;
+import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +47,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.rabbitmq.SettingsOfRb.*;
+import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtils.waitUtil;
 
 /**

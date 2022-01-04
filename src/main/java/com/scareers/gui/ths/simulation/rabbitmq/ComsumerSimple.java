@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq;
+package com.scareers.gui.ths.simulation.rabbitmq;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 import static com.scareers.gui.ths.simulation.Trader.connectToRbServer;
 import static com.scareers.gui.ths.simulation.Trader.initDualChannel;
-import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
+import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**
  * description:

@@ -1,18 +1,17 @@
-package com.scareers.gui.rabbitmq;
+package com.scareers.gui.ths.simulation.rabbitmq;
 
-import cn.hutool.json.JSONObject;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.scareers.gui.rabbitmq.order.Order;
+import com.scareers.gui.ths.simulation.order.Order;
 
 import java.nio.charset.StandardCharsets;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.rabbitmq.OrderFactory.*;
+import static com.scareers.gui.ths.simulation.OrderFactory.*;
 import static com.scareers.gui.ths.simulation.Trader.connectToRbServer;
 import static com.scareers.gui.ths.simulation.Trader.initDualChannel;
-import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
-import static com.scareers.gui.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
+import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
+import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
 
 
 /**

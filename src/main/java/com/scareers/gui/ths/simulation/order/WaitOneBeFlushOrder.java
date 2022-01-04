@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq.order;
+package com.scareers.gui.ths.simulation.order;
 
 import java.util.Map;
 

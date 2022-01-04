@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq.order;
+package com.scareers.gui.ths.simulation.order;
 
 import java.util.Map;
 
@@ -8,11 +8,13 @@ import java.util.Map;
  * @author: admin
  * @date: 2021/12/23/023-19:37:36
  */
-public class SellOrder extends Order {
+public class BuyOrder extends Order {
     public static long DEFAULT_PRIORITY = Order.PRIORITY_HIGH;
 
-    public SellOrder(Map<String, Object> params) {
-        super("sell", params);
+    public BuyOrder(Map<String, Object> params) {
+        super("buy", params);
         this.setPriority(DEFAULT_PRIORITY);
     }
 }
+
+

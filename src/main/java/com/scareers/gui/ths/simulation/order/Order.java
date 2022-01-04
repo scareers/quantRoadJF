@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq.order;
+package com.scareers.gui.ths.simulation.order;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;

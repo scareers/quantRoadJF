@@ -1,4 +1,4 @@
-package com.scareers.gui.rabbitmq.order;
+package com.scareers.gui.ths.simulation.order;
 
 /**
  * description: 无特别参数的 查询类订单类型
