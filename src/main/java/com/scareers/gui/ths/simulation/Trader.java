@@ -38,6 +38,7 @@ import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -121,10 +122,10 @@ public class Trader {
         // 正式启动主策略下单
         mainStrategy.startDealWith();
 
-        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.
+        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.  应阻塞!
 
         closeDualChannelAndConn(); // 关闭连接
-        FSTransactionFetcher.stopFetch(); // 停止数据抓 取
+        FSTransactionFetcher.stopFetch(); // 停止数据抓 取, 非立即.
     }
 
     private static void manualInteractive() {
@@ -314,7 +315,7 @@ public class Trader {
             if (priority == null) {
                 priority = Order.PRIORITY_LOWEST;
             }
-            Order order = OrderFactory.generateDefaultArgsQueryOrder(orderType, priority);
+            Order order = OrderFactory.generateNoArgsQueryOrder(orderType, priority);
             putOrderToWaitExecute(order);
             return order.getRawOrderId();
         }
@@ -327,23 +328,35 @@ public class Trader {
          * @throws Exception
          */
         public static String flushNineBaseFundsData(Long priority) throws Exception {
-            return flushItem("get_account_funds_info", priority);
+            // 默认刷新, 不等待static
+            Order order = OrderFactory.generateGetAccountFundsInfoOrder(true, false, priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
         }
 
         public static String flushCurrentHolds(Long priority) throws Exception {
-            return flushItem("get_hold_stocks_info", priority);
+            Order order = OrderFactory.generateGetHoldStocksInfoOrder(priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
         }
 
         public static String flushCanCancels(Long priority) throws Exception {
-            return flushItem("get_unsolds_not_yet", priority);
+            Order order = OrderFactory.generateGetUnsoldsNotYetOrder(priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
         }
 
         public static String flushTodayClinchs(Long priority) throws Exception {
-            return flushItem("get_today_clinch_orders", priority);
+            Order order = OrderFactory.generateGetTodayClinchOrdersOrder(priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
         }
 
         public static String flushTodayConsigns(Long priority) throws Exception {
-            return flushItem("get_today_consign_orders", priority);
+            // 默认访问分组!未成交/成交/撤单3组
+            Order order = OrderFactory.generateGetTodayConsignOrdersOrder("分组", priority);
+            putOrderToWaitExecute(order);
+            return order.getRawOrderId();
         }
 
         public static String flushNineBaseFundsDataImmediately() throws Exception {
@@ -529,7 +542,7 @@ public class Trader {
 
     public static void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列");
-        log.info("order generated: 已生成订单: {}", order.toJsonStr());
+        log.info("order generated: 已生成订单等待执行: {} ", order.toJsonStr());
         ordersWaitForExecution.put(order);
     }
 

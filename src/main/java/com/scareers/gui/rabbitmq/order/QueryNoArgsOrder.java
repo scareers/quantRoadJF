@@ -11,10 +11,10 @@ package com.scareers.gui.rabbitmq.order;
  * @author: admin
  * @date: 2021/12/23/023-19:37:36
  */
-public class QueryDefaultArgsOrder extends Order {
+public class QueryNoArgsOrder extends Order {
     public static long DEFAULT_PRIORITY = Order.PRIORITY_LOW;
 
-    public QueryDefaultArgsOrder(String orderType) {
+    public QueryNoArgsOrder(String orderType) {
         super(orderType);
         this.setPriority(DEFAULT_PRIORITY);
     }

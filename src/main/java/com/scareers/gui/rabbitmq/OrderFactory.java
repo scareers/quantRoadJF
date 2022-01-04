@@ -211,24 +211,94 @@ public class OrderFactory {
      * 构造无特别参数查询函数, 因 目前两个查询函数均不需要参数, 因此 NoArgs
      * 当前可使用查询api:
      * //----> get_hold_stocks_info    账号股票持仓汇总数据
-     * //----> get_account_funds_info  9项账号资金数据
      * //----> get_unsolds_not_yet  获取当前尚未完全成交的挂单
      * //----> get_today_clinch_orders  获取所有今日成交订单列表
-     * //----> get_today_consign_orders  获取所有今日委托过的订单列表
+     * <p>
+     * 已经新增了参数: .... // 也能使用默认参数
+     * //----> get_account_funds_info  9项账号资金数据        (2参数,可更快速度)
+     * //----> get_today_consign_orders  获取所有今日委托过的订单列表 (1参数, 可分组)
      *
      * @param orderType
      * @return
      */
-    public static Order generateDefaultArgsQueryOrder(String orderType) {
+    public static Order generateNoArgsQueryOrder(String orderType) {
         Objects.requireNonNull(orderType);
-        return new QueryDefaultArgsOrder(orderType);
+        return new QueryNoArgsOrder(orderType);
     }
 
-    public static Order generateDefaultArgsQueryOrder(String orderType, Long priority) {
-        Order res = generateDefaultArgsQueryOrder(orderType);
+    public static Order generateNoArgsQueryOrder(String orderType, Long priority) {
+        Order res = generateNoArgsQueryOrder(orderType);
         res.setPriority(priority);
         return res;
     }
+
+    public static Order generateGetHoldStocksInfoOrder(Long priority) {
+        return generateNoArgsQueryOrder("get_hold_stocks_info", priority);
+    }
+
+    public static Order generateGetHoldStocksInfoOrder() {
+        return generateNoArgsQueryOrder("get_hold_stocks_info");
+    }
+
+    public static Order generateGetUnsoldsNotYetOrder(Long priority) {
+        return generateNoArgsQueryOrder("get_unsolds_not_yet", priority);
+    }
+
+    public static Order generateGetUnsoldsNotYetOrder() {
+        return generateNoArgsQueryOrder("get_unsolds_not_yet");
+    }
+
+    public static Order generateGetTodayClinchOrdersOrder(Long priority) {
+        return generateNoArgsQueryOrder("get_today_clinch_orders", priority);
+    }
+
+    public static Order generateGetTodayClinchOrdersOrder() {
+        return generateNoArgsQueryOrder("get_today_clinch_orders");
+    }
+
+    public static Order generateGetAccountFundsInfoOrder(Long priority) {
+        return generateNoArgsQueryOrder("get_account_funds_info", priority);
+    }
+
+    public static Order generateGetAccountFundsInfoOrder() {
+        return generateNoArgsQueryOrder("get_account_funds_info");
+    }
+
+    public static Order generateGetAccountFundsInfoOrder(Boolean flush, Boolean waitStatic, Long priority) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("flush", flush);
+        params.put("waitStatic", waitStatic);
+        return new Order("get_today_consign_orders", params, priority);
+    }
+
+    public static Order generateGetAccountFundsInfoOrder(Boolean flush, Boolean waitStatic) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("flush", flush);
+        params.put("waitStatic", waitStatic);
+        return new Order("get_today_consign_orders", params);
+    }
+
+    public static Order generateGetTodayConsignOrdersOrder(Long priority) {
+        return generateNoArgsQueryOrder("get_today_consign_orders", priority);
+    }
+
+    public static Order generateGetTodayConsignOrdersOrder() {
+        return generateNoArgsQueryOrder("get_today_consign_orders");
+    }
+
+    public static Order generateGetTodayConsignOrdersOrder(String queryType) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("queryType", queryType);
+        return new Order("get_today_consign_orders", params);
+    }
+
+    public static Order generateGetTodayConsignOrdersOrder(String queryType, Long priority) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("queryType", queryType);
+        return new Order("get_today_consign_orders", params, priority);
+    }
+
+
 }
 
 
