@@ -112,6 +112,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
+            log.warn("待执行订单数量: {}",Trader.ordersWaitForExecution.size());
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
@@ -129,7 +130,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     @Override
     protected void buyDecision() throws Exception {
         int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-        Thread.sleep(sleep * 1000);
+        Thread.sleep(sleep * 1000*3);
         Order order = null;
         int type = RandomUtil.randomInt(12);
         if (type < 3) {
