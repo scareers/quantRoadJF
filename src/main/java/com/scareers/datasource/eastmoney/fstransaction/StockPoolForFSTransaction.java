@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeans;
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeanList;
 
 /**
  * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
@@ -45,21 +45,10 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public static List<StockBean> stockListFromSimpleStockList(List<String> stockList, boolean addTwoIndex)
-            throws ExecutionException, InterruptedException {
-        List<StockBean> rawBeans = querySecurityIdsToBeans(stockList);
-        for (StockBean bean : rawBeans) {
-            String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
-            if (secId == null) { // 无对应的指数 code
-                continue;
-            }
-            res.add(new StockBean(secId));
-        }
-        if (addTwoIndex) {
-            res.add(new StockBean("1.000001"));
-            res.add(new StockBean("0.399001")); // 两大指数
-        }
-        return new CopyOnWriteArrayList<>(res.stream().distinct().collect(Collectors.toList()));
+    public static List<StockBean> stockListFromSimpleStockList(List<String> stockListSimple)
+            throws Exception {
+        List<StockBean> stockList = StockBean.createStockList(stockListSimple);
+
     }
 
 
@@ -88,7 +77,7 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
         stockList =
                 stockList.stream().distinct().filter(stock -> stock.endsWith("SZ") || stock.endsWith("SH"))
                         .collect(Collectors.toList());
-        List<EmSecurityBean> rawBeans = querySecurityIdsToBeans(stockList.subList(Math.max(0, start),
+        List<EmSecurityBean> rawBeans = querySecurityIdsToBeanList(stockList.subList(Math.max(0, start),
                 Math.min(stockList.size(), end)));
         for (EmSecurityBean bean : rawBeans) {
             String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果

@@ -31,12 +31,21 @@ import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.*;
 public class EastMoneyUtils {
     // dc 代码查询结果全缓存, 且线程安全, 因常线程池批量调用  getAsStrUseHutool/getAsStrUseKevin 使用不同库. 具体api自己试
     public static ConcurrentHashMap<String, JSONArray> quoteCache = new ConcurrentHashMap<>();
+    public static ThreadPoolExecutor poolExecutor;
+
+    public static void checkPoolExecutor() {
+        if (poolExecutor == null) {
+            poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
+                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
+
+        }
+    }
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         Console.log(querySecurityId("000001"));
         GlobalThreadPool.shutdown(false);
 
-        Console.log(querySecurityIdSimple("000001"));
+
     }
 
     /**
@@ -134,6 +143,7 @@ public class EastMoneyUtils {
 
     /**
      * 查询 em 通用的资产代码.
+     * 已重试3次, 失败返回 null
      * // @noti: 异常调用方处理;  不直接调用. 使用线程池执行
      * // @noti: 将会重试三次
      *
@@ -182,47 +192,33 @@ public class EastMoneyUtils {
     }
 
     /**
-     * 简单返回第一个结果 QuoteID 字段  0.000001
-     *
-     * @param simpleCode
-     * @return
-     */
-    public static String querySecurityIdSimple(String simpleCode) {
-        JSONArray response = querySecurityId(simpleCode);
-        return response.getJSONObject(0).getStr("QuoteID");
-    }
-
-
-    /**
-     * 批量查询简单股票代码, 获取 em 查询结果.  返回  EmSecurityBean 对象!!
+     * 批量查询简单股票代码, 获取 em 查询结果.
      * 因多为http请求, 使用线程池
      * // 自动取前6位代码
+     * <p>
+     * 并未对结果进行解析, 使用需要调用
      *
      * @param simpleCodes
      * @return
+     * @noti 仅构建列表, 并未转换
+     * @see StockBean.toStockList
+     * @see StockBean.toIndexList
      */
-    public static List<StockBean> querySecurityIdsToBeans(List<String> simpleCodes)
-            throws ExecutionException, InterruptedException {
+    public static List<StockBean> querySecurityIdsToBeanList(List<String> simpleCodes)
+            throws Exception {
         simpleCodes = simpleCodes.stream().map(value -> value.substring(0, 6)).collect(Collectors.toList());
         List<StockBean> beans = new CopyOnWriteArrayList<>();
-        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(8,
-                16 * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("EmIdQueryPool-", null, true)
-        );
+        checkPoolExecutor();
         ConcurrentHashMap<String, Future<JSONArray>> futures = new ConcurrentHashMap<>();
         for (String simpleCode : simpleCodes) {
-            Future<JSONArray> future = poolExecutor.submit(new Callable<JSONArray>() {
-                @Override
-                public JSONArray call() throws Exception {
-                    JSONArray res = null;
-                    try {
-                        res = querySecurityId(simpleCode);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    return res;
+            Future<JSONArray> future = poolExecutor.submit(() -> {
+                JSONArray res = null;
+                try {
+                    res = querySecurityId(simpleCode);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+                return res;
             });
             futures.put(simpleCode, future);
         }
@@ -232,7 +228,7 @@ public class EastMoneyUtils {
             if (temp != null) {
                 beans.add(new StockBean(temp));
             } else {
-                log.warn("fail em stockId query: 东方财富股票id查询失败: {}!", stockCodeSimple);
+                log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}!", stockCodeSimple);
             }
         }
         poolExecutor.shutdown();

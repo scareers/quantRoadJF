@@ -4,14 +4,13 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtils;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
+import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeanList;
 
 /**
  * description: 代表一特定证券/指数等资产. 仅简单两字段. 基类. 常使用 EmSecurityBean
@@ -24,24 +23,44 @@ public class StockBean {
     private static final long serialVersionUID = 156415111L;
 
     /**
-     * 列表转换
+     * 给定股票简单代码列表, 获取 已转换为 股票 的 StockBean
+     * // 本身已经是 CopyOnWriteArrayList
      *
      * @param beans
      * @return
      * @throws Exception
      */
-    public static List<StockBean> toStockList(List<StockBean> beans) throws Exception {
+    public static List<StockBean> createStockList(List<String> stockListSimple) throws Exception {
+        List<StockBean> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (StockBean bean : beans) {
             bean.convertToStock();
         }
         return beans; // 列表不变
     }
 
-    public static List<StockBean> toIndexList(List<StockBean> beans) throws Exception {
+    /**
+     * 给定股票简单代码列表, 获取 已转换为 指数 的 StockBean
+     *
+     * @param stockListSimple
+     * @return
+     * @throws Exception
+     */
+    public static List<StockBean> createIndexList(List<String> stockListSimple) throws Exception {
+        List<StockBean> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (StockBean bean : beans) {
             bean.convertToIndex();
         }
         return beans;
+    }
+
+    /**
+     * @param stockListSimple
+     * @return
+     * @throws Exception
+     * @noti 仅构建列表, 并未转换,  转换需要调用 toStockList / toIndexList 方法
+     */
+    public static List<StockBean> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
+        return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
     }
 
     private static final Log log = LogUtils.getLogger();
@@ -74,6 +93,7 @@ public class StockBean {
      */
     private enum ConvertState {
         NULL, // 尚未转换
+        FAIL, // 转换失败
         STOCK, // 已转换为股票
         INDEX // 已转换为指数
     }
@@ -114,7 +134,10 @@ public class StockBean {
      */
     public StockBean convertToStock() throws Exception {
         if (convertState != ConvertState.STOCK) {
-            if (!convert(Arrays.asList("AStock", "23"))) {
+            if (convert(Arrays.asList("AStock", "23"))) {
+                convertState = ConvertState.STOCK;
+            } else {
+                convertState = ConvertState.FAIL;
                 throw new Exception("转换StockBean为股票Bean异常");
             }
         }
@@ -129,8 +152,10 @@ public class StockBean {
     public StockBean convertToIndex() throws Exception {
         if (convertState != ConvertState.INDEX) {
             if (!convert(Arrays.asList("Index"))) {
+                convertState = ConvertState.FAIL;
                 throw new Exception("转换StockBean为指数Bean异常");
             }
+            convertState = ConvertState.INDEX;
         }
         return this;
     }
@@ -164,4 +189,10 @@ public class StockBean {
         }
         return false;
     }
+
+    @Override
+    public boolean equals(Object o) {
+
+    }
+
 }
