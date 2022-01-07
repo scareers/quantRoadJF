@@ -47,9 +47,8 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
      */
     public static List<StockBean> stockListFromSimpleStockList(List<String> stockList, boolean addTwoIndex)
             throws ExecutionException, InterruptedException {
-        List<StockBean> res = new ArrayList<>();
-        List<EmSecurityBean> rawBeans = querySecurityIdsToBeans(stockList);
-        for (EmSecurityBean bean : rawBeans) {
+        List<StockBean> rawBeans = querySecurityIdsToBeans(stockList);
+        for (StockBean bean : rawBeans) {
             String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
             if (secId == null) { // 无对应的指数 code
                 continue;

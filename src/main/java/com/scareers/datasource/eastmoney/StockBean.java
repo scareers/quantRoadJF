@@ -84,6 +84,11 @@ public class StockBean {
         checkQueryResults(); // 若null将强制查询
     }
 
+    public StockBean(String stockCodeSimple) {
+        this.stockCodeSimple = stockCodeSimple; // 将被查询
+        checkQueryResults();
+    }
+
     private void checkQueryResults() { // 死循环查询 3次
         int retry_ = 0;
         while (queryResults == null) {
