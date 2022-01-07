@@ -231,7 +231,6 @@ public class EastMoneyUtils {
                 log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}!", stockCodeSimple);
             }
         }
-        poolExecutor.shutdown();
         return beans;
     }
 

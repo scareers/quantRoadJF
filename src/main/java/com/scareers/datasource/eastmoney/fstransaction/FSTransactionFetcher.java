@@ -48,11 +48,19 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 @Data
 public class FSTransactionFetcher {
+    public static void main(String[] args) throws Exception {
+        FSTransactionFetcher fsTransactionFetcher =
+                new FSTransactionFetcher(new StockPoolForFSTransaction().createStockPool(100), 10, "15:10:00", 500, 10);
+        fsTransactionFetcher.startFetch(); // 测试股票池
+
+        waitEnter();
+    }
+
+
     // 静态属性 设置项
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
-    public static int threadPoolCorePoolSize = 16;
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
     private static final Log log = LogUtils.getLogger();
@@ -62,15 +70,16 @@ public class FSTransactionFetcher {
     private volatile ConcurrentHashMap<StockBean, String> processes;
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
     private volatile ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas;
-    private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
+    private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
+    private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量
     private DateTime limitTick;
     private int timeout; // 单个http访问超时毫秒
-    private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
     private final List<StockBean> stockPool;
     private String saveTableName; // 保存数据表名称
     private final int logFreq; // 分时图抓取多少次,log一次时间
+    public int threadPoolCorePoolSize = 32; // 线程池数量
 
     public FSTransactionFetcher(List<StockBean> stockPool, long redundancyRecords,
                                 String limitTick, int timeout, int logFreq) throws SQLException, InterruptedException {
@@ -94,12 +103,6 @@ public class FSTransactionFetcher {
         this.logFreq = logFreq;
     }
 
-    public static void main(String[] args) throws Exception {
-        FSTransactionFetcher fsTransactionFetcher =
-                new FSTransactionFetcher(StockPoolForFSTransaction.stockPoolTest(), 10, "15:10:00", 1000, 100);
-        fsTransactionFetcher.startFetch(); // 测试股票池
-        waitEnter();
-    }
 
     public void startFetch() throws Exception {
         Thread fsFetchTask = new Thread(new Runnable() {
@@ -117,11 +120,11 @@ public class FSTransactionFetcher {
     }
 
     private void startFetch0() throws Exception {
-        initThreadPool(); // 懒加载一次
+        initThreadPool(threadPoolCorePoolSize); // 懒加载一次
         createSaveTable(saveTableName);
         initProcessAndRawDatas(saveTableName);
 
-        log.warn("start: 开始抓取数据...");
+        log.warn("start: 开始抓取数据,股票池数量: {}", stockPool.size());
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
@@ -234,9 +237,8 @@ public class FSTransactionFetcher {
     }
 
 
-    public static void initThreadPool() {
+    public static void initThreadPool(int threadPoolCorePoolSize) {
         if (threadPoolOfFetch == null) {
-
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -244,7 +246,7 @@ public class FSTransactionFetcher {
             );
             log.debug("init threadPoolOfFetch: 初始化Fetch线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
         }
-        if (threadPoolOfSave == null) {
+        if (threadPoolOfSave == null) { // 保存线程相同数量, 否则将成为瓶颈
             threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),

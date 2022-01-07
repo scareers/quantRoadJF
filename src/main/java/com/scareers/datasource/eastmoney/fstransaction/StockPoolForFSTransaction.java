@@ -6,9 +6,7 @@ import com.scareers.datasource.eastmoney.StockBean;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.log.LogUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -23,72 +21,47 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsT
  * @date: 2021/12/21/021-18:16:14
  */
 public class StockPoolForFSTransaction implements StockPoolFactory {
+    private static final Log log = LogUtils.getLogger();
+
     public static void main(String[] args) throws Exception {
         Console.log(new StockPoolForFSTransaction().createStockPool());
     }
 
-    private static final Log log = LogUtils.getLogger();
 
     @Override
     public List<StockBean> createStockPool() throws Exception {
+        return createStockPool(30);
+    }
+
+    public List<StockBean> createStockPool(int amounts) throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
-        List<StockBean> res = stockPoolFromTushare(0, 100);
-//        List<StockBean> res = stockPoolTest();
+        List<StockBean> res = stockPoolFromTushare(0, amounts);
+        res.addAll(stockListOfTwoMarketIndex());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
     }
 
     /**
-     * @param stockList
-     * @param addTwoIndex 添加两大指数
-     * @return
+     * @return 返回两大指数的 StockBean
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public static List<StockBean> stockListFromSimpleStockList(List<String> stockListSimple)
+    public static List<StockBean> stockListOfTwoMarketIndex()
             throws Exception {
-        List<StockBean> stockList = StockBean.createStockList(stockListSimple);
+        return StockBean.createIndexList(Arrays.asList("000001", "399001"));
 
-    }
-
-
-    public static List<StockBean> stockListFromSimpleStockList(List<String> stockList)
-            throws ExecutionException, InterruptedException {
-        return stockListFromSimpleStockList(stockList, true);
-    }
-
-    public static List<StockBean> stockPoolTest() {
-        List<StockBean> stockPool = new ArrayList<>();
-        stockPool.add(new StockBean("000001", 1));// 上证指数
-        stockPool.add(new StockBean("000001", 0));// 平安银行
-        stockPool.add(new StockBean("000002", 1));// A股指数
-        stockPool.add(new StockBean("000002", 0));// 万科A
-        stockPool.add(new StockBean("399001", 0));// 深证成指
-        stockPool.add(new StockBean("000153", 0));// 丰原药业
-        stockPool.add(new StockBean("600037", 1));// 歌华有线
-        // 去重 + 线程安全
-        return new CopyOnWriteArrayList<>(stockPool.stream().distinct().collect(Collectors.toList()));
     }
 
     public static List<StockBean> stockPoolFromTushare(int start, int end) throws Exception {
         HashMap<String, String> stocks = TushareApi.getStockWithBoardAsMapFromTushare();
         List<StockBean> res = new ArrayList<>();
-        List<String> stockList = new ArrayList<>(stocks.keySet());
-        stockList =
-                stockList.stream().distinct().filter(stock -> stock.endsWith("SZ") || stock.endsWith("SH"))
+        List<String> stockList =
+                new ArrayList<>(stocks.keySet()).stream().distinct()
+                        .filter(stock -> stock.endsWith("SZ") || stock.endsWith("SH"))
                         .collect(Collectors.toList());
-        List<EmSecurityBean> rawBeans = querySecurityIdsToBeanList(stockList.subList(Math.max(0, start),
-                Math.min(stockList.size(), end)));
-        for (EmSecurityBean bean : rawBeans) {
-            String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
-            if (secId == null) { // 无对应的指数 code
-                continue;
-            }
-            res.add(new StockBean(secId));
-        }
-        res.add(new StockBean("1.000001"));
-        res.add(new StockBean("0.399001")); // 两大指数
-        return new CopyOnWriteArrayList<>(res.stream().distinct().collect(Collectors.toList()));
+        Collections.sort(stockList);
+        stockList = stockList.subList(Math.max(0, start), Math.min(end, stockList.size()));
+        return StockBean.createStockList(stockList);
     }
 }
 

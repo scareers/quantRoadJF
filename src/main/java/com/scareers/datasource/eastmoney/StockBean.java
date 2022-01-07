@@ -98,12 +98,21 @@ public class StockBean {
         INDEX // 已转换为指数
     }
 
-
+    /**
+     * 给定查询结果构造
+     *
+     * @param queryResults
+     */
     public StockBean(JSONArray queryResults) {
         this.queryResults = queryResults;
         checkQueryResults(); // 若null将强制查询
     }
 
+    /**
+     * 给定股票简单代码构造, 将一定执行查询.  不建议过多单独调用, 应使用线程池版本创建股票池
+     *
+     * @param stockCodeSimple
+     */
     public StockBean(String stockCodeSimple) {
         this.stockCodeSimple = stockCodeSimple; // 将被查询
         checkQueryResults();
@@ -192,7 +201,11 @@ public class StockBean {
 
     @Override
     public boolean equals(Object o) {
-
+        if (o instanceof StockBean) {
+            return this.queryResults.equals(((StockBean) o).getQueryResults());
+        }
+        return false;
     }
+
 
 }
