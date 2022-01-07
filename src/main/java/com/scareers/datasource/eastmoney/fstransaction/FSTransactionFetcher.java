@@ -6,7 +6,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.StockBean;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
@@ -50,7 +50,9 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class FSTransactionFetcher {
     public static void main(String[] args) throws Exception {
         FSTransactionFetcher fsTransactionFetcher =
-                new FSTransactionFetcher(new StockPoolForFSTransaction().createStockPool(100), 10, "15:10:00", 500, 10);
+                new FSTransactionFetcher(new StockPoolForFSTransaction().createStockPool(100),
+                        10, "15:10:00", 500,
+                        10, 32);
         fsTransactionFetcher.startFetch(); // 测试股票池
 
         waitEnter();
@@ -67,22 +69,23 @@ public class FSTransactionFetcher {
 
     // 实例属性
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
-    private volatile ConcurrentHashMap<StockBean, String> processes;
+    private volatile ConcurrentHashMap<SecurityBeanEm, String> processes;
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
-    private volatile ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas;
+    private volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas;
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
     private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
     private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
     // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量
     private DateTime limitTick;
     private int timeout; // 单个http访问超时毫秒
-    private final List<StockBean> stockPool;
+    private final List<SecurityBeanEm> stockPool;
     private String saveTableName; // 保存数据表名称
     private final int logFreq; // 分时图抓取多少次,log一次时间
-    public int threadPoolCorePoolSize = 32; // 线程池数量
+    public int threadPoolCorePoolSize; // 线程池数量
 
-    public FSTransactionFetcher(List<StockBean> stockPool, long redundancyRecords,
-                                String limitTick, int timeout, int logFreq) throws SQLException, InterruptedException {
+    public FSTransactionFetcher(List<SecurityBeanEm> stockPool, long redundancyRecords,
+                                String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize)
+            throws SQLException, InterruptedException {
         // 4项全默认值
         this.processes = new ConcurrentHashMap<>();
         this.fsTransactionDatas = new ConcurrentHashMap<>();
@@ -101,6 +104,7 @@ public class FSTransactionFetcher {
         this.limitTick = DateUtil.parse(DateUtil.today() + " " + limitTick); // "15:10:00"
         this.timeout = timeout; // 1000
         this.logFreq = logFreq;
+        this.threadPoolCorePoolSize = threadPoolCorePoolSize;
     }
 
 
@@ -132,7 +136,7 @@ public class FSTransactionFetcher {
         while (!stopFetch) {
             epoch++;
             List<Future<Void>> futures = new ArrayList<>();
-            for (StockBean stock : stockPool) {
+            for (SecurityBeanEm stock : stockPool) {
                 Future<Void> f = threadPoolOfFetch
                         .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
@@ -159,7 +163,7 @@ public class FSTransactionFetcher {
     private void initProcessAndRawDatas(String saveTableName) throws SQLException {
         String sqlSelectAll = StrUtilSelf.format("select * from `{}`", saveTableName);
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
-        for (StockBean stock : stockPool) {
+        for (SecurityBeanEm stock : stockPool) {
             DataFrame<Object> datasOfOneStock =
                     dfAll.select(value -> value.get(0).toString().equals(stock.getStockCodeSimple()) && value.get(1)
                             .toString()
@@ -262,10 +266,10 @@ public class FSTransactionFetcher {
     }
 
     public static class FetchOneStockTask implements Callable<Void> {
-        StockBean stock;
+        SecurityBeanEm stock;
         FSTransactionFetcher fetcher;
 
-        public FetchOneStockTask(StockBean stock, FSTransactionFetcher fetcher) {
+        public FetchOneStockTask(SecurityBeanEm stock, FSTransactionFetcher fetcher) {
             this.stock = stock;
             this.fetcher = fetcher;
         }

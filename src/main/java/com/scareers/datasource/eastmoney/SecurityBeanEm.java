@@ -13,41 +13,41 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeanList;
 
 /**
- * description: 代表一特定证券/指数等资产. 仅简单两字段. 基类. 常使用 EmSecurityBean
+ * description: 代表一特定证券/指数等资产. Em 东方财富.
  *
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
  */
 @Data
-public class StockBean {
+public class SecurityBeanEm {
     private static final long serialVersionUID = 156415111L;
 
     /**
-     * 给定股票简单代码列表, 获取 已转换为 股票 的 StockBean
+     * 给定股票简单代码列表, 获取 已转换为 股票 的 SecurityBeanEm
      * // 本身已经是 CopyOnWriteArrayList
      *
      * @param beans
      * @return
      * @throws Exception
      */
-    public static List<StockBean> createStockList(List<String> stockListSimple) throws Exception {
-        List<StockBean> beans = queryBatchStockWithoutConvert(stockListSimple);
-        for (StockBean bean : beans) {
+    public static List<SecurityBeanEm> createStockList(List<String> stockListSimple) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+        for (SecurityBeanEm bean : beans) {
             bean.convertToStock();
         }
         return beans; // 列表不变
     }
 
     /**
-     * 给定股票简单代码列表, 获取 已转换为 指数 的 StockBean
+     * 给定股票简单代码列表, 获取 已转换为 指数 的 SecurityBeanEm
      *
      * @param stockListSimple
      * @return
      * @throws Exception
      */
-    public static List<StockBean> createIndexList(List<String> stockListSimple) throws Exception {
-        List<StockBean> beans = queryBatchStockWithoutConvert(stockListSimple);
-        for (StockBean bean : beans) {
+    public static List<SecurityBeanEm> createIndexList(List<String> stockListSimple) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+        for (SecurityBeanEm bean : beans) {
             bean.convertToIndex();
         }
         return beans;
@@ -59,7 +59,7 @@ public class StockBean {
      * @throws Exception
      * @noti 仅构建列表, 并未转换,  转换需要调用 toStockList / toIndexList 方法
      */
-    public static List<StockBean> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
+    public static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
         return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
     }
 
@@ -103,7 +103,7 @@ public class StockBean {
      *
      * @param queryResults
      */
-    public StockBean(JSONArray queryResults) {
+    public SecurityBeanEm(JSONArray queryResults) {
         this.queryResults = queryResults;
         checkQueryResults(); // 若null将强制查询
     }
@@ -113,7 +113,7 @@ public class StockBean {
      *
      * @param stockCodeSimple
      */
-    public StockBean(String stockCodeSimple) {
+    public SecurityBeanEm(String stockCodeSimple) {
         this.stockCodeSimple = stockCodeSimple; // 将被查询
         checkQueryResults();
     }
@@ -141,7 +141,7 @@ public class StockBean {
      * @return
      * @noti: 不新建对象
      */
-    public StockBean convertToStock() throws Exception {
+    public SecurityBeanEm convertToStock() throws Exception {
         if (convertState != ConvertState.STOCK) {
             if (convert(Arrays.asList("AStock", "23"))) {
                 convertState = ConvertState.STOCK;
@@ -158,7 +158,7 @@ public class StockBean {
      *
      * @return
      */
-    public StockBean convertToIndex() throws Exception {
+    public SecurityBeanEm convertToIndex() throws Exception {
         if (convertState != ConvertState.INDEX) {
             if (!convert(Arrays.asList("Index"))) {
                 convertState = ConvertState.FAIL;
@@ -201,11 +201,9 @@ public class StockBean {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof StockBean) {
-            return this.queryResults.equals(((StockBean) o).getQueryResults());
+        if (o instanceof SecurityBeanEm) {
+            return this.queryResults.equals(((SecurityBeanEm) o).getQueryResults());
         }
         return false;
     }
-
-
 }

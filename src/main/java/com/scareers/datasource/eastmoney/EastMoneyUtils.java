@@ -201,13 +201,13 @@ public class EastMoneyUtils {
      * @param simpleCodes
      * @return
      * @noti 仅构建列表, 并未转换
-     * @see StockBean.toStockList
-     * @see StockBean.toIndexList
+     * @see SecurityBeanEm.toStockList
+     * @see SecurityBeanEm.toIndexList
      */
-    public static List<StockBean> querySecurityIdsToBeanList(List<String> simpleCodes)
+    public static List<SecurityBeanEm> querySecurityIdsToBeanList(List<String> simpleCodes)
             throws Exception {
         simpleCodes = simpleCodes.stream().map(value -> value.substring(0, 6)).collect(Collectors.toList());
-        List<StockBean> beans = new CopyOnWriteArrayList<>();
+        List<SecurityBeanEm> beans = new CopyOnWriteArrayList<>();
         checkPoolExecutor();
         ConcurrentHashMap<String, Future<JSONArray>> futures = new ConcurrentHashMap<>();
         for (String simpleCode : simpleCodes) {
@@ -226,7 +226,7 @@ public class EastMoneyUtils {
             // 可能null, 但是具体构建时, 会再次对 查询结果进行null check, 直到获取成功
             JSONArray temp = futures.get(stockCodeSimple).get();
             if (temp != null) {
-                beans.add(new StockBean(temp));
+                beans.add(new SecurityBeanEm(temp));
             } else {
                 log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}!", stockCodeSimple);
             }

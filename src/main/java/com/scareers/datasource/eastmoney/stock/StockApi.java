@@ -3,6 +3,7 @@ package com.scareers.datasource.eastmoney.stock;
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
@@ -12,7 +13,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.Cached;
-import com.scareers.datasource.eastmoney.StockBean;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
@@ -56,51 +57,28 @@ public class StockApi {
     }
 
     public static void main(String[] args) throws Exception {
-//        List<StockBean> stocks = new StockPoolForFSTransaction().createStockPool();
-//        for (StockBean stock : stocks) {
-//            Console.log(getFSTransaction(100, stock.getStockCodeSimple(), stock.getMarket()));
-//        }
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
 
+        Console.log(getFSTransaction(120, "000001", 1, 1000));
+        Console.log(timer.intervalRestart());
 
-//        TimeInterval timer = DateUtil.timer();
-//        timer.start();
-////        DataFrame<Object> dataFrame = getRealtimeQuotes(Arrays.asList("stock"));
-//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-//        Console.log(timer.intervalRestart());
-//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-//        Console.log(timer.intervalRestart());
-//        getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2);
-//        Console.log(timer.intervalRestart());
-//        Console.log(getQuoteHistory(Arrays.asList("000001"), "20210101", "20220101", "101", "1", 2));
+        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+        Console.log(timer.intervalRestart());
 
+        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+        Console.log(timer.intervalRestart());
+        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+        Console.log(timer.intervalRestart());
 
-//        Console.log(getRealtimeQuotes(Arrays.asList("沪A", "深A")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("创业板")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("科创板")));
+        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
+        Console.log(timer.intervalRestart());
+        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
+        Console.log(timer.intervalRestart());
 
+        Console.log(getPreNTradeDateStrict("2021-01-08"));
+        Console.log(timer.intervalRestart());
 
-//        List<String> allHSAstock = DataFrameSelf
-//                .getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
-//        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
-//        List<String> scientificCreationMarket =
-//                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
-//                        "股票代码");
-//        HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
-//                pioneerMarket)),
-//                scientificCreationMarket); // 两次差集操作
-//
-//        Console.log(mainboardStocks);
-
-        ConcurrentHashMap<String, DataFrame<Object>> datasMap =
-                StockApi.getQuoteHistory(Arrays.asList("000001", "000002"),
-                        "20211027", "20211224", "101", "1", 2, false);
-        Console.log(datasMap);
-
-        String today = DateUtil.today();
-        String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.
-        Console.log(today);
-        Console.log(pre7TradeDate);
     }
 
     static {
@@ -312,6 +290,11 @@ public class StockApi {
      * efinance get_realtime_quotes 重载实现.  给定市场列表, 返回, 这些市场所有股票列表 截面数据
      * // ['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21',
      * 'f13']
+     * <p>
+     * * ['bond', '可转债', 'stock', '沪深A股', '沪深京A股', '北证A股', '北A', 'futures', '期货', '上证A股', '沪A',
+     * * '深证A股', '深A', '新股', '创业板', '科创板', '沪股通', '深股通', '风险警示板', '两网及退市',
+     * * '地域板块', '行业板块', '概念板块', '上证系列指数', '深证系列指数', '沪深系列指数', 'ETF', 'LOF',
+     * * '美股', '港股', '英股', '中概股', '中国概念股']
      *
      * @param markets
      * @return
@@ -413,7 +396,8 @@ public class StockApi {
                                                                                String endDate,
                                                                                String klType, String fq,
                                                                                int retrySingle,
-                                                                               boolean isIndex
+                                                                               boolean isIndex,
+                                                                               int timeoutOfReq
     )
             throws ExecutionException, InterruptedException {
 
@@ -424,12 +408,12 @@ public class StockApi {
             futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex);
+                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex,
+                            timeoutOfReq);
                 }
             }));
         }
         ConcurrentHashMap<String, DataFrame<Object>> res = new ConcurrentHashMap<>();
-        List<Integer> integers = range(futures.keySet().size());
         for (String stock : Tqdm.tqdm(stockCodesSimple, "process: ")) {
             DataFrame<Object> dfTemp = futures.get(stock).get();
             if (dfTemp != null) {
@@ -456,8 +440,15 @@ public class StockApi {
     @Cached
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean isIndex)
+                                                          int retrySingle, boolean isIndex, int timeout)
             throws Exception {
+        if (begDate == null) {
+            begDate = "19900101";
+        }
+        if (endDate == null) {
+            endDate = "20500101";
+        }
+
         String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
                 isIndex);
         DataFrame<Object> res = getQuoteHistorySingleCache.get(cacheKey);
@@ -467,7 +458,7 @@ public class StockApi {
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
         JSONArray quoteRes = querySecurityId(stock);
-        StockBean bean = new StockBean(quoteRes);
+        SecurityBeanEm bean = new SecurityBeanEm(quoteRes);
         String quoteId = null;
         try { // 转换失败
             quoteId = isIndex ? bean.convertToIndex().getSecId() : bean.convertToStock().getSecId();
@@ -488,7 +479,7 @@ public class StockApi {
         String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
         String response = null;
         try {
-            response = getAsStrUseHutool(url, params, 2000, retrySingle);
+            response = getAsStrUseHutool(url, params, timeout, retrySingle);
         } catch (Exception e) {
             return null;
         }
@@ -508,20 +499,20 @@ public class StockApi {
                                                           String endDate, String klType, String fq,
                                                           int retrySingle)
             throws Exception {
-        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false);
+        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false, 2000);
     }
 
     /**
-     * 给定一个具体日期, yyyy-MM-dd形式, 因为em默认日期格式是这样, 方便比较.  返回上n个交易日的日期,
+     * 给定一个具体日期, yyyy-MM-dd 形式, 因为em默认日期格式是这样, 方便比较.  返回上n个交易日的日期,
      * 原理上查询 上证指数 所有历史日k线, 获取得到日期列表. 倒序遍历即可
-     * 返回  yyyy-MM-dd形式
+     * 返回  yyyy-MM-dd 形式
      *
      * @param todayDate
      * @return
      */
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws Exception {
-        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true);
+        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, 3000);
         List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日

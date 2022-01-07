@@ -2,7 +2,7 @@ package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.StockBean;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtils;
 import lombok.Data;
@@ -21,7 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 public abstract class Strategy {
     private String strategyName; // 策略名称, 线程同名
-    private List<StockBean> stockPool; // 股票池. 使用东方财富股票代码
+    private List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
 
     public Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
@@ -66,7 +66,7 @@ public abstract class Strategy {
     /**
      * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), 两大初始化方法
      */
-    protected abstract List<StockBean> initStockPool() throws Exception;
+    protected abstract List<SecurityBeanEm> initStockPool() throws Exception;
 
     /**
      * 选股方法. 通常需要加上各大指数, 最终将构建股票池

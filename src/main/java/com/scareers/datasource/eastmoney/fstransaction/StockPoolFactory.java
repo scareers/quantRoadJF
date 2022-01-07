@@ -1,6 +1,6 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
-import com.scareers.datasource.eastmoney.StockBean;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ public interface StockPoolFactory {
     /**
      * @return 生成股票池, 股票代码列表
      */
-    default List<StockBean> createStockPool() throws Exception {
+    default List<SecurityBeanEm> createStockPool() throws Exception {
         return null;
     }
 }
