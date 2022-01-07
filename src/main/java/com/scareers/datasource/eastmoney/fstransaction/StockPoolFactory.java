@@ -1,7 +1,8 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
+import com.scareers.datasource.eastmoney.StockBean;
+
 import java.util.List;
-import java.util.Set;
 
 /**
  * description:

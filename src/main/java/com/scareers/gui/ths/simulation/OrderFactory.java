@@ -268,14 +268,14 @@ public class OrderFactory {
         Map<String, Object> params = new HashMap<>();
         params.put("flush", flush);
         params.put("waitStatic", waitStatic);
-        return new Order("get_today_consign_orders", params, priority);
+        return new Order("get_account_funds_info", params, priority);
     }
 
     public static Order generateGetAccountFundsInfoOrder(Boolean flush, Boolean waitStatic) {
         Map<String, Object> params = new HashMap<>();
         params.put("flush", flush);
         params.put("waitStatic", waitStatic);
-        return new Order("get_today_consign_orders", params);
+        return new Order("get_account_funds_info", params);
     }
 
     public static Order generateGetTodayConsignOrdersOrder(Long priority) {

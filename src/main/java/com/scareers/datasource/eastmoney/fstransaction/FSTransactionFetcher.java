@@ -4,16 +4,16 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.func.VoidFunc;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.StockBean;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtilSelf;
 import com.scareers.utils.log.LogUtils;
 import joinery.DataFrame;
+import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
@@ -23,6 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
+import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -45,36 +46,67 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2021/12/21/021-15:26:04
  */
+@Data
 public class FSTransactionFetcher {
-    // 静态属性
+    // 静态属性 设置项
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
     public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static int threadPoolCorePoolSize = 16;
-    private static final Log log = LogUtils.getLogger();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
-    // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
-    public static ConcurrentHashMap<StockBean, String> processes = new ConcurrentHashMap<>();
-    // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
-    public static ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
-    public static long redundancyRecords = 10; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
-    public static AtomicBoolean firstTimeFinish = new AtomicBoolean(false);
-    public static DateTime limitTick = DateUtil.parse(DateUtil.today() + " " + "15:10:00"); // tick时间上限
-    public static int timeout = 1000;
-    public static boolean stopFetch = false;
+    private static final Log log = LogUtils.getLogger();
 
-    public static void main(String[] args) throws Exception {
-        startFetch(StockPoolForFSTransaction.stockPoolTest()); // 测试股票池
-        Thread.sleep(1000000);
+    // 实例属性
+    // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
+    private volatile ConcurrentHashMap<StockBean, String> processes;
+    // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
+    private volatile ConcurrentHashMap<StockBean, DataFrame<Object>> fsTransactionDatas;
+    private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
+    private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
+    // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量
+    private DateTime limitTick;
+    private int timeout; // 单个http访问超时毫秒
+    private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
+    private final List<StockBean> stockPool;
+    private String saveTableName; // 保存数据表名称
+    private final int logFreq; // 分时图抓取多少次,log一次时间
+
+    public FSTransactionFetcher(List<StockBean> stockPool, long redundancyRecords,
+                                String limitTick, int timeout, int logFreq) throws SQLException, InterruptedException {
+        // 4项全默认值
+        this.processes = new ConcurrentHashMap<>();
+        this.fsTransactionDatas = new ConcurrentHashMap<>();
+        this.firstTimeFinish = new AtomicBoolean(false); //
+        this.stopFetch = false;
+
+        // yyyy-MM-dd HH:mm:ss.SSS // 决定保存数据表
+        this.saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
+        if (newDayDecide()) {
+            this.saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
+        }
+
+        // 4项可设定
+        this.stockPool = stockPool;
+        this.redundancyRecords = redundancyRecords; // 10
+        this.limitTick = DateUtil.parse(DateUtil.today() + " " + limitTick); // "15:10:00"
+        this.timeout = timeout; // 1000
+        this.logFreq = logFreq;
     }
 
-    public static void startFetch(List<StockBean> stockPool) throws Exception {
+    public static void main(String[] args) throws Exception {
+        FSTransactionFetcher fsTransactionFetcher =
+                new FSTransactionFetcher(StockPoolForFSTransaction.stockPoolTest(), 10, "15:10:00", 1000, 100);
+        fsTransactionFetcher.startFetch(); // 测试股票池
+        waitEnter();
+    }
+
+    public void startFetch() throws Exception {
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
-                startFetch0(stockPool);
+                startFetch0();
             }
         });
         fsFetchTask.setDaemon(true);
@@ -84,24 +116,22 @@ public class FSTransactionFetcher {
         log.warn("FSTransFetcher start: 开始持续获取实时成交数据");
     }
 
-    public static void startFetch0(List<StockBean> stockPool) throws Exception {
-        initThreadPool();
-        boolean shouldFetchToday = newDayDecide();
-        // yyyy-MM-dd HH:mm:ss.SSS
-        String saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
-        if (!shouldFetchToday) {
-            saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
-        }
+    private void startFetch0() throws Exception {
+        initThreadPool(); // 懒加载一次
         createSaveTable(saveTableName);
-        initProcessAndRawDatas(saveTableName, stockPool);
+        initProcessAndRawDatas(saveTableName);
+
         log.warn("start: 开始抓取数据...");
         TimeInterval timer = DateUtil.timer();
         timer.start();
+
+        int epoch = 0; // 抓取轮次, 控制 log 频率
         while (!stopFetch) {
+            epoch++;
             List<Future<Void>> futures = new ArrayList<>();
             for (StockBean stock : stockPool) {
                 Future<Void> f = threadPoolOfFetch
-                        .submit(new FetchOneStockTask(stock, saveTableName));
+                        .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
             }
             for (Future<Void> future : futures) {
@@ -109,9 +139,12 @@ public class FSTransactionFetcher {
             }
             if (!firstTimeFinish.get()) {
                 log.warn("finish first: 首次抓取完成...");
+                firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
             }
-            log.debug("finish timing: 本轮抓取结束,耗时: {} s", ((double) timer.intervalRestart()) / 1000);
-            firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
+            if (epoch % logFreq == 0) {
+                epoch = 0;
+                log.info("finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
+            }
         }
         threadPoolOfFetch.shutdown();
         threadPoolOfSave.shutdown();
@@ -120,7 +153,7 @@ public class FSTransactionFetcher {
     /**
      * 从数据库读取今日已被抓取数据,可能空. 并填充 进度map和初始数据map
      */
-    private static void initProcessAndRawDatas(String saveTableName, List<StockBean> stockPool) throws SQLException {
+    private void initProcessAndRawDatas(String saveTableName) throws SQLException {
         String sqlSelectAll = StrUtilSelf.format("select * from `{}`", saveTableName);
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
         for (StockBean stock : stockPool) {
@@ -140,7 +173,7 @@ public class FSTransactionFetcher {
     }
 
 
-    public static boolean newDayDecide() throws InterruptedException, SQLException {
+    private boolean newDayDecide() throws InterruptedException, SQLException {
         DateTime now = DateUtil.date();
         String today = DateUtil.today();
         DateTime thresholdBefore = DateUtil.parse(today + " " + newDayTimeThreshold.get(0));
@@ -202,31 +235,37 @@ public class FSTransactionFetcher {
 
 
     public static void initThreadPool() {
-        threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
-                threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("FSFetcherPool-", null, true)
-        ); // 唯一线程池, 一直不shutdown
-        threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
-                threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(),
-                ThreadUtil.newNamedThreadFactory("FSTSavePool-", null, true)
-        ); // 唯一线程池, 一直不shutdown
-        log.debug("init threadpool: 初始化唯一线程池,核心线程数量: {}", threadPoolCorePoolSize);
+        if (threadPoolOfFetch == null) {
+
+            threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
+                    threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(),
+                    ThreadUtil.newNamedThreadFactory("FSFetcherPool-", null, true)
+            );
+            log.debug("init threadPoolOfFetch: 初始化Fetch线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
+        }
+        if (threadPoolOfSave == null) {
+            threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
+                    threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
+                    new LinkedBlockingQueue<>(),
+                    ThreadUtil.newNamedThreadFactory("FSTSavePool-", null, true)
+            );
+            log.debug("init threadPoolOfSave: 初始化Save线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
+        }
     }
 
-    public static void stopFetch() {
+    public void stopFetch() {
         // 关闭线程池即可
         stopFetch = true;
     }
 
     public static class FetchOneStockTask implements Callable<Void> {
         StockBean stock;
-        String saveTableName;
+        FSTransactionFetcher fetcher;
 
-        public FetchOneStockTask(StockBean stock, String saveTableName) {
+        public FetchOneStockTask(StockBean stock, FSTransactionFetcher fetcher) {
             this.stock = stock;
-            this.saveTableName = saveTableName;
+            this.fetcher = fetcher;
         }
 
         /**
@@ -237,12 +276,12 @@ public class FSTransactionFetcher {
          */
         @Override
         public Void call() throws Exception {
-            String process = processes.get(stock); // 进度, time_tick表示
-            DataFrame<Object> dataOriginal = fsTransactionDatas.get(stock); // 原全数据.
+            String process = fetcher.getProcesses().get(stock); // 进度, time_tick表示
+            DataFrame<Object> dataOriginal = fetcher.getFsTransactionDatas().get(stock); // 原全数据.
             // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
-            int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + redundancyRecords);
+            int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + fetcher.getRedundancyRecords());
             DataFrame<Object> dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
-                    stock.getMarket(), timeout);
+                    stock.getMarket(), fetcher.timeout);
             // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
             HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameSelf.getColAsStringList(dataOriginal,
                     "time_tick"));
@@ -253,7 +292,7 @@ public class FSTransactionFetcher {
             if (dfTemp.length() > 0) { // 若存在纯新数据
                 threadPoolOfSave.submit(() -> {
                     try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
-                        DataFrameSelf.toSql(dfTemp, saveTableName, connSave, "append", null);
+                        DataFrameSelf.toSql(dfTemp, fetcher.saveTableName, connSave, "append", null);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -261,19 +300,15 @@ public class FSTransactionFetcher {
             }
             // 有序判定
             // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
-            fsTransactionDatas.put(stock, dfCurrentAll);
+            fetcher.getFsTransactionDatas().put(stock, dfCurrentAll);
             Optional<String> processNew =
                     (DataFrameSelf.getColAsStringList(dfCurrentAll, "time_tick")).stream()
                             .max(Comparator.naturalOrder());
             if (processNew.isPresent()) {
-                processes.put(stock, processNew.get());
+                fetcher.getProcesses().put(stock, processNew.get());
             } else {
                 // 例如停牌则没有数据
-//                Console.log(dfCurrentAll);
-//                Console.log(dataOriginal);
-//                Console.log(dfTemp);
-//                Console.log(stock);
-                processes.put(stock, "09:00:00");
+                fetcher.getProcesses().put(stock, "09:00:00");
             }
             log.debug("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
             return null;
@@ -285,8 +320,8 @@ public class FSTransactionFetcher {
             DateTime processTick = DateUtil.parse(today + " " + process);
 
             long between;
-            if (DateUtil.between(now, limitTick, DateUnit.SECOND, false) < 0) { // now超过4点
-                between = DateUtil.between(processTick, limitTick, DateUnit.SECOND, false);
+            if (DateUtil.between(now, fetcher.getLimitTick(), DateUnit.SECOND, false) < 0) { // now超过4点
+                between = DateUtil.between(processTick, fetcher.getLimitTick(), DateUnit.SECOND, false);
             } else {
                 between = DateUtil.between(processTick, now, DateUnit.SECOND, false);
             }

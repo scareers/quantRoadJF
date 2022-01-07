@@ -28,8 +28,11 @@ import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.google.errorprone.annotations.Var;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+//import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
+import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
@@ -115,26 +118,39 @@ public class Trader {
         mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
 
         // fs成交开始抓取, 股票池包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓(for sell)
-        FSTransactionFetcher.startFetch(mainStrategy.getStockPool()); // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        waitUtil(() -> FSTransactionFetcher.firstTimeFinish.get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
+        FSTransactionFetcher fsTransactionFetcher =
+                new FSTransactionFetcher(mainStrategy.getStockPool(), 10, "15:10:00", 1000, 100);
+        fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
+        waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
         // 正式启动主策略下单
+//        ThreadUtil.execAsync(new Runnable() {
+//            @SneakyThrows
+//            @Override
+//            public void run() {
+//                JFrameDemo.main0(null);
+//            }tyg
+//        });
+
         mainStrategy.startDealWith();
 
-        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.  应阻塞!
 
+        manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.  应阻塞!
         closeDualChannelAndConn(); // 关闭连接
-        FSTransactionFetcher.stopFetch(); // 停止数据抓 取, 非立即.
+        fsTransactionFetcher.stopFetch(); // 停止数据抓 取, 非立即.
     }
 
-    private static void manualInteractive() {
-        Scanner input = new Scanner(System.in);
+    private static void manualInteractive() throws Exception {
+
         while (true) {
+            Scanner input = new Scanner(System.in);
             String info = input.next();
+            System.out.println(info);
             if ("q".equals(info)) {
                 break;
-            }
-            if ("s".equals(info)) {
+            } else if ("s".equals(info)) {
                 AccountStates.showFields();
+            } else if ("g".equals(info)) {
+//                JFrameDemo.main0(null);
             }
         }
     }

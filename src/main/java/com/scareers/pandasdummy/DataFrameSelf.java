@@ -192,10 +192,12 @@ public class DataFrameSelf<V> extends joinery.DataFrame<V> {
     }
 
     public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
+        //System.out.println(df.columns());
         List<Object> col;
         try {
             col = df.col(colNameOrIndex);
         } catch (Exception e) {
+            //e.printStackTrace();
             col = df.col(Integer.parseInt(colNameOrIndex.toString()));
         }
         List<String> res = new ArrayList<>();

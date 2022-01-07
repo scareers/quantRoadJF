@@ -21,8 +21,9 @@ import java.util.function.Predicate;
  * @date: 2021/11/6  0006-23:38
  */
 public class CommonUtils {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws TimeoutException, InterruptedException {
         Console.log(changeStatRangeForFull(Arrays.asList("20120102", "20130102")));
+        waitEnter();
     }
 
     /**
@@ -274,6 +275,18 @@ public class CommonUtils {
             throws TimeoutException, InterruptedException {
         waitUtil(booleanSupplier, timeout, interval, description, true);
     }
+
+    public static void waitForever()
+            throws TimeoutException, InterruptedException {
+        waitUtil(() -> false, Integer.MAX_VALUE, Integer.MAX_VALUE, "wait forever!", true);
+    }
+
+    public static void waitEnter() {
+        // 按下确定退出
+        Scanner scanner = new Scanner(System.in);
+        scanner.next();
+    }
+
 
     /**
      * 判定 double 列表, 之和 约等于 某个值

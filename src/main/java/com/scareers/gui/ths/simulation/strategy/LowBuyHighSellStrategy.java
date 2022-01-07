@@ -10,7 +10,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.fstransaction.StockBean;
+import com.scareers.datasource.eastmoney.StockBean;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.OrderFactory;
@@ -126,7 +126,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     @Override
     protected void buyDecision() throws Exception {
         int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-        Thread.sleep(sleep * 1000*3);
+        Thread.sleep(sleep * 1000);
         Order order = null;
         int type = RandomUtil.randomInt(12);
         if (type < 3) {

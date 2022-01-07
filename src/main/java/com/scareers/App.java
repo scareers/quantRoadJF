@@ -16,6 +16,8 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
@@ -23,24 +25,41 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.utils.CommonUtils.*;
 import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
 import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
+import static com.scareers.utils.SqlUtil.execSql;
+import static com.scareers.utils.SqlUtil.execSqlQuery;
 
 /**
  * Hello world!
  */
 public class App {
+
+
+    public static long fibonacci(long number) {
+        if ((number == 0) || (number == 1)) {
+            return number;
+        } else {
+            return fibonacci(number - 1) + fibonacci(number - 2);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
 
 
 
-        String x = "\u51fa\u73b0\u4e86\u5f02\u5e38, \u5f02\u5e38\u6808" ;
-        System.out.println(x);
 
-        Snowflake snowflake = IdUtil.getSnowflake(1, 1);
-        long id = snowflake.nextId(); // 雪花算法, 但是不同次运行能够生成相同id
-        Console.log(id);
+        long start = System.currentTimeMillis();
+        System.out.println(fibonacci(42));
+        System.out.println(System.currentTimeMillis() - start);
 
-        String id2 = IdUtil.objectId();
-        Console.log(id2); // 类似于uuid version1, mongodb使用的id生成策略, 选用此种方式
+//        String x = "\u51fa\u73b0\u4e86\u5f02\u5e38, \u5f02\u5e38\u6808" ;
+//        System.out.println(x);
+//
+//        Snowflake snowflake = IdUtil.getSnowflake(1, 1);
+//        long id = snowflake.nextId(); // 雪花算法, 但是不同次运行能够生成相同id
+//        Console.log(id);
+//
+//        String id2 = IdUtil.objectId();
+//        Console.log(id2); // 类似于uuid version1, mongodb使用的id生成策略, 选用此种方式
 
 //        DataFrame<Object> df_ = new DataFrame<>();
 //        df_.add("a", ListUtil.of("abc", "xyz"));

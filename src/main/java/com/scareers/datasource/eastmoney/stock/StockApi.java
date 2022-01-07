@@ -12,7 +12,6 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.Cached;
-import com.scareers.datasource.eastmoney.EmSecurityIdBean;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
@@ -467,7 +466,7 @@ public class StockApi {
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
         JSONArray quoteRes = querySecurityId(stock);
-        EmSecurityIdBean bean = new EmSecurityIdBean(stock, quoteRes);
+        EmSecurityBean bean = new EmSecurityBean(stock, quoteRes);
         String quoteId = isIndex ? bean.getIndexSecId() : bean.getAStockSecId();
 
         HashMap<String, Object> params = new HashMap<>();

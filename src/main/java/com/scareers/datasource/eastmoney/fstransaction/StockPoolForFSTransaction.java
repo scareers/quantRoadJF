@@ -1,16 +1,14 @@
 package com.scareers.datasource.eastmoney.fstransaction;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.GlobalThreadPool;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.EmSecurityIdBean;
+import com.scareers.datasource.eastmoney.StockBean;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.log.LogUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -50,8 +48,8 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
     public static List<StockBean> stockListFromSimpleStockList(List<String> stockList, boolean addTwoIndex)
             throws ExecutionException, InterruptedException {
         List<StockBean> res = new ArrayList<>();
-        List<EmSecurityIdBean> rawBeans = querySecurityIdsToBeans(stockList);
-        for (EmSecurityIdBean bean : rawBeans) {
+        List<EmSecurityBean> rawBeans = querySecurityIdsToBeans(stockList);
+        for (EmSecurityBean bean : rawBeans) {
             String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
             if (secId == null) { // 无对应的指数 code
                 continue;
@@ -91,9 +89,9 @@ public class StockPoolForFSTransaction implements StockPoolFactory {
         stockList =
                 stockList.stream().distinct().filter(stock -> stock.endsWith("SZ") || stock.endsWith("SH"))
                         .collect(Collectors.toList());
-        List<EmSecurityIdBean> rawBeans = querySecurityIdsToBeans(stockList.subList(Math.max(0, start),
+        List<EmSecurityBean> rawBeans = querySecurityIdsToBeans(stockList.subList(Math.max(0, start),
                 Math.min(stockList.size(), end)));
-        for (EmSecurityIdBean bean : rawBeans) {
+        for (EmSecurityBean bean : rawBeans) {
             String secId = bean.getAStockSecId(); // 股票结果,  而非指数结果
             if (secId == null) { // 无对应的指数 code
                 continue;
