@@ -19,12 +19,17 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
  */
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
 public class StockBean {
     private static final long serialVersionUID = 156415111L;
 
+    /**
+     * 列表转换
+     *
+     * @param beans
+     * @return
+     * @throws Exception
+     */
     public static List<StockBean> toStockList(List<StockBean> beans) throws Exception {
         for (StockBean bean : beans) {
             bean.convertToStock();
