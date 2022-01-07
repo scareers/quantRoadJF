@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
 
@@ -25,6 +26,22 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
 @NoArgsConstructor
 @Data
 public class StockBean {
+    private static final long serialVersionUID = 156415111L;
+
+    public static List<StockBean> toStockList(List<StockBean> beans) throws Exception {
+        for (StockBean bean : beans) {
+            bean.convertToStock();
+        }
+        return beans; // 列表不变
+    }
+
+    public static List<StockBean> toIndexList(List<StockBean> beans) throws Exception {
+        for (StockBean bean : beans) {
+            bean.convertToIndex();
+        }
+        return beans;
+    }
+
     private static final Log log = LogUtils.getLogger();
     private static final int retry = 3; // 查询时3次
 
@@ -48,9 +65,15 @@ public class StockBean {
     private String UnifiedCode;
     private String InnerCode;
 
-    public StockBean(String stockCodeSimple, JSONArray queryResults) {
-        this(queryResults);
-        this.stockCodeSimple = stockCodeSimple; // 更新一下. 本身不需要
+    private ConvertState convertState = ConvertState.NULL;
+
+    /**
+     * 表示当前已转换类型! 保证仅转换一次!
+     */
+    private enum ConvertState {
+        NULL, // 尚未转换
+        STOCK, // 已转换为股票
+        INDEX // 已转换为指数
     }
 
 
@@ -80,9 +103,15 @@ public class StockBean {
      * 调用后均需要判定转换成功与否!
      *
      * @return
+     * @noti: 不新建对象
      */
-    public boolean convertToStock() {
-        return convert(Arrays.asList("AStock", "23"));
+    public StockBean convertToStock() throws Exception {
+        if (convertState != ConvertState.STOCK) {
+            if (!convert(Arrays.asList("AStock", "23"))) {
+                throw new Exception("转换StockBean为股票Bean异常");
+            }
+        }
+        return this;
     }
 
     /**
@@ -90,8 +119,13 @@ public class StockBean {
      *
      * @return
      */
-    public boolean convertToIndex() {
-        return convert(Arrays.asList("Index"));
+    public StockBean convertToIndex() throws Exception {
+        if (convertState != ConvertState.INDEX) {
+            if (!convert(Arrays.asList("Index"))) {
+                throw new Exception("转换StockBean为指数Bean异常");
+            }
+        }
+        return this;
     }
 
     private boolean convert(List<String> typeConditions) {

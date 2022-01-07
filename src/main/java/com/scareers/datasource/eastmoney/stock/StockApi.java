@@ -12,6 +12,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.Cached;
+import com.scareers.datasource.eastmoney.StockBean;
 import com.scareers.pandasdummy.DataFrameSelf;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtils;
@@ -443,7 +444,7 @@ public class StockApi {
     /**
      * 单股票k线
      *
-     * @param stock       @noti: 绝对传递 simple模式, 是否指数有  isIndex 参数控制
+     * @param stock       @noti: 绝对传递 simple模式, 是否指数由  isIndex 参数控制
      * @param begDate
      * @param endDate
      * @param klType
@@ -456,7 +457,7 @@ public class StockApi {
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retrySingle, boolean isIndex)
-            throws ExecutionException, InterruptedException {
+            throws Exception {
         String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
                 isIndex);
         DataFrame<Object> res = getQuoteHistorySingleCache.get(cacheKey);
@@ -466,8 +467,13 @@ public class StockApi {
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
         JSONArray quoteRes = querySecurityId(stock);
-        EmSecurityBean bean = new EmSecurityBean(stock, quoteRes);
-        String quoteId = isIndex ? bean.getIndexSecId() : bean.getAStockSecId();
+        StockBean bean = new StockBean(quoteRes);
+        String quoteId = null;
+        try { // 转换失败
+            quoteId = isIndex ? bean.convertToIndex().getSecId() : bean.convertToStock().getSecId();
+        } catch (Exception e) {
+            throw e;
+        }
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
@@ -492,8 +498,8 @@ public class StockApi {
                 Arrays.asList("data", "klines"), String.class, Arrays.asList(),
                 Arrays.asList());
 
-        dfTemp = dfTemp.add("股票代码", values -> isIndex ? bean.getIndexCode() : bean.getAStockCode());
-        res = dfTemp.add("股票名称", values -> isIndex ? bean.getIndexName() : bean.getAStockName());
+        dfTemp = dfTemp.add("股票代码", values -> bean.getStockCodeSimple());
+        res = dfTemp.add("股票名称", values -> bean.getName());
         getQuoteHistorySingleCache.put(cacheKey, res);
         return res;
     }
@@ -501,7 +507,7 @@ public class StockApi {
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retrySingle)
-            throws ExecutionException, InterruptedException {
+            throws Exception {
         return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false);
     }
 
@@ -514,7 +520,7 @@ public class StockApi {
      * @return
      */
     public static String getPreNTradeDateStrict(String todayDate, int n)
-            throws ExecutionException, InterruptedException {
+            throws Exception {
         DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true);
         List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
@@ -531,7 +537,7 @@ public class StockApi {
         return null;
     }
 
-    public static String getPreNTradeDateStrict(String todayDate) throws ExecutionException, InterruptedException {
+    public static String getPreNTradeDateStrict(String todayDate) throws Exception {
         return getPreNTradeDateStrict(todayDate, 1); // 默认获取today上一交易日
     }
 

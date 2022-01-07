@@ -201,10 +201,10 @@ public class EastMoneyUtils {
      * @param simpleCodes
      * @return
      */
-    public static List<EmSecurityBean> querySecurityIdsToBeans(List<String> simpleCodes)
+    public static List<StockBean> querySecurityIdsToBeans(List<String> simpleCodes)
             throws ExecutionException, InterruptedException {
         simpleCodes = simpleCodes.stream().map(value -> value.substring(0, 6)).collect(Collectors.toList());
-        List<EmSecurityBean> beans = new CopyOnWriteArrayList<>();
+        List<StockBean> beans = new CopyOnWriteArrayList<>();
         ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(8,
                 16 * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(),
@@ -230,7 +230,7 @@ public class EastMoneyUtils {
             // 可能null, 但是具体构建时, 会再次对 查询结果进行null check, 直到获取成功
             JSONArray temp = futures.get(stockCodeSimple).get();
             if (temp != null) {
-                beans.add(new EmSecurityBean(stockCodeSimple, temp));
+                beans.add(new StockBean(temp));
             } else {
                 log.warn("fail em stockId query: 东方财富股票id查询失败: {}!", stockCodeSimple);
             }
