@@ -88,7 +88,7 @@ public class Trader {
      */
     public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
-    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序slee
+    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序 slee
 
     /**
      * 主策略类. 管理具体实现
