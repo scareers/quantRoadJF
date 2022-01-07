@@ -1,6 +1,5 @@
 package com.scareers.datasource.eastmoney;
 
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
@@ -11,8 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
 
@@ -156,12 +153,5 @@ public class StockBean {
             }
         }
         return false;
-    }
-
-    public StockBean(String SecId) { // 1.000001
-        Objects.requireNonNull(SecId);
-        List<String> fragments = StrUtil.split(SecId, ".");
-        this.stockCodeSimple = fragments.get(1);
-        this.market = Integer.valueOf(fragments.get(0));
     }
 }
