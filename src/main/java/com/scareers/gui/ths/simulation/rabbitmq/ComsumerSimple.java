@@ -8,8 +8,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-import static com.scareers.gui.ths.simulation.Trader.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
+import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**

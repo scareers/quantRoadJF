@@ -56,30 +56,34 @@ public class Order implements Comparable, Serializable {
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
     private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
-
     private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
+    private List<Map<String, Object>> execResponses;
+    // 被python执行后的响应列表. 常规仅单个元素, retrying状态下可能多个,默认空al, 无论python做何响应, 应当添加.
 
     public static void main(String[] args) throws Exception {
-        Order x = new BuyOrder(new HashMap<>());
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("test_param_key", "test_param_key");
+        Order x = new Order("test_order_type", 100L);
         Console.log(x.toJsonPrettyStr());
-
         Console.log(x.deepCopy());
-
         Console.log(x.toJsonPrettyStr().equals(x.deepCopy().toJsonPrettyStr()));
+
     }
 
 
-    public Order() {
+    private Order() {
         // 常态仅 orderType null, 参数空map
         this(IdUtil.objectId(),
                 null,
                 System.currentTimeMillis(),
                 new HashMap<>(),
                 null,
-                true,
+                true, // 应当属于params, 但过于常用, 转换为基本属性
                 new HashMap<>(),
-                PRIORITY_LOWEST,
-                0L);
+                PRIORITY_LOWEST, // 默认最低优先级
+                0L,
+                new ArrayList<>()
+        );
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
@@ -95,13 +99,6 @@ public class Order implements Comparable, Serializable {
         this.lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("生成完成,订单对象已确定类型: {}", orderType)));
     }
 
-    public Order(String orderType, Map<String, Object> params, Long priority) {
-        this(orderType, params);
-        if (priority != null) {
-            this.priority = priority;
-        }
-    }
-
     public Order(String orderType) {
         this(orderType, null);
     }
@@ -110,6 +107,18 @@ public class Order implements Comparable, Serializable {
         this(orderType, null, priority);
     }
 
+    public Order(String orderType, Map<String, Object> params, Long priority) {
+        this(orderType, params);
+        if (priority != null) {
+            this.priority = priority;
+        }
+    }
+
+
+    public static List<String> paramsKeyExcludes = Arrays.asList(
+            "rawOrderId", "orderType", "timestamp", "priority", "lifePoints", "timer", "otherRawMessages",
+            "resendTimes", "execResponses"
+    ); // params 的key不应包含这些key, 它们均表示Order本身属性
 
     public JSON prepare() throws Exception {
         JSONObject order = new JSONObject();
@@ -125,7 +134,17 @@ public class Order implements Comparable, Serializable {
         order.set("lifePoints", lifePoints.stream().map(value -> value.asJson()).collect(Collectors.toList()));
         order.set("timer", timer);
         order.set("otherRawMessages", otherRawMessages);
+        order.set("resendTimes", resendTimes);
+        order.set("execResponses", execResponses); // 初始空
         return order;
+    }
+
+    private void checkParamsKeySet() throws Exception {
+        for (String paramName : params.keySet()) {
+            if (paramsKeyExcludes.contains(paramName)) {
+                throw new Exception(StrUtil.format("参数map错误: key错误: {}", paramName));
+            }
+        }
     }
 
     @SneakyThrows
@@ -142,14 +161,12 @@ public class Order implements Comparable, Serializable {
         return JSONUtil.toJsonPrettyStr(prepare());
     }
 
-    @SneakyThrows
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Order) {
             return this.rawOrderId.equals(((Order) obj).getRawOrderId());
-        } else {
-            throw new Exception("Order 对象只能与Order对象进行 equals 判定");
         }
+        return false;
     }
 
     @Override
@@ -158,18 +175,9 @@ public class Order implements Comparable, Serializable {
     }
 
 
-    private void checkParamsKeySet() throws Exception {
-        for (String paramName : params.keySet()) {
-            if ("rawOrderId".equals(rawOrderId) || "orderType".equals(rawOrderId) || "timestamp".equals(
-                    rawOrderId)) {
-                throw new Exception(StrUtil.format("参数map错误: key错误: {}", paramName));
-            }
-        }
-    }
-
     @SneakyThrows
     @Override
-    public int compareTo(Object o) {
+    public int compareTo(Object o) { // 优先级比较!
         if (o instanceof Order) {
             return this.priority.compareTo(((Order) o).priority);
         } else {
@@ -200,7 +208,7 @@ public class Order implements Comparable, Serializable {
     }
 
     /**
-     * 纯深拷贝. private
+     * 纯深拷贝. private, 常规逻辑应当使用 deepCopyToNewOrder, 所有状态将被初始化,
      *
      * @return
      */
@@ -224,10 +232,11 @@ public class Order implements Comparable, Serializable {
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
         lifePoints.add(new LifePoint(LifePointStatus.GENERATED,
-                StrUtil.format("生成完成,订单对象已确定类型: {}", res.getOrderType()))); // 生成
+                StrUtil.format("{} : 订单生成完成,订单对象已确定类型", res.getOrderType()))); // 生成
         res.setLifePoints(lifePoints);
         res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字 -1)
         res.setResendTimes(res.getResendTimes() + 1); // 重发次数+1
+        res.setExecResponses(new ArrayList<>()); // 执行记录空
         return res;
     }
 
@@ -242,7 +251,7 @@ public class Order implements Comparable, Serializable {
     public static class LifePoint implements Serializable { // 生命周期中, 某一时刻点
         private static final long serialVersionUID = 1454451855L;
 
-        Long timestamp;
+        Long timestamp; // 此生命阶段生成时间戳, 自动new时生成
         LifePointStatus status;
         String description;
         String payload;
@@ -267,6 +276,7 @@ public class Order implements Comparable, Serializable {
             this(status, description, payload);
             this.notes = notes;
         }
+
 
         public JSON asJson() {
             JSONObject lifePoint = new JSONObject();

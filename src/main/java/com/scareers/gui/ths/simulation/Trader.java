@@ -28,11 +28,8 @@ import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.google.errorprone.annotations.Var;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
-//import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
-import com.scareers.datasource.eastmoney.fstransaction.StockPoolForFSTransaction;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
@@ -54,6 +51,8 @@ import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbS
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtils.waitUtil;
+
+//import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
 
 /**
  * description: ths 自动交易程序
