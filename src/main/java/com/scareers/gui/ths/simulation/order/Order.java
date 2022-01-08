@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * --> finish (订单彻底完成)
  * 2.Order.equals /hashCode 方法 取决于 rawOrderId(确定全局唯一), 而 compareTo 取决于 priority(为优先级队列)
  * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
- * 3.十大属性更改时:
+ * 3.11大属性更改时:
  * private String rawOrderId; //java全局唯一id, new时自动生成. 重发时自动生成新的
  * private String orderType; // 核心订单类型, 对应python操作api
  * private long timestamp; // 生成时间戳
