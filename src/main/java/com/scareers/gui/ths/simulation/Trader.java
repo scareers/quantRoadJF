@@ -601,7 +601,7 @@ public class Trader {
          * @param order
          */
         public static void reSendOrder(Order order, Long priority) throws Exception {
-            Order newOrder = order.deepCopyToNewOrder(true);
+            Order newOrder = order.deepCopyToNewOrder();
             if (priority != null) { // 默认实现优先级将-1,增加1.  可直接传递
                 newOrder.setPriority(priority);
             }

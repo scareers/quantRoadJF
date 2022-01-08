@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * description: 核心订单对象 抽象类. 传递前调用 prepare() 方法, 转换为 json字符串传递
- * 订单对象生命周期: 见 LifePointStatus
+ * 1.订单对象生命周期: 见 LifePointStatus
  * --> new  (纯新生,无参数构造器new,尚未决定类型)
  * --> generated(类型,参数已准备好,可prepare)
  * --> wait_execute(入(执行队列)队后等待执行)
@@ -23,8 +23,20 @@ import java.util.stream.Collectors;
  * --> finish_execute(已接收到python响应)
  * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
  * --> finish (订单彻底完成)
- * <p>
+ * 2.Order.equals /hashCode 方法 取决于 rawOrderId(确定全局唯一), 而 compareTo 取决于 priority(为优先级队列)
  * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
+ * 3.十大属性更改时:
+ * private String rawOrderId; //java全局唯一id, new时自动生成. 重发时自动生成新的
+ * private String orderType; // 核心订单类型, 对应python操作api
+ * private long timestamp; // 生成时间戳
+ * private Map<String, Object> params; // 订单api需要的其他参数map
+ * private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
+ * private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
+ * private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
+ * private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
+ * private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
+ * private List<Map<String, Object>> execResponses;
+ * private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 "" , 非null
  *
  * @author: admin
  * @date: 2021/12/23/023-18:17:58
@@ -58,6 +70,7 @@ public class Order implements Comparable, Serializable {
     private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
     private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
     private List<Map<String, Object>> execResponses;
+    private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 "" , 非null
     // 被python执行后的响应列表. 常规仅单个元素, retrying状态下可能多个,默认空al, 无论python做何响应, 应当添加.
 
     public static void main(String[] args) throws Exception {
@@ -82,7 +95,8 @@ public class Order implements Comparable, Serializable {
                 new HashMap<>(),
                 PRIORITY_LOWEST, // 默认最低优先级
                 0L,
-                new ArrayList<>()
+                new ArrayList<>(),
+                "" //
         );
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
@@ -117,7 +131,7 @@ public class Order implements Comparable, Serializable {
 
     public static List<String> paramsKeyExcludes = Arrays.asList(
             "rawOrderId", "orderType", "timestamp", "priority", "lifePoints", "timer", "otherRawMessages",
-            "resendTimes", "execResponses"
+            "resendTimes", "execResponses", "parentOrder"
     ); // params 的key不应包含这些key, 它们均表示Order本身属性
 
     public JSON prepare() throws Exception {
@@ -136,6 +150,7 @@ public class Order implements Comparable, Serializable {
         order.set("otherRawMessages", otherRawMessages);
         order.set("resendTimes", resendTimes);
         order.set("execResponses", execResponses); // 初始空
+        order.set("parentOrder", parentOrder); // null
         return order;
     }
 
@@ -225,7 +240,7 @@ public class Order implements Comparable, Serializable {
      *
      * @return 新订单对象!
      */
-    public Order deepCopyToNewOrder(boolean isResend) {
+    public Order deepCopyToNewOrder() {
         Order res = ObjectUtil.cloneByStream(this);
         res.setRawOrderId(IdUtil.objectId());
         res.setTimestamp(System.currentTimeMillis());
@@ -237,11 +252,8 @@ public class Order implements Comparable, Serializable {
         res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字 -1)
         res.setResendTimes(res.getResendTimes() + 1); // 重发次数+1
         res.setExecResponses(new ArrayList<>()); // 执行记录空
+        res.setParentOrder(this.getRawOrderId());
         return res;
-    }
-
-    public Order deepCopyToNewOrder() {
-        return deepCopyToNewOrder(true); // 默认copy时为重发对象!!
     }
 
 
