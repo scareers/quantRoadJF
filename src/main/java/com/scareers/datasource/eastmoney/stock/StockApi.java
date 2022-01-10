@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
-import static com.scareers.utils.CommonUtils.range;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 
 /**

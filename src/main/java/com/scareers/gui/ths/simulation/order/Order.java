@@ -25,18 +25,6 @@ import java.util.stream.Collectors;
  * --> finish (订单彻底完成)
  * 2.Order.equals /hashCode 方法 取决于 rawOrderId(确定全局唯一), 而 compareTo 取决于 priority(为优先级队列)
  * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
- * 3.11大属性更改时:
- * private String rawOrderId; //java全局唯一id, new时自动生成. 重发时自动生成新的
- * private String orderType; // 核心订单类型, public构造器必须设定的属性
- * private long timestamp; // new时间戳, 重发时将更新
- * private Map<String, Object> params; // 订单api需要的其他参数map
- * private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
- * private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
- * private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
- * private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
- * private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
- * private List<Map<String, Object>> execResponses;
- * private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 "" , 非null
  *
  * @author: admin
  * @date: 2021/12/23/023-18:17:58
@@ -65,21 +53,21 @@ public class Order implements Comparable, Serializable {
     private long timestamp; // 生成时间戳
     private Map<String, Object> params; // 订单api需要的其他参数map
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
-    private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
+    private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 几乎不需要修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
     private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
     private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
     private List<Map<String, Object>> execResponses;
-    private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 "" , 非null
     // 被python执行后的响应列表. 常规仅单个元素, retrying状态下可能多个,默认空al, 无论python做何响应, 应当添加.
+    private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 null
 
     public static void main(String[] args) throws Exception {
         HashMap<String, Object> params = new HashMap<>();
         params.put("test_param_key", "test_param_key");
-        Order x = new Order("test_order_type", 100L);
-        Console.log(x.toJsonPrettyStr());
+        Order x = new Order("test_order_type", params);
+        Console.log(x.toJsonStr());
         Console.log(x.deepCopy());
-        Console.log(x.toJsonPrettyStr().equals(x.deepCopy().toJsonPrettyStr()));
+        Console.log(x.toJsonStr().equals(x.deepCopy().toJsonStr()));
 
     }
 
@@ -96,10 +84,10 @@ public class Order implements Comparable, Serializable {
                 PRIORITY_LOWEST, // 默认最低优先级
                 0L,
                 new ArrayList<>(),
-                "" //
+                null //
         );
         List<LifePoint> lifePoints = new ArrayList<>();
-        lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
+        lifePoints.add(new LifePoint(LifePointStatus.NEW, "new: 订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
     }
 
@@ -110,7 +98,8 @@ public class Order implements Comparable, Serializable {
         if (params != null) { // params 可null, 自动生成空map
             this.params = params;
         }
-        this.lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("生成完成,订单对象已确定类型: {}", orderType)));
+        this.lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("{}: 订单对象已确定类型",
+                orderType)));
     }
 
     public Order(String orderType) {
@@ -239,15 +228,16 @@ public class Order implements Comparable, Serializable {
      * // @key: 该方法并未使用 新建对象, 仅修改订单类型和参数的方式. 直接copy较为健壮
      *
      * @return 新订单对象!
+     * @noti: 重发逻辑: 11项属性, 仅 orderType/params/timer 未修改, 其余8项合理初始化
      */
-    public Order deepCopyToNewOrder() {
+    public Order forResend() {
         Order res = ObjectUtil.cloneByStream(this);
         res.setRawOrderId(IdUtil.objectId());
         res.setTimestamp(System.currentTimeMillis());
         List<LifePoint> lifePoints = new ArrayList<>();
-        lifePoints.add(new LifePoint(LifePointStatus.NEW, "new订单对象,尚未决定类型")); // 新生
-        lifePoints.add(new LifePoint(LifePointStatus.GENERATED,
-                StrUtil.format("{} : 订单生成完成,订单对象已确定类型", res.getOrderType()))); // 生成
+        lifePoints.add(new LifePoint(LifePointStatus.NEW, "new: 订单对象,尚未决定类型")); // 新生
+        lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("{}: 订单对象已确定类型",
+                orderType)));
         res.setLifePoints(lifePoints);
         res.setPriority(Math.max(0L, res.getPriority() - 1)); // 优先级提高1 (数字 -1)
         res.setResendTimes(res.getResendTimes() + 1); // 重发次数+1
