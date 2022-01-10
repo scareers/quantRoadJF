@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.trader;
 
-import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtil;
@@ -14,11 +14,11 @@ import java.util.Objects;
 /**
  * 对订单执行结果进行判定监控check!
  * 收到python响应后, 放入check Map, 等待 结果 check!
- * // @noti: 约定: 订单重发, 均构造类似订单
- * // @noti: 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
- * // @noti: 典型的: buy/sell 订单的check逻辑, 应当由 主策 略实现!
  *
  * @author admin
+ * @noti 约定: 订单重发, 均构造类似订单
+ * @noti 账号状态相关api, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
+ * @noti 典型的: buy/sell 订单的check逻辑, 应当由 主策 略实现!
  */
 public class Checker {
     private static final Log log = LogUtil.getLogger();
@@ -55,10 +55,9 @@ public class Checker {
             public void run() {
                 while (true) {
                     for (Order order : trader.getOrdersWaitForCheckTransactionStatusMap().keySet()) {
-                        List<JSONObject> responses = trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
-
+                        List<Response> responses = trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
                         String orderType = order.getOrderType();
-                        if (AccountStates.orderTypes.contains(orderType)) {
+                        if (AccountStates.ORDER_TYPES.contains(orderType)) {
                             // 若是账户状态相关订单, 则交由  AccountStates 进行check
                             trader.getAccountStates().checkForAccountStates(order, responses, orderType);
                         } else {

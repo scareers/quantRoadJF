@@ -4,18 +4,13 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.StockPoolFactory;
-import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.log.LogUtil;
 
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-
-import static com.scareers.datasource.eastmoney.SecurityBeanEm.getTwoGlobalMarketIndexList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
- * 均已经去重, 且加入两大指数!
+ * description: fs成交股票池构建. 需要提供股票代码列表, 允许加入两大指数
  *
  * @author: admin
  * @date: 2021/12/21/021-18:16:14

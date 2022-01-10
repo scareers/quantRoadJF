@@ -10,7 +10,7 @@ import joinery.DataFrame;
 import java.util.List;
 
 /**
- * description:
+ * description: Trader 相关通用工具函数, 常可能被多个子组件调用
  *
  * @author: admin
  * @date: 2021/12/26/026-00:13:09
@@ -19,15 +19,15 @@ public class TraderUtil {
     private static final Log log = LogUtil.getLogger();
 
     /**
-     * 单个订单可能有多个响应, 多个 retrying + 1个正式响应. 给定响应列表, 找到响应
+     * 单个订单可能有多个响应, 多个 retrying + 1个正式响应. 给定响应列表, 找到响应. 虽然常态应当是最后一个元素!
      *
      * @param responses
      * @return
      */
-    public static JSONObject findFinalResponse(List<JSONObject> responses) {
-        JSONObject resFinal = null;
+    public static Response findFinalResponse(List<Response> responses) {
+        Response resFinal = null;
         try {
-            for (JSONObject response : responses) {
+            for (Response response : responses) {
                 if (!"retrying".equals(response.getByPath("state").toString())) {
                     resFinal = response;
                     break; // 找到非retrying 响应

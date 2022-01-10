@@ -14,20 +14,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * description: 核心订单对象 抽象类. 传递前调用 prepare() 方法, 转换为 json字符串传递
- * 1.订单对象生命周期: 见 LifePointStatus
- * --> new  (纯新生,无参数构造器new,尚未决定类型)
- * --> generated(类型,参数已准备好,可prepare)
- * --> wait_execute(入(执行队列)队后等待执行)
- * --> executing(已发送python,执行中,等待响应)
- * --> finish_execute(已接收到python响应)
- * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
- * --> finish (订单彻底完成)
- * 2.Order.equals /hashCode 方法 取决于 rawOrderId(确定全局唯一), 而 compareTo 取决于 priority(为优先级队列)
- * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
+ * description: 核心订单对象 抽象类.
  *
+ * @noti rawOrderId决定 equals和hashCode, 以便Map处理.  priority决定 compareTo,以便优先级队列处理
  * @author: admin
  * @date: 2021/12/23/023-18:17:58
+ * @see LifePointStatus
  */
 @Data
 @AllArgsConstructor
@@ -300,6 +292,7 @@ public class Order implements Comparable, Serializable {
      * --> finish_execute(已接收到python响应)
      * --> wait_check_transaction_status(等待确认成交状态, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
      * --> checking(checking中, 例如等待成交中., 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
+     * --> resended 已经重发了, 该状态特殊情况, 重发后正常进入finish状态!
      * --> finish (订单彻底完成)
      */
     public enum LifePointStatus implements Serializable {
@@ -310,7 +303,9 @@ public class Order implements Comparable, Serializable {
         FINISH_EXECUTE("finish_execute"),
         WAIT_CHECK_TRANSACTION_STATUS("wait_check_transaction_status"),
         CHECKING("checking"),
-        FINISH("finish");
+
+        RESENDED("resended"), //  已被重发的订单,随后finish
+        FINISH("finish"); // 正常完成订单
 
         private static final long serialVersionUID = 101241855L;
 

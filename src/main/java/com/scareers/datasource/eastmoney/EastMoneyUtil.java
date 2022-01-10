@@ -1,7 +1,6 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.GlobalThreadPool;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.Method;
@@ -14,7 +13,9 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.annotations.Cached;
 import com.scareers.utils.log.LogUtil;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 

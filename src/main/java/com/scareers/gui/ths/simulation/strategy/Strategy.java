@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.strategy;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
@@ -92,7 +93,7 @@ public abstract class Strategy {
      * @param responses
      * @param orderType
      */
-    public void checkOrder(Order order, List<JSONObject> responses, String orderType) {
+    public void checkOrder(Order order, List<Response> responses, String orderType) {
         if ("buy".equals(orderType)) {
             checkBuyOrder(order, responses, orderType);
         } else if ("sell".equals(orderType)) {

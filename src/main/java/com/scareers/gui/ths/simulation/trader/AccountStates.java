@@ -1,10 +1,10 @@
 package com.scareers.gui.ths.simulation.trader;
 
-
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.OrderFactory;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
@@ -18,20 +18,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 账号状态监控类. 当前 5项数据
- * <p>
- * // @noti:5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以高优先级放入待执行队列. 实际执行由待执行队列进行调度
- * // @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 换 和check程序之后执行,
- * 且需要等待5项数据第一次更新!
- * // @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
- * // @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量. 即使静态变量被更新, 依然不影响
+ *
+ * @author admin
+ * @noti: 5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以0最高优先级放入待执行队列. 实际执行由待执行队列进行调度
+ * @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 和 check程序之后执行,
+ * 且需要等待5项数据第一次更新, 以保证后期逻辑不会访问到 null值(或空Map/List)
+ * @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
+ * @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量.
+ * 即使静态变量在处理期间被更新, 依然不影响, 防止遍历时等bug
  */
 @Getter
 @Setter
 public class AccountStates {
-    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序 slee
+    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序 sleep
+    public static final List<String> ORDER_TYPES = Arrays
+            .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
+                    "get_today_clinch_orders", "get_today_consign_orders"); // 常量,对应5项数据api
 
+    // 实例属性
     public ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
-    // {冻结金额=363.48, 总资产=177331.42, 可用金额=57078.94, 资金余额=57442.42, 可取金额=0.0, 当日盈亏比=-0.017, 当日盈亏=-3059.0, 股票市值=119889.0, 持仓盈亏=-7915.0}
     public DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
     public DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
     public DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
@@ -43,10 +48,7 @@ public class AccountStates {
     public Long todayClinchsFlushTimestamp = null;
     public Long todayConsignsFlushTimestamp = null;
 
-    public static final List<String> orderTypes = Arrays
-            .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
-                    "get_today_clinch_orders", "get_today_consign_orders"); // 常量
-
+    // 核心trader, 以便访问其他组件
     private Trader trader;
 
     public AccountStates(Trader trader) {
@@ -54,35 +56,27 @@ public class AccountStates {
     }
 
     /**
-     * 已被第一次初始化, 需要等待
+     * 等待已被第一次初始化, Map做size()检测, 其余做非null检测
      *
-     * @return
+     * @return 第一次是否初始化完成.
      */
     public boolean alreadyInitialized() {
         return nineBaseFundsData
                 .size() > 0 && currentHolds != null
                 && canCancels != null && todayClinchs != null && todayConsigns != null;
-        // 五项不为null, 已被初始化
     }
-
-    public void showFields() {
-        Console.log("AccountStates.nineBaseFundsData:\n{}\n", nineBaseFundsData);
-        Console.log("AccountStates.currentHolds:\n{}\n", currentHolds.toString(100));
-        Console.log("AccountStates.canCancels:\n{}\n", canCancels.toString(100));
-        Console.log("AccountStates.todayClinchs:\n{}\n", todayClinchs.toString(100));
-        Console.log("AccountStates.todayConsigns:\n{}\n", todayConsigns.toString(100));
-    }
-
 
     /**
-     * 账号状态相关api check逻辑, 几乎每个策略都相同, 无需 主策略实现特殊的check逻辑!
+     * 账号状态相关api check逻辑, 几乎每个策略都相同, 由 AccountStatas类自行实现, 无需主策略实现特殊的check逻辑
+     * 将被 Checker调用
      *
      * @param order
      * @param responses
      * @param orderType
      * @throws Exception
+     * @see Checker
      */
-    public void checkForAccountStates(Order order, List<JSONObject> responses, String orderType)
+    public void checkForAccountStates(Order order, List<Response> responses, String orderType)
             throws Exception {
         switch (orderType) {
             case "get_account_funds_info":
@@ -122,13 +116,13 @@ public class AccountStates {
                     Iterator iterator = trader.getOrdersWaitForExecution().iterator();
                     while (iterator.hasNext()) {
                         Order order = (Order) iterator.next();
-                        if (orderTypes.contains(order.getOrderType())) {
+                        if (ORDER_TYPES.contains(order.getOrderType())) {
                             // 得到已在队列中的类型. 对其余类型进行补齐
                             alreadyInQueue.add(order.getOrderType());
                         }
                     }
 
-                    for (String orderType : orderTypes) {
+                    for (String orderType : ORDER_TYPES) {
                         if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
                             switch (orderType) {
                                 // 第一次将以最高优先级刷新
@@ -255,13 +249,13 @@ public class AccountStates {
     private static final Log log = LogUtil.getLogger();
 
     /**
-     * update: 实际的更新操作, 将被 check程序调用, 真正的执行更新数据,此时已从python获取响应
+     * update: 实际的更新操作, 将被 check程序调用(switch分发形式), 真正的执行更新数据, 此时已从python获取响应
      */
-    public void updateNineBaseFundsData(Order order, List<JSONObject> responses) throws Exception {
-        JSONObject resFinal = TraderUtil.findFinalResponse(responses);
+    public void updateNineBaseFundsData(Order order, List<Response> responses) throws Exception {
+        Response resFinal = TraderUtil.findFinalResponse(responses);
         if (resFinal == null) {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应不正确,全为retrying状态, 任务重入队列!!");
-            this.trader.getOrderExecutor().reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+            trader.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
             return;
         }
         // 响应正确, 该响应唯一情况:
@@ -275,7 +269,7 @@ public class AccountStates {
             nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
         } else {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
-            this.trader.getOrderExecutor().reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+            trader.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
         }
     }
 

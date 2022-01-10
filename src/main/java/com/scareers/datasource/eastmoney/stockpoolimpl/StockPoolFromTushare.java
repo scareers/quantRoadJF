@@ -8,16 +8,12 @@ import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.SecurityBeanEm.getTwoGlobalMarketIndexList;
-
 /**
- * description: 构建fs成交需要抓取的股票池, Map形式. 以构建 secid.
- * 均已经去重, 且加入两大指数!
+ * description: 从tushare读取股票列表, 设置slice, 做测试股票池所用
  *
  * @author: admin
  * @date: 2021/12/21/021-18:16:14

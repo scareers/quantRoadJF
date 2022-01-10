@@ -30,10 +30,12 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
+import com.scareers.utils.StrUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -53,8 +55,6 @@ import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbS
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitUtil;
-
-//import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
 
 /**
  * description: ths 自动交易程序
@@ -121,14 +121,21 @@ public class Trader {
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    private ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap;
+    private ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap;
 
     /**
      * check 后, 将被放入完成队列. check信息, 将被放入 order.生命周期 check_transaction_status的描述中.
-     * 最后将生命周期设置为finish, 放入此Map
+     * 最后将生命周期设置为finish, 放入此Map.
+     *
+     * @noti 某些重发的订单, 原始订单对象 应添加 RESENDED 生命周期后, 再放入本map, 含义为 "resended_finish"
      */
-    private ConcurrentHashMap<Order, List<JSONObject>> ordersFinished;
-    // 各大子组件, 初始化
+    private ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished;
+    /**
+     * 重发后视为完成的原始订单,resended 生命周期的 payload, 带有当次重发的"新订单" 的 rawOrderId
+     */
+    private ConcurrentHashMap<Order, List<Response>> ordersResendFinished;
+
+    // 各大子组件, 均单例模式
     private OrderExecutor orderExecutor;
     private Checker checker;
     private AccountStates accountStates;
@@ -144,12 +151,31 @@ public class Trader {
     public Trader() throws IOException, TimeoutException {
         this.ordersWaitForExecution = new PriorityBlockingQueue<>();
         this.ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
-        this.ordersFinished = new ConcurrentHashMap<>();
+        this.ordersSuccessFinished = new ConcurrentHashMap<>();
         this.orderExecutor = new OrderExecutor(this);
         this.checker = Checker.getInstance(this);
         this.accountStates = new AccountStates(this);
         this.initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
+    }
+
+    /**
+     * @param order 被重发的原始订单对象, 将保留3项属性, 其余8项属性更新.
+     * @return 返回重发的新订单的 id.
+     * @key3 核心重发订单方法. 将使用深拷贝方式, 对订单类型和参数 不进行改变!
+     * @see Order.forResend()
+     */
+    public String reSendOrder(Order order, Long priority) throws Exception {
+        Order newOrder = order.forResend();
+        if (priority != null) { // 默认实现优先级将-1
+            newOrder.setPriority(priority);
+        }
+        putOrderToWaitExecute(newOrder);
+        return newOrder.getRawOrderId();
+    }
+
+    public String reSendOrder(Order order) throws Exception {
+        return reSendOrder(order, null);
     }
 
     private void manualInteractive() throws Exception {
@@ -162,31 +188,22 @@ public class Trader {
                 break;
             } else if ("s".equals(info)) {
                 accountStates.showFields();
+
             } else if ("g".equals(info)) {
 //                JFrameDemo.main0(null);
             }
         }
     }
 
-    public void successFinishOrder(Order order, List<JSONObject> responses, String description) {
-        ordersWaitForCheckTransactionStatusMap.remove(order);
-        order.addLifePoint(Order.LifePointStatus.FINISH, description);
-        ordersFinished.put(order, responses); // 先删除, 后添加
-    }
-
-    public void successFinishOrder(Order order, List<JSONObject> responses) {
-        successFinishOrder(order, responses, "订单完成");
-    }
-
 
     public void putOrderToWaitExecute(Order order) throws Exception {
-        order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列");
-        log.info("order generated: 已生成订单等待执行: {} ", order.toJsonStr());
+        order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
+        log.info("order generated: 生成订单放入执行队列: {} ", order.toJsonStr());
         ordersWaitForExecution.put(order);
     }
 
 
-    public List<JSONObject> execOrderUtilSuccess(Order order)
+    public List<Response> execOrderUtilSuccess(Order order)
             throws Exception {
         String orderMsg = order.toJsonStr();
         String rawOrderId = order.getRawOrderId();
@@ -294,9 +311,9 @@ public class Trader {
      * @throws IOException
      * @throws InterruptedException
      */
-    public List<JSONObject> comsumeUntilNotRetryingState(String rawOrderId)
+    public List<Response> comsumeUntilNotRetryingState(String rawOrderId)
             throws IOException, InterruptedException {
-        List<JSONObject> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
+        List<Response> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
         final boolean[] finish = {false};
         Consumer consumer = new DefaultConsumer(channelComsumer) {
             @Override
@@ -337,7 +354,7 @@ public class Trader {
 
                 log.info("receive response ack: from python: {}", message);
                 channelComsumer.basicAck(envelope.getDeliveryTag(), false);
-                responses.add(message); // 可能null, 此时需要访问 responsesRaw
+                responses.add(new Response(message)); // 可能null, 此时需要访问 responsesRaw
 
                 Object state = message.get("state");
                 if (!"retrying".equals(state.toString())) {
@@ -351,16 +368,69 @@ public class Trader {
 
         channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
         while (!finish[0]) {
-            Thread.sleep(1); // 只能自行阻塞?
+            Thread.sleep(1); // 阻塞直到 非!retrying状态
         }
         return responses;
     }
 
 
+    /**
+     * 经由rabbitmq 发送任意消息到python, 常为订单,另有握手信息等
+     *
+     * @param channelProducer
+     * @param jsonMsg
+     * @throws IOException
+     */
     public void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
-        log.info("send request: to python: {}", jsonMsg);
+        log.info("--> python: {}", jsonMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /*
+     * 订单结束相关处理方法
+     */
+
+    /**
+     * 成功, 逻辑上正常的完成某订单. 此时业务逻辑上订单一般拥有完整生命周期.
+     * 从 waitCheck 队列 --> finish 队列        // Map类型
+     * FINISH 生命周期简单构造
+     *
+     * @param order
+     * @param responses
+     * @param description
+     */
+    public void successFinishOrder(Order order, List<Response> responses, String description) {
+        ordersWaitForCheckTransactionStatusMap.remove(order);
+        order.addLifePoint(Order.LifePointStatus.FINISH, description);
+        ordersSuccessFinished.put(order, responses);
+    }
+
+    public void successFinishOrder(Order order, List<Response> responses) {
+        successFinishOrder(order, responses, "finish: 订单成功完成");
+    }
+
+    /**
+     * 订单经由业务逻辑判定, 已经被重发, 策略后期应当跟踪重发的新订单!
+     * 此时原订单视为 finish. 将被放入 ordersResendFinished 队列
+     *
+     * @param order
+     * @param responses
+     * @param descriptionForFinish
+     * @noti 被重发的新订单的 rawOrderId, 将作为 RESENDED 生命周期的 payload 属性,保留访问
+     */
+    public void resendFinishOrder(Order order, List<Response> responses, String newOrderId,
+                                  String descriptionForFinish) {
+        ordersWaitForCheckTransactionStatusMap.remove(order);
+        order.addLifePoint(LifePointStatus.RESENDED,
+                StrUtilS.format("resended: 原始订单已被重发,新订单id: {}", newOrderId),
+                newOrderId);
+        order.addLifePoint(Order.LifePointStatus.FINISH, descriptionForFinish);
+        ordersResendFinished.put(order, responses);
+    }
+
+    public void resendFinishOrder(Order order, List<Response> responses, String newOrderId) {
+        resendFinishOrder(order, responses, "resended_finish: 订单已被重发! 订单完成");
     }
 
 

@@ -3,7 +3,7 @@ package com.scareers.datasource.eastmoney;
 import java.security.spec.PSSParameterSpec;
 
 /**
- * description: dfcf 常规设定
+ * description: em 常规设定
  *
  * @author: admin
  * @date: 2021/12/21/021-22:21:52
@@ -26,7 +26,6 @@ public class SettingsOfEastMoney {
     public static String HEADER_VALUE_OF_REFERER = "http://quote.eastmoney.com/center/gridlist.html";
 
     public static int DEFAULT_TIMEOUT = 3 * 1000;
-
 
 
 }

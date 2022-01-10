@@ -1,7 +1,5 @@
 package com.scareers.datasource.eastmoney;
 
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
-
 import java.util.List;
 
 /**
