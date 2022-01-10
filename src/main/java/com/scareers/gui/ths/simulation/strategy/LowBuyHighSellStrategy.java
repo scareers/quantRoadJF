@@ -14,6 +14,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.OrderFactory;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -93,17 +94,17 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
-    protected void checkBuyOrder(Order order, List<JSONObject> responses, String orderType) {
+    protected void checkBuyOrder(Order order, List<Response> responses, String orderType) {
         checkOtherOrder(order, responses, orderType);
     }
 
     @Override
-    protected void checkSellOrder(Order order, List<JSONObject> responses, String orderType) {
+    protected void checkSellOrder(Order order, List<Response> responses, String orderType) {
         checkOtherOrder(order, responses, orderType);
     }
 
     @Override
-    protected void checkOtherOrder(Order order, List<JSONObject> responses, String orderType) {
+    protected void checkOtherOrder(Order order, List<Response> responses, String orderType) {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());

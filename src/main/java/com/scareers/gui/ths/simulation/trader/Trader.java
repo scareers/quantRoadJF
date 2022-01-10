@@ -25,6 +25,7 @@ import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.Response;
+import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
@@ -61,33 +62,26 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 @Setter
 @Getter
 public class Trader {
-    // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
-    private static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
-            "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
     private static final Log log = LogUtil.getLogger();
-    private static Channel channelComsumer; // 自行初始化
-    private static Channel channelProducer;
-    private static Connection connOfRabbitmq;
 
 
     public static void main(String[] args) throws Exception {
         Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
         Strategy mainStrategy = new LowBuyHighSellStrategy(
-                LowBuyHighSellStrategy.class.getName(), trader); // 获取核心策略对象, 达成与trader关联. trader设置strategy
+                LowBuyHighSellStrategy.class.getName(), trader); // 核心策略对象, 达成与trader关联. trader设置strategy属性
 
-        // trader.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
-        trader.handshake(); // 与python握手可控
+        // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
+        trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         trader.getOrderExecutor().start();
-
-        // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等
+        // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等.   两者启动后方可启动 账户状态信息获取
         trader.getChecker().startCheckTransactionStatus(mainStrategy);
 
         // 启动账户资金获取程序
         trader.getAccountStates().startFlush();
-        waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 100,
-                "首次账户资金状态刷新完成"); // 需要等待初始化完成!
+        waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
+                "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
 
         mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
 
@@ -106,7 +100,7 @@ public class Trader {
         fsTransactionFetcher.stopFetch(); // 停止数据抓 取, 非立即.
     }
 
-    // 属性: 3大队列, 将初始化为空队列/map
+    // 属性: 4大队列, 将初始化为 空队列/map
     /**
      * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
      */
@@ -133,7 +127,12 @@ public class Trader {
     private OrderExecutor orderExecutor;
     private Checker checker;
     private AccountStates accountStates;
-    private Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
+    private Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成关连
+
+    // 通道, 自行初始化
+    private Channel channelComsumer; // 自行初始化
+    private Channel channelProducer;
+    private Connection connOfRabbitmq;
 
     /**
      * 参数为子组件构建参数, 后缀ForXy 表明了用于构建哪个子控件
@@ -160,6 +159,24 @@ public class Trader {
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
     }
 
+    /*
+     * 通信初始化与关闭
+     */
+
+    public void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
+        connOfRabbitmq = connectToRbServer();
+        channelProducer = connOfRabbitmq.createChannel();
+        initDualChannel(channelProducer);
+        channelComsumer = connOfRabbitmq.createChannel();
+        initDualChannel(channelComsumer);
+    }
+
+    public void closeDualChannelAndConn() throws IOException, TimeoutException {
+        channelProducer.close();
+        channelComsumer.close();
+        connOfRabbitmq.close();
+    }
+
     /**
      * 命令行交互, 弃用
      *
@@ -178,48 +195,23 @@ public class Trader {
         }
     }
 
-
-    public void putOrderToWaitExecute(Order order) throws Exception {
-        order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
-        log.info("order generated: 生成订单放入执行队列: {} ", order.toJsonStr());
-        ordersWaitForExecution.put(order);
-    }
-
-
-    public List<Response> execOrderUtilSuccess(Order order)
-            throws Exception {
-        String orderMsg = order.toJsonStr();
-        String rawOrderId = order.getRawOrderId();
-        sendMessageToPython(channelProducer, orderMsg);
-        return comsumeUntilNotRetryingState(rawOrderId);
-    }
-
+    /*
+     * 握手相关3方法
+     */
 
     public void handshake() throws IOException, InterruptedException {
-        sendMessageToPython(channelProducer, buildHandshakeMsg()); // 发送握手信息,
-        waitUtilPythonReady(channelComsumer); // 等待python握手信息.
+        log.warn("handshake start: 开始尝试与python握手");
+        sendMessageToPython(channelProducer, buildHandshakeMsg());
+        waitUtilPythonReady(channelComsumer);
         log.warn("handshake success: java<->python 握手成功");
     }
 
-    public void startPythonApp() throws InterruptedException {
-        ThreadUtil.execAsync(() -> {
-            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
-        }, true);
-        Thread.sleep(1000); // 运行python仿真程序,并稍作等待
-    }
-
-    public void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
-        connOfRabbitmq = connectToRbServer();
-        channelProducer = connOfRabbitmq.createChannel();
-        initDualChannel(channelProducer);
-        channelComsumer = connOfRabbitmq.createChannel();
-        initDualChannel(channelComsumer);
-    }
-
-    public void closeDualChannelAndConn() throws IOException, TimeoutException {
-        channelProducer.close();
-        channelComsumer.close();
-        connOfRabbitmq.close();
+    public String buildHandshakeMsg() {
+        JSONObject handshake = new JSONObject();
+        handshake.set("handshakeJavaSide", "java get ready");
+        handshake.set("handshakePythonSide", "and you?");
+        handshake.set("timestamp", System.currentTimeMillis());
+        return JSONUtil.toJsonStr(handshake);
     }
 
 
@@ -228,13 +220,14 @@ public class Trader {
      * handshake.set("handshakeJavaSide", "java get ready");
      * handshake.set("handshakePythonSide", "and you?");
      * handshake.set("timestamp", System.currentTimeMillis());
-     * <p>
      * python 回复消息:
      * handshake_success_response = dict(
      * handshakeJavaSide="java get ready",
      * handshakePythonSide='python get ready',
      * timestamp=int(time.time() * 1000)
      * )
+     *
+     * @noti 历史遗留消息将被消费!正常ack 相当于 遗弃
      */
     private void waitUtilPythonReady(Channel channelComsumer) throws IOException, InterruptedException {
         final boolean[] handshakeSuccess = {false};
@@ -242,22 +235,22 @@ public class Trader {
             @SneakyThrows
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                       byte[] body) throws IOException {
+                                       byte[] body) {
                 String msg = new String(body, StandardCharsets.UTF_8);
-                JSONObject message = null;
+                JSONObject message;
                 try {
                     message = JSONUtil.parseObj(msg);
                 } catch (Exception e) {
                     e.printStackTrace();
                     log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);
-                    channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
+                    channelComsumer.basicAck(envelope.getDeliveryTag(), false);
                     return;
                 }
 
                 if ("java get ready".equals(message.get("handshakeJavaSide"))) {
                     if ("python get ready".equals(message.get("handshakePythonSide"))) {
                         Long timeStamp = Long.valueOf(message.get("timestamp").toString());
-                        log.warn("handshaking: 收到来自python的握手成功回复, 时间: {}", timeStamp);
+                        log.warn("handshaking: 收到来自python的握手成功回复, 时间戳: {}", timeStamp);
                         channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
                         channelComsumer.basicCancel(consumerTag);
                         handshakeSuccess[0] = true;
@@ -274,88 +267,25 @@ public class Trader {
         };
         channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
         while (!handshakeSuccess[0]) {
-            Thread.sleep(1); // 只能自行阻塞?
+            Thread.sleep(1);
         }
     }
 
-    public String buildHandshakeMsg() {
-        JSONObject handshake = new JSONObject();
-        handshake.set("handshakeJavaSide", "java get ready");
-        handshake.set("handshakePythonSide", "and you?");
-        handshake.set("timestamp", System.currentTimeMillis());
-        return JSONUtil.toJsonStr(handshake);
-    }
+    /*
+     * 核心方法!!
+     */
 
     /**
-     * retrying则持续等待, 否则返回执行结果, 可能 success, fail(执行正确, 订单本身原因失败),error(代码未实现)
+     * 将新订单放入执行队列, 等待执行. 添加生命周期 WAIT_EXECUTE
      *
-     * @param rawOrderId
-     * @return
-     * @throws IOException
-     * @throws InterruptedException
+     * @param order
+     * @throws Exception
      */
-    public List<Response> comsumeUntilNotRetryingState(String rawOrderId)
-            throws IOException, InterruptedException {
-        List<Response> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
-        final boolean[] finish = {false};
-        Consumer consumer = new DefaultConsumer(channelComsumer) {
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                       byte[] body) throws IOException {
-                String msg = new String(body, StandardCharsets.UTF_8);
-                JSONObject message = null;
-                try {
-                    message = JSONUtil.parseObj(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    log.warn("nack: 收到来自python的消息, 但解析为 JSONObject 失败: {}", msg);
-                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                    return;
-                }
-                JSONObject rawOrderFromResponse = null;
-                try {
-                    rawOrderFromResponse = ((JSONObject) message.get("rawOrder"));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 失败: {}", message);
-                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                    return;
-                }
-                if (rawOrderFromResponse == null) {
-                    log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 为null: {}", message);
-                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                    return;
-                }
-
-                String rawOrderIdOfResponse = rawOrderFromResponse.getStr("rawOrderId");
-                if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
-                    log.warn("nack: 收到来自python的消息, 但 rawOrderId 不匹配: should: {}, receive: {}", rawOrderId,
-                            rawOrderIdOfResponse);
-                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                    return;
-                }
-
-                log.info("receive response ack: from python: {}", message);
-                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
-                responses.add(new Response(message)); // 可能null, 此时需要访问 responsesRaw
-
-                Object state = message.get("state");
-                if (!"retrying".equals(state.toString())) {
-                    channelComsumer.basicCancel(consumerTag);
-                    finish[0] = true;
-                }
-            }
-        };
-        // 消费者, 消费 p2j 的队列..
-        // 将阻塞, 直到 取消消费?
-
-        channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
-        while (!finish[0]) {
-            Thread.sleep(1); // 阻塞直到 非!retrying状态
-        }
-        return responses;
+    public void putOrderToWaitExecute(Order order) throws Exception {
+        order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
+        ordersWaitForExecution.put(order);
+        log.info("order generated: 生成订单放入执行队列: {} ", order.toJsonStr());
     }
-
 
     /**
      * 经由rabbitmq 发送任意消息到python, 常为订单,另有握手信息等
@@ -369,6 +299,7 @@ public class Trader {
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));
     }
+
 
     /*
      * 订单结束相关处理方法

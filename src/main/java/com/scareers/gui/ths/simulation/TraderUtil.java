@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation;
 
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONNull;
 import cn.hutool.json.JSONObject;
@@ -17,6 +19,9 @@ import java.util.List;
  */
 public class TraderUtil {
     private static final Log log = LogUtil.getLogger();
+    // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
+    private static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
+            "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
 
     private TraderUtil() {
     }
@@ -69,5 +74,13 @@ public class TraderUtil {
             }
         }
         return res;
+    }
+
+
+    public static void startPythonApp() throws InterruptedException {
+        ThreadUtil.execAsync(() -> {
+            RuntimeUtil.execForStr(pythonStartCMD); // 运行python仿真程序
+        }, true);
+        Thread.sleep(1000); // 运行python仿真程序,并稍作等待
     }
 }

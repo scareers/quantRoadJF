@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.strategy;
 
-import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.Response;
@@ -53,17 +52,17 @@ public abstract class Strategy {
     /**
      * 针对 buy 订单check逻辑. 检测成交是否完成等  // 处理三大类型淡订单
      */
-    protected abstract void checkBuyOrder(Order order, List<JSONObject> responses, String orderType);
+    protected abstract void checkBuyOrder(Order order, List<Response> responses, String orderType);
 
     /**
      * 针对 sell 订单check逻辑. 检测成交是否完成等
      */
-    protected abstract void checkSellOrder(Order order, List<JSONObject> responses, String orderType);
+    protected abstract void checkSellOrder(Order order, List<Response> responses, String orderType);
 
     /**
      * 针对 其余类型 订单check逻辑.较少 检测成交是否完成等
      */
-    protected abstract void checkOtherOrder(Order order, List<JSONObject> responses, String orderType);
+    protected abstract void checkOtherOrder(Order order, List<Response> responses, String orderType);
 
     /**
      * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), 两大初始化方法
