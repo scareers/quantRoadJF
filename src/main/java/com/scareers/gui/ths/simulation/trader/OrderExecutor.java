@@ -20,6 +20,10 @@ public class OrderExecutor {
 
     private Trader trader;
 
+    public OrderExecutor(Trader trader) {
+        this.trader = trader;
+    }
+
     public void start() {
         Thread orderExecuteTask = new Thread(new Runnable() {
             @SneakyThrows

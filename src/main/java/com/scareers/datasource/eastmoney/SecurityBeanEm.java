@@ -211,11 +211,5 @@ public class SecurityBeanEm {
         return false;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof SecurityBeanEm) {
-            return this.queryResults.equals(((SecurityBeanEm) o).getQueryResults());
-        }
-        return false;
-    }
+
 }

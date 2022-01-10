@@ -8,7 +8,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
-import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsTransaction;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.TushareApi;
@@ -51,7 +50,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 @Data
 public class FsTransactionFetcher {
     public static void main(String[] args) throws Exception {
-        FsTransactionFetcher fsTransactionFetcher = createInstance
+        FsTransactionFetcher fsTransactionFetcher = getInstance
                 (new StockPoolFromTushare(0, 10, true).createStockPool(),
                         10, "15:10:00", 500,
                         10, 32);
@@ -60,22 +59,18 @@ public class FsTransactionFetcher {
         waitEnter();
     }
 
-    private static FsTransactionFetcher INSTANCE;// 单例模式, 自行保证
+    private static FsTransactionFetcher INSTANCE;
 
-    public static FsTransactionFetcher getInstance() throws Exception {
-        if (INSTANCE == null) {
-            throw new Exception("单例FSTransactionFetcher尚未初始化,不可调用此方法访问,应先调用createInstance初始化");
-        }
+    public static FsTransactionFetcher getInstance() {
+        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 
-    public static FsTransactionFetcher createInstance(List<SecurityBeanEm> stockPool, long redundancyRecords,
-                                                      String limitTick, int timeout, int logFreq,
-                                                      int threadPoolCorePoolSize)
+    public static FsTransactionFetcher getInstance(List<SecurityBeanEm> stockPool, long redundancyRecords,
+                                                   String limitTick, int timeout, int logFreq,
+                                                   int threadPoolCorePoolSize)
             throws SQLException, InterruptedException {
-        if (INSTANCE != null) {
-            log.warn("单例FSTransactionFetcher已被初始化,建议调用 getInstance()获取单例");
-        } else {
+        if (INSTANCE == null) {
             INSTANCE = new FsTransactionFetcher(stockPool, redundancyRecords, limitTick, timeout, logFreq,
                     threadPoolCorePoolSize);
         }
@@ -132,7 +127,7 @@ public class FsTransactionFetcher {
     }
 
 
-    public void startFetch() throws Exception {
+    public void startFetch() {
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override

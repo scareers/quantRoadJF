@@ -12,7 +12,8 @@ import lombok.SneakyThrows;
 import java.util.List;
 
 /**
- * description: 策略抽象类. 子类只需要实现 startCore() 方法. 策略核心逻辑
+ * description:
+ * 策略抽象类. 子类只需要实现 startCore() 方法. 策略核心逻辑
  *
  * @author: admin
  * @date: 2021/12/26/026-03:19:41
