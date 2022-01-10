@@ -3,24 +3,18 @@ package com.scareers.gui.ths.simulation.trader;
 /**
  * ths 自动交易程序子系统:(主要面向过程编程)
  * 1.数据获取系统:
- * 1.FsTransactionFetcher 获取dc实时成交数据,3stick. 数据存储于静态属性. 异步存储于mysql
- * 2.eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块
- * 2.订单生成系统: Order 作为基类, OrderFactory 作为快捷生产的工厂类
- * 3.订单发送与响应接收(交易操作系统): 通过rabbitmq作为中间件, 与python交互.
- * 单个订单, 收发一次, 封装为一次交易过程, 串行.
- * 4.订单优先级执行器系统: 所有订单应进入优先级队列, 由订单执行器, 统一依据优先级调度, 常态优先执行buy/sell订单
- * 5.账户状态监控系统:
+ * FsTransactionFetcher 获取dc实时成交数据,3s tick
+ * StockApi 以及eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块,
+ * 2.订单生成系统: Order / OrderFactory
+ * Order 作为基类, OrderFactory 作为快捷生产的工厂类
+ * 3.订单发送与响应接收: 通过rabbitmq作为中间件, 与python交互. sendMessageToPython
+ * 单个订单, 收发一次, 封装为一次交易过程, 串行. 类似rpc
+ * 4.订单优先级执行器系统: PriorityBlockingQueue<Order> ordersWaitForExecution
+ * 所有订单应进入优先级队列, 由订单执行器, 统一依据优先级调度, 常态优先执行buy/sell订单
+ * 5.账户状态监控系统: AccountStates
  * 不断发送查询api, 以尽可能快速更新账户信息, 使得订单发送前较为合理资金调度
- * 6.成交状态监控系统:
+ * 6.成交状态监控系统: ordersWaitForCheckTransactionStatusMap  check系统
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
- * 7.各大系统对应订单生命周期:
- * * --> new  (纯新生,无参数构造器new,尚未决定类型)
- * * --> generated(类型,参数已准备好,可prepare)
- * * --> wait_execute(入(执行队列)队后等待执行)
- * * --> executing(已发送python,执行中,等待响应)
- * * --> finish_execute(已接收到python响应)
- * * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
- * * --> finish (订单彻底完成)
  */
 
 import cn.hutool.core.thread.ThreadUtil;
@@ -58,7 +52,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
  * description: ths 自动交易程序
- * java发送消息 --> python执行 --> python发送结果 --> java收到retrying继续等待,直到success --> java执行完毕.
+ * java发送消息 --> python执行 --> python发送响应 --> java收到retrying继续等待,直到success --> java执行完毕.
  * 将 API 封装为串行
  *
  * @author: admin
@@ -71,17 +65,17 @@ public class Trader {
     private static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
     private static final Log log = LogUtil.getLogger();
-    private static Channel channelComsumer;
+    private static Channel channelComsumer; // 自行初始化
     private static Channel channelProducer;
     private static Connection connOfRabbitmq;
 
 
     public static void main(String[] args) throws Exception {
-        Trader trader = new Trader();
+        Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
         Strategy mainStrategy = new LowBuyHighSellStrategy(
-                LowBuyHighSellStrategy.class.getName(), trader); // 获取核心策略对象, 达成与trader关联
+                LowBuyHighSellStrategy.class.getName(), trader); // 获取核心策略对象, 达成与trader关联. trader设置strategy
 
-        // trader.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python cmd
+        // trader.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手可控
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
@@ -142,37 +136,44 @@ public class Trader {
     private Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
 
     /**
-     * 构造器需要
+     * 参数为子组件构建参数, 后缀ForXy 表明了用于构建哪个子控件
+     * ForAS --> AccountStates
      *
-     * @param orderExecutor
-     * @param checker
-     * @param accountStates
+     * @param flushIntervalForAS
+     * @param commonApiPriorityForAS
+     * @param priorityRaiseTimeThresholdForAS
+     * @param priorityRaiseForAS
+     * @throws IOException
+     * @throws TimeoutException
      */
-    public Trader() throws IOException, TimeoutException {
+    public Trader(long flushIntervalForAS, long commonApiPriorityForAS, long priorityRaiseTimeThresholdForAS,
+                  long priorityRaiseForAS) throws IOException, TimeoutException {
         this.ordersWaitForExecution = new PriorityBlockingQueue<>();
         this.ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
         this.ordersSuccessFinished = new ConcurrentHashMap<>();
-        this.orderExecutor = new OrderExecutor(this);
+
+        this.orderExecutor = OrderExecutor.getInstance(this);
         this.checker = Checker.getInstance(this);
-        this.accountStates = new AccountStates(this);
+        this.accountStates = AccountStates.getInstance(this, flushIntervalForAS, commonApiPriorityForAS,
+                priorityRaiseTimeThresholdForAS, priorityRaiseForAS);
         this.initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
     }
 
-
+    /**
+     * 命令行交互, 弃用
+     *
+     * @throws Exception
+     */
     private void manualInteractive() throws Exception {
-
+        Scanner input = new Scanner(System.in);
         while (true) {
-            Scanner input = new Scanner(System.in);
             String info = input.next();
             System.out.println(info);
             if ("q".equals(info)) {
                 break;
             } else if ("s".equals(info)) {
-                //accountStates.showFields();
-//TODO
             } else if ("g".equals(info)) {
-//                JFrameDemo.main0(null);
             }
         }
     }

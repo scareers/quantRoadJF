@@ -34,7 +34,7 @@ public class OrderExecutor {
 
     private Trader trader;
 
-    public OrderExecutor(Trader trader) {
+    private OrderExecutor(Trader trader) {
         this.trader = trader;
     }
 

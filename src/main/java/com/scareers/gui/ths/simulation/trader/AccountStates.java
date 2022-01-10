@@ -32,7 +32,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Setter
 public class AccountStates {
     private static final Log log = LogUtil.getLogger();
+    private static AccountStates INSTANCE; // 单例实现
 
+    public static AccountStates getInstance(Trader trader, long flushInterval, long commonApiPriority,
+                                            long priorityRaiseTimeThreshold,
+                                            long priorityRaise) {
+        if (INSTANCE == null) {
+            INSTANCE = new AccountStates(trader, flushInterval, commonApiPriority, priorityRaiseTimeThreshold,
+                    priorityRaise);
+        }
+        return INSTANCE;
+    }
+
+    public static AccountStates getInstance() {
+        Objects.requireNonNull(INSTANCE);
+        return INSTANCE;
+    }
 
     public static final List<String> ORDER_TYPES = Arrays
             .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
@@ -59,11 +74,11 @@ public class AccountStates {
     private long commonApiPriority;
     // 某项数据超过多久未更新? 将提高一点优先级, 先于同类执行 , 单位 ms
     private long priorityRaiseTimeThreshold;
-    // 当某一项数据长时间没有更新, 优先级变更为 commonApiPriority - priorityRaise, 提高优先级,先于同类执行
+    // 当某一项数据长时间没有更新, 优先级变更为 commonApiPriority - priorityRaise, 提高优先级,先于同类执行.优先级提高程度尽量小.例如
     private long priorityRaise;
 
-    public AccountStates(Trader trader, long flushInterval, long commonApiPriority, long priorityRaiseTimeThreshold,
-                         long priorityRaise) {
+    private AccountStates(Trader trader, long flushInterval, long commonApiPriority, long priorityRaiseTimeThreshold,
+                          long priorityRaise) {
         this.trader = trader;
         this.flushInterval = flushInterval;
         this.commonApiPriority = commonApiPriority; // Order.PRIORITY_MEDIUM; // 5000, 不高
@@ -123,7 +138,7 @@ public class AccountStates {
                                         flushCurrentHoldsImmediately();
                                     } else {
                                         if (System
-                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                                .currentTimeMillis() - currentHoldsFlushTimestamp > priorityRaiseTimeThreshold) {
                                             flushCurrentHolds(Math.max(commonApiPriority - priorityRaise, 0));
                                         }
                                         flushCurrentHolds(commonApiPriority);
@@ -134,7 +149,7 @@ public class AccountStates {
                                         flushCanCancelsImmediately();
                                     } else {
                                         if (System
-                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                                .currentTimeMillis() - canCancelsFlushTimestamp > priorityRaiseTimeThreshold) {
                                             flushCanCancels(Math.max(commonApiPriority - priorityRaise, 0));
                                         }
                                         flushCanCancels(commonApiPriority);
@@ -145,7 +160,7 @@ public class AccountStates {
                                         flushTodayClinchsImmediately();
                                     } else {
                                         if (System
-                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                                .currentTimeMillis() - todayClinchsFlushTimestamp > priorityRaiseTimeThreshold) {
                                             flushTodayClinchs(Math.max(commonApiPriority - priorityRaise, 0));
                                         }
                                         flushTodayClinchs(commonApiPriority);
@@ -156,7 +171,7 @@ public class AccountStates {
                                         flushTodayConsignsImmediately();
                                     } else {
                                         if (System
-                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                                .currentTimeMillis() - todayConsignsFlushTimestamp > priorityRaiseTimeThreshold) {
                                             flushTodayConsigns(Math.max(commonApiPriority - priorityRaise, 0));
                                         }
                                         flushTodayConsigns(commonApiPriority);
