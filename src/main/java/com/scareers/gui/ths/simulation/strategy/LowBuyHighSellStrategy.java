@@ -62,6 +62,20 @@ public class LowBuyHighSellStrategy extends Strategy {
     public static Map<String, Object> fieldsRenameDict = Dict.create().set("日期", "trade_date").set("开盘", "open")
             .set("收盘", "close")
             .set("最高", "high").set("最低", "low").set("成交量", "vol").set("成交额", "amount");
+    public static String sqlCreateStockSelectResultSaveTableTemplate = "create table if not exists " +
+            "`{}`\n" +
+            "(\n" +
+            "    id           int auto_increment comment 'id'\n" +
+            "        primary key,\n" +
+            "    trade_date   varchar(1024) null comment 'today: 选股日期',\n" +
+            "    ts_code      varchar(1024) null comment '某只股票',\n" +
+            "    form_set_ids longtext      null comment '该股票,该日, 所属的形态集合, 即被那些形态集合选中. json字符串Long列表',\n" +
+            "    self_notes   varchar(2048) null comment '其他备注',\n" +
+            "\n" +
+            "    INDEX trade_date_index (trade_date ASC),\n" +
+            "    INDEX ts_code_index (ts_code ASC)\n" +
+            ")\n" +
+            "    comment '选股结果: 日期-股票-所属形态集合id列表';\n";
     private static final Log log = LogUtil.getLogger();
 
     // -------->  构造器所需传递属性
@@ -99,6 +113,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                   boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
                                   List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推
     ) throws Exception {
+        Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
@@ -161,33 +176,34 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     }
 
-
     @Override
     protected List<SecurityBeanEm> initStockPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
-        // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
         stockSelect(); // 选股for buy
-        log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
-        log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
-        log.warn("stock select result: 最终选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
+        // 两大属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+        log.warn("stock select result: 选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
+        log.warn("stock select result: 选股数量: {}", stockSelectCountMapFinal.size());
+        log.warn("stock select result: 自适应选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
 
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
         initFinalDistribution(); // 计算等价分布
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
         List<SecurityBeanEm> res =
-                SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
+                SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet())); // 选股结果
         res.addAll(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"))); // 加入两大指数
-        initYesterdayHolds(); // 加入昨日持仓for sell
+        res.addAll(SecurityBeanEm.createStockList(initYesterdayHolds()));// 加入昨日持仓for sell
+        log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: ", this.getStockPool().size());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
     }
 
     /**
+     * @return
      * @throws Exception
      * @noti: 逻辑上本函数通常在第一次获取账号信息后执行, 再次更新 this.stockPool
      */
     @Override
-    public void initYesterdayHolds() throws Exception {
+    public List<String> initYesterdayHolds() throws Exception {
         execSql(StrUtil.format("create table if not exists\n {}" +
                         "(\n" +
                         "    trade_date                       varchar(128) null,\n" +
@@ -235,8 +251,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("after yesterday close: 昨日收盘后持有股票数量: {} ;代码: {}", stocksYesterdayHolds.size(), stocksYesterdayHolds);
         log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
-        this.getStockPool().addAll(SecurityBeanEm.createStockList(stocksYesterdayHolds));
-        log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: ", this.getStockPool().size());
+        return stocksYesterdayHolds;
     }
 
     /**
@@ -606,18 +621,4 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
 
-    public static String sqlCreateStockSelectResultSaveTableTemplate = "create table if not exists " +
-            "`{}`\n" +
-            "(\n" +
-            "    id           int auto_increment comment 'id'\n" +
-            "        primary key,\n" +
-            "    trade_date   varchar(1024) null comment 'today: 选股日期',\n" +
-            "    ts_code      varchar(1024) null comment '某只股票',\n" +
-            "    form_set_ids longtext      null comment '该股票,该日, 所属的形态集合, 即被那些形态集合选中. json字符串Long列表',\n" +
-            "    self_notes   varchar(2048) null comment '其他备注',\n" +
-            "\n" +
-            "    INDEX trade_date_index (trade_date ASC),\n" +
-            "    INDEX ts_code_index (ts_code ASC)\n" +
-            ")\n" +
-            "    comment '选股结果: 日期-股票-所属形态集合id列表';\n";
 }

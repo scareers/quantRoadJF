@@ -82,8 +82,9 @@ public abstract class Strategy {
      * 注意通常需要 waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成");
      * 后执行. 或者需要数据库已经保存有 昨日收盘后持仓(尽量等 00:00证券公司完全刷新后,而非简单昨日收盘后)
      * 将昨日持仓更新到股票池. 将昨日收盘持仓和资金信息, 更新到属性
+     * @return
      */
-    public abstract void initYesterdayHolds() throws Exception;
+    public abstract List<String> initYesterdayHolds() throws Exception;
 
     /**
      * check. 默认实现为简单分发为3个抽象方法
