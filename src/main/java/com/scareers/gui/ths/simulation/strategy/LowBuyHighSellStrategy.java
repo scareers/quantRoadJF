@@ -207,7 +207,7 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     @Override
     protected List<SecurityBeanEm> initStockPool() throws Exception {
-        log.warn("start init stockPool: 开始尝试初始化股票池...");
+        log.warn("start init stockPool: 开始初始化股票池...");
         // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
         stockSelect(); // 选股for buy
         log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
