@@ -30,12 +30,12 @@ public abstract class Strategy {
     }
 
     /**
-     * 策略开始处理执行. 核心实现!!!  即下单.  默认实现为 死循环调用 买卖决策函数
+     * 策略开始处理执行. 策略逻辑.  默认实现为 死循环调用 买卖决策方法
      * 默认先尝试卖, 回笼资金, 后买. 影响不大.
      */
     protected void startCore() throws Exception {
         while (true) {
-            sellDecision(); //
+            sellDecision();
             buyDecision();
         }
     }
@@ -65,25 +65,24 @@ public abstract class Strategy {
     protected abstract void checkOtherOrder(Order order, List<Response> responses, String orderType);
 
     /**
-     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), 两大初始化方法
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect() 以及 initYesterdayHolds(), 两大初始化股票池方法
      */
     protected abstract List<SecurityBeanEm> initStockPool() throws Exception;
 
     /**
-     * 选股方法. 通常需要加上各大指数, 最终将构建股票池
+     * 选股方法. 通常需要加上各大指数, 最终更新到股票池.
+     * 通常还需要等待获取昨日收盘后(今日盘前)持仓股票,进一步更新股票池  initYesterdayHolds()
      */
     protected abstract List<String> stockSelect() throws Exception;
 
     /**
      * 获取今日开盘前已经持仓股票列表. 将账号初始状态和昨日已经持仓状态, 保存到数据库.
      * 并将昨日持仓股票列表 加入 stockPool, 以便fs抓取!
-     * 注意需要 waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成");
-     * 后执行.
-     * <p>
-     * 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
+     * 注意通常需要 waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成");
+     * 后执行. 或者需要数据库已经保存有 昨日收盘后持仓(尽量等 00:00证券公司完全刷新后,而非简单昨日收盘后)
+     * 将昨日持仓更新到股票池. 将昨日收盘持仓和资金信息, 更新到属性
      */
     public abstract void initYesterdayHolds() throws Exception;
-
 
     /**
      * check. 默认实现为简单分发为3个抽象方法

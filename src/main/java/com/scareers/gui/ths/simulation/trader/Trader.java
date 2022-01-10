@@ -64,7 +64,6 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 public class Trader {
     private static final Log log = LogUtil.getLogger();
 
-
     public static void main(String[] args) throws Exception {
         Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
         Strategy mainStrategy = new LowBuyHighSellStrategy(
@@ -83,21 +82,20 @@ public class Trader {
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
 
-        mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
-
-        // fs成交开始抓取, 股票池包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓(for sell)
+        mainStrategy.initYesterdayHolds(); // 将昨日持仓进一步更新到股票池 mainStrategy.getStockPool()
+        // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
-                FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10, "15:10:00", 1000, 100, 32);
-
+                FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,
+                        "15:10:00", 1000, 100, 32);
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
 
+        // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
+        waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
         mainStrategy.startDealWith();
 
-
-        trader.manualInteractive(); // 开始人工交互, 可以人工调用订单, 可以人工打印信息等, 可以 gui程序.  应阻塞!
+        trader.manualInteractive(); // 开始交互, 直到退出.
         trader.closeDualChannelAndConn(); // 关闭连接
-        fsTransactionFetcher.stopFetch(); // 停止数据抓 取, 非立即.
+        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
     }
 
     // 属性: 4大队列, 将初始化为 空队列/map
