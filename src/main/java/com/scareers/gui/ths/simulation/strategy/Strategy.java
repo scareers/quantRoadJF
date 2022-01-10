@@ -65,13 +65,14 @@ public abstract class Strategy {
     protected abstract void checkOtherOrder(Order order, List<Response> responses, String orderType);
 
     /**
-     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect() 以及 initYesterdayHolds(), 两大初始化股票池方法
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect()
      */
     protected abstract List<SecurityBeanEm> initStockPool() throws Exception;
 
     /**
      * 选股方法. 通常需要加上各大指数, 最终更新到股票池.
-     * 通常还需要等待获取昨日收盘后(今日盘前)持仓股票,进一步更新股票池  initYesterdayHolds()
+     * 通常还需要等待获取昨日收盘后(今日盘前)持仓股票,进一步更新股票池  initYesterdayHolds(),
+     * 但该方法通常需要等待第一次获取账户信息完成(数据库无数据时), 因此
      */
     protected abstract List<String> stockSelect() throws Exception;
 

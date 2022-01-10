@@ -37,7 +37,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 
 
 /**
- * description: 虚拟的策略, 随机生成订单, 放入队列执行. check 逻辑也相同
+ * description: 低买高卖策略
  *
  * @author: admin
  * @date: 2021/12/26/026-03:21:08
@@ -180,7 +180,8 @@ public class LowBuyHighSellStrategy extends Strategy {
             DataFrame<Object> dfSave = new DataFrame<Object>();
             dfSave.add("trade_date", Arrays.asList(today));
             dfSave.add("yesterday_holds",
-                    Arrays.asList(JSONUtil.toJsonStr(DataFrameS.to2DList(trader.getAccountStates().currentHolds, true))));
+                    Arrays.asList(
+                            JSONUtil.toJsonStr(DataFrameS.to2DList(trader.getAccountStates().currentHolds, true))));
             dfSave.add("yesterday_nine_account_fund_info",
                     Arrays.asList(JSONUtil.toJsonStr(trader.getAccountStates().nineBaseFundsData)));
             dfSave.add("record_time", Arrays.asList(DateUtil.now()));
