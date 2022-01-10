@@ -293,8 +293,8 @@ public class LowBuyHighSellStrategy extends Strategy {
         ticksOfHigh1GlobalFinal = ticksOfHigh1Global; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
         weightsOfHigh1GlobalFinal = weightsOfHigh1Global; // 88数据
 
-        Assert.isTrue(equalApproximately(weightsOfLow1GlobalFinal, 1.0, 0.001));//权重和1
-        Assert.isTrue(equalApproximately(weightsOfHigh1GlobalFinal, 1.0, 0.001));//权重和1
+        Assert.isTrue(sumEqualApproximately(weightsOfLow1GlobalFinal, 1.0, 0.001));//权重和1
+        Assert.isTrue(sumEqualApproximately(weightsOfHigh1GlobalFinal, 1.0, 0.001));//权重和1
         log.info("show: 低买tick: {}", ticksOfLow1GlobalFinal);
         log.info("show: 低买分布: {}", weightsOfLow1GlobalFinal);
         log.info("show: 高卖tick: {}", ticksOfHigh1GlobalFinal);
@@ -486,7 +486,7 @@ public class LowBuyHighSellStrategy extends Strategy {
 
         formSerDistributionWeightMapFinal = formSerDistributionWeightMap;
         stockSelectCountMapFinal = stockSelectCountMap;
-        Assert.isTrue(equalApproximately(formSerDistributionWeightMapFinal.values(), 1.0, 0.005));//权重和1
+        Assert.isTrue(sumEqualApproximately(formSerDistributionWeightMapFinal.values(), 1.0, 0.005));//权重和1
 
     }
 

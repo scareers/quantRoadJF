@@ -4,7 +4,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.gui.ths.simulation.rabbitmq.ComsumerSimple;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.*;
@@ -19,8 +21,10 @@ import java.util.function.BooleanSupplier;
  */
 public class CommonUtil {
     public static void main(String[] args) throws TimeoutException, InterruptedException {
-        Console.log(changeStatRangeForFull(Arrays.asList("20120102", "20130102")));
+        Console.log(countTrueOfListBooleans(Arrays.asList(true, false, true)));
+        Console.log(Collections.frequency(Arrays.asList(true, false, true), true));
         waitEnter();
+        waitForever();
     }
 
     /**
@@ -35,7 +39,6 @@ public class CommonUtil {
      * @return 为了数据完整性, 前后更宽的statRange
      */
     public static List<String> changeStatRangeForFull(List<String> statRange) {
-        //        return Arrays.asList("19000101", "21000101");
         String start = statRange.get(0);
         String end = statRange.get(1);
         int startYear = DateUtil.parse(start).year() - 2;
@@ -97,13 +100,12 @@ public class CommonUtil {
      * @return
      */
     public static boolean isIntersectOfSetUseStream(List<String> set1, HashSet<String> set2) {
-//        return set1.parallelStream().anyMatch(s -> set2.contains(s));
         // 流更慢
         return set1.stream().anyMatch(s -> set2.contains(s));
     }
 
     public static boolean isIntersectOfSet(List<String> set1, HashSet<String> set2) {
-        // 交集
+        // 是否交集,
         for (String key : set1) {
             if (set2.contains(key)) {
                 return true;
@@ -143,50 +145,9 @@ public class CommonUtil {
     }
 
     public static Double minOfListDouble(List<Double> doubles) {
-        if (doubles.size() == 0) {
-            return null;
-        }
-        Double res = Double.MAX_VALUE;
-        for (int i = 0; i < doubles.size(); i++) {
-            Double ele = doubles.get(i);
-            if (ele == null) { // 有null时能够正确返回.
-                continue;
-            }
-            if (ele < res) {
-                res = ele;
-            }
-        }
-        if (res.equals(Double.MAX_VALUE)) {
-            return null; // 全部时null时, 可能发生.
-        }
-        return res;
+        return Collections.min(doubles); // 速度凑合
     }
 
-    /**
-     * 可null, 如果用
-     *
-     * @param numbers
-     * @return
-     */
-    public static Double minOfListNumber(List<Number> numbers) {
-        if (numbers.size() == 0) {
-            return null;
-        }
-        Double res = Double.MAX_VALUE;
-        for (int i = 0; i < numbers.size(); i++) {
-            Number ele = numbers.get(i);
-            if (ele == null) { // 有null时能够正确返回.
-                continue;
-            }
-            if (ele.doubleValue() < res) {
-                res = ele.doubleValue();
-            }
-        }
-        if (res.equals(Double.MAX_VALUE)) {
-            return null; // 全部时null时, 可能发生.
-        }
-        return res;
-    }
 
     public static Double sumOfListNumber(List<? extends Number> numbers) {
         return numbers.stream().
@@ -197,7 +158,7 @@ public class CommonUtil {
         if (numbers.size() == 0) {
             return null;
         }
-        Double sum = numbers.get(0).doubleValue();
+        double sum = numbers.get(0).doubleValue();
         for (int i = 1; i < numbers.size(); i++) {
             sum += numbers.get(i).doubleValue();
         }
@@ -205,36 +166,14 @@ public class CommonUtil {
     }
 
     public static Double maxOfListDouble(List<Double> doubles) {
-        if (doubles.size() == 0) {
-            return null;
-        }
-        Double res = Double.MIN_VALUE;
-        for (int i = 0; i < doubles.size(); i++) {
-            Double ele = doubles.get(i);
-            if (ele == null) { // 有null时能够正确返回.
-                continue;
-            }
-            if (ele > res) {
-                res = ele;
-            }
-        }
-        if (res.equals(Double.MIN_VALUE)) {
-            return null; // 全部时null时, 可能发生.
-        }
-        return res;
+        return Collections.max(doubles);
     }
 
     public static int countTrueOfListBooleans(List<Boolean> bools) {
-        int res = 0;
-        for (Boolean b : bools) {
-            if (b) {
-                res += 1;
-            }
-        }
-        return res;
+        return Collections.frequency(bools, true);
     }
 
-    // 字典的值非0的
+    // 字典的值非0.0的
     public static int countNonZeroValueOfMap(Map<? extends Object, ? extends Number> map) {
         int res = 0;
         for (Object o : map.keySet()) {
@@ -245,6 +184,17 @@ public class CommonUtil {
         return res;
     }
 
+    /**
+     * 等待 某函数返回true
+     *
+     * @param booleanSupplier 等待某方法返回 true
+     * @param timeout         超时ms
+     * @param interval        等待死循环间隔
+     * @param description     可log提示信息
+     * @param showWaitTime    log总计等待时间
+     * @throws TimeoutException
+     * @throws InterruptedException
+     */
     public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval, String description,
                                 boolean showWaitTime)
             throws TimeoutException, InterruptedException {
@@ -281,7 +231,7 @@ public class CommonUtil {
     public static void waitEnter() {
         // 按下确定退出
         Scanner scanner = new Scanner(System.in);
-        scanner.next();
+        scanner.nextLine();
     }
 
 
@@ -293,8 +243,8 @@ public class CommonUtil {
      * @param deviation 允许误差, abs
      * @return
      */
-    public static boolean equalApproximately(Collection<Double> doubles, double equalTo, double deviation) {
+    public static boolean sumEqualApproximately(Collection<Double> doubles, double equalTo, double deviation) {
         return Math.abs(
-                doubles.stream().mapToDouble(value -> value).sum() - 1.0) < 0.005;
+                doubles.stream().mapToDouble(value -> value).sum() - equalTo) < deviation;
     }
 }

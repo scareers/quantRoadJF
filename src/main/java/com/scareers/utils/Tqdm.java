@@ -125,7 +125,8 @@ public class Tqdm<T> implements Iterable<T> {
             String timeString = String.format("[%s<%s,%s]", formatTime(usedTime), formatTime(leftTime), speedString);
             if (gui) {
                 this.guiProgress.progress.setValue(progress);
-                this.guiProgress.label.setText(String.format("%s %d/%d %s", percentString, progress, total, timeString));
+                this.guiProgress.label
+                        .setText(String.format("%s %d/%d %s", percentString, progress, total, timeString));
                 if ((data != null && !data.hasNext()) || this.progress >= this.total) {
                     this.guiProgress.complete();
                 }

@@ -16,6 +16,9 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 
+/**
+ * @author admin
+ */
 public class HardwareUtil {
     public static void main(String[] args)
             throws InterruptedException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
