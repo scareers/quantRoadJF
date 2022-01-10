@@ -36,7 +36,7 @@ public class App {
 
     public static long fibonacci(long number) {
         if ((number == 0) || (number == 1)) {
-            return number;
+            return 1;
         } else {
             return fibonacci(number - 1) + fibonacci(number - 2);
         }
@@ -45,11 +45,13 @@ public class App {
     public static void main(String[] args) throws Exception {
 
 
+        while (true) {
 
-
-        long start = System.currentTimeMillis();
-        System.out.println(fibonacci(42));
-        System.out.println(System.currentTimeMillis() - start);
+            long start = System.currentTimeMillis();
+            fibonacci(40);
+            System.out.println(System.currentTimeMillis() - start);
+        }
+//        System.out.println(fibonacci(40));
 
 //        String x = "\u51fa\u73b0\u4e86\u5f02\u5e38, \u5f02\u5e38\u6808" ;
 //        System.out.println(x);

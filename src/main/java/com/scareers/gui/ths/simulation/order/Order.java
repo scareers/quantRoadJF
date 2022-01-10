@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
  * // Serializable 支持  ObjectUtil.cloneByStream(obj) 进行深拷贝
  * 3.11大属性更改时:
  * private String rawOrderId; //java全局唯一id, new时自动生成. 重发时自动生成新的
- * private String orderType; // 核心订单类型, 对应python操作api
- * private long timestamp; // 生成时间戳
+ * private String orderType; // 核心订单类型, public构造器必须设定的属性
+ * private long timestamp; // new时间戳, 重发时将更新
  * private Map<String, Object> params; // 订单api需要的其他参数map
  * private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
  * private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 通常需要手动修改
