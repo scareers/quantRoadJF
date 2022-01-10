@@ -66,23 +66,23 @@ public class Trader {
 
     public static void main(String[] args) throws Exception {
         Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
-        Strategy mainStrategy = new LowBuyHighSellStrategy(
-                LowBuyHighSellStrategy.class.getName(), trader); // 核心策略对象, 达成与trader关联. trader设置strategy属性
-
         // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
         trader.getOrderExecutor().start();
         // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等.   两者启动后方可启动 账户状态信息获取
-        trader.getChecker().startCheckTransactionStatus(mainStrategy);
+        // check可能用到strategy, 此时strategy为null, 因此需要保证strategy被设置前, 不调用策略相关api, 此处仅调用账户信息相关api
+        trader.getChecker().startCheckTransactionStatus();
 
         // 启动账户资金获取程序
-        trader.getAccountStates().startFlush();
+        trader.getAccountStates().startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
 
-        mainStrategy.initYesterdayHolds(); // 将昨日持仓进一步更新到股票池 mainStrategy.getStockPool()
+        Strategy mainStrategy = new LowBuyHighSellStrategy( // 直到此时才实例化策略对象, 绑定到 trader
+                LowBuyHighSellStrategy.class.getName(), trader); // 核心策略对象, 达成与trader关联. trader设置strategy属性
+
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
                 FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,

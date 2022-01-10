@@ -209,7 +209,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     protected List<SecurityBeanEm> initStockPool() throws Exception {
         log.warn("start init stockPool: 开始尝试初始化股票池...");
         // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
-        stockSelect();
+        stockSelect(); // 选股for buy
         log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
         log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
         log.warn("stock select result: 最终选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
@@ -220,6 +220,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         List<SecurityBeanEm> res =
                 SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
         res.addAll(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"))); // 加入两大指数
+        initYesterdayHolds(); // 加入昨日持仓for sell
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
     }

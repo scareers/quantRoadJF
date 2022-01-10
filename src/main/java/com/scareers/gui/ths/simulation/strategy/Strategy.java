@@ -65,7 +65,7 @@ public abstract class Strategy {
     protected abstract void checkOtherOrder(Order order, List<Response> responses, String orderType);
 
     /**
-     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect()
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), initYesterdayHolds(), + 两大指数
      */
     protected abstract List<SecurityBeanEm> initStockPool() throws Exception;
 

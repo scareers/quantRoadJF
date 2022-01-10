@@ -48,7 +48,7 @@ public class Checker {
         this.trader = trader;
     }
 
-    public void startCheckTransactionStatus(Strategy mainStrategy) {
+    public void startCheckTransactionStatus() {
         Thread checkTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
@@ -61,7 +61,7 @@ public class Checker {
                             // 若是账户状态相关订单, 则交由  AccountStates 进行check
                             trader.getAccountStates().checkForAccountStates(order, responses, orderType);
                         } else {
-                            mainStrategy.checkOrder(order, responses, orderType);
+                            trader.getStrategy().checkOrder(order, responses, orderType);
                         }
                     }
                 }
