@@ -81,7 +81,7 @@ public class Trader {
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
 
         Strategy mainStrategy = new LowBuyHighSellStrategy( // 直到此时才实例化策略对象, 绑定到 trader
-                LowBuyHighSellStrategy.class.getName(), trader); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf()
+                trader, LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf()
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =

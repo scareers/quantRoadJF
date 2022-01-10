@@ -587,7 +587,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
 
-    public LowBuyHighSellStrategy(String strategyName, Trader trader) throws Exception {
+    public LowBuyHighSellStrategy(Trader trader, String strategyName) throws Exception {
         super(strategyName);
         this.trader = trader;
         bindSelf();
