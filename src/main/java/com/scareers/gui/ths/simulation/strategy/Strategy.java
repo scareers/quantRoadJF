@@ -24,7 +24,7 @@ public abstract class Strategy {
     protected String strategyName; // 策略名称, 线程同名
     protected List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
 
-    public Strategy(String strategyName) throws Exception {
+    protected Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
     }
