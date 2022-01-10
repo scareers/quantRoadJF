@@ -38,6 +38,8 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,9 +81,13 @@ public class Trader {
         trader.getAccountStates().startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
-
-        Strategy mainStrategy = new LowBuyHighSellStrategy( // 直到此时才实例化策略对象, 绑定到 trader
-                trader, LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf()
+        // 直到此时才实例化策略对象, 绑定到 trader
+        Strategy mainStrategy = new LowBuyHighSellStrategy(trader, LowBuyHighSellStrategy.class.getName(),
+                new ArrayList<>(), // 强制排除选股结果
+                20, // 期望选股数量
+                false, // 偏向更多选股结果
+                Arrays.asList(0, 1) // 核心, 哪天买哪天卖的算法?
+        ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf()
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =

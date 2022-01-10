@@ -22,6 +22,8 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.KlineFormsApi;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -42,53 +44,73 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2021/12/26/026-03:21:08
  */
+@Getter
+@Setter
 public class LowBuyHighSellStrategy extends Strategy {
-    // 手动额外强制不选中的股票列表. 仅简单排除股票池, 不对其他任何逻辑造成影响, 取前6位为代码
-//    public static List<String> forceManualExcludeStocks = Arrays.asList("002028.sz");
-    public static List<String> forceManualExcludeStocks = Collections.emptyList();
-    public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug
-    public static List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
-    // @key5: 筛选formset的 profit阈值>=, 设置初始值后,将自动适配, 以使得选股数量接近  suitableSelectStockCount
-    public static double profitLimitOfFormSetIdFilter = 0.013; // 自动适配
-    public static double profitAdjustTick = 0.00025; // 自动适配时, profit参数 往大/小 调整的数量
-    public static int suitableSelectStockCount = 30;  // @key5: 建议最终选股结果的数量, 将自动调控 profit参数放松放宽筛选条件
-    // 当找到合适的参数, 是否偏好更多选股结果? 若是, 则最终选股>=suitableSelectStockCount,
-    // 否则, 比较两个距离的大小, 选择更加接近的一方.  即可能不论true或者false, 选股结果相同!!
-    public static boolean preferenceMoreStock = false;
-
-    public static HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重Map
-    public static HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
-    public static List<Double> ticksOfLow1GlobalFinal = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
-    public static List<Double> weightsOfLow1GlobalFinal = null; // 44数据
-    public static List<Double> ticksOfHigh1GlobalFinal = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
-    public static List<Double> weightsOfHigh1GlobalFinal = null; // 88数据
-
+    // -------->  静态属性, 几乎不变
+    public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug, 设置为很大然后无视
     // 首先尝试从数据库直接获取  昨日持仓与账户初始资金信息, 若无, 则:
-    //  将首次获取的账户信息, 作为昨日收盘后初始信息, 保存到数据库(下一次启动将读取该数据)
+    // 将(今日)首次获取的账户信息, 作为昨日收盘后初始信息, 保存到数据库(下一次启动将读取该数据)
     public static String tableNameOfYesterdayStockHoldsAndAccountsInfoBefore = "stock_yesterday_holds_and_account_info";
-    public static DataFrame<Object> yesterdayStockHoldsBeSell; // 持仓数据二维数组, 含表头, 昨日收盘时.
-    public static ConcurrentHashMap<String, Double> yesterdayNineBaseFundsData; // 9项基本数据, 昨日收盘时
     public static String STR_SEC_CODE = "证券代码"; // 获取代码列需要
-
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
-    public static long hasStockSelectResultTodayThreshold = 1000;
-    public static String SIMPLE_DATE_FORMAT = "yyyyMMdd";
-    public static final List<Integer> keyInts = Arrays.asList(0, 1); // 核心设定  0,1  必须此设定
-    public static String stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
-            keyInts.get(0), keyInts.get(1));
+    public static long hasStockSelectResultTodayThreshold = 1000; // 常态要么 0(无结果), 要么 3200+ 所有主板执行过选股
+    public static String SIMPLEST_DATE_FORMAT = "yyyyMMdd"; // 最简单的日期格式
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
     public static final List<String> fieldsOfDfRaw = Arrays
-            // @update: 新增了 amount列, 对主程序没有影响, 但是在 lbhs时, 可以读取到 amount 列, 成交额比成交量方便计算百分比
             .asList("trade_date", "open", "close", "high", "low", "vol", "amount"); // 股票日k线数据列
-    // 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	  振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
     public static Map<String, Object> fieldsRenameDict = Dict.create().set("日期", "trade_date").set("开盘", "open")
             .set("收盘", "close")
             .set("最高", "high").set("最低", "low").set("成交量", "vol").set("成交额", "amount");
-
-
     private static final Log log = LogUtil.getLogger();
 
+    // -------->  构造器所需传递属性
+    // 手动额外强制不选中的股票列表. 仅简单排除股票池, 不对其他任何逻辑造成影响, 取前6位为代码
+    private List<String> forceManualExcludeStocks; // 需要设置
+    private int suitableSelectStockCount;  // @key5: 建议最终选股结果的数量, 将自动调控 profit 参数放松放宽筛选条件
+    // @key5: 筛选formset的 profit 阈值>=, 设置初始值后,将自动适配, 以使得选股数量接近  suitableSelectStockCount
+    // 当找到合适的参数, 是否偏好更多选股结果? 若是, 则最终选股>=suitableSelectStockCount,
+    // 否则, 比较两个距离的大小, 选择更加接近的一方.  即可能不论true或者false, 选股结果相同.
+    private boolean preferenceMoreStock = false;
+    private List<Integer> keyInts; // 核心设定  0,1  必须此设定, 低买高卖形式,0,1表示次日买后日卖
+
+    // -------->  直接赋予默认值属性,一般无需修改
+    private double profitLimitOfFormSetIdFilter = 0.013; // 将自动适配, 此处设置默认值作为适配起点. @key: 适配后, 核心属性
+    private double profitAdjustTick = 0.00025; // 自动适配时, profit参数 往大/小 调整的数量, 这里 0.025%. 越小计算量越大越精细
+
+    // -------->  init自动计算初始化属性
+    private List<Long> useFormSetIds;  // @key5: 策略使用到的 集合池, 其分布将依据选股结果进行加权!!
+    private HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重 Map
+    private HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
+    // 四项, 分布和tick
+    private List<Double> ticksOfLow1GlobalFinal = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
+    private List<Double> weightsOfLow1GlobalFinal = null; // 44数据
+    private List<Double> ticksOfHigh1GlobalFinal = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
+    private List<Double> weightsOfHigh1GlobalFinal = null; // 88数据
+    private DataFrame<Object> yesterdayStockHoldsBeSell; // 持仓数据二维数组, 含表头, 昨日收盘时.
+    private ConcurrentHashMap<String, Double> yesterdayNineBaseFundsData; // 9项基本数据, 昨日收盘时
+    private String stockSelectResultSaveTableName;
+
     private Trader trader;
+
+    public LowBuyHighSellStrategy(Trader trader, String strategyName,
+                                  List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
+                                  int suitableSelectStockCount, // 期望的选股结果数量
+                                  boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
+                                  List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推
+    ) throws Exception {
+        this.trader = trader;
+        this.forceManualExcludeStocks = forceManualExcludeStocks;
+        this.suitableSelectStockCount = suitableSelectStockCount;
+        this.preferenceMoreStock = preferenceMoreStock;
+        this.keyInts = keyInts;
+        this.stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
+                keyInts.get(0), keyInts.get(1)); // 立即初始化
+
+        this.strategyName = strategyName; // 同super
+        this.stockPool = initStockPool(); // 构建器自动初始化股票池!
+        bindSelf();
+    }
 
     public static void main(String[] args) throws Exception {
     }
@@ -333,7 +355,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
 
-    private static void initUseFormSetIds() throws FileNotFoundException {
+    private void initUseFormSetIds() throws FileNotFoundException {
         // 初始化使用到的 形态集合id列表.
         // 这里提供文件名称, classpath文件. json. 解析到 profit字段最大的一些 formSetId
 
@@ -586,12 +608,6 @@ public class LowBuyHighSellStrategy extends Strategy {
         return res;
     }
 
-
-    public LowBuyHighSellStrategy(Trader trader, String strategyName) throws Exception {
-        super(strategyName);
-        this.trader = trader;
-        bindSelf();
-    }
 
     public void bindSelf() {
         this.trader.setStrategy(this);

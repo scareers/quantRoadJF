@@ -21,8 +21,8 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public abstract class Strategy {
-    private String strategyName; // 策略名称, 线程同名
-    private List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
+    protected String strategyName; // 策略名称, 线程同名
+    protected List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
 
     public Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
