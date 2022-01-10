@@ -4,17 +4,16 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.CommonUtils;
-import com.scareers.utils.StrUtilSelf;
+import com.scareers.utils.CommonUtil;
+import com.scareers.utils.StrUtilS;
 import com.scareers.utils.Tqdm;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -28,9 +27,9 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
-import static com.scareers.utils.CommonUtils.*;
+import static com.scareers.utils.CommonUtil.*;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -65,8 +64,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             execSql(
-                    StrUtilSelf.format(SettingsOfLowBuyFS.sqlDeleteExistDateRangeFS,
-                            StrUtilSelf.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    StrUtilS.format(SettingsOfLowBuyFS.sqlDeleteExistDateRangeFS,
+                            StrUtilS.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     connSingleton, false);
             // 主逻辑.
             // 主程序分析计算的几个参数用不到, 删除即可
@@ -77,8 +76,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
             String hardwareInfo = reportCpuMemoryDisk(true);
             try {
-                MailUtil.send(SettingsCommon.receivers, StrUtilSelf.format("LowBuy部分完成: {}", statDateRange),
-                        StrUtilSelf.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
+                MailUtil.send(SettingsCommon.receivers, StrUtilS.format("LowBuy部分完成: {}", statDateRange),
+                        StrUtilS.format("LowBuy部分完成, 硬件信息:{}\n", hardwareInfo), false,
                         null);
             } catch (Exception e) {
                 e.printStackTrace(); // 防止断网
@@ -110,8 +109,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                             statDateRange, stockWithStDateRanges, connOfParse, keyInt));
             futuresOfParse.add(f);
         }
-        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtilSelf.format("{} process: ", statDateRange))) {
+        List<Integer> indexesOfParse = CommonUtil.range(futuresOfParse.size());
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtilS.format("{} process: ", statDateRange))) {
             // 串行不再需要使用 CountDownLatch
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             // @noti: 结果的 key为:  形态集合id__Low/2/High/2_ 5项基本数据
@@ -147,13 +146,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                 new LinkedBlockingQueue<>());
         int totalEpochAmounts = (int) Math
                 .ceil((double) results.size() / perEpochTaskAmounts);
-        List<Integer> epochs = CommonUtils.range(totalEpochAmounts);
+        List<Integer> epochs = CommonUtil.range(totalEpochAmounts);
         Connection connOfSave = ConnectionFactory.getConnLocalKlineForms();
         CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
         ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
         // 批量插入不伤ssd. 单条插入很伤ssd
         for (Integer currentEpoch : Tqdm
-                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilS.format("{} process: ", statDateRange))) {
             int startIndex = currentEpoch * perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * perEpochTaskAmounts;
             List<String> formNamesCurrentEpoch = forNameRaws
@@ -167,7 +166,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             futuresOfSave.add(f);
         }
         for (Integer i : Tqdm
-                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilS.format("{} process: ", statDateRange))) {
             Future<List<String>> f = futuresOfSave.get(i);
             List<String> finishedFormNames = f.get();
             for (String formName0 : finishedFormNames) {
@@ -239,7 +238,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             try {
                 // 开始主要逻辑
                 // 添加结果到 线程安全的 总结果集
-                List<String> statDateRangeFull = CommonUtils.changeStatRangeForFull(statDateRange);
+                List<String> statDateRangeFull = CommonUtil.changeStatRangeForFull(statDateRange);
                 // 单个线程用一个 conn 对象, 用完close(), 否则线程池容量不够
                 // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
                 DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",
@@ -407,14 +406,14 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                         String prefix = setId.toString() + "__"; // 临时前缀.
                         if (parallelComputingLowBuy) {
                             for (String lowKeys : resultOf10AlgorithmLow.keySet()) {
-                                String keyFull = StrUtilSelf.format("{}{}", prefix, lowKeys);
+                                String keyFull = StrUtilS.format("{}{}", prefix, lowKeys);
                                 resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                                 resultTemp.get(keyFull).add(resultOf10AlgorithmLow.get(lowKeys));
                             }
                         }
                         if (resultOf10AlgorithmHigh != null) { // 并列计算 HighSell时, 填充他.
                             for (String highKeys : resultOf10AlgorithmHigh.keySet()) {
-                                String keyFull = StrUtilSelf.format("{}{}", prefix, highKeys);
+                                String keyFull = StrUtilS.format("{}{}", prefix, highKeys);
                                 resultTemp.putIfAbsent(keyFull, new ArrayList<>());
                                 resultTemp.get(keyFull).add(resultOf10AlgorithmHigh.get(highKeys));
                             }
@@ -442,13 +441,13 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                                                  String saveTablenameStockSelectResult, Connection connOfKlineForms)
                 throws Exception {
             String sqlDeleteExists = "delete from {} where ts_code='{}' and trade_date='{}'";
-            execSql(StrUtilSelf.format(sqlDeleteExists, saveTablenameStockSelectResult, stock, todayTemp),
+            execSql(StrUtilS.format(sqlDeleteExists, saveTablenameStockSelectResult, stock, todayTemp),
                     connOfKlineForms); // 因为mysql不能有则更新,无则插入. 因此果断删除后,重新插入
             DataFrame<Object> dfSave = new DataFrame<>(); // 单行
             dfSave.add("trade_date", Arrays.asList(todayTemp));
             dfSave.add("ts_code", Arrays.asList(stock));
             dfSave.add("form_set_ids", Arrays.asList(JSONUtil.toJsonStr(belongToFormsetIds))); // String
-            DataFrameSelf.toSql(dfSave, saveTablenameStockSelectResult, connOfKlineForms, "append", null);
+            DataFrameS.toSql(dfSave, saveTablenameStockSelectResult, connOfKlineForms, "append", null);
         }
 
         /**
@@ -525,8 +524,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             dfFSLowBuyDay.add("tick_double", tickDoubleCol);
 
             // 1.low, 相关
-            List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close");
-            List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "amount");
+            List<Double> closeCol = DataFrameS.getColAsDoubleList(dfFSLowBuyDay, "close");
+            List<Double> amountCol = DataFrameS.getColAsDoubleList(dfFSLowBuyDay, "amount");
             Double low = minOfListDouble(closeCol);
             // 1-1. happen_tick
             // 只不过最后再转换为Double, 目前int,方便计算, 且 tick相关均使用 tick_double列进行取值
@@ -736,8 +735,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 //            Console.com.scareers.log(dfFSLowBuyDay.toString(300));
 //            Console.com.scareers.log(dfFSLowBuyDay.types());
             // 1.high, 相关
-            List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "close");
-            List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "amount");
+            List<Double> closeCol = DataFrameS.getColAsDoubleList(dfFSHighSellDay, "close");
+            List<Double> amountCol = DataFrameS.getColAsDoubleList(dfFSHighSellDay, "amount");
 
 
             List<List<Double>> closesFragments = new ArrayList<>(); // 构建新的参数, 在index为key时,转换为新的片段
@@ -861,12 +860,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
             // Console.com.scareers.log(continuousFallVolPercent);
             // Low相关5项完成.
-            resRaw.put(StrUtilSelf.format("High{}__happen_tick", layer),
+            resRaw.put(StrUtilS.format("High{}__happen_tick", layer),
                     tickDoubleCol.get(happernTickOfHigh + fixHappenTick));
-            resRaw.put(StrUtilSelf.format("High{}__value_percent", layer), valuePercentOfHigh);
-            resRaw.put(StrUtilSelf.format("High{}__dominate_left", layer), (double) dominateLeft);
-            resRaw.put(StrUtilSelf.format("High{}__dominate_right", layer), (double) dominateRight);
-            resRaw.put(StrUtilSelf.format("High{}__continuous_raise_vol_percent", layer), continuousRaiseVolPercent);
+            resRaw.put(StrUtilS.format("High{}__value_percent", layer), valuePercentOfHigh);
+            resRaw.put(StrUtilS.format("High{}__dominate_left", layer), (double) dominateLeft);
+            resRaw.put(StrUtilS.format("High{}__dominate_right", layer), (double) dominateRight);
+            resRaw.put(StrUtilS.format("High{}__continuous_raise_vol_percent", layer), continuousRaiseVolPercent);
 
             // 需要重新构建, 传递到下一层的参数, 主要是片段切分!!. 整体保持 物理顺序, 只将被切分的片段, 分为新的两段插入.
             List<Double> closeColFragment1 = closeCol.subList(0, happernTickOfHigh - dominateLeft);
@@ -950,8 +949,8 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 //            Console.com.scareers.log(dfFSLowBuyDay.toString(300));
 //            Console.com.scareers.log(dfFSLowBuyDay.types());
             // 1.low, 相关
-            List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close");
-            List<Double> amountCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "amount");
+            List<Double> closeCol = DataFrameS.getColAsDoubleList(dfFSLowBuyDay, "close");
+            List<Double> amountCol = DataFrameS.getColAsDoubleList(dfFSLowBuyDay, "amount");
 
 
             List<List<Double>> closesFragments = new ArrayList<>(); // 构建新的参数, 在index为key时,转换为新的片段
@@ -1077,12 +1076,12 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
             // Console.com.scareers.log(continuousFallVolPercent);
             // Low相关5项完成.
-            resRaw.put(StrUtilSelf.format("Low{}__happen_tick", layer),
+            resRaw.put(StrUtilS.format("Low{}__happen_tick", layer),
                     tickDoubleCol.get(happernTickOfLow + fixHappenTick));
-            resRaw.put(StrUtilSelf.format("Low{}__value_percent", layer), valuePercentOfLow);
-            resRaw.put(StrUtilSelf.format("Low{}__dominate_left", layer), (double) dominateLeft);
-            resRaw.put(StrUtilSelf.format("Low{}__dominate_right", layer), (double) dominateRight);
-            resRaw.put(StrUtilSelf.format("Low{}__continuous_fall_vol_percent", layer), continuousFallVolPercent);
+            resRaw.put(StrUtilS.format("Low{}__value_percent", layer), valuePercentOfLow);
+            resRaw.put(StrUtilS.format("Low{}__dominate_left", layer), (double) dominateLeft);
+            resRaw.put(StrUtilS.format("Low{}__dominate_right", layer), (double) dominateRight);
+            resRaw.put(StrUtilS.format("Low{}__continuous_fall_vol_percent", layer), continuousFallVolPercent);
 
             // 需要重新构建, 传递到下一层的参数, 主要是片段切分!!. 整体保持 物理顺序, 只将被切分的片段, 分为新的两段插入.
 
@@ -1165,11 +1164,11 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
         public static ConcurrentHashMap<Long, List<String>> parseFromsSetsFromDb(List<Integer> keyInts,
                                                                                  Connection connOfKlineForms)
                 throws SQLException { // 直接读取设定,而非用keyInt
-            String tableName = StrUtilSelf.format("next{}b{}s_of_single_kline",
+            String tableName = StrUtilS.format("next{}b{}s_of_single_kline",
                     keyInts.get(0),
                     keyInts.get(1));
             DataFrame<Object> dfFormSets = DataFrame
-                    .readSql(connOfKlineForms, StrUtilSelf.format("select id,form_name from {};",
+                    .readSql(connOfKlineForms, StrUtilS.format("select id,form_name from {};",
                             tableName));
             ConcurrentHashMap<Long, List<String>> res = new ConcurrentHashMap<>();
 
@@ -1194,7 +1193,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     resTemp.put(key_, value);
                 }
             }
-            log.info(StrUtilSelf.format("form_sets parse: 解析形态集合完成, 数据源表: {} ; 形态集合数量:{}", tableName, resTemp.size()));
+            log.info(StrUtilS.format("form_sets parse: 解析形态集合完成, 数据源表: {} ; 形态集合数量:{}", tableName, resTemp.size()));
             //@noti: res.get(1L)  才行, 注意时 long, 而非int
             return resTemp;
         }
@@ -1214,7 +1213,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
 
     }
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     public static class CalcStatResultAndSaveTaskOfFSLowBuyHighSell implements Callable<List<String>> {
         CountDownLatch latchOfCalcForEpoch;
@@ -1253,7 +1252,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     }
                     // 精细分析也不需要保存 cdfwithtick. 过于冗余
                     // 已经得到 分析结果, 需要注意 Map的Value 实际类别各不相同. 保存时需要一一对应
-                    List<String> formNameFragments = StrUtilSelf.split(formName, "__");
+                    List<String> formNameFragments = StrUtilS.split(formName, "__");
                     Double formSetId = Double.valueOf(formNameFragments.get(0)); // 形态集合id.
                     String statResultAlgorithm = formNameFragments.get(1); // Low1/2/3 作为算法字段保存
                     String concreteAlgorithm = formNameFragments.get(2); // 具体小算法5种
@@ -1282,7 +1281,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
                     }
                 }
                 // dfTotalSave 应当转换为 self
-                DataFrameSelf.toSql(dfTotalSave, saveTablenameLowBuyFS, connOfSave, "append", null);
+                DataFrameS.toSql(dfTotalSave, saveTablenameLowBuyFS, connOfSave, "append", null);
                 return formNamesCurrentEpoch;
             } catch (Exception e) {
                 e.printStackTrace();

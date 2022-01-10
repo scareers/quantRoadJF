@@ -11,13 +11,13 @@ import java.util.List;
  * @author: admin
  * @date: 2021/11/29/029-2:37
  */
-public class StrUtilSelf {
+public class StrUtilS {
     public static void main(String[] args) {
 
     }
 
     /**
-     * hutool 的 StrUtilSelf.format, 调用 CharSequenceUtil.format.  因检测null和空值, 浪费时间. 自己研究时不判定,  可以提高性能
+     * hutool 的 StrUtilS.format, 调用 CharSequenceUtil.format.  因检测null和空值, 浪费时间. 自己研究时不判定,  可以提高性能
      *
      * @param template
      * @param params

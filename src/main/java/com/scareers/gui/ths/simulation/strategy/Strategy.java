@@ -4,7 +4,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.order.Order;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -127,6 +127,6 @@ public abstract class Strategy {
         this.strategyName = strategyName;
     }
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
 }

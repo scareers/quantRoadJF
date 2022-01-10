@@ -12,7 +12,7 @@ import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.settings.SettingsCommon;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.analyzeListDoubleSingle;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.prepareSaveDfForAnalyzeResult;
-import static com.scareers.utils.CommonUtils.intersectionOfSet;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.CommonUtil.intersectionOfSet;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -300,14 +300,14 @@ public class LowBuyNextHighSellDistributionAnalyze {
                         SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
                         effectiveValusRanges.get(intTable), false);
                 Integer selectedFormCounts = selectedForms.size();
-                DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+                DataFrameS<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
                         JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
                         validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
                         JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
                         String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
                         null);
                 // 单条记录保存了
-                DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+                DataFrameS.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
                 //                Console.com.scareers.log(resultSingle);
                 Console.log("selected forms counts: {}", selectedForms.size());
                 Console.log("actual selected counts: {}", calcedForms.size());
@@ -323,11 +323,11 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //            throws SQLException {
 //        for (Integer intTable : correspondingFilterAlgos) {
 //            for (String algorithmRaw : algorithmRawList) {
-//                String resultAlgorithm = StrUtilSelf.format("Next{}{}", intTable, algorithmRaw);
-//                String info = StrUtilSelf
+//                String resultAlgorithm = StrUtilS.format("Next{}{}", intTable, algorithmRaw);
+//                String info = StrUtilS
 //                        .format("LowBuy {}, HighSell {}, -- {}", lowArgs, highArgs, resultAlgorithm);
-//                com.scareers.log.info(StrUtilSelf.format("start: {}", info));
-//                String resultTableName = StrUtilSelf.format("filtered_single_kline_from_next{}__excybkcb",
+//                com.scareers.log.info(StrUtilS.format("start: {}", info));
+//                String resultTableName = StrUtilS.format("filtered_single_kline_from_next{}__excybkcb",
 //                        intTable); // 通常对作为条件的两个表, 都做四项计算
 //
 //                HashMap<String, List<Object>> calcedForms = conditionOptimizeTrying(selectedForms,
@@ -347,14 +347,14 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //                        SettingsOfSingleKlineBasePercent.bigChangeThreshold, binsList.get(intTable),
 //                        effectiveValusRanges.get(intTable), false);
 //                Integer selectedFormCounts = selectedForms.size();
-//                DataFrameSelf<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
+//                DataFrameS<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
 //                        JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
 //                        validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
 //                        JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
 //                        String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
 //                        null);
 //                // 单条记录保存了
-//                DataFrameSelf.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
+//                DataFrameS.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
 //                Console.com.scareers.log(resultSingle);
 //                Console.com.scareers.log("selected forms counts: {}", selectedForms.size());
 //                Console.com.scareers.log("actual selected counts: {}", calcedForms.size());

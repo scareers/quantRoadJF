@@ -8,9 +8,9 @@ import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.settings.SettingsCommon;
-import com.scareers.utils.CommonUtils;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
@@ -21,8 +21,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg;
-import static com.scareers.sqlapi.MysqlApi.setBufferPoolSizeGB;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDisk;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -72,7 +71,7 @@ public class FilterSimpleFor0B1S {
         // 不能关闭
         execSql(sqlCreateFiteredSaveTable, connection, false);
         // 四种算法
-        List<Integer> indexes = CommonUtils.range(algorithms.size());
+        List<Integer> indexes = CommonUtil.range(algorithms.size());
 
         CountDownLatch latch = new CountDownLatch(algorithms.size());
         ThreadPoolExecutor pool = new ThreadPoolExecutor(4,
@@ -177,7 +176,7 @@ public class FilterSimpleFor0B1S {
                 DataFrame<Object> dfSelectedForms = DataFrame.readSql(connection, sqlSelectGoodForm);
                 Console.log("{} - {} : {}", algorithm, minVGMean, dfSelectedForms.length());
                 dfSelectedForms.cast(String.class);
-                List<Integer> indexes = CommonUtils.range(dfSelectedForms.length());
+                List<Integer> indexes = CommonUtil.range(dfSelectedForms.length());
                 for (Integer i : Tqdm.tqdm(indexes, StrUtil.format("{} process", algorithm))) {
                     String formName = (String) dfSelectedForms.get(i, 0);
 
@@ -201,7 +200,7 @@ public class FilterSimpleFor0B1S {
                         // 读取全部字段
                         DataFrame<Object> dfSave = DataFrame
                                 .readSql(connection, StrUtil.format(sqlSaveGoodFormRaw, formName));
-                        DataFrameSelf.toSql(dfSave, saveTablenameFiltered, connection, "append", null);
+                        DataFrameS.toSql(dfSave, saveTablenameFiltered, connection, "append", null);
                     }
                 }
                 return "success";

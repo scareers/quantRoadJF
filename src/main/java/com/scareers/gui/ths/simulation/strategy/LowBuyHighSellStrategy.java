@@ -18,9 +18,9 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.Trader;
 import com.scareers.gui.ths.simulation.Trader.AccountStates;
 import com.scareers.gui.ths.simulation.TraderUtil;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.KlineFormsApi;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.io.FileNotFoundException;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
-import static com.scareers.utils.CommonUtils.*;
+import static com.scareers.utils.CommonUtil.*;
 import static com.scareers.utils.SqlUtil.execSql;
 
 
@@ -86,7 +86,7 @@ public class LowBuyHighSellStrategy extends Strategy {
             .set("最高", "high").set("最低", "low").set("成交量", "vol").set("成交额", "amount");
 
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
         new LowBuyHighSellStrategy("xx");
@@ -179,11 +179,11 @@ public class LowBuyHighSellStrategy extends Strategy {
             DataFrame<Object> dfSave = new DataFrame<Object>();
             dfSave.add("trade_date", Arrays.asList(today));
             dfSave.add("yesterday_holds",
-                    Arrays.asList(JSONUtil.toJsonStr(DataFrameSelf.to2DList(AccountStates.currentHolds, true))));
+                    Arrays.asList(JSONUtil.toJsonStr(DataFrameS.to2DList(AccountStates.currentHolds, true))));
             dfSave.add("yesterday_nine_account_fund_info",
                     Arrays.asList(JSONUtil.toJsonStr(AccountStates.nineBaseFundsData)));
             dfSave.add("record_time", Arrays.asList(DateUtil.now()));
-            DataFrameSelf.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfStockSelectResult,
+            DataFrameS.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfStockSelectResult,
                     "append", null);
             log.warn("save success: 保存成功: 昨日收盘持仓信息和账户资金数据原始记录");
             dfTemp = DataFrame.readSql(connOfStockSelectResult, sql); // 获取解析以便, 不使用直接赋值的方式
@@ -195,7 +195,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         tempMap.keySet().stream()
                 .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));
         log.warn("init success: 昨日持仓与账户资金状况, 初始化完成");
-        List<String> stocksYesterdayHolds = DataFrameSelf.getColAsStringList(yesterdayStockHoldsBeSell, STR_SEC_CODE);
+        List<String> stocksYesterdayHolds = DataFrameS.getColAsStringList(yesterdayStockHoldsBeSell, STR_SEC_CODE);
         log.warn("after yesterday close: 昨日收盘后持有股票数量: {} ;代码: {}", stocksYesterdayHolds.size(), stocksYesterdayHolds);
         log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
@@ -497,10 +497,10 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("stock select today: 执行今日选股主逻辑. keyInts: {}", keyInts);
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
-        List<String> allHSAstock = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
-        List<String> pioneerMarket = DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
+        List<String> allHSAstock = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
+        List<String> pioneerMarket = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
         List<String> scientificCreationMarket =
-                DataFrameSelf.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
+                DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
                         "股票代码");
         HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
                 pioneerMarket)),

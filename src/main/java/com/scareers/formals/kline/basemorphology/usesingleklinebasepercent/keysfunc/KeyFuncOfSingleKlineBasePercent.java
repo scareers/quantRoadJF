@@ -1,11 +1,10 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
-import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.utils.CommonUtils;
+import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.combinpermu.Generator;
 import joinery.DataFrame;
 
@@ -28,7 +27,7 @@ public class KeyFuncOfSingleKlineBasePercent {
         // double perRangeWidth = (effectiveValueRange.get(1) - effectiveValueRange.get(0)) / bins;
         List<Double> tickList = new ArrayList<>();
         for (int i = 0; i < bins + 1; i++) {// 初始化 tick列表.
-            tickList.add(CommonUtils.roundHalfUP(effectiveValueRange.get(0) + i * perRangeWidth, 3));
+            tickList.add(CommonUtil.roundHalfUP(effectiveValueRange.get(0) + i * perRangeWidth, 3));
         }
         return tickList;
     }
@@ -273,18 +272,18 @@ public class KeyFuncOfSingleKlineBasePercent {
     }
 
 
-    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
-                                                                      String formNamePure,
-                                                                      List<String> statDateRange,
-                                                                      String statResultAlgorithm,
-                                                                      String conditionsSet,
-                                                                      String condition1,
-                                                                      String condition2,
-                                                                      String condition3,
-                                                                      String condition4,
-                                                                      String condition5,
-                                                                      String condition6,
-                                                                      String condition7) throws SQLException {
+    public static DataFrameS<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
+                                                                   String formNamePure,
+                                                                   List<String> statDateRange,
+                                                                   String statResultAlgorithm,
+                                                                   String conditionsSet,
+                                                                   String condition1,
+                                                                   String condition2,
+                                                                   String condition3,
+                                                                   String condition4,
+                                                                   String condition5,
+                                                                   String condition6,
+                                                                   String condition7) throws SQLException {
 
         return prepareSaveDfForAnalyzeResult(analyzeResultMapSingle, formNamePure, statDateRange, statResultAlgorithm,
                 conditionsSet
@@ -345,29 +344,29 @@ public class KeyFuncOfSingleKlineBasePercent {
      * @param formDescription
      */
     // 本函数是针对单条结果的, 并不执行保存逻辑, 返回 单条记录的 df; 调用方可拼接多次实现批量保存
-    public static DataFrameSelf<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
-                                                                      String formNamePure,
-                                                                      List<String> statDateRange,
-                                                                      String statResultAlgorithm,
-                                                                      String conditionsSet,
-                                                                      String condition1,
-                                                                      String condition2,
-                                                                      String condition3,
-                                                                      String condition4,
-                                                                      String condition5,
-                                                                      String condition6,
-                                                                      String condition7,
-                                                                      String condition8,
-                                                                      String condition9,
-                                                                      String condition10,
-                                                                      String selfNotes,
-                                                                      String formDescription
+    public static DataFrameS<Object> prepareSaveDfForAnalyzeResult(HashMap<String, Object> analyzeResultMapSingle,
+                                                                   String formNamePure,
+                                                                   List<String> statDateRange,
+                                                                   String statResultAlgorithm,
+                                                                   String conditionsSet,
+                                                                   String condition1,
+                                                                   String condition2,
+                                                                   String condition3,
+                                                                   String condition4,
+                                                                   String condition5,
+                                                                   String condition6,
+                                                                   String condition7,
+                                                                   String condition8,
+                                                                   String condition9,
+                                                                   String condition10,
+                                                                   String selfNotes,
+                                                                   String formDescription
     ) throws SQLException {
         if (analyzeResultMapSingle == null) {
             return null;
         }
 
-        DataFrameSelf<Object> dfSaved = new DataFrameSelf<>();
+        DataFrameS<Object> dfSaved = new DataFrameS<>();
         List<Object> row = new ArrayList<>();
         for (String key : analyzeResultMapSingle.keySet()) {
             // zero_compare_counts ArrayList<Integer> 3
@@ -761,7 +760,7 @@ public class KeyFuncOfSingleKlineBasePercent {
         // 7.今日成交量 / 前五日平均成交量: 使用 vol列, 而非amount金额. 注意需要 df_window 复权形式一样. 要么无复权,要么全部后复权
         // @noti: new: trade_date	open	close	high	 low	  vol	     amount  成交量在 5, 不使用查找了
         DataFrame<Double> dfTemp = new DataFrame<>();
-        dfTemp.add("vol", DataFrameSelf.getColAsDoubleList(dfWindow.slice(0, 5), "vol"));
+        dfTemp.add("vol", DataFrameS.getColAsDoubleList(dfWindow.slice(0, 5), "vol"));
         Double volToPre5day = todayVol / dfTemp.mean().get(0, 0);
         // .mean() 也得到了df, 这里只有唯一一个了
         List<String> volToPre5dayConditionList = getConditionNamesForNodeList(volToPre5dayAvgRangeList,

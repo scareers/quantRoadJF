@@ -5,14 +5,11 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
-import com.scareers.utils.log.LogUtils;
-import org.apache.poi.hssf.record.PageBreakRecord;
+import com.scareers.utils.log.LogUtil;
 
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
-import java.util.function.Predicate;
 
 /**
  * description:
@@ -20,7 +17,7 @@ import java.util.function.Predicate;
  * @author: admin
  * @date: 2021/11/6  0006-23:38
  */
-public class CommonUtils {
+public class CommonUtil {
     public static void main(String[] args) throws TimeoutException, InterruptedException {
         Console.log(changeStatRangeForFull(Arrays.asList("20120102", "20130102")));
         waitEnter();
@@ -252,7 +249,7 @@ public class CommonUtils {
                                 boolean showWaitTime)
             throws TimeoutException, InterruptedException {
         if (description != null) {
-            LogUtils.log.warn("wait util: 等待: {}", description);
+            LogUtil.log.warn("wait util: 等待: {}", description);
         }
         TimeInterval timer = DateUtil.timer();
         timer.start();
@@ -264,10 +261,10 @@ public class CommonUtils {
             Thread.sleep(interval);
         }
         if (showWaitTime) {
-            LogUtils.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
+            LogUtil.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
         }
         if (description != null) {
-            LogUtils.log.warn("wait util: 完成: {}", description);
+            LogUtil.log.warn("wait util: 完成: {}", description);
         }
     }
 

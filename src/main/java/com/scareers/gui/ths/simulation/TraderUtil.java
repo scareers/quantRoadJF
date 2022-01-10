@@ -4,9 +4,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONNull;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
-import org.checkerframework.common.reflection.qual.NewInstance;
 
 import java.util.List;
 
@@ -17,7 +16,7 @@ import java.util.List;
  * @date: 2021/12/26/026-00:13:09
  */
 public class TraderUtil {
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     /**
      * 单个订单可能有多个响应, 多个 retrying + 1个正式响应. 给定响应列表, 找到响应

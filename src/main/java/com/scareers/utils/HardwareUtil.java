@@ -16,7 +16,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 
-public class HardwareUtils {
+public class HardwareUtil {
     public static void main(String[] args)
             throws InterruptedException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 //        getCpuInfoAsString(true);
@@ -47,8 +47,8 @@ public class HardwareUtils {
                 while (true) {
                     String hardwareInfo = reportCpuMemoryDisk(showInStdout);
                     try {
-                        MailUtil.send(SettingsCommon.receivers, StrUtilSelf.format("硬件信息线程播报: ({}分钟/次)", interval),
-                                StrUtilSelf
+                        MailUtil.send(SettingsCommon.receivers, StrUtilS.format("硬件信息线程播报: ({}分钟/次)", interval),
+                                StrUtilS
                                         .format("当前时间: {}, 硬件信息:{}\n", LocalDateTimeUtil.now().toString(), hardwareInfo),
                                 false,
                                 null);

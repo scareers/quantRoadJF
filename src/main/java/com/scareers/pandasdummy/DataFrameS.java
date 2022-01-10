@@ -30,28 +30,28 @@ import java.util.*;
  *
  * @param <V> 数据类型, 常用 Object
  */
-public class DataFrameSelf<V> extends joinery.DataFrame<V> {
-    public DataFrameSelf() {
+public class DataFrameS<V> extends joinery.DataFrame<V> {
+    public DataFrameS() {
         super();
     }
 
-    public DataFrameSelf(String... columns) {
+    public DataFrameS(String... columns) {
         super(columns);
     }
 
-    public DataFrameSelf(Collection<?> columns) {
+    public DataFrameS(Collection<?> columns) {
         super(columns);
     }
 
-    public DataFrameSelf(Collection<?> index, Collection<?> columns) {
+    public DataFrameS(Collection<?> index, Collection<?> columns) {
         super(index, columns);
     }
 
-    public DataFrameSelf(List<? extends List<? extends V>> data) {
+    public DataFrameS(List<? extends List<? extends V>> data) {
         super(data);
     }
 
-    public DataFrameSelf(Collection<?> index, Collection<?> columns, List<? extends List<? extends V>> data) {
+    public DataFrameS(Collection<?> index, Collection<?> columns, List<? extends List<? extends V>> data) {
         super(index, columns, data);
     }
 

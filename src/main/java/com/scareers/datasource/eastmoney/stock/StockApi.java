@@ -14,9 +14,9 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.Tqdm;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.util.Arrays;
@@ -37,7 +37,7 @@ import static com.scareers.utils.JsonUtil.jsonStrToDf;
  * @date: 2021/12/21/021-22:10:19
  */
 public class StockApi {
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
     public static ConcurrentHashMap<String, String> FS_DICT = new ConcurrentHashMap<>();
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
@@ -512,7 +512,7 @@ public class StockApi {
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws Exception {
         DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, 3000);
-        List<String> dates = DataFrameSelf.getColAsStringList(dfTemp, "日期");
+        List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
                 // 此时i为  上 1 交易日. 因此..

@@ -8,12 +8,12 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.MindgoFSApi;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.sqlapi.TushareIndexApi;
-import com.scareers.utils.StrUtilSelf;
+import com.scareers.utils.StrUtilS;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 import lombok.AllArgsConstructor;
@@ -32,9 +32,9 @@ import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribut
 import static com.scareers.sqlapi.KlineFormsApi.*;
 import static com.scareers.sqlapi.TushareApi.*;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
-import static com.scareers.utils.CommonUtils.range;
+import static com.scareers.utils.CommonUtil.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -96,8 +96,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             execSql(
-                    StrUtilSelf.format(sqlDeleteExistDateRangeFSBacktest,
-                            StrUtilSelf.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    StrUtilS.format(sqlDeleteExistDateRangeFSBacktest,
+                            StrUtilS.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     connOfKlineForms, false);
             // 主逻辑.
             fsLowBuyHighSellBacktestV1(statDateRange);
@@ -117,7 +117,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 processAmountOfBacktest * 2, 10000, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>()); // 唯一线程池, 一直不shutdown
         List<Integer> indexes = range(dates.size());
-        for (Integer index : Tqdm.tqdm(indexes, StrUtilSelf.format("{} total process ", backtestDateRange))) {
+        for (Integer index : Tqdm.tqdm(indexes, StrUtilS.format("{} total process ", backtestDateRange))) {
             Console.log("\ntotal process: {} / {}", index + 1, indexes.size()); // 换行以方便显示进度条
             if (index < start) {
                 continue; // 可设定起始值, 方便debug
@@ -148,7 +148,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 futuresOfBacktest.add(f);
             }
             List<Integer> indexesOfBacktest = range(futuresOfBacktest.size());
-            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtilSelf.format("{} process ", tradeDate))) {
+            for (Integer i : Tqdm.tqdm(indexesOfBacktest, StrUtilS.format("{} process ", tradeDate))) {
                 // 串行不再需要使用 CountDownLatch
                 Future<Void> f = futuresOfBacktest.get(i);
                 Void res = f.get();
@@ -157,8 +157,8 @@ public class FSBacktestOfLowBuyNextHighSell {
 
         }
         MailUtil.send(SettingsCommon.receivers,
-                StrUtilSelf.format("部分回测完成: {} ", backtestDateRange),
-                StrUtilSelf.format("部分回测完成,耗时: {}h",
+                StrUtilS.format("部分回测完成: {} ", backtestDateRange),
+                StrUtilS.format("部分回测完成,耗时: {}h",
                         (double) timer.intervalRestart() / 3600000),
                 false, null);
         System.gc();
@@ -167,7 +167,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
     private static List<Long> filterFormSetIds(List<Long> formSetIds) throws SQLException {
         DataFrame<Object> dataFrame = DataFrame.readSql(ConnectionFactory.getConnLocalKlineForms(),
-                StrUtilSelf.format(
+                StrUtilS.format(
                         "select form_set_id,\n" +
                                 "       (max(virtual_geometry_mean) - min(virtual_geometry_mean)) as width,\n" +
                                 "       max(virtual_geometry_mean)                                as\n" +
@@ -185,7 +185,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                                 "  and stat_result_algorithm like '%1%'\n" +
                                 "group by form_set_id\n" +
                                 "order by width desc", formSetIdsFilterArgs.get(0), formSetIdsFilterArgs.get(1)));
-        List<Long> formSetIdsSelected = DataFrameSelf.getColAsLongList(dataFrame, "form_set_id");
+        List<Long> formSetIdsSelected = DataFrameS.getColAsLongList(dataFrame, "form_set_id");
 
         List<Long> res = new ArrayList<>();
         for (Long i : formSetIds) {
@@ -436,7 +436,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 }
                 return value; // 如果值时 NaN, 则保存到mysql出错, 这里判定一下, 转换为 null
             });
-            DataFrameSelf.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
+            DataFrameS.toSql(dfLowBuyHighSell, saveTablenameFSBacktest,
                     connOfKlineForms, "append", null);
             // Console.com.scareers.log("success: {}", formSetId);
             return null;
@@ -717,7 +717,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 tradeTimeCol.stream().forEach(value -> {
                     tickDoubleCol.add(fsTimeStrParseToTickDouble(value.toString().substring(11, 16)));
                 }); // 构建 tick Double 列.
-                List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSHighSellDay, "close"); //key2列
+                List<Double> closeCol = DataFrameS.getColAsDoubleList(dfFSHighSellDay, "close"); //key2列
 
                 // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
                 Double stdCloseOfHighSell = closePriceOfQfqStockSpecialDay(stock, tradeDate, highSellDate,
@@ -1009,7 +1009,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                 tradeTimeCol.stream().forEach(value -> {
                     tickDoubleCol.add(fsTimeStrParseToTickDouble(value.toString().substring(11, 16)));
                 }); // 构建 tick Double 列.
-                List<Double> closeCol = DataFrameSelf.getColAsDoubleList(dfFSLowBuyDay, "close"); //key2列
+                List<Double> closeCol = DataFrameS.getColAsDoubleList(dfFSLowBuyDay, "close"); //key2列
 
                 // 获取 今日收盘价, 作为 买入价_百分比 计算的 标准价格.       @Cached
                 Double stdCloseOfLowBuy = closePriceOfQfqStockSpecialDay(stock, tradeDate, lowBuyDate,

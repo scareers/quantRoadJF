@@ -2,16 +2,13 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.back
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileWriter;
-import cn.hutool.core.io.resource.Resource;
-import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.utils.StrUtilSelf;
+import com.scareers.utils.StrUtilS;
 import joinery.DataFrame;
 
 import java.io.File;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -57,7 +54,7 @@ public class IndexRealTimeRaiseFallParameter {
         HashMap<String, HashMap<Integer, HashMap<String, Double>>> res = new HashMap<>();
         for (String table : tables) {
             Console.log("parsing: {}", table);
-            String fullSql = StrUtilSelf.format(sql, table);
+            String fullSql = StrUtilS.format(sql, table);
             DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
 
             HashMap<Integer, HashMap<String, Double>> resOfPerFormsetid = new HashMap<>();
@@ -108,7 +105,7 @@ public class IndexRealTimeRaiseFallParameter {
         for (String table : tables) {
             Console.log("parseing: {}", table);
             HashMap<String, Double> singleRes = new HashMap<>();
-            String fullSql = StrUtilSelf.format(sql, table);
+            String fullSql = StrUtilS.format(sql, table);
             DataFrame<Object> dfTemp = DataFrame.readSql(klineForms, fullSql);
             int colCount = dfTemp.size();
             for (int i = 0; i < colCount; i++) {
@@ -140,7 +137,7 @@ public class IndexRealTimeRaiseFallParameter {
         List<String> tables = getResultTables();
         int prefixLenth = "fs_bk_lbhs_next0b1s_indexper_scale1.21.3".length();
         for (String tablename : tables) {
-            String newTablename = StrUtilSelf.format("{}{}{}",
+            String newTablename = StrUtilS.format("{}{}{}",
                     "fs_bk_lbhs_next0b1s_indexper_scale1.21.31.2",
                     "",
                     tablename.substring(prefixLenth, tablename.length()));

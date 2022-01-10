@@ -4,7 +4,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.utils.CommonUtils;
+import com.scareers.utils.CommonUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class ThreadPoolDemo {
         final TimeInterval timer = new TimeInterval();
         timer.start("1");
 
-        List<Integer> indexes = CommonUtils.range(100);
+        List<Integer> indexes = CommonUtil.range(100);
         CountDownLatch latch = new CountDownLatch(indexes.size());
         ThreadPoolExecutor pool = new ThreadPoolExecutor(100,
                 200, 10000, TimeUnit.MILLISECONDS,
@@ -61,7 +61,7 @@ public class ThreadPoolDemo {
         final TimeInterval timer = new TimeInterval();
         timer.start("1");
 
-        List<Integer> indexes = CommonUtils.range(100);
+        List<Integer> indexes = CommonUtil.range(100);
         CountDownLatch latch = new CountDownLatch(indexes.size());
         ThreadPoolExecutor pool = new ThreadPoolExecutor(100,
                 200, 10000, TimeUnit.MILLISECONDS,

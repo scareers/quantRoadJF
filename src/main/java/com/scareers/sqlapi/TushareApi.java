@@ -11,7 +11,7 @@ import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 
 import joinery.DataFrame;
 
@@ -443,7 +443,7 @@ public class TushareApi {
                 "trade_date>='{}' order by trade_date limit {}", StrUtil.format(STOCK_PRICE_DAILY_TABLENAME_TEMPLATE,
                 "nofq"), stock, today, keyInts.get(1) + 2); // 包括今天,且从0开始
         DataFrame<Object> dates = DataFrame.readSql(connLocalTushare, sql);
-        List<String> dates_ = DataFrameSelf.getColAsStringList(dates, "trade_date");
+        List<String> dates_ = DataFrameS.getColAsStringList(dates, "trade_date");
         // 找到 keyInts 对应的 两个日期.  注意因为 today可能不在以上列表中, 因此 并不一定最后一个就是我们要的 keyInt2
         List<String> keyIntsDates = new ArrayList<>();
         int gtThanToday = -1; // 记录已经大于today 的数量

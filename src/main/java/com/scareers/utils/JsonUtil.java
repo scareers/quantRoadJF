@@ -5,8 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.log.Log;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
@@ -99,7 +98,7 @@ public class JsonUtil {
                 res.append(rowFinal);
             }
         } else {
-            LogUtils.log.error("parse type error: 尚未支持的解析类型: {}", clazz);
+            LogUtil.log.error("parse type error: 尚未支持的解析类型: {}", clazz);
         }
         return res;
     }

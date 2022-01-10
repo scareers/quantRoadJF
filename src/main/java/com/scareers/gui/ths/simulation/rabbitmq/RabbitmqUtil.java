@@ -4,7 +4,7 @@ import cn.hutool.log.Log;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -18,7 +18,7 @@ import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
  * @date: 2022/1/8/008-01:03:54
  */
 public class RabbitmqUtil {
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     public static Connection connectToRbServer() throws IOException, TimeoutException {
         ConnectionFactory factory = new ConnectionFactory();

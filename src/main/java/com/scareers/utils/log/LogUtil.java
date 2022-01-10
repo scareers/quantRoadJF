@@ -15,7 +15,7 @@ import java.lang.management.ManagementFactory;
  * @author: admin
  * @date: 2021/12/20/020-16:15
  */
-public class LogUtils {
+public class LogUtil {
     public static Log log = getLogger();
 
     public static void main(String[] args) {

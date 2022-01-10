@@ -34,7 +34,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
@@ -50,7 +50,7 @@ import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
-import static com.scareers.utils.CommonUtils.waitUtil;
+import static com.scareers.utils.CommonUtil.waitUtil;
 
 //import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
 
@@ -66,7 +66,7 @@ public class Trader {
     // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
             "C:/project/python/quantRoad/gui/ths_simulation_trade/main_simulation_trade.py";
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
     public static Channel channelComsumer;
     public static Channel channelProducer;
     public static Connection connOfRabbitmq;

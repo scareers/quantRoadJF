@@ -1,7 +1,7 @@
 package com.scareers.sqlapi;
 
-import com.scareers.pandasdummy.DataFrameSelf;
-import com.scareers.utils.StrUtilSelf;
+import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.StrUtilS;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -19,13 +19,13 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class CommonSqlApi {
 
     public static void renameTable(Connection connection, String tableName, String newTableName) throws Exception {
-        String sql = StrUtilSelf.format("rename table `{}` to `{}`", tableName, newTableName);
+        String sql = StrUtilS.format("rename table `{}` to `{}`", tableName, newTableName);
         execSql(sql, connection);
     }
 
     public static List<String> getAllTables(Connection connection) throws SQLException {
         String sql = "show tables";
         DataFrame<Object> dfTemp = DataFrame.readSql(connection, sql);
-        return DataFrameSelf.getColAsStringList(dfTemp, 0);
+        return DataFrameS.getColAsStringList(dfTemp, 0);
     }
 }

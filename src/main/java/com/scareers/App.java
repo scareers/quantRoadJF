@@ -1,32 +1,9 @@
 package com.scareers;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.file.FileWriter;
-import cn.hutool.core.io.resource.Resource;
-import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.lang.Snowflake;
-import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
-import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell;
-
-import java.io.File;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.util.*;
-
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
-import static com.scareers.utils.CommonUtils.*;
-import static com.scareers.utils.FSUtil.fsTickDoubleParseToTimeStr;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDiskSubThread;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDiskSubThread;
 import static com.scareers.utils.SqlUtil.execSql;
-import static com.scareers.utils.SqlUtil.execSqlQuery;
 
 /**
  * Hello world!
@@ -82,10 +59,10 @@ public class App {
 //
 //        for (String key : keys) {
 //            if (key.endsWith("happen_tick")) {
-//                Console.com.scareers.log(StrUtilSelf.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
+//                Console.com.scareers.log(StrUtilS.format("{} --> {}", key, fsTickDoubleParseToTimeStr(temp2.get(key))));
 //                continue;
 //            }
-//            Console.com.scareers.log(StrUtilSelf.format("{} --> {}", key, temp2.get(key)));
+//            Console.com.scareers.log(StrUtilS.format("{} --> {}", key, temp2.get(key)));
 //        }
 //        Console.com.scareers.log(RandomUtil.randomInt(10));
 
@@ -156,7 +133,7 @@ public class App {
 //        Console.com.scareers.log(df.kurt());
 
 
-//        DataFrameSelf<Object> df = new DataFrameSelf<>("a", "b");
+//        DataFrameS<Object> df = new DataFrameS<>("a", "b");
 //        Connection conn = ConnectionFactory.getConnLocalKlineForms();
 
 //        df.append(Arrays.asList(1, 2));
@@ -199,9 +176,9 @@ public class App {
 //
 //        String str = "abcde" +
 //                "fgh" + (1 ^ 2);
-//        String strSub1 = StrUtilSelf.sub(str, 2, 3); //strSub1 -> c
-//        String strSub2 = StrUtilSelf.sub(str, 2, -3); //strSub2 -> cde
-//        String strSub3 = StrUtilSelf.sub(str, 3, 2); //strSub2 -> c
+//        String strSub1 = StrUtilS.sub(str, 2, 3); //strSub1 -> c
+//        String strSub2 = StrUtilS.sub(str, 2, -3); //strSub2 -> cde
+//        String strSub3 = StrUtilS.sub(str, 3, 2); //strSub2 -> c
 //        System.out.println(strSub1);
 //
 ////        System.out.println(RuntimeUtil.execForStr("systeminfo"));

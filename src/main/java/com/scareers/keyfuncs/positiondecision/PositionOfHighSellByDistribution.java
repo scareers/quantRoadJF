@@ -9,7 +9,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
@@ -19,7 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.*;
-import static com.scareers.utils.CommonUtils.*;
+import static com.scareers.utils.CommonUtil.*;
 
 /**
  * description: Low, High等相关分布, 决定买卖点出现时, 的仓位.
@@ -406,7 +406,7 @@ public class PositionOfHighSellByDistribution {
                         "  and stat_result_algorithm like '%1%'\n" +
                         "group by form_set_id\n" +
                         "order by width desc");
-        List<Integer> formSetIds = DataFrameSelf.getColAsIntegerList(dataFrame, "form_set_id");
+        List<Integer> formSetIds = DataFrameS.getColAsIntegerList(dataFrame, "form_set_id");
         flushDistributions(formSetIds.get(formSetIdControll));
     }
 

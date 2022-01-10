@@ -12,7 +12,7 @@ package com.scareers.gui.ths.simulation.order;
  * @date: 2021/12/23/023-19:37:36
  */
 public class QueryNoArgsOrder extends Order {
-    public static long DEFAULT_PRIORITY = Order.PRIORITY_LOW;
+    private static long DEFAULT_PRIORITY = Order.PRIORITY_LOW;
 
     public QueryNoArgsOrder(String orderType) {
         super(orderType);

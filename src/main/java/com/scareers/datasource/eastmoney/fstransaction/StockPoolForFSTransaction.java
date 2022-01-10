@@ -4,7 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @date: 2021/12/21/021-18:16:14
  */
 public class StockPoolForFSTransaction implements StockPoolFactory {
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
         Console.log(new StockPoolForFSTransaction().createStockPool());

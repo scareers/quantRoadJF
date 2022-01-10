@@ -7,18 +7,18 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
-//import cn.hutool.core.util.StrUtilSelf;
+//import cn.hutool.core.util.StrUtilS;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.CommonUtils;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.SqlUtil;
-import com.scareers.utils.StrUtilSelf;
+import com.scareers.utils.StrUtilS;
 import com.scareers.utils.Tqdm;
 import joinery.DataFrame;
 
@@ -32,8 +32,8 @@ import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercen
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.sqlapi.TushareApi.getAdjdatesByTscodeFromTushare;
 import static com.scareers.sqlapi.TushareApi.getStockPriceByTscodeAndDaterangeAsDfFromTushare;
-import static com.scareers.utils.CommonUtils.showMemoryUsageMB;
-import static com.scareers.utils.HardwareUtils.reportCpuMemoryDisk;
+import static com.scareers.utils.CommonUtil.showMemoryUsageMB;
+import static com.scareers.utils.HardwareUtil.reportCpuMemoryDisk;
 
 /**
  * description:
@@ -59,7 +59,7 @@ public class SingleKlineFormsBase {
             timer.start();
 
             log.info("current time");
-            log.warn(StrUtilSelf.format("start windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg));
+            log.warn(StrUtilS.format("start windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg));
             // 刷新相关设定:
             SettingsOfSingleKlineBasePercent.refreshWindowUsePeriodRelativeSettings(windowUsePeriodsCoreArg);
             main0(SettingsOfSingleKlineBasePercent.windowUsePeriodsCoreArg);
@@ -68,8 +68,8 @@ public class SingleKlineFormsBase {
             // 在批量调用时, 调用main0, 周期数量通过 参数  windowUsePeriodsCoreArg 传递.
             // 设定的所有都不需要变, 只有 周期数需要改变
             MailUtil.send(SettingsCommon.receivers,
-                    StrUtilSelf.format("全部解析完成,windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg),
-                    StrUtilSelf.format("全部解析完成,耗时: {}h",
+                    StrUtilS.format("全部解析完成,windowUsePeriodsCoreArg: {}", windowUsePeriodsCoreArg),
+                    StrUtilS.format("全部解析完成,耗时: {}h",
                             (double) timer.intervalRestart() / 3600000),
                     false, null);
             Console.log("耗时: windowUsePeriodsCoreArg: {} , {} ", windowUsePeriodsCoreArg,
@@ -102,16 +102,16 @@ public class SingleKlineFormsBase {
             Console.log("当前循环组: {}", statDateRange);
             // 不能关闭连接, 否则为 null, 引发空指针异常
             SqlUtil.execSql(
-                    StrUtilSelf.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
-                            StrUtilSelf.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
+                    StrUtilS.format(SettingsOfSingleKlineBasePercent.sqlDeleteExistDateRange,
+                            StrUtilS.format("[\"{}\",\"{}\"]", statDateRange.get(0), statDateRange.get(1))),
                     SettingsOfSingleKlineBasePercent.ConnOfSaveTable, false);
 
             statsConclusionOfBatchFormsCommons(stocks, stockWithStDateRanges, stockWithBoard, statDateRange,
                     bigChangeThreshold, bins, effectiveValueRange,
                     SettingsOfSingleKlineBasePercent.saveTablename, windowUsePeriodsCoreArg);
             String hardwareInfo = reportCpuMemoryDisk(true);
-            MailUtil.send(SettingsCommon.receivers, StrUtilSelf.format("部分解析完成: {}", statDateRange),
-                    StrUtilSelf.format("部分解析完成, 硬件信息:{}\n", hardwareInfo), false,
+            MailUtil.send(SettingsCommon.receivers, StrUtilS.format("部分解析完成: {}", statDateRange),
+                    StrUtilS.format("部分解析完成, 硬件信息:{}\n", hardwareInfo), false,
                     null);
             log.info("current time");
         }
@@ -155,8 +155,8 @@ public class SingleKlineFormsBase {
                             stockWithStDateRanges, connOfParse, windowUsePeriodsCoreArg));
             futuresOfParse.add(f);
         }
-        List<Integer> indexesOfParse = CommonUtils.range(futuresOfParse.size());
-        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtilSelf.format("{} process: ", statDateRange))) {
+        List<Integer> indexesOfParse = CommonUtil.range(futuresOfParse.size());
+        for (Integer i : Tqdm.tqdm(indexesOfParse, StrUtilS.format("{} process: ", statDateRange))) {
             Future<ConcurrentHashMap<String, List<Double>>> f = futuresOfParse.get(i);
             ConcurrentHashMap<String, List<Double>> resultTemp = f.get();
             //            synchronized (results) {
@@ -198,13 +198,13 @@ public class SingleKlineFormsBase {
         // 仅用于显示进度
         int totalEpochAmounts = (int) Math
                 .ceil((double) results.size() / SettingsOfSingleKlineBasePercent.perEpochTaskAmounts);
-        List<Integer> epochs = CommonUtils.range(totalEpochAmounts);
+        List<Integer> epochs = CommonUtil.range(totalEpochAmounts);
         Connection connOfSave = SettingsOfSingleKlineBasePercent.ConnOfSaveTable;
         CountDownLatch latchOfCalcForEpoch = new CountDownLatch(totalEpochAmounts);
         ArrayList<Future<List<String>>> futuresOfSave = new ArrayList<>();
         // 批量插入不伤ssd. 单条插入很伤ssd
         for (Integer currentEpoch : Tqdm
-                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilS.format("{} process: ", statDateRange))) {
             int startIndex = currentEpoch * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             int endIndex = (currentEpoch + 1) * SettingsOfSingleKlineBasePercent.perEpochTaskAmounts;
             List<String> formNamesCurrentEpoch = forNameRaws
@@ -219,7 +219,7 @@ public class SingleKlineFormsBase {
         }
         AtomicInteger saveProcess = new AtomicInteger(0);
         for (Integer i : Tqdm
-                .tqdm(epochs, StrUtilSelf.format("{} process: ", statDateRange))) {
+                .tqdm(epochs, StrUtilS.format("{} process: ", statDateRange))) {
             Future<List<String>> f = futuresOfSave.get(i);
             List<String> finishedFormNames = f.get();
             for (String formName0 : finishedFormNames) {
@@ -294,7 +294,7 @@ public class SingleKlineFormsBase {
                     int splitIndex = formName.lastIndexOf("__");
                     String formNamePure = formName.substring(0, splitIndex);
                     String statResultAlgorithm = formName.substring(splitIndex + 2);
-                    List<String> conditions = StrUtilSelf.split(formNamePure, "__");
+                    List<String> conditions = StrUtilS.split(formNamePure, "__");
                     String condition1 = null;
                     String condition2 = null;
                     String condition3 = null;
@@ -327,7 +327,7 @@ public class SingleKlineFormsBase {
                         }
                     }
 
-                    DataFrameSelf<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultMap, formNamePure,
+                    DataFrameS<Object> dfSingleSaved = prepareSaveDfForAnalyzeResult(analyzeResultMap, formNamePure,
                             statDateRange,
                             statResultAlgorithm, "",
                             condition1, condition2,
@@ -355,7 +355,7 @@ public class SingleKlineFormsBase {
                     //或者: 返回后统一删除key.
                 }
                 // dfTotalSave 应当转换为 self
-                DataFrameSelf.toSql(dfTotalSave, saveTablename, connOfSingleThread, "append", null);
+                DataFrameS.toSql(dfTotalSave, saveTablename, connOfSingleThread, "append", null);
                 return formNameRaws;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -442,7 +442,7 @@ public class SingleKlineFormsBase {
             try {
                 // 开始主要逻辑
                 // 添加结果到 线程安全的 总结果集
-                List<String> statDateRangeFull = CommonUtils.changeStatRangeForFull(statDateRange);
+                List<String> statDateRangeFull = CommonUtil.changeStatRangeForFull(statDateRange);
                 // 单个线程用一个 conn 对象, 用完close(), 否则线程池容量不够
                 // 连接未关闭, 传递了 conn. 若不传递, 则临时从池子获取.
                 DataFrame<Object> dfRaw = getStockPriceByTscodeAndDaterangeAsDfFromTushare(stock, "nofq",

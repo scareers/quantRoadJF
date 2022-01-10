@@ -3,7 +3,7 @@ package com.scareers.datasource.eastmoney;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import lombok.Data;
 
 import java.util.Arrays;
@@ -63,7 +63,7 @@ public class SecurityBeanEm {
         return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
     }
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
     private static final int retry = 3; // 查询时3次
 
 

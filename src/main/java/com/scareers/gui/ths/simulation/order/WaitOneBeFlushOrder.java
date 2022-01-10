@@ -9,7 +9,7 @@ import java.util.Map;
  * @date: 2021/12/23/023-19:37:36
  */
 public class WaitOneBeFlushOrder extends Order {
-    public static long DEFAULT_PRIORITY = Order.PRIORITY_HIGH;
+    private static long DEFAULT_PRIORITY = Order.PRIORITY_HIGH;
 
     public WaitOneBeFlushOrder(Map<String, Object> params) {
         super("wait_one_exact_order_be_flushed", params); // 等待某订单被刷新.

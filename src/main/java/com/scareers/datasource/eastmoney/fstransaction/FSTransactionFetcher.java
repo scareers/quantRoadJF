@@ -8,10 +8,10 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.TushareApi;
-import com.scareers.utils.StrUtilSelf;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.StrUtilS;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
-import static com.scareers.utils.CommonUtils.*;
+import static com.scareers.utils.CommonUtil.*;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
@@ -65,7 +65,7 @@ public class FSTransactionFetcher {
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 
     // 实例属性
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
@@ -161,7 +161,7 @@ public class FSTransactionFetcher {
      * 从数据库读取今日已被抓取数据,可能空. 并填充 进度map和初始数据map
      */
     private void initProcessAndRawDatas(String saveTableName) throws SQLException {
-        String sqlSelectAll = StrUtilSelf.format("select * from `{}`", saveTableName);
+        String sqlSelectAll = StrUtilS.format("select * from `{}`", saveTableName);
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
         for (SecurityBeanEm stock : stockPool) {
             DataFrame<Object> datasOfOneStock =
@@ -172,7 +172,7 @@ public class FSTransactionFetcher {
             fsTransactionDatas.put(stock, datasOfOneStock); // 可空
             processes.putIfAbsent(stock, "09:00:00"); // 默认值
 
-            List<String> timeTicks = DataFrameSelf.getColAsStringList(datasOfOneStock, "time_tick");
+            List<String> timeTicks = DataFrameS.getColAsStringList(datasOfOneStock, "time_tick");
             Optional<String> maxTick = timeTicks.stream().max(Comparator.naturalOrder());
             maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
         }
@@ -221,7 +221,7 @@ public class FSTransactionFetcher {
      * @throws Exception
      */
     public static void createSaveTable(String saveTableName) throws Exception {
-        String sql = StrUtilSelf.format("create table if not exists `{}`\n" +
+        String sql = StrUtilS.format("create table if not exists `{}`\n" +
                 "        (\n" +
                 "            stock_code varchar(128)   null,\n" +
                 "            market int null,\n" +
@@ -289,7 +289,7 @@ public class FSTransactionFetcher {
             DataFrame<Object> dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
                     stock.getMarket(), fetcher.timeout);
             // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
-            HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameSelf.getColAsStringList(dataOriginal,
+            HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameS.getColAsStringList(dataOriginal,
                     "time_tick"));
             // @noti: 分时有序: 取决于初始化时排序, 且纯新增数据有序后连接
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
@@ -298,7 +298,7 @@ public class FSTransactionFetcher {
             if (dfTemp.length() > 0) { // 若存在纯新数据
                 threadPoolOfSave.submit(() -> {
                     try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
-                        DataFrameSelf.toSql(dfTemp, fetcher.saveTableName, connSave, "append", null);
+                        DataFrameS.toSql(dfTemp, fetcher.saveTableName, connSave, "append", null);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -308,7 +308,7 @@ public class FSTransactionFetcher {
             // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
             fetcher.getFsTransactionDatas().put(stock, dfCurrentAll);
             Optional<String> processNew =
-                    (DataFrameSelf.getColAsStringList(dfCurrentAll, "time_tick")).stream()
+                    (DataFrameS.getColAsStringList(dfCurrentAll, "time_tick")).stream()
                             .max(Comparator.naturalOrder());
             if (processNew.isPresent()) {
                 fetcher.getProcesses().put(stock, processNew.get());

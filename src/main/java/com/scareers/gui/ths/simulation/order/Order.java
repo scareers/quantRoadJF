@@ -6,7 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.*;
 import cn.hutool.log.Log;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 import lombok.*;
 
 import java.io.Serializable;
@@ -327,5 +327,5 @@ public class Order implements Comparable, Serializable {
     }
 
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 }

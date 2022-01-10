@@ -12,7 +12,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.annotations.Cached;
-import com.scareers.utils.log.LogUtils;
+import com.scareers.utils.log.LogUtil;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -234,5 +234,5 @@ public class EastMoneyUtils {
         return beans;
     }
 
-    private static final Log log = LogUtils.getLogger();
+    private static final Log log = LogUtil.getLogger();
 }

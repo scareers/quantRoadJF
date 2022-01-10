@@ -4,7 +4,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameSelf;
+import com.scareers.pandasdummy.DataFrameS;
 import joinery.DataFrame;
 
 import java.sql.Connection;
@@ -65,7 +65,7 @@ public class DummyFormOrOtherSingleForm {
 
             }
             Console.log("{} -- {}", targetForm, algorithm);
-            dfTotal = DataFrameSelf.sortByColumnName(dfTotal);
+            dfTotal = DataFrameS.sortByColumnName(dfTotal);
             System.out.println(dfTotal.toString(1000));
             Console.log("********************");
 
