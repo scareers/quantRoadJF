@@ -1,7 +1,5 @@
 package com.scareers.gui.ths.simulation.trader;
 
-import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
@@ -20,17 +18,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * 账号状态监控类. 当前 5项数据
  *
  * @author admin
- * @noti: 5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以0最高优先级放入待执行队列. 实际执行由待执行队列进行调度
- * @noti: 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 和 check程序之后执行,
+ * @noti 5项数据的刷新均不保证立即执行, 即使  Immediately 也仅仅是以0最高优先级放入待执行队列. 实际执行由待执行队列进行调度
+ * @noti 静态属性的赋值, 实际由 check 程序完成, 因此, 本子系统应当后于 执行调度程序 和 check程序之后执行,
  * 且需要等待5项数据第一次更新, 以保证后期逻辑不会访问到 null值(或空Map/List)
- * @noti: nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
- * @noti: 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量.
+ * @noti nineBaseFundsData线程安全, 可随意赋值修改. 其余4项  DataFrame<Object> 需要全量更新.
+ * @noti 访问 DataFrame<Object> 时, 需要使用临时变量暂存, 即 dfo tempDf = 静态变量.
  * 即使静态变量在处理期间被更新, 依然不影响, 防止遍历时等bug
+ * @impl 机制1: 将死循环遍历订单队列, 补齐不存在的状态api类型订单. 循环带sleep
+ * 机制2: 某api若长时间未刷新数据, 则优先级可略提高, 以便先于同类执行.
+ * 机制3: commonApiPriority 控制常态 账户状态刷新api 的优先级
  */
 @Getter
 @Setter
 public class AccountStates {
-    public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序 sleep
+    private static final Log log = LogUtil.getLogger();
+
+
     public static final List<String> ORDER_TYPES = Arrays
             .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
                     "get_today_clinch_orders", "get_today_consign_orders"); // 常量,对应5项数据api
@@ -50,9 +53,22 @@ public class AccountStates {
 
     // 核心trader, 以便访问其他组件
     private Trader trader;
+    // 账户状态检测程序 刷新 sleep 间隔.
+    private long flushInterval;
+    // 常态情况(非第一次), 状态更新api的优先级. 5项api设置相等, 以便使得执行更加均匀     -- 常规优先级.
+    private long commonApiPriority;
+    // 某项数据超过多久未更新? 将提高一点优先级, 先于同类执行 , 单位 ms
+    private long priorityRaiseTimeThreshold;
+    // 当某一项数据长时间没有更新, 优先级变更为 commonApiPriority - priorityRaise, 提高优先级,先于同类执行
+    private long priorityRaise;
 
-    public AccountStates(Trader trader) {
+    public AccountStates(Trader trader, long flushInterval, long commonApiPriority, long priorityRaiseTimeThreshold,
+                         long priorityRaise) {
         this.trader = trader;
+        this.flushInterval = flushInterval;
+        this.commonApiPriority = commonApiPriority; // Order.PRIORITY_MEDIUM; // 5000, 不高
+        this.priorityRaiseTimeThreshold = priorityRaiseTimeThreshold;
+        this.priorityRaise = priorityRaise;
     }
 
     /**
@@ -66,99 +82,84 @@ public class AccountStates {
                 && canCancels != null && todayClinchs != null && todayConsigns != null;
     }
 
-    /**
-     * 账号状态相关api check逻辑, 几乎每个策略都相同, 由 AccountStatas类自行实现, 无需主策略实现特殊的check逻辑
-     * 将被 Checker调用
-     *
-     * @param order
-     * @param responses
-     * @param orderType
-     * @throws Exception
-     * @see Checker
-     */
-    public void checkForAccountStates(Order order, List<Response> responses, String orderType)
-            throws Exception {
-        switch (orderType) {
-            case "get_account_funds_info":
-                updateNineBaseFundsData(order, responses);
-                break;
-            case "get_hold_stocks_info":
-                updateCurrentHolds(order, responses);
-                break;
-            case "get_unsolds_not_yet":
-                updateCanCancels(order, responses);
-                break;
-            case "get_today_clinch_orders":
-                updateTodayClinchs(order, responses);
-                break;
-            case "get_today_consign_orders":
-                updateTodayConsigns(order, responses);
-                break;
-            default:
-                throw new Exception("error orderType");
-        }
-    }
 
     /**
-     * 刷新账户信息. 仅将订单放入队列.
+     * 刷新账户信息主逻辑,可控制不同种类更新频率等. 将订单放入队列(可不同优先级).
+     * 当某项信息刷新时间间隔过久, 优先级将比常规提高2. 使得下一轮优先调用
      *
-     * @throws Exception
+     * @impl 刷新5项数据, 对订单队列进行遍历, 若存在对应类型订单, 则跳过, 否则下单.
+     * @noti 订单重发时(账户状态5订单), 队列中可能存在两个同类型订单, 但重发订单优先级更高1. 不算bug
      */
-    public void startFlush() throws Exception {
+    public void startFlush() {
         Thread accoutStatesFlushTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
                 while (true) {
-                    // 刷新5项数据,对队列进行遍历,若存在对应类型订单, 则跳过, 否则下单
-
                     List<String> alreadyInQueue = new ArrayList<>();
-                    Iterator iterator = trader.getOrdersWaitForExecution().iterator();
-                    while (iterator.hasNext()) {
-                        Order order = (Order) iterator.next();
+                    for (Order order : trader.getOrdersWaitForExecution()) {
                         if (ORDER_TYPES.contains(order.getOrderType())) {
                             // 得到已在队列中的类型. 对其余类型进行补齐
                             alreadyInQueue.add(order.getOrderType());
                         }
                     }
-
                     for (String orderType : ORDER_TYPES) {
                         if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
                             switch (orderType) {
-                                // 第一次将以最高优先级刷新
+                                // 第一次将以最高优先级刷新, 否则常态
                                 case "get_account_funds_info":
                                     if (nineBaseFundsData.size() == 0) {
                                         flushNineBaseFundsDataImmediately();
                                     } else {
-                                        flushNineBaseFundsData(Order.PRIORITY_MEDIUM / 2);
+                                        if (System
+                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                            flushNineBaseFundsData(Math.max(commonApiPriority - priorityRaise, 0));
+                                        }
+                                        flushNineBaseFundsData(commonApiPriority);
                                     }
                                     break;
                                 case "get_hold_stocks_info":
                                     if (currentHolds == null) {
                                         flushCurrentHoldsImmediately();
                                     } else {
-                                        flushCurrentHolds(Order.PRIORITY_MEDIUM / 2);
+                                        if (System
+                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                            flushCurrentHolds(Math.max(commonApiPriority - priorityRaise, 0));
+                                        }
+                                        flushCurrentHolds(commonApiPriority);
                                     }
                                     break;
                                 case "get_unsolds_not_yet":
                                     if (canCancels == null) {
                                         flushCanCancelsImmediately();
                                     } else {
-                                        flushCanCancels(Order.PRIORITY_MEDIUM / 2);
+                                        if (System
+                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                            flushCanCancels(Math.max(commonApiPriority - priorityRaise, 0));
+                                        }
+                                        flushCanCancels(commonApiPriority);
                                     }
                                     break;
                                 case "get_today_clinch_orders":
                                     if (todayClinchs == null) {
                                         flushTodayClinchsImmediately();
                                     } else {
-                                        flushTodayClinchs(Order.PRIORITY_MEDIUM / 2);
+                                        if (System
+                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                            flushTodayClinchs(Math.max(commonApiPriority - priorityRaise, 0));
+                                        }
+                                        flushTodayClinchs(commonApiPriority);
                                     }
                                     break;
                                 case "get_today_consign_orders":
                                     if (todayConsigns == null) {
                                         flushTodayConsignsImmediately();
                                     } else {
-                                        flushTodayConsigns(Order.PRIORITY_MEDIUM / 2);
+                                        if (System
+                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                                            flushTodayConsigns(Math.max(commonApiPriority - priorityRaise, 0));
+                                        }
+                                        flushTodayConsigns(commonApiPriority);
                                     }
                                     break;
                                 default:
@@ -166,7 +167,7 @@ public class AccountStates {
                             }
                         }
                     }
-                    Thread.sleep(accountStatesFlushGlobalInterval);
+                    Thread.sleep(flushInterval);
                 }
             }
         });
@@ -178,14 +179,9 @@ public class AccountStates {
         log.warn("accoutStatesFlush start: 开始持续更新账户资金股票等状况");
     }
 
-    public String flushItem(String orderType, Long priority) throws Exception {
-        if (priority == null) {
-            priority = Order.PRIORITY_LOWEST;
-        }
-        Order order = OrderFactory.generateNoArgsQueryOrder(orderType, priority);
-        trader.putOrderToWaitExecute(order);
-        return order.getRawOrderId();
-    }
+    /*
+     * 下单以刷新账户5状态
+     */
 
     /**
      * 10大下单方法. 可提供优先级
@@ -220,7 +216,7 @@ public class AccountStates {
     }
 
     public String flushTodayConsigns(Long priority) throws Exception {
-        // 默认访问分组!未成交/成交/撤单3组
+        // 默认访问分组形式, 通常未成交/成交/撤单3组, 若某些证券公司不支持分组, 由python api保证!
         Order order = OrderFactory.generateGetTodayConsignOrdersOrder("分组", priority);
         trader.putOrderToWaitExecute(order);
         return order.getRawOrderId();
@@ -246,7 +242,47 @@ public class AccountStates {
         return flushTodayConsigns(0L);
     }
 
-    private static final Log log = LogUtil.getLogger();
+    /*
+     * check 逻辑,将调用更新逻辑
+     */
+
+    /**
+     * 账号状态相关api check逻辑, 几乎每个策略都相同, 由 AccountStatas类自行实现, 无需主策略实现特殊的check逻辑
+     * 将被 Checker调用
+     *
+     * @param order
+     * @param responses
+     * @param orderType
+     * @throws Exception
+     * @see Checker
+     */
+    public void checkForAccountStates(Order order, List<Response> responses, String orderType)
+            throws Exception {
+        switch (orderType) {
+            case "get_account_funds_info":
+                updateNineBaseFundsData(order, responses);
+                break;
+            case "get_hold_stocks_info":
+                updateCurrentHolds(order, responses);
+                break;
+            case "get_unsolds_not_yet":
+                updateCanCancels(order, responses);
+                break;
+            case "get_today_clinch_orders":
+                updateTodayClinchs(order, responses);
+                break;
+            case "get_today_consign_orders":
+                updateTodayConsigns(order, responses);
+                break;
+            default:
+                throw new Exception("error orderType");
+        }
+    }
+
+
+    /*
+     * 5大字段具体更新逻辑
+     */
 
     /**
      * update: 实际的更新操作, 将被 check程序调用(switch分发形式), 真正的执行更新数据, 此时已从python获取响应
@@ -255,7 +291,8 @@ public class AccountStates {
         Response resFinal = TraderUtil.findFinalResponse(responses);
         if (resFinal == null) {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应不正确,全为retrying状态, 任务重入队列!!");
-            trader.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+            // 强制高1优先级重入队列!因此队列中可能存在2个,因死循环可能已放入但未执行
+            trader.reSendAndFinishOrder(order, responses);
             return;
         }
         // 响应正确, 该响应唯一情况:
@@ -269,10 +306,44 @@ public class AccountStates {
             nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
         } else {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
-            trader.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+            trader.reSendAndFinishOrder(order, responses); // 强制高优先级重入队列!因此队列中可能存在2个
         }
     }
 
+
+    /**
+     * 四大df字段,更新逻辑相同, 均为读取payload, 转换df后更新
+     *
+     * @param order
+     * @param responses
+     * @param fieldName
+     * @warning 重入队列的订单, 已经是新的订单对象, 非原订单 !!
+     */
+    public void updateDfFields(Order order, List<Response> responses, String fieldName,
+                               String successDescription) throws Exception {
+        Response resFinal = TraderUtil.findFinalResponse(responses);
+        if (resFinal == null) {
+            log.error("flush fail: AccountStates.{}: 响应不正确,全为retrying状态, 相同新任务重入队列!!", fieldName);
+            trader.reSendAndFinishOrder(order, responses);
+            return;
+        }
+        if ("success".equals(resFinal.getStr("state"))) {
+            DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal);
+            if (dfTemp == null) {
+                log.error("flush fail: AccountStates.{}: payload为null, 相同新任务重入队列!!", fieldName);
+                trader.reSendAndFinishOrder(order, responses);
+                return;
+            }
+            if (dfTemp.size() == 0) {
+                log.warn("empty df: {}", fieldName);
+            }
+            realFlushFieldAndTimestamp(fieldName, dfTemp);
+            log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
+        } else {
+            log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
+            trader.reSendAndFinishOrder(order, responses);
+        }
+    }
 
     /**
      * 最终的更新逻辑, 两字段赋值
@@ -298,73 +369,26 @@ public class AccountStates {
                 todayConsigns = newData;
                 todayConsignsFlushTimestamp = System.currentTimeMillis();
                 break;
-            //case "nineBaseFundsData": // 不会出现
-            //nineBaseFundsData = newData;
-            //nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
-            //break;
+            //case "nineBaseFundsData": // 不会出现, 非 df
             default:
                 throw new Exception("error fieldName");
         }
     }
 
-    /**
-     * 四大df字段,更新逻辑相同, 均为读取payload, 转换df后更新
-     * 注意, 重入队列的订单, 已经是新的订单对象, 非原订单 !!
-     *
-     * @param order
-     * @param responses
-     * @param fieldName
-     */
-    public void updateDfFields(Order order, List<JSONObject> responses, String fieldName,
-                               String successDescription) throws Exception {
-        JSONObject resFinal = TraderUtil.findFinalResponse(responses);
 
-        if (resFinal == null) {
-            log.error("flush fail: AccountStates.{}: 响应不正确,全为retrying状态, 相同新任务重入队列!!", fieldName);
-            this.trader.getOrderExecutor().reSendOrder(order);
-            return;
-        }
-        // 响应正确, 该响应2种情况: 即使无数据, 仅返回表头, 也解析为 dfo, 赋值.
-        // 4大df字段基本相同, 仅描述不同
-            /*
-                response = dict(state="success", description='当前并没有持仓股票',
-                        payload=results_lines, rawOrder=order)
-                response = dict(state="success", description=f'获取账号股票持仓信息成功',
-                        payload=results_lines, rawOrder=order)
-             */
-        if ("success".equals(resFinal.getStr("state"))) {
-            DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal); // 解析必然!
-            if (dfTemp == null) {
-                log.error("flush fail: AccountStates.{}: payload为null, 相同新任务重入队列!!", fieldName);
-                this.trader.getOrderExecutor().reSendOrder(order);
-                // 强制高优先级重入队列!因此队列中可能存在2个
-                return;
-            }
-            if (dfTemp.size() == 0) {
-                log.warn("empty df: 当前持仓数据为空");
-            }
-            realFlushFieldAndTimestamp(fieldName, dfTemp);
-            log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
-        } else {
-            log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
-            this.trader.getOrderExecutor().reSendOrder(order);
-        }
-    }
-
-
-    public void updateCurrentHolds(Order order, List<JSONObject> responses) throws Exception {
+    public void updateCurrentHolds(Order order, List<Response> responses) throws Exception {
         updateDfFields(order, responses, "currentHolds", "当前持仓股票列表");
     }
 
-    public void updateCanCancels(Order order, List<JSONObject> responses) throws Exception {
+    public void updateCanCancels(Order order, List<Response> responses) throws Exception {
         updateDfFields(order, responses, "canCancels", "当前可撤单股票列表");
     }
 
-    public void updateTodayClinchs(Order order, List<JSONObject> responses) throws Exception {
+    public void updateTodayClinchs(Order order, List<Response> responses) throws Exception {
         updateDfFields(order, responses, "todayClinchs", "今日成交订单列表");
     }
 
-    public void updateTodayConsigns(Order order, List<JSONObject> responses) throws Exception {
+    public void updateTodayConsigns(Order order, List<Response> responses) throws Exception {
         updateDfFields(order, responses, "todayConsigns", "今日委托订单列表");
     }
 }

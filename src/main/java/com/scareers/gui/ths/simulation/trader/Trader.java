@@ -159,24 +159,6 @@ public class Trader {
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
     }
 
-    /**
-     * @param order 被重发的原始订单对象, 将保留3项属性, 其余8项属性更新.
-     * @return 返回重发的新订单的 id.
-     * @key3 核心重发订单方法. 将使用深拷贝方式, 对订单类型和参数 不进行改变!
-     * @see Order.forResend()
-     */
-    public String reSendOrder(Order order, Long priority) throws Exception {
-        Order newOrder = order.forResend();
-        if (priority != null) { // 默认实现优先级将-1
-            newOrder.setPriority(priority);
-        }
-        putOrderToWaitExecute(newOrder);
-        return newOrder.getRawOrderId();
-    }
-
-    public String reSendOrder(Order order) throws Exception {
-        return reSendOrder(order, null);
-    }
 
     private void manualInteractive() throws Exception {
 
@@ -187,8 +169,8 @@ public class Trader {
             if ("q".equals(info)) {
                 break;
             } else if ("s".equals(info)) {
-                accountStates.showFields();
-
+                //accountStates.showFields();
+//TODO
             } else if ("g".equals(info)) {
 //                JFrameDemo.main0(null);
             }
@@ -400,15 +382,12 @@ public class Trader {
      * @param responses
      * @param description
      */
-    public void successFinishOrder(Order order, List<Response> responses, String description) {
+    public void successFinishOrder(Order order, List<Response> responses) {
         ordersWaitForCheckTransactionStatusMap.remove(order);
-        order.addLifePoint(Order.LifePointStatus.FINISH, description);
+        order.addLifePoint(Order.LifePointStatus.FINISH, "finish: 订单成功完成");
         ordersSuccessFinished.put(order, responses);
     }
 
-    public void successFinishOrder(Order order, List<Response> responses) {
-        successFinishOrder(order, responses, "finish: 订单成功完成");
-    }
 
     /**
      * 订单经由业务逻辑判定, 已经被重发, 策略后期应当跟踪重发的新订单!
@@ -419,20 +398,61 @@ public class Trader {
      * @param descriptionForFinish
      * @noti 被重发的新订单的 rawOrderId, 将作为 RESENDED 生命周期的 payload 属性,保留访问
      */
-    public void resendFinishOrder(Order order, List<Response> responses, String newOrderId,
-                                  String descriptionForFinish) {
+    public void resendFinishOrder(Order order, List<Response> responses, String newOrderId) {
         ordersWaitForCheckTransactionStatusMap.remove(order);
         order.addLifePoint(LifePointStatus.RESENDED,
                 StrUtilS.format("resended: 原始订单已被重发,新订单id: {}", newOrderId),
                 newOrderId);
-        order.addLifePoint(Order.LifePointStatus.FINISH, descriptionForFinish);
+        order.addLifePoint(Order.LifePointStatus.FINISH, "resended_finish: 订单已被重发! 订单完成");
         ordersResendFinished.put(order, responses);
     }
 
-    public void resendFinishOrder(Order order, List<Response> responses, String newOrderId) {
-        resendFinishOrder(order, responses, "resended_finish: 订单已被重发! 订单完成");
+
+    /*
+     * 重发方法, 以及立即已 重发_完成 方式, 完成订单快捷方法 reSendOrder + resendFinishOrder
+     */
+
+    /**
+     * @param order 被重发的原始订单对象, 将保留3项属性, 其余8项属性更新.
+     * @return 返回重发的新订单的 id.
+     * @key3 核心重发订单方法. 将使用深拷贝方式, 对订单类型和参数 不进行改变!
+     * @see Order.forResend()
+     */
+    public String reSendOrder(Order order, Long newOrderPriority) throws Exception {
+        Order newOrder = order.forResend();
+        if (newOrderPriority != null) {
+            // 默认实现优先级将-1,也可给定具体值
+            newOrder.setPriority(newOrderPriority);
+        }
+        putOrderToWaitExecute(newOrder);
+        return newOrder.getRawOrderId();
     }
 
+    public String reSendOrder(Order order) throws Exception {
+        return reSendOrder(order, null);
+    }
+
+    /**
+     * 快捷方法, 重发订单, 并且原始订单进入 resendFinish 队列, 完成之
+     *
+     * @param order
+     */
+    public void reSendAndFinishOrder(Order order, List<Response> responses, Long newOrderPriority) throws Exception {
+        String newOrderId = reSendOrder(order, newOrderPriority);
+        resendFinishOrder(order, responses, newOrderId);
+    }
+
+    /**
+     * 将采用 优先级-1(增大1) 的默认方式, 设置新订单优先级
+     *
+     * @param order
+     * @param responses
+     * @throws Exception
+     */
+    public void reSendAndFinishOrder(Order order, List<Response> responses) throws Exception {
+        String newOrderId = reSendOrder(order);
+        resendFinishOrder(order, responses, newOrderId);
+    }
 
 }
 

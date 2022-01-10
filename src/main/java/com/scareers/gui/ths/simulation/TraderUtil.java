@@ -18,6 +18,9 @@ import java.util.List;
 public class TraderUtil {
     private static final Log log = LogUtil.getLogger();
 
+    private TraderUtil() {
+    }
+
     /**
      * 单个订单可能有多个响应, 多个 retrying + 1个正式响应. 给定响应列表, 找到响应. 虽然常态应当是最后一个元素!
      *
@@ -41,13 +44,13 @@ public class TraderUtil {
     }
 
     /**
-     * 用于各查询函数, 返回payload字段放入二维数组, 转换df. 约定: 第一行为表头!
+     * 用于各查询函数, 返回payload字段的二维数组, 转换df. 协议约定: 第一行为表头!
      *
      * @return
      */
     public static DataFrame<Object> payloadArrayToDf(JSONObject response) {
         JSONArray datas = response.getJSONArray("payload");
-        if (JSONNull.NULL.equals(datas)) { // 注意 NULL 为单例, equals方法将判定null以及是否为解析的单例 JSONNull.NULL
+        if (JSONNull.NULL.equals(datas)) {
             log.warn("payload empty: 响应payload字段为空, 无法解析为df");
             return null; // 返回null, 调用方应判定
         }
