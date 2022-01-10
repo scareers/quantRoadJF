@@ -1,3 +1,5 @@
+package com.scareers.gui.ths.simulation.trader;
+
 /**
  * ths 自动交易程序子系统:(主要面向过程编程)
  * 1.数据获取系统:
@@ -20,7 +22,6 @@
  * * --> check_transaction_status(确认成交状态中, 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
  * * --> finish (订单彻底完成)
  */
-package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -30,12 +31,15 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
+import com.scareers.gui.ths.simulation.OrderFactory;
+import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -62,6 +66,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  * @author: admin
  * @date: 2021/12/14/014-13:44
  */
+@Data
 public class Trader {
     // python程序启动cmd命令.  PYTHONPATH 由该程序自行保证! --> sys.path.append()
     public static String pythonStartCMD = "C:\\keys\\Python37-32\\python.exe " +
@@ -74,18 +79,18 @@ public class Trader {
     /**
      * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
      */
-    public static PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
+    public  PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
     /**
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    public static ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap
+    public  ConcurrentHashMap<Order, List<JSONObject>> ordersWaitForCheckTransactionStatusMap
             = new ConcurrentHashMap<>();
     /**
      * check 后, 将被放入完成队列. check信息, 将被放入 order.生命周期 check_transaction_status的描述中.
      * 最后将生命周期设置为finish, 放入此Map
      */
-    public static ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
+    public  ConcurrentHashMap<Order, List<JSONObject>> ordersFinished
             = new ConcurrentHashMap<>();
     public static long accountStatesFlushGlobalInterval = 10 * 1000; // 账户状态检测程序 slee
 
@@ -99,7 +104,8 @@ public class Trader {
     }
 
     public static void main(String[] args) throws Exception {
-        Strategy mainStrategy = MainStrategy.createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
+        Strategy mainStrategy = com.scareers.gui.ths.simulation.TraderMain.MainStrategy
+                .createStrategy(); // 获取核心策略对象!, 该配置也在这里了.
 
 
         initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
@@ -107,14 +113,15 @@ public class Trader {
         handshake(); // 与python握手可控
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
-        OrderExecutor.start();
+        com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.start();
 
         // 启动成交状况检测, 对每个订单的响应, 进行处理. 成功或者重发等
-        Checker.startCheckTransactionStatus(mainStrategy);
+        com.scareers.gui.ths.simulation.TraderMain.Checker.startCheckTransactionStatus(mainStrategy);
 
         // 启动账户资金获取程序
-        AccountStates.startFlush();
-        waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成"); // 需要等待初始化完成!
+        com.scareers.gui.ths.simulation.TraderMain.AccountStates.startFlush();
+        waitUtil(com.scareers.gui.ths.simulation.TraderMain.AccountStates::alreadyInitialized, 120 * 1000, 100,
+                "首次账户资金状态刷新完成"); // 需要等待初始化完成!
 
         mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
 
@@ -149,7 +156,7 @@ public class Trader {
             if ("q".equals(info)) {
                 break;
             } else if ("s".equals(info)) {
-                AccountStates.showFields();
+                com.scareers.gui.ths.simulation.TraderMain.AccountStates.showFields();
             } else if ("g".equals(info)) {
 //                JFrameDemo.main0(null);
             }
@@ -157,9 +164,9 @@ public class Trader {
     }
 
     public static void successFinishOrder(Order order, List<JSONObject> responses, String description) {
-        Trader.ordersWaitForCheckTransactionStatusMap.remove(order);
+        com.scareers.gui.ths.simulation.TraderMain.ordersWaitForCheckTransactionStatusMap.remove(order);
         order.addLifePoint(Order.LifePointStatus.FINISH, description);
-        Trader.ordersFinished.put(order, responses); // 先删除, 后添加
+        com.scareers.gui.ths.simulation.TraderMain.ordersFinished.put(order, responses); // 先删除, 后添加
     }
 
     public static void successFinishOrder(Order order, List<JSONObject> responses) {
@@ -228,19 +235,19 @@ public class Trader {
                 throws Exception {
             switch (orderType) {
                 case "get_account_funds_info":
-                    AccountStates.updateNineBaseFundsData(order, responses);
+                    com.scareers.gui.ths.simulation.TraderMain.AccountStates.updateNineBaseFundsData(order, responses);
                     break;
                 case "get_hold_stocks_info":
-                    AccountStates.updateCurrentHolds(order, responses);
+                    com.scareers.gui.ths.simulation.TraderMain.AccountStates.updateCurrentHolds(order, responses);
                     break;
                 case "get_unsolds_not_yet":
-                    AccountStates.updateCanCancels(order, responses);
+                    com.scareers.gui.ths.simulation.TraderMain.AccountStates.updateCanCancels(order, responses);
                     break;
                 case "get_today_clinch_orders":
-                    AccountStates.updateTodayClinchs(order, responses);
+                    com.scareers.gui.ths.simulation.TraderMain.AccountStates.updateTodayClinchs(order, responses);
                     break;
                 case "get_today_consign_orders":
-                    AccountStates.updateTodayConsigns(order, responses);
+                    com.scareers.gui.ths.simulation.TraderMain.AccountStates.updateTodayConsigns(order, responses);
                     break;
                 default:
                     throw new Exception("error orderType");
@@ -401,7 +408,7 @@ public class Trader {
             JSONObject resFinal = TraderUtil.findFinalResponse(responses);
             if (resFinal == null) {
                 log.error("flush fail: AccountStates.nineBaseFundsData: 响应不正确,全为retrying状态, 任务重入队列!!");
-                OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+                com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
                 return;
             }
             // 响应正确, 该响应唯一情况:
@@ -415,7 +422,7 @@ public class Trader {
                 nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
             } else {
                 log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
-                OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
+                com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.reSendOrder(order); // 强制高优先级重入队列!因此队列中可能存在2个
             }
         }
 
@@ -467,7 +474,7 @@ public class Trader {
 
             if (resFinal == null) {
                 log.error("flush fail: AccountStates.{}: 响应不正确,全为retrying状态, 相同新任务重入队列!!", fieldName);
-                OrderExecutor.reSendOrder(order);
+                com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.reSendOrder(order);
                 return;
             }
             // 响应正确, 该响应2种情况: 即使无数据, 仅返回表头, 也解析为 dfo, 赋值.
@@ -482,7 +489,7 @@ public class Trader {
                 DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal); // 解析必然!
                 if (dfTemp == null) {
                     log.error("flush fail: AccountStates.{}: payload为null, 相同新任务重入队列!!", fieldName);
-                    OrderExecutor.reSendOrder(order);
+                    com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.reSendOrder(order);
                     // 强制高优先级重入队列!因此队列中可能存在2个
                     return;
                 }
@@ -493,7 +500,7 @@ public class Trader {
                 log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
             } else {
                 log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);
-                OrderExecutor.reSendOrder(order);
+                com.scareers.gui.ths.simulation.TraderMain.OrderExecutor.reSendOrder(order);
             }
         }
 
@@ -535,8 +542,10 @@ public class Trader {
                             List<JSONObject> responses = ordersWaitForCheckTransactionStatusMap.get(order);
 
                             String orderType = order.getOrderType();
-                            if (AccountStates.orderTypes.contains(orderType)) {
-                                AccountStates.checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
+                            if (com.scareers.gui.ths.simulation.TraderMain.AccountStates.orderTypes
+                                    .contains(orderType)) {
+                                com.scareers.gui.ths.simulation.TraderMain.AccountStates
+                                        .checkForAccountStates(order, responses, orderType); // 账户状态更新 五类订单
                             }
 
                             // todo: 其余类型的订单, check 应当 由主策略决定, 因此实际由主策略实现. 这里仅分发!
@@ -555,7 +564,7 @@ public class Trader {
     }
 
 
-    public static void putOrderToWaitExecute(Order order) throws Exception {
+    public  void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "将被放入执行队列");
         log.info("order generated: 已生成订单等待执行: {} ", order.toJsonStr());
         ordersWaitForExecution.put(order);
@@ -614,7 +623,7 @@ public class Trader {
     }
 
 
-    public static List<JSONObject> execOrderUtilSuccess(Order order)
+    public  List<JSONObject> execOrderUtilSuccess(Order order)
             throws Exception {
         String orderMsg = order.toJsonStr();
         String rawOrderId = order.getRawOrderId();

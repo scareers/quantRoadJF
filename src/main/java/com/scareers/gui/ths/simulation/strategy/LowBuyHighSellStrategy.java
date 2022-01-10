@@ -15,8 +15,8 @@ import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.order.Order;
-import com.scareers.gui.ths.simulation.Trader;
-import com.scareers.gui.ths.simulation.Trader.AccountStates;
+import com.scareers.gui.ths.simulation.TraderMain;
+import com.scareers.gui.ths.simulation.TraderMain.AccountStates;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.KlineFormsApi;
@@ -107,14 +107,14 @@ public class LowBuyHighSellStrategy extends Strategy {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
-            log.warn("待执行订单数量: {}", Trader.ordersWaitForExecution.size());
+            log.warn("待执行订单数量: {}", TraderMain.ordersWaitForExecution.size());
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
             log.info(JSONUtil.parseArray(responses).toStringPretty());
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行失败");
         }
-        Trader.successFinishOrder(order, responses);
+        TraderMain.successFinishOrder(order, responses);
     }
 
     @Override
@@ -139,7 +139,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         } else {
             order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
         }
-        Trader.putOrderToWaitExecute(order);
+        TraderMain.putOrderToWaitExecute(order);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         if (dfTemp.length() == 0) {
             log.warn("no record: 无昨日收盘持仓信息和账户资金数据 原始记录. 需要此刻初始化");
             // 等待首次信息更新, 本处不调用实际逻辑, 调用方保证 初始化完成
-            waitUtil(Trader.AccountStates::alreadyInitialized, 120 * 1000, 100, null, false);
+            waitUtil(TraderMain.AccountStates::alreadyInitialized, 120 * 1000, 100, null, false);
             //AccountStates.nineBaseFundsData          // 当前的这两字段保存
             //AccountStates.currentHolds
 
