@@ -105,14 +105,10 @@ public class LowBuyHighSellStrategy extends Strategy {
         this.preferenceMoreStock = preferenceMoreStock;
         this.keyInts = keyInts;
         this.stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
-                keyInts.get(0), keyInts.get(1)); // 立即初始化
-
+                keyInts.get(0), keyInts.get(1)); // 立即初始化表明保存结果
         this.strategyName = strategyName; // 同super
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
         bindSelf();
-    }
-
-    public static void main(String[] args) throws Exception {
     }
 
     @Override
@@ -141,11 +137,6 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
-    protected void startCore() throws Exception {
-        super.startCore();
-    }
-
-    @Override
     protected void buyDecision() throws Exception {
         int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
         Thread.sleep(sleep * 1000);
@@ -168,6 +159,27 @@ public class LowBuyHighSellStrategy extends Strategy {
     @Override
     protected void sellDecision() throws Exception {
 
+    }
+
+
+    @Override
+    protected List<SecurityBeanEm> initStockPool() throws Exception {
+        log.warn("start init stockPool: 开始初始化股票池...");
+        // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+        stockSelect(); // 选股for buy
+        log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
+        log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
+        log.warn("stock select result: 最终选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
+
+        // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
+        initFinalDistribution(); // 计算等价分布
+        log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
+        List<SecurityBeanEm> res =
+                SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
+        res.addAll(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"))); // 加入两大指数
+        initYesterdayHolds(); // 加入昨日持仓for sell
+        log.warn("finish init stockPool: 完成初始化股票池...");
+        return res;
     }
 
     /**
@@ -225,26 +237,6 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
         this.getStockPool().addAll(SecurityBeanEm.createStockList(stocksYesterdayHolds));
         log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: ", this.getStockPool().size());
-    }
-
-    @Override
-    protected List<SecurityBeanEm> initStockPool() throws Exception {
-        log.warn("start init stockPool: 开始初始化股票池...");
-        // 两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
-        stockSelect(); // 选股for buy
-        log.warn("stock select result: 最终选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
-        log.warn("stock select result: 最终选股数量: {}", stockSelectCountMapFinal.size());
-        log.warn("stock select result: 最终选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
-
-        // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
-        initFinalDistribution(); // 计算等价分布
-        log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
-        List<SecurityBeanEm> res =
-                SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet()));
-        res.addAll(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"))); // 加入两大指数
-        initYesterdayHolds(); // 加入昨日持仓for sell
-        log.warn("finish init stockPool: 完成初始化股票池...");
-        return res;
     }
 
     /**
