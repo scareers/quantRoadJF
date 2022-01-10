@@ -1,4 +1,4 @@
-package com.scareers.datasource.eastmoney.fstransaction;
+package com.scareers.datasource.eastmoney;
 
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 

@@ -28,7 +28,7 @@ import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.*;
  * @author: admin
  * @date: 2021/12/21/021-22:31:30
  */
-public class EastMoneyUtils {
+public class EastMoneyUtil {
     // dc 代码查询结果全缓存, 且线程安全, 因常线程池批量调用  getAsStrUseHutool/getAsStrUseKevin 使用不同库. 具体api自己试
     public static ConcurrentHashMap<String, JSONArray> quoteCache = new ConcurrentHashMap<>();
     public static ThreadPoolExecutor poolExecutor;
@@ -43,7 +43,6 @@ public class EastMoneyUtils {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         Console.log(querySecurityId("000001"));
-        GlobalThreadPool.shutdown(false);
 
 
     }

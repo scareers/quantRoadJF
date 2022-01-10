@@ -8,6 +8,8 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
+import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsTransaction;
+import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtilS;
@@ -47,15 +49,37 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2021/12/21/021-15:26:04
  */
 @Data
-public class FSTransactionFetcher {
+public class FsTransactionFetcher {
     public static void main(String[] args) throws Exception {
-        FSTransactionFetcher fsTransactionFetcher =
-                new FSTransactionFetcher(new StockPoolForFSTransaction().createStockPool(100),
+        FsTransactionFetcher fsTransactionFetcher = createInstance
+                (new StockPoolFromTushare(0, 10, true).createStockPool(),
                         10, "15:10:00", 500,
                         10, 32);
-        fsTransactionFetcher.startFetch(); // 测试股票池
 
+        fsTransactionFetcher.startFetch(); // 测试股票池
         waitEnter();
+    }
+
+    private static FsTransactionFetcher INSTANCE;// 单例模式, 自行保证
+
+    public static FsTransactionFetcher getInstance() throws Exception {
+        if (INSTANCE == null) {
+            throw new Exception("单例FSTransactionFetcher尚未初始化,不可调用此方法访问,应先调用createInstance初始化");
+        }
+        return INSTANCE;
+    }
+
+    public static FsTransactionFetcher createInstance(List<SecurityBeanEm> stockPool, long redundancyRecords,
+                                                      String limitTick, int timeout, int logFreq,
+                                                      int threadPoolCorePoolSize)
+            throws SQLException, InterruptedException {
+        if (INSTANCE != null) {
+            log.warn("单例FSTransactionFetcher已被初始化,建议调用 getInstance()获取单例");
+        } else {
+            INSTANCE = new FsTransactionFetcher(stockPool, redundancyRecords, limitTick, timeout, logFreq,
+                    threadPoolCorePoolSize);
+        }
+        return INSTANCE;
     }
 
 
@@ -83,8 +107,8 @@ public class FSTransactionFetcher {
     private final int logFreq; // 分时图抓取多少次,log一次时间
     public int threadPoolCorePoolSize; // 线程池数量
 
-    public FSTransactionFetcher(List<SecurityBeanEm> stockPool, long redundancyRecords,
-                                String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize)
+    private FsTransactionFetcher(List<SecurityBeanEm> stockPool, long redundancyRecords,
+                                 String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize)
             throws SQLException, InterruptedException {
         // 4项全默认值
         this.processes = new ConcurrentHashMap<>();
@@ -267,9 +291,9 @@ public class FSTransactionFetcher {
 
     public static class FetchOneStockTask implements Callable<Void> {
         SecurityBeanEm stock;
-        FSTransactionFetcher fetcher;
+        FsTransactionFetcher fetcher;
 
-        public FetchOneStockTask(SecurityBeanEm stock, FSTransactionFetcher fetcher) {
+        public FetchOneStockTask(SecurityBeanEm stock, FsTransactionFetcher fetcher) {
             this.stock = stock;
             this.fetcher = fetcher;
         }

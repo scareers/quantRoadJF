@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.*;
+import static com.scareers.datasource.eastmoney.EastMoneyUtil.*;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
 import static com.scareers.utils.JsonUtil.jsonStrToDf;
 

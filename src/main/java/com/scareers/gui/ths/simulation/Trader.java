@@ -1,7 +1,7 @@
 /**
  * ths 自动交易程序子系统:(主要面向过程编程)
  * 1.数据获取系统:
- * 1.FSTransactionFetcher 获取dc实时成交数据,3stick. 数据存储于静态属性. 异步存储于mysql
+ * 1.FsTransactionFetcher 获取dc实时成交数据,3stick. 数据存储于静态属性. 异步存储于mysql
  * 2.eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块
  * 2.订单生成系统: Order 作为基类, OrderFactory 作为快捷生产的工厂类
  * 3.订单发送与响应接收(交易操作系统): 通过rabbitmq作为中间件, 与python交互.
@@ -29,7 +29,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
-import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
@@ -119,8 +119,8 @@ public class Trader {
         mainStrategy.initYesterdayHolds(); // 将昨日持仓更新到股票池.  将昨日收盘持仓和资金信息, 更新到静态属性
 
         // fs成交开始抓取, 股票池包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓(for sell)
-        FSTransactionFetcher fsTransactionFetcher =
-                new FSTransactionFetcher(mainStrategy.getStockPool(), 10, "15:10:00", 1000, 100, 32);
+        FsTransactionFetcher fsTransactionFetcher =
+                FsTransactionFetcher.createInstance(mainStrategy.getStockPool(), 10, "15:10:00", 1000, 100, 32);
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成"); //
         // 正式启动主策略下单

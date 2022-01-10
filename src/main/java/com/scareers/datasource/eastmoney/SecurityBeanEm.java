@@ -8,9 +8,10 @@ import lombok.Data;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityId;
-import static com.scareers.datasource.eastmoney.EastMoneyUtils.querySecurityIdsToBeanList;
+import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
+import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsToBeanList;
 
 /**
  * description: 代表一特定证券/指数等资产. Em 东方财富.
@@ -61,6 +62,17 @@ public class SecurityBeanEm {
      */
     public static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
         return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
+    }
+
+
+    /**
+     * @return 返回两大指数的 SecurityBeanEm
+     * @throws ExecutionException
+     * @throws InterruptedException
+     */
+    public static List<SecurityBeanEm> getTwoGlobalMarketIndexList()
+            throws Exception {
+        return SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"));
     }
 
     private static final Log log = LogUtil.getLogger();

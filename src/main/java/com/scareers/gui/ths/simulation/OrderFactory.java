@@ -220,6 +220,7 @@ public class OrderFactory {
      *
      * @param orderType
      * @return
+     * @noti: 默认低优先级
      */
     public static Order generateNoArgsQueryOrder(String orderType) {
         Objects.requireNonNull(orderType);

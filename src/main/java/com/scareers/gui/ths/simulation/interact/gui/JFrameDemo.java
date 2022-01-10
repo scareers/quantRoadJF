@@ -3,7 +3,7 @@
 //import cn.hutool.core.thread.ThreadUtil;
 //import cn.hutool.json.JSONUtil;
 //import com.alee.laf.WebLookAndFeel;
-//import com.scareers.datasource.eastmoney.fstransaction.FSTransactionFetcher;
+//import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
 //import com.scareers.datasource.eastmoney.SecurityBeanEm;
 //import eu.verdelhan.ta4j.indicators.MACDIndicator;
 //import joinery.DataFrame;
@@ -54,7 +54,7 @@
 //
 ////        Image image = Toolkit.getDefaultToolkit().createImage()
 ////        ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas = new ConcurrentHashMap<>();
-////        ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas = FSTransactionFetcher.fsTransactionDatas;
+////        ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas = FsTransactionFetcher.fsTransactionDatas;
 ////        fsTransactionDatas.put(new SecurityBeanEm("1.000001"), new DataFrame(Arrays.asList(Arrays.asList(1, 2),
 ////                Arrays.asList(3, 4))));
 ////        fsTransactionDatas.put(new SecurityBeanEm("0.000001"), new DataFrame(Arrays.asList(Arrays.asList(10, 20),
