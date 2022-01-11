@@ -33,7 +33,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.t
  * --> 内容控件或许是 JInternalFrame 或者 自定义(例如按钮容器+内容容器) , 主要含功能最小化.
  * 6.状态栏, 右侧含按钮 --> 简单容器放在下即可, 添加按钮
  * 7.左功能栏 + 主编辑器,  占据主要界面. 左功能栏可关闭
- * --> 标准 JSplitPane, 左功能栏可关闭. 编辑框不可最小化. 编辑框为 JTabbedPane
+ * --> 标准 JSplitPane, 左功能栏可关闭. 编辑框不可最小化. 编辑框为 JTabbedPane,动态增加tab
  * @author: admin
  * @date: 2022/1/4/004-17:03:03
  */
