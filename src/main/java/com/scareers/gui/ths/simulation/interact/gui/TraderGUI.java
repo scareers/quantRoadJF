@@ -20,8 +20,20 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.t
 
 
 /**
- * description:
+ * description: 模拟交易后台gui, 主要用于查看模拟交易进行各种状况.
  *
+ * @key1 gui风格模仿idea;
+ * @key2 主界面子组件:
+ * 1.菜单栏, --> 常规实现
+ * 2.工具栏 --> 常规实现
+ * 3.路径栏(状态栏1) --> 多级label+> , 容器FlowLayout
+ * 4.右侧边功能栏,可调宽度 JTabbedPane, 各panel为子功能
+ * --> 内容控件或许是 JInternalFrame 或者 自定义(例如按钮容器+内容容器) , 主要含功能最小化.
+ * 5.下边功能栏,可调高度 JTabbedPane , 各panel为子功能.
+ * --> 内容控件或许是 JInternalFrame 或者 自定义(例如按钮容器+内容容器) , 主要含功能最小化.
+ * 6.状态栏, 右侧含按钮 --> 简单容器放在下即可, 添加按钮
+ * 7.左功能栏 + 主编辑器,  占据主要界面. 左功能栏可关闭
+ * --> 标准 JSplitPane, 左功能栏可关闭
  * @author: admin
  * @date: 2022/1/4/004-17:03:03
  */
@@ -90,6 +102,7 @@ public class TraderGUI {
     public void initMainWindow() {
         mainWindow = new JFrame("Trader");    //创建一个JFrame对象
         mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        mainWindow.setLocation(200, 100);
         mainWindow.setUndecorated(false); // 标题栏显示
 //        mainWindow.addKeyListener(new KeyAdapter() {
 //            @Override
