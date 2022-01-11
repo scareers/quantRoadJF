@@ -10,6 +10,7 @@ import com.rabbitmq.client.Envelope;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
@@ -27,6 +28,7 @@ import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p
  *
  * @author admin
  */
+@Getter
 public class OrderExecutor {
     private static final Log log = LogUtil.getLogger();
     private static OrderExecutor INSTANCE;
@@ -44,6 +46,8 @@ public class OrderExecutor {
     }
 
     private Trader trader;
+    private Order executingOrder; // 暂时保存正在执行的订单, 可随时查看正在执行的订单, 当订单一旦执行完成, 立即设置为null,直到下一订单开始
+    private CopyOnWriteArrayList<Order> executedOrder = new CopyOnWriteArrayList<>(); // 保存执行顺序订单对象队列, 全部
 
     private OrderExecutor(Trader trader) {
         this.trader = trader;
@@ -56,10 +60,13 @@ public class OrderExecutor {
             public void run() {
                 while (true) {
                     Order order = trader.getOrdersWaitForExecution().take(); // 最高优先级订单, 将可能被阻塞
-                    log.info("order start execute: 开始执行订单: {} [{}] --> {}:{}", order.getOrderType(),
+                    executedOrder.add(order); // 添加入已执行订单队列, 无视执行结果
+                    executingOrder = order;
+                    log.warn("order start execute: {} [{}] --> {}:{}", order.getOrderType(),
                             order.getPriority(), order.getRawOrderId(), order.getParams());
                     order.addLifePoint(Order.LifePointStatus.EXECUTING, "executing: 开始执行订单");
                     List<Response> responses = execOrderUtilSuccess(order);
+                    executingOrder = null;
                     order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
                     order.addLifePoint(Order.LifePointStatus.WAIT_CHECK_TRANSACTION_STATUS,
                             "wait_check_transaction_status: 订单进入check队列,等待check完成");
@@ -141,7 +148,7 @@ public class OrderExecutor {
                     return;
                 }
 
-                log.info("receive response ack: from python: {}", message);
+                log.info("java <-- python: {}", message);
                 trader.getChannelComsumer().basicAck(envelope.getDeliveryTag(), false);
                 responses.add(new Response(message)); // 可能null, 此时需要访问 responsesRaw
 

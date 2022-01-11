@@ -12,6 +12,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
+import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsTransaction;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
@@ -141,7 +142,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         JSONObject response = responses.get(responses.size() - 1);
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
-            log.warn("待执行订单数量: {}", trader.getOrdersWaitForExecution().size());
+//            log.warn("待执行订单数量: {}", trader.getOrdersWaitForExecution().size());
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
@@ -188,11 +189,11 @@ public class LowBuyHighSellStrategy extends Strategy {
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
         initFinalDistribution(); // 计算等价分布
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
-        List<SecurityBeanEm> res =
-                SecurityBeanEm.createStockList(new ArrayList<>(stockSelectCountMapFinal.keySet())); // 选股结果
-        res.addAll(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"))); // 加入两大指数
-        res.addAll(SecurityBeanEm.createStockList(initYesterdayHolds()));// 加入昨日持仓for sell
-        log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: ", this.getStockPool().size());
+
+        ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
+        stocks.addAll(initYesterdayHolds());
+        List<SecurityBeanEm> res = new StockPoolForFsTransaction(stocks, true).createStockPool();
+        log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: {}", res.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
     }
@@ -203,7 +204,7 @@ public class LowBuyHighSellStrategy extends Strategy {
      * @noti: 逻辑上本函数通常在第一次获取账号信息后执行, 再次更新 this.stockPool
      */
     @Override
-    public List<String> initYesterdayHolds() throws Exception {
+    protected List<String> initYesterdayHolds() throws Exception {
         execSql(StrUtil.format("create table if not exists\n {}" +
                         "(\n" +
                         "    trade_date                       varchar(128) null,\n" +
@@ -252,6 +253,42 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
         return stocksYesterdayHolds;
+    }
+
+    /**
+     * 选股逻辑, 注意此处并未使用返回值, 将选股结果存储于属性
+     *
+     * @return
+     * @throws Exception
+     */
+    @Override
+    protected List<String> stockSelect() throws Exception {
+        execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
+                connOfStockSelectResult); // 不存在则建表
+        String today = DateUtil.today();
+        String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
+                stockSelectResultSaveTableName, today);
+        DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
+        long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
+        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
+            stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
+        }
+        // 获取选股结果, api均已缓存
+        // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
+        HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
+                stockSelectResultSaveTableName);
+        HashMap<Long, HashSet<String>> stockSelectResultAsSet = new HashMap<>();
+        stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
+                new HashSet<>(stockSelectResult.get(value)))); // 转换hs
+
+
+        // 自动调整参数 profitLimitOfFormSetIdFilter, 使得选股数量接近 suitableSelectStockCount
+        decideTheMostSuitableFormSetIds(stockSelectResultAsSet);
+        // 此时参数已调整好, 最后获取最终确定的 选股结果!!
+        confirmStockSelectResult(stockSelectResultAsSet);
+        // 确定后两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
+
+        return null;
     }
 
     /**
@@ -328,37 +365,6 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.info("show: 低买分布: {}", weightsOfLow1GlobalFinal);
         log.info("show: 高卖tick: {}", ticksOfHigh1GlobalFinal);
         log.info("show: 高卖分布: {}", weightsOfHigh1GlobalFinal);
-    }
-
-
-    @Override
-    protected List<String> stockSelect() throws Exception {
-        execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
-                connOfStockSelectResult); // 不存在则建表
-        String today = DateUtil.today();
-        String sqlIsStockSelectedToday = StrUtil.format("select count(*) from `{}` where trade_date='{}'",
-                stockSelectResultSaveTableName, today);
-        DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sqlIsStockSelectedToday);
-        long resultCountOfToday = Long.valueOf(dfTemp.get(0, 0).toString());
-        if (resultCountOfToday <= hasStockSelectResultTodayThreshold) { // 全量更新今日全部选股结果
-            stockSelect0(); // 真实今日选股并存入数据库, 需要从各大分析研究程序调用对应函数
-        }
-        // 获取选股结果, api均已缓存
-        // List<String> getStockSelectResultOfTradeDate  获取单form_set 某日期 选股结果列表
-        HashMap<Long, List<String>> stockSelectResult = KlineFormsApi.getStockSelectResultOfTradeDate(today, keyInts,
-                stockSelectResultSaveTableName);
-        HashMap<Long, HashSet<String>> stockSelectResultAsSet = new HashMap<>();
-        stockSelectResult.keySet().stream().forEach(value -> stockSelectResultAsSet.put(value,
-                new HashSet<>(stockSelectResult.get(value)))); // 转换hs
-
-
-        // 自动调整参数 profitLimitOfFormSetIdFilter, 使得选股数量接近 suitableSelectStockCount
-        decideTheMostSuitableFormSetIds(stockSelectResultAsSet);
-        // 此时参数已调整好, 最后获取最终确定的 选股结果!!
-        confirmStockSelectResult(stockSelectResultAsSet);
-        // 确定后两大静态属性已经初始化(即使空): formSerDistributionWeightMapFinal ,stockSelectCountMapFinal
-
-        return null;
     }
 
 
@@ -459,7 +465,8 @@ public class LowBuyHighSellStrategy extends Strategy {
     private int getStockSelectCountCurrentFilterArgOfProfit(HashMap<Long, HashSet<String>> stockSelectResultAsSet
     )
             throws FileNotFoundException {
-        initUseFormSetIds(); // profitLimitOfFormSetIdFilter 自动调整
+        initUseFormSetIds();
+        // profitLimitOfFormSetIdFilter 自动调整
         // 初始化使用的形态id列表, 已经去重, 默认实现为筛选  见: profitLimitOfFormSetIdFilter
         // 计算每只股票有多少个formset 选中了?
         HashMap<String, Integer> stockSelectCountMap = new HashMap<>();

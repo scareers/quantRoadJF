@@ -84,7 +84,7 @@ public abstract class Strategy {
      * 将昨日持仓更新到股票池. 将昨日收盘持仓和资金信息, 更新到属性
      * @return
      */
-    public abstract List<String> initYesterdayHolds() throws Exception;
+    protected abstract List<String> initYesterdayHolds() throws Exception;
 
     /**
      * check. 默认实现为简单分发为3个抽象方法

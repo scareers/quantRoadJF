@@ -288,7 +288,7 @@ public class Trader {
     public void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
-        log.info("order generated: 生成订单放入执行队列: {} ", order.toJsonStr());
+        log.info("order enqueue: {} ", order.toJsonStr());
     }
 
     /**
@@ -299,7 +299,7 @@ public class Trader {
      * @throws IOException
      */
     public void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
-        log.info("--> python: {}", jsonMsg);
+        log.info("java --> python: {}", jsonMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));
     }

@@ -34,12 +34,10 @@ public class StockPoolForFsTransaction implements StockPoolFactory {
 
     @Override
     public List<SecurityBeanEm> createStockPool() throws Exception {
-        log.warn("start init stockPool: 开始初始化股票池...");
         List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stockPoolSimple);
         if (addTwoMarketIndex) {
             results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
         }
-        log.warn("finish init stockPool: 完成初始化股票池,股票池数量: {}", results.size());
         return results;
     }
 }
