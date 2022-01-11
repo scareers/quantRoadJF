@@ -12,6 +12,8 @@ import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import static java.awt.BorderLayout.NORTH;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.themeColor;
@@ -62,18 +64,19 @@ public class TraderGUI {
 
 
         // JTabbedPane 封装底部
-
-//        jTabbedPane.addTab("Terminal", jDisplayForLog);
-        JInternalFrame jInternalFrame = new JInternalFrame("Terminal", true, true, false);
-        jInternalFrame.add(jDisplayForLog);
-        jInternalFrame.setBorder(null);
-        jTabbedPane.addTab("Terminal", jInternalFrame);
+        jTabbedPane.addTab("Terminal", jDisplayForLog);
+//        JInternalFrame jInternalFrame = new JInternalFrame("Terminal", true, true, true);
+//        jInternalFrame.add(jDisplayForLog);
+//        jInternalFrame.setBorder(null);
+//        jInternalFrame.setForeground(themeColor);
+//        jInternalFrame.setBackground(themeColor);
+//        jTabbedPane.addTab("Terminal", jInternalFrame);
 
         jTabbedPane.addTab("Terminal2", new Label("测试 tab"));
         jSplitPane.setBottomComponent(jTabbedPane);
 
-        JLabel label = new JLabel("我是状态栏");
-        label.setFont(new Font("宋体", Font.BOLD, 20));
+        JLabel label = new JLabel("Running");
+        label.setFont(new Font("宋体", Font.BOLD, 15));
         label.setForeground(Color.RED);
 
         mainWindow.add(label, BorderLayout.SOUTH);
@@ -86,15 +89,24 @@ public class TraderGUI {
 
     public void initMainWindow() {
         mainWindow = new JFrame("Trader");    //创建一个JFrame对象
-        mainWindow.setLocation(200, 100);
-        ImageIcon imageIcon = new ImageIcon(ClassLoader.getSystemResource("gui/img/titleIcon.png"));
+        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        mainWindow.setUndecorated(false); // 标题栏显示
+//        mainWindow.addKeyListener(new KeyAdapter() {
+//            @Override
+//            public void keyPressed(KeyEvent e) {
+//                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+//                    mainWindow.setUndecorated(true); // 退出真全屏模式
+//                }
+//            }
+//        });
+        ImageIcon imageIcon = new ImageIcon(ClassLoader.getSystemResource("gui/img/titleIcon0.png"));
         mainWindow.setIconImage(imageIcon.getImage());
         mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
     }
 
     public void initGlobalStyle() throws UnsupportedLookAndFeelException {
-        UIManager.setLookAndFeel(new MetalLookAndFeel());
+        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关
         // UIManager.setLookAndFeel(new PgsLookAndFeel());
 
         UIDefaults defs = UIManager.getDefaults();

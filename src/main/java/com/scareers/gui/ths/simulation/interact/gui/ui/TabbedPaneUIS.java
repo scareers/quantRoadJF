@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.ui;
 
 import javax.swing.*;
-import javax.swing.plaf.basic.BasicTabbedPaneUI;
+import javax.swing.plaf.metal.MetalTabbedPaneUI;
 import java.awt.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.themeColor;
@@ -14,7 +14,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.t
  */
 
 
-public class TabbedPaneUIS extends BasicTabbedPaneUI {
+public class TabbedPaneUIS extends MetalTabbedPaneUI {
     // 绘制pane时，计算坐标和宽高的方法需要用到，直接从父类拷贝过来的
     private boolean tabsOverlapBorder = UIManager.getBoolean("TabbedPane.tabsOverlapBorder");
 
