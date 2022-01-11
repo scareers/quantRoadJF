@@ -52,7 +52,7 @@ import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChan
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
-//import com.scareers.gui.ths.simulation.interact.gui.JFrameDemo;
+//import com.scareers.gui.ths.simulation.interact.gui.TraderGUI;
 
 /**
  * description: ths 自动交易程序

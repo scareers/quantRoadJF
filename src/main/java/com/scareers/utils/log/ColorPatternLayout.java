@@ -59,6 +59,9 @@ public class ColorPatternLayout extends PatternLayout {
          */
 
         switch (level.toInt()) {
+            case Level.TRACE_INT:
+                prefix = "";
+                break;
             case Level.DEBUG_INT:
                 prefix = ""; // 默认无附加颜色
                 break;

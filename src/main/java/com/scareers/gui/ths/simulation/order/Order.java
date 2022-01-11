@@ -126,7 +126,11 @@ public class Order implements Comparable, Serializable {
         order.set("priority", priority);
         checkParamsKeySet();
         order.putAll(params);
-        order.set("lifePoints", lifePoints.stream().map(value -> value.asJson()).collect(Collectors.toList()));
+        ArrayList<JSON> lifePointsJSON = new ArrayList<>();
+        for (LifePoint i : lifePoints) {
+            lifePointsJSON.add(i.asJson());
+        }
+        order.set("lifePoints", lifePointsJSON);
         order.set("timer", timer);
         order.set("otherRawMessages", otherRawMessages);
         order.set("resendTimes", resendTimes);
