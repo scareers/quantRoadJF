@@ -17,15 +17,12 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RuntimeUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.Response;
-import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
@@ -43,7 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -67,6 +63,10 @@ public class Trader {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
+        main0(args);
+    }
+
+    public static void main0(String[] args) throws Exception {
         Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
         // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
@@ -87,12 +87,13 @@ public class Trader {
                 20, // 期望选股数量
                 false, // 偏向更多选股结果
                 Arrays.asList(0, 1) // 核心, 哪天买哪天卖的算法?
-        ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf()
+        ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
                 FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,
                         "15:10:00", 1000, 100, 32);
+        trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
 
         // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
@@ -132,6 +133,7 @@ public class Trader {
     private Checker checker;
     private AccountStates accountStates;
     private Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成关连
+    private FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
 
     // 通道, 自行初始化
     private Channel channelComsumer; // 自行初始化
