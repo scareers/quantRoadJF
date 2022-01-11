@@ -34,6 +34,8 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.t
  * 6.状态栏, 右侧含按钮 --> 简单容器放在下即可, 添加按钮
  * 7.左功能栏 + 主编辑器,  占据主要界面. 左功能栏可关闭
  * --> 标准 JSplitPane, 左功能栏可关闭. 编辑框不可最小化. 编辑框为 JTabbedPane,动态增加tab
+ * @key3 主界面主布局采用  JDesktopPane / JLayeredPane
+ * 使得 右/下 功能栏可以叠加到 主界面(左功能+编辑器)之上.
  * @author: admin
  * @date: 2022/1/4/004-17:03:03
  */
