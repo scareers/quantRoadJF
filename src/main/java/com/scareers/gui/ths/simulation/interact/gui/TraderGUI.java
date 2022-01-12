@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.json.JSONUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.JButtonV;
+import com.scareers.gui.ths.simulation.interact.gui.component.fivecore.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.forlog.JDisplayForLog;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
@@ -15,6 +16,7 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Arrays;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMain;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMinor;
@@ -86,79 +88,88 @@ public class TraderGUI {
      * @return
      */
     public JPanel buildCorePanel(JFrame mainWindow) {
-        JPanel corePane = new JPanel();
+        return new CorePanel(100, 10, 20, 20, 20,
+                Arrays.asList(ButtonFactory.getButton("对象查看", true)),
+                Arrays.asList(ButtonFactory.getButton("数据查看", true)),
+                Arrays.asList(ButtonFactory.getButton("数据库", true)),
+                Arrays.asList(ButtonFactory.getButton("书签", true)),
+                Arrays.asList(ButtonFactory.getButton("终端命令行")),
+                Arrays.asList(ButtonFactory.getButton("命令行2"))
+        );
 
-
-        // 1. 左主要树形菜单 + 编辑器  JSplitPane,不定宽高,自动BorderLayout适应
-        JPanel leftPane = new JPanel(); // mainTree
-        leftPane.setPreferredSize(new Dimension(100, 200)); // 定宽
-        leftPane.setBackground(Color.yellow);
-        leftPane.setOpaque(true);
-
-        JPanel editor = new JPanel();
-        editor.setBackground(Color.green);
-        editor.setOpaque(true);
-
-        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); //设定为左右拆分布局
-        centerSplitPane.setBorder(null);
-        centerSplitPane.setOneTouchExpandable(true); // 让分割线显示出箭头
-        centerSplitPane.setContinuousLayout(true); // 操作箭头，重绘图形
-        centerSplitPane.setDividerSize(20); //设置分割线的宽度
-        centerSplitPane.setLeftComponent(leftPane);
-        centerSplitPane.setRightComponent(editor);
-        centerSplitPane.setOpaque(true);
-
-        // 2. 左工具栏 JPanel,     box + 2Panel(一上Flow, 一下Flow) // 按钮列表
-        JPanel leftTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
-        leftTools.setLayout(new BoxLayout(leftTools, BoxLayout.Y_AXIS)); // 上下
-        leftTools.setPreferredSize(new Dimension(20, 100)); // 定宽
-        JPanel panel1 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
-        JPanel panel2 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
-        JButton projectButton = ButtonFactory.getButton("对象查看", true);
-        panel1.add(projectButton);
-        projectButton.setBackground(colorThemeMinor);
-        JButton favoritesButton = ButtonFactory.getButton("数据查看", true);
-        panel2.add(favoritesButton);
-        leftTools.add(panel1);
-        leftTools.add(panel2);
-
-
-        // 3. 右工具栏 类似2
-        JPanel rightTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
-        rightTools.setLayout(new BoxLayout(rightTools, BoxLayout.Y_AXIS)); // 上下
-        rightTools.setPreferredSize(new Dimension(20, 100)); // 定宽
-        JPanel panel3 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
-        JPanel panel4 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
-        JButton databaseButton = ButtonFactory.getButton("数据库", true);
-        panel3.add(databaseButton);
-        JButton mavenButton = ButtonFactory.getButton("书签", true);
-        panel4.add(mavenButton);
-        rightTools.add(panel3);
-        rightTools.add(panel4);
-
-
-        // 4. 下工具栏, 横向排布,逻辑类似2,3
-        JPanel bottomTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
-        bottomTools.setLayout(new BoxLayout(bottomTools, BoxLayout.X_AXIS)); // 左右
-        bottomTools.setPreferredSize(new Dimension(100, 20)); // 定高
-        JPanel panel5 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));  // 上, 上浮动
-        JPanel panel6 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)); // 下, 下浮动
-
-        JButton terminalButton = ButtonFactory.getButton("终端命令行");
-        panel5.add(createPlaceholderLabel(20, 20)); // 前面需要添加占位符label, 宽度等于左工具栏宽度20
-        panel5.add(terminalButton);
-        JButton runButton = ButtonFactory.getButton("终端2");
-        panel6.add(runButton);
-        panel6.add(createPlaceholderLabel(20, 20)); // @noti: 占位label依然需要最后添加, 右Flow应当先加入所有控件,再右对齐
-        bottomTools.add(panel5);
-        bottomTools.add(panel6);
-
-        corePane.setLayout(new BorderLayout());
-        corePane.add(leftTools, BorderLayout.WEST);
-        corePane.add(rightTools, BorderLayout.EAST);
-        corePane.add(centerSplitPane, BorderLayout.CENTER);
-        corePane.add(bottomTools, BorderLayout.SOUTH);
-        return corePane;
+//        JPanel corePane = new JPanel();
+//
+//
+//        // 1. 左主要树形菜单 + 编辑器  JSplitPane,不定宽高,自动BorderLayout适应
+//        JPanel leftPane = new JPanel(); // mainTree
+//        leftPane.setPreferredSize(new Dimension(100, 200)); // 定宽
+//        leftPane.setBackground(Color.yellow);
+//        leftPane.setOpaque(true);
+//
+//        JPanel editor = new JPanel();
+//        editor.setBackground(Color.green);
+//        editor.setOpaque(true);
+//
+//        JSplitPane centerSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); //设定为左右拆分布局
+//        centerSplitPane.setBorder(null);
+//        centerSplitPane.setOneTouchExpandable(true); // 让分割线显示出箭头
+//        centerSplitPane.setContinuousLayout(true); // 操作箭头，重绘图形
+//        centerSplitPane.setDividerSize(20); //设置分割线的宽度
+//        centerSplitPane.setLeftComponent(leftPane);
+//        centerSplitPane.setRightComponent(editor);
+//        centerSplitPane.setOpaque(true);
+//
+//        // 2. 左工具栏 JPanel,     box + 2Panel(一上Flow, 一下Flow) // 按钮列表
+//        JPanel leftTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+//        leftTools.setLayout(new BoxLayout(leftTools, BoxLayout.Y_AXIS)); // 上下
+//        leftTools.setPreferredSize(new Dimension(20, 100)); // 定宽
+//        JPanel panel1 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
+//        JPanel panel2 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
+//        JButton projectButton = ButtonFactory.getButton("对象查看", true);
+//        panel1.add(projectButton);
+//        projectButton.setBackground(colorThemeMinor);
+//        JButton favoritesButton = ButtonFactory.getButton("数据查看", true);
+//        panel2.add(favoritesButton);
+//        leftTools.add(panel1);
+//        leftTools.add(panel2);
+//
+//
+//        // 3. 右工具栏 类似2
+//        JPanel rightTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+//        rightTools.setLayout(new BoxLayout(rightTools, BoxLayout.Y_AXIS)); // 上下
+//        rightTools.setPreferredSize(new Dimension(20, 100)); // 定宽
+//        JPanel panel3 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
+//        JPanel panel4 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
+//        JButton databaseButton = ButtonFactory.getButton("数据库", true);
+//        panel3.add(databaseButton);
+//        JButton mavenButton = ButtonFactory.getButton("书签", true);
+//        panel4.add(mavenButton);
+//        rightTools.add(panel3);
+//        rightTools.add(panel4);
+//
+//
+//        // 4. 下工具栏, 横向排布,逻辑类似2,3
+//        JPanel bottomTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+//        bottomTools.setLayout(new BoxLayout(bottomTools, BoxLayout.X_AXIS)); // 左右
+//        bottomTools.setPreferredSize(new Dimension(100, 20)); // 定高
+//        JPanel panel5 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));  // 上, 上浮动
+//        JPanel panel6 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)); // 下, 下浮动
+//
+//        JButton terminalButton = ButtonFactory.getButton("终端命令行");
+//        panel5.add(createPlaceholderLabel(20, 20)); // 前面需要添加占位符label, 宽度等于左工具栏宽度20
+//        panel5.add(terminalButton);
+//        JButton runButton = ButtonFactory.getButton("终端2");
+//        panel6.add(runButton);
+//        panel6.add(createPlaceholderLabel(20, 20)); // @noti: 占位label依然需要最后添加, 右Flow应当先加入所有控件,再右对齐
+//        bottomTools.add(panel5);
+//        bottomTools.add(panel6);
+//
+//        corePane.setLayout(new BorderLayout());
+//        corePane.add(leftTools, BorderLayout.WEST);
+//        corePane.add(rightTools, BorderLayout.EAST);
+//        corePane.add(centerSplitPane, BorderLayout.CENTER);
+//        corePane.add(bottomTools, BorderLayout.SOUTH);
+//        return corePane;
     }
 
 
