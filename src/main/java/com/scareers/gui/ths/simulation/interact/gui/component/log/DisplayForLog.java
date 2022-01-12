@@ -9,11 +9,11 @@ import java.awt.*;
  * @author: admin
  * @date: 2022/1/12/012-00:14:04
  */
-public class JDisplayForLog extends JPanel {
+public class DisplayForLog extends JPanel {
     JScrollPane jScrollPane = new JScrollPane(); // 滚动包裹
-    JTextPane logTextPane = new JTextPaneDisplay(true); // 不换行不可编辑展示框
+    JTextPane logTextPane = new TextPaneDisplay(true); // 不换行不可编辑展示框
 
-    public JDisplayForLog() {
+    public DisplayForLog() {
         super();
         this.setLayout(new BorderLayout());
 

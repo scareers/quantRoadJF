@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.Getter;
@@ -14,10 +15,7 @@ import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.util.Arrays;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -66,7 +64,7 @@ public class TraderGui extends JFrame {
 
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
-    JPanel corePanel; // 核心组件
+    CorePanel corePanel; // 核心组件
 
     boolean presentationMode = false;
 
@@ -110,6 +108,7 @@ public class TraderGui extends JFrame {
     }
 
     private void addListeners() {
+        TraderGui mainWindow = this;
         // 打开后启动交易程序
         this.addWindowListener(new WindowAdapter() {
             @SneakyThrows
@@ -117,6 +116,7 @@ public class TraderGui extends JFrame {
             public void windowOpened(WindowEvent e) {
                 ThreadUtil.execAsync(() -> {
                     try {
+                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -140,14 +140,24 @@ public class TraderGui extends JFrame {
      *
      * @return
      */
-    public JPanel buildCorePanel() {
+    public CorePanel buildCorePanel() {
+        JButton logsFunc = ButtonFactory.getButton("日志输出");
+        TraderGui parent = this;
+        logsFunc.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                LogFuncWindow logFuncWindow = new LogFuncWindow(parent, "logs",
+                        LogFuncWindow.OrientationType.HORIZONTAL);
+            }
+        });
+
         return new CorePanel(100, 10, 30, 30, 30,
                 Arrays.asList(ButtonFactory.getButton("对象查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据库", true)),
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
-                Arrays.asList(ButtonFactory.getButton("终端命令行")),
-                Arrays.asList(ButtonFactory.getButton("命令行2"))
+                Arrays.asList(logsFunc),
+                Arrays.asList(ButtonFactory.getButton("终端命令行"))
         );
     }
 

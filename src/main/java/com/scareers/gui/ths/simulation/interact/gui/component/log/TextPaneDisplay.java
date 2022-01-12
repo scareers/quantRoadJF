@@ -11,8 +11,8 @@ import java.awt.*;
  * @author: admin
  * @date: 2022/1/11/011-23:55:07
  */
-public class JTextPaneDisplay extends JTextPane {
-    public JTextPaneDisplay(boolean registerToLog) {
+public class TextPaneDisplay extends JTextPane {
+    public TextPaneDisplay(boolean registerToLog) {
         super();
         setEditable(false); // 展示用因此不可编辑
         if (registerToLog) { //是否绑定到cmd log, 作为log显示控件?
