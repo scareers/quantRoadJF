@@ -1,17 +1,23 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
+import cn.hutool.json.JSONUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.JButtonV;
 import com.scareers.gui.ths.simulation.interact.gui.component.forlog.JDisplayForLog;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
+import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.themeColor;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMain;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMinor;
 
 
 /**
@@ -55,6 +61,7 @@ public class TraderGUI {
 //        jTabbedPane.setFont(new Font());
         jTabbedPane.setForeground(Color.WHITE);
 
+
         JDisplayForLog jDisplayForLog = new JDisplayForLog();
         jDisplayForLog.setPreferredSize(new Dimension(1980, 300));
 
@@ -96,9 +103,22 @@ public class TraderGUI {
         JPanel corePanel = buildCorePanel();
         corePanel.add(jSplitPane, BorderLayout.CENTER);
 
-        mainWindow.add(label, BorderLayout.NORTH);
+        JButton btn = ButtonFactory.getButton("测试");
+        btn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                jTabbedPane.setSelectedIndex(1);
+                Component x = jTabbedPane.getComponent(0);
+                jTabbedPane.setSize(jTabbedPane.getWidth(), jTabbedPane.getHeight() - x.getHeight());
+                jTabbedPane.repaint();
+            }
+        });
+
+        mainWindow.add(label, BorderLayout.SOUTH);
         mainWindow.add(corePanel, BorderLayout.CENTER);
-        mainWindow.add(pathLabel, BorderLayout.SOUTH);
+        mainWindow.add(pathLabel, BorderLayout.NORTH);
+        mainWindow.add(btn, BorderLayout.EAST);
+
 
         mainWindow.pack();
         mainWindow.setVisible(true);
@@ -111,18 +131,21 @@ public class TraderGUI {
      * @return
      */
     public JPanel buildCorePanel() {
-        JPanel corePanel = new JPanel();
-        corePanel.setLayout(new BorderLayout());
+        JLayeredPane layeredPane = new JLayeredPane();
+
+        JPanel corePanel0 = new JPanel();
+        corePanel0.setLayout(new BorderLayout());
 
         JPanel leftTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
         leftTools.setLayout(new BoxLayout(leftTools, BoxLayout.Y_AXIS)); // 上下
-        leftTools.setPreferredSize(new Dimension(20, 100)); // 定宽
+        leftTools.setPreferredSize(new Dimension(50, 100)); // 定宽
         JPanel panel1 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
         JPanel panel2 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
 
-        JButton projectButton = new JButtonV("对象查看");
+        JButton projectButton = ButtonFactory.getButton("对象查看", true);
         panel1.add(projectButton);
-        JButton favoritesButton = new JButtonV("状态查看");
+        projectButton.setBackground(colorThemeMinor);
+        JButton favoritesButton = ButtonFactory.getButton("数据查看", true);
         panel2.add(favoritesButton);
 
         leftTools.add(panel1);
@@ -134,9 +157,9 @@ public class TraderGUI {
         JPanel panel3 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
         JPanel panel4 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
 
-        JButton databaseButton = new JButtonV("database");
+        JButton databaseButton = ButtonFactory.getButton("数据库", true);
         panel3.add(databaseButton);
-        JButton mavenButton = new JButtonV("maven");
+        JButton mavenButton = ButtonFactory.getButton("书签", true);
         panel4.add(mavenButton);
 
         rightTools.add(panel3);
@@ -148,21 +171,21 @@ public class TraderGUI {
         JPanel panel5 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));  // 上, 上浮动
         JPanel panel6 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)); // 下, 下浮动
 
-        JButton terminalButton = new JButton("terminal");
+        JButton terminalButton = ButtonFactory.getButton("终端命令行");
         panel5.add(terminalButton);
-        JButton runButton = new JButton("run");
+        JButton runButton = new JButton("命令行2");
         panel6.add(runButton);
 
         bottomTools.add(panel5);
         bottomTools.add(panel6);
 
 
-        corePanel.add(leftTools, BorderLayout.WEST); // 左工具
-        corePanel.add(rightTools, BorderLayout.EAST); // 右工具
-        corePanel.add(bottomTools, BorderLayout.SOUTH); // 下工具
+        corePanel0.add(leftTools, BorderLayout.WEST); // 左工具
+        corePanel0.add(rightTools, BorderLayout.EAST); // 右工具
+        corePanel0.add(bottomTools, BorderLayout.SOUTH); // 下工具
 
-
-        return corePanel;
+        layeredPane.add(corePanel0, Integer.valueOf(200), 0); // 约束越大越前前, index为同一层的先后
+        return corePanel0;
     }
 
     public void initMainWindow() {
@@ -185,18 +208,26 @@ public class TraderGUI {
     }
 
     public void initGlobalStyle() throws UnsupportedLookAndFeelException {
-        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关
-        // UIManager.setLookAndFeel(new PgsLookAndFeel());
-
+        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
-        defs.put("TextPane.background", new ColorUIResource(themeColor));
-        defs.put("TextPane.inactiveBackground", new ColorUIResource(themeColor));
-        defs.put("SplitPane.background", new ColorUIResource(themeColor));
-        defs.put("SplitPane.inactiveBackground", new ColorUIResource(themeColor));
-        defs.put("Panel.background", new ColorUIResource(themeColor));
-        defs.put("Panel.inactiveBackground", new ColorUIResource(themeColor));
-        //        System.out.println(JSONUtil.toJsonPrettyStr(JSONUtil.parse(defs)));
-        defs.put("SplitPane.background", new ColorUIResource(themeColor));
+
+        defs.put("TextPane.background", new ColorUIResource(colorThemeMain));
+        defs.put("TextPane.inactiveBackground", new ColorUIResource(colorThemeMain));
+        defs.put("SplitPane.background", new ColorUIResource(colorThemeMain));
+        defs.put("SplitPane.inactiveBackground", new ColorUIResource(colorThemeMain));
+        defs.put("TabbedPane.background", new ColorUIResource(colorThemeMinor));
+
+        defs.put("Button.shadow", colorThemeMain);
+        defs.put("Button.select", colorThemeMain);
+        defs.put("Button.focus", colorThemeMain);
+        defs.put("Button.background", new ColorUIResource(colorThemeMain));
+        defs.put("Button.foreground", new ColorUIResource(colorThemeMain));//
+        defs.put("Button.margin", new InsetsUIResource(2, 2, 2, 3));// 因为有竖直button,这里margin初始化
+        defs.put("Button.gradient", null);// 将渐变去除
+
+        defs.put("Panel.background", new ColorUIResource(colorThemeMinor));
+        defs.put("Panel.inactiveBackground", new ColorUIResource(colorThemeMinor));
+//                System.out.println(JSONUtil.toJsonPrettyStr(JSONUtil.parse(defs)));
     }
 
 }

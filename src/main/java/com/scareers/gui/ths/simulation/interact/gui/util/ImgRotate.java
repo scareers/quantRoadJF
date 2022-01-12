@@ -6,10 +6,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 
 /**
- * Author Mythos_Q
- * <p>
- * Time 2011-07-20
- * <p>
  * Description 图片旋转、翻转处理
  */
 public class ImgRotate {
