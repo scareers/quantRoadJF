@@ -18,6 +18,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -67,7 +68,7 @@ public class TraderGui extends JFrame {
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
 
-    CopyOnWriteArrayList<Dialog> funcDialogs; // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
+    CopyOnWriteArraySet<JDialog> funcDialogs; // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
 
     public TraderGui() throws Exception {
         super();
@@ -124,6 +125,17 @@ public class TraderGui extends JFrame {
                 }, true);
             }
         });
+
+        // 尺寸改变
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                // 应当刷新bounds, 并且重绘
+                for (JDialog dialog : funcDialogs) {
+
+                }
+            }
+        });
     }
 
     /**
@@ -148,6 +160,7 @@ public class TraderGui extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         LogFuncWindow.OrientationType.HORIZONTAL);
+                funcDialogs.add(logFuncWindow);
             }
         });
 
