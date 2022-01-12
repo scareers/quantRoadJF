@@ -17,6 +17,7 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -66,8 +67,7 @@ public class TraderGui extends JFrame {
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
 
-    boolean presentationMode = false;
-
+    CopyOnWriteArrayList<Dialog> funcDialogs; // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
 
     public TraderGui() throws Exception {
         super();
@@ -77,7 +77,7 @@ public class TraderGui extends JFrame {
 
     public void init() {
         this.setLayout(new BorderLayout());
-        this.setUndecorated(presentationMode); // 标题栏显示,true 则类似专注模式
+        this.setUndecorated(false); // 标题栏显示,true 则类似专注模式
         ImageIcon imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_PATH));
         this.setIconImage(imageIcon.getImage()); // 图标
 
@@ -146,7 +146,7 @@ public class TraderGui extends JFrame {
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                LogFuncWindow logFuncWindow = new LogFuncWindow(parent, "logs",
+                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         LogFuncWindow.OrientationType.HORIZONTAL);
             }
         });
