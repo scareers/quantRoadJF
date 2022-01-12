@@ -11,7 +11,7 @@ import java.awt.*;
  */
 public class LogFuncWindow extends JDialog {
     public LogFuncWindow(Window owner, String title, ModalityType modalityType) {
-        super(owner, title, modalityType);
+        super(owner, title, ModalityType.MODELESS);
     }
 
 
