@@ -3,10 +3,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.log.DisplayForLog;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 /**
  * description: 查看日志输出, 约等于idea的 Run 显示信息. 无法显示 print
  *
@@ -40,7 +36,12 @@ public class LogFuncWindow extends FuncDialogS {
         this.add(jDisplayForLog);
         // 注意, 起点(x,y) 应当+主窗口x,y, 因为setBounds本身是绝对定位
         this.flushBounds();
+        this.setResizable(true);
+        this.setFocusable(true);
         this.setVisible(true);
+
+        this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏而非真正关闭,配合单例模式
+
     }
 
     @Override

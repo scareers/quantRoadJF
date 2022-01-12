@@ -129,9 +129,11 @@ public class TraderGui extends JFrame {
 
         // 尺寸改变
         this.addComponentListener(new ComponentAdapter() {
+            @SneakyThrows
             @Override
             public void componentResized(ComponentEvent e) {
                 // 应当刷新bounds, 将自动重绘
+                Thread.sleep(100); // 对话框无法渐变size, 因此先等待
                 for (FuncDialogS dialog : funcDialogs) {
                     dialog.flushBounds();
                 }
@@ -162,6 +164,7 @@ public class TraderGui extends JFrame {
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         LogFuncWindow.OrientationType.HORIZONTAL);
                 funcDialogs.add(logFuncWindow);
+//                logFuncWindow.focus
             }
         });
 
