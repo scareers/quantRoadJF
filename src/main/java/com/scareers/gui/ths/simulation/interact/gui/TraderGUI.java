@@ -1,6 +1,8 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.JButtonV;
 import com.scareers.gui.ths.simulation.interact.gui.component.forlog.JDisplayForLog;
+import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
@@ -86,12 +88,81 @@ public class TraderGUI {
         label.setFont(new Font("宋体", Font.BOLD, 15));
         label.setForeground(Color.RED);
 
-        mainWindow.add(label, BorderLayout.SOUTH);
-        mainWindow.add(jSplitPane, BorderLayout.CENTER);
+        JLabel pathLabel = new JLabel("paths: ");
+        pathLabel.setFont(new Font("宋体", Font.BOLD, 15));
+        pathLabel.setForeground(Color.RED);
+
+
+        JPanel corePanel = buildCorePanel();
+        corePanel.add(jSplitPane, BorderLayout.CENTER);
+
+        mainWindow.add(label, BorderLayout.NORTH);
+        mainWindow.add(corePanel, BorderLayout.CENTER);
+        mainWindow.add(pathLabel, BorderLayout.SOUTH);
 
         mainWindow.pack();
         mainWindow.setVisible(true);
         Trader.main0(null);
+    }
+
+    /**
+     * 核心内容 Panel. 含 左右下 3个按钮列, 以及 JSplitPanel 的项目+编辑器 主界面
+     *
+     * @return
+     */
+    public JPanel buildCorePanel() {
+        JPanel corePanel = new JPanel();
+        corePanel.setLayout(new BorderLayout());
+
+        JPanel leftTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+        leftTools.setLayout(new BoxLayout(leftTools, BoxLayout.Y_AXIS)); // 上下
+        leftTools.setPreferredSize(new Dimension(20, 100)); // 定宽
+        JPanel panel1 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
+        JPanel panel2 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
+
+        JButton projectButton = new JButtonV("对象查看");
+        panel1.add(projectButton);
+        JButton favoritesButton = new JButtonV("状态查看");
+        panel2.add(favoritesButton);
+
+        leftTools.add(panel1);
+        leftTools.add(panel2);
+
+        JPanel rightTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+        rightTools.setLayout(new BoxLayout(rightTools, BoxLayout.Y_AXIS)); // 上下
+        rightTools.setPreferredSize(new Dimension(20, 100)); // 定宽
+        JPanel panel3 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.TOP, 0, 0));  // 上, 上浮动
+        JPanel panel4 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.BOTTOM, 0, 0)); // 下, 下浮动
+
+        JButton databaseButton = new JButtonV("database");
+        panel3.add(databaseButton);
+        JButton mavenButton = new JButtonV("maven");
+        panel4.add(mavenButton);
+
+        rightTools.add(panel3);
+        rightTools.add(panel4);
+
+        JPanel bottomTools = new JPanel(); // 工具栏包含2个Panel, 一个左浮动, 一个右浮动
+        bottomTools.setLayout(new BoxLayout(bottomTools, BoxLayout.X_AXIS)); // 左右
+        bottomTools.setPreferredSize(new Dimension(100, 20)); // 定高
+        JPanel panel5 = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));  // 上, 上浮动
+        JPanel panel6 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)); // 下, 下浮动
+
+        JButton terminalButton = new JButton("terminal");
+        panel5.add(terminalButton);
+        JButton runButton = new JButton("run");
+        panel6.add(runButton);
+
+        bottomTools.add(panel5);
+        bottomTools.add(panel6);
+
+
+        corePanel.add(leftTools, BorderLayout.WEST); // 左工具
+        corePanel.add(rightTools, BorderLayout.EAST); // 右工具
+        corePanel.add(bottomTools, BorderLayout.SOUTH); // 下工具
+
+
+        return corePanel;
     }
 
     public void initMainWindow() {
