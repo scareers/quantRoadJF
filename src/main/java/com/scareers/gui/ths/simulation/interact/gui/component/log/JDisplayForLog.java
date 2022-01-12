@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.forlog;
+package com.scareers.gui.ths.simulation.interact.gui.component.log;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.fivecore;
+package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import lombok.Getter;
 import lombok.Setter;

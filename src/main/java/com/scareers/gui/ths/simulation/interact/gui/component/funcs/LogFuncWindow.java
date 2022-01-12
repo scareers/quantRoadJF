@@ -10,9 +10,21 @@ import java.awt.*;
  * @date: 2022/1/13/013-04:41:26
  */
 public class LogFuncWindow extends JDialog {
-    public LogFuncWindow(Window owner, String title, ModalityType modalityType) {
-        super(owner, title, ModalityType.MODELESS);
+    OrientationType type;
+
+    public LogFuncWindow(Window owner, String title, OrientationType type) {
+        super(owner, title, ModalityType.MODELESS); // 永不阻塞顶级窗口
+        this.type = type;
+        init();
     }
 
+    private void init() {
 
+
+    }
+
+    public static enum OrientationType {
+        VERTICAL,
+        HORIZONTAL
+    }
 }

@@ -90,6 +90,9 @@ class TimeDialog {
         dialog.setTitle("提示: 本窗口将在" + secends + "秒后自动关闭");
         dialog.setLayout(null);
         dialog.add(label);
+//        System.out.println(dialog.isUndecorated());
+//        System.out.println(dialog.isUndecorated());
+        dialog.setUndecorated(true);
         dialog.add(confirm);
         dialog.add(cancel);
         s.scheduleAtFixedRate(new Runnable() {

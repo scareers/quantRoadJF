@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.fivecore;
+package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
