@@ -1,21 +1,14 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
-import cn.hutool.json.JSONUtil;
-import com.scareers.gui.ths.simulation.interact.gui.component.JDisplayForLog;
+import com.scareers.gui.ths.simulation.interact.gui.component.forlog.JDisplayForLog;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
-import com.scareers.gui.ths.simulation.order.BuyOrder;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
-import javax.swing.plaf.basic.BasicSplitPaneDivider;
-import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
-import static java.awt.BorderLayout.NORTH;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.themeColor;
 
 

@@ -1,7 +1,6 @@
-package com.scareers.gui.ths.simulation.interact.gui.component;
+package com.scareers.gui.ths.simulation.interact.gui.component.forlog;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 /**

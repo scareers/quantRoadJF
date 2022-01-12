@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component;
+package com.scareers.gui.ths.simulation.interact.gui.component.forlog;
 
 import com.scareers.utils.log.JTextPaneAppender;
 
