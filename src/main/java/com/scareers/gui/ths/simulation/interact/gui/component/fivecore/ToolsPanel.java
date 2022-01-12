@@ -81,8 +81,8 @@ public class ToolsPanel extends JPanel {
         } else {
             this.setLayout(new BoxLayout(this, BoxLayout.X_AXIS)); // 左右
             this.setPreferredSize(new Dimension(placeholderHightOrWidth, widthOrHeight)); // 定高
-            panel1 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.LEFT, panel1HGap, panel1VGap));  // 左浮动
-            panel2 = new JPanel(new VerticalFlowLayout(VerticalFlowLayout.RIGHT, panel2VGap, panel2VGap)); // 右浮动
+            panel1 = new JPanel(new FlowLayout(FlowLayout.LEFT, panel1HGap, panel1VGap));  // 左浮动
+            panel2 = new JPanel(new FlowLayout(FlowLayout.RIGHT, panel2VGap, panel2VGap)); // 右浮动
         }
 
         if (startPlaceholder != null) {

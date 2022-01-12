@@ -88,7 +88,7 @@ public class TraderGUI {
      * @return
      */
     public JPanel buildCorePanel(JFrame mainWindow) {
-        return new CorePanel(100, 10, 20, 20, 20,
+        return new CorePanel(100, 10, 20, 20, 40,
                 Arrays.asList(ButtonFactory.getButton("对象查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据库", true)),

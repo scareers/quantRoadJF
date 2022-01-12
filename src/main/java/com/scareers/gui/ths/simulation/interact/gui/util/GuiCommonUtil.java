@@ -21,6 +21,7 @@ public class GuiCommonUtil {
         JLabel placeholderLabel = new JLabel();
         placeholderLabel.setSize(new Dimension(width, height));
         placeholderLabel.setPreferredSize(new Dimension(height, height));
+        placeholderLabel.setBorder(null);
         return placeholderLabel;
     }
 }
