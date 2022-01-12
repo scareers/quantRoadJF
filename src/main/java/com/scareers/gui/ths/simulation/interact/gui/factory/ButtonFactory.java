@@ -1,6 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.factory;
 
-import com.scareers.gui.ths.simulation.interact.gui.component.JButtonV;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.JButtonV;
 
 import javax.swing.*;
 

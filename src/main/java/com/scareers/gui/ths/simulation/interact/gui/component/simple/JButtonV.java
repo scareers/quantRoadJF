@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component;
+package com.scareers.gui.ths.simulation.interact.gui.component.simple;
 
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
