@@ -25,9 +25,9 @@ public class ButtonFactory {
         } else {
             button = new JButton(text);
         }
-        button.setBackground(colorThemeMinor); // 次色
+        button.setBackground(COLOR_THEME_MINOR); // 次色
         button.setBorderPainted(false); // 无边框
-        button.setForeground(colorGrayCommon); // 常态字灰
+        button.setForeground(COLOR_GRAY_COMMON); // 常态字灰
         button.setFocusPainted(false); // 去掉focus时文字框
         return button;
     }

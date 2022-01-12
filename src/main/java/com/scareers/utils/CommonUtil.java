@@ -24,7 +24,7 @@ public class CommonUtil {
         Console.log(countTrueOfListBooleans(Arrays.asList(true, false, true)));
         Console.log(Collections.frequency(Arrays.asList(true, false, true), true));
         waitEnter();
-        waitForever();
+//        waitForever();
     }
 
     /**
@@ -199,7 +199,7 @@ public class CommonUtil {
                                 boolean showWaitTime)
             throws TimeoutException, InterruptedException {
         if (description != null) {
-            LogUtil.log.warn("wait util: 等待: {}", description);
+            LogUtil.log.warn("wait util: {}", description);
         }
         TimeInterval timer = DateUtil.timer();
         timer.start();
@@ -214,7 +214,7 @@ public class CommonUtil {
             LogUtil.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
         }
         if (description != null) {
-            LogUtil.log.warn("wait util: 完成: {}", description);
+            LogUtil.log.warn("wait finish: {}", description);
         }
     }
 

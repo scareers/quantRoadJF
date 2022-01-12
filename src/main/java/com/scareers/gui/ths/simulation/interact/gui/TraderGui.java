@@ -1,28 +1,27 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
-import cn.hutool.json.JSONUtil;
-import com.scareers.gui.ths.simulation.interact.gui.component.JButtonV;
+import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.fivecore.CorePanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.forlog.JDisplayForLog;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
-import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Arrays;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMain;
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMinor;
-import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.utils.CommonUtil.waitForever;
 
 
 /**
@@ -41,7 +40,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.cr
  */
 @Setter
 @Getter
-public class TraderGUI extends JFrame {
+public class TraderGui extends JFrame {
     public static int screenW; // 除去任务栏, 可用的全屏宽度/高度, 暂时未使用
     public static int screenH;
 
@@ -59,31 +58,39 @@ public class TraderGUI extends JFrame {
     }
 
     public static void main0(String[] agrs) throws Exception {
-        TraderGUI gui = new TraderGUI();
-        gui.showAndStartTrader(); // 显示并开始程序
+        TraderGui gui = new TraderGui();
+        gui.setVisible(true);
+        waitForever();
     }
 
 
-    String iconPath = "gui/img/titleIcon0.png";
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
-
     JPanel corePanel; // 核心组件
 
-    public TraderGUI() throws Exception {
+    boolean presentationMode = false;
+
+
+    public TraderGui() throws Exception {
         super();
         init(); // 组装子控件
+
     }
 
     public void init() {
         this.setLayout(new BorderLayout());
-        this.setUndecorated(false); // 标题栏显示,true 则类似专注模式
-        ImageIcon imageIcon = new ImageIcon(ClassLoader.getSystemResource(iconPath));
+        this.setUndecorated(presentationMode); // 标题栏显示,true 则类似专注模式
+        ImageIcon imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_PATH));
         this.setIconImage(imageIcon.getImage()); // 图标
 
-        // this.setBounds(0, 0, screenW, screenH); // 可不需要, 直接最大化
-        this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 直接最大化
-        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE); // 退出回调, 建议 HIDE_ON_CLOSE / EXIT_ON_CLOSE
+        if (MAXIMIZE_DEFAULT) {
+            this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 直接最大化
+        } else {
+            centerSelf();
+        }
+
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 退出回调, 建议 HIDE_ON_CLOSE / EXIT_ON_CLOSE
+        addListeners(); // 添加监听器
 
         pathLabel = new JLabel("paths: ");
         pathLabel.setFont(new Font("宋体", Font.BOLD, 15));
@@ -99,12 +106,32 @@ public class TraderGUI extends JFrame {
         this.add(pathLabel, BorderLayout.NORTH);
         this.add(corePanel, BorderLayout.CENTER);
         this.add(statusBar, BorderLayout.SOUTH);
+        this.pack();
     }
 
-    private void showAndStartTrader() throws Exception {
-        this.pack();
-        this.setVisible(true);
-        Trader.main0(null);
+    private void addListeners() {
+        // 打开后启动交易程序
+        this.addWindowListener(new WindowAdapter() {
+            @SneakyThrows
+            @Override
+            public void windowOpened(WindowEvent e) {
+                ThreadUtil.execAsync(() -> {
+                    try {
+                        Trader.main0();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }, true);
+            }
+        });
+    }
+
+    /**
+     * 居中自身, 且宽高为屏幕可用 3/4
+     */
+    private void centerSelf() {
+        this.setLocation(screenW / 8, screenH / 8);
+        this.setPreferredSize(new Dimension((int) (screenW * 0.75), (int) (screenH * 0.75)));
     }
 
 
@@ -133,22 +160,22 @@ public class TraderGUI extends JFrame {
         UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
 
-        defs.put("TextPane.background", new ColorUIResource(colorThemeMain));
-        defs.put("TextPane.inactiveBackground", new ColorUIResource(colorThemeMain));
-        defs.put("SplitPane.background", new ColorUIResource(colorThemeMain));
-        defs.put("SplitPane.inactiveBackground", new ColorUIResource(colorThemeMain));
-        defs.put("TabbedPane.background", new ColorUIResource(colorThemeMinor));
+        defs.put("TextPane.background", new ColorUIResource(COLOR_THEME_MAIN));
+        defs.put("TextPane.inactiveBackground", new ColorUIResource(COLOR_THEME_MAIN));
+        defs.put("SplitPane.background", new ColorUIResource(COLOR_THEME_MAIN));
+        defs.put("SplitPane.inactiveBackground", new ColorUIResource(COLOR_THEME_MAIN));
+        defs.put("TabbedPane.background", new ColorUIResource(COLOR_THEME_MINOR));
 
-        defs.put("Button.shadow", colorThemeMain);
-        defs.put("Button.select", colorThemeMain);
-        defs.put("Button.focus", colorThemeMain);
-        defs.put("Button.background", new ColorUIResource(colorThemeMain));
-        defs.put("Button.foreground", new ColorUIResource(colorThemeMain));//
+        defs.put("Button.shadow", COLOR_THEME_MAIN);
+        defs.put("Button.select", COLOR_THEME_MAIN);
+        defs.put("Button.focus", COLOR_THEME_MAIN);
+        defs.put("Button.background", new ColorUIResource(COLOR_THEME_MAIN));
+        defs.put("Button.foreground", new ColorUIResource(COLOR_THEME_MAIN));//
         defs.put("Button.margin", new InsetsUIResource(2, 2, 2, 3));// 因为有竖直button,这里margin初始化
         defs.put("Button.gradient", null);// 将渐变去除
 
-        defs.put("Panel.background", new ColorUIResource(colorThemeMinor));
-        defs.put("Panel.inactiveBackground", new ColorUIResource(colorThemeMinor));
+        defs.put("Panel.background", new ColorUIResource(COLOR_THEME_MINOR));
+        defs.put("Panel.inactiveBackground", new ColorUIResource(COLOR_THEME_MINOR));
         // System.out.println(JSONUtil.toJsonPrettyStr(JSONUtil.parse(defs)));
     }
 

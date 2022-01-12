@@ -4,7 +4,7 @@ import javax.swing.*;
 import javax.swing.plaf.metal.MetalTabbedPaneUI;
 import java.awt.*;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMain;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MAIN;
 
 /**
  * description: TabbedPaneUI 重写, 主要重写了tab绘制
@@ -20,7 +20,7 @@ public class TabbedPaneUIS extends MetalTabbedPaneUI {
 
     // 边框和背景的颜色
 //    private Color SELECT_COLOR = new Color(57, 181, 215); // 原实现, 蓝色
-    private Color mainColor = colorThemeMain; // 应当是主题色
+    private Color mainColor = COLOR_THEME_MAIN; // 应当是主题色
     private Color commonColor = new Color(60, 63, 65); // 非主内容页颜色,比黑色淡一些
 
     /*// 绘制整个选项卡区域

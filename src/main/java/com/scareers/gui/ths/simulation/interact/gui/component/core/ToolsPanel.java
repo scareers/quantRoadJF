@@ -7,10 +7,7 @@ import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMinor;
 
 /**
  * description: 左功能栏, 右功能栏, 下功能栏.  含多 Button 的 Panel.

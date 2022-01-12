@@ -63,10 +63,10 @@ public class Trader {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        main0(args);
+        main0();
     }
 
-    public static void main0(String[] args) throws Exception {
+    public static void main0() throws Exception {
         Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
         // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
