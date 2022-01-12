@@ -1,10 +1,13 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+
 import javax.swing.*;
+import java.awt.*;
 
 /**
  * description: 自定义 FuncDialogS 抽象类, 逻辑意义是: 各种子功能使用的组件, 基组件是对话框
- * 主要添加刷新bounds 的方法, 该方法从 主窗口获取信息, 并更新自身 bounds.
+ * 主要添加刷新bounds 等方法, 该方法从 主窗口获取信息, 并更新自身 bounds.
  * 各个子功能的子窗口, 均需要继承此抽象类. 以便主窗口统一控制.
  * 例如当主窗口 reSize, 则遍历所有绑定的功能对话框, 它们均调用 flushBounds(), 且重绘.
  *
@@ -14,4 +17,9 @@ import javax.swing.*;
  */
 public abstract class FuncDialogS extends JDialog {
     public abstract void flushBounds();
+
+
+    public FuncDialogS(Window owner, String title, ModalityType type) {
+        super(owner, title, type);
+    }
 }

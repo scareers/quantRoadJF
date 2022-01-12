@@ -13,7 +13,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author: admin
  * @date: 2022/1/13/013-04:41:26
  */
-public class LogFuncWindow extends JDialog {
+public class LogFuncWindow extends FuncDialogS {
     private static LogFuncWindow INSTANCE;
     public static int preferHeight = 200;
 
@@ -39,6 +39,12 @@ public class LogFuncWindow extends JDialog {
         DisplayForLog jDisplayForLog = new DisplayForLog();
         this.add(jDisplayForLog);
         // 注意, 起点(x,y) 应当+主窗口x,y, 因为setBounds本身是绝对定位
+        this.flushBounds();
+        this.setVisible(true);
+    }
+
+    @Override
+    public void flushBounds() {
         this.setBounds(
                 //  x = 左侧边栏X + 左侧边栏宽度
                 parent.getCorePanel().getLeftTools().getX() + parent.getCorePanel().getLeftTools().getWidth() + parent
@@ -50,7 +56,6 @@ public class LogFuncWindow extends JDialog {
                 parent.getWidth() - parent.getCorePanel().getLeftTools().getWidth() - parent.getCorePanel()
                         .getRightTools().getWidth(),
                 preferHeight);
-        this.setVisible(true);
     }
 
     public enum OrientationType {

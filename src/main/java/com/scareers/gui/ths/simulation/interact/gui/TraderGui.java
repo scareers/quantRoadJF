@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -68,7 +69,7 @@ public class TraderGui extends JFrame {
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
 
-    CopyOnWriteArraySet<JDialog> funcDialogs; // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
+    CopyOnWriteArraySet<FuncDialogS> funcDialogs = new CopyOnWriteArraySet<>(); // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
 
     public TraderGui() throws Exception {
         super();
@@ -130,9 +131,9 @@ public class TraderGui extends JFrame {
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                // 应当刷新bounds, 并且重绘
-                for (JDialog dialog : funcDialogs) {
-
+                // 应当刷新bounds, 将自动重绘
+                for (FuncDialogS dialog : funcDialogs) {
+                    dialog.flushBounds();
                 }
             }
         });
