@@ -30,9 +30,10 @@ public class LogFuncWindow extends JDialog {
         // 注意, 起点(x,y) 应当+主窗口x,y, 因为setBounds本身是绝对定位
         this.setBounds(
                 //  x = 左侧边栏X + 左侧边栏宽度 + 主窗口X
-                parent.getCorePanel().getLeftTools().getX() + parent.getCorePanel().getLeftTools().getWidth(),
+                parent.getCorePanel().getLeftTools().getX() + parent.getCorePanel().getLeftTools().getWidth() + parent
+                        .getX(),
                 // y = 从底部栏的 y - 默认高度 + 主窗口Y
-                parent.getCorePanel().getBottomTools().getY() - preferHeight,
+                parent.getCorePanel().getBottomTools().getY() - preferHeight + parent.getY(),
                 // 宽度 = 主宽 - (两个侧边栏宽之和)
                 parent.getWidth() - parent.getCorePanel().getLeftTools().getWidth() - parent.getCorePanel()
                         .getRightTools().getWidth(),

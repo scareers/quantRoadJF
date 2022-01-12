@@ -24,6 +24,6 @@ public class SettingsOfGuiGlobal {
 
     // 主界面相关设定
     public static final String ICON_PATH = "gui/img/titleIcon0.png"; // 图标
-    public static final boolean MAXIMIZE_DEFAULT = false; // 默认启动时最大化?
+    public static final boolean MAXIMIZE_DEFAULT = true; // 默认启动时最大化?
 
 }
