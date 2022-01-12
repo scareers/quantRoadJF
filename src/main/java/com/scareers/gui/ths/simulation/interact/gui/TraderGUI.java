@@ -18,6 +18,7 @@ import java.awt.event.ActionListener;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMain;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorThemeMinor;
+import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
 
 /**
@@ -144,11 +145,11 @@ public class TraderGUI {
         JPanel panel6 = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0)); // 下, 下浮动
 
         JButton terminalButton = ButtonFactory.getButton("终端命令行");
-        panel5.add(createPlaceholderLabel()); // 前面需要添加占位符label, 宽度等于左工具栏宽度20
+        panel5.add(createPlaceholderLabel(20, 20)); // 前面需要添加占位符label, 宽度等于左工具栏宽度20
         panel5.add(terminalButton);
         JButton runButton = ButtonFactory.getButton("终端2");
         panel6.add(runButton);
-        panel6.add(createPlaceholderLabel()); // @noti: 占位label依然需要最后添加, 右Flow应当先加入所有控件,再右对齐
+        panel6.add(createPlaceholderLabel(20, 20)); // @noti: 占位label依然需要最后添加, 右Flow应当先加入所有控件,再右对齐
         bottomTools.add(panel5);
         bottomTools.add(panel6);
 
@@ -160,12 +161,6 @@ public class TraderGUI {
         return corePane;
     }
 
-    public JLabel createPlaceholderLabel() {
-        JLabel placeholderLabel = new JLabel();
-        placeholderLabel.setSize(new Dimension(20, 20));
-        placeholderLabel.setPreferredSize(new Dimension(20, 20));
-        return placeholderLabel;
-    }
 
     public void initMainWindow() {
         mainWindow = new JFrame("Trader");    //创建一个JFrame对象
