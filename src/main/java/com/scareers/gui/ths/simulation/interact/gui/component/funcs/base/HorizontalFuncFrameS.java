@@ -25,12 +25,13 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
     // 需要提供
     int autoMaxHight; // 自动增加可达到最大高度
     int autoMinHight; // 自动减小可达到最小高度
-    double preferHeightScale; // 默认高度占父亲高度百分比
+    double preferHeightScale; // 默认高度占主内容高度百分比
     int funcToolsWidth; // 按钮栏宽度
 
     // 自动初始化
-    int preferHeight; // 主界面高度*倍率
+    int preferHeight; // mainPane高度*倍率
     ToolsPanel funcTools; // 工具按钮组
+
 
     // 抽象方法实现初始化
     protected Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
@@ -46,16 +47,21 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
      * @param maximizable
      * @param iconifiable
      */
-    protected HorizontalFuncFrameS(JFrame mainWindow, String title,
-                                boolean resizable, boolean closable, // JInternalFrame
-                                boolean maximizable, boolean iconifiable,
-
-                                int funcToolsWidth, double preferHeightScale, // 自身
-                                int autoMinHight, int autoMaxHight) {
+    protected HorizontalFuncFrameS(TraderGui mainWindow, String title,
+                                   boolean resizable, boolean closable, // JInternalFrame
+                                   boolean maximizable, boolean iconifiable,
+                                   int funcToolsWidth, double preferHeightScale, // 自身
+                                   int autoMinHight, int autoMaxHight,
+                                   Integer layer
+    ) {
         super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
-        initAttrs(mainWindow, funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
+        initAttrs(funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
         initCenterComponent(); // abstract
         initOtherChildren();
+
+        this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
+        this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+        this.flushBounds(); // abstract
     }
 
 
@@ -64,9 +70,7 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
      */
     protected abstract void initCenterComponent();
 
-    private void initAttrs(JFrame mainWindow, int funcToolsWidth, double preferHeightScale, int autoMinHight,
-                           int autoMaxHight) {
-        this.mainWindow = mainWindow; // TraderGui
+    private void initAttrs(int funcToolsWidth, double preferHeightScale, int autoMinHight, int autoMaxHight) {
         this.funcToolsWidth = funcToolsWidth;
         this.preferHeightScale = preferHeightScale;
         this.preferHeight = (int) (this.mainWindow.getHeight() * preferHeightScale); // flushBounds()中重复调用.
@@ -81,8 +85,6 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
                 getToolsButtons1(), getToolsButtons2(),
                 0, 0, 0, 0);
         this.add(funcTools, BorderLayout.WEST);
-        this.flushBounds(); // abstract
-        this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
     }
 
     /**
@@ -142,27 +144,20 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
         return Arrays.asList();
     }
 
+    /**
+     * 刷新位置, 注意, 自身已经加入 主面板 JDesktopPane 的某一层-0;
+     * 因此位置需要依据 mainPane 当前情况刷新
+     */
     @Override
     public void flushBounds() {
-        if (mainWindow instanceof TraderGui) {
-            TraderGui mainWindowS = (TraderGui) mainWindow;
-            this.preferHeight = (int) (this.mainWindow.getHeight() * preferHeightScale);
-            this.setBounds(
-                    //  x = 左侧边栏X + 左侧边栏宽度
-                    mainWindowS.getCorePanel().getLeftTools().getX() + mainWindowS.getCorePanel().getLeftTools()
-                            .getWidth() + mainWindowS
-                            .getX(),
-                    // y = 主界面底部 - 状态栏高度 - 底部栏高度 + 2(像素修正)
-                    mainWindowS.getY() + mainWindowS.getHeight() - mainWindowS.getStatusBar().getHeight() - mainWindowS
-                            .getCorePanel()
-                            .getBottomTools().getHeight() - preferHeight + 2,
-                    // 宽度 = 主宽 - (两个侧边栏宽之和)
-                    mainWindowS.getWidth() - mainWindowS.getCorePanel().getLeftTools().getWidth() - mainWindowS
-                            .getCorePanel()
-                            .getRightTools().getWidth(),
-                    preferHeight);
-        } else {
-            log.error("flushBounds 失败: 主界面非 TraderGui");
-        }
+        this.preferHeight = (int) (this.mainPane.getHeight() * preferHeightScale);
+        this.setBounds(
+                //  x = 0, 已被 mainPane 管理
+                0,
+                // y = mainPane高度 - 自身高度
+                mainPane.getHeight() - preferHeight,
+                // 宽度 = mainPane 同宽
+                mainPane.getWidth(),
+                preferHeight);
     }
 }

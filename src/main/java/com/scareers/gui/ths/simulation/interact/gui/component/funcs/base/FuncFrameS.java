@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs.base;
 
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,7 +29,8 @@ public abstract class FuncFrameS extends JInternalFrame {
 
     protected static final Log log = LogUtil.getLogger();
     OrientationType typeS; // 功能窗口2类, 横, 竖
-    JFrame mainWindow; // 主界面, 以便将自身添加到主内容面板 -- 层级面板中, 自行强转 TraderUI
+    TraderGui mainWindow; // 主界面, 以便将自身添加到主内容面板 -- 层级面板中, 自行强转 TraderUI
+    JDesktopPane mainPane; // 主界面mainPane
 
     public abstract void flushBounds();
 
@@ -43,11 +45,12 @@ public abstract class FuncFrameS extends JInternalFrame {
      * @param maximizable
      * @param iconifiable
      */
-    protected FuncFrameS(JFrame mainWindow, OrientationType typeS, String title, boolean resizable, boolean closable,
+    protected FuncFrameS(TraderGui mainWindow, OrientationType typeS, String title, boolean resizable, boolean closable,
                          boolean maximizable, boolean iconifiable) {
         super(title, resizable, closable, maximizable, iconifiable);
         this.typeS = typeS;
         this.mainWindow = mainWindow;
+        this.mainPane = this.mainWindow.getCorePanel().getMainPane();
         this.setLayout(new BorderLayout());
     }
 

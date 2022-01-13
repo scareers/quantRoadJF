@@ -19,30 +19,30 @@ import java.util.List;
 public class LogFuncWindow extends HorizontalFuncFrameS {
     private static LogFuncWindow INSTANCE;
 
-    private LogFuncWindow(JFrame mainWindow, String title, boolean resizable, boolean closable, boolean maximizable,
+    private LogFuncWindow(TraderGui mainWindow, String title, boolean resizable, boolean closable, boolean maximizable,
                           boolean iconifiable, int funcToolsWidth, double preferHeightScale, int autoMinHight,
-                          int autoMaxHight) {
+                          int autoMaxHight, Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsWidth, preferHeightScale,
-                autoMinHight, autoMaxHight);
+                autoMinHight, autoMaxHight, layer);
     }
 
     // DisplayForLog jDisplayForLog; // 主内容, 强行访问需要强转  Component
-    public static LogFuncWindow getInstance(JFrame mainWindow, String title,
+    public static LogFuncWindow getInstance(TraderGui mainWindow, String title,
                                             boolean resizable, boolean closable, // JInternalFrame
                                             boolean maximizable, boolean iconifiable,
 
                                             int funcToolsWidth, double preferHeightScale, // 自身
-                                            int autoMinHight, int autoMaxHight) {
+                                            int autoMinHight, int autoMaxHight,
+                                            Integer layer) {
         if (INSTANCE == null) {
             INSTANCE = new LogFuncWindow(mainWindow, title,
                     resizable, closable, // JInternalFrame
                     maximizable, iconifiable,
 
                     funcToolsWidth, preferHeightScale, // 自身
-                    autoMinHight, autoMaxHight);
+                    autoMinHight, autoMaxHight, layer);
         }
         INSTANCE.flushBounds();
-        INSTANCE.setVisible(true);
         return INSTANCE;
     }
 
