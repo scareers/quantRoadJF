@@ -130,11 +130,9 @@ public class CorePanel extends JDesktopPane {
         mainFuncPanel = new JPanel();
         mainFuncPanel.setPreferredSize(new Dimension(mainFuncPanelDefaultWidth, placeholderWidthOrHeight)); // 定默认宽
         mainFuncPanel.setBackground(Color.yellow);
-        mainFuncPanel.setOpaque(true);
 
         mainDisplayPanel = new JPanel();
         mainDisplayPanel.setBackground(Color.green);
-        mainDisplayPanel.setOpaque(true);
 
 
         centerSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // 设定为左右拆分布局
@@ -144,13 +142,13 @@ public class CorePanel extends JDesktopPane {
         centerSplitPane.setDividerSize(centerSplitPaneDividerSize); //设置分割线的宽度
         centerSplitPane.setLeftComponent(mainFuncPanel);
         centerSplitPane.setRightComponent(mainDisplayPanel);
-        centerSplitPane.setOpaque(true);
+//        centerSplitPane
 
         mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
-        mainPane.setBorder(null);
+//        mainPane.setBorder(null);
+
         mainPane.add(centerSplitPane, Integer.valueOf(100), 0);
     }
-
 
 
     /**
@@ -163,11 +161,12 @@ public class CorePanel extends JDesktopPane {
     public void flushMainPanelBounds() {
         // 因相对坐标, x,y=0; 只计算 主splitPane 宽高
         centerSplitPane.setLocation(0, 0);
-        System.out.println(mainPane.getBounds());
         centerSplitPane.setSize(
                 mainPane.getWidth(), // 因本方法后于它们渲染完成调用,有效
                 mainPane.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
+        System.out.println(mainPane.getBounds());
         System.out.println(centerSplitPane.getBounds());
+        mainPane.repaint();
 //        mainPane.setSize(
 //                parent.getWidth() - leftTools.getWidth() - rightTools.getWidth(), // 因本方法后于它们渲染完成调用,有效
 //                leftTools.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改

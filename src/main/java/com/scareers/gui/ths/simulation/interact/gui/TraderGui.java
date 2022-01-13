@@ -7,6 +7,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -20,6 +21,7 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -71,19 +73,22 @@ public class TraderGui extends JFrame {
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
-
     CopyOnWriteArraySet<FuncDialogS> funcDialogs = new CopyOnWriteArraySet<>(); // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
+
+    private ImageIcon imageIcon; // 图标
+    private TrayIcon trayIcon; // 系统托盘
 
     public TraderGui() throws Exception {
         super();
         init(); // 组装子控件
-
+        initTrayIcon();
     }
+
 
     public void init() {
         this.setLayout(new BorderLayout());
         this.setUndecorated(false); // 标题栏显示,true 则类似专注模式
-        ImageIcon imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_PATH));
+        imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_PATH));
         this.setIconImage(imageIcon.getImage()); // 图标
 
         if (MAXIMIZE_DEFAULT) {
@@ -107,8 +112,7 @@ public class TraderGui extends JFrame {
 
         corePanel = buildCorePanel();
         this.add(pathLabel, BorderLayout.NORTH);
-//        this.add(corePanel, BorderLayout.CENTER);
-        this.setContentPane(corePanel);
+        this.add(corePanel, BorderLayout.CENTER);
         this.add(statusBar, BorderLayout.SOUTH);
         this.pack();
     }
@@ -122,13 +126,37 @@ public class TraderGui extends JFrame {
             public void windowOpened(WindowEvent e) {
                 ThreadUtil.execAsync(() -> {
                     try {
-//                        mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
-//                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
+                        mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
+                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
                 }, true);
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+                System.out.println("xxx");
+                mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
+//                if (e.getOldState() != e.getNewState()) {
+//
+////                    switch (e.getNewState()) {
+////                        case Frame.MAXIMIZED_VERT:
+////
+////                            // 最大化
+////                            break;
+////                        case Frame.ICONIFIED:
+////                            // 最小化
+////                            break;
+////                        case Frame.NORMAL:
+////                            // 恢复
+////                            break;
+////                        default:
+////                            break;
+////                    }
+//                }
+
             }
         });
 
@@ -138,13 +166,72 @@ public class TraderGui extends JFrame {
             @Override
             public void componentResized(ComponentEvent e) {
                 // 应当刷新bounds, 将自动重绘
-                Thread.sleep(20); // 对话框无法渐变size, 因此先等待
+                mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
                 for (FuncDialogS dialog : funcDialogs) {
                     dialog.flushBounds();
-                    mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
                 }
             }
         });
+
+        this.addWindowListener(new WindowAdapter() {
+            //捕获窗口关闭事件
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (SystemTray.isSupported()) {
+                    setVisible(false);
+                    minimizeToTray();
+                } else {
+                    System.exit(0);
+                }
+            }
+
+            //捕获窗口最小化事件
+            @Override
+            public void windowIconified(WindowEvent e) {
+                if (SystemTray.isSupported()) {
+                    setVisible(false);
+                    minimizeToTray();
+                } else {
+                    System.exit(0);
+                }
+            }
+        });
+
+
+    }
+
+
+    private void initTrayIcon() {
+        PopupMenu popup = new PopupMenu();
+        MenuItem exitItem = new MenuItem("Show");
+        ActionListener listener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(true);
+                setExtendedState(Frame.NORMAL);
+                SystemTray.getSystemTray().remove(trayIcon);
+            }
+        };
+        exitItem.addActionListener(listener);
+        popup.add(exitItem);
+
+        //根据image、提示、菜单创建TrayIcon
+        this.trayIcon = new TrayIcon(
+                ImageScaler.zoomBySize(imageIcon.getImage(), (int) trayIconSize.getWidth(),
+                        (int) trayIconSize.getHeight()),
+                "MyTray", popup);
+        //给TrayIcon添加事件监听器
+        this.trayIcon.addActionListener(listener);
+    }
+
+    public void minimizeToTray() {
+
+        SystemTray tray = SystemTray.getSystemTray();
+        try {
+            tray.add(this.trayIcon);
+        } catch (AWTException ex) {
+            ex.printStackTrace();
+        }
     }
 
     /**
@@ -167,6 +254,7 @@ public class TraderGui extends JFrame {
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                log.info("not implement: 点击了日志输出");
 //                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
 //                        30, 0.33, 100, 1080);
 //                funcDialogs.add(logFuncWindow);
