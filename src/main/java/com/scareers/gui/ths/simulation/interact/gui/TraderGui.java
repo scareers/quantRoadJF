@@ -4,8 +4,8 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -20,7 +20,6 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -126,7 +125,7 @@ public class TraderGui extends JFrame {
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushMainPanelBounds(); // 实测必须,否则主内容左侧无法正确初始化
-                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
+//                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -184,12 +183,12 @@ public class TraderGui extends JFrame {
      */
     public CorePanel buildCorePanel() {
         JButton logsFunc = ButtonFactory.getButton("日志输出");
-        TraderGui parent = this;
+        TraderGui mainWindow = this;
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // log.info("not implement: 点击了日志输出");
-                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
+                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
                         true, true, false, true,
                         30, 0.3, 100, 1200);
 
@@ -204,10 +203,20 @@ public class TraderGui extends JFrame {
             }
         });
 
+        JButton databaseFunc = ButtonFactory.getButton("数据库", true);
+        databaseFunc.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "database", true,
+                        true, false, true,
+                        30, 0.25, 100, 1500);
+            }
+        });
+
         return new CorePanel(100, 10, 30, 30, 30,
                 Arrays.asList(ButtonFactory.getButton("对象查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据查看", true)),
-                Arrays.asList(ButtonFactory.getButton("数据库", true)),
+                Arrays.asList(databaseFunc),
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
                 Arrays.asList(logsFunc),
                 Arrays.asList(terminalFunc),

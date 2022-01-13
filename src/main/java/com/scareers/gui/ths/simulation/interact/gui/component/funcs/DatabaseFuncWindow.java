@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.DisplayForLog;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
 
 import javax.swing.*;
@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfDatabaseFuncWindow;
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfLogFuncWindow;
 
 /**
  * description:
@@ -54,9 +53,8 @@ public class DatabaseFuncWindow extends VerticalFuncFrameS {
 
     @Override
     public void initCenterComponent() { // 抽象方法
-        DisplayForLog displayForLog = new DisplayForLog();
-        this.centerComponent = displayForLog;
-        this.add(displayForLog, BorderLayout.CENTER);
+        this.centerComponent = new JLabel("我是数据库");
+        this.add(this.centerComponent, BorderLayout.CENTER);
     }
 
     @Override

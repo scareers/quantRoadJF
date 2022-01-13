@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.DisplayForLog;
 
 import javax.swing.*;

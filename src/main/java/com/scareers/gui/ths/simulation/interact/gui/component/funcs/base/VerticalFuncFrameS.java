@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * description: 垂直功能界面, 依附于主界面右侧, layer > 编辑器 , layer < 水平功能界面
+ * description:
  *
  * @author: admin
  * @date: 2022/1/13/013-09:02:09
@@ -23,13 +23,13 @@ import java.util.List;
 @Getter
 public abstract class VerticalFuncFrameS extends FuncFrameS {
     // 需要提供
-    int autoMaxHight; // 自动增加可达到最大高度
-    int autoMinHight; // 自动减小可达到最小高度
-    double preferHeightScale; // 默认高度占主内容高度百分比
-    int funcToolsWidth; // 按钮栏宽度
+    int autoMaxWidth;
+    int autoMinWidth;
+    double preferWidthScale;
+    int funcToolsHeight;
 
     // 自动初始化
-    int preferHeight; // mainPane高度*倍率
+    int preferWidth; // mainPane 宽度*倍率
     ToolsPanel funcTools; // 工具按钮组
 
 
@@ -50,12 +50,12 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
     protected VerticalFuncFrameS(TraderGui mainWindow, String title,
                                  boolean resizable, boolean closable, // JInternalFrame
                                  boolean maximizable, boolean iconifiable,
-                                 int funcToolsHeight, double preferWidthScale, // 自身
-                                 int autoMinWidth, int autoMaxWidth,
+                                 int funcToolsWidth, double preferHeightScale, // 自身
+                                 int autoMinHight, int autoMaxHight,
                                  Integer layer
     ) {
-        super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
-        initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
+        super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
+        initAttrs(funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
         initCenterComponent(); // abstract
         initOtherChildren();
 
@@ -71,20 +71,20 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
     protected abstract void initCenterComponent();
 
     private void initAttrs(int funcToolsWidth, double preferHeightScale, int autoMinHight, int autoMaxHight) {
-        this.funcToolsWidth = funcToolsWidth;
-        this.preferHeightScale = preferHeightScale;
-        this.preferHeight = (int) (this.mainWindow.getHeight() * preferHeightScale); // flushBounds()中重复调用.
-        this.autoMinHight = autoMinHight;
-        this.autoMaxHight = autoMaxHight;
+        this.funcToolsHeight = funcToolsWidth;
+        this.preferWidthScale = preferHeightScale;
+        this.preferWidth = (int) (this.mainWindow.getHeight() * preferHeightScale); // flushBounds()中重复调用.
+        this.autoMinWidth = autoMinHight;
+        this.autoMaxWidth = autoMaxHight;
     }
 
 
     protected void initOtherChildren() {
-        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.HORIZONTAL; // 纵向功能对话框, 使用横向工具栏
-        funcTools = new ToolsPanel(funcToolsWidth, toolsPanelType,
+        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.VERTICAL; // 横向功能对话框, 使用纵向工具栏
+        funcTools = new ToolsPanel(funcToolsHeight, toolsPanelType,
                 getToolsButtons1(), getToolsButtons2(),
                 0, 0, 0, 0);
-        this.add(funcTools, BorderLayout.NORTH); // 应放在上面
+        this.add(funcTools, BorderLayout.WEST); // 应放下面
     }
 
     /**
@@ -111,7 +111,7 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Rectangle rawbounds = frame.getBounds();
-                int newHeight = Math.min(frame.getHeight() * 2, autoMaxHight);
+                int newHeight = Math.min(frame.getHeight() * 2, autoMaxWidth);
                 int difference = newHeight - frame.getHeight();
                 if (difference <= 0) {
                     return;
@@ -128,7 +128,7 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Rectangle rawbounds = frame.getBounds();
-                int newHeight = Math.max(frame.getHeight() / 2, autoMinHight);
+                int newHeight = Math.max(frame.getHeight() / 2, autoMinWidth);
                 int difference = newHeight - frame.getHeight();
                 if (difference >= 0) {
                     return;
@@ -150,14 +150,14 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
      */
     @Override
     public void flushBounds() {
-        this.preferHeight = (int) (this.mainPane.getHeight() * preferHeightScale);
+        this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
         this.setBounds(
-                //  x = 0, 已被 mainPane 管理
+                //  x = mainPane宽度 - 自身宽度
+                mainPane.getWidth() - preferWidth,
+                // y = 0
                 0,
-                // y = mainPane高度 - 自身高度
-                mainPane.getHeight() - preferHeight,
-                // 宽度 = mainPane 同宽
-                mainPane.getWidth(),
-                preferHeight);
+                preferWidth,
+                // 高度 = mainPane 高度
+                mainPane.getHeight());
     }
 }
