@@ -2,9 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.simple;
 
 import javax.swing.*;
 import javax.swing.text.StyledDocument;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 /**
  * description: 给定 输入输出流, 达成交互! 类似 cmd shell交互. 一般用于开启其他进程后, 文本编辑框交互!
@@ -13,8 +11,8 @@ import java.io.OutputStream;
  * @date: 2022/1/13/013-10:06:32
  */
 public class StreamInteractiveTextPaneS extends JTextPane {
-    InputStream input;
-    OutputStream output;
+    BufferedReader input;
+    BufferedWriter output;
     Process process; // 常态null, terminal状态下
 
     Object lock = new Object();  // 读写共用一把锁
@@ -24,7 +22,7 @@ public class StreamInteractiveTextPaneS extends JTextPane {
         this.setEditable(true);
     }
 
-    public StreamInteractiveTextPaneS(InputStream input, OutputStream output) {
+    public StreamInteractiveTextPaneS(BufferedReader input, BufferedWriter output) {
         this();
         this.input = input;
         this.output = output;
@@ -40,7 +38,18 @@ public class StreamInteractiveTextPaneS extends JTextPane {
             process = Runtime.getRuntime().exec("cmd.exe"); // 再次抛出异常
         }
         this.process = process;
-        this.input = process.getInputStream();
-        this.output = process.getOutputStream();
+        this.input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        this.output = new BufferedWriter(new OutputStreamWriter(process.getOutputStream()));
     }
+
+
+    /*
+    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getInputStream());
+    while((s=bufferedReader.readLine()) != null)
+    System.out.println(s);
+    int exitcode = process.waitfor(); // 阻塞等结束
+    process.destroy();  // 强杀
+     */
+
+
 }
