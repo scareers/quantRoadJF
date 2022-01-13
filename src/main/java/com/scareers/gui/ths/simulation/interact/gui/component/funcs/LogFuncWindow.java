@@ -3,8 +3,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.log.DisplayForLog;
-import lombok.Getter;
-import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;

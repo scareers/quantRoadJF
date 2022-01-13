@@ -60,8 +60,8 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
      */
     protected abstract void initCenterComponent();
 
-    protected void initAttrs(TraderGui owner, int funcToolsWidth, double preferHeightScale, int autoMinHight,
-                             int autoMaxHight) {
+    private void initAttrs(TraderGui owner, int funcToolsWidth, double preferHeightScale, int autoMinHight,
+                           int autoMaxHight) {
         this.parent = owner; // 达成对 TraderGui 而非父类 owner Window 的访问
         this.funcToolsWidth = funcToolsWidth;
         this.preferHeightScale = preferHeightScale;
@@ -174,6 +174,4 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
                         .getRightTools().getWidth(),
                 preferHeight);
     }
-
-
 }
