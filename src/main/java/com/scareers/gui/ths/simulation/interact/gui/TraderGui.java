@@ -5,9 +5,8 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -72,7 +71,7 @@ public class TraderGui extends JFrame {
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
-    CopyOnWriteArraySet<FuncDialogS> funcDialogs = new CopyOnWriteArraySet<>(); // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
+    CopyOnWriteArraySet<FuncFrameS> funcFrames = new CopyOnWriteArraySet<>(); // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
 
     private ImageIcon imageIcon; // 图标
     private TrayIcon trayIcon; // 系统托盘
@@ -163,7 +162,7 @@ public class TraderGui extends JFrame {
             @Override
             public void componentResized(ComponentEvent e) {
                 // 应当刷新bounds, 将自动重绘
-                for (FuncDialogS dialog : funcDialogs) {
+                for (FuncFrameS dialog : funcFrames) {
                     dialog.flushBounds();
                 }
             }
@@ -193,9 +192,12 @@ public class TraderGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // log.info("not implement: 点击了日志输出");
-//                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-//                        30, 0.33, 100, 1080);
-//                funcDialogs.add(logFuncWindow); // 对话框实现的子功能窗口
+                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
+                        true, true, false, true,
+                        30, 0.3, 100, 1200);
+                // 注册
+                funcFrames.add(logFuncWindow);
+
             }
         });
 

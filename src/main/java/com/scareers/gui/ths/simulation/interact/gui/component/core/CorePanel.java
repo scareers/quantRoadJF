@@ -1,16 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
-import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
