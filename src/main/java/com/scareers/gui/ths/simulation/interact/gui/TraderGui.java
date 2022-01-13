@@ -171,9 +171,9 @@ public class TraderGui extends JFrame {
         terminalFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                TerminalFuncWindow logFuncWindow = TerminalFuncWindow.getInstance(parent, "terminal",
+                TerminalFuncWindow terminalFuncWindow = TerminalFuncWindow.getInstance(parent, "terminal",
                         30, 0.4, 100, 1080);
-                funcDialogs.add(logFuncWindow);
+                funcDialogs.add(terminalFuncWindow);
             }
         });
 

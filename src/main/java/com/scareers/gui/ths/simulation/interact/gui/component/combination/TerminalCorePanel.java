@@ -4,6 +4,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.StreamInter
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 
 /**
  * description:
@@ -13,9 +14,9 @@ import java.awt.*;
  */
 public class TerminalCorePanel extends JPanel {
     JScrollPane jScrollPane = new JScrollPane(); //
-    JTextPane interactivePane = new StreamInteractiveTextPaneS(); // 交互编辑框
+    JTextPane interactivePane = new StreamInteractiveTextPaneS(true); // 交互编辑框
 
-    public TerminalCorePanel() {
+    public TerminalCorePanel() throws IOException {
         super();
         init();
     }

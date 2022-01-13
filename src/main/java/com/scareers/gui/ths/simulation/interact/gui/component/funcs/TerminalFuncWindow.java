@@ -7,6 +7,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.Di
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +42,12 @@ public class TerminalFuncWindow extends HorizontalFuncDialogS {
 
     @Override
     public void initCenterComponent() { // 抽象方法
-        TerminalCorePanel displayForLog = new TerminalCorePanel();
+        TerminalCorePanel displayForLog = null;
+        try {
+            displayForLog = new TerminalCorePanel();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         this.centerComponent = displayForLog;
         this.add(displayForLog, BorderLayout.CENTER);
     }
