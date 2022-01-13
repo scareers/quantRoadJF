@@ -5,7 +5,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -20,8 +19,6 @@ import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -66,6 +63,7 @@ public class TraderGui extends JFrame {
     public static void main0(String[] agrs) throws Exception {
         TraderGui gui = new TraderGui();
         gui.setVisible(true);
+        gui.showSystemTray();
         waitForever();
     }
 
@@ -97,7 +95,9 @@ public class TraderGui extends JFrame {
             centerSelf();
         }
 
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 退出回调, 建议 HIDE_ON_CLOSE / EXIT_ON_CLOSE
+        // 退出回调, 建议 HIDE_ON_CLOSE / EXIT_ON_CLOSE/ DO_NOTHING_ON_CLOSE(此可捕获事件),
+        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+
         addListeners(); // 添加监听器
 
         pathLabel = new JLabel("paths: ");
@@ -126,7 +126,7 @@ public class TraderGui extends JFrame {
             public void windowOpened(WindowEvent e) {
                 ThreadUtil.execAsync(() -> {
                     try {
-                        mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
+                        mainWindow.getCorePanel().flushMainPanelBounds(); // 实测必须,否则主内容左侧无法正确初始化
                         mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
@@ -135,52 +135,12 @@ public class TraderGui extends JFrame {
                 }, true);
             }
 
-            @Override
-            public void windowDeiconified(WindowEvent e) {
-                System.out.println("xxx");
-                mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
-//                if (e.getOldState() != e.getNewState()) {
-//
-////                    switch (e.getNewState()) {
-////                        case Frame.MAXIMIZED_VERT:
-////
-////                            // 最大化
-////                            break;
-////                        case Frame.ICONIFIED:
-////                            // 最小化
-////                            break;
-////                        case Frame.NORMAL:
-////                            // 恢复
-////                            break;
-////                        default:
-////                            break;
-////                    }
-//                }
-
-            }
-        });
-
-        // 尺寸改变
-        this.addComponentListener(new ComponentAdapter() {
-            @SneakyThrows
-            @Override
-            public void componentResized(ComponentEvent e) {
-                // 应当刷新bounds, 将自动重绘
-                mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
-                for (FuncDialogS dialog : funcDialogs) {
-                    dialog.flushBounds();
-                }
-            }
-        });
-
-        this.addWindowListener(new WindowAdapter() {
             //捕获窗口关闭事件
             @Override
             public void windowClosing(WindowEvent e) {
-                if (SystemTray.isSupported()) {
-                    setVisible(false);
-                    minimizeToTray();
-                } else {
+                int res = JOptionPane.showConfirmDialog(mainWindow, "确定关闭?", "是否关闭程序", JOptionPane.YES_NO_OPTION);
+                if (res == JOptionPane.YES_OPTION) {
+                    SystemTray.getSystemTray().remove(trayIcon); // 图标消失
                     System.exit(0);
                 }
             }
@@ -190,49 +150,26 @@ public class TraderGui extends JFrame {
             public void windowIconified(WindowEvent e) {
                 if (SystemTray.isSupported()) {
                     setVisible(false);
-                    minimizeToTray();
                 } else {
-                    System.exit(0);
+                    // 默认行为, 最小化到任务栏
                 }
             }
         });
 
-
-    }
-
-
-    private void initTrayIcon() {
-        PopupMenu popup = new PopupMenu();
-        MenuItem exitItem = new MenuItem("Show");
-        ActionListener listener = new ActionListener() {
+        // 尺寸改变
+        this.addComponentListener(new ComponentAdapter() {
+            @SneakyThrows
             @Override
-            public void actionPerformed(ActionEvent e) {
-                setVisible(true);
-                setExtendedState(Frame.NORMAL);
-                SystemTray.getSystemTray().remove(trayIcon);
+            public void componentResized(ComponentEvent e) {
+                // 应当刷新bounds, 将自动重绘
+                for (FuncDialogS dialog : funcDialogs) {
+                    dialog.flushBounds();
+                }
             }
-        };
-        exitItem.addActionListener(listener);
-        popup.add(exitItem);
+        });
 
-        //根据image、提示、菜单创建TrayIcon
-        this.trayIcon = new TrayIcon(
-                ImageScaler.zoomBySize(imageIcon.getImage(), (int) trayIconSize.getWidth(),
-                        (int) trayIconSize.getHeight()),
-                "MyTray", popup);
-        //给TrayIcon添加事件监听器
-        this.trayIcon.addActionListener(listener);
     }
 
-    public void minimizeToTray() {
-
-        SystemTray tray = SystemTray.getSystemTray();
-        try {
-            tray.add(this.trayIcon);
-        } catch (AWTException ex) {
-            ex.printStackTrace();
-        }
-    }
 
     /**
      * 居中自身, 且宽高为屏幕可用 3/4
@@ -299,46 +236,45 @@ public class TraderGui extends JFrame {
         );
     }
 
-    public static JInternalFrame createInternalFrame(String title, int x, int y, int width
-            , int height) {
-        // 创建一个内部窗口
-        JInternalFrame internalFrame = new JInternalFrame(
-                title,  // title
-                true,       // resizable
-                true,       // closable
-                true,       // maximizable
-                true        // iconifiable
-        );
 
-        // 设置窗口的宽高
-        internalFrame.setSize(width, height);
-        // 设置窗口的显示位置
-        internalFrame.setLocation(x, y);
-        // 内部窗口的关闭按钮动作默认就是销毁窗口，所有不用设置
-        // internalFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+    private void initTrayIcon() {
+        PopupMenu popup = new PopupMenu();
+        MenuItem exitItem = new MenuItem("还原");
+        ActionListener listener = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setVisible(true);
+                setExtendedState(Frame.NORMAL);
+            }
+        };
+        exitItem.addActionListener(listener);
+        MenuItem exitItem2 = new MenuItem("关闭程序");
+        exitItem2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                SystemTray.getSystemTray().remove(trayIcon); // 图标消失
+                System.exit(0);
+            }
+        });
+        popup.add(exitItem);
+        popup.add(exitItem2);
 
-        // 创建内容面板
-        JPanel panel = new JPanel();
+        //根据image、提示、菜单创建TrayIcon
+        this.trayIcon = new TrayIcon(
+                ImageScaler.zoomBySize(imageIcon.getImage(), (int) trayIconSize.getWidth(),
+                        (int) trayIconSize.getHeight()),
+                "Scareers", popup);
+        //给TrayIcon添加事件监听器
+        this.trayIcon.addActionListener(listener);
+    }
 
-        // 添加组件到面板
-        panel.add(new JLabel("Label001"));
-        panel.add(new JButton("JButton001"));
-
-        // 设置内部窗口的内容面板
-        internalFrame.setContentPane(panel);
-
-        /*
-         * 对于内部窗口，还可以不需要手动设置内容面板，直接把窗口当做普通面板使用，
-         * 即直接设置布局，然后通过 add 添加组件，如下代码:
-         *     internalFrame.setLayout(new FlowLayout());
-         *     internalFrame.add(new JLabel("Label001"));
-         *     internalFrame.add(new JButton("JButton001"));
-         */
-
-        // 显示内部窗口
-        internalFrame.setVisible(true);
-
-        return internalFrame;
+    public void showSystemTray() {
+        SystemTray tray = SystemTray.getSystemTray();
+        try {
+            tray.add(this.trayIcon);
+        } catch (AWTException ex) {
+            ex.printStackTrace();
+        }
     }
 
 

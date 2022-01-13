@@ -1,14 +1,18 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -102,6 +106,15 @@ public class CorePanel extends JDesktopPane {
         this.add(rightTools, BorderLayout.EAST);
         this.add(mainPane, BorderLayout.CENTER); // @2022/1/14已更新为层级 pane
         this.add(bottomTools, BorderLayout.SOUTH);
+
+        // 尺寸改变
+        this.addComponentListener(new ComponentAdapter() {
+            @SneakyThrows
+            @Override
+            public void componentResized(ComponentEvent e) {
+                flushMainPanelBounds(); // 容器大小改变, 应当自动改变主内容, 实测直接最大化无法自动完成,因此
+            }
+        });
     }
 
 
@@ -159,17 +172,18 @@ public class CorePanel extends JDesktopPane {
      * 因此, 这里应当设定 mainPane的每层子组件的 大小! 首先刷新 centerSplitPane
      */
     public void flushMainPanelBounds() {
-        // 因相对坐标, x,y=0; 只计算 主splitPane 宽高
+        // ??? 分割线重设,否则最大化时有一半无法渲染
+        centerSplitPane.setDividerLocation(centerSplitPane.getLastDividerLocation());
         centerSplitPane.setLocation(0, 0);
         centerSplitPane.setSize(
                 mainPane.getWidth(), // 因本方法后于它们渲染完成调用,有效
                 mainPane.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
-        System.out.println(mainPane.getBounds());
-        System.out.println(centerSplitPane.getBounds());
-        mainPane.repaint();
-//        mainPane.setSize(
-//                parent.getWidth() - leftTools.getWidth() - rightTools.getWidth(), // 因本方法后于它们渲染完成调用,有效
-//                leftTools.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
+
+        mainFuncPanel.setSize(new Dimension(mainFuncPanel.getWidth(), centerSplitPane.getHeight()));
+        mainDisplayPanel.setSize(
+                new Dimension(centerSplitPane.getWidth() - mainFuncPanelDefaultWidth - centerSplitPane.getDividerSize(),
+                        centerSplitPane.getHeight()));
+
     }
 
 
