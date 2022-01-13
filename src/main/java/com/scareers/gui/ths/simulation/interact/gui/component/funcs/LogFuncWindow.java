@@ -31,7 +31,6 @@ public class LogFuncWindow extends HorizontalFuncDialogS {
                                             int funcToolsWidth, double preferHeightScale, int autoMinHight,
                                             int autoMaxHight) {
         if (INSTANCE == null) {
-
             INSTANCE = new LogFuncWindow(owner, title, funcToolsWidth, preferHeightScale, autoMinHight,
                     autoMaxHight);
         }
@@ -43,15 +42,19 @@ public class LogFuncWindow extends HorizontalFuncDialogS {
 
     private LogFuncWindow(TraderGui owner, String title, int funcToolsWidth,
                           double preferHeightScale, int autoMinHight, int autoMaxHight) {
-        super(owner, title, ModalityType.MODELESS); // 永不阻塞顶级窗口, 且已经设置水平方向
-        initAttrs(owner, funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
-        DisplayForLog displayForLog = new DisplayForLog(); // 仅这里相比父构造器, 添加了固定组件
-        initChildren(displayForLog);
+        super(owner, title, funcToolsWidth,
+                preferHeightScale, autoMinHight, autoMaxHight);
     }
 
+    @Override
+    protected void initCenterComponent() { // 抽象方法
+        DisplayForLog displayForLog = new DisplayForLog();
+        this.centerComponent = displayForLog;
+        this.add(displayForLog, BorderLayout.CENTER);
+    }
 
     @Override
-    protected List<JButton> getToolsButtons1() {
+    protected List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
         List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
         // 可加入其他 button
         return res;

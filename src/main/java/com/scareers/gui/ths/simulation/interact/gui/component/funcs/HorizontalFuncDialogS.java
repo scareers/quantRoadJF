@@ -43,15 +43,18 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
      * @param autoMinHight
      * @param autoMaxHight
      */
-    protected HorizontalFuncDialogS(TraderGui owner, Component centerComponent, String title, int funcToolsWidth,
+    protected HorizontalFuncDialogS(TraderGui owner, String title, int funcToolsWidth,
                                     double preferHeightScale, int autoMinHight, int autoMaxHight) {
         this(owner, title, ModalityType.MODELESS); // 永不阻塞顶级窗口, 且已经设置水平方向
         initAttrs(owner, funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
-        initChildren(centerComponent);
+        initCenterComponent(); // 抽象方法, 创建核心中央组件, 以做子类区分
+        initChildren();
     }
 
+    protected abstract void initCenterComponent();
+
     protected void initAttrs(TraderGui owner, int funcToolsWidth, double preferHeightScale, int autoMinHight,
-                           int autoMaxHight) {
+                             int autoMaxHight) {
         this.parent = owner; // 达成对 TraderGui 而非父类 owner Window 的访问
         this.funcToolsWidth = funcToolsWidth;
         this.preferHeightScale = preferHeightScale;
@@ -69,16 +72,13 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
      * @param funcToolsWidth
      * @param preferHeightScale
      */
-    protected HorizontalFuncDialogS(TraderGui owner, Component centerComponent, String title, int funcToolsWidth,
+    protected HorizontalFuncDialogS(TraderGui owner, String title, int funcToolsWidth,
                                     double preferHeightScale) {
-        this(owner, centerComponent, title, funcToolsWidth,
+        this(owner, title, funcToolsWidth,
                 preferHeightScale, 50, 1080);
     }
 
-    protected void initChildren(Component centerComponent) {
-        this.centerComponent = centerComponent;
-        this.add(centerComponent, BorderLayout.CENTER); // 主窗体需要传递
-
+    protected void initChildren() {
         ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.VERTICAL; // 横向功能对话框, 使用纵向工具栏
         funcTools = new ToolsPanel(funcToolsWidth, toolsPanelType,
                 getToolsButtons1(), getToolsButtons2(),
