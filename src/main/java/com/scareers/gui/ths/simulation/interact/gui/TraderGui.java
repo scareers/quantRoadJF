@@ -4,6 +4,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler;
@@ -191,29 +192,10 @@ public class TraderGui extends JFrame {
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                log.info("not implement: 点击了日志输出");
-//                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-//                        30, 0.33, 100, 1080);
-//                funcDialogs.add(logFuncWindow);
-
-//                JDesktopPane desktopPane = new JDesktopPane();
-//                JInternalFrame internalFrame = createInternalFrame("窗口1", 0, 0, 200, 200);
-//                desktopPane.add(internalFrame, Integer.valueOf(100), 0);
-//
-//                JInternalFrame internalFrame2 = createInternalFrame("窗口2", 100, 100, 300, 300);
-//                desktopPane.add(internalFrame2, Integer.valueOf(200), 0);
-//                parent.getCorePanel().getCenterSplitPane().setRightComponent(desktopPane);
-//
-//                desktopPane.setBounds(0,0,1000,500);
-//                desktopPane.setVisible(true);
-
-//                try {
-//                    // 设置 内部窗口 被选中
-//                    internalFrame.setSelected(true);
-//                } catch (Exception e2) {
-//                    e2.printStackTrace();
-//                }
-
+                // log.info("not implement: 点击了日志输出");
+                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
+                        30, 0.33, 100, 1080);
+                funcDialogs.add(logFuncWindow);
             }
         });
 
