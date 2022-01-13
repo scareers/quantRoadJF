@@ -34,7 +34,7 @@ public class Test {
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
                 Arrays.asList(logsFunc),
                 Arrays.asList(terminalFunc),
-                jf
+                null
         );
 
         jf.setContentPane(corePanel);

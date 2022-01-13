@@ -66,17 +66,17 @@ public class CorePanel extends JDesktopPane {
 
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
-                      int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,
+                     int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,
 
-                      List<JButton> leftToolsButtonsUp,
-                      List<JButton> leftToolsButtonsDown,
+                     List<JButton> leftToolsButtonsUp,
+                     List<JButton> leftToolsButtonsDown,
 
-                      List<JButton> rightToolsButtonsUp,
-                      List<JButton> rightToolsButtonsDown,
+                     List<JButton> rightToolsButtonsUp,
+                     List<JButton> rightToolsButtonsDown,
 
-                      List<JButton> bottomToolsButtonsPre,
-                      List<JButton> bottomToolsButtonsAfter,
-                      TraderGui mainWindow) {
+                     List<JButton> bottomToolsButtonsPre,
+                     List<JButton> bottomToolsButtonsAfter,
+                     TraderGui mainWindow) {
         super();
         this.mainWindow = mainWindow;
         this.mainFuncPanelDefaultWidth = mainFuncPanelDefaultWidth;
@@ -146,82 +146,12 @@ public class CorePanel extends JDesktopPane {
         centerSplitPane.setRightComponent(mainDisplayPanel);
         centerSplitPane.setOpaque(true);
 
-//        mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
-//        mainPane.setBorder(null);
-
-        JDesktopPane layeredPane = new JDesktopPane();
-
-        // 层数: 100
-        JPanel panel_100_1 = createPanel(Color.RED, "L=100, P=1", 0, 0, 200, 200);
-        panel_100_1.add(ButtonFactory.getButton("按钮1"));
-        layeredPane.add(panel_100_1, new Integer(100));
-
-        // 层数: 200, 层内位置: 0（层内顶部）
-        JPanel panel_200_0 = createPanel(Color.GREEN, "L=200, P=0", 100, 100, 200, 200);
-        panel_200_0.add(ButtonFactory.getButton("按钮2"));
-        layeredPane.add(panel_200_0, new Integer(200), 0);
-
-        // 层数: 200, 层内位置: 1
-        JPanel panel_200_1 = createPanel(Color.CYAN, "L=200, P=1", 200, 400, 200, 200);
-        panel_200_1.add(ButtonFactory.getButton("按钮3"));
-        layeredPane.add(panel_200_1, new Integer(200), 1);
-
-        // 层数: 300
-        JPanel panel_300 = createPanel(Color.YELLOW, "L=300", null, 600, 200, 200);
-        panel_300.add(ButtonFactory.getButton("按钮4"));
-        layeredPane.add(panel_300, new Integer(300));
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
-        splitPane.setLeftComponent(ButtonFactory.getButton("按钮5"));
-        JButton six = ButtonFactory.getButton("按钮6");
-        splitPane.setRightComponent(six);
-        six.addActionListener(new ActionListener() {
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (panel_300.isVisible()) {
-                    System.out.println(layeredPane.getBounds());
-                    panel_300.setSize(panel_300.getWidth() * 2+50, panel_300.getHeight() * 2+50);
-                    panel_300.setVisible(false);
-                } else {
-                    panel_300.setVisible(true);
-                }
-            }
-        });
-        splitPane.setBounds(600, 600, 300, 300);
-        splitPane.setContinuousLayout(true);
-        layeredPane.add(splitPane, new Integer(400));
-
-        mainPane = layeredPane;
-
-//        mainPane.add(centerSplitPane, Integer.valueOf(100), 0);
-
+        mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
+        mainPane.setBorder(null);
+        mainPane.add(centerSplitPane, Integer.valueOf(100), 0);
     }
 
-    private static JPanel createPanel(Color bg, String text, Integer x, Integer y, Integer width, Integer height) {
-        // 创建一个 JPanel, 使用 1 行 1 列的网格布局
-        JPanel panel = new JPanel(new GridLayout(1, 1));
 
-        // 设置容器的位置和宽高
-        if (x != null) {
-
-            panel.setBounds(x, y, width, height);
-        }
-
-        // 设置 panel 的背景
-        panel.setOpaque(true);
-        panel.setBackground(bg);
-
-        // 创建标签并设置相应属性
-        JLabel label = new JLabel(text);
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        label.setVerticalAlignment(SwingConstants.TOP);
-
-        // 添加标签到容器
-        panel.add(label);
-
-        return panel;
-    }
 
     /**
      * 刷新自身位置, 置于主界面主要位置. 当主界面窗口启动, 或者主界面大小改变时应当调用!

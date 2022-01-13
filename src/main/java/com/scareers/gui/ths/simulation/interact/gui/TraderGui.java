@@ -106,10 +106,10 @@ public class TraderGui extends JFrame {
         statusBar.setPreferredSize(new Dimension(100, 20));
 
         corePanel = buildCorePanel();
-//        this.add(pathLabel, BorderLayout.NORTH);
+        this.add(pathLabel, BorderLayout.NORTH);
 //        this.add(corePanel, BorderLayout.CENTER);
         this.setContentPane(corePanel);
-//        this.add(statusBar, BorderLayout.SOUTH);
+        this.add(statusBar, BorderLayout.SOUTH);
         this.pack();
     }
 
