@@ -1,6 +1,7 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
+package com.scareers.gui.ths.simulation.interact.gui.component.funcs.base;
 
-import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +16,8 @@ import java.awt.*;
  * @date: 2022/1/13/013-07:27:42
  * @see flushBounds()
  */
+@Setter
+@Getter
 public abstract class FuncDialogS extends JDialog {
     public enum OrientationType {
         VERTICAL,

@@ -1,18 +1,14 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.core.ToolsPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.log.DisplayForLog;
-import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,8 +17,7 @@ import java.util.List;
  * @author: admin
  * @date: 2022/1/13/013-04:41:26
  */
-@Setter
-@Getter
+
 public class LogFuncWindow extends HorizontalFuncDialogS {
     private static LogFuncWindow INSTANCE;
 
@@ -39,7 +34,6 @@ public class LogFuncWindow extends HorizontalFuncDialogS {
         return INSTANCE;
     }
 
-
     private LogFuncWindow(TraderGui owner, String title, int funcToolsWidth,
                           double preferHeightScale, int autoMinHight, int autoMaxHight) {
         super(owner, title, funcToolsWidth,
@@ -47,7 +41,7 @@ public class LogFuncWindow extends HorizontalFuncDialogS {
     }
 
     @Override
-    protected void initCenterComponent() { // 抽象方法
+    public void initCenterComponent() { // 抽象方法
         DisplayForLog displayForLog = new DisplayForLog();
         this.centerComponent = displayForLog;
         this.add(displayForLog, BorderLayout.CENTER);

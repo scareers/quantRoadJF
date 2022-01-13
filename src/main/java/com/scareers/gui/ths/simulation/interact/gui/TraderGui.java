@@ -3,7 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.FuncDialogS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -18,7 +18,6 @@ import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;

@@ -1,8 +1,10 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
+package com.scareers.gui.ths.simulation.interact.gui.component.funcs.base;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.ToolsPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,6 +19,8 @@ import java.util.List;
  * @author: admin
  * @date: 2022/1/13/013-09:02:09
  */
+@Setter
+@Getter
 public abstract class HorizontalFuncDialogS extends FuncDialogS {
     int autoMaxHight = 1080; // 自动增加可达到最大高度
     int autoMinHight = 50; // 自动减小可达到最小高度
@@ -25,7 +29,7 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
     TraderGui parent;
     ToolsPanel funcTools; // 工具按钮组
     int funcToolsWidth; // 按钮宽度
-    Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
+    protected Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
 
     protected HorizontalFuncDialogS(Window owner, String title, ModalityType type) {
         super(owner, title, type);
@@ -47,10 +51,13 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
                                     double preferHeightScale, int autoMinHight, int autoMaxHight) {
         this(owner, title, ModalityType.MODELESS); // 永不阻塞顶级窗口, 且已经设置水平方向
         initAttrs(owner, funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
-        initCenterComponent(); // 抽象方法, 创建核心中央组件, 以做子类区分
+        initCenterComponent();
         initChildren();
     }
 
+    /**
+     * 抽象方法, 创建核心中央组件, 以做子类区分
+     */
     protected abstract void initCenterComponent();
 
     protected void initAttrs(TraderGui owner, int funcToolsWidth, double preferHeightScale, int autoMinHight,
