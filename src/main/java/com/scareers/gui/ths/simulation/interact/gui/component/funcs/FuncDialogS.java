@@ -16,8 +16,14 @@ import java.awt.*;
  * @see flushBounds()
  */
 public abstract class FuncDialogS extends JDialog {
-    public abstract void flushBounds();
+    public enum OrientationType {
+        VERTICAL,
+        HORIZONTAL
+    }
 
+    OrientationType typeS; // 功能对话框2类, 横, 竖
+
+    public abstract void flushBounds();
 
     public FuncDialogS(Window owner, String title, ModalityType type) {
         super(owner, title, type);
