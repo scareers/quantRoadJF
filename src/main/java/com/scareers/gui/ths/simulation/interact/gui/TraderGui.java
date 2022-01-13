@@ -191,7 +191,7 @@ public class TraderGui extends JFrame {
                 // log.info("not implement: 点击了日志输出");
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         true, true, false, true,
-                        30, 0.3, 100, 1200, 200);
+                        30, 0.3, 100, 1200);
 
             }
         });

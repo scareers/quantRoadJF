@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfCorePane;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
 /**
@@ -29,9 +30,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.cr
 @Getter
 @Setter
 public class CorePanel extends JDesktopPane {
-    // 主内容在 JDesktopPane 的默认层级. 其余子功能对话框 应 > 此值, 才可显示在上
-    // 另外横向功能栏默认层级应当 > 纵向, 同idea效果. 但都 > 此值.
-    public static Integer defaultLayerForCenter = Integer.valueOf(100);
+
 
     // 仅做占位符使用的 int, 设定为默认宽/高的值,无实际意义.应当保证控件最终渲染宽/高>此值.
     public static int placeholderWidthOrHeight = 100;
@@ -117,7 +116,6 @@ public class CorePanel extends JDesktopPane {
             @Override
             public void componentResized(ComponentEvent e) {
                 flushMainPanelBounds(); // 容器大小改变, 应当自动改变主内容, 实测直接最大化无法自动完成,因此
-
             }
         });
     }
@@ -163,7 +161,7 @@ public class CorePanel extends JDesktopPane {
 
         mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
 
-        mainPane.add(centerSplitPane, defaultLayerForCenter, 0);
+        mainPane.add(centerSplitPane, layerOfCorePane, 0);
     }
 
 

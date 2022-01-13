@@ -14,7 +14,7 @@ import java.awt.*;
  * @see ClassLoader.getSystemResource(iconPath)
  */
 public class SettingsOfGuiGlobal {
-    // 颜色相关设定
+    // 1.颜色相关设定
     public static Color COLOR_THEME_MAIN = new Color(43, 43, 43); // 主色,常见内容框背景色
     public static Color COLOR_THEME_MINOR = new Color(60, 63, 65); // 主色2,次要颜色菜单栏,树形菜单等内容主色,主界面标题栏
     public static Color COLOR_THEME_TITLE = new Color(59, 71, 84); // 主色3, 子组件标题栏颜色
@@ -22,8 +22,14 @@ public class SettingsOfGuiGlobal {
 
     public static Color colorTest = new Color(51, 51, 51); // 测试颜色.., 方便看..
 
-    // 主界面相关设定
+    // 2.主界面相关设定
     public static final String ICON_PATH = "gui/img/titleIcon0.png"; // 图标
     public static final boolean MAXIMIZE_DEFAULT = false; // 默认启动时最大化?
 
+    // 3.各主/子功能界面默认层级layer, 被各功能窗口工厂方法使用
+    // 主内容在 JDesktopPane 的默认层级. 其余子功能对话框 应 > 此值, 才可显示在上
+    // 另外横向功能栏默认层级应当 > 纵向, 同idea效果. 但都 > 此值.
+    public static Integer layerOfCorePane = 100; // 最低
+    public static Integer layerOfLogFuncWindow = 200;
+    public static Integer layerOfDatabaseFuncWindow = 150;
 }

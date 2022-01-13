@@ -9,6 +9,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfLogFuncWindow;
+
 /**
  * description: 查看日志输出, 约等于idea的 Run 显示信息. 无法显示 print
  *
@@ -24,7 +26,7 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                           int autoMaxHight, Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsWidth, preferHeightScale,
                 autoMinHight, autoMaxHight, layer);
-        this.getMainWindow().getCorePanel().getFuncFrames().add(INSTANCE); // 注册自身, 主界面变化时将自动调用 flushBounds()
+        this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
     // DisplayForLog jDisplayForLog;
@@ -33,15 +35,14 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                                             boolean maximizable, boolean iconifiable,
 
                                             int funcToolsWidth, double preferHeightScale, // 自身
-                                            int autoMinHight, int autoMaxHight,
-                                            Integer layer) {
+                                            int autoMinHight, int autoMaxHight) {
         if (INSTANCE == null) {
             INSTANCE = new LogFuncWindow(mainWindow, title,
                     resizable, closable, // JInternalFrame
                     maximizable, iconifiable,
 
                     funcToolsWidth, preferHeightScale, // 自身
-                    autoMinHight, autoMaxHight, layer);
+                    autoMinHight, autoMaxHight, layerOfLogFuncWindow);
         }
         INSTANCE.flushBounds(); // 均刷新
         INSTANCE.show(); // 均显示
