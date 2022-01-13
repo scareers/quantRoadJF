@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -43,7 +45,7 @@ public class ToolsPanel extends JPanel {
     CopyOnWriteArrayList<String> buttonTextsOfPanel2 = new CopyOnWriteArrayList<>();
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      CopyOnWriteArrayList<JButton> buttonsOfPanel1, CopyOnWriteArrayList<JButton> buttonsOfPanel2,
+                      List<JButton> buttonsOfPanel1, List<JButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap) {
         this(widthOrHeight, type,
@@ -52,14 +54,16 @@ public class ToolsPanel extends JPanel {
     }
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      CopyOnWriteArrayList<JButton> buttonsOfPanel1, CopyOnWriteArrayList<JButton> buttonsOfPanel2,
+                      List<JButton> buttonsOfPanel1, List<JButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap, JLabel startPlaceholder, JLabel endPlaceholder) {
         super();
+        Objects.requireNonNull(buttonsOfPanel2);
+        Objects.requireNonNull(buttonsOfPanel1);
         this.widthOrHeight = widthOrHeight;
         this.type = type;
-        this.buttonsOfPanel1 = buttonsOfPanel1;
-        this.buttonsOfPanel2 = buttonsOfPanel2;
+        this.buttonsOfPanel1 = new CopyOnWriteArrayList<>(buttonsOfPanel1);
+        this.buttonsOfPanel2 = new CopyOnWriteArrayList<>(buttonsOfPanel2);
         this.panel1HGap = panel1HGap;
         this.panel1VGap = panel1VGap;
         this.panel2HGap = panel2HGap;

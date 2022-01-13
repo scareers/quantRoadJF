@@ -162,7 +162,7 @@ public class TraderGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-                        LogFuncWindow.OrientationType.HORIZONTAL);
+                        LogFuncWindow.OrientationType.HORIZONTAL, 25);
                 funcDialogs.add(logFuncWindow);
 //                logFuncWindow.focus
             }
