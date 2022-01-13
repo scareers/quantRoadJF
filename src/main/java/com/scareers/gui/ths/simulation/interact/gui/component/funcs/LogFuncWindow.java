@@ -26,7 +26,7 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                 autoMinHight, autoMaxHight, layer);
     }
 
-    // DisplayForLog jDisplayForLog; // 主内容, 强行访问需要强转  Component
+    // DisplayForLog jDisplayForLog;
     public static LogFuncWindow getInstance(TraderGui mainWindow, String title,
                                             boolean resizable, boolean closable, // JInternalFrame
                                             boolean maximizable, boolean iconifiable,
