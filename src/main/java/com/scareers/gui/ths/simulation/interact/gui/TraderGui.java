@@ -261,10 +261,9 @@ public class TraderGui extends JFrame {
 
         //根据image、提示、菜单创建TrayIcon
         this.trayIcon = new TrayIcon(
-                ImageScaler.zoomBySize(imageIcon.getImage(), (int) trayIconSize.getWidth(),
-                        (int) trayIconSize.getHeight()),
+                imageIcon.getImage(),
                 "Scareers", popup);
-        //给TrayIcon添加事件监听器
+        trayIcon.setImageAutoSize(true); // 自动缩放, 避免无法显示
         this.trayIcon.addActionListener(listener);
     }
 
