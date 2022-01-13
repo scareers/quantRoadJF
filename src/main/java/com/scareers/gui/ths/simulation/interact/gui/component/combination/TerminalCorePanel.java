@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.StreamInteractiveTextPaneS;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -11,7 +13,7 @@ import java.awt.*;
  */
 public class TerminalCorePanel extends JPanel {
     JScrollPane jScrollPane = new JScrollPane(); //
-    JTextPane interactivePane = new JTextPane(); // 交互编辑框
+    JTextPane interactivePane = new StreamInteractiveTextPaneS(); // 交互编辑框
 
     public TerminalCorePanel() {
         super();
