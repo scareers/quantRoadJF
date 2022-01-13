@@ -161,7 +161,7 @@ public class TraderGui extends JFrame {
             @SneakyThrows
             @Override
             public void componentResized(ComponentEvent e) {
-                // 应当刷新bounds, 将自动重绘
+                // 应当刷新bounds, 将自动重绘, 这些都是子功能窗口
                 for (FuncFrameS dialog : funcFrames) {
                     dialog.flushBounds();
                 }
@@ -195,8 +195,7 @@ public class TraderGui extends JFrame {
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         true, true, false, true,
                         30, 0.3, 100, 1200, 200);
-                // 注册
-                funcFrames.add(logFuncWindow);
+
             }
         });
 
