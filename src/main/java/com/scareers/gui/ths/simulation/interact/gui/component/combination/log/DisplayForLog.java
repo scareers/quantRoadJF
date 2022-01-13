@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.log;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.log;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +16,6 @@ public class DisplayForLog extends JPanel {
     public DisplayForLog() {
         super();
         this.setLayout(new BorderLayout());
-
         logTextPane.setBorder(null);
         jScrollPane.setHorizontalScrollBarPolicy(
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -27,6 +26,4 @@ public class DisplayForLog extends JPanel {
         this.add(jScrollPane, BorderLayout.CENTER);
         this.setBorder(null);
     }
-
-
 }

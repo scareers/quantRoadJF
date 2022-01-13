@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.TerminalFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -163,7 +164,16 @@ public class TraderGui extends JFrame {
                 LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
                         30, 0.33, 100, 1080);
                 funcDialogs.add(logFuncWindow);
-//                logFuncWindow.focus
+            }
+        });
+
+        JButton terminalFunc = ButtonFactory.getButton("终端命令行");
+        terminalFunc.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                TerminalFuncWindow logFuncWindow = TerminalFuncWindow.getInstance(parent, "terminal",
+                        30, 0.4, 100, 1080);
+                funcDialogs.add(logFuncWindow);
             }
         });
 
@@ -173,7 +183,7 @@ public class TraderGui extends JFrame {
                 Arrays.asList(ButtonFactory.getButton("数据库", true)),
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
                 Arrays.asList(logsFunc),
-                Arrays.asList(ButtonFactory.getButton("终端命令行"))
+                Arrays.asList(terminalFunc)
         );
     }
 
