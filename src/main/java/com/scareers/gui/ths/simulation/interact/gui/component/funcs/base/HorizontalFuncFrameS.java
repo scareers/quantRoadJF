@@ -54,7 +54,7 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
                                    int autoMinWidth, int autoMaxWidth,
                                    Integer layer
     ) {
-        super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
+        super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
         initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
         initCenterComponent(); // abstract
         initOtherChildren();
@@ -80,11 +80,11 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
 
 
     protected void initOtherChildren() {
-        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.HORIZONTAL; // 纵向功能对话框, 使用横向工具栏
+        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.VERTICAL; // 横向功能对话框, 使用纵向工具栏
         funcTools = new ToolsPanel(funcToolsWidth, toolsPanelType,
                 getToolsButtons1(), getToolsButtons2(),
                 0, 0, 0, 0);
-        this.add(funcTools, BorderLayout.NORTH); // 应放在上面
+        this.add(funcTools, BorderLayout.WEST);
     }
 
     /**

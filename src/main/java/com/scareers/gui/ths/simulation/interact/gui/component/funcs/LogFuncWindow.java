@@ -9,6 +9,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfLogFuncWindow;
 
@@ -36,7 +37,7 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                                             boolean maximizable, boolean iconifiable,
 
                                             int funcToolsWidth, double preferHeightScale, // 自身
-                                            int autoMinHight, int autoMaxHight) {
+                                            int autoMinHight, int autoMaxHight, boolean show) {
         if (INSTANCE == null) {
             INSTANCE = new LogFuncWindow(mainWindow, title,
                     resizable, closable, // JInternalFrame
@@ -46,7 +47,16 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                     autoMinHight, autoMaxHight, layerOfLogFuncWindow);
         }
         INSTANCE.flushBounds(); // 均刷新
-        INSTANCE.show(); // 均显示
+        if (show) {
+            INSTANCE.show(); // 可选显示
+        }
+        return INSTANCE;
+    }
+
+    public static LogFuncWindow getInstance() {
+        Objects.requireNonNull(INSTANCE);
+        INSTANCE.flushBounds(); // 均刷新显示
+        INSTANCE.show();
         return INSTANCE;
     }
 

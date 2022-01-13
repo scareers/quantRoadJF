@@ -51,6 +51,7 @@ public abstract class FuncFrameS extends JInternalFrame {
         this.typeS = typeS;
         this.mainWindow = mainWindow;
         this.mainPane = this.mainWindow.getCorePanel().getMainPane();
+        this.setBorder(null);
         this.setLayout(new BorderLayout());
     }
 

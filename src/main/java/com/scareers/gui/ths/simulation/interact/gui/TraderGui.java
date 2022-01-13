@@ -125,7 +125,11 @@ public class TraderGui extends JFrame {
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushMainPanelBounds(); // 实测必须,否则主内容左侧无法正确初始化
-//                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
+                        // 日志控件立即初始化, 暂不显示
+                        LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
+                                true, true, false, true,
+                                30, 0.3, 100, 1200, false);
+                        mainWindow.getCorePanel().getRightToolsButtonsUp().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -188,10 +192,7 @@ public class TraderGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // log.info("not implement: 点击了日志输出");
-                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
-                        true, true, false, true,
-                        30, 0.3, 100, 1200);
-
+                LogFuncWindow.getInstance(); // 窗口启动时已经初始化, 单例模式可调用无参方法
             }
         });
 
@@ -209,7 +210,7 @@ public class TraderGui extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "database", true,
                         true, false, true,
-                        30, 0.25, 100, 1500);
+                        30, 0.2, 100, 1500);
             }
         });
 

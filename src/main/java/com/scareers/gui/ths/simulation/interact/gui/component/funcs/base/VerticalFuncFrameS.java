@@ -54,7 +54,7 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
                                  int autoMinHight, int autoMaxHight,
                                  Integer layer
     ) {
-        super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
+        super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
         initAttrs(funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
         initCenterComponent(); // abstract
         initOtherChildren();
@@ -80,11 +80,11 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
 
 
     protected void initOtherChildren() {
-        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.VERTICAL; // 横向功能对话框, 使用纵向工具栏
+        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.HORIZONTAL;
         funcTools = new ToolsPanel(funcToolsHeight, toolsPanelType,
                 getToolsButtons1(), getToolsButtons2(),
                 0, 0, 0, 0);
-        this.add(funcTools, BorderLayout.WEST); // 应放下面
+        this.add(funcTools, BorderLayout.NORTH);
     }
 
     /**
@@ -104,37 +104,35 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
             }
         });
 
-        JButton higherButton = ButtonFactory.getButton("上");
-        higherButton.setToolTipText("增大高度");
+        JButton higherButton = ButtonFactory.getButton("左");
+        higherButton.setToolTipText("增大宽度");
 
         higherButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Rectangle rawbounds = frame.getBounds();
-                int newHeight = Math.min(frame.getHeight() * 2, autoMaxWidth);
-                int difference = newHeight - frame.getHeight();
+                int newWidth = Math.min(frame.getWidth() * 2, autoMaxWidth);
+                int difference = newWidth - frame.getWidth();
                 if (difference <= 0) {
                     return;
                 }
-                frame.setBounds((int) rawbounds.getX(), (int) rawbounds.getY() - difference,
-                        (int) rawbounds.getWidth(), newHeight);
+                frame.setBounds(frame.getX() - difference, frame.getY(), newWidth, frame.getHeight());
             }
         });
 
-        JButton shorterButton = ButtonFactory.getButton("下");
-        shorterButton.setToolTipText("减小高度");
+        JButton shorterButton = ButtonFactory.getButton("右");
+        shorterButton.setToolTipText("减小宽度");
 
         shorterButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Rectangle rawbounds = frame.getBounds();
-                int newHeight = Math.max(frame.getHeight() / 2, autoMinWidth);
-                int difference = newHeight - frame.getHeight();
+                int newWidth = Math.max(frame.getWidth() / 2, autoMinWidth);
+                int difference = newWidth - frame.getWidth();
                 if (difference >= 0) {
                     return;
                 }
-                frame.setBounds((int) rawbounds.getX(), (int) rawbounds.getY() - difference, // y-负数, 变大
-                        (int) rawbounds.getWidth(), newHeight);
+                frame.setBounds(frame.getX() - difference, frame.getY(), newWidth, frame.getHeight());
             }
         });
         return Arrays.asList(resetBounds, higherButton, shorterButton);

@@ -53,7 +53,11 @@ public class DatabaseFuncWindow extends VerticalFuncFrameS {
 
     @Override
     public void initCenterComponent() { // 抽象方法
-        this.centerComponent = new JLabel("我是数据库");
+        JLabel label = new JLabel("我是数据库");
+        label.setForeground(Color.WHITE);
+        JPanel jPanel = new JPanel();
+        jPanel.add(label);
+        this.centerComponent = jPanel;
         this.add(this.centerComponent, BorderLayout.CENTER);
     }
 
