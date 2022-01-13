@@ -42,7 +42,8 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                     funcToolsWidth, preferHeightScale, // 自身
                     autoMinHight, autoMaxHight, layer);
         }
-        INSTANCE.flushBounds();
+        INSTANCE.flushBounds(); // 均刷新
+        INSTANCE.show(); // 均显示
         return INSTANCE;
     }
 
