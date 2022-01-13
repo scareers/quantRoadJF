@@ -2,12 +2,13 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.TerminalFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncDialogS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
+import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -18,6 +19,7 @@ import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyVetoException;
 import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -42,6 +44,7 @@ import static com.scareers.utils.CommonUtil.waitForever;
 @Setter
 @Getter
 public class TraderGui extends JFrame {
+    private static final Log log = LogUtil.getLogger();
     public static int screenW; // 除去任务栏, 可用的全屏宽度/高度, 暂时未使用
     public static int screenH;
 
@@ -133,7 +136,7 @@ public class TraderGui extends JFrame {
             @Override
             public void componentResized(ComponentEvent e) {
                 // 应当刷新bounds, 将自动重绘
-                Thread.sleep(100); // 对话框无法渐变size, 因此先等待
+                Thread.sleep(20); // 对话框无法渐变size, 因此先等待
                 for (FuncDialogS dialog : funcDialogs) {
                     dialog.flushBounds();
                 }
@@ -161,9 +164,27 @@ public class TraderGui extends JFrame {
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-                        30, 0.33, 100, 1080);
-                funcDialogs.add(logFuncWindow);
+//                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
+//                        30, 0.33, 100, 1080);
+//                funcDialogs.add(logFuncWindow);
+                JDesktopPane desktopPane = new JDesktopPane();
+                JInternalFrame internalFrame = createInternalFrame("窗口1", 0, 0, 200, 200);
+                desktopPane.add(internalFrame, Integer.valueOf(100), 0);
+
+                JInternalFrame internalFrame2 = createInternalFrame("窗口2", 100, 100, 300, 300);
+                desktopPane.add(internalFrame2, Integer.valueOf(200), 0);
+                parent.getCorePanel().getCenterSplitPane().setRightComponent(desktopPane);
+//
+//                desktopPane.setBounds(0,0,1000,500);
+//                desktopPane.setVisible(true);
+
+//                try {
+//                    // 设置 内部窗口 被选中
+//                    internalFrame.setSelected(true);
+//                } catch (Exception e2) {
+//                    e2.printStackTrace();
+//                }
+
             }
         });
 
@@ -171,9 +192,7 @@ public class TraderGui extends JFrame {
         terminalFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                TerminalFuncWindow terminalFuncWindow = TerminalFuncWindow.getInstance(parent, "terminal",
-                        30, 0.4, 100, 1080);
-                funcDialogs.add(terminalFuncWindow);
+                log.info("not implement: 点击了终端命令行");
             }
         });
 
@@ -187,13 +206,55 @@ public class TraderGui extends JFrame {
         );
     }
 
+    public static JInternalFrame createInternalFrame(String title, int x, int y, int width
+            , int height) {
+        // 创建一个内部窗口
+        JInternalFrame internalFrame = new JInternalFrame(
+                title,  // title
+                true,       // resizable
+                true,       // closable
+                true,       // maximizable
+                true        // iconifiable
+        );
+
+        // 设置窗口的宽高
+        internalFrame.setSize(width, height);
+        // 设置窗口的显示位置
+        internalFrame.setLocation(x, y);
+        // 内部窗口的关闭按钮动作默认就是销毁窗口，所有不用设置
+        // internalFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+        // 创建内容面板
+        JPanel panel = new JPanel();
+
+        // 添加组件到面板
+        panel.add(new JLabel("Label001"));
+        panel.add(new JButton("JButton001"));
+
+        // 设置内部窗口的内容面板
+        internalFrame.setContentPane(panel);
+
+        /*
+         * 对于内部窗口，还可以不需要手动设置内容面板，直接把窗口当做普通面板使用，
+         * 即直接设置布局，然后通过 add 添加组件，如下代码:
+         *     internalFrame.setLayout(new FlowLayout());
+         *     internalFrame.add(new JLabel("Label001"));
+         *     internalFrame.add(new JButton("JButton001"));
+         */
+
+        // 显示内部窗口
+        internalFrame.setVisible(true);
+
+        return internalFrame;
+    }
+
+
     /**
      * 初始化各项默认 LookAndFeel设置, 可依需要修改
      *
      * @throws UnsupportedLookAndFeelException
      */
     public static void initGlobalStyle() throws UnsupportedLookAndFeelException {
-        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
 
         defs.put("TextPane.background", new ColorUIResource(COLOR_THEME_MAIN));
@@ -212,7 +273,15 @@ public class TraderGui extends JFrame {
 
         defs.put("Panel.background", new ColorUIResource(COLOR_THEME_MINOR));
         defs.put("Panel.inactiveBackground", new ColorUIResource(COLOR_THEME_MINOR));
+
+        defs.put("activeCaption", new javax.swing.plaf.ColorUIResource(Color.orange));
+        defs.put("activeCaptionText", new javax.swing.plaf.ColorUIResource(Color.red));
         // System.out.println(JSONUtil.toJsonPrettyStr(JSONUtil.parse(defs)));
+
+        UIManager.put("InternalFrame.activeTitleBackground", new ColorUIResource(Color.black));
+        UIManager.put("InternalFrame.activeTitleForeground", new ColorUIResource(Color.WHITE));
+        UIManager.put("InternalFrame.titleFont", new Font("Dialog", Font.PLAIN, 11));
+        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
     }
 
     /**

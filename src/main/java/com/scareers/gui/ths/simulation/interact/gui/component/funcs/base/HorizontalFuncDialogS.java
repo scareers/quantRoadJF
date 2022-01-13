@@ -31,7 +31,7 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
     int funcToolsWidth; // 按钮宽度
     protected Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
 
-    protected HorizontalFuncDialogS(Window owner, String title, ModalityType type) {
+    protected HorizontalFuncDialogS(Window owner, String title, JDialog.ModalityType type) {
         super(owner, title, type);
         this.typeS = OrientationType.HORIZONTAL; // 固定
     }
@@ -49,7 +49,7 @@ public abstract class HorizontalFuncDialogS extends FuncDialogS {
      */
     protected HorizontalFuncDialogS(TraderGui owner, String title, int funcToolsWidth,
                                     double preferHeightScale, int autoMinHight, int autoMaxHight) {
-        this(owner, title, ModalityType.MODELESS); // 永不阻塞顶级窗口, 且已经设置水平方向
+        this(owner, title, JDialog.ModalityType.MODELESS); // 永不阻塞顶级窗口, 且已经设置水平方向
         initAttrs(owner, funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
         initCenterComponent();
         initChildren();

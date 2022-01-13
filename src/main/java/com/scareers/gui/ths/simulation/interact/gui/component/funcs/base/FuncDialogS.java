@@ -30,5 +30,11 @@ public abstract class FuncDialogS extends JDialog {
 
     public FuncDialogS(Window owner, String title, ModalityType type) {
         super(owner, title, type);
+//        super(title);
+
+    }
+
+    public static void main(String[] args) {
+        JInternalFrame jInternalFrame = new JInternalFrame();
     }
 }

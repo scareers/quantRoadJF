@@ -56,6 +56,7 @@ public class CorePanel extends JPanel {
     JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
     JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
     JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
+    JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
@@ -83,7 +84,7 @@ public class CorePanel extends JPanel {
         this.bottomToolsButtonsPre = new CopyOnWriteArrayList<>(bottomToolsButtonsPre);
         this.bottomToolsButtonsAfter = new CopyOnWriteArrayList<>(bottomToolsButtonsAfter);
 
-        initTwoMainPane();
+        initMainPane();
         initLeftTools();
         initRightTools();
         initBottomTools();
@@ -91,7 +92,7 @@ public class CorePanel extends JPanel {
         this.setLayout(new BorderLayout());
         this.add(leftTools, BorderLayout.WEST);
         this.add(rightTools, BorderLayout.EAST);
-        this.add(centerSplitPane, BorderLayout.CENTER);
+        this.add(mainPane, BorderLayout.CENTER); // @2022/1/14已更新为层级 pane
         this.add(bottomTools, BorderLayout.SOUTH);
     }
 
@@ -117,7 +118,9 @@ public class CorePanel extends JPanel {
                 createPlaceholderLabel(rightToolsWidth, bottomToolsHeight));
     }
 
-    private void initTwoMainPane() {
+    private void initMainPane() {
+
+
         mainFuncPanel = new JPanel();
         mainFuncPanel.setPreferredSize(new Dimension(mainFuncPanelDefaultWidth, placeholderWidthOrHeight)); // 定默认宽
         mainFuncPanel.setBackground(Color.yellow);
@@ -136,6 +139,11 @@ public class CorePanel extends JPanel {
         centerSplitPane.setLeftComponent(mainFuncPanel);
         centerSplitPane.setRightComponent(mainDisplayPanel);
         centerSplitPane.setOpaque(true);
+
+        mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
+        mainPane.add(centerSplitPane, Integer.valueOf(100));
+
     }
+
 
 }

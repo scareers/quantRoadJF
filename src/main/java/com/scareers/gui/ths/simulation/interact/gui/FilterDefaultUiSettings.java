@@ -16,7 +16,7 @@ import java.util.HashMap;
  */
 public class FilterDefaultUiSettings {
     public static void main(String[] args) {
-        Console.log(filter("Button"));
+        Console.log(filter("window"));
 
     }
 
@@ -27,7 +27,7 @@ public class FilterDefaultUiSettings {
         HashMap<String, Object> stringObjectHashMap = new HashMap<>();
         for (String key : json.keySet()) {
 //            if (key.contains(filterStr) || key.contains(filterStr.toLowerCase())) {
-            if (key.startsWith(filterStr)) {
+            if (key.toLowerCase().startsWith(filterStr.toLowerCase())) {
                 stringObjectHashMap.put(key, json.get(key));
             }
         }
