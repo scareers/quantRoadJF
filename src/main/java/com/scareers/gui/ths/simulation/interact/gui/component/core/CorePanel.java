@@ -1,10 +1,14 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -22,7 +26,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.cr
  */
 @Getter
 @Setter
-public class CorePanel extends JPanel {
+public class CorePanel extends JDesktopPane {
     // 仅做占位符使用的 int, 设定为默认宽/高的值,无实际意义.应当保证控件最终渲染宽/高>此值.
     public static int placeholderWidthOrHeight = 100;
     public static int verticalToolsHGap1 = 0; // 本质是内部 2个 FlowLayout 两gap设定
@@ -35,6 +39,7 @@ public class CorePanel extends JPanel {
     public static int horizontalToolsVGap2 = 0;
 
     // 需要传递的属性
+    JFrame parent; // 主界面, 方便计算位置
     int mainFuncPanelDefaultWidth; // 主功能实现区默认宽度
     int centerSplitPaneDividerSize; // 主分割面板分割线宽度
     int leftToolsWidth;
@@ -56,7 +61,6 @@ public class CorePanel extends JPanel {
     JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
     JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
     JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
-    JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
@@ -69,8 +73,10 @@ public class CorePanel extends JPanel {
                      List<JButton> rightToolsButtonsDown,
 
                      List<JButton> bottomToolsButtonsPre,
-                     List<JButton> bottomToolsButtonsAfter) {
+                     List<JButton> bottomToolsButtonsAfter,
+                     JFrame parent) {
         super();
+        this.parent = parent;
         this.mainFuncPanelDefaultWidth = mainFuncPanelDefaultWidth;
         this.centerSplitPaneDividerSize = centerSplitPaneDividerSize;
         this.leftToolsWidth = leftToolsWidth;
@@ -89,11 +95,16 @@ public class CorePanel extends JPanel {
         initRightTools();
         initBottomTools();
 
-        this.setLayout(new BorderLayout());
-        this.add(leftTools, BorderLayout.WEST);
-        this.add(rightTools, BorderLayout.EAST);
-        this.add(mainPane, BorderLayout.CENTER); // @2022/1/14已更新为层级 pane
-        this.add(bottomTools, BorderLayout.SOUTH);
+        leftTools.setBounds(0, 0, 30, 800);
+        rightTools.setBounds(1600, 0, 30, 800);
+        bottomTools.setBounds(0, 850, 1500, 30);
+        centerSplitPane.setBounds(30, 0, 1500, 800);
+
+        this.add(leftTools, new Integer(100), 100);
+        this.add(rightTools, new Integer(200), 100);
+        this.add(bottomTools, new Integer(300), 100);
+        this.add(centerSplitPane, new Integer(400), 100);
+
     }
 
 
@@ -119,8 +130,6 @@ public class CorePanel extends JPanel {
     }
 
     private void initMainPane() {
-
-
         mainFuncPanel = new JPanel();
         mainFuncPanel.setPreferredSize(new Dimension(mainFuncPanelDefaultWidth, placeholderWidthOrHeight)); // 定默认宽
         mainFuncPanel.setBackground(Color.yellow);
@@ -139,10 +148,51 @@ public class CorePanel extends JPanel {
         centerSplitPane.setLeftComponent(mainFuncPanel);
         centerSplitPane.setRightComponent(mainDisplayPanel);
         centerSplitPane.setOpaque(true);
+    }
 
-        mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
-        mainPane.add(centerSplitPane, Integer.valueOf(100));
+    private static JPanel createPanel(Color bg, String text, Integer x, Integer y, Integer width, Integer height) {
+        // 创建一个 JPanel, 使用 1 行 1 列的网格布局
+        JPanel panel = new JPanel(new GridLayout(1, 1));
 
+        // 设置容器的位置和宽高
+        if (x != null) {
+
+            panel.setBounds(x, y, width, height);
+        }
+
+        // 设置 panel 的背景
+        panel.setOpaque(true);
+        panel.setBackground(bg);
+
+        // 创建标签并设置相应属性
+        JLabel label = new JLabel(text);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setVerticalAlignment(SwingConstants.TOP);
+
+        // 添加标签到容器
+        panel.add(label);
+
+        return panel;
+    }
+
+    /**
+     * 刷新自身位置, 置于主界面主要位置. 当主界面窗口启动, 或者主界面大小改变时应当调用!
+     * 注意调用时机
+     *
+     * @noti 主界面大小确定后, 控制核心Panel大小, 因使用 JDesktopPane, 其大小由 每层子组件大小确定.
+     * 因此, 这里应当设定 mainPane的每层子组件的 大小! 首先刷新 centerSplitPane
+     */
+    public void flushMainPanelBounds() {
+        // 因相对坐标, x,y=0; 只计算 主splitPane 宽高
+//        centerSplitPane.setLocation(0, 0);
+//        System.out.println(this.getBounds());
+//        centerSplitPane.setSize(
+//                this.getWidth(), // 因本方法后于它们渲染完成调用,有效
+//                this.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
+//        System.out.println(centerSplitPane.getBounds());
+//        mainPane.setSize(
+//                parent.getWidth() - leftTools.getWidth() - rightTools.getWidth(), // 因本方法后于它们渲染完成调用,有效
+//                leftTools.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
     }
 
 

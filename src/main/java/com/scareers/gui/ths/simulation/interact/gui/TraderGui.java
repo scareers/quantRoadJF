@@ -106,9 +106,10 @@ public class TraderGui extends JFrame {
         statusBar.setPreferredSize(new Dimension(100, 20));
 
         corePanel = buildCorePanel();
-        this.add(pathLabel, BorderLayout.NORTH);
-        this.add(corePanel, BorderLayout.CENTER);
-        this.add(statusBar, BorderLayout.SOUTH);
+//        this.add(pathLabel, BorderLayout.NORTH);
+//        this.add(corePanel, BorderLayout.CENTER);
+        this.setContentPane(corePanel);
+//        this.add(statusBar, BorderLayout.SOUTH);
         this.pack();
     }
 
@@ -121,7 +122,8 @@ public class TraderGui extends JFrame {
             public void windowOpened(WindowEvent e) {
                 ThreadUtil.execAsync(() -> {
                     try {
-                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
+//                        mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
+//                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -139,6 +141,7 @@ public class TraderGui extends JFrame {
                 Thread.sleep(20); // 对话框无法渐变size, 因此先等待
                 for (FuncDialogS dialog : funcDialogs) {
                     dialog.flushBounds();
+                    mainWindow.getCorePanel().flushMainPanelBounds(); // 刷新位置
                 }
             }
         });
@@ -167,13 +170,14 @@ public class TraderGui extends JFrame {
 //                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
 //                        30, 0.33, 100, 1080);
 //                funcDialogs.add(logFuncWindow);
-                JDesktopPane desktopPane = new JDesktopPane();
-                JInternalFrame internalFrame = createInternalFrame("窗口1", 0, 0, 200, 200);
-                desktopPane.add(internalFrame, Integer.valueOf(100), 0);
 
-                JInternalFrame internalFrame2 = createInternalFrame("窗口2", 100, 100, 300, 300);
-                desktopPane.add(internalFrame2, Integer.valueOf(200), 0);
-                parent.getCorePanel().getCenterSplitPane().setRightComponent(desktopPane);
+//                JDesktopPane desktopPane = new JDesktopPane();
+//                JInternalFrame internalFrame = createInternalFrame("窗口1", 0, 0, 200, 200);
+//                desktopPane.add(internalFrame, Integer.valueOf(100), 0);
+//
+//                JInternalFrame internalFrame2 = createInternalFrame("窗口2", 100, 100, 300, 300);
+//                desktopPane.add(internalFrame2, Integer.valueOf(200), 0);
+//                parent.getCorePanel().getCenterSplitPane().setRightComponent(desktopPane);
 //
 //                desktopPane.setBounds(0,0,1000,500);
 //                desktopPane.setVisible(true);
@@ -202,7 +206,8 @@ public class TraderGui extends JFrame {
                 Arrays.asList(ButtonFactory.getButton("数据库", true)),
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
                 Arrays.asList(logsFunc),
-                Arrays.asList(terminalFunc)
+                Arrays.asList(terminalFunc),
+                this
         );
     }
 
