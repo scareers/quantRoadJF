@@ -193,9 +193,9 @@ public class TraderGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // log.info("not implement: 点击了日志输出");
-                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-                        30, 0.33, 100, 1080);
-                funcDialogs.add(logFuncWindow);
+//                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
+//                        30, 0.33, 100, 1080);
+//                funcDialogs.add(logFuncWindow); // 对话框实现的子功能窗口
             }
         });
 
