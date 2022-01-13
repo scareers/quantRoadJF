@@ -25,45 +25,9 @@ public class Test {
         jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
 
-
         JButton logsFunc = ButtonFactory.getButton("日志输出");
-        logsFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-//                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(parent, "logs",
-//                        30, 0.33, 100, 1080);
-//                funcDialogs.add(logFuncWindow);
-
-//                JDesktopPane desktopPane = new JDesktopPane();
-//                JInternalFrame internalFrame = createInternalFrame("窗口1", 0, 0, 200, 200);
-//                desktopPane.add(internalFrame, Integer.valueOf(100), 0);
-//
-//                JInternalFrame internalFrame2 = createInternalFrame("窗口2", 100, 100, 300, 300);
-//                desktopPane.add(internalFrame2, Integer.valueOf(200), 0);
-//                parent.getCorePanel().getCenterSplitPane().setRightComponent(desktopPane);
-//
-//                desktopPane.setBounds(0,0,1000,500);
-//                desktopPane.setVisible(true);
-
-//                try {
-//                    // 设置 内部窗口 被选中
-//                    internalFrame.setSelected(true);
-//                } catch (Exception e2) {
-//                    e2.printStackTrace();
-//                }
-
-            }
-        });
-
         JButton terminalFunc = ButtonFactory.getButton("终端命令行");
-        terminalFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-            }
-        });
-
-        CorePanel corePanel =  new CorePanel(100, 10, 30, 30, 30,
+        CorePanel corePanel = new CorePanel(100, 10, 30, 30, 30,
                 Arrays.asList(ButtonFactory.getButton("对象查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据查看", true)),
                 Arrays.asList(ButtonFactory.getButton("数据库", true)),

@@ -39,7 +39,8 @@ public class CorePanel extends JDesktopPane {
     public static int horizontalToolsVGap2 = 0;
 
     // 需要传递的属性
-    JFrame parent; // 主界面, 方便计算位置
+    // @warning: 该属性不能名为 parent!, 否则于父类定义的属性冲突
+    TraderGui mainWindow; // 主界面, 方便计算位置,
     int mainFuncPanelDefaultWidth; // 主功能实现区默认宽度
     int centerSplitPaneDividerSize; // 主分割面板分割线宽度
     int leftToolsWidth;
@@ -61,22 +62,23 @@ public class CorePanel extends JDesktopPane {
     JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
     JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
     JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
+    JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
-                     int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,
+                      int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,
 
-                     List<JButton> leftToolsButtonsUp,
-                     List<JButton> leftToolsButtonsDown,
+                      List<JButton> leftToolsButtonsUp,
+                      List<JButton> leftToolsButtonsDown,
 
-                     List<JButton> rightToolsButtonsUp,
-                     List<JButton> rightToolsButtonsDown,
+                      List<JButton> rightToolsButtonsUp,
+                      List<JButton> rightToolsButtonsDown,
 
-                     List<JButton> bottomToolsButtonsPre,
-                     List<JButton> bottomToolsButtonsAfter,
-                     JFrame parent) {
+                      List<JButton> bottomToolsButtonsPre,
+                      List<JButton> bottomToolsButtonsAfter,
+                      TraderGui mainWindow) {
         super();
-        this.parent = parent;
+        this.mainWindow = mainWindow;
         this.mainFuncPanelDefaultWidth = mainFuncPanelDefaultWidth;
         this.centerSplitPaneDividerSize = centerSplitPaneDividerSize;
         this.leftToolsWidth = leftToolsWidth;
@@ -95,16 +97,11 @@ public class CorePanel extends JDesktopPane {
         initRightTools();
         initBottomTools();
 
-        leftTools.setBounds(0, 0, 30, 800);
-        rightTools.setBounds(1600, 0, 30, 800);
-        bottomTools.setBounds(0, 850, 1500, 30);
-        centerSplitPane.setBounds(30, 0, 1500, 800);
-
-        this.add(leftTools, new Integer(100), 100);
-        this.add(rightTools, new Integer(200), 100);
-        this.add(bottomTools, new Integer(300), 100);
-        this.add(centerSplitPane, new Integer(400), 100);
-
+        this.setLayout(new BorderLayout());
+        this.add(leftTools, BorderLayout.WEST);
+        this.add(rightTools, BorderLayout.EAST);
+        this.add(mainPane, BorderLayout.CENTER); // @2022/1/14已更新为层级 pane
+        this.add(bottomTools, BorderLayout.SOUTH);
     }
 
 
@@ -148,6 +145,57 @@ public class CorePanel extends JDesktopPane {
         centerSplitPane.setLeftComponent(mainFuncPanel);
         centerSplitPane.setRightComponent(mainDisplayPanel);
         centerSplitPane.setOpaque(true);
+
+//        mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
+//        mainPane.setBorder(null);
+
+        JDesktopPane layeredPane = new JDesktopPane();
+
+        // 层数: 100
+        JPanel panel_100_1 = createPanel(Color.RED, "L=100, P=1", 0, 0, 200, 200);
+        panel_100_1.add(ButtonFactory.getButton("按钮1"));
+        layeredPane.add(panel_100_1, new Integer(100));
+
+        // 层数: 200, 层内位置: 0（层内顶部）
+        JPanel panel_200_0 = createPanel(Color.GREEN, "L=200, P=0", 100, 100, 200, 200);
+        panel_200_0.add(ButtonFactory.getButton("按钮2"));
+        layeredPane.add(panel_200_0, new Integer(200), 0);
+
+        // 层数: 200, 层内位置: 1
+        JPanel panel_200_1 = createPanel(Color.CYAN, "L=200, P=1", 200, 400, 200, 200);
+        panel_200_1.add(ButtonFactory.getButton("按钮3"));
+        layeredPane.add(panel_200_1, new Integer(200), 1);
+
+        // 层数: 300
+        JPanel panel_300 = createPanel(Color.YELLOW, "L=300", null, 600, 200, 200);
+        panel_300.add(ButtonFactory.getButton("按钮4"));
+        layeredPane.add(panel_300, new Integer(300));
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setLeftComponent(ButtonFactory.getButton("按钮5"));
+        JButton six = ButtonFactory.getButton("按钮6");
+        splitPane.setRightComponent(six);
+        six.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (panel_300.isVisible()) {
+                    System.out.println(layeredPane.getBounds());
+                    panel_300.setSize(panel_300.getWidth() * 2+50, panel_300.getHeight() * 2+50);
+                    panel_300.setVisible(false);
+                } else {
+                    panel_300.setVisible(true);
+                }
+            }
+        });
+        splitPane.setBounds(600, 600, 300, 300);
+        splitPane.setContinuousLayout(true);
+        layeredPane.add(splitPane, new Integer(400));
+
+        mainPane = layeredPane;
+
+//        mainPane.add(centerSplitPane, Integer.valueOf(100), 0);
+
     }
 
     private static JPanel createPanel(Color bg, String text, Integer x, Integer y, Integer width, Integer height) {
@@ -184,12 +232,12 @@ public class CorePanel extends JDesktopPane {
      */
     public void flushMainPanelBounds() {
         // 因相对坐标, x,y=0; 只计算 主splitPane 宽高
-//        centerSplitPane.setLocation(0, 0);
-//        System.out.println(this.getBounds());
-//        centerSplitPane.setSize(
-//                this.getWidth(), // 因本方法后于它们渲染完成调用,有效
-//                this.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
-//        System.out.println(centerSplitPane.getBounds());
+        centerSplitPane.setLocation(0, 0);
+        System.out.println(mainPane.getBounds());
+        centerSplitPane.setSize(
+                mainPane.getWidth(), // 因本方法后于它们渲染完成调用,有效
+                mainPane.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
+        System.out.println(centerSplitPane.getBounds());
 //        mainPane.setSize(
 //                parent.getWidth() - leftTools.getWidth() - rightTools.getWidth(), // 因本方法后于它们渲染完成调用,有效
 //                leftTools.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
