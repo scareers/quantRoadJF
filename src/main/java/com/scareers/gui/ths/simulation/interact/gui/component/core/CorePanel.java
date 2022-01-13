@@ -168,11 +168,10 @@ public class CorePanel extends JDesktopPane {
 
 
     /**
-     * 刷新mainPane及所有关联子组件Size, 当主界面窗口启动, 或者主界面大小改变时应当调用! (mainPane大小改变时)
+     * 刷新mainPane及所有关联子组件bounds, 当主界面窗口启动, 或者主界面大小改变时应当调用! (mainPane大小改变时)
      * 注意调用时机
      *
-     * @noti 主界面大小确定后, 控制核心Panel大小, 因使用 JDesktopPane, 其大小由 每层子组件大小确定.
-     * 这里应当设定 mainPane 的每层子组件的 bounds!
+     * @noti 皆因 JDesktopPane 层次面板size改变时, 其内子组件并不会相应自动改变bounds, 因此实现所有相关子组件位置刷新逻辑
      */
     public void flushMainPanelBounds() {
         // ??? 两大组件刷新
