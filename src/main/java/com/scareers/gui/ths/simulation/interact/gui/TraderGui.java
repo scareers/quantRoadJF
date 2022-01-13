@@ -71,7 +71,6 @@ public class TraderGui extends JFrame {
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
-    CopyOnWriteArraySet<FuncFrameS> funcFrames = new CopyOnWriteArraySet<>(); // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置
 
     private ImageIcon imageIcon; // 图标
     private TrayIcon trayIcon; // 系统托盘
@@ -161,10 +160,8 @@ public class TraderGui extends JFrame {
             @SneakyThrows
             @Override
             public void componentResized(ComponentEvent e) {
-                // 应当刷新bounds, 将自动重绘, 这些都是子功能窗口
-                for (FuncFrameS dialog : funcFrames) {
-                    dialog.flushBounds();
-                }
+                // 应当刷新bounds, 将自动重绘
+
             }
         });
 

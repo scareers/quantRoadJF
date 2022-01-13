@@ -24,7 +24,7 @@ public class LogFuncWindow extends HorizontalFuncFrameS {
                           int autoMaxHight, Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsWidth, preferHeightScale,
                 autoMinHight, autoMaxHight, layer);
-        this.getMainWindow().getFuncFrames().add(INSTANCE); // 注册自身, 主界面变化时将自动调用 flushBounds()
+        this.getMainWindow().getCorePanel().getFuncFrames().add(INSTANCE); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
     // DisplayForLog jDisplayForLog;

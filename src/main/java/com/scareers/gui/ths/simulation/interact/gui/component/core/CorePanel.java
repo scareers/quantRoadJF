@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -11,6 +12,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
@@ -68,6 +70,8 @@ public class CorePanel extends JDesktopPane {
     JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
     JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 
+    // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置, 逻辑上 与 JDesktopPane mainPane  绑定
+    CopyOnWriteArraySet<FuncFrameS> funcFrames = new CopyOnWriteArraySet<>();
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
                      int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,
@@ -113,6 +117,7 @@ public class CorePanel extends JDesktopPane {
             @Override
             public void componentResized(ComponentEvent e) {
                 flushMainPanelBounds(); // 容器大小改变, 应当自动改变主内容, 实测直接最大化无法自动完成,因此
+
             }
         });
     }
@@ -155,25 +160,22 @@ public class CorePanel extends JDesktopPane {
         centerSplitPane.setDividerSize(centerSplitPaneDividerSize); //设置分割线的宽度
         centerSplitPane.setLeftComponent(mainFuncPanel);
         centerSplitPane.setRightComponent(mainDisplayPanel);
-//        centerSplitPane
 
         mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
-//        mainPane.setBorder(null);
-
 
         mainPane.add(centerSplitPane, defaultLayerForCenter, 0);
     }
 
 
     /**
-     * 刷新自身位置, 置于主界面主要位置. 当主界面窗口启动, 或者主界面大小改变时应当调用!
+     * 刷新mainPane及所有关联子组件Size, 当主界面窗口启动, 或者主界面大小改变时应当调用! (mainPane大小改变时)
      * 注意调用时机
      *
      * @noti 主界面大小确定后, 控制核心Panel大小, 因使用 JDesktopPane, 其大小由 每层子组件大小确定.
-     * 因此, 这里应当设定 mainPane的每层子组件的 大小! 首先刷新 centerSplitPane
+     * 这里应当设定 mainPane 的每层子组件的 bounds!
      */
     public void flushMainPanelBounds() {
-        // ??? 分割线重设,否则最大化时有一半无法渲染
+        // ??? 两大组件刷新
         centerSplitPane.setDividerLocation(centerSplitPane.getLastDividerLocation());
         centerSplitPane.setLocation(0, 0);
         centerSplitPane.setSize(
@@ -185,6 +187,9 @@ public class CorePanel extends JDesktopPane {
                 new Dimension(centerSplitPane.getWidth() - mainFuncPanelDefaultWidth - centerSplitPane.getDividerSize(),
                         centerSplitPane.getHeight()));
 
+        for (FuncFrameS dialog : funcFrames) { // 其他关联的功能窗口, 也刷新
+            dialog.flushBounds();
+        }
     }
 
 
