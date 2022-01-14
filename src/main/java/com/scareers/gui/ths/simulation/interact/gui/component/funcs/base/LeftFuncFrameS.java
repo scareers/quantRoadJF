@@ -25,7 +25,7 @@ public abstract class LeftFuncFrameS extends VerticalFuncFrameS {
     // 需要提供
     int autoMaxWidth;
     int autoMinWidth;
-    double preferWidthScale;
+    double preferWidthScale=0.2;
     int funcToolsHeight;
 
     // 自动初始化
@@ -50,17 +50,35 @@ public abstract class LeftFuncFrameS extends VerticalFuncFrameS {
     protected LeftFuncFrameS(TraderGui mainWindow, String title,
                              boolean resizable, boolean closable, // JInternalFrame
                              boolean maximizable, boolean iconifiable,
-                             int funcToolsWidth, double preferHeightScale, // 自身
+                             int funcToolsWidth,
+                             // double preferHeightScale,
                              int autoMinHight, int autoMaxHight,
                              Integer layer
     ) {
         super(mainWindow, title,
                 resizable, closable, // JInternalFrame
                 maximizable, iconifiable,
-                funcToolsWidth, 1, // 自身
+                funcToolsWidth, 0.2, // 自身
                 autoMinHight, autoMaxHight,
-                50);
+                layer); // layer应当最低
+
     }
 
+    /**
+     * 刷新位置, 注意, 自身已经加入 主面板 JDesktopPane 的某一层-0;
+     * 因此位置需要依据 mainPane 当前情况刷新
+     */
+    @Override
+    public void flushBounds() {
+        this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
+        this.setBounds(
+                //  x = mainPane宽度 - 自身宽度
+                0,
+                // y = 0
+                0,
+                preferWidth,
+                // 高度 = mainPane 高度
+                mainPane.getHeight());
+    }
 
 }

@@ -145,7 +145,9 @@ public class CorePanel extends JDesktopPane {
     private void initMainPane() {
         mainFuncPanel = new JPanel();
         mainFuncPanel.setPreferredSize(new Dimension(mainFuncPanelDefaultWidth, placeholderWidthOrHeight)); // 定默认宽
-        mainFuncPanel.setBackground(Color.yellow);
+//        mainFuncPanel.setBackground(Color.yellow);
+        mainFuncPanel.setOpaque(false);
+        mainFuncPanel.setMinimumSize(new Dimension(50, 10)); // 这部分是透明的,漏出下面的 左侧功能
 
         mainDisplayPanel = new JPanel();
         mainDisplayPanel.setBackground(Color.green);

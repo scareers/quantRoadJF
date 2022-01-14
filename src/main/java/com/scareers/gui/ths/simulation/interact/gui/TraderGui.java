@@ -6,12 +6,14 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.LeftFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.sonatype.guice.bean.locators.MutableBeanLocator;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
@@ -223,15 +225,29 @@ public class TraderGui extends JFrame {
         observerFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "对象查看", true,
-                        true, false, true,
-                        30, 1, 100, 4096);
+                LeftFuncFrameS x = new LeftFuncFrameS(mainWindow, "对象列表", true, true, false, true,
+                        30, 100, 2000, 150) {
+                    @Override
+                    protected void initCenterComponent() {
+                        JLabel label = new JLabel("我是对象");
+                        label.setForeground(Color.WHITE);
+                        label.setBounds(0, 0, 200, 200);
+                        JPanel jPanel = new JPanel();
+                        jPanel.add(label);
+                        this.centerComponent = jPanel;
+                        this.add(this.centerComponent, BorderLayout.CENTER);
+                    }
+                };
+
+                x.flushBounds();
+                System.out.println(x.getBounds());
+                x.show();
             }
         });
 
 
         return new CorePanel(100, 10, 30, 30, 30,
-                Arrays.asList(ButtonFactory.getButton("对象查看", true)),
+                Arrays.asList(observerFunc),
                 Arrays.asList(ButtonFactory.getButton("数据查看", true)),
                 Arrays.asList(databaseFunc),
                 Arrays.asList(ButtonFactory.getButton("书签", true)),
