@@ -30,13 +30,13 @@ public class LogFuncWindow extends BottomFuncFrameS {
         this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
-    // DisplayForLog jDisplayForLog;
+    // DisplayForLog jDisplayForLog;  工厂方法不控制 刷新与显示, 请手动调用
     public static LogFuncWindow getInstance(TraderGui mainWindow, String title,
                                             boolean resizable, boolean closable, // JInternalFrame
                                             boolean maximizable, boolean iconifiable,
 
                                             int funcToolsWidth, double preferHeightScale, // 自身
-                                            int autoMinHight, int autoMaxHight, boolean show) {
+                                            int autoMinHight, int autoMaxHight) {
         if (INSTANCE == null) {
             INSTANCE = new LogFuncWindow(mainWindow, title,
                     resizable, closable, // JInternalFrame
@@ -45,17 +45,11 @@ public class LogFuncWindow extends BottomFuncFrameS {
                     funcToolsWidth, preferHeightScale, // 自身
                     autoMinHight, autoMaxHight, layerOfLogFuncWindow);
         }
-        INSTANCE.flushBounds(); // 均刷新
-        if (show) {
-            INSTANCE.show(); // 可选显示
-        }
         return INSTANCE;
     }
 
     public static LogFuncWindow getInstance() {
         Objects.requireNonNull(INSTANCE);
-        INSTANCE.flushBounds(); // 均刷新显示
-        INSTANCE.show();
         return INSTANCE;
     }
 

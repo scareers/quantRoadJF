@@ -33,7 +33,15 @@ public abstract class FuncFrameS extends JInternalFrame {
     TraderGui mainWindow; // 主界面, 以便将自身添加到主内容面板 -- 层级面板中, 自行强转 TraderUI
     JDesktopPane mainPane; // 主界面mainPane
 
-    public abstract void flushBounds();
+    // 自动计算
+    int mainPaneWidth; // 保存mainPane的 高度和宽度, 在构造器中首次更新. 当mainPane大小改变将使用并刷新此值
+    int mainPaneHeight;
+
+    public abstract void flushBounds(boolean first);
+
+    public void flushBounds() {
+        flushBounds(false); // 无参调用默认为非首次!
+    }
 
     /**
      * JInternalFrame 的全参构造器 + 新增2属性
@@ -52,6 +60,8 @@ public abstract class FuncFrameS extends JInternalFrame {
         this.typeS = typeS;
         this.mainWindow = mainWindow;
         this.mainPane = this.mainWindow.getCorePanel().getMainPane();
+        this.mainPaneWidth = this.mainPane.getWidth();
+        this.mainPaneHeight = this.mainPane.getHeight();
         this.setBorder(null);
         this.setLayout(new BorderLayout());
     }

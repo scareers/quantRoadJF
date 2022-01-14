@@ -78,7 +78,6 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         if (addToMainPane) { // 可暂时不注册
             this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
         }
-        this.flushBounds(); // abstract
     }
 
 
@@ -164,14 +163,27 @@ public abstract class RightFuncFrameS extends FuncFrameS {
      * 因此位置需要依据 mainPane 当前情况刷新
      */
     @Override
-    public void flushBounds() {
-        this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
+    public void flushBounds(boolean first) {
+        if (first) { // 首次刷新, 将读取默认比例, 并计算最新高度! 并设置最新高度
+            this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale); // 需要更新默认高度
+            actualFlush(preferWidth);
+        } else {
+            double oldScale = (double) this.getWidth() / this.mainPaneWidth; // 注意, 需要读取上次保存的 旧的mainPane尺寸
+            int newWidth = (int) (oldScale * this.mainPane.getWidth()); // 新的尺寸计算, 等比缩放
+            actualFlush(newWidth);
+        }
+        // 无论如何, 均需要刷新mainPane尺寸, 做下一次更新时的 "旧尺寸"
+        this.mainPaneWidth = this.mainPane.getWidth();
+        this.mainPaneHeight = this.mainPane.getHeight(); // 刷新manePane尺寸
+    }
+
+    private void actualFlush(int newWidth) {
         this.setBounds(
                 //  x = mainPane宽度 - 自身宽度
-                mainPane.getWidth() - preferWidth,
+                mainPane.getWidth() - newWidth,
                 // y = 0
                 0,
-                preferWidth,
+                newWidth,
                 // 高度 = mainPane 高度
                 mainPane.getHeight());
     }

@@ -162,7 +162,7 @@ public class TraderGui extends JFrame {
                 mainFunc.flushBounds();
                 mainDisplay.flushBounds();
                 mainFunc.show();
-                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red,3));
+                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red, 3));
                 mainDisplay.show();
 
 
@@ -172,8 +172,16 @@ public class TraderGui extends JFrame {
                         // 日志控件立即初始化, 暂不显示
                         LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
                                 true, true, false, true,
-                                30, 0.3, 100, 1200, false);
-//                        logFuncWindow.setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
+                                30, 0.3, 100, 1200);
+                        logFuncWindow.flushBounds(true); // 首次刷新
+//                        logFuncWindow.show(); // 暂时不显示
+
+                        DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow
+                                .getInstance(mainWindow, "database", true,
+                                        true, false, true,
+                                        30, 0.2, 100, 1500);
+                        databaseFuncWindow.flushBounds(true);
+//                        databaseFuncWindow.show();
 
                         mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick(); // 日志框显示
                         mainWindow.getCorePanel().getRightToolsButtonsUp().get(0).doClick();
@@ -239,7 +247,9 @@ public class TraderGui extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // log.info("not implement: 点击了日志输出");
-                LogFuncWindow.getInstance(); // 窗口启动时已经初始化, 单例模式可调用无参方法
+                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(); // 窗口启动时已经初始化, 单例模式可调用无参方法
+                logFuncWindow.flushBounds(); // 非首次
+                logFuncWindow.show();
             }
         });
 
@@ -258,6 +268,8 @@ public class TraderGui extends JFrame {
                 DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "database", true,
                         true, false, true,
                         30, 0.2, 100, 1500);
+                databaseFuncWindow.flushBounds(false);
+                databaseFuncWindow.show();
             }
         });
 

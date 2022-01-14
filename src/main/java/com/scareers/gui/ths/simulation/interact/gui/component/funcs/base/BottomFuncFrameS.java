@@ -61,7 +61,6 @@ public abstract class BottomFuncFrameS extends FuncFrameS {
 
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
         this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
-        this.flushBounds(); // abstract
     }
 
 
@@ -149,15 +148,29 @@ public abstract class BottomFuncFrameS extends FuncFrameS {
      * 因此位置需要依据 mainPane 当前情况刷新
      */
     @Override
-    public void flushBounds() {
-        this.preferHeight = (int) (this.mainPane.getHeight() * preferHeightScale);
+    public void flushBounds(boolean first) {
+        if (first) { // 首次刷新, 将读取默认比例, 并计算最新高度! 并设置最新高度
+            this.preferHeight = (int) (this.mainPane.getHeight() * preferHeightScale); // 需要更新默认高度
+            actualFlush(preferHeight);
+        } else {
+            double oldScale = (double) this.getHeight() / this.mainPaneHeight; // 注意, 需要读取上次保存的 旧的mainPane尺寸
+            int newHeight = (int) (oldScale * this.mainPane.getHeight()); // 新的尺寸计算, 等比缩放
+            actualFlush(newHeight);
+        }
+        // 无论如何, 均需要刷新mainPane尺寸, 做下一次更新时的 "旧尺寸"
+        this.mainPaneWidth = this.mainPane.getWidth();
+        this.mainPaneHeight = this.mainPane.getHeight(); // 刷新manePane尺寸
+    }
+
+    private void actualFlush(int newHeight) {
         this.setBounds(
                 //  x = 0, 已被 mainPane 管理
                 0,
                 // y = mainPane高度 - 自身高度
-                mainPane.getHeight() - preferHeight,
+                mainPane.getHeight() - newHeight,
                 // 宽度 = mainPane 同宽
                 mainPane.getWidth(),
-                preferHeight);
+                newHeight);
     }
+
 }

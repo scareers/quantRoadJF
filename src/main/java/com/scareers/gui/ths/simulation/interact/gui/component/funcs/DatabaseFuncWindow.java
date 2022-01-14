@@ -45,8 +45,6 @@ public class DatabaseFuncWindow extends RightFuncFrameS {
                     funcToolsHeight, preferWidthScale, // 自身
                     autoMinWidth, autoMaxWidth, layerOfDatabaseFuncWindow);
         }
-        INSTANCE.flushBounds(); // 均刷新
-        INSTANCE.show(); // 均显示
         return INSTANCE;
     }
 

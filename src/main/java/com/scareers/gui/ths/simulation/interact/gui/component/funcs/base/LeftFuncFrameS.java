@@ -58,10 +58,6 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
      * @noti preferWidth 本身已经沦为了首次初始化显示时的默认宽度, 且 mainPane应当对应减小宽度.
      */
     @Override
-    public void flushBounds() { // 默认为非首次刷新的逻辑. 因此实例化时, 应当调用首次刷新的逻辑
-        flushBounds(false);
-    }
-
     public void flushBounds(boolean first) {
         if (first) {
             this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
