@@ -64,9 +64,9 @@ public class CorePanel extends JDesktopPane {
     JPanel rightTools; // 右功能区, 按钮列表
     JPanel bottomTools; // 下功能区, 按钮列表
 
-    JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
-    JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
-    JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
+    //    JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
+//    JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
+//    JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
     JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 
     // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置, 逻辑上 与 JDesktopPane mainPane  绑定
@@ -143,26 +143,15 @@ public class CorePanel extends JDesktopPane {
     }
 
     private void initMainPane() {
-        mainFuncPanel = new JPanel();
-        mainFuncPanel.setPreferredSize(new Dimension(mainFuncPanelDefaultWidth, placeholderWidthOrHeight)); // 定默认宽
-//        mainFuncPanel.setBackground(Color.yellow);
-        mainFuncPanel.setOpaque(false);
-        mainFuncPanel.setMinimumSize(new Dimension(50, 10)); // 这部分是透明的,漏出下面的 左侧功能
+        // 这里更新. 首先, 原编辑器转换为 无标题栏的对话框. 靠左. 设置一个较大的默认宽度, 最大 1.0  layer== 100
+        // 左侧的功能, 例如项目文件树, 固定为 垂直的窗口, 宽度固定倍率为 1.0, 且置于其下. layer == 50
+        // 因此, 左侧功能栏本身永恒占满底层mainPane, 而 编辑器功能栏 占据从右向左的较大部分, 初始占据 1.
+        // 需要设置, 当左侧功能栏非 数量非null时, editor窗口起点右移. 表面是新的项目窗口撑开了, 实际是编辑器本身右移了
 
-        mainDisplayPanel = new JPanel();
-        mainDisplayPanel.setBackground(Color.green);
-
-        centerSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // 设定为左右拆分布局
-        centerSplitPane.setBorder(null);
-        centerSplitPane.setOneTouchExpandable(true); // 让分割线显示出箭头
-        centerSplitPane.setContinuousLayout(true); // 调整时实时重绘
-        centerSplitPane.setDividerSize(centerSplitPaneDividerSize); //设置分割线的宽度
-        centerSplitPane.setLeftComponent(mainFuncPanel);
-        centerSplitPane.setRightComponent(mainDisplayPanel);
 
         mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
 
-        mainPane.add(centerSplitPane, layerOfCorePane, 0);
+//        mainPane.add(centerSplitPane, layerOfCorePane, 0);
     }
 
 
@@ -174,16 +163,7 @@ public class CorePanel extends JDesktopPane {
      */
     public void flushMainPanelBounds() {
         // ??? 两大组件刷新
-        centerSplitPane.setDividerLocation(centerSplitPane.getLastDividerLocation());
-        centerSplitPane.setLocation(0, 0);
-        centerSplitPane.setSize(
-                mainPane.getWidth(), // 因本方法后于它们渲染完成调用,有效
-                mainPane.getHeight()); // 必须设定具体大小, 方可正常显示, 在主界面回调中修改
 
-        mainFuncPanel.setSize(new Dimension(mainFuncPanel.getWidth(), centerSplitPane.getHeight()));
-        mainDisplayPanel.setSize(
-                new Dimension(centerSplitPane.getWidth() - mainFuncPanelDefaultWidth - centerSplitPane.getDividerSize(),
-                        centerSplitPane.getHeight()));
 
         for (FuncFrameS dialog : funcFrames) { // 其他关联的功能窗口, 也刷新
             dialog.flushBounds();

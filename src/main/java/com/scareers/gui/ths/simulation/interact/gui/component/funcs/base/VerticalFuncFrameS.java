@@ -50,12 +50,12 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
     protected VerticalFuncFrameS(TraderGui mainWindow, String title,
                                  boolean resizable, boolean closable, // JInternalFrame
                                  boolean maximizable, boolean iconifiable,
-                                 int funcToolsWidth, double preferHeightScale, // 自身
-                                 int autoMinHight, int autoMaxHight,
+                                 int funcToolsHeight, double preferWidthScale, // 自身
+                                 int autoMinWidth, int autoMaxWidth,
                                  Integer layer
     ) {
         super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
-        initAttrs(funcToolsWidth, preferHeightScale, autoMinHight, autoMaxHight);
+        initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
         initCenterComponent(); // abstract
         initOtherChildren();
 
@@ -70,12 +70,12 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
      */
     protected abstract void initCenterComponent();
 
-    protected void initAttrs(int funcToolsWidth, double preferHeightScale, int autoMinHight, int autoMaxHight) {
-        this.funcToolsHeight = funcToolsWidth;
-        this.preferWidthScale = preferHeightScale;
-        this.preferWidth = (int) (this.mainWindow.getHeight() * preferHeightScale); // flushBounds()中重复调用.
-        this.autoMinWidth = autoMinHight;
-        this.autoMaxWidth = autoMaxHight;
+    protected void initAttrs(int funcToolsHeight, double preferWidthScale, int autoMinWidth, int autoMaxWidth) {
+        this.funcToolsHeight = funcToolsHeight;
+        this.preferWidthScale = preferWidthScale;
+        this.preferWidth = (int) (this.mainWindow.getHeight() * preferWidthScale); // flushBounds()中重复调用.
+        this.autoMinWidth = autoMinWidth;
+        this.autoMaxWidth = autoMaxWidth;
     }
 
 

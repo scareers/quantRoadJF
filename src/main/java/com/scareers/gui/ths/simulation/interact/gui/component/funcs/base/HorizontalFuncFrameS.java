@@ -50,12 +50,12 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
     protected HorizontalFuncFrameS(TraderGui mainWindow, String title,
                                    boolean resizable, boolean closable, // JInternalFrame
                                    boolean maximizable, boolean iconifiable,
-                                   int funcToolsHeight, double preferWidthScale, // 自身
-                                   int autoMinWidth, int autoMaxWidth,
+                                   int funcToolsWidth, double preferHeightScale, // 自身
+                                   int autoMinHeight, int autoMaxHeight,
                                    Integer layer
     ) {
         super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
-        initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
+        initAttrs(funcToolsWidth, preferHeightScale, autoMinHeight, autoMaxHeight);
         initCenterComponent(); // abstract
         initOtherChildren();
 
