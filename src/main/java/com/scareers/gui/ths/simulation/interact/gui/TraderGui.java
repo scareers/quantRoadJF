@@ -7,6 +7,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -171,8 +172,20 @@ public class TraderGui extends JFrame {
                         30, 0.8, 200, 4096
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
+                // 尺寸改变回调, 调节左侧功能栏
+                mainDisplayWindow.addComponentListener(new ComponentAdapter() {
+                    @SneakyThrows
+                    @Override
+                    public void componentResized(ComponentEvent e) {
+                        for (FuncFrameS dialog : mainWindow.getCorePanel().getLeftFuncFrames()) { // 左侧功能窗口, 也刷新
+                            dialog.flushBounds();
+                        }
+                    }
+                });
+
                 mainDisplayWindow.flushBounds();
                 mainDisplayWindow.show();
+
 
                 ThreadUtil.execAsync(() -> {
                     try {
