@@ -25,7 +25,7 @@ public abstract class BottomFuncFrameS extends FuncFrameS {
     // 需要提供
     int autoMaxHight; // 自动增加可达到最大高度
     int autoMinHight; // 自动减小可达到最小高度
-    double preferHeightScale; // 默认高度占主内容高度百分比
+    double preferHeightScale; // 默认高度占主内容高度百分比  , // 该值final
     int funcToolsWidth; // 按钮栏宽度
 
     // 自动初始化
@@ -61,6 +61,7 @@ public abstract class BottomFuncFrameS extends FuncFrameS {
 
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
         this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+        this.flushBounds(true); // 首次刷新, 将采用默认尺寸
     }
 
 
@@ -99,7 +100,7 @@ public abstract class BottomFuncFrameS extends FuncFrameS {
         resetBounds.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frame.flushBounds();
+                frame.flushBounds(true);
             }
         });
 

@@ -170,17 +170,17 @@ public class TraderGui extends JFrame {
                     try {
                         mainWindow.getCorePanel().flushMainPanelBounds(); // 实测必须,否则主内容左侧无法正确初始化
                         // 日志控件立即初始化, 暂不显示
-                        LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
-                                true, true, false, true,
-                                30, 0.3, 100, 1200);
-                        logFuncWindow.flushBounds(true); // 首次刷新
-//                        logFuncWindow.show(); // 暂时不显示
-
-                        DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow
-                                .getInstance(mainWindow, "database", true,
-                                        true, false, true,
-                                        30, 0.2, 100, 1500);
-                        databaseFuncWindow.flushBounds(true);
+//                        LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
+//                                true, true, false, true,
+//                                30, 0.3, 100, 1200);
+//                        logFuncWindow.flushBounds(true); // 首次刷新
+////                        logFuncWindow.show(); // 暂时不显示
+//
+//                        DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow
+//                                .getInstance(mainWindow, "database", true,
+//                                        true, false, true,
+//                                        30, 0.2, 100, 1500);
+//                        databaseFuncWindow.flushBounds(true);
 //                        databaseFuncWindow.show();
 
                         mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick(); // 日志框显示
@@ -246,9 +246,11 @@ public class TraderGui extends JFrame {
         logsFunc.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // log.info("not implement: 点击了日志输出");
-                LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(); // 窗口启动时已经初始化, 单例模式可调用无参方法
-                logFuncWindow.flushBounds(); // 非首次
+                LogFuncWindow logFuncWindow =  // 窗口启动时已经初始化, 单例模式可调用无参方法
+                        LogFuncWindow.getInstance(mainWindow, "logs",
+                                true, true, false, true,
+                                30, 0.3, 100, 1200);
+                logFuncWindow.flushBounds(); // 实例化时首次, 今次不首次. 若要重置应当调用首次
                 logFuncWindow.show();
             }
         });
@@ -268,7 +270,7 @@ public class TraderGui extends JFrame {
                 DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "database", true,
                         true, false, true,
                         30, 0.2, 100, 1500);
-                databaseFuncWindow.flushBounds(false);
+                databaseFuncWindow.flushBounds();
                 databaseFuncWindow.show();
             }
         });

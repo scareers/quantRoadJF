@@ -35,7 +35,7 @@ public abstract class FuncFrameS extends JInternalFrame {
 
     // 自动计算
     int mainPaneWidth; // 保存mainPane的 高度和宽度, 在构造器中首次更新. 当mainPane大小改变将使用并刷新此值
-    int mainPaneHeight;
+    int mainPaneHeight; // 逻辑上含义为 上次mainPane的尺寸
 
     public abstract void flushBounds(boolean first);
 

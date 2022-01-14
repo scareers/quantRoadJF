@@ -1,17 +1,8 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs.base;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.core.ToolsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import lombok.Getter;
 import lombok.Setter;
-
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * description: 左侧纵向子功能栏界面, 其宽度均取决于编辑区拖动.
@@ -51,24 +42,22 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
 
 
     /**
-     * 刷新位置, 注意, 自身已经加入 主面板 JDesktopPane 的某一层-0;
-     * 因此位置需要依据 mainPane 当前情况刷新
+     * flush逻辑与父类同, 只是实际位置应当不同! 调用该方法前, 若要高度减半,(idea左下册功能), 请手动设置 halfHeight
      *
-     * @noti 应当读取 mainPane宽度-编辑器宽度, 决定宽度,  读取 halfHeight 决定是否半高. 半高时, 其layer应当>全高的组件
-     * @noti preferWidth 本身已经沦为了首次初始化显示时的默认宽度, 且 mainPane应当对应减小宽度.
+     * @param newWidth
      */
     @Override
-    public void flushBounds(boolean first) {
-        if (first) {
-            this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
-            this.setBounds(
-                    0,
-                    // x,y = 0
-                    0,
-                    preferWidth,
-                    // 高度 = mainPane 高度
-                    mainPane.getHeight()); // 位于左边.
-
+    protected void actualFlush(int newWidth) {
+        int y = 0;
+        if (halfHeight) {
+            y = mainPane.getHeight() / 2;
         }
+        this.setBounds(
+                0,
+                // y = 0
+                y,
+                newWidth,
+                // 高度 = mainPane 高度
+                mainPane.getHeight() - y); // 注意逻辑
     }
 }

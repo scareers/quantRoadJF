@@ -25,7 +25,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
     // 需要提供
     int autoMaxWidth;
     int autoMinWidth;
-    double preferWidthScale;
+    double preferWidthScale; // 该值final
     int funcToolsHeight;
 
     // 自动初始化
@@ -70,6 +70,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
                               Integer layer, boolean addToMainPane
     ) {
         super(mainWindow, OrientationType.VERTICAL_RIGHT, title, resizable, closable, maximizable, iconifiable);
+        this.preferWidth = (int) (this.mainWindow.getHeight() * preferWidthScale); // flushBounds()中重复调用.
         initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
         initCenterComponent(); // abstract
         initOtherChildren();
@@ -78,6 +79,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         if (addToMainPane) { // 可暂时不注册
             this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
         }
+        this.flushBounds(true); // 首次刷新, 将采用默认尺寸
     }
 
 
@@ -116,7 +118,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         resetBounds.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frame.flushBounds();
+                frame.flushBounds(true);
             }
         });
 
@@ -177,7 +179,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         this.mainPaneHeight = this.mainPane.getHeight(); // 刷新manePane尺寸
     }
 
-    private void actualFlush(int newWidth) {
+    protected void actualFlush(int newWidth) {
         this.setBounds(
                 //  x = mainPane宽度 - 自身宽度
                 mainPane.getWidth() - newWidth,
