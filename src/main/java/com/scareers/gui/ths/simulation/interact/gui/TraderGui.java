@@ -102,11 +102,13 @@ public class TraderGui extends JFrame {
         pathLabel.setFont(new Font("宋体", Font.BOLD, 15));
         pathLabel.setForeground(Color.RED);
         pathLabel.setPreferredSize(new Dimension(100, 20));
+        pathLabel.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
 
         statusBar = new JLabel("Running");
         statusBar.setFont(new Font("宋体", Font.BOLD, 15));
         statusBar.setForeground(Color.RED);
         statusBar.setPreferredSize(new Dimension(100, 20));
+//        statusBar.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
 
         corePanel = buildCorePanel();
         this.add(pathLabel, BorderLayout.NORTH);
@@ -129,6 +131,9 @@ public class TraderGui extends JFrame {
                         LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
                                 true, true, false, true,
                                 30, 0.3, 100, 1200, false);
+//                        logFuncWindow.setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
+
+                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick(); // 日志框显示
                         mainWindow.getCorePanel().getRightToolsButtonsUp().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
@@ -213,6 +218,17 @@ public class TraderGui extends JFrame {
                         30, 0.2, 100, 1500);
             }
         });
+
+        JButton observerFunc = ButtonFactory.getButton("对象查看", true);
+        observerFunc.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "对象查看", true,
+                        true, false, true,
+                        30, 1, 100, 4096);
+            }
+        });
+
 
         return new CorePanel(100, 10, 30, 30, 30,
                 Arrays.asList(ButtonFactory.getButton("对象查看", true)),

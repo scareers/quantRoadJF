@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * description:
+ * description: 垂直窗口. 常用于右侧工具栏
  *
  * @author: admin
  * @date: 2022/1/13/013-09:02:09
@@ -70,7 +70,7 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
      */
     protected abstract void initCenterComponent();
 
-    private void initAttrs(int funcToolsWidth, double preferHeightScale, int autoMinHight, int autoMaxHight) {
+    protected void initAttrs(int funcToolsWidth, double preferHeightScale, int autoMinHight, int autoMaxHight) {
         this.funcToolsHeight = funcToolsWidth;
         this.preferWidthScale = preferHeightScale;
         this.preferWidth = (int) (this.mainWindow.getHeight() * preferHeightScale); // flushBounds()中重复调用.

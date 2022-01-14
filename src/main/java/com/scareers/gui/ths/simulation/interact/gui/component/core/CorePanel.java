@@ -125,7 +125,6 @@ public class CorePanel extends JDesktopPane {
         leftTools = new ToolsPanel(leftToolsWidth, ToolsPanel.ToolsPanelType.VERTICAL,
                 leftToolsButtonsUp, leftToolsButtonsDown,
                 verticalToolsHGap1, verticalToolsVGap1, verticalToolsHGap2, verticalToolsVGap2);
-
     }
 
     private void initRightTools() {
@@ -140,6 +139,7 @@ public class CorePanel extends JDesktopPane {
                 horizontalToolsHGap1, horizontalToolsVGap1, horizontalToolsHGap2, horizontalToolsVGap2,
                 createPlaceholderLabel(leftToolsWidth, bottomToolsHeight),
                 createPlaceholderLabel(rightToolsWidth, bottomToolsHeight));
+        bottomTools.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
     }
 
     private void initMainPane() {
@@ -149,7 +149,6 @@ public class CorePanel extends JDesktopPane {
 
         mainDisplayPanel = new JPanel();
         mainDisplayPanel.setBackground(Color.green);
-
 
         centerSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // 设定为左右拆分布局
         centerSplitPane.setBorder(null);
