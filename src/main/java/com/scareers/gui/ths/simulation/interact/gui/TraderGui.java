@@ -162,6 +162,7 @@ public class TraderGui extends JFrame {
                 mainFunc.flushBounds();
                 mainDisplay.flushBounds();
                 mainFunc.show();
+                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red,3));
                 mainDisplay.show();
 
 
