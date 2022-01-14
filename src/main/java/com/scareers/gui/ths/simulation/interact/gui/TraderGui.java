@@ -6,7 +6,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -126,7 +126,7 @@ public class TraderGui extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
 
-                VerticalFuncFrameS mainFunc = new VerticalFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
+                RightFuncFrameS mainFunc = new RightFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
                         4096,
                         4096, 50
                         , false) {
@@ -141,7 +141,7 @@ public class TraderGui extends JFrame {
                         this.add(this.centerComponent, BorderLayout.CENTER);
                     }
                 };
-                VerticalFuncFrameS mainDisplay = new VerticalFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
+                RightFuncFrameS mainDisplay = new RightFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
                         0.8,
                         4096,
                         4096, 100

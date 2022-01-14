@@ -23,8 +23,9 @@ import java.awt.*;
 @Getter
 public abstract class FuncFrameS extends JInternalFrame {
     public enum OrientationType {
-        VERTICAL,
-        HORIZONTAL
+        VERTICAL_RIGHT, // 右侧功能栏, 编辑区也属于此, 常规尺寸较大且layer较低且无标题栏
+        VERTICAL_LEFT, // 左侧功能栏,  需要与编辑区尺寸互动
+        HORIZONTAL_BOTTOM // 底部功能栏
     }
 
     protected static final Log log = LogUtil.getLogger();

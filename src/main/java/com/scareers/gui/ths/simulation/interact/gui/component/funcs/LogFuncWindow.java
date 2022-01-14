@@ -1,8 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncFrameS;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.BottomFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.DisplayForLog;
 
 import javax.swing.*;
@@ -20,7 +19,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  * @date: 2022/1/13/013-04:41:26
  */
 
-public class LogFuncWindow extends HorizontalFuncFrameS {
+public class LogFuncWindow extends BottomFuncFrameS {
     private static LogFuncWindow INSTANCE;
 
     private LogFuncWindow(TraderGui mainWindow, String title, boolean resizable, boolean closable, boolean maximizable,

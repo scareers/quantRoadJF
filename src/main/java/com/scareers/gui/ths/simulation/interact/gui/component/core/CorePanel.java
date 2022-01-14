@@ -2,7 +2,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfCorePane;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
 /**

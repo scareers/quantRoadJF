@@ -1,8 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.HorizontalFuncFrameS;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,7 +16,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
-public class DatabaseFuncWindow extends VerticalFuncFrameS {
+public class DatabaseFuncWindow extends RightFuncFrameS {
     private static DatabaseFuncWindow INSTANCE;
 
     private DatabaseFuncWindow(TraderGui mainWindow, String title,

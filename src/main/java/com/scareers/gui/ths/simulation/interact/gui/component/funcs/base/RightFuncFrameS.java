@@ -14,14 +14,14 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * description: 垂直窗口. 常用于右侧工具栏
+ * description: 右边纵向子功能栏界面, 继承自 JInternalFrame.
  *
  * @author: admin
  * @date: 2022/1/13/013-09:02:09
  */
 @Setter
 @Getter
-public abstract class VerticalFuncFrameS extends FuncFrameS {
+public abstract class RightFuncFrameS extends FuncFrameS {
     // 需要提供
     int autoMaxWidth;
     int autoMinWidth;
@@ -47,12 +47,12 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
      * @param maximizable
      * @param iconifiable
      */
-    protected VerticalFuncFrameS(TraderGui mainWindow, String title,
-                                 boolean resizable, boolean closable, // JInternalFrame
-                                 boolean maximizable, boolean iconifiable,
-                                 int funcToolsHeight, double preferWidthScale, // 自身
-                                 int autoMinWidth, int autoMaxWidth,
-                                 Integer layer
+    protected RightFuncFrameS(TraderGui mainWindow, String title,
+                              boolean resizable, boolean closable, // JInternalFrame
+                              boolean maximizable, boolean iconifiable,
+                              int funcToolsHeight, double preferWidthScale, // 自身
+                              int autoMinWidth, int autoMaxWidth,
+                              Integer layer
     ) {
         this(mainWindow, title,
                 resizable, closable, // JInternalFrame
@@ -62,14 +62,14 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
                 layer, true); // 默认注册到mainPane
     }
 
-    protected VerticalFuncFrameS(TraderGui mainWindow, String title,
-                                 boolean resizable, boolean closable, // JInternalFrame
-                                 boolean maximizable, boolean iconifiable,
-                                 int funcToolsHeight, double preferWidthScale, // 自身
-                                 int autoMinWidth, int autoMaxWidth,
-                                 Integer layer, boolean addToMainPane
+    protected RightFuncFrameS(TraderGui mainWindow, String title,
+                              boolean resizable, boolean closable, // JInternalFrame
+                              boolean maximizable, boolean iconifiable,
+                              int funcToolsHeight, double preferWidthScale, // 自身
+                              int autoMinWidth, int autoMaxWidth,
+                              Integer layer, boolean addToMainPane
     ) {
-        super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
+        super(mainWindow, OrientationType.VERTICAL_RIGHT, title, resizable, closable, maximizable, iconifiable);
         initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
         initCenterComponent(); // abstract
         initOtherChildren();
@@ -110,7 +110,7 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
      * @return
      */
     protected List<JButton> getToolsButtons1() {
-        VerticalFuncFrameS frame = this;
+        RightFuncFrameS frame = this;
         JButton resetBounds = ButtonFactory.getButton("置");
         resetBounds.setToolTipText("重置位置");
 

@@ -14,14 +14,14 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * description: 垂直功能界面, 依附于主界面右侧, layer > 编辑器 , layer < 水平功能界面
+ * description: 底部横向子功能栏界面, 继承自 JInternalFrame.
  *
  * @author: admin
  * @date: 2022/1/13/013-09:02:09
  */
 @Setter
 @Getter
-public abstract class HorizontalFuncFrameS extends FuncFrameS {
+public abstract class BottomFuncFrameS extends FuncFrameS {
     // 需要提供
     int autoMaxHight; // 自动增加可达到最大高度
     int autoMinHight; // 自动减小可达到最小高度
@@ -47,14 +47,14 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
      * @param maximizable
      * @param iconifiable
      */
-    protected HorizontalFuncFrameS(TraderGui mainWindow, String title,
-                                   boolean resizable, boolean closable, // JInternalFrame
-                                   boolean maximizable, boolean iconifiable,
-                                   int funcToolsWidth, double preferHeightScale, // 自身
-                                   int autoMinHeight, int autoMaxHeight,
-                                   Integer layer
+    protected BottomFuncFrameS(TraderGui mainWindow, String title,
+                               boolean resizable, boolean closable, // JInternalFrame
+                               boolean maximizable, boolean iconifiable,
+                               int funcToolsWidth, double preferHeightScale, // 自身
+                               int autoMinHeight, int autoMaxHeight,
+                               Integer layer
     ) {
-        super(mainWindow, OrientationType.HORIZONTAL, title, resizable, closable, maximizable, iconifiable);
+        super(mainWindow, OrientationType.HORIZONTAL_BOTTOM, title, resizable, closable, maximizable, iconifiable);
         initAttrs(funcToolsWidth, preferHeightScale, autoMinHeight, autoMaxHeight);
         initCenterComponent(); // abstract
         initOtherChildren();
@@ -93,7 +93,7 @@ public abstract class HorizontalFuncFrameS extends FuncFrameS {
      * @return
      */
     protected List<JButton> getToolsButtons1() {
-        HorizontalFuncFrameS frame = this;
+        BottomFuncFrameS frame = this;
         JButton resetBounds = ButtonFactory.getButton("置");
         resetBounds.setToolTipText("重置位置");
 
