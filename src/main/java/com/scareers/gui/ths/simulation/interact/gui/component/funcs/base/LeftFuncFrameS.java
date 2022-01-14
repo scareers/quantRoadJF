@@ -21,7 +21,7 @@ import lombok.Setter;
 public abstract class LeftFuncFrameS extends RightFuncFrameS {
     // 对比常规的 RightFuncFrameS 新增参数: 可控高度一半
     // 默认全高. 当按钮位于左侧工具栏下方时, 应当 true, 以显示一半高度, 该属性请根据需要调用set设置,不在构造器中
-    boolean halfHeight = false;  // 请根据需要显示调用set方法设置该值. 若按钮位置变化,也应当实时读取位置确定是否全高!
+    boolean halfHeight;  // 请根据需要显示调用set方法设置该值. 若按钮位置变化,也应当实时读取位置确定是否全高!
 
     // 构造器相同
     protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
@@ -41,7 +41,7 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
                 autoMinWidth, autoMaxWidth, layer, addToMainPane); // 将首次调用flushBounds, 此时默认全高
         this.halfHeight = halfHeight;
         if (halfHeight) {
-            this.flushBounds(true); // 若半高则 将第二次调用
+            this.flushBounds(true); // 若半高则 将第二次调用, 此时已经修改
         }
     }
 
