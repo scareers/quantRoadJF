@@ -177,6 +177,7 @@ public class TraderGui extends JFrame {
                     @SneakyThrows
                     @Override
                     public void componentResized(ComponentEvent e) {
+                        System.out.println("xxx");
                         for (FuncFrameS dialog : mainWindow.getCorePanel().getLeftFuncFrames()) { // 左侧功能窗口, 也刷新
                             dialog.flushBounds();
                         }
