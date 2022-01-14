@@ -27,17 +27,22 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
     protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
                              boolean maximizable,
                              boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
-                             int autoMaxWidth, Integer layer) {
-        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer);
+                             int autoMaxWidth, Integer layer, boolean halfHeight) {
+        this(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
+                autoMinWidth, autoMaxWidth, layer, true, halfHeight);
+
     }
 
     protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
                              boolean maximizable,
                              boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
-                             int autoMaxWidth, Integer layer, boolean addToMainPane) {
+                             int autoMaxWidth, Integer layer, boolean addToMainPane, boolean halfHeight) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer, addToMainPane);
+                autoMinWidth, autoMaxWidth, layer, addToMainPane); // 将首次调用flushBounds, 此时默认全高
+        this.halfHeight = halfHeight;
+        if (halfHeight) {
+            this.flushBounds(true); // 若半高则 将第二次调用
+        }
     }
 
 
