@@ -157,8 +157,12 @@ public class TraderGui extends JFrame {
                         this.add(this.centerComponent, BorderLayout.CENTER);
                     }
                 }; // 绑定2原始
-                mainWindow.getCorePanel().getMainPane().add(mainFunc, layerOfCorePane, 50);
-                mainWindow.getCorePanel().getMainPane().add(mainDisplay, layerOfCorePane, 100);
+                mainWindow.getCorePanel().getMainPane().add(mainFunc, 50, 0);
+                mainWindow.getCorePanel().getMainPane().add(mainDisplay, 100, 0);
+                mainFunc.flushBounds();
+                mainDisplay.flushBounds();
+                mainFunc.show();
+                mainDisplay.show();
 
 
                 ThreadUtil.execAsync(() -> {
