@@ -59,7 +59,9 @@ public abstract class RightFuncFrameS extends FuncFrameS {
                 maximizable, iconifiable,
                 funcToolsHeight, preferWidthScale, // 自身
                 autoMinWidth, autoMaxWidth,
-                layer, true); // 默认注册到mainPane
+                layer, true, true);
+        // 默认注册到mainPane,
+        // 且注册到 FuncFrames, 使得bounds可自动刷新
     }
 
     protected RightFuncFrameS(TraderGui mainWindow, String title,
@@ -67,7 +69,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
                               boolean maximizable, boolean iconifiable,
                               int funcToolsHeight, double preferWidthScale, // 自身
                               int autoMinWidth, int autoMaxWidth,
-                              Integer layer, boolean addToMainPane
+                              Integer layer, boolean addToMainPane, boolean bindToFuncFrames
     ) {
         super(mainWindow, OrientationType.VERTICAL_RIGHT, title, resizable, closable, maximizable, iconifiable);
         this.preferWidth = (int) (this.mainWindow.getHeight() * preferWidthScale); // flushBounds()中重复调用.
@@ -78,6 +80,8 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
         if (addToMainPane) { // 可暂时不注册
             this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+        }
+        if (bindToFuncFrames) {
             this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
         }
         this.flushBounds(true); // 首次刷新, 将采用默认尺寸

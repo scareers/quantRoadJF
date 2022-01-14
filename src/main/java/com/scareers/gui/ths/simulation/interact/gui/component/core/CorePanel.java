@@ -68,8 +68,10 @@ public class CorePanel extends JDesktopPane {
     JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
     MainDisplayWindow mainDisplayWindow; // 该属性应当实例化后, 被手动设定!
 
-    // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置, 逻辑上 与 JDesktopPane mainPane  绑定
+    // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置, 逻辑上 与 JDesktopPane mainPane  绑定, // 下+右
     CopyOnWriteArraySet<FuncFrameS> funcFrames = new CopyOnWriteArraySet<>();
+    // 左功能组件列表, 应当在 mainDisplayWindow 的size回调中刷新bounds
+    CopyOnWriteArraySet<FuncFrameS> leftFuncFrames = new CopyOnWriteArraySet<>();
 
     public CorePanel(int mainFuncPanelDefaultWidth, int centerSplitPaneDividerSize,
                      int leftToolsWidth, int rightToolsWidth, int bottomToolsHeight,

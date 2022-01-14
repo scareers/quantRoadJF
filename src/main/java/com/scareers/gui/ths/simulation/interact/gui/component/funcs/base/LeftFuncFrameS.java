@@ -29,20 +29,24 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
                              boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
                              int autoMaxWidth, Integer layer, boolean halfHeight) {
         this(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer, true, halfHeight);
+                autoMinWidth, autoMaxWidth, layer, false, halfHeight);
+
 
     }
 
     protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
                              boolean maximizable,
                              boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
-                             int autoMaxWidth, Integer layer, boolean addToMainPane, boolean halfHeight) {
+                             int autoMaxWidth, Integer layer, boolean addToMainPane,
+                             boolean halfHeight) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer, addToMainPane); // 将首次调用flushBounds, 此时默认全高
+                autoMinWidth, autoMaxWidth, layer, addToMainPane, false); // 将首次调用flushBounds, 此时默认全高
+        // 左侧功能区, 并不放入 FuncFrames, 在 mainPanesize改变时刷新, 而放入 leftFuncFrames, 在 mainDisplay改变时刷新尺寸!
         this.halfHeight = halfHeight;
         if (halfHeight) {
             this.flushBounds(true); // 若半高则 将第二次调用, 此时已经修改
         }
+        this.getMainWindow().getCorePanel().getLeftFuncFrames().add(this);
     }
 
     /**
