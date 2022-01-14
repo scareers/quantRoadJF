@@ -27,10 +27,8 @@ public class LogFuncWindow extends BottomFuncFrameS {
                           int autoMaxHight, Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsWidth, preferHeightScale,
                 autoMinHight, autoMaxHight, layer);
-        this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
-    // DisplayForLog jDisplayForLog;  工厂方法不控制 刷新与显示, 请手动调用
     public static LogFuncWindow getInstance(TraderGui mainWindow, String title,
                                             boolean resizable, boolean closable, // JInternalFrame
                                             boolean maximizable, boolean iconifiable,

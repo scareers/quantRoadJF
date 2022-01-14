@@ -27,7 +27,6 @@ public class DatabaseFuncWindow extends RightFuncFrameS {
                                Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
                 autoMinWidth, autoMaxWidth, layer);
-        this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
     // 模拟数据库控件

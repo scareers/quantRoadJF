@@ -78,6 +78,7 @@ public abstract class RightFuncFrameS extends FuncFrameS {
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
         if (addToMainPane) { // 可暂时不注册
             this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+            this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
         }
         this.flushBounds(true); // 首次刷新, 将采用默认尺寸
     }

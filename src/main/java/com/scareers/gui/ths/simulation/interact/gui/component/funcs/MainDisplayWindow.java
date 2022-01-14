@@ -29,7 +29,6 @@ public class MainDisplayWindow extends RightFuncFrameS {
                               Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
                 autoMinWidth, autoMaxWidth, layer);
-        this.getMainWindow().getCorePanel().getFuncFrames().add(this); // 注册自身, 主界面变化时将自动调用 flushBounds()
     }
 
     // 模拟数据库控件
@@ -47,8 +46,6 @@ public class MainDisplayWindow extends RightFuncFrameS {
                     funcToolsHeight, preferWidthScale, // 自身
                     autoMinWidth, autoMaxWidth, layerOfDatabaseFuncWindow);
         }
-        INSTANCE.flushBounds(); // 均刷新
-        INSTANCE.show(); // 均显示
         return INSTANCE;
     }
 
@@ -63,8 +60,8 @@ public class MainDisplayWindow extends RightFuncFrameS {
     }
 
     @Override
-    protected List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
-        List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
+    protected java.util.List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
+        java.util.List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
         // 可加入其他 button
         return res;
     }
