@@ -6,6 +6,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.VerticalFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -124,6 +125,42 @@ public class TraderGui extends JFrame {
             @SneakyThrows
             @Override
             public void windowOpened(WindowEvent e) {
+
+                VerticalFuncFrameS mainFunc = new VerticalFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
+                        4096,
+                        4096, 50
+                        , false) {
+                    @Override
+                    protected void initCenterComponent() {
+                        JLabel label = new JLabel("我是项目文件树");
+                        label.setForeground(Color.WHITE);
+                        label.setBounds(0, 0, 200, 200);
+                        JPanel jPanel = new JPanel();
+                        jPanel.add(label);
+                        this.centerComponent = jPanel;
+                        this.add(this.centerComponent, BorderLayout.CENTER);
+                    }
+                };
+                VerticalFuncFrameS mainDisplay = new VerticalFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
+                        0.8,
+                        4096,
+                        4096, 100
+                        , false) {
+                    @Override
+                    protected void initCenterComponent() {
+                        JLabel label = new JLabel("我是编辑器");
+                        label.setBounds(0, 0, 200, 200);
+                        label.setForeground(Color.WHITE);
+                        JPanel jPanel = new JPanel();
+                        jPanel.add(label);
+                        this.centerComponent = jPanel;
+                        this.add(this.centerComponent, BorderLayout.CENTER);
+                    }
+                }; // 绑定2原始
+                mainWindow.getCorePanel().getMainPane().add(mainFunc, layerOfCorePane, 50);
+                mainWindow.getCorePanel().getMainPane().add(mainDisplay, layerOfCorePane, 100);
+
+
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushMainPanelBounds(); // 实测必须,否则主内容左侧无法正确初始化

@@ -54,13 +54,30 @@ public abstract class VerticalFuncFrameS extends FuncFrameS {
                                  int autoMinWidth, int autoMaxWidth,
                                  Integer layer
     ) {
+        this(mainWindow, title,
+                resizable, closable, // JInternalFrame
+                maximizable, iconifiable,
+                funcToolsHeight, preferWidthScale, // 自身
+                autoMinWidth, autoMaxWidth,
+                layer, true); // 默认注册到mainPane
+    }
+
+    protected VerticalFuncFrameS(TraderGui mainWindow, String title,
+                                 boolean resizable, boolean closable, // JInternalFrame
+                                 boolean maximizable, boolean iconifiable,
+                                 int funcToolsHeight, double preferWidthScale, // 自身
+                                 int autoMinWidth, int autoMaxWidth,
+                                 Integer layer, boolean addToMainPane
+    ) {
         super(mainWindow, OrientationType.VERTICAL, title, resizable, closable, maximizable, iconifiable);
         initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
         initCenterComponent(); // abstract
         initOtherChildren();
 
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
-        this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+        if (addToMainPane) { // 可暂时不注册
+            this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
+        }
         this.flushBounds(); // abstract
     }
 

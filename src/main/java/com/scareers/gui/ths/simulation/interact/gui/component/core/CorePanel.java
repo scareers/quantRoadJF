@@ -148,37 +148,7 @@ public class CorePanel extends JDesktopPane {
         // 左侧的功能, 例如项目文件树, 固定为 垂直的窗口, 宽度固定倍率为 1.0, 且置于其下. layer == 50
         // 因此, 左侧功能栏本身永恒占满底层mainPane, 而 编辑器功能栏 占据从右向左的较大部分, 初始占据 1.
         // 需要设置, 当左侧功能栏非 数量非null时, editor窗口起点右移. 表面是新的项目窗口撑开了, 实际是编辑器本身右移了
-
-        VerticalFuncFrameS mainFunc = new VerticalFuncFrameS() {
-            @Override
-            protected void initCenterComponent() {
-                JLabel label = new JLabel("我是项目文件树");
-                label.setForeground(Color.WHITE);
-                label.setBounds(0, 0, 200, 200);
-                JPanel jPanel = new JPanel();
-                jPanel.add(label);
-                this.centerComponent = jPanel;
-                this.add(this.centerComponent, BorderLayout.CENTER);
-            }
-        };
-        VerticalFuncFrameS mainDisplay = new VerticalFuncFrameS() {
-            @Override
-            protected void initCenterComponent() {
-                JLabel label = new JLabel("我是编辑器");
-                label.setBounds(0, 0, 200, 200);
-                label.setForeground(Color.WHITE);
-                JPanel jPanel = new JPanel();
-                jPanel.add(label);
-                this.centerComponent = jPanel;
-                this.add(this.centerComponent, BorderLayout.CENTER);
-            }
-        };
-
-
         mainPane = new JDesktopPane(); // 核心层级pane, 原 splitPane 放于其上, 层级为 100, 各窗口应当高于此.
-
-        mainPane.add(mainFunc, layerOfCorePane, 50);
-        mainPane.add(mainDisplay, layerOfCorePane, 100);
     }
 
 
