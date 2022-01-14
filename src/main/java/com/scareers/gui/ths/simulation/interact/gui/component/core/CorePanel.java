@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import lombok.Getter;
 import lombok.Setter;
@@ -63,10 +64,9 @@ public class CorePanel extends JDesktopPane {
     JPanel rightTools; // 右功能区, 按钮列表
     JPanel bottomTools; // 下功能区, 按钮列表
 
-    //    JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
-    // JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
-//    JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
+
     JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
+    MainDisplayWindow mainDisplayWindow; // 该属性应当实例化后, 被手动设定!
 
     // 各个用对话框实现的子功能组件, 注册到队列. 当主界面size变化, 应当重置位置, 逻辑上 与 JDesktopPane mainPane  绑定
     CopyOnWriteArraySet<FuncFrameS> funcFrames = new CopyOnWriteArraySet<>();

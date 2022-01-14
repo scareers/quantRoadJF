@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfDatabaseFuncWindow;
 
@@ -44,6 +45,10 @@ public class DatabaseFuncWindow extends RightFuncFrameS {
                     funcToolsHeight, preferWidthScale, // 自身
                     autoMinWidth, autoMaxWidth, layerOfDatabaseFuncWindow);
         }
+        return INSTANCE;
+    }
+    public static DatabaseFuncWindow getInstance() {
+        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 

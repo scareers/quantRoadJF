@@ -7,8 +7,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfDatabaseFuncWindow;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfMainDisplay;
 
 /**
  * description: 主编辑区/主展示区, 应当继承RightFuncFrameS, 注意其宽度! 且该控件, 在 CorePane实例化(mainPane实例化)后再显式设置!
@@ -44,8 +46,13 @@ public class MainDisplayWindow extends RightFuncFrameS {
                     maximizable, iconifiable,
 
                     funcToolsHeight, preferWidthScale, // 自身
-                    autoMinWidth, autoMaxWidth, layerOfDatabaseFuncWindow);
+                    autoMinWidth, autoMaxWidth, layerOfMainDisplay);
         }
+        return INSTANCE;
+    }
+
+    public static MainDisplayWindow getInstance() { // 快捷方法, 需要创建后
+        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 

@@ -6,6 +6,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -13,6 +14,7 @@ import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
@@ -126,45 +128,51 @@ public class TraderGui extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
 
-                RightFuncFrameS mainFunc = new RightFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
-                        4096,
-                        4096, 50
-                        , false) {
-                    @Override
-                    protected void initCenterComponent() {
-                        JLabel label = new JLabel("我是项目文件树");
-                        label.setForeground(Color.WHITE);
-                        label.setBounds(0, 0, 200, 200);
-                        JPanel jPanel = new JPanel();
-                        jPanel.add(label);
-                        this.centerComponent = jPanel;
-                        this.add(this.centerComponent, BorderLayout.CENTER);
-                    }
-                };
-                RightFuncFrameS mainDisplay = new RightFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
-                        0.8,
-                        4096,
-                        4096, 100
-                        , false) {
-                    @Override
-                    protected void initCenterComponent() {
-                        JLabel label = new JLabel("我是编辑器");
-                        label.setBounds(0, 0, 200, 200);
-                        label.setForeground(Color.WHITE);
-                        JPanel jPanel = new JPanel();
-                        jPanel.add(label);
-                        this.centerComponent = jPanel;
-                        this.add(this.centerComponent, BorderLayout.CENTER);
-                    }
-                }; // 绑定2原始
-                mainWindow.getCorePanel().getMainPane().add(mainFunc, 50, 0);
-                mainWindow.getCorePanel().getMainPane().add(mainDisplay, 100, 0);
-                mainFunc.flushBounds();
-                mainDisplay.flushBounds();
-                mainFunc.show();
-                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red, 3));
-                mainDisplay.show();
-
+//                RightFuncFrameS mainFunc = new RightFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
+//                        4096,
+//                        4096, 50
+//                        , false) {
+//                    @Override
+//                    protected void initCenterComponent() {
+//                        JLabel label = new JLabel("我是项目文件树");
+//                        label.setForeground(Color.WHITE);
+//                        label.setBounds(0, 0, 200, 200);
+//                        JPanel jPanel = new JPanel();
+//                        jPanel.add(label);
+//                        this.centerComponent = jPanel;
+//                        this.add(this.centerComponent, BorderLayout.CENTER);
+//                    }
+//                };
+//                RightFuncFrameS mainDisplay = new RightFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
+//                        0.8,
+//                        4096,
+//                        4096, 100
+//                        , false) {
+//                    @Override
+//                    protected void initCenterComponent() {
+//                        JLabel label = new JLabel("我是编辑器");
+//                        label.setBounds(0, 0, 200, 200);
+//                        label.setForeground(Color.WHITE);
+//                        JPanel jPanel = new JPanel();
+//                        jPanel.add(label);
+//                        this.centerComponent = jPanel;
+//                        this.add(this.centerComponent, BorderLayout.CENTER);
+//                    }
+//                }; // 绑定2原始
+//                mainWindow.getCorePanel().getMainPane().add(mainFunc, 50, 0);
+//                mainWindow.getCorePanel().getMainPane().add(mainDisplay, 100, 0);
+//                mainFunc.flushBounds();
+//                mainDisplay.flushBounds();
+//                mainFunc.show();
+//                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red, 3));
+//                mainDisplay.show();
+                MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
+                        mainWindow, "编辑器", true, true, false, true,
+                        30, 0.8, 200, 4096
+                );
+                mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
+                mainDisplayWindow.flushBounds();
+                mainDisplayWindow.show();
 
                 ThreadUtil.execAsync(() -> {
                     try {

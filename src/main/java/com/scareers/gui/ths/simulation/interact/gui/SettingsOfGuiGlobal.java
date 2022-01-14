@@ -32,4 +32,5 @@ public class SettingsOfGuiGlobal {
     public static Integer layerOfCorePane = 100; // 最低
     public static Integer layerOfLogFuncWindow = 200;
     public static Integer layerOfDatabaseFuncWindow = 150;
+    public static Integer layerOfMainDisplay = 100; // 低
 }
