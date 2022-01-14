@@ -64,7 +64,7 @@ public class CorePanel extends JDesktopPane {
     JPanel bottomTools; // 下功能区, 按钮列表
 
     //    JPanel mainFuncPanel; // 左功能实现区, 常为树形菜单形式! 被 leftTools 按钮们控制
-//    JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
+    // JPanel mainDisplayPanel; // 主要展示区, 对应idea编辑器. Editor
 //    JSplitPane centerSplitPane; // 分开 mainMenuPanel + mainDisplayPanel, 宽度可调
     JDesktopPane mainPane; // 新增核心层级pane, 原 splitPane 置于其中, 约束值 100
 

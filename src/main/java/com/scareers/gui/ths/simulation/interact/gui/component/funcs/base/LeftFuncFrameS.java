@@ -27,158 +27,52 @@ import java.util.List;
  */
 @Setter
 @Getter
-public abstract class LeftFuncFrameS extends FuncFrameS {
-    // 需要提供
-    int autoMaxWidth;
-    int autoMinWidth;
-    double preferWidthScale;
-    int funcToolsHeight;
+public abstract class LeftFuncFrameS extends RightFuncFrameS {
+    // 对比常规的 RightFuncFrameS 新增参数: 可控高度一半
+    // 默认全高. 当按钮位于左侧工具栏下方时, 应当 true, 以显示一半高度, 该属性请根据需要调用set设置,不在构造器中
+    boolean halfHeight = false;  // 请根据需要显示调用set方法设置该值. 若按钮位置变化,也应当实时读取位置确定是否全高!
 
-    // 自动初始化
-    int preferWidth; // mainPane 宽度*倍率
-    ToolsPanel funcTools; // 工具按钮组
-
-
-    // 抽象方法实现初始化
-    protected Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
-
-
-    /**
-     * 全参构造器, 方向确定为水平
-     *
-     * @param mainWindow
-     * @param title
-     * @param resizable
-     * @param closable
-     * @param maximizable
-     * @param iconifiable
-     */
-    protected LeftFuncFrameS(TraderGui mainWindow, String title,
-                             boolean resizable, boolean closable, // JInternalFrame
-                             boolean maximizable, boolean iconifiable,
-                             int funcToolsHeight, double preferWidthScale, // 自身
-                             int autoMinWidth, int autoMaxWidth,
-                             Integer layer
-    ) {
-        this(mainWindow, title,
-                resizable, closable, // JInternalFrame
-                maximizable, iconifiable,
-                funcToolsHeight, preferWidthScale, // 自身
-                autoMinWidth, autoMaxWidth,
-                layer, true); // 默认注册到mainPane
+    // 构造器相同
+    protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
+                             boolean maximizable,
+                             boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
+                             int autoMaxWidth, Integer layer) {
+        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
+                autoMinWidth, autoMaxWidth, layer);
     }
 
-    protected LeftFuncFrameS(TraderGui mainWindow, String title,
-                             boolean resizable, boolean closable, // JInternalFrame
-                             boolean maximizable, boolean iconifiable,
-                             int funcToolsHeight, double preferWidthScale, // 自身
-                             int autoMinWidth, int autoMaxWidth,
-                             Integer layer, boolean addToMainPane
-    ) {
-        super(mainWindow, OrientationType.VERTICAL_RIGHT, title, resizable, closable, maximizable, iconifiable);
-        initAttrs(funcToolsHeight, preferWidthScale, autoMinWidth, autoMaxWidth);
-        initCenterComponent(); // abstract
-        initOtherChildren();
-
-        this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
-        if (addToMainPane) { // 可暂时不注册
-            this.mainPane.add(this, layer, 0);  //  JDesktopPane mainPane 放置
-        }
-        this.flushBounds(); // abstract
+    protected LeftFuncFrameS(TraderGui mainWindow, String title, boolean resizable, boolean closable,
+                             boolean maximizable,
+                             boolean iconifiable, int funcToolsHeight, double preferWidthScale, int autoMinWidth,
+                             int autoMaxWidth, Integer layer, boolean addToMainPane) {
+        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
+                autoMinWidth, autoMaxWidth, layer, addToMainPane);
     }
 
-
-    /**
-     * 抽象方法, 创建核心中央组件, 以做子类区分
-     */
-    protected abstract void initCenterComponent();
-
-    protected void initAttrs(int funcToolsHeight, double preferWidthScale, int autoMinWidth, int autoMaxWidth) {
-        this.funcToolsHeight = funcToolsHeight;
-        this.preferWidthScale = preferWidthScale;
-        this.preferWidth = (int) (this.mainWindow.getHeight() * preferWidthScale); // flushBounds()中重复调用.
-        this.autoMinWidth = autoMinWidth;
-        this.autoMaxWidth = autoMaxWidth;
-    }
-
-
-    protected void initOtherChildren() {
-        ToolsPanel.ToolsPanelType toolsPanelType = ToolsPanel.ToolsPanelType.HORIZONTAL;
-        funcTools = new ToolsPanel(funcToolsHeight, toolsPanelType,
-                getToolsButtons1(), getToolsButtons2(),
-                0, 0, 0, 0);
-        this.add(funcTools, BorderLayout.NORTH);
-    }
-
-    /**
-     * 默认实现仅此3按钮, 子类可调用
-     *
-     * @return
-     */
-    protected List<JButton> getToolsButtons1() {
-        LeftFuncFrameS frame = this;
-        JButton resetBounds = ButtonFactory.getButton("置");
-        resetBounds.setToolTipText("重置位置");
-
-        resetBounds.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                frame.flushBounds();
-            }
-        });
-
-        JButton higherButton = ButtonFactory.getButton("左");
-        higherButton.setToolTipText("增大宽度");
-
-        higherButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Rectangle rawbounds = frame.getBounds();
-                int newWidth = Math.min(frame.getWidth() * 2, autoMaxWidth);
-                int difference = newWidth - frame.getWidth();
-                if (difference <= 0) {
-                    return;
-                }
-                frame.setBounds(frame.getX() - difference, frame.getY(), newWidth, frame.getHeight());
-            }
-        });
-
-        JButton shorterButton = ButtonFactory.getButton("右");
-        shorterButton.setToolTipText("减小宽度");
-
-        shorterButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Rectangle rawbounds = frame.getBounds();
-                int newWidth = Math.max(frame.getWidth() / 2, autoMinWidth);
-                int difference = newWidth - frame.getWidth();
-                if (difference >= 0) {
-                    return;
-                }
-                frame.setBounds(frame.getX() - difference, frame.getY(), newWidth, frame.getHeight());
-            }
-        });
-        return Arrays.asList(resetBounds, higherButton, shorterButton);
-    }
-
-    protected List<JButton> getToolsButtons2() {
-        return Arrays.asList();
-    }
 
     /**
      * 刷新位置, 注意, 自身已经加入 主面板 JDesktopPane 的某一层-0;
      * 因此位置需要依据 mainPane 当前情况刷新
+     *
+     * @noti 应当读取 mainPane宽度-编辑器宽度, 决定宽度,  读取 halfHeight 决定是否半高. 半高时, 其layer应当>全高的组件
+     * @noti preferWidth 本身已经沦为了首次初始化显示时的默认宽度, 且 mainPane应当对应减小宽度.
      */
     @Override
-    public void flushBounds() {
-        this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
-        this.setBounds(
-                //  x = mainPane宽度 - 自身宽度
-                mainPane.getWidth() - preferWidth,
-                // y = 0
-                0,
-                preferWidth,
-                // 高度 = mainPane 高度
-                mainPane.getHeight());
+    public void flushBounds() { // 默认为非首次刷新的逻辑. 因此实例化时, 应当调用首次刷新的逻辑
+        flushBounds(false);
+    }
+
+    public void flushBounds(boolean first) {
+        if (first) {
+            this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale);
+            this.setBounds(
+                    0,
+                    // x,y = 0
+                    0,
+                    preferWidth,
+                    // 高度 = mainPane 高度
+                    mainPane.getHeight()); // 位于左边.
+
+        }
     }
 }
