@@ -51,14 +51,18 @@ public abstract class LeftFuncFrameS extends RightFuncFrameS {
      */
     @Override
     public void flushBounds(boolean first) {
-        if (first) { // 首次刷新, 将读取mainDisplay是否被设定, 若未设定, 则采取默认宽度, 否则同 false.
-            this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale); // 需要更新默认高度
-            actualFlush(preferWidth);
-        } else {
-            double oldScale = (double) this.getWidth() / this.mainPaneWidth; // 注意, 需要读取上次保存的 旧的mainPane尺寸
-            int newWidth = (int) (oldScale * this.mainPane.getWidth()); // 新的尺寸计算, 等比缩放
-            actualFlush(newWidth);
+        if (first) {
+            // 首次刷新, 将读取mainDisplay是否被设定, 若未设定, 则采取默认宽度, 否则同 false, 读取主编辑器宽度刷新
+            if (this.mainWindow.getCorePanel().getMainDisplayWindow() == null) {
+                this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale); // 需要更新默认高度
+                actualFlush(preferWidth);
+                return;
+            }
         }
+
+        int newWidth = mainPane.getWidth() - this.mainWindow.getCorePanel().getMainDisplayWindow().getWidth();
+        actualFlush(newWidth);
+
         // 无论如何, 均需要刷新mainPane尺寸, 做下一次更新时的 "旧尺寸"
         this.mainPaneWidth = this.mainPane.getWidth();
         this.mainPaneHeight = this.mainPane.getHeight(); // 刷新manePane尺寸
