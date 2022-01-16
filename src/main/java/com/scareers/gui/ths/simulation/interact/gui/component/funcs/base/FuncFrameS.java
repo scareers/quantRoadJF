@@ -13,7 +13,7 @@ import java.awt.*;
  * description: 自定义 FuncFrameS 抽象类, 逻辑意义是: 各种子功能使用的组件, 基组件是 JInternalFrame
  * 主要添加刷新 bounds 等方法, 该方法从 主窗口获取信息, 并更新自身 bounds.
  * 各个子功能的子窗口, 均需要继承此抽象类. 以便主窗口统一控制.
- * 当主窗口 reSize, 则遍历所有绑定的 FuncFrameS, 它们均调用 flushBounds(), 重绘.
+ * 当主窗口 reSize, 则遍历所有绑定的 FuncFrameS, 它们均调用 flushBounds(),  重绘.
  *
  * @author: admin
  * @date: 2022/1/13/013-07:27:42
