@@ -1,12 +1,11 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.BottomFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.DisplayForLog;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
-import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,36 +18,13 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  * @date: 2022/1/13/013-04:41:26
  */
 
-public class LogFuncWindow extends BottomFuncFrameS {
-    private static LogFuncWindow INSTANCE;
-
-    private LogFuncWindow(TraderGui mainWindow, String title, boolean resizable, boolean closable, boolean maximizable,
-                          boolean iconifiable, int funcToolsWidth, double preferHeightScale, int autoMinHight,
-                          int autoMaxHight, Integer layer) {
-        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsWidth, preferHeightScale,
-                autoMinHight, autoMaxHight, layer);
-    }
-
-    public static LogFuncWindow getInstance(TraderGui mainWindow, String title,
-                                            boolean resizable, boolean closable, // JInternalFrame
-                                            boolean maximizable, boolean iconifiable,
-
-                                            int funcToolsWidth, double preferHeightScale, // 自身
-                                            int autoMinHight, int autoMaxHight) {
-        if (INSTANCE == null) {
-            INSTANCE = new LogFuncWindow(mainWindow, title,
-                    resizable, closable, // JInternalFrame
-                    maximizable, iconifiable,
-
-                    funcToolsWidth, preferHeightScale, // 自身
-                    autoMinHight, autoMaxHight, layerOfLogFuncWindow);
-        }
-        return INSTANCE;
-    }
-
-    public static LogFuncWindow getInstance() {
-        Objects.requireNonNull(INSTANCE);
-        return INSTANCE;
+public class LogFuncWindow extends FuncFrameS {
+    public LogFuncWindow(Type type, String title, TraderGui mainWindow,
+                            FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                            boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
+                            int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+        super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }
 
     @Override
@@ -59,14 +35,12 @@ public class LogFuncWindow extends BottomFuncFrameS {
     }
 
     @Override
-    protected List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
-        List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
-        // 可加入其他 button
-        return res;
+    protected List<FuncButton> getToolButtons1() { // 工具栏可重写(两组按钮)
+        return super.defaultToolsButtonList1();
     }
 
     @Override
-    protected List<JButton> getToolsButtons2() {
-        return super.getToolsButtons2();
+    protected List<FuncButton> getToolButtons2() {
+        return super.defaultToolsButtonList2();
     }
 }

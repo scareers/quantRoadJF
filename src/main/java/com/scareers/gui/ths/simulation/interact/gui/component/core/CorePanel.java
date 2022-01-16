@@ -3,7 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.core;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS2;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -24,7 +24,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.cr
  * 1. 实例化时, 仅实例化 3大功能栏(且不含按钮). + JDesktopPane(层级布局,位于CENTER),
  * 2. 主编辑区+各大功能按钮于 主界面windowOpened 后回调添加. 3方功能栏均于 按钮回调形式添加;  最初状态, 整块CENTER区空白.
  * 3. 3大功能栏 宽度(左右)  高度(下) 可调. 且下功能栏头尾使用占位 Label
- * 4. 功能栏按钮, 以及编辑区MainDisplayWindow , 均使用 FuncFrameS extends JInternalFrame, 配合 JDesktopPane mainPane
+ * 4. 功能栏按钮, 以及编辑区MainDisplayWindow , 均使用 FuncFrameS0 extends JInternalFrame, 配合 JDesktopPane mainPane
  * 5. 功能按钮+实现框 永不真正意义的删除, 最多仅不可见
  *
  * @author: admin
@@ -63,7 +63,7 @@ public class CorePanel extends JDesktopPane {
     CopyOnWriteArrayList<FuncButton> bottomLeftButtonList = new CopyOnWriteArrayList<>();
     CopyOnWriteArrayList<FuncButton> bottomRightButtonList = new CopyOnWriteArrayList<>(); // 底部工具栏后排按钮列表
     // key:value -> 各大按钮对象:其对应功能栏, 均使用单例模式! 自行完成状态变化. 注意 FuncButton的equals和hashCode未曾重写过
-    ConcurrentHashMap<FuncButton, FuncFrameS2> funcPool = new ConcurrentHashMap<>();
+    ConcurrentHashMap<FuncButton, FuncFrameS> funcPool = new ConcurrentHashMap<>();
 
     // 自动计算的属性
     ToolsPanel leftTools; // 左功能区, 按钮列表
@@ -132,7 +132,7 @@ public class CorePanel extends JDesktopPane {
      */
     public void flushAllFuncFrameBounds() {
         // 所有功能框刷新 位置.
-        for (FuncFrameS2 dialog : funcPool.values()) { // 其他关联的功能窗口, 也刷新
+        for (FuncFrameS dialog : funcPool.values()) { // 其他关联的功能窗口, 也刷新
             dialog.flushBounds();
         }
     }
@@ -152,15 +152,29 @@ public class CorePanel extends JDesktopPane {
 
     /**
      * 注册 功能按钮 + 对应功能实现框, 分发函数
+     * funcFrameS 可null
      *
      * @param funcButton
      * @param funcFrameS
      */
-    public void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS2 funcFrameS) {
+    public void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS funcFrameS) {
+        registerFuncBtnAndCorrespondFuncFrame(funcButton, funcFrameS, null);
+        // 常规注册, 前2参数成对非null传递. 第三参数null. 于 FuncFrameS 实例化时调用
+    }
+
+    public void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS funcFrameS,
+                                                      FuncFrameS.Type defaultType) {
+        // defaultType 非null时, 代表首次, FuncFrameS==null尚不存在, 需要指定 FuncButton 默认位置
         synchronized (funcChangeLock) {
             removeFuncFromSixList(funcButton);
-            funcPool.put(funcButton, funcFrameS); // 添加/更新到功能池
-            switch (funcFrameS.getType()) {
+            if (funcFrameS != null) {
+                funcPool.put(funcButton, funcFrameS); // 添加/更新到功能池
+            }
+            FuncFrameS.Type determinType = defaultType;
+            if (defaultType == null) {
+                determinType = funcFrameS.getType();
+            }
+            switch (determinType) {
                 case LEFT_TOP:
                     leftTopButtonList.add(funcButton); // 添加到正确的列表
                     leftTools.getPanel1().add(funcButton); // 添加组件到侧边栏并显示
@@ -186,7 +200,7 @@ public class CorePanel extends JDesktopPane {
                     bottomTools.getPanel2().add(funcButton);
                     break;
                 default:
-                    log.error("致命错误: 未知 FuncFrameS Type");
+                    log.error("致命错误: 未知 FuncFrameS0 Type");
             }
         }
     }

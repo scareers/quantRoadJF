@@ -17,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * --> "功能栏 == 按钮组"  , 均分为两个内部 panel, 管理着向两侧浮动的 按钮们.
  *
  * @key1 该Panel 不再管理自身2大按钮列表, 改为由 CorePane 管理, 本身只做 panel1和2管理
- * @key2 3侧功能栏的按钮列表对象由CorePane维护, 子功能框的按钮列表由 FuncFrameS 维护
+ * @key2 3侧功能栏的按钮列表对象由CorePane维护, 子功能框的按钮列表由 FuncFrameS0 维护
  * @author: admin
  * @date: 2022/1/13/013-02:51:06
  * @see ButtonFactory 注意, 传递的button, 应当与本对象 横向纵向相匹配 , ButtonFactory.getButton("对象查看", true) 第二参数
@@ -92,7 +92,6 @@ public class ToolsPanel extends JPanel {
         this.add(panel2);
     }
 
-    public
 
     public enum ToolsPanelType {
         VERTICAL,

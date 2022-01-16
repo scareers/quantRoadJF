@@ -8,7 +8,6 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFunc
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.LeftFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -74,6 +73,7 @@ public class TraderGui extends JFrame {
     JLabel pathLabel; // 路径栏, 待完善
     JLabel statusBar; // 状态栏, 待完善
     CorePanel corePanel; // 核心组件
+    JDesktopPane mainPane;
 
     private ImageIcon imageIcon; // 图标
     private TrayIcon trayIcon; // 系统托盘
@@ -112,9 +112,9 @@ public class TraderGui extends JFrame {
         statusBar.setFont(new Font("宋体", Font.BOLD, 15));
         statusBar.setForeground(Color.RED);
         statusBar.setPreferredSize(new Dimension(100, 20));
-//        statusBar.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
 
         corePanel = buildCorePanel();
+        this.mainPane = corePanel.getMainPane();
         this.add(pathLabel, BorderLayout.NORTH);
         this.add(corePanel, BorderLayout.CENTER);
         this.add(statusBar, BorderLayout.SOUTH);
@@ -130,8 +130,8 @@ public class TraderGui extends JFrame {
             public void windowOpened(WindowEvent e) {
 
                 MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
-                        mainWindow, "编辑器", true, true, false, true,
-                        30, 0.8, 200, 4096
+                        "编辑器", mainWindow, true, true, false, true,
+                        4096, 100, 1.0, 30, layerOfMainDisplay
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
                 // 尺寸改变回调, 调节左侧功能栏
@@ -139,36 +139,57 @@ public class TraderGui extends JFrame {
                     @SneakyThrows
                     @Override
                     public void componentResized(ComponentEvent e) {
-                        for (FuncFrameS dialog : mainWindow.getCorePanel().getLeftFuncFrames()) { // 左侧功能窗口, 也刷新
-                            dialog.flushBounds();
+                        CorePanel corePanel = mainWindow.getCorePanel();
+                        for (FuncButton btn : corePanel.getLeftTopButtonList()) { // 左侧功能窗口,刷新 左上 + 左下
+                            corePanel.getFuncPool().get(btn).flushBounds();
+                        }
+                        for (FuncButton btn : corePanel.getLeftBottomButtonList()) {
+                            corePanel.getFuncPool().get(btn).flushBounds();
                         }
                     }
                 });
 
-                mainDisplayWindow.flushBounds();
-                mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2 ));
+                mainDisplayWindow.flushBounds(true);
+                mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2));
                 mainDisplayWindow.show();
 
+
+                FuncButton logsFunc = ButtonFactory.getButton("日志输出");
+                corePanel.registerFuncBtnAndCorrespondFuncFrame(logsFunc, null);
+                logsFunc.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        LogFuncWindow logFuncWindow =  // 窗口启动时已经初始化, 单例模式可调用无参方法
+                                new LogFuncWindow(FuncFrameS.Type.BOTTOM_LEFT, "logs", mainWindow, logsFunc, true, true,
+                                        false,
+                                        true,
+                                        1200, 100, 0.3, 30, false, layerOfLogFuncWindow);
+                        logFuncWindow.flushBounds(true); // 实例化时首次, 今次不首次. 若要重置应当调用首次
+                        logFuncWindow.show();
+                    }
+                });
+
+                FuncButton databaseFunc = ButtonFactory.getButton("数据库", true);
+                corePanel.registerFuncBtnAndCorrespondFuncFrame(databaseFunc, null);
+                databaseFunc.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        DatabaseFuncWindow databaseFuncWindow = new DatabaseFuncWindow(FuncFrameS.Type.RIGHT_TOP,
+                                "database", mainWindow, databaseFunc, true,
+                                true, false, true,
+                                1500, 100, 0.2, 30, false, layerOfDatabaseFuncWindow);
+                        databaseFuncWindow.flushBounds(true);
+                        databaseFuncWindow.show();
+                    }
+                });
 
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
-                        // 日志控件立即初始化, 暂不显示
-//                        LogFuncWindow logFuncWindow = LogFuncWindow.getInstance(mainWindow, "logs",
-//                                true, true, false, true,
-//                                30, 0.3, 100, 1200);
-//                        logFuncWindow.flushBounds(true); // 首次刷新
-////                        logFuncWindow.show(); // 暂时不显示
-//
-//                        DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow
-//                                .getInstance(mainWindow, "database", true,
-//                                        true, false, true,
-//                                        30, 0.2, 100, 1500);
-//                        databaseFuncWindow.flushBounds(true);
-//                        databaseFuncWindow.show();
 
-                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+
+//                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -225,77 +246,7 @@ public class TraderGui extends JFrame {
      * @return
      */
     public CorePanel buildCorePanel() {
-        TraderGui mainWindow = this;
-
-        FuncButton logsFunc = ButtonFactory.getButton("日志输出");
-        logsFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                LogFuncWindow logFuncWindow =  // 窗口启动时已经初始化, 单例模式可调用无参方法
-                        LogFuncWindow.getInstance(mainWindow, "logs",
-                                true, true, false, true,
-                                30, 0.3, 100, 1200);
-                logFuncWindow.flushBounds(); // 实例化时首次, 今次不首次. 若要重置应当调用首次
-                logFuncWindow.show();
-            }
-        });
-
-        FuncButton terminalFunc = ButtonFactory.getButton("终端命令行");
-        terminalFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                log.info("not implement: 点击了终端命令行");
-            }
-        });
-
-        FuncButton databaseFunc = ButtonFactory.getButton("数据库", true);
-        databaseFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow.getInstance(mainWindow, "database", true,
-                        true, false, true,
-                        30, 0.2, 100, 1500);
-                databaseFuncWindow.flushBounds();
-                databaseFuncWindow.show();
-            }
-        });
-
-        FuncButton observerFunc = ButtonFactory.getButton("对象查看", true);
-        observerFunc.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("xxx");
-                LeftFuncFrameS x = new LeftFuncFrameS(mainWindow, "对象列表", true, true, false, true,
-                        30, 100, 2000, 500, 150, true,false) {
-                    @Override
-                    protected void initCenterComponent() {
-                        JLabel label = new JLabel("我是对象");
-                        label.setForeground(Color.WHITE);
-                        label.setBounds(0, 0, 200, 200);
-                        JPanel jPanel = new JPanel();
-                        jPanel.add(label);
-                        this.centerComponent = jPanel;
-                        this.add(this.centerComponent, BorderLayout.CENTER);
-                    }
-                };
-//                x.setBorder(BorderFactory.createLineBorder(Color.red, 2 ));
-                System.out.println(x.getBounds());
-                x.flushBounds(true);
-                x.flushBounds(false);
-                x.show();
-            }
-        });
-
-
-        return new CorePanel(30, 30, 30,
-                Arrays.asList(observerFunc),
-                Arrays.asList(ButtonFactory.getButton("数据查看", true)),
-                Arrays.asList(databaseFunc),
-                Arrays.asList(ButtonFactory.getButton("书签", true)),
-                Arrays.asList(logsFunc),
-                Arrays.asList(terminalFunc),
-                this
-        );
+        return new CorePanel(30, 30, 30, this);
     }
 
 

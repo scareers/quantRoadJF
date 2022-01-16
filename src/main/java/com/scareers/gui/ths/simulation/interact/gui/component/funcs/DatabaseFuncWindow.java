@@ -1,15 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfDatabaseFuncWindow;
 
 /**
  * description:
@@ -17,39 +14,14 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
-public class DatabaseFuncWindow extends RightFuncFrameS {
-    private static DatabaseFuncWindow INSTANCE;
-
-    private DatabaseFuncWindow(TraderGui mainWindow, String title,
-                               boolean resizable, boolean closable, // JInternalFrame
-                               boolean maximizable, boolean iconifiable,
-                               int funcToolsHeight, double preferWidthScale, // 自身
-                               int autoMinWidth, int autoMaxWidth,
-                               Integer layer) {
-        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer);
-    }
-
-    // 模拟数据库控件
-    public static DatabaseFuncWindow getInstance(TraderGui mainWindow, String title,
-                                                 boolean resizable, boolean closable, // JInternalFrame
-                                                 boolean maximizable, boolean iconifiable,
-                                                 int funcToolsHeight, double preferWidthScale, // 自身
-                                                 int autoMinWidth, int autoMaxWidth
-    ) {
-        if (INSTANCE == null) {
-            INSTANCE = new DatabaseFuncWindow(mainWindow, title,
-                    resizable, closable, // JInternalFrame
-                    maximizable, iconifiable,
-
-                    funcToolsHeight, preferWidthScale, // 自身
-                    autoMinWidth, autoMaxWidth, layerOfDatabaseFuncWindow);
-        }
-        return INSTANCE;
-    }
-    public static DatabaseFuncWindow getInstance() {
-        Objects.requireNonNull(INSTANCE);
-        return INSTANCE;
+public class DatabaseFuncWindow extends FuncFrameS {
+    public DatabaseFuncWindow(Type type, String title, TraderGui mainWindow,
+                              FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                              boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                              double preferScale,
+                              int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+        super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }
 
     @Override
@@ -63,14 +35,12 @@ public class DatabaseFuncWindow extends RightFuncFrameS {
     }
 
     @Override
-    protected java.util.List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
-        java.util.List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
-        // 可加入其他 button
-        return res;
+    protected List<FuncButton> getToolButtons1() { // 工具栏可重写(两组按钮)
+        return super.defaultToolsButtonList1();
     }
 
     @Override
-    protected List<JButton> getToolsButtons2() {
-        return super.getToolsButtons2();
+    protected List<FuncButton> getToolButtons2() {
+        return super.defaultToolsButtonList2();
     }
 }

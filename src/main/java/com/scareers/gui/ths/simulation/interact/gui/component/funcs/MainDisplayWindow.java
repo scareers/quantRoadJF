@@ -2,17 +2,15 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
-import org.apache.maven.settings.Settings;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.thoughtworks.xstream.mapper.Mapper;
 
 import javax.swing.*;
-import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfDatabaseFuncWindow;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfMainDisplay;
 
 /**
@@ -23,35 +21,33 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
-public class MainDisplayWindow extends RightFuncFrameS {
+public class MainDisplayWindow extends FuncFrameS {
     private static MainDisplayWindow INSTANCE;
 
-    private MainDisplayWindow(TraderGui mainWindow, String title,
-                              boolean resizable, boolean closable, // JInternalFrame
-                              boolean maximizable, boolean iconifiable,
-                              int funcToolsHeight, double preferWidthScale, // 自身
-                              int autoMinWidth, int autoMaxWidth,
-                              Integer layer) {
-        super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
-                autoMinWidth, autoMaxWidth, layer);
-//        this.putClientProperty("JInternalFrame.isPalette", Boolean.TRUE);
-        ((BasicInternalFrameUI) this.getUI()).setNorthPane(null);
+    public MainDisplayWindow(String title, TraderGui mainWindow,
+                             boolean resizable, boolean closable, boolean maximizable, boolean iconifiable,
+                             int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
+                             int funcToolsWidthOrHeight, Integer layer) {
+        super(Type.RIGHT_TOP, title, mainWindow, null, resizable, closable, maximizable, iconifiable,
+                autoMaxWidthOrHeight,
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, false, layer, false);
+        // 两参数使用固定的默认值
     }
 
     // 模拟数据库控件
-    public static MainDisplayWindow getInstance(TraderGui mainWindow, String title,
-                                                boolean resizable, boolean closable, // JInternalFrame
-                                                boolean maximizable, boolean iconifiable,
-                                                int funcToolsHeight, double preferWidthScale, // 自身
-                                                int autoMinWidth, int autoMaxWidth
+    public static MainDisplayWindow getInstance(String title, TraderGui mainWindow,
+                                                boolean resizable, boolean closable, boolean maximizable,
+                                                boolean iconifiable,
+                                                int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                                                double preferScale,
+                                                int funcToolsWidthOrHeight,
+                                                Integer layer
     ) {
         if (INSTANCE == null) {
-            INSTANCE = new MainDisplayWindow(mainWindow, title,
-                    resizable, closable, // JInternalFrame
-                    maximizable, iconifiable,
-
-                    funcToolsHeight, preferWidthScale, // 自身
-                    autoMinWidth, autoMaxWidth, layerOfMainDisplay);
+            INSTANCE = new MainDisplayWindow(title, mainWindow,
+                    resizable, closable, maximizable, iconifiable,
+                    autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale,
+                    funcToolsWidthOrHeight, layer);
         }
         return INSTANCE;
     }
@@ -74,14 +70,13 @@ public class MainDisplayWindow extends RightFuncFrameS {
     }
 
     @Override
-    protected java.util.List<JButton> getToolsButtons1() { // 工具栏可重写(两组按钮)
-        java.util.List<JButton> res = new ArrayList<JButton>(super.getToolsButtons1());
-        // 可加入其他 button
-        return res;
+    protected List<FuncButton> getToolButtons1() {
+        return super.defaultToolsButtonList1();
     }
 
     @Override
-    protected List<JButton> getToolsButtons2() {
-        return super.getToolsButtons2();
+    protected List<FuncButton> getToolButtons2() {
+        return super.defaultToolsButtonList2();
     }
+
 }
