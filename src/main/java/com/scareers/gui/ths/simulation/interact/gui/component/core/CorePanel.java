@@ -25,6 +25,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.cr
  * 2. 主编辑区+各大功能按钮于 主界面windowOpened 后回调添加. 3方功能栏均于 按钮回调形式添加;  最初状态, 整块CENTER区空白.
  * 3. 3大功能栏 宽度(左右)  高度(下) 可调. 且下功能栏头尾使用占位 Label
  * 4. 功能栏按钮, 以及编辑区MainDisplayWindow , 均使用 FuncFrameS extends JInternalFrame, 配合 JDesktopPane mainPane
+ * 5. 功能按钮+实现框 永不真正意义的删除, 最多仅不可见
  *
  * @author: admin
  * @date: 2022/1/13/013-02:23:04
@@ -158,11 +159,11 @@ public class CorePanel extends JDesktopPane {
     public void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS2 funcFrameS) {
         synchronized (funcChangeLock) {
             removeFuncFromSixList(funcButton);
-            funcPool.put(funcButton, funcFrameS); // 添加到功能池
+            funcPool.put(funcButton, funcFrameS); // 添加/更新到功能池
             switch (funcFrameS.getType()) {
                 case LEFT_TOP:
                     leftTopButtonList.add(funcButton); // 添加到正确的列表
-                    leftTools.getPanel1().add(funcButton); // 添加组件到侧边栏
+                    leftTools.getPanel1().add(funcButton); // 添加组件到侧边栏并显示
                     break;
                 case LEFT_BOTTOM:
                     leftBottomButtonList.add(funcButton);

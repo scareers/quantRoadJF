@@ -171,6 +171,8 @@ public abstract class RightFuncFrameS extends FuncFrameS {
      */
     @Override
     public void flushBounds(boolean first) {
+
+
         if (first) { // 首次刷新, 将读取默认比例, 并计算最新高度! 并设置最新高度
             this.preferWidth = (int) (this.mainPane.getWidth() * preferWidthScale); // 需要更新默认高度
             actualFlush(preferWidth);
