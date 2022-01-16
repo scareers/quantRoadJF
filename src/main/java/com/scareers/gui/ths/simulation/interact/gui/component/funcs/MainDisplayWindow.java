@@ -1,9 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
+import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
+import org.apache.maven.settings.Settings;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +34,8 @@ public class MainDisplayWindow extends RightFuncFrameS {
                               Integer layer) {
         super(mainWindow, title, resizable, closable, maximizable, iconifiable, funcToolsHeight, preferWidthScale,
                 autoMinWidth, autoMaxWidth, layer);
+//        this.putClientProperty("JInternalFrame.isPalette", Boolean.TRUE);
+        ((BasicInternalFrameUI) this.getUI()).setNorthPane(null);
     }
 
     // 模拟数据库控件
@@ -59,9 +64,11 @@ public class MainDisplayWindow extends RightFuncFrameS {
     @Override
     public void initCenterComponent() { // 抽象方法
         JLabel label = new JLabel("我是编辑区");
+        label.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MAIN);
         label.setForeground(Color.WHITE);
         JPanel jPanel = new JPanel();
         jPanel.add(label);
+        jPanel.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MAIN);
         this.centerComponent = jPanel;
         this.add(this.centerComponent, BorderLayout.CENTER);
     }

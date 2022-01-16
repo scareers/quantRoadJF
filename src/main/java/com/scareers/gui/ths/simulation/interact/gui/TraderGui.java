@@ -2,12 +2,14 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.json.XML;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.LeftFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.RightFuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -129,44 +131,6 @@ public class TraderGui extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
 
-//                RightFuncFrameS mainFunc = new RightFuncFrameS(mainWindow, "项目", true, true, false, true, 30, 1.0,
-//                        4096,
-//                        4096, 50
-//                        , false) {
-//                    @Override
-//                    protected void initCenterComponent() {
-//                        JLabel label = new JLabel("我是项目文件树");
-//                        label.setForeground(Color.WHITE);
-//                        label.setBounds(0, 0, 200, 200);
-//                        JPanel jPanel = new JPanel();
-//                        jPanel.add(label);
-//                        this.centerComponent = jPanel;
-//                        this.add(this.centerComponent, BorderLayout.CENTER);
-//                    }
-//                };
-//                RightFuncFrameS mainDisplay = new RightFuncFrameS(mainWindow, "编辑器", true, true, false, true, 30,
-//                        0.8,
-//                        4096,
-//                        4096, 100
-//                        , false) {
-//                    @Override
-//                    protected void initCenterComponent() {
-//                        JLabel label = new JLabel("我是编辑器");
-//                        label.setBounds(0, 0, 200, 200);
-//                        label.setForeground(Color.WHITE);
-//                        JPanel jPanel = new JPanel();
-//                        jPanel.add(label);
-//                        this.centerComponent = jPanel;
-//                        this.add(this.centerComponent, BorderLayout.CENTER);
-//                    }
-//                }; // 绑定2原始
-//                mainWindow.getCorePanel().getMainPane().add(mainFunc, 50, 0);
-//                mainWindow.getCorePanel().getMainPane().add(mainDisplay, 100, 0);
-//                mainFunc.flushBounds();
-//                mainDisplay.flushBounds();
-//                mainFunc.show();
-//                mainDisplay.setBorder(BorderFactory.createLineBorder(Color.red, 3));
-//                mainDisplay.show();
                 MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
                         mainWindow, "编辑器", true, true, false, true,
                         30, 0.8, 200, 4096
@@ -177,7 +141,6 @@ public class TraderGui extends JFrame {
                     @SneakyThrows
                     @Override
                     public void componentResized(ComponentEvent e) {
-                        System.out.println("xxx");
                         for (FuncFrameS dialog : mainWindow.getCorePanel().getLeftFuncFrames()) { // 左侧功能窗口, 也刷新
                             dialog.flushBounds();
                         }
@@ -185,6 +148,7 @@ public class TraderGui extends JFrame {
                 });
 
                 mainDisplayWindow.flushBounds();
+                mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2 ));
                 mainDisplayWindow.show();
 
 
@@ -298,28 +262,30 @@ public class TraderGui extends JFrame {
         });
 
         JButton observerFunc = ButtonFactory.getButton("对象查看", true);
-//        observerFunc.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                LeftFuncFrameS x = new LeftFuncFrameS(mainWindow, "对象列表", true, true, false, true,
-//                        30, 100, 2000, 150) {
-//                    @Override
-//                    protected void initCenterComponent() {
-//                        JLabel label = new JLabel("我是对象");
-//                        label.setForeground(Color.WHITE);
-//                        label.setBounds(0, 0, 200, 200);
-//                        JPanel jPanel = new JPanel();
-//                        jPanel.add(label);
-//                        this.centerComponent = jPanel;
-//                        this.add(this.centerComponent, BorderLayout.CENTER);
-//                    }
-//                };
-//
-//                x.flushBounds();
-//                System.out.println(x.getBounds());
-//                x.show();
-//            }
-//        });
+        observerFunc.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("xxx");
+                LeftFuncFrameS x = new LeftFuncFrameS(mainWindow, "对象列表", true, true, false, true,
+                        30, 100, 2000, 500, 150, true,false) {
+                    @Override
+                    protected void initCenterComponent() {
+                        JLabel label = new JLabel("我是对象");
+                        label.setForeground(Color.WHITE);
+                        label.setBounds(0, 0, 200, 200);
+                        JPanel jPanel = new JPanel();
+                        jPanel.add(label);
+                        this.centerComponent = jPanel;
+                        this.add(this.centerComponent, BorderLayout.CENTER);
+                    }
+                };
+//                x.setBorder(BorderFactory.createLineBorder(Color.red, 2 ));
+                System.out.println(x.getBounds());
+                x.flushBounds(true);
+                x.flushBounds(false);
+                x.show();
+            }
+        });
 
 
         return new CorePanel(100, 10, 30, 30, 30,

@@ -1,13 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.factory;
 
-import com.scareers.gui.ths.simulation.interact.gui.component.simple.JButtonV;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
-import javax.swing.*;
-
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_GRAY_COMMON;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
 /**
- * description: 默认button 工厂
+ * description: 功能栏按钮 工厂
  *
  * @author: admin
  * @date: 2022/1/12/012-21:42:52
@@ -18,12 +17,12 @@ public class ButtonFactory {
      *
      * @return
      */
-    public static JButton getButton(String text, boolean vertical) {
-        JButton button;
+    public static FuncButton getButton(String text, boolean vertical) {
+        FuncButton button;
         if (vertical) {
-            button = new JButtonV(text);
+            button = new FuncButton(text, FuncButton.BtnType.VERTICAL);
         } else {
-            button = new JButton(text);
+            button = new FuncButton(text);
         }
         button.setBackground(COLOR_THEME_MINOR); // 次色
         button.setBorderPainted(false); // 无边框
@@ -32,7 +31,7 @@ public class ButtonFactory {
         return button;
     }
 
-    public static JButton getButton(String text) {
+    public static FuncButton getButton(String text) {
         return getButton(text, false);
     }
 
