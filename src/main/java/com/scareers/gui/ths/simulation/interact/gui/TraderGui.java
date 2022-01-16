@@ -167,8 +167,8 @@ public class TraderGui extends JFrame {
 //                        databaseFuncWindow.flushBounds(true);
 //                        databaseFuncWindow.show();
 
-                        mainWindow.getCorePanel().getBottomToolsButtonsPre().get(0).doClick(); // 日志框显示
-                        mainWindow.getCorePanel().getRightToolsButtonsUp().get(0).doClick();
+                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();

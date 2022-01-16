@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * description: 左功能栏, 右功能栏, 下功能栏.  含多 Button 的 Panel.
  * --> "功能栏 == 按钮组"  , 均分为两个内部 panel, 管理着向两侧浮动的 按钮们.
  *
+ * @key1 该Panel 不再管理自身2大按钮列表, 改为由 CorePane 管理, 本身只做 panel1和2管理
  * @author: admin
  * @date: 2022/1/13/013-02:51:06
  * @see ButtonFactory 注意, 传递的button, 应当与本对象 横向纵向相匹配 , ButtonFactory.getButton("对象查看", true) 第二参数
@@ -28,8 +29,6 @@ public class ToolsPanel extends JPanel {
     // 需要传递的属性:
     int widthOrHeight;
     ToolsPanelType type;
-    CopyOnWriteArrayList<FuncButton> buttonsOfPanel1;
-    CopyOnWriteArrayList<FuncButton> buttonsOfPanel2;
 
     // 内部两Panel的 纵横向 gap
     int panel1HGap;
@@ -44,29 +43,22 @@ public class ToolsPanel extends JPanel {
     // 自动计算的属性
     JPanel panel1; // 前或上 panel容器
     JPanel panel2; // 后或下 panel容器, 方便使用左右, 上下浮动布局
-    CopyOnWriteArrayList<String> buttonTextsOfPanel1 = new CopyOnWriteArrayList<>(); // 列表均线程安全
-    CopyOnWriteArrayList<String> buttonTextsOfPanel2 = new CopyOnWriteArrayList<>();
+
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      List<FuncButton> buttonsOfPanel1, List<FuncButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap) {
-        this(widthOrHeight, type,
-                buttonsOfPanel1, buttonsOfPanel2, panel1HGap, panel1VGap,
+        this(widthOrHeight, type, panel1HGap, panel1VGap,
                 panel2HGap, panel2VGap, null, null);
     }
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      List<FuncButton> buttonsOfPanel1, List<FuncButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap, JLabel startPlaceholder, JLabel endPlaceholder) {
         super();
-        Objects.requireNonNull(buttonsOfPanel2);
-        Objects.requireNonNull(buttonsOfPanel1);
         this.widthOrHeight = widthOrHeight;
         this.type = type;
-        this.buttonsOfPanel1 = new CopyOnWriteArrayList<>(buttonsOfPanel1);
-        this.buttonsOfPanel2 = new CopyOnWriteArrayList<>(buttonsOfPanel2);
+
         this.panel1HGap = panel1HGap;
         this.panel1VGap = panel1VGap;
         this.panel2HGap = panel2HGap;
@@ -91,14 +83,6 @@ public class ToolsPanel extends JPanel {
 
         if (startPlaceholder != null) {
             panel1.add(startPlaceholder); // 添加前占位符
-        }
-        for (FuncButton button : buttonsOfPanel1) { // 添加相应button对象
-            panel1.add(button);
-            buttonTextsOfPanel1.add(button.getText());
-        }
-        for (FuncButton button : buttonsOfPanel2) {
-            panel2.add(button);
-            buttonTextsOfPanel2.add(button.getText());
         }
         if (endPlaceholder != null) {
             panel2.add(endPlaceholder); // 添加后占位符控件
