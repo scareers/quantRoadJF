@@ -17,7 +17,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
 /**
  * description: 主编辑区/主展示区, 应当继承RightFuncFrameS, 注意其宽度! 且该控件, 在 CorePane实例化(mainPane实例化)后再显式设置!
  * 其 preferWidthScale 往往较大, 其layer 应当 < 右侧其他.功能栏   > 左侧功能栏
- * 其应当设定监听器, 当尺寸改变时, 应当调用 所有左侧栏的 flushBounds(false) 方法, 非首次刷新.
+ * 其应当设定监听器, 当尺寸改变时, 应当调用 所有左侧栏的 flushBounds(false) 方法, 非首次刷新 .
  *
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
