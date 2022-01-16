@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.core;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * description: 左功能栏, 右功能栏, 下功能栏.  含多 Button 的 Panel.
- * 可纵向, 可横向
+ * --> "功能栏 == 按钮组"  , 均分为两个内部 panel, 管理着向两侧浮动的 按钮们.
  *
  * @author: admin
  * @date: 2022/1/13/013-02:51:06
@@ -27,25 +28,27 @@ public class ToolsPanel extends JPanel {
     // 需要传递的属性:
     int widthOrHeight;
     ToolsPanelType type;
-    CopyOnWriteArrayList<JButton> buttonsOfPanel1;
-    CopyOnWriteArrayList<JButton> buttonsOfPanel2;
+    CopyOnWriteArrayList<FuncButton> buttonsOfPanel1;
+    CopyOnWriteArrayList<FuncButton> buttonsOfPanel2;
+
     // 内部两Panel的 纵横向 gap
     int panel1HGap;
     int panel1VGap;
     int panel2HGap;
     int panel2VGap;
+
     // 可null的前后占位符Label控件
     JLabel startPlaceholder;
     JLabel endPlaceholder;
 
     // 自动计算的属性
-    JPanel panel1;
-    JPanel panel2;
+    JPanel panel1; // 前或上 panel容器
+    JPanel panel2; // 后或下 panel容器, 方便使用左右, 上下浮动布局
     CopyOnWriteArrayList<String> buttonTextsOfPanel1 = new CopyOnWriteArrayList<>(); // 列表均线程安全
     CopyOnWriteArrayList<String> buttonTextsOfPanel2 = new CopyOnWriteArrayList<>();
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      List<JButton> buttonsOfPanel1, List<JButton> buttonsOfPanel2,
+                      List<FuncButton> buttonsOfPanel1, List<FuncButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap) {
         this(widthOrHeight, type,
@@ -54,7 +57,7 @@ public class ToolsPanel extends JPanel {
     }
 
     public ToolsPanel(int widthOrHeight, ToolsPanelType type,
-                      List<JButton> buttonsOfPanel1, List<JButton> buttonsOfPanel2,
+                      List<FuncButton> buttonsOfPanel1, List<FuncButton> buttonsOfPanel2,
                       int panel1HGap, int panel1VGap,
                       int panel2HGap, int panel2VGap, JLabel startPlaceholder, JLabel endPlaceholder) {
         super();
@@ -89,11 +92,11 @@ public class ToolsPanel extends JPanel {
         if (startPlaceholder != null) {
             panel1.add(startPlaceholder); // 添加前占位符
         }
-        for (JButton button : buttonsOfPanel1) {
+        for (FuncButton button : buttonsOfPanel1) { // 添加相应button对象
             panel1.add(button);
             buttonTextsOfPanel1.add(button.getText());
         }
-        for (JButton button : buttonsOfPanel2) {
+        for (FuncButton button : buttonsOfPanel2) {
             panel2.add(button);
             buttonTextsOfPanel2.add(button.getText());
         }
