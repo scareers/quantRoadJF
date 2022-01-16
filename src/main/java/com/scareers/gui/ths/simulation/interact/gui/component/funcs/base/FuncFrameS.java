@@ -154,7 +154,7 @@ public abstract class FuncFrameS extends JInternalFrame {
                         frame.setBounds(frame.getX() - difference, frame.getY(), newWidth, frame.getHeight());
                     }
                 });
-
+                break;
             case BOTTOM_LEFT:
             case BOTTOM_RIGHT:
                 text1 = "上";
@@ -216,11 +216,10 @@ public abstract class FuncFrameS extends JInternalFrame {
                          double preferScale,
                          int funcToolsWidthOrHeight,
                          boolean halfWidthOrHeight,
-
                          Integer layer
     ) {
         this(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
-                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true);
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true, true);
         // 默认是功能栏, 绑定到 CorePane管理.  仅 主编辑器调用 false 构造器, 且 belongBtn可传递 null.
     }
 
@@ -236,6 +235,24 @@ public abstract class FuncFrameS extends JInternalFrame {
 
                          Integer layer,
                          boolean bindToCorePane
+    ) {
+        this(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true, true);
+    }
+
+    protected FuncFrameS(Type type, String title, TraderGui mainWindow, FuncButton belongBtn,  // 4基本
+                         boolean resizable, boolean closable,
+                         boolean maximizable, boolean iconifiable, // 4 父类全参
+
+                         int autoMaxWidthOrHeight, // 5自身功能
+                         int autoMinWidthOrHeight,
+                         double preferScale,
+                         int funcToolsWidthOrHeight,
+                         boolean halfWidthOrHeight,
+
+                         Integer layer,
+                         boolean bindToCorePane,
+                         boolean hasInternalTool
     ) {
         super(title, resizable, closable, maximizable, iconifiable);
         this.type = type;
@@ -255,7 +272,9 @@ public abstract class FuncFrameS extends JInternalFrame {
 
         flushPreferWidthOrHeight(); // 视type, 决定是默认宽/高
         this.setLayout(new BorderLayout());
-        initInnerFuncTools(); // 需要实现2 abstract, 总之, 默认要求实现 内部工具栏, 以及主内容控件
+        if (hasInternalTool) {
+            initInnerFuncTools(); // 需要实现2 abstract, 总之, 默认要求实现 内部工具栏, 以及主内容控件
+        }
         initCenterComponent(); // abstract
 
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
@@ -296,8 +315,8 @@ public abstract class FuncFrameS extends JInternalFrame {
      * 初始化内部小工具栏, 请实现抽象方法 getToolsButtons1(), getToolsButtons2()
      */
     protected void initInnerFuncTools() {
-        this.toolButtonList1.addAll(getToolButtonList1()); // 初始化内部工具栏
-        this.toolButtonList2.addAll(getToolButtonList2());
+        this.toolButtonList1.addAll(getToolButtons1()); // 初始化内部工具栏
+        this.toolButtonList2.addAll(getToolButtons2());
         switch (this.type) {
             case BOTTOM_LEFT: // 底左,底右 , 工具栏垂直, 且放在西方
             case BOTTOM_RIGHT:

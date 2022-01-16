@@ -7,6 +7,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.thoughtworks.xstream.mapper.Mapper;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
@@ -25,18 +26,19 @@ public class MainDisplayWindow extends FuncFrameS {
     private static MainDisplayWindow INSTANCE;
 
     public MainDisplayWindow(String title, TraderGui mainWindow,
-                             boolean resizable, boolean closable, boolean maximizable, boolean iconifiable,
+                             boolean resizable, boolean maximizable, boolean iconifiable,
                              int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
                              int funcToolsWidthOrHeight, Integer layer) {
-        super(Type.RIGHT_TOP, title, mainWindow, null, resizable, closable, maximizable, iconifiable,
+        super(Type.RIGHT_TOP, title, mainWindow, null, resizable, false, maximizable, iconifiable,
                 autoMaxWidthOrHeight,
-                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, false, layer, false);
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, false, layer, false,false);
         // 两参数使用固定的默认值
+        ((BasicInternalFrameUI) this.getUI()).setNorthPane(null);
     }
 
     // 模拟数据库控件
     public static MainDisplayWindow getInstance(String title, TraderGui mainWindow,
-                                                boolean resizable, boolean closable, boolean maximizable,
+                                                boolean resizable, boolean maximizable,
                                                 boolean iconifiable,
                                                 int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
                                                 double preferScale,
@@ -45,7 +47,7 @@ public class MainDisplayWindow extends FuncFrameS {
     ) {
         if (INSTANCE == null) {
             INSTANCE = new MainDisplayWindow(title, mainWindow,
-                    resizable, closable, maximizable, iconifiable,
+                    resizable, maximizable, iconifiable,
                     autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale,
                     funcToolsWidthOrHeight, layer);
         }

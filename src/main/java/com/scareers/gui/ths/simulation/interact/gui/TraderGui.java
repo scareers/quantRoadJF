@@ -128,10 +128,9 @@ public class TraderGui extends JFrame {
             @SneakyThrows
             @Override
             public void windowOpened(WindowEvent e) {
-
                 MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
-                        "编辑器", mainWindow, true, true, false, true,
-                        4096, 100, 1.0, 30, layerOfMainDisplay
+                        "编辑器", mainWindow, true,  false, true,
+                        4096, 100, 1.0, 0, layerOfMainDisplay
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
                 // 尺寸改变回调, 调节左侧功能栏
@@ -151,11 +150,12 @@ public class TraderGui extends JFrame {
 
                 mainDisplayWindow.flushBounds(true);
                 mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2));
+                mainDisplayWindow.setAutoMaxWidthOrHeight(corePanel.getWidth());
                 mainDisplayWindow.show();
 
 
                 FuncButton logsFunc = ButtonFactory.getButton("日志输出");
-                corePanel.registerFuncBtnAndCorrespondFuncFrame(logsFunc, null);
+                corePanel.registerFuncBtnWithoutFuncFrame(logsFunc, FuncFrameS.Type.BOTTOM_LEFT);
                 logsFunc.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -170,7 +170,7 @@ public class TraderGui extends JFrame {
                 });
 
                 FuncButton databaseFunc = ButtonFactory.getButton("数据库", true);
-                corePanel.registerFuncBtnAndCorrespondFuncFrame(databaseFunc, null);
+                corePanel.registerFuncBtnWithoutFuncFrame(databaseFunc, FuncFrameS.Type.RIGHT_TOP);
                 databaseFunc.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
@@ -188,8 +188,8 @@ public class TraderGui extends JFrame {
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
 
 
-//                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();

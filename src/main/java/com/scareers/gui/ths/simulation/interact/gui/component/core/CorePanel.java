@@ -145,6 +145,9 @@ public class CorePanel extends JDesktopPane {
             @SneakyThrows
             @Override
             public void componentResized(ComponentEvent e) {
+                if (mainDisplayWindow != null) {
+                    mainDisplayWindow.setAutoMaxWidthOrHeight(getWidth()); // 首次实例化后需自行调用
+                }
                 flushAllFuncFrameBounds(); // 容器大小改变, 应当自动改变主内容, 实测直接最大化无法自动完成,因此
             }
         });
@@ -162,8 +165,13 @@ public class CorePanel extends JDesktopPane {
         // 常规注册, 前2参数成对非null传递. 第三参数null. 于 FuncFrameS 实例化时调用
     }
 
-    public void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS funcFrameS,
-                                                      FuncFrameS.Type defaultType) {
+    public void registerFuncBtnWithoutFuncFrame(FuncButton funcButton,
+                                                FuncFrameS.Type defaultType) {
+        registerFuncBtnAndCorrespondFuncFrame(funcButton, null, defaultType);
+    }
+
+    private void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS funcFrameS,
+                                                       FuncFrameS.Type defaultType) {
         // defaultType 非null时, 代表首次, FuncFrameS==null尚不存在, 需要指定 FuncButton 默认位置
         synchronized (funcChangeLock) {
             removeFuncFromSixList(funcButton);
