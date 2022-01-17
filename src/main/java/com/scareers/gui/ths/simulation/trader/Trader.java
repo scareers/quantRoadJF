@@ -61,13 +61,22 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 @Getter
 public class Trader {
     private static final Log log = LogUtil.getLogger();
+    private static Trader INSTANCE;
+
+    public static Trader getInstance() throws IOException, TimeoutException {
+        // todo: 待完成
+        if (INSTANCE == null) {
+            INSTANCE = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
+        }
+        return INSTANCE;
+    }
 
     public static void main(String[] args) throws Exception {
         main0();
     }
 
     public static void main0() throws Exception {
-        Trader trader = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
+        Trader trader = Trader.getInstance();
         // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
 
@@ -82,7 +91,7 @@ public class Trader {
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
         // 直到此时才实例化策略对象, 绑定到 trader
-        Strategy mainStrategy = new LowBuyHighSellStrategy(trader, LowBuyHighSellStrategy.class.getName(),
+        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
                 20, // 期望选股数量
                 false, // 偏向更多选股结果

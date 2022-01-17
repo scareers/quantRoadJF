@@ -25,6 +25,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
+import org.fife.ui.rtextarea.RTextAreaEditorKit;
 
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -48,6 +49,25 @@ import static com.scareers.utils.SqlUtil.execSql;
 @Getter
 @Setter
 public class LowBuyHighSellStrategy extends Strategy {
+    private static LowBuyHighSellStrategy INSTANCE;
+
+    public static LowBuyHighSellStrategy getInstance(Trader trader, String strategyName,
+                                                     List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
+                                                     int suitableSelectStockCount, // 期望的选股结果数量
+                                                     boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
+                                                     List<Integer> keyInts) throws Exception {
+        if (INSTANCE == null) {
+            INSTANCE = new LowBuyHighSellStrategy(trader, strategyName, forceManualExcludeStocks,
+                    suitableSelectStockCount, preferenceMoreStock, keyInts);
+        }
+        return INSTANCE;
+    }
+
+    public static LowBuyHighSellStrategy getInstance() {
+        return INSTANCE;
+    }
+
+
     // -------->  静态属性, 几乎不变
     public static int stockSelectedExecAmounts = 100000; // 选股遍历股票数量, 方便debug, 设置为很大然后无视
     // 首先尝试从数据库直接获取  昨日持仓与账户初始资金信息, 若无, 则:
