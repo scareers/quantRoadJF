@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.Di
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.List;
@@ -37,16 +38,22 @@ public class LogFuncWindow extends FuncFrameS {
             INSTANCE = new LogFuncWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
                     halfWidthOrHeight, layer);
-            ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
+//            ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
+//            BasicInternalFrameUI ui = ((BasicInternalFrameUI) INSTANCE.getUI());
+//            ui.setNorthPane(new BasicInternalFrameTitlePaneS(INSTANCE));
+//            BasicInternalFrameTitlePane northPane = (BasicInternalFrameTitlePane) ui.getNorthPane();
+//            northPane.setBackground(Color.red);
+//
+//            ui.setNorthPane(northPane);
         }
 
         return INSTANCE;
     }
 
     private LogFuncWindow(Type type, String title, TraderGui mainWindow,
-                         FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
-                         boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
-                         int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+                          FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                          boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
+                          int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }

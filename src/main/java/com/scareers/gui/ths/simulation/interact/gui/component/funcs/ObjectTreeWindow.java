@@ -12,6 +12,7 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -99,58 +100,42 @@ public class ObjectTreeWindow extends FuncFrameS {
         return super.defaultToolsButtonList2();
     }
 
-    public static class User {
-        private String name;
-
-        public User(String n) {
-            name = n;
-        }
-
-        // 重点在toString，节点的显示文本就是toString
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
     private JTree buildTree() {
-        DefaultMutableTreeNode node1 = new DefaultMutableTreeNode("软件部");
-        node1.add(new DefaultMutableTreeNode(new User("小花")));
-        node1.add(new DefaultMutableTreeNode(new User("小虎")));
-        node1.add(new DefaultMutableTreeNode(new User("小龙")));
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("对象查看");
 
-        DefaultMutableTreeNode node2 = new DefaultMutableTreeNode("销售部");
-        node2.add(new DefaultMutableTreeNode(new User("小叶")));
-        node2.add(new DefaultMutableTreeNode(new User("小雯")));
-        node2.add(new DefaultMutableTreeNode(new User("小夏")));
+        DefaultMutableTreeNode traderNode = new DefaultMutableTreeNode("Trader");
 
 
-        DefaultMutableTreeNode top = new DefaultMutableTreeNode("职员管理");
+        // 5大子对象,可扩展
+        DefaultMutableTreeNode orderExecutorNode = new DefaultMutableTreeNode("OrderExecutor");
+        DefaultMutableTreeNode checkerNode = new DefaultMutableTreeNode("Checker");
+        DefaultMutableTreeNode accountStatesNode = new DefaultMutableTreeNode("AccountStates");
+        DefaultMutableTreeNode fsTransactionFetcherNode = new DefaultMutableTreeNode("FsTransactionFetcher");
+        DefaultMutableTreeNode strategyNode = new DefaultMutableTreeNode("Strategy");
 
-        top.add(new DefaultMutableTreeNode(new User("总经理")));
-        top.add(node1);
-        top.add(node2);
-        final JTree tree = new JTree(top);
+        // 4大队列/map
+        DefaultMutableTreeNode queues = new DefaultMutableTreeNode("Queues!"); // 父包含
+        DefaultMutableTreeNode ordersWaitForExecution = new DefaultMutableTreeNode("ordersWaitForExecution");
+        DefaultMutableTreeNode ordersWaitForCheckTransactionStatusMap = new DefaultMutableTreeNode(
+                "ordersWaitForCheckTransactionStatusMap");
+        DefaultMutableTreeNode ordersSuccessFinished = new DefaultMutableTreeNode("ordersSuccessFinished");
+        DefaultMutableTreeNode ordersResendFinished = new DefaultMutableTreeNode("ordersResendFinished");
+        queues.add(ordersWaitForExecution);
+        queues.add(ordersWaitForCheckTransactionStatusMap);
+        queues.add(ordersSuccessFinished);
+        queues.add(ordersResendFinished);
+
+        traderNode.add(queues);
+        traderNode.add(orderExecutorNode);
+        traderNode.add(checkerNode);
+        traderNode.add(accountStatesNode);
+        traderNode.add(fsTransactionFetcherNode);
+        traderNode.add(strategyNode);
+
+        root.add(traderNode);
+
+        final JTree tree = new JTree(root);
         // 添加选择事件
-        tree.addTreeSelectionListener(new TreeSelectionListener() {
-
-            @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree
-                        .getLastSelectedPathComponent();
-
-                if (node == null) {
-                    return;
-                }
-
-                Object object = node.getUserObject();
-                if (node.isLeaf()) {
-                    User user = (User) object;
-                    System.out.println("你选择了：" + user.toString());
-                }
-
-            }
-        });
 
         TreeCellRendererS renderer = new TreeCellRendererS();
         renderer.setBackgroundNonSelectionColor(COLOR_THEME_MINOR);
@@ -167,8 +152,46 @@ public class ObjectTreeWindow extends FuncFrameS {
         renderer.setTextNonSelectionColor(COLOR_GRAY_COMMON);
 
         tree.setCellRenderer(renderer);
+        tree.addTreeSelectionListener(new TreeSelectionListener() {
+            @Override
+            public void valueChanged(TreeSelectionEvent e) {
+                dispatch(e.getNewLeadSelectionPath());
+            }
+        });
         return tree;
     }
+
+    public void dispatch(TreePath treePath) {
+
+        new Dispatcher().dispatch(treePath.toString());
+    }
+
+    public static class TreePathConstants { // 路径常量, 字符串配置
+        /**
+         * [对象查看]
+         * [对象查看, Trader]
+         * [对象查看, Trader, Queues!]
+         * [对象查看, Trader, OrderExecutor]
+         * [对象查看, Trader, Checker]
+         * [对象查看, Trader, AccountStates]
+         * [对象查看, Trader, FsTransactionFetcher]
+         * [对象查看, Trader, Strategy]
+         * [对象查看, Trader, Queues!, ordersWaitForExecution]
+         * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
+         * [对象查看, Trader, Queues!, ordersSuccessFinished]
+         * [对象查看, Trader, Queues!, ordersResendFinished]
+         */
+        public static final String OBJECT_OBSERVER = "";
+
+    }
+
+    public static class Dispatcher {
+        public void dispatch(String treePath) {
+            System.out.println(treePath);
+
+        }
+    }
+
 
     public static class TreeCellRendererS extends DefaultTreeCellRenderer {
         @Override
