@@ -12,6 +12,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.Objects;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_MAIN_DISPLAY_BORDER;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfMainDisplay;
 
 /**
@@ -25,13 +26,13 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
 public class MainDisplayWindow extends FuncFrameS {
     private static MainDisplayWindow INSTANCE;
 
-    public MainDisplayWindow(String title, TraderGui mainWindow,
-                             boolean resizable, boolean maximizable, boolean iconifiable,
-                             int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
-                             int funcToolsWidthOrHeight, Integer layer) {
+    private MainDisplayWindow(String title, TraderGui mainWindow,
+                              boolean resizable, boolean maximizable, boolean iconifiable,
+                              int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
+                              int funcToolsWidthOrHeight, Integer layer) {
         super(Type.RIGHT_TOP, title, mainWindow, null, resizable, false, maximizable, iconifiable,
                 autoMaxWidthOrHeight,
-                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, false, layer, false,false);
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, false, layer, false, false);
         // 两参数使用固定的默认值
         ((BasicInternalFrameUI) this.getUI()).setNorthPane(null);
     }
@@ -51,11 +52,11 @@ public class MainDisplayWindow extends FuncFrameS {
                     autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale,
                     funcToolsWidthOrHeight, layer);
         }
+//        INSTANCE.setBorder(BorderFactory.createLineBorder(COLOR_MAIN_DISPLAY_BORDER, 1));
         return INSTANCE;
     }
 
     public static MainDisplayWindow getInstance() { // 快捷方法, 需要创建后
-        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 

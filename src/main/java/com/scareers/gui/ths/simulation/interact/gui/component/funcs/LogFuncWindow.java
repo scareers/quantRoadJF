@@ -19,10 +19,31 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.l
  */
 
 public class LogFuncWindow extends FuncFrameS {
-    public LogFuncWindow(Type type, String title, TraderGui mainWindow,
-                            FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
-                            boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
-                            int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+    private static LogFuncWindow INSTANCE;
+
+    public static LogFuncWindow getInstance() {
+        return INSTANCE;
+    }
+
+    public static LogFuncWindow getInstance(Type type, String title, TraderGui mainWindow,
+                                            FuncButton belongBtn, boolean resizable, boolean closable,
+                                            boolean maximizable,
+                                            boolean iconifiable, int autoMaxWidthOrHeight,
+                                            int autoMinWidthOrHeight,
+                                            double preferScale,
+                                            int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+        if (INSTANCE == null) {
+            INSTANCE = new LogFuncWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
+                    iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
+                    halfWidthOrHeight, layer);
+        }
+        return INSTANCE;
+    }
+
+    private LogFuncWindow(Type type, String title, TraderGui mainWindow,
+                         FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                         boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight, double preferScale,
+                         int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }

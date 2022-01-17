@@ -155,7 +155,6 @@ public class TraderGui extends JFrame {
                     }
                 });
                 mainDisplayWindow.flushBounds(true);
-                mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2));
                 mainDisplayWindow.setAutoMaxWidthOrHeight(corePanel.getWidth());
                 mainDisplayWindow.show();
 
@@ -166,12 +165,19 @@ public class TraderGui extends JFrame {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         LogFuncWindow logFuncWindow =  // 窗口启动时已经初始化, 单例模式可调用无参方法
-                                new LogFuncWindow(FuncFrameS.Type.BOTTOM_LEFT, "logs", mainWindow, logsFunc, true, true,
-                                        false,
-                                        true,
-                                        1200, 100, 0.3, 30, false, layerOfLogFuncWindow);
-                        logFuncWindow.flushBounds(true); // 实例化时首次, 今次不首次. 若要重置应当调用首次
-                        logFuncWindow.show();
+                                LogFuncWindow
+                                        .getInstance(FuncFrameS.Type.BOTTOM_LEFT, "logs", mainWindow, logsFunc, true,
+                                                true,
+                                                false,
+                                                true,
+                                                1200, 100, 0.3, 30, false, layerOfLogFuncWindow);
+                        if (logFuncWindow.isVisible()) {
+                            logFuncWindow.flushBounds();
+                            logFuncWindow.hide();
+                        } else {
+                            logFuncWindow.flushBounds();
+                            logFuncWindow.show();
+                        }
                     }
                 });
 
@@ -180,12 +186,18 @@ public class TraderGui extends JFrame {
                 databaseFunc.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        DatabaseFuncWindow databaseFuncWindow = new DatabaseFuncWindow(FuncFrameS.Type.RIGHT_TOP,
-                                "database", mainWindow, databaseFunc, true,
-                                true, false, true,
-                                1500, 100, 0.2, 30, false, layerOfDatabaseFuncWindow);
-                        databaseFuncWindow.flushBounds(true);
-                        databaseFuncWindow.show();
+                        DatabaseFuncWindow databaseFuncWindow = DatabaseFuncWindow
+                                .getInstance(FuncFrameS.Type.RIGHT_TOP,
+                                        "database", mainWindow, databaseFunc, true,
+                                        true, false, true,
+                                        1500, 100, 0.2, 30, false, layerOfDatabaseFuncWindow);
+                        if (databaseFuncWindow.isVisible()) {
+                            databaseFuncWindow.flushBounds();
+                            databaseFuncWindow.hide();
+                        } else {
+                            databaseFuncWindow.flushBounds();
+                            databaseFuncWindow.show();
+                        }
                     }
                 });
 
@@ -215,7 +227,8 @@ public class TraderGui extends JFrame {
 
 
                         mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+                        mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();

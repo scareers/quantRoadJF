@@ -15,12 +15,34 @@ import java.util.List;
  * @date: 2022/1/14/014-07:16:15
  */
 public class DatabaseFuncWindow extends FuncFrameS {
-    public DatabaseFuncWindow(Type type, String title, TraderGui mainWindow,
+    private static DatabaseFuncWindow INSTANCE;
+
+    public static DatabaseFuncWindow getInstance() {
+        return INSTANCE;
+    }
+
+    public static DatabaseFuncWindow getInstance(Type type, String title, TraderGui mainWindow,
+                                                 FuncButton belongBtn, boolean resizable, boolean closable,
+                                                 boolean maximizable,
+                                                 boolean iconifiable, int autoMaxWidthOrHeight,
+                                                 int autoMinWidthOrHeight,
+                                                 double preferScale,
+                                                 int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+        if (INSTANCE == null) {
+            INSTANCE = new DatabaseFuncWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
+                    iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
+                    halfWidthOrHeight, layer);
+        }
+        return INSTANCE;
+    }
+
+    private DatabaseFuncWindow(Type type, String title, TraderGui mainWindow,
                               FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
                               boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
                               double preferScale,
                               int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
-        super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
+        super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable,
+                autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }
 

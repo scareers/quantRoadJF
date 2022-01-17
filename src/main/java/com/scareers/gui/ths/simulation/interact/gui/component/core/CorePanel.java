@@ -88,9 +88,9 @@ public class CorePanel extends JDesktopPane {
         initRightTools();
         initBottomTools();
 
-        leftTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
-        rightTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
-        bottomTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
+        leftTools.setBorder(BorderFactory.createLineBorder(new Color(70, 70, 70), 1, false));
+        rightTools.setBorder(BorderFactory.createLineBorder(new Color(70, 70, 70), 1, false));
+        bottomTools.setBorder(BorderFactory.createLineBorder(new Color(70, 70, 70), 1, false));
         this.setLayout(new BorderLayout());
         this.add(leftTools, BorderLayout.WEST);
         this.add(rightTools, BorderLayout.EAST);

@@ -20,6 +20,8 @@ public class SettingsOfGuiGlobal {
     public static Color COLOR_THEME_TITLE = new Color(59, 71, 84); // 主色3, 子组件标题栏颜色
     public static Color COLOR_GRAY_COMMON = new Color(187, 187, 187); // 常规灰,按钮字颜色
 
+    public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
+
     public static Color colorTest = new Color(51, 51, 51); // 测试颜色.., 方便看..
 
     // 2.主界面相关设定

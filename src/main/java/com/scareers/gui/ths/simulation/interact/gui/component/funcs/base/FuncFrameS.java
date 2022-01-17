@@ -330,7 +330,7 @@ public abstract class FuncFrameS extends JInternalFrame {
                 funcTools = new ToolsPanel(funcToolsWidthOrHeight, ToolsPanel.ToolsPanelType.HORIZONTAL,
 
                         0, 0, 0, 0);
-                this.add(funcTools, BorderLayout.WEST);
+                this.add(funcTools, BorderLayout.NORTH);
         }
         for (FuncButton btn : this.toolButtonList1) {
             funcTools.getPanel1().add(btn); // 按钮添加显示

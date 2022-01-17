@@ -6,10 +6,16 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import org.fife.ui.rtextarea.RTextAreaEditorKit;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
+
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
  * description:
@@ -37,7 +43,9 @@ public class ObjectTreeWindow extends FuncFrameS {
                     INSTANCE.getCorePanel().getMainDisplayWindow().flushBounds(true); // 编辑界面就像第一次刷新
                 }
             });
+            INSTANCE.setBorder(new LineBorder(COLOR_MAIN_DISPLAY_BORDER, 1));
         }
+        INSTANCE.getFuncTools().setVisible(false);
         return INSTANCE;
     }
 
@@ -56,11 +64,17 @@ public class ObjectTreeWindow extends FuncFrameS {
 
     @Override
     public void initCenterComponent() { // 抽象方法
-        JLabel label = new JLabel("对象查看器");
         JPanel jPanel = new JPanel();
-        jPanel.add(label);
-
-        this.centerComponent = jPanel;
+        jPanel.setLayout(new BorderLayout());
+        JTree tree = buildTree();
+        tree.setBackground(COLOR_THEME_MINOR);
+        jPanel.add(tree, BorderLayout.WEST);
+        tree.setLocation(0, 0);
+        JScrollPane jScrollPane = new JScrollPane(jPanel);
+        jScrollPane.setBorder(null);
+        jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        this.centerComponent = jScrollPane;
         this.add(this.centerComponent, BorderLayout.CENTER);
     }
 
@@ -72,5 +86,59 @@ public class ObjectTreeWindow extends FuncFrameS {
     @Override
     protected List<FuncButton> getToolButtons2() {
         return super.defaultToolsButtonList2();
+    }
+
+    public static class User {
+        private String name;
+
+        public User(String n) {
+            name = n;
+        }
+
+        // 重点在toString，节点的显示文本就是toString
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    private JTree buildTree() {
+        DefaultMutableTreeNode node1 = new DefaultMutableTreeNode("软件部");
+        node1.add(new DefaultMutableTreeNode(new User("小花")));
+        node1.add(new DefaultMutableTreeNode(new User("小虎")));
+        node1.add(new DefaultMutableTreeNode(new User("小龙")));
+
+        DefaultMutableTreeNode node2 = new DefaultMutableTreeNode("销售部");
+        node2.add(new DefaultMutableTreeNode(new User("小叶")));
+        node2.add(new DefaultMutableTreeNode(new User("小雯")));
+        node2.add(new DefaultMutableTreeNode(new User("小夏")));
+
+        DefaultMutableTreeNode top = new DefaultMutableTreeNode("职员管理");
+
+        top.add(new DefaultMutableTreeNode(new User("总经理")));
+        top.add(node1);
+        top.add(node2);
+        final JTree tree = new JTree(top);
+        // 添加选择事件
+        tree.addTreeSelectionListener(new TreeSelectionListener() {
+
+            @Override
+            public void valueChanged(TreeSelectionEvent e) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree
+                        .getLastSelectedPathComponent();
+
+                if (node == null) {
+                    return;
+                }
+
+                Object object = node.getUserObject();
+                if (node.isLeaf()) {
+                    User user = (User) object;
+                    System.out.println("你选择了：" + user.toString());
+                }
+
+            }
+        });
+        return tree;
     }
 }
