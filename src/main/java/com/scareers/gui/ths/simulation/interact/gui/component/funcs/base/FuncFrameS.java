@@ -219,7 +219,7 @@ public abstract class FuncFrameS extends JInternalFrame {
                          Integer layer
     ) {
         this(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
-                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true, true);
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true);
         // 默认是功能栏, 绑定到 CorePane管理.  仅 主编辑器调用 false 构造器, 且 belongBtn可传递 null.
     }
 
@@ -237,7 +237,8 @@ public abstract class FuncFrameS extends JInternalFrame {
                          boolean bindToCorePane
     ) {
         this(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
-                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, true, true);
+                autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer, bindToCorePane,
+                true);
     }
 
     protected FuncFrameS(Type type, String title, TraderGui mainWindow, FuncButton belongBtn,  // 4基本
@@ -397,6 +398,7 @@ public abstract class FuncFrameS extends JInternalFrame {
                     // 因mainDisplay也设置了 size改变回调, 也将再次修改 this的宽度, 但已经非第一次. 浪费一点时间
                     this.preferWidthOrHeight = (int) (this.mainPane.getWidth() * preferScale); // 需要更新默认高度
                     actualFlushForLeftTop(preferWidthOrHeight); // 刷新
+                    this.corePanel.getMainDisplayWindow().setLocation(preferWidthOrHeight, 0);
                     this.corePanel.getMainDisplayWindow().setSize(this.mainPane.getWidth() - preferWidthOrHeight,
                             this.mainPane.getHeight()); // 主编辑器修改宽高.
                 } else {

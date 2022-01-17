@@ -7,6 +7,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.ObjectTreeWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -129,7 +130,7 @@ public class TraderGui extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
                 MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
-                        "编辑器", mainWindow, true,  false, true,
+                        "编辑器", mainWindow, true, false, true,
                         4096, 100, 1.0, 0, layerOfMainDisplay
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
@@ -140,14 +141,19 @@ public class TraderGui extends JFrame {
                     public void componentResized(ComponentEvent e) {
                         CorePanel corePanel = mainWindow.getCorePanel();
                         for (FuncButton btn : corePanel.getLeftTopButtonList()) { // 左侧功能窗口,刷新 左上 + 左下
-                            corePanel.getFuncPool().get(btn).flushBounds();
+                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
+                            if (temp != null) {
+                                temp.flushBounds();
+                            }
                         }
                         for (FuncButton btn : corePanel.getLeftBottomButtonList()) {
-                            corePanel.getFuncPool().get(btn).flushBounds();
+                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
+                            if (temp != null) {
+                                temp.flushBounds();
+                            }
                         }
                     }
                 });
-
                 mainDisplayWindow.flushBounds(true);
                 mainDisplayWindow.setBorder(BorderFactory.createLineBorder(Color.blue, 2));
                 mainDisplayWindow.setAutoMaxWidthOrHeight(corePanel.getWidth());
@@ -183,13 +189,33 @@ public class TraderGui extends JFrame {
                     }
                 });
 
+                FuncButton objectsBtn = ButtonFactory.getButton("对象查看", true);
+                corePanel.registerFuncBtnWithoutFuncFrame(objectsBtn, FuncFrameS.Type.LEFT_TOP);
+                objectsBtn.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ObjectTreeWindow objectTreeWindow = ObjectTreeWindow
+                                .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
+                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.2, 30, false,
+                                        layerOfObjectsTree + 1); // 一定不为null, 单例
+
+                        if (objectTreeWindow.isVisible()) {
+                            objectTreeWindow.flushBounds();
+                            objectTreeWindow.hide();
+                        } else {
+                            objectTreeWindow.flushBounds(true);
+                            objectTreeWindow.show();
+                        }
+                    }
+                });
+
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
 
 
                         mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {
                         ex.printStackTrace();

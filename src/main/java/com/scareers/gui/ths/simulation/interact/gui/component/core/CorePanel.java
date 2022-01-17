@@ -11,12 +11,14 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
 /**
@@ -86,6 +88,9 @@ public class CorePanel extends JDesktopPane {
         initRightTools();
         initBottomTools();
 
+        leftTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
+        rightTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
+        bottomTools.setBorder(BorderFactory.createLineBorder(Color.gray, 1, false));
         this.setLayout(new BorderLayout());
         this.add(leftTools, BorderLayout.WEST);
         this.add(rightTools, BorderLayout.EAST);
@@ -98,6 +103,7 @@ public class CorePanel extends JDesktopPane {
 
     private void initMainPane() {
         mainPane = new JDesktopPane(); // 核心层级pane
+        mainPane.setBackground(COLOR_THEME_TITLE);
     }
 
 
@@ -134,6 +140,9 @@ public class CorePanel extends JDesktopPane {
         // 所有功能框刷新 位置.
         for (FuncFrameS dialog : funcPool.values()) { // 其他关联的功能窗口, 也刷新
             dialog.flushBounds();
+        }
+        if (mainDisplayWindow != null) {
+            mainDisplayWindow.flushBounds();
         }
     }
 

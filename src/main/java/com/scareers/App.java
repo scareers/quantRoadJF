@@ -1,5 +1,8 @@
 package com.scareers;
 
+import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
+
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
 import static com.scareers.utils.HardwareUtil.reportCpuMemoryDiskSubThread;
@@ -26,8 +29,26 @@ public class App {
         while (true) {
 
             long start = System.currentTimeMillis();
-            fibonacci(40);
+//            fibonacci(40);
+            for (long i = 0; i < 1000000; i++) {
+                JSONUtil.parseObj(
+                        "{\n" +
+                        "            \"code\": 200,\n" +
+                        "            \"success\": true,\n" +
+                        "            \"payload\": {\n" +
+                        "                \"features\": [\n" +
+                        "                    \"awesome\",\n" +
+                        "                    \"easyAPI\",\n" +
+                        "                    \"lowLearningCurve\"\n" +
+                        "                ]\n" +
+                        "            }\n" +
+                        "        }"
+
+                      );
+
+            }
             System.out.println(System.currentTimeMillis() - start);
+            break;
         }
 //        System.out.println(fibonacci(40));
 
