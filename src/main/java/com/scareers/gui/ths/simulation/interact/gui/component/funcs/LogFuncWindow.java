@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.Di
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
+import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +37,9 @@ public class LogFuncWindow extends FuncFrameS {
             INSTANCE = new LogFuncWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
                     halfWidthOrHeight, layer);
+            ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
         }
+
         return INSTANCE;
     }
 

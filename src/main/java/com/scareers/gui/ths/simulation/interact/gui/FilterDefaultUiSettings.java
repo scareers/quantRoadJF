@@ -16,7 +16,7 @@ import java.util.HashMap;
  */
 public class FilterDefaultUiSettings {
     public static void main(String[] args) {
-        Console.log(filter("window"));
+        Console.log(filter("InternalFrame"));
 
     }
 

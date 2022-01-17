@@ -1,7 +1,10 @@
 package com.scareers;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
+
+import java.awt.*;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
@@ -25,7 +28,8 @@ public class App {
     public static void main(String[] args) throws Exception {
 
         System.out.println("abc".getClass());
-
+        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        Console.log(fontNames);
         while (true) {
 
             long start = System.currentTimeMillis();

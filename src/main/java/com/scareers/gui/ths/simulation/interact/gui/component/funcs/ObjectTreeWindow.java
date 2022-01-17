@@ -1,21 +1,24 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
+import cn.hutool.core.io.resource.ResourceUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
-import org.fife.ui.rtextarea.RTextAreaEditorKit;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
 
 /**
  * description:
@@ -44,8 +47,16 @@ public class ObjectTreeWindow extends FuncFrameS {
                 }
             });
             INSTANCE.setBorder(new LineBorder(COLOR_MAIN_DISPLAY_BORDER, 1));
+            ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
         }
         INSTANCE.getFuncTools().setVisible(false);
+//        BasicInternalFrameUI ui = (BasicInternalFrameUI) INSTANCE.getUI();
+//        BasicInternalFrameTitlePane titlePane = (BasicInternalFrameTitlePane)ui.getNorthPane();
+//        titlePane.selectedTitleColor
+//        selectedTitleColor = UIManager.getColor("InternalFrame.activeTitleBackground");
+//        selectedTextColor = UIManager.getColor("InternalFrame.activeTitleForeground");
+//        notSelectedTitleColor = UIManager.getColor("InternalFrame.inactiveTitleBackground");
+//        notSelectedTextColor = UIManager.getColor("InternalFrame.inactiveTitleForeground");
         return INSTANCE;
     }
 
@@ -113,6 +124,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         node2.add(new DefaultMutableTreeNode(new User("小雯")));
         node2.add(new DefaultMutableTreeNode(new User("小夏")));
 
+
         DefaultMutableTreeNode top = new DefaultMutableTreeNode("职员管理");
 
         top.add(new DefaultMutableTreeNode(new User("总经理")));
@@ -139,6 +151,35 @@ public class ObjectTreeWindow extends FuncFrameS {
 
             }
         });
+
+        TreeCellRendererS renderer = new TreeCellRendererS();
+        renderer.setBackgroundNonSelectionColor(COLOR_THEME_MINOR);
+        renderer.setBackgroundSelectionColor(COLOR_TREE_ITEM_SELECTED);
+        renderer.setBorderSelectionColor(Color.red);
+        renderer.setClosedIcon(new ImageIcon(
+                zoomBySize(new ImageIcon(ResourceUtil.getResource(ICON_FOLDER_CLOSE_PATH)).getImage(), 16, 16)));
+        renderer.setOpenIcon(new ImageIcon(
+                zoomBySize(new ImageIcon(ResourceUtil.getResource(ICON_FOLDER_OPEN_PATH)).getImage(), 16, 16)));
+        renderer.setLeafIcon(new ImageIcon(
+                zoomBySize(new ImageIcon(ResourceUtil.getResource(ICON_FILE0_PATH)).getImage(), 15, 15)));
+        renderer.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        renderer.setTextSelectionColor(COLOR_GRAY_COMMON);
+        renderer.setTextNonSelectionColor(COLOR_GRAY_COMMON);
+
+        tree.setCellRenderer(renderer);
         return tree;
+    }
+
+    public static class TreeCellRendererS extends DefaultTreeCellRenderer {
+        @Override
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
+                                                      boolean leaf, int row, boolean hasFocus) {
+            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
+            Object nodeData = node.getUserObject();
+            this.setText(nodeData.toString());
+//            this.setIcon();
+            return this;
+        }
     }
 }

@@ -23,7 +23,6 @@ import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Arrays;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -89,7 +88,7 @@ public class TraderGui extends JFrame {
     public void init() {
         this.setLayout(new BorderLayout());
         this.setUndecorated(false); // 标题栏显示,true 则类似专注模式
-        imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_PATH));
+        imageIcon = new ImageIcon(ResourceUtil.getResource(ICON_TITLE_PATH));
         this.setIconImage(imageIcon.getImage()); // 图标
 
         if (MAXIMIZE_DEFAULT) {
@@ -335,6 +334,7 @@ public class TraderGui extends JFrame {
      * @throws UnsupportedLookAndFeelException
      */
     public static void initGlobalStyle() throws UnsupportedLookAndFeelException {
+        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
 
         defs.put("TextPane.background", new ColorUIResource(COLOR_THEME_MAIN));
@@ -358,10 +358,11 @@ public class TraderGui extends JFrame {
         defs.put("activeCaptionText", new javax.swing.plaf.ColorUIResource(Color.red));
         // System.out.println(JSONUtil.toJsonPrettyStr(JSONUtil.parse(defs)));
 
-        UIManager.put("InternalFrame.activeTitleBackground", new ColorUIResource(Color.black));
-        UIManager.put("InternalFrame.activeTitleForeground", new ColorUIResource(Color.WHITE));
-        UIManager.put("InternalFrame.titleFont", new Font("Dialog", Font.PLAIN, 11));
-        UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
+        UIManager.put("InternalFrame.activeTitleBackground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
+        UIManager.put("InternalFrame.activeTitleForeground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
+        UIManager.put("InternalFrame.inactiveTitleBackground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
+        UIManager.put("InternalFrame.inactiveTitleForeground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
+
     }
 
     /**

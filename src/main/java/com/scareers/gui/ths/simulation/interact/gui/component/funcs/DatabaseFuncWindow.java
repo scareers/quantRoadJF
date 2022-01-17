@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFra
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.List;
 
@@ -32,6 +33,7 @@ public class DatabaseFuncWindow extends FuncFrameS {
             INSTANCE = new DatabaseFuncWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
                     halfWidthOrHeight, layer);
+            ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
         }
         return INSTANCE;
     }
