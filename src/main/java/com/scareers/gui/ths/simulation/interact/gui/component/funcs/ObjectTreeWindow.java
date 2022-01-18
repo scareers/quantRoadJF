@@ -19,6 +19,7 @@ import java.awt.event.ComponentEvent;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.gui.ths.simulation.interact.gui.component.funcs.TreePathConstants.ORDERS_WAIT_FOR_EXECUTION;
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
 
 /**
@@ -162,51 +163,20 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
     public void dispatch(TreePath treePath) {
-
         new Dispatcher().dispatch(treePath.toString());
     }
 
-    public static class TreePathConstants { // 路径常量, 字符串配置
-        /**
-         * [对象查看]
-         * [对象查看, Trader]
-         * [对象查看, Trader, Queues!]
-         * [对象查看, Trader, OrderExecutor]
-         * [对象查看, Trader, Checker]
-         * [对象查看, Trader, AccountStates]
-         * [对象查看, Trader, FsTransactionFetcher]
-         * [对象查看, Trader, Strategy]
-         * [对象查看, Trader, Queues!, ordersWaitForExecution]
-         * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
-         * [对象查看, Trader, Queues!, ordersSuccessFinished]
-         * [对象查看, Trader, Queues!, ordersResendFinished]
-         */
-        public static final String OBJECT_OBSERVER = "[对象查看]";
-        public static final String TRADER = "[对象查看, Trader]";
-        public static final String QUEUES = "[对象查看, Trader, Queues!]";
-
-        public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
-        public static final String CHECKER = "[对象查看, Trader, Checker]";
-        public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
-        public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
-        public static final String STRATEGY = "[对象查看, Trader, Strategy]";
-
-        public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
-        public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
-                "ordersWaitForCheckTransactionStatusMap]";
-        public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
-        public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
-
-    }
 
     public static class Dispatcher {
         public void dispatch(String treePath) {
-
-            switch (treePath) {
-                TreePathConstants.ORDERS_WAIT_FOR_EXECUTION: // 等待执行队列 , Order 列表
-                default:
-                    System.out.println(treePath);
+            if (ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
+                changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法
+            } else {
+                System.out.println(treePath);
             }
+        }
+
+        private void changeToOrdersWaitForExecution() {
         }
     }
 
@@ -223,4 +193,37 @@ public class ObjectTreeWindow extends FuncFrameS {
             return this;
         }
     }
+}
+
+class TreePathConstants { // 路径常量, 字符串配置
+    /**
+     * [对象查看]
+     * [对象查看, Trader]
+     * [对象查看, Trader, Queues!]
+     * [对象查看, Trader, OrderExecutor]
+     * [对象查看, Trader, Checker]
+     * [对象查看, Trader, AccountStates]
+     * [对象查看, Trader, FsTransactionFetcher]
+     * [对象查看, Trader, Strategy]
+     * [对象查看, Trader, Queues!, ordersWaitForExecution]
+     * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
+     * [对象查看, Trader, Queues!, ordersSuccessFinished]
+     * [对象查看, Trader, Queues!, ordersResendFinished]
+     */
+    public static final String OBJECT_OBSERVER = "[对象查看]";
+    public static final String TRADER = "[对象查看, Trader]";
+    public static final String QUEUES = "[对象查看, Trader, Queues!]";
+
+    public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
+    public static final String CHECKER = "[对象查看, Trader, Checker]";
+    public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
+    public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
+    public static final String STRATEGY = "[对象查看, Trader, Strategy]";
+
+    public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
+    public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
+            "ordersWaitForCheckTransactionStatusMap]";
+    public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
+    public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
+
 }
