@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.util;
 
+import cn.hutool.core.util.StrUtil;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -64,4 +66,17 @@ public class GuiCommonUtil {
         }
         return null;
     }
+
+    /**
+     * 将 json字符串转换为 html形式, 方便 JLabel等 显示
+     *
+     * @param jsonPrettyStr
+     * @return
+     */
+    public static String jsonStrToHtmlFormat(String jsonPrettyStr) {
+        jsonPrettyStr = "<html>" + StrUtil.replace(jsonPrettyStr, "\n", "<br/>") + "</html>";
+        jsonPrettyStr = StrUtil.replace(jsonPrettyStr, " ", "&ensp;");
+        return jsonPrettyStr;
+    }
+
 }

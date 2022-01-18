@@ -70,7 +70,9 @@ public class OrderExecutor {
                     order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
                     order.addLifePoint(Order.LifePointStatus.WAIT_CHECK_TRANSACTION_STATUS,
                             "wait_check_transaction_status: 订单进入check队列,等待check完成");
+
                     trader.getOrdersWaitForCheckTransactionStatusMap().put(order, responses);
+                    trader.getOrdersAllMap().put(order, responses); // 也放入全订单队列
                 }
             }
         });

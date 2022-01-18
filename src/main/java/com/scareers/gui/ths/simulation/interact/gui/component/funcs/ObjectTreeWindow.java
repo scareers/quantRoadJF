@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
@@ -18,6 +19,8 @@ import lombok.SneakyThrows;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
@@ -200,14 +203,56 @@ public class ObjectTreeWindow extends FuncFrameS {
      */
     private void changeToOrdersWaitForExecution() throws Exception {
         JList<OrderSimple> jList = getOrderSimpleJListOfOrdersWaitForExecution();
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+        panel.add(jList, BorderLayout.WEST); // 添加列表
+        jList.setPreferredSize(new Dimension(300, 10000));
+        jList.setBackground(COLOR_THEME_TITLE);
+        OrderDetailPanel orderDetailPanel = getDetailPanel();
+        panel.add(orderDetailPanel, BorderLayout.CENTER); // 添加详情
 
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(jList, BorderLayout.CENTER);
+
+        jList.addListSelectionListener(new ListSelectionListener() {
+            @SneakyThrows
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                ThreadUtil.execAsync(new Runnable() {
+                    @SneakyThrows
+                    @Override
+                    public void run() {
+                        while (true) {
+                            int index = e.getLastIndex();
+                            OrderSimple orderSimple = null;
+                            try {
+                                orderSimple = jList.getModel().getElementAt(index);
+                            } catch (Exception ex) {
+                                Thread.sleep(100);
+                                continue;
+                            }
+                            String orderId = orderSimple.getRawOrderId();
+                            Order currentOrder = null;
+                            // 从最新队列读取
+                            for (Order order : Trader.getInstance().getOrdersWaitForExecution()) {
+                                if (order.getRawOrderId().equals(orderId)) {
+                                    currentOrder = order;
+                                }
+                            } // 查找具体
+                            if (currentOrder != null) {
+                                orderDetailPanel.setText(currentOrder.toStringPretty());
+                            }
+                            break; // 静态
+                        }
+                    }
+                }, true);
+            }
+        });
+        jList.setSelectedIndex(0); // 选择第一个
+
         this.getMainDisplayWindow().setCenterPanel(panel);
     }
 
-    private JPanel temp() {
-        return null;
+    private OrderDetailPanel getDetailPanel() {
+        return new OrderDetailPanel();
     }
 
     private JList<OrderSimple> getOrderSimpleJListOfOrdersWaitForExecution() throws Exception {

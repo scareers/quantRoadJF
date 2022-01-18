@@ -119,6 +119,12 @@ public class Trader {
      * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
      */
     private PriorityBlockingQueue<Order> ordersWaitForExecution;
+
+    /**
+     * 存放 所有曾出现过订单, 一旦订单加入 ordersWaitForExecution, 则加入此key,value为空列表.
+     * 一旦获取到响应, 则设定value.
+     */
+    private ConcurrentHashMap<Order, List<Response>> ordersAllMap;
     /**
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
@@ -299,6 +305,7 @@ public class Trader {
     public void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
+        ordersAllMap.put(order, Arrays.asList()); // 暂无响应
         log.info("order enqueue: {} ", order.toString());
     }
 

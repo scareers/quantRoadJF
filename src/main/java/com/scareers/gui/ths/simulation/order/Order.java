@@ -349,6 +349,8 @@ public class Order implements Comparable, Serializable {
     /**
      * 用于订单极简单显示
      */
+    @Setter
+    @Getter
     public static class OrderSimple implements Comparable {
         private static final long serialVersionUID = 78921545L;
 

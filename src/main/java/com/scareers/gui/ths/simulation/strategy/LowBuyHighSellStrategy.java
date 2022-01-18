@@ -166,7 +166,7 @@ public class LowBuyHighSellStrategy extends Strategy {
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toStringPretty());
+            log.info(JSONUtil.parseArray(responses).toString());
             order.addLifePoint(Order.LifePointStatus.CHECKING, "执行失败");
         }
         trader.successFinishOrder(order, responses);

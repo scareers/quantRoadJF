@@ -6,6 +6,8 @@ import com.scareers.gui.ths.simulation.order.Order;
 import javax.swing.*;
 import java.awt.*;
 
+import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
+
 /**
  * description: Order列表JList专用, 将显示 toolTip
  *
@@ -18,9 +20,7 @@ public class OrderListCellRendererS extends DefaultListCellRenderer {
                                                   boolean cellHasFocus) {
         JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
         String toolTip = ((Order.OrderSimple) value).toToolTip();
-        toolTip = "<html>" + StrUtil.replace(toolTip, "\n", "<br/>") + "</html>";
-        toolTip = StrUtil.replace(toolTip, " ", "&ensp;");
-        label.setToolTipText(toolTip); // pretty json 可换行
+        label.setToolTipText(jsonStrToHtmlFormat(toolTip)); // pretty json 可换行
         return label;
     }
 }
