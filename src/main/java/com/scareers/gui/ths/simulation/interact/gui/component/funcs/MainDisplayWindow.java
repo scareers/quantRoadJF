@@ -51,7 +51,6 @@ public class MainDisplayWindow extends FuncFrameS {
                     autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale,
                     funcToolsWidthOrHeight, layer);
         }
-//        INSTANCE.setBorder(BorderFactory.createLineBorder(COLOR_MAIN_DISPLAY_BORDER, 1));
         return INSTANCE;
     }
 
@@ -61,7 +60,8 @@ public class MainDisplayWindow extends FuncFrameS {
 
     @Override
     public void initCenterPanel() { // 抽象方法
-        JPanel panel = new JPanel(); // 默认空panel
+        JPanel panel = new JPanel(new BorderLayout()); // 默认空panel
+        panel.add(new JLabel("xxxxx"), BorderLayout.CENTER);
         panel.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MAIN);
         setCenterPanel(panel);
     }
@@ -71,12 +71,11 @@ public class MainDisplayWindow extends FuncFrameS {
      *
      * @param centerPanel
      */
-    @Override
-    public void setCenterPanel(JPanel centerPanel) {
-        this.centerPanel = centerPanel;
-        this.add(this.centerPanel, BorderLayout.CENTER);
-    }
-
+//    @Override
+//    public void setCenterPanel(JPanel centerPanel) {
+//        this.centerPanel = centerPanel;
+//        this.add(centerPanel, BorderLayout.CENTER);
+//    }
     @Override
     protected List<FuncButton> getToolButtons1() {
         return super.defaultToolsButtonList1();

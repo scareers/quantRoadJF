@@ -63,7 +63,7 @@ public class Trader {
     private static final Log log = LogUtil.getLogger();
     private static Trader INSTANCE;
 
-    public static Trader getInstance() throws IOException, TimeoutException {
+    public static Trader getInstance() throws Exception {
         // todo: 待完成
         if (INSTANCE == null) {
             INSTANCE = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);

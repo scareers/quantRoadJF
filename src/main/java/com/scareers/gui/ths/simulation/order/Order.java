@@ -2,7 +2,6 @@ package com.scareers.gui.ths.simulation.order;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -168,6 +167,10 @@ public class Order implements Comparable, Serializable {
     @SneakyThrows
     @Override
     public String toString() {
+        return JSONUtil.toJsonStr(prepare(true)); // 直观显示
+    }
+
+    public String toStringPretty() throws Exception {
         return JSONUtil.toJsonPrettyStr(prepare(true)); // 直观显示
     }
 
@@ -346,14 +349,25 @@ public class Order implements Comparable, Serializable {
     /**
      * 用于订单极简单显示
      */
-    public static class OrderSimpleDisplay implements Comparable {
+    public static class OrderSimple implements Comparable {
+        private static final long serialVersionUID = 78921545L;
+
         String orderType;
         DateTime generateTime;
         String rawOrderId;
         Map<String, Object> params;
 
+        private static OrderSimple DUMMY_ORDER_SIMPLE;
 
-        public OrderSimpleDisplay(Order order) {
+        public static OrderSimple getDummyOrderSimple() {
+            if (DUMMY_ORDER_SIMPLE == null) {
+                DUMMY_ORDER_SIMPLE = new OrderSimple(new Order("当前尚无订单"));
+            }
+            return DUMMY_ORDER_SIMPLE;
+        }
+
+
+        public OrderSimple(Order order) {
             this.orderType = order.getOrderType();
             this.generateTime = order.getGenerateTime();
             this.rawOrderId = order.getRawOrderId();
@@ -361,37 +375,34 @@ public class Order implements Comparable, Serializable {
         }
 
         @Override
-        public String toString() { // 显示类型,时间,参数, id
+        public String toString() { // 显示 [时间] 类型
             StringBuilder builder = new StringBuilder();
-            builder.append(orderType);
-            builder.append("[");
-            builder.append(generateTime.toString("HH:mm:ss.SSS")); // 简单形式
-            builder.append(", "); // 简单形式
-            builder.append(params.toString());
-            builder.append(", "); // 简单形式
-            builder.append(rawOrderId); // 简单形式
-            builder.append("]"); // 简单形式
-            return builder.toString();
-        }
-
-        public String toSimpleString() { // 仅仅显示类型和时间
-            StringBuilder builder = new StringBuilder();
-            builder.append(orderType);
             builder.append("[");
             builder.append(generateTime.toString("HH:mm:ss.SSS")); // 简单形式
             builder.append("]"); // 简单形式
+            builder.append(" "); // 简单形式
+            builder.append(orderType);
             return builder.toString();
         }
 
+        public String toToolTip() { // 提示文字, 显示
+            JSONObject toolTip = new JSONObject();
+            toolTip.set("generateTime", generateTime.toString("HH:mm:ss.SSS"));
+            toolTip.set("orderType", orderType);
+            toolTip.set("rawOrderId", rawOrderId);
+            toolTip.set("params", params);
+
+            return JSONUtil.toJsonPrettyStr(toolTip);
+        }
 
         @SneakyThrows
         @Override
         public int compareTo(Object o) {
-            if (o instanceof OrderSimpleDisplay) {
-                OrderSimpleDisplay orderSimpleDisplay = (OrderSimpleDisplay) o;
-                return this.generateTime.compareTo(((OrderSimpleDisplay) o).generateTime); // 默认使用时间排序
+            if (o instanceof OrderSimple) {
+                OrderSimple orderSimpleDisplay = (OrderSimple) o;
+                return this.generateTime.compareTo(((OrderSimple) o).generateTime); // 默认使用时间排序
             } else {
-                throw new Exception("OrderSimpleDisplay cant not compareTo other types");
+                throw new Exception("OrderSimple cant not compareTo other types");
             }
         }
     }
@@ -405,10 +416,10 @@ public class Order implements Comparable, Serializable {
      * @param orders
      * @return
      */
-    public static Vector<OrderSimpleDisplay> ordersForDisplay(List<Order> orders) {
+    public static Vector<OrderSimple> ordersForDisplay(List<Order> orders) {
         Vector res = new Vector();
         for (Order order : orders) {
-            res.add(new OrderSimpleDisplay(order));
+            res.add(new OrderSimple(order));
         }
         return res;
     }

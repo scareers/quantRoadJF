@@ -1,21 +1,39 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
+import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.TreeCellRendererS;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
+import com.scareers.gui.ths.simulation.model.DefaultListModelS;
+import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.gui.ths.simulation.order.Order.OrderSimple;
+import com.scareers.gui.ths.simulation.trader.Trader;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
+import javax.swing.plaf.basic.BasicListUI;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
@@ -26,6 +44,8 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoom
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
+@Getter
+@Setter
 public class ObjectTreeWindow extends FuncFrameS {
     private static ObjectTreeWindow INSTANCE;
 
@@ -73,11 +93,13 @@ public class ObjectTreeWindow extends FuncFrameS {
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
     }
 
+    JTree tree;
+
     @Override
     public void initCenterPanel() { // 抽象方法
         JPanel jPanel = new JPanel();
         jPanel.setLayout(new BorderLayout());
-        JTree tree = buildTree();
+        tree = buildTree();
         tree.setBackground(COLOR_THEME_MINOR);
         jPanel.add(tree, BorderLayout.WEST);
         tree.setLocation(0, 0);
@@ -156,16 +178,18 @@ public class ObjectTreeWindow extends FuncFrameS {
 
         tree.setCellRenderer(renderer);
         tree.addTreeSelectionListener(new TreeSelectionListener() {
+            @SneakyThrows
             @Override
             public void valueChanged(TreeSelectionEvent e) {
                 dispatch(e.getNewLeadSelectionPath().toString());
             }
         });
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDERS_WAIT_FOR_EXECUTION);
         return tree;
     }
 
 
-    public void dispatch(String treePath) {
+    public void dispatch(String treePath) throws Exception {
         if (TreePathConstants.ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
             // private PriorityBlockingQueue<Order> ordersWaitForExecution;
             changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法.
@@ -175,25 +199,53 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
     /**
-     * 等待执行的订单队列展示. 均需要重设主界面的 CenterPanel (默认空panel)
+     * 等待执行的订单队列展示.
+     * JPanel --> 左 JList显示列表, 右详细内容.
+     * 均需要重设主界面的 CenterPanel (默认空panel)
      */
-    private void changeToOrdersWaitForExecution() {
-
-
-    }
-
-
-    public static class TreeCellRendererS extends DefaultTreeCellRenderer {
-        @Override
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
-                                                      boolean leaf, int row, boolean hasFocus) {
-            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
-            Object nodeData = node.getUserObject();
-            this.setText(nodeData.toString());
-//            this.setIcon();
-            return this;
+    private void changeToOrdersWaitForExecution() throws Exception {
+        Trader trader = Trader.getInstance();
+        if (trader == null) {
+            JLabel jLabel = new JLabel("Trader 尚未启动");
+            JPanel panel = new JPanel(new BorderLayout());
+            panel.add(jLabel, BorderLayout.CENTER);
+            this.setCenterPanel(panel);
+            System.out.println("Trader 尚未启动");
+            return;
         }
+        PriorityBlockingQueue<Order> orders = trader.getOrdersWaitForExecution();
+        Vector<OrderSimple> simpleOrders = Order.ordersForDisplay(new ArrayList<>(orders));
+        if (simpleOrders.size() == 0) {
+            simpleOrders.add(OrderSimple.getDummyOrderSimple());
+        }
+
+        DefaultListModelS<OrderSimple> model = new DefaultListModelS<>();
+        model.flush(simpleOrders);
+        JList<OrderSimple> jList = new JList<>(model);
+        jList.setCellRenderer(new OrderListCellRendererS());
+        jList.setForeground(COLOR_GRAY_COMMON);
+        BasicListUI ui = (BasicListUI) jList.getUI();
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(jList, BorderLayout.CENTER);
+        this.getMainDisplayWindow().setCenterPanel(panel);
+
+        ThreadUtil.execAsync(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) { // 每半秒刷新model
+                    Vector<OrderSimple> simpleOrders = Order
+                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersWaitForExecution()));
+                    if (simpleOrders.size() == 0) {
+                        simpleOrders.add(OrderSimple.getDummyOrderSimple());
+                    }
+                    model.flush(simpleOrders);
+                    Thread.sleep(1000);
+                }
+            }
+        }, true);
+
     }
 
 

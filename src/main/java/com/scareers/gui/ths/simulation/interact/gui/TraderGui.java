@@ -21,6 +21,7 @@ import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -121,6 +122,8 @@ public class TraderGui extends JFrame {
         this.pack();
     }
 
+    ObjectTreeWindow objectTreeWindow;
+
     private void addListeners() {
         TraderGui mainWindow = this;
         // 打开后启动交易程序
@@ -205,11 +208,11 @@ public class TraderGui extends JFrame {
                 objectsBtn.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        ObjectTreeWindow objectTreeWindow = ObjectTreeWindow
+                        objectTreeWindow = ObjectTreeWindow
                                 .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
-                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.2, 30, false,
+                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.2, 30,
+                                        false,
                                         layerOfObjectsTree + 1); // 一定不为null, 单例
-
                         if (objectTreeWindow.isVisible()) {
                             objectTreeWindow.flushBounds();
                             objectTreeWindow.hide();
@@ -334,6 +337,7 @@ public class TraderGui extends JFrame {
      * @throws UnsupportedLookAndFeelException
      */
     public static void initGlobalStyle() throws UnsupportedLookAndFeelException {
+//        ToolTipManager.sharedInstance().setDismissDelay(10000); // tooptip持续时间
         UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
 
