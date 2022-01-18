@@ -12,14 +12,12 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
-import static com.scareers.gui.ths.simulation.interact.gui.component.funcs.TreePathConstants.ORDERS_WAIT_FOR_EXECUTION;
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
 
 /**
@@ -76,7 +74,7 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
     @Override
-    public void initCenterComponent() { // 抽象方法
+    public void initCenterPanel() { // 抽象方法
         JPanel jPanel = new JPanel();
         jPanel.setLayout(new BorderLayout());
         JTree tree = buildTree();
@@ -87,8 +85,12 @@ public class ObjectTreeWindow extends FuncFrameS {
         jScrollPane.setBorder(null);
         jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-        this.centerComponent = jScrollPane;
-        this.add(this.centerComponent, BorderLayout.CENTER);
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(jScrollPane, BorderLayout.CENTER);
+        this.centerPanel = panel;
+
+        this.add(this.centerPanel, BorderLayout.CENTER);
     }
 
     @Override
@@ -156,31 +158,28 @@ public class ObjectTreeWindow extends FuncFrameS {
         tree.addTreeSelectionListener(new TreeSelectionListener() {
             @Override
             public void valueChanged(TreeSelectionEvent e) {
-                dispatch(e.getNewLeadSelectionPath());
+                dispatch(e.getNewLeadSelectionPath().toString());
             }
         });
         return tree;
     }
 
-    public void dispatch(TreePath treePath) {
-        new Dispatcher().dispatch(treePath.toString());
+
+    public void dispatch(String treePath) {
+        if (TreePathConstants.ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
+            // private PriorityBlockingQueue<Order> ordersWaitForExecution;
+            changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法.
+        } else {
+            System.out.println(treePath);
+        }
     }
 
+    /**
+     * 等待执行的订单队列展示. 均需要重设主界面的 CenterPanel
+     */
+    private void changeToOrdersWaitForExecution() {
+        JPanel displayPanel = this.getMainDisplayWindow().getCenterPanel();
 
-    public static class Dispatcher {
-        public void dispatch(String treePath) {
-            if (ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
-                // private PriorityBlockingQueue<Order> ordersWaitForExecution;
-                changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法.
-            } else {
-                System.out.println(treePath);
-            }
-        }
-
-        private void changeToOrdersWaitForExecution() {
-
-
-        }
     }
 
 
@@ -196,37 +195,39 @@ public class ObjectTreeWindow extends FuncFrameS {
             return this;
         }
     }
+
+
+    public static class TreePathConstants { // 路径常量, 字符串配置
+        /**
+         * [对象查看]
+         * [对象查看, Trader]
+         * [对象查看, Trader, Queues!]
+         * [对象查看, Trader, OrderExecutor]
+         * [对象查看, Trader, Checker]
+         * [对象查看, Trader, AccountStates]
+         * [对象查看, Trader, FsTransactionFetcher]
+         * [对象查看, Trader, Strategy]
+         * [对象查看, Trader, Queues!, ordersWaitForExecution]
+         * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
+         * [对象查看, Trader, Queues!, ordersSuccessFinished]
+         * [对象查看, Trader, Queues!, ordersResendFinished]
+         */
+        public static final String OBJECT_OBSERVER = "[对象查看]";
+        public static final String TRADER = "[对象查看, Trader]";
+        public static final String QUEUES = "[对象查看, Trader, Queues!]";
+
+        public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
+        public static final String CHECKER = "[对象查看, Trader, Checker]";
+        public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
+        public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
+        public static final String STRATEGY = "[对象查看, Trader, Strategy]";
+
+        public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
+        public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
+                "ordersWaitForCheckTransactionStatusMap]";
+        public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
+        public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
+
+    }
 }
 
-class TreePathConstants { // 路径常量, 字符串配置
-    /**
-     * [对象查看]
-     * [对象查看, Trader]
-     * [对象查看, Trader, Queues!]
-     * [对象查看, Trader, OrderExecutor]
-     * [对象查看, Trader, Checker]
-     * [对象查看, Trader, AccountStates]
-     * [对象查看, Trader, FsTransactionFetcher]
-     * [对象查看, Trader, Strategy]
-     * [对象查看, Trader, Queues!, ordersWaitForExecution]
-     * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
-     * [对象查看, Trader, Queues!, ordersSuccessFinished]
-     * [对象查看, Trader, Queues!, ordersResendFinished]
-     */
-    public static final String OBJECT_OBSERVER = "[对象查看]";
-    public static final String TRADER = "[对象查看, Trader]";
-    public static final String QUEUES = "[对象查看, Trader, Queues!]";
-
-    public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
-    public static final String CHECKER = "[对象查看, Trader, Checker]";
-    public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
-    public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
-    public static final String STRATEGY = "[对象查看, Trader, Strategy]";
-
-    public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
-    public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
-            "ordersWaitForCheckTransactionStatusMap]";
-    public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
-    public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
-
-}

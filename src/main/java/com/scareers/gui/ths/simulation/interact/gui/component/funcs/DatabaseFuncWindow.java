@@ -49,12 +49,11 @@ public class DatabaseFuncWindow extends FuncFrameS {
     }
 
     @Override
-    public void initCenterComponent() { // 抽象方法
+    public void initCenterPanel() { // 抽象方法
         JLabel label = new JLabel("我是数据库");
         JPanel jPanel = new JPanel();
         jPanel.add(label);
-        this.centerComponent = jPanel;
-        this.add(this.centerComponent, BorderLayout.CENTER);
+        setCenterPanel(jPanel);
     }
 
     @Override

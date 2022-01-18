@@ -346,7 +346,7 @@ public class Order implements Comparable, Serializable {
     /**
      * 用于订单极简单显示
      */
-    public static class OrderSimpleDisplay {
+    public static class OrderSimpleDisplay implements Comparable {
         String orderType;
         DateTime generateTime;
         String rawOrderId;
@@ -384,6 +384,16 @@ public class Order implements Comparable, Serializable {
         }
 
 
+        @SneakyThrows
+        @Override
+        public int compareTo(Object o) {
+            if (o instanceof OrderSimpleDisplay) {
+                OrderSimpleDisplay orderSimpleDisplay = (OrderSimpleDisplay) o;
+                return this.generateTime.compareTo(((OrderSimpleDisplay) o).generateTime); // 默认使用时间排序
+            } else {
+                throw new Exception("OrderSimpleDisplay cant not compareTo other types");
+            }
+        }
     }
 
 

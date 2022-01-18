@@ -4,6 +4,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.ToolsPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.utils.log.LogUtil;
@@ -63,6 +64,7 @@ public abstract class FuncFrameS extends JInternalFrame {
 
     // 自动初始化
     CorePanel corePanel; // corePanel对象, 从 mainWindow 获取
+    MainDisplayWindow mainDisplayWindow; // 编辑区
     JDesktopPane mainPane; // 主界面 mainPane, 层级控件, 从 mainWindow 获取
     int preferWidthOrHeight; // 该宽/高每次经由preferScale 计算得来, 可变.  mainPane 宽度*倍率
     ToolsPanel funcTools; // 内部工具按钮组, 底部功能在左侧, 左右在上侧
@@ -74,10 +76,15 @@ public abstract class FuncFrameS extends JInternalFrame {
     CopyOnWriteArrayList<FuncButton> toolButtonList2 = new CopyOnWriteArrayList<>();
 
     // 抽象方法实现初始化功能框内容
-    protected Component centerComponent; // 主内容, 若调用特殊方法, 应当强制转型后调用
+    protected JPanel centerPanel; // 主内容, 若调用特殊方法, 应当强制转型后调用
 
     // 3抽象方法, 需要填充中央组件, 内部工具栏2类按钮
-    protected abstract void initCenterComponent();
+    protected abstract void initCenterPanel();
+
+    public void setCenterPanel(JPanel centerPanel) {
+        this.centerPanel = centerPanel;
+        this.add(this.centerPanel, BorderLayout.CENTER);
+    }
 
     /**
      * 需要实现此2方法, 决定功能框 内部工具栏, 常调用 defaultToolsButtonList1/2, 默认实现3按钮在1
@@ -260,6 +267,7 @@ public abstract class FuncFrameS extends JInternalFrame {
 
         this.mainWindow = mainWindow;
         this.corePanel = this.mainWindow.getCorePanel();
+        this.mainDisplayWindow = corePanel.getMainDisplayWindow();
         this.mainPane = this.corePanel.getMainPane();
         this.mainPaneWidth = this.mainPane.getWidth();
         this.mainPaneHeight = this.mainPane.getHeight();
@@ -276,7 +284,7 @@ public abstract class FuncFrameS extends JInternalFrame {
         if (hasInternalTool) {
             initInnerFuncTools(); // 需要实现2 abstract, 总之, 默认要求实现 内部工具栏, 以及主内容控件
         }
-        initCenterComponent(); // abstract
+        initCenterPanel(); // abstract
 
         this.setDefaultCloseOperation(HIDE_ON_CLOSE); // 关闭时隐藏
         this.setBorder(null); // 无边框

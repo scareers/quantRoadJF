@@ -5,13 +5,8 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.Di
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
-import javax.swing.plaf.basic.BasicInternalFrameUI;
 import java.awt.*;
 import java.util.List;
-import java.util.Objects;
-
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.layerOfLogFuncWindow;
 
 /**
  * description: 查看日志输出, 约等于idea的 Run 显示信息. 无法显示 print
@@ -59,10 +54,9 @@ public class LogFuncWindow extends FuncFrameS {
     }
 
     @Override
-    public void initCenterComponent() { // 抽象方法
+    public void initCenterPanel() { // 抽象方法
         DisplayForLog displayForLog = new DisplayForLog();
-        this.centerComponent = displayForLog;
-        this.add(displayForLog, BorderLayout.CENTER);
+        setCenterPanel(displayForLog);
     }
 
     @Override
