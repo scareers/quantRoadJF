@@ -184,11 +184,13 @@ public class ObjectTreeWindow extends FuncFrameS {
         public static final String OBJECT_OBSERVER = "[对象查看]";
         public static final String TRADER = "[对象查看, Trader]";
         public static final String QUEUES = "[对象查看, Trader, Queues!]";
+
         public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
         public static final String CHECKER = "[对象查看, Trader, Checker]";
         public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
         public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
         public static final String STRATEGY = "[对象查看, Trader, Strategy]";
+
         public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
         public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
                 "ordersWaitForCheckTransactionStatusMap]";
@@ -199,8 +201,12 @@ public class ObjectTreeWindow extends FuncFrameS {
 
     public static class Dispatcher {
         public void dispatch(String treePath) {
-            System.out.println(treePath);
 
+            switch (treePath) {
+                TreePathConstants.ORDERS_WAIT_FOR_EXECUTION: // 等待执行队列 , Order 列表
+                default:
+                    System.out.println(treePath);
+            }
         }
     }
 
