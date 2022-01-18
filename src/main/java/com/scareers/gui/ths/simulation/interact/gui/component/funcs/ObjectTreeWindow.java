@@ -175,10 +175,10 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
     /**
-     * 等待执行的订单队列展示. 均需要重设主界面的 CenterPanel
+     * 等待执行的订单队列展示. 均需要重设主界面的 CenterPanel (默认空panel)
      */
     private void changeToOrdersWaitForExecution() {
-        JPanel displayPanel = this.getMainDisplayWindow().getCenterPanel();
+
 
     }
 
