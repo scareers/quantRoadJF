@@ -32,7 +32,9 @@ public class GuiCommonUtil {
 
 
     /**
-     * 给定JTree, 和 String的节点路径, 选择某个节点
+     * 给定JTree, 和 String的节点路径, 选择某个节点.
+     * nodePath 全路径字符串
+     *
      * @param tree
      * @param nodePath
      */
@@ -44,7 +46,7 @@ public class GuiCommonUtil {
     }
 
     /**
-     * 树查找节点以选择
+     * 树查找节点以选择, 全路径字符串
      *
      * @param nodeStr
      * @param first
@@ -56,7 +58,7 @@ public class GuiCommonUtil {
         Enumeration e = root.breadthFirstEnumeration();  //获取root下所有节点
         while (e.hasMoreElements()) {
             node = (DefaultMutableTreeNode) e.nextElement();
-            if ((node.getUserObject().toString()).contains(nodeStr)) {
+            if (new TreePath(node.getPath()).toString().equals(nodeStr)) {
                 return node;
             }
         }

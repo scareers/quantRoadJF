@@ -21,16 +21,11 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
-import javax.swing.plaf.basic.BasicListUI;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -204,15 +199,19 @@ public class ObjectTreeWindow extends FuncFrameS {
      * 均需要重设主界面的 CenterPanel (默认空panel)
      */
     private void changeToOrdersWaitForExecution() throws Exception {
+        JList<OrderSimple> jList = getOrderSimpleJListOfOrdersWaitForExecution();
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.add(jList, BorderLayout.CENTER);
+        this.getMainDisplayWindow().setCenterPanel(panel);
+    }
+
+    private JPanel temp() {
+        return null;
+    }
+
+    private JList<OrderSimple> getOrderSimpleJListOfOrdersWaitForExecution() throws Exception {
         Trader trader = Trader.getInstance();
-        if (trader == null) {
-            JLabel jLabel = new JLabel("Trader 尚未启动");
-            JPanel panel = new JPanel(new BorderLayout());
-            panel.add(jLabel, BorderLayout.CENTER);
-            this.setCenterPanel(panel);
-            System.out.println("Trader 尚未启动");
-            return;
-        }
         PriorityBlockingQueue<Order> orders = trader.getOrdersWaitForExecution();
         Vector<OrderSimple> simpleOrders = Order.ordersForDisplay(new ArrayList<>(orders));
         if (simpleOrders.size() == 0) {
@@ -224,12 +223,6 @@ public class ObjectTreeWindow extends FuncFrameS {
         JList<OrderSimple> jList = new JList<>(model);
         jList.setCellRenderer(new OrderListCellRendererS());
         jList.setForeground(COLOR_GRAY_COMMON);
-        BasicListUI ui = (BasicListUI) jList.getUI();
-
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.add(jList, BorderLayout.CENTER);
-        this.getMainDisplayWindow().setCenterPanel(panel);
-
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
@@ -245,7 +238,7 @@ public class ObjectTreeWindow extends FuncFrameS {
                 }
             }
         }, true);
-
+        return jList;
     }
 
 
