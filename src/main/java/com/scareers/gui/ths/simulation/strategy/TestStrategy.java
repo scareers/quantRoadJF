@@ -47,22 +47,22 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 @Getter
 @Setter
-public class LowBuyHighSellStrategy extends Strategy {
-    private static LowBuyHighSellStrategy INSTANCE;
+public class TestStrategy extends Strategy {
+    private static TestStrategy INSTANCE;
 
-    public static LowBuyHighSellStrategy getInstance(Trader trader, String strategyName,
-                                                     List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
-                                                     int suitableSelectStockCount, // 期望的选股结果数量
-                                                     boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
-                                                     List<Integer> keyInts) throws Exception {
+    public static TestStrategy getInstance(Trader trader, String strategyName,
+                                           List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
+                                           int suitableSelectStockCount, // 期望的选股结果数量
+                                           boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
+                                           List<Integer> keyInts) throws Exception {
         if (INSTANCE == null) {
-            INSTANCE = new LowBuyHighSellStrategy(trader, strategyName, forceManualExcludeStocks,
+            INSTANCE = new TestStrategy(trader, strategyName, forceManualExcludeStocks,
                     suitableSelectStockCount, preferenceMoreStock, keyInts);
         }
         return INSTANCE;
     }
 
-    public static LowBuyHighSellStrategy getInstance() {
+    public static TestStrategy getInstance() {
         return INSTANCE;
     }
 
@@ -127,11 +127,11 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     private Trader trader;
 
-    public LowBuyHighSellStrategy(Trader trader, String strategyName,
-                                  List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
-                                  int suitableSelectStockCount, // 期望的选股结果数量
-                                  boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
-                                  List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推
+    public TestStrategy(Trader trader, String strategyName,
+                        List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
+                        int suitableSelectStockCount, // 期望的选股结果数量
+                        boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
+                        List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推
     ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
@@ -173,17 +173,18 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     @Override
     protected void buyDecision() throws Exception {
-        int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
+        int sleep = RandomUtil.randomInt(1, 10);
         Thread.sleep(sleep * 2000);
-        Order order = null;
-        int type = RandomUtil.randomInt(12);
-        if (type < 3) {
+
+        Order order;
+        int type = RandomUtil.randomInt(16);
+        if (type < 5) {
             order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-        } else if (type < 6) {
-            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-        } else if (type < 8) {
-            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
         } else if (type < 10) {
+            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
+        } else if (type < 12) {
+            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
+        } else if (type < 14) {
             order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
         } else {
             order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);

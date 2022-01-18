@@ -27,6 +27,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
+import com.scareers.gui.ths.simulation.strategy.TestStrategy;
 import com.scareers.utils.StrUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -90,7 +91,7 @@ public class Trader {
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
         // 直到此时才实例化策略对象, 绑定到 trader
-        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
+        Strategy mainStrategy = TestStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
                 20, // 期望选股数量
                 false, // 偏向更多选股结果
