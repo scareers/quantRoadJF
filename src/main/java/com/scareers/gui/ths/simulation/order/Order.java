@@ -1,5 +1,8 @@
 package com.scareers.gui.ths.simulation.order;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -11,7 +14,6 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * description: 核心订单对象 抽象类.
@@ -42,7 +44,7 @@ public class Order implements Comparable, Serializable {
 
     private String rawOrderId; //java全局唯一id, 决定了equals和hashcode
     private String orderType; // 核心订单类型, 对应python操作api
-    private long timestamp; // 生成时间戳
+    private DateTime generateTime; // 生成时间
     private Map<String, Object> params; // 订单api需要的其他参数map
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 几乎不需要修改
@@ -57,10 +59,10 @@ public class Order implements Comparable, Serializable {
         HashMap<String, Object> params = new HashMap<>();
         params.put("test_param_key", "test_param_key");
         Order x = new Order("test_order_type", params);
-        Console.log(x.toJsonStr());
-        Console.log(x.deepCopy());
-        Console.log(x.toJsonStr().equals(x.deepCopy().toJsonStr()));
 
+        Console.log(x.toJsonStrForTrans());
+        Console.log(x.toJsonPrettyStrForTrans());
+        Console.log(x.toString());
     }
 
 
@@ -68,7 +70,7 @@ public class Order implements Comparable, Serializable {
         // 常态仅 orderType null, 参数空map
         this(IdUtil.objectId(),
                 null,
-                System.currentTimeMillis(),
+                new DateTime(),
                 new HashMap<>(),
                 null,
                 true, // 应当属于params, 但过于常用, 转换为基本属性
@@ -111,21 +113,36 @@ public class Order implements Comparable, Serializable {
 
 
     public static List<String> paramsKeyExcludes = Arrays.asList(
-            "rawOrderId", "orderType", "timestamp", "priority", "lifePoints", "timer", "otherRawMessages",
+            "rawOrderId", "orderType", "generateTime", "priority", "lifePoints", "timer", "otherRawMessages",
             "resendTimes", "execResponses", "parentOrder"
     ); // params 的key不应包含这些key, 它们均表示Order本身属性
 
     public JSON prepare() throws Exception {
+        return prepare(false); // 将参数作为key放入order对象
+    }
+
+    /**
+     * 若 forDisplay, 则将参数作为 params={} 显示, 并不展开, 默认重载方法展开, 为了传递给python api
+     *
+     * @param forDisplay
+     * @return
+     * @throws Exception
+     */
+    public JSON prepare(boolean forDisplay) throws Exception {
         JSONObject order = new JSONObject();
         order.set("rawOrderId", rawOrderId);
         if (orderType == null) {
             throw new Exception("订单对象尚未生成完成,不可prepare()");
         }
         order.set("orderType", orderType);
-        order.set("timestamp", timestamp);
+        order.set("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
         order.set("priority", priority);
         checkParamsKeySet();
-        order.putAll(params);
+        if (forDisplay) {
+            order.set("params", params);
+        } else {
+            order.putAll(params);
+        }
         ArrayList<JSON> lifePointsJSON = new ArrayList<>();
         for (LifePoint i : lifePoints) {
             lifePointsJSON.add(i.asJson());
@@ -139,6 +156,7 @@ public class Order implements Comparable, Serializable {
         return order;
     }
 
+
     private void checkParamsKeySet() throws Exception {
         for (String paramName : params.keySet()) {
             if (paramsKeyExcludes.contains(paramName)) {
@@ -150,14 +168,14 @@ public class Order implements Comparable, Serializable {
     @SneakyThrows
     @Override
     public String toString() {
-        return toJsonPrettyStr();
+        return JSONUtil.toJsonPrettyStr(prepare(true)); // 直观显示
     }
 
-    public String toJsonStr() throws Exception {
+    public String toJsonStrForTrans() throws Exception { // 传递给python
         return JSONUtil.toJsonStr(prepare(), orderJsonStrConfig);
     }
 
-    public String toJsonPrettyStr() throws Exception {
+    public String toJsonPrettyStrForTrans() throws Exception { // 传递给python
         return JSONUtil.toJsonPrettyStr(prepare());
     }
 
@@ -229,7 +247,7 @@ public class Order implements Comparable, Serializable {
     public Order forResend() {
         Order res = ObjectUtil.cloneByStream(this);
         res.setRawOrderId(IdUtil.objectId());
-        res.setTimestamp(System.currentTimeMillis());
+        res.setGenerateTime(new DateTime());
         List<LifePoint> lifePoints = new ArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new: 订单对象,尚未决定类型")); // 新生
         lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("{}: 订单对象已确定类型",
@@ -249,7 +267,7 @@ public class Order implements Comparable, Serializable {
     public static class LifePoint implements Serializable { // 生命周期中, 某一时刻点
         private static final long serialVersionUID = 1454451855L;
 
-        Long timestamp; // 此生命阶段生成时间戳, 自动new时生成
+        DateTime generateTime; // 此生命阶段生成时间戳, 自动new时生成
         LifePointStatus status;
         String description;
         String payload;
@@ -257,7 +275,7 @@ public class Order implements Comparable, Serializable {
 
         public LifePoint(LifePointStatus status) {
             this.status = status;
-            this.timestamp = System.currentTimeMillis();
+            this.generateTime = new DateTime();
         }
 
         public LifePoint(LifePointStatus status, String description) {
@@ -279,7 +297,7 @@ public class Order implements Comparable, Serializable {
         public JSON asJson() {
             JSONObject lifePoint = new JSONObject();
             lifePoint.set("status", status.toString());
-            lifePoint.set("timestamp", timestamp);
+            lifePoint.set("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
             lifePoint.set("description", description);
             lifePoint.set("payload", payload);
             lifePoint.set("notes", notes);
@@ -325,6 +343,63 @@ public class Order implements Comparable, Serializable {
         }
     }
 
+    /**
+     * 用于订单极简单显示
+     */
+    public static class OrderSimpleDisplay {
+        String orderType;
+        DateTime generateTime;
+        String rawOrderId;
+        Map<String, Object> params;
+
+
+        public OrderSimpleDisplay(Order order) {
+            this.orderType = order.getOrderType();
+            this.generateTime = order.getGenerateTime();
+            this.rawOrderId = order.getRawOrderId();
+            this.params = order.getParams();
+        }
+
+        @Override
+        public String toString() { // 显示类型,时间,参数, id
+            StringBuilder builder = new StringBuilder();
+            builder.append(orderType);
+            builder.append("[");
+            builder.append(generateTime.toString("HH:mm:ss.SSS")); // 简单形式
+            builder.append(", "); // 简单形式
+            builder.append(params.toString());
+            builder.append(", "); // 简单形式
+            builder.append(rawOrderId); // 简单形式
+            builder.append("]"); // 简单形式
+            return builder.toString();
+        }
+
+        public String toSimpleString() { // 仅仅显示类型和时间
+            StringBuilder builder = new StringBuilder();
+            builder.append(orderType);
+            builder.append("[");
+            builder.append(generateTime.toString("HH:mm:ss.SSS")); // 简单形式
+            builder.append("]"); // 简单形式
+            return builder.toString();
+        }
+
+
+    }
+
 
     private static final Log log = LogUtil.getLogger();
+
+    /**
+     * 获取简单展示列表, gui JList 的model使用
+     *
+     * @param orders
+     * @return
+     */
+    public static Vector<OrderSimpleDisplay> ordersForDisplay(List<Order> orders) {
+        Vector res = new Vector();
+        for (Order order : orders) {
+            res.add(new OrderSimpleDisplay(order));
+        }
+        return res;
+    }
 }

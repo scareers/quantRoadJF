@@ -35,7 +35,7 @@ public class ProducerSimple {
             // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
             Order order = generateSellOrderQuick("600090", 100, 1.25);
             String msg;
-            msg = order.toJsonStr();
+            msg = order.toJsonStrForTrans();
             channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                     msg.getBytes(StandardCharsets.UTF_8));
         }

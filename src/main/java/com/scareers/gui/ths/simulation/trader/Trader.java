@@ -299,7 +299,7 @@ public class Trader {
     public void putOrderToWaitExecute(Order order) throws Exception {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
-        log.info("order enqueue: {} ", order.toJsonStr());
+        log.info("order enqueue: {} ", order.toString());
     }
 
     /**

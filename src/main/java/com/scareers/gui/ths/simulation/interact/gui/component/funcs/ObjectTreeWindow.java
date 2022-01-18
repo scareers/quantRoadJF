@@ -170,13 +170,16 @@ public class ObjectTreeWindow extends FuncFrameS {
     public static class Dispatcher {
         public void dispatch(String treePath) {
             if (ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
-                changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法
+                // private PriorityBlockingQueue<Order> ordersWaitForExecution;
+                changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法.
             } else {
                 System.out.println(treePath);
             }
         }
 
         private void changeToOrdersWaitForExecution() {
+
+
         }
     }
 
