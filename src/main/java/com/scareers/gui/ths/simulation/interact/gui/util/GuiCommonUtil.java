@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.util;
 
 import cn.hutool.core.util.StrUtil;
+import com.scareers.gui.ths.simulation.order.Order;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -78,5 +79,25 @@ public class GuiCommonUtil {
         jsonPrettyStr = StrUtil.replace(jsonPrettyStr, " ", "&ensp;");
         return jsonPrettyStr;
     }
+
+    public static void setLabelForeColorByOrderLifePoint(Order order, Component label) {
+        Order.LifePointStatus status = order.getLastLifePoint().getStatus();
+        if (status == Order.LifePointStatus.EXECUTING) {
+            label.setForeground(Color.yellow);
+        } else if (status == Order.LifePointStatus.FINISH_EXECUTE) {
+            label.setForeground(Color.pink);
+        } else if (status == Order.LifePointStatus.WAIT_CHECKING) {
+            label.setForeground(Color.green);
+        } else if (status == Order.LifePointStatus.CHECKED) {
+            label.setForeground(Color.blue);
+        } else if (status == Order.LifePointStatus.RESENDED) {
+            label.setForeground(Color.red);
+        } else if (status == Order.LifePointStatus.FINISH) {
+            label.setForeground(Color.CYAN);
+        } else {
+            label.setForeground(Color.gray);
+        }
+    }
+
 
 }

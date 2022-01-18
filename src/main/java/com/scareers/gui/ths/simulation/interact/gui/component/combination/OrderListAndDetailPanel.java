@@ -196,6 +196,8 @@ public class OrderListAndDetailPanel extends JPanel {
                                 .getRawOrderId();
                         // 因实时改变,需要防止越界
                     } catch (Exception e) {
+                        // System.out.println("出错");
+                        // @noti: AWT 框架自动显示错误信息. 用户侧不显示. 常出现索引列表越界错误.. 因为列表内容时动态的
                         Thread.sleep(1); // 不断刷新
                         continue;
                     }

@@ -2,6 +2,8 @@ package com.scareers.gui.ths.simulation.order;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -13,6 +15,7 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * description: 核心订单对象 抽象类.
@@ -79,10 +82,15 @@ public class Order implements Comparable, Serializable {
                 new ArrayList<>(),
                 null //
         );
-        List<LifePoint> lifePoints = new ArrayList<>();
+        List<LifePoint> lifePoints = new CopyOnWriteArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new: 订单对象,尚未决定类型")); // 新生
         this.lifePoints = lifePoints;
     }
+
+    public LifePoint getLastLifePoint() {
+        return this.getLifePoints().get(this.getLifePoints().size() - 1);
+    }
+
 
     public Order(String orderType, Map<String, Object> params) {
         this();
@@ -251,7 +259,7 @@ public class Order implements Comparable, Serializable {
         Order res = ObjectUtil.cloneByStream(this);
         res.setRawOrderId(IdUtil.objectId());
         res.setGenerateTime(new DateTime());
-        List<LifePoint> lifePoints = new ArrayList<>();
+        List<LifePoint> lifePoints = new CopyOnWriteArrayList<>();
         lifePoints.add(new LifePoint(LifePointStatus.NEW, "new: 订单对象,尚未决定类型")); // 新生
         lifePoints.add(new LifePoint(LifePointStatus.GENERATED, StrUtil.format("{}: 订单对象已确定类型",
                 orderType)));
@@ -359,6 +367,7 @@ public class Order implements Comparable, Serializable {
         DateTime generateTime;
         String rawOrderId;
         Map<String, Object> params;
+        Order order;
 
         private static OrderSimple DUMMY_ORDER_SIMPLE;
 
@@ -371,6 +380,7 @@ public class Order implements Comparable, Serializable {
 
 
         public OrderSimple(Order order) {
+            this.order = order;
             this.orderType = order.getOrderType();
             this.generateTime = order.getGenerateTime();
             this.rawOrderId = order.getRawOrderId();
@@ -380,11 +390,21 @@ public class Order implements Comparable, Serializable {
         @Override
         public String toString() { // 显示 [时间] 类型
             StringBuilder builder = new StringBuilder();
+            builder.append("<html>");
             builder.append("[");
             builder.append(generateTime.toString("HH:mm:ss.SSS")); // 简单形式
             builder.append("]"); // 简单形式
             builder.append(" "); // 简单形式
             builder.append(orderType);
+
+            if (this.order.getLastLifePoint().getStatus() == LifePointStatus.EXECUTING) {
+                builder.append(" <font color=\"red\">["); // 简单形式
+                builder.append(((double) DateUtil
+                        .between(this.order.getLastLifePoint().getGenerateTime(), new DateTime(), DateUnit.MS,
+                                false)) / 1000);
+                builder.append(" s]</font>"); // 简单形式
+            }
+            builder.append("</html>");
             return builder.toString();
         }
 

@@ -124,14 +124,14 @@ public class Trader {
      * 存放 所有曾出现过订单, 一旦订单加入 ordersWaitForExecution, 则加入此key,value为空列表.
      * 一旦获取到响应, 则设定value.
      */
-    public static volatile ConcurrentHashMap<Order, List<Response>> ordersAllMap = new ConcurrentHashMap<>();
+    public static volatile Hashtable<Order, List<Response>> ordersAllMap = new Hashtable<>();
     ;
 
     /**
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    public static volatile ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
+    public static volatile Hashtable<Order, List<Response>> ordersWaitForCheckTransactionStatusMap = new Hashtable<>();
     ;
 
     /**
@@ -140,12 +140,12 @@ public class Trader {
      *
      * @noti 某些重发的订单, 原始订单对象 应添加 RESENDED 生命周期后, 再放入本map, 含义为 "resended_finish"
      */
-    public static volatile ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished = new ConcurrentHashMap<>();
+    public static volatile Hashtable<Order, List<Response>> ordersSuccessFinished = new Hashtable<>();
     ;
     /**
      * 重发后视为完成的原始订单,resended 生命周期的 payload, 带有当次重发的"新订单" 的 rawOrderId
      */
-    public static volatile ConcurrentHashMap<Order, List<Response>> ordersResendFinished = new ConcurrentHashMap<>();
+    public static volatile Hashtable<Order, List<Response>> ordersResendFinished = new Hashtable<>();
     ;
 
     // 各大子组件, 均单例模式
@@ -412,15 +412,6 @@ public class Trader {
         resendFinishOrder(order, responses, newOrderId);
     }
 
-
-    public static Log getLog() {
-        return log;
-    }
-
-    public static Trader getINSTANCE() {
-        return INSTANCE;
-    }
-
     public static int getAllOrderAmount() {
         return allOrderAmount;
     }
@@ -429,28 +420,20 @@ public class Trader {
         return ordersWaitForExecution;
     }
 
-    public static ConcurrentHashMap<Order, List<Response>> getOrdersAllMap() {
+    public static Hashtable<Order, List<Response>> getOrdersAllMap() {
         return ordersAllMap;
     }
 
-    public static ConcurrentHashMap<Order, List<Response>> getOrdersWaitForCheckTransactionStatusMap() {
+    public static Hashtable<Order, List<Response>> getOrdersWaitForCheckTransactionStatusMap() {
         return ordersWaitForCheckTransactionStatusMap;
     }
 
-    public static ConcurrentHashMap<Order, List<Response>> getOrdersSuccessFinished() {
+    public static Hashtable<Order, List<Response>> getOrdersSuccessFinished() {
         return ordersSuccessFinished;
     }
 
-    public static ConcurrentHashMap<Order, List<Response>> getOrdersResendFinished() {
+    public static Hashtable<Order, List<Response>> getOrdersResendFinished() {
         return ordersResendFinished;
-    }
-
-    public static void setINSTANCE(Trader INSTANCE) {
-        Trader.INSTANCE = INSTANCE;
-    }
-
-    public static void setAllOrderAmount(int allOrderAmount) {
-        Trader.allOrderAmount = allOrderAmount;
     }
 
     public static void setOrdersWaitForExecution(
@@ -459,22 +442,22 @@ public class Trader {
     }
 
     public static void setOrdersAllMap(
-            ConcurrentHashMap<Order, List<Response>> ordersAllMap) {
+            Hashtable<Order, List<Response>> ordersAllMap) {
         Trader.ordersAllMap = ordersAllMap;
     }
 
     public static void setOrdersWaitForCheckTransactionStatusMap(
-            ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap) {
+            Hashtable<Order, List<Response>> ordersWaitForCheckTransactionStatusMap) {
         Trader.ordersWaitForCheckTransactionStatusMap = ordersWaitForCheckTransactionStatusMap;
     }
 
     public static void setOrdersSuccessFinished(
-            ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished) {
+            Hashtable<Order, List<Response>> ordersSuccessFinished) {
         Trader.ordersSuccessFinished = ordersSuccessFinished;
     }
 
     public static void setOrdersResendFinished(
-            ConcurrentHashMap<Order, List<Response>> ordersResendFinished) {
+            Hashtable<Order, List<Response>> ordersResendFinished) {
         Trader.ordersResendFinished = ordersResendFinished;
     }
 }

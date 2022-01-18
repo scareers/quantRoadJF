@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
+import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.setLabelForeColorByOrderLifePoint;
 
 /**
  * description: Order对象 详情展示. 简单通过操作 label 显示
@@ -44,6 +45,7 @@ public class OrderDetailPanel extends JPanel {
         String newText = jsonStrToHtmlFormat(order.toStringPretty());
         if (!newText.equals(preText)) {
             this.label.setText(newText);
+            setLabelForeColorByOrderLifePoint(order, label);
             preText = newText;
         }
     }

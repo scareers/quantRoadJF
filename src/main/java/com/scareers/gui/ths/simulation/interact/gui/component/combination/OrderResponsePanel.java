@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination;
 
 import cn.hutool.json.JSONUtil;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -8,6 +9,7 @@ import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
 
@@ -40,11 +42,25 @@ public class OrderResponsePanel extends JPanel {
         this.add(jScrollPane, BorderLayout.CENTER);
     }
 
-    public void updateText(Order order) throws Exception {
-        String newText = jsonStrToHtmlFormat(JSONUtil.toJsonPrettyStr(
-                Trader.getInstance().getOrdersAllMap().get(order)));
+    public void updateText(Order order) {
+        List<Response> responses = Trader.getOrdersAllMap().get(order);
+        String newText = jsonStrToHtmlFormat(JSONUtil.toJsonPrettyStr(responses));
+
         if (!newText.equals(preText)) {
             this.label.setText(newText);
+            if (responses.size() > 0) {
+                String state = responses.get(responses.size() - 1).getStr("state");
+                if (state.equals("success")) {
+                    label.setForeground(Color.green);
+                } else if (state.equals("fail")) {
+                    label.setForeground(Color.red);
+                } else {
+                    label.setForeground(Color.gray);
+                }
+            } else {
+                label.setForeground(Color.gray);
+            }
+
             this.preText = newText;
         }
     }

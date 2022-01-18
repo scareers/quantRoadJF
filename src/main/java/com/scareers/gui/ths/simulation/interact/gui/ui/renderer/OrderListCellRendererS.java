@@ -13,6 +13,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
+import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.setLabelForeColorByOrderLifePoint;
 
 /**
  * description: Order列表JList专用, 将显示 toolTip
@@ -25,9 +26,11 @@ public class OrderListCellRendererS extends DefaultListCellRenderer {
     public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
                                                   boolean cellHasFocus) {
         JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-        String toolTip = ((Order.OrderSimple) value).toToolTip();
+        Order.OrderSimple orderSimple = (Order.OrderSimple) value;
+        String toolTip = orderSimple.toToolTip();
         label.setToolTipText(jsonStrToHtmlFormat(toolTip)); // pretty json 可换行
 
+        setLabelForeColorByOrderLifePoint(orderSimple.getOrder(), label);
 
         return label;
     }
