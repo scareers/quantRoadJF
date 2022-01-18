@@ -2,14 +2,16 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import com.alee.laf.list.ListDataAdapter;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderDetailPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderResponsePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.TreeCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
-import com.scareers.gui.ths.simulation.model.DefaultListModelS;
+import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.OrderSimple;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -18,11 +20,9 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
+import javax.swing.event.*;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
@@ -196,6 +196,11 @@ public class ObjectTreeWindow extends FuncFrameS {
         }
     }
 
+
+    private volatile OrderSimple selectedOrder; // 唯一被选中订单
+    private boolean monitorStarted; // 监控订单的线程是否启动
+    private boolean selectedOrderChanged = false; // 监控订单的线程是否启动
+
     /**
      * 等待执行的订单队列展示.
      * JPanel --> 左 JList显示列表, 右详细内容.
@@ -203,61 +208,115 @@ public class ObjectTreeWindow extends FuncFrameS {
      */
     private void changeToOrdersWaitForExecution() throws Exception {
         JList<OrderSimple> jList = getOrderSimpleJListOfOrdersWaitForExecution();
+
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.add(jList, BorderLayout.WEST); // 添加列表
         jList.setPreferredSize(new Dimension(300, 10000));
         jList.setBackground(COLOR_THEME_TITLE);
+
+        JSplitPane orderContent = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // box 存放 order详情和响应
+        orderContent.setDividerLocation(500);
+
         OrderDetailPanel orderDetailPanel = getDetailPanel();
-        panel.add(orderDetailPanel, BorderLayout.CENTER); // 添加详情
+//        orderDetailPanel.setPreferredSize(new Dimension(700, 10));
+        orderContent.setLeftComponent(orderDetailPanel); // 添加响应
+
+        OrderResponsePanel responsePanel = getResponsePanel();
+        orderContent.setRightComponent(responsePanel); // 添加响应
+//        responsePanel.setPreferredSize(new Dimension(10000, 10000));
 
 
         jList.addListSelectionListener(new ListSelectionListener() {
             @SneakyThrows
             @Override
             public void valueChanged(ListSelectionEvent e) {
+                if (e.getValueIsAdjusting()) {
+                    return; // 若是数据更新调整, 则无视
+                }
                 ThreadUtil.execAsync(new Runnable() {
                     @SneakyThrows
                     @Override
                     public void run() {
                         while (true) {
                             int index = e.getLastIndex();
-                            OrderSimple orderSimple = null;
                             try {
-                                orderSimple = jList.getModel().getElementAt(index);
+                                selectedOrder = jList.getModel().getElementAt(index);
+                                selectedOrderChanged = true;
                             } catch (Exception ex) {
                                 Thread.sleep(100);
                                 continue;
                             }
-                            String orderId = orderSimple.getRawOrderId();
-                            Order currentOrder = null;
-                            // 从最新队列读取
-                            for (Order order : Trader.getInstance().getOrdersWaitForExecution()) {
-                                if (order.getRawOrderId().equals(orderId)) {
-                                    currentOrder = order;
-                                }
-                            } // 查找具体
-                            if (currentOrder != null) {
-                                orderDetailPanel.setText(currentOrder.toStringPretty());
-                            }
-                            break; // 静态
+                            break; // 仅设置1次
                         }
                     }
                 }, true);
             }
         });
+
+        panel.add(orderContent, BorderLayout.CENTER); // 添加详情
+        panel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                jList.setSize(300, 10000);
+                orderContent.setDividerLocation(0.35); // 分割位置百分比
+                orderContent.setBounds(0, 0, panel.getWidth()-300, panel.getHeight()); // 占满
+            }
+        });
+        this.getMainDisplayWindow().setCenterPanel(panel);
         jList.setSelectedIndex(0); // 选择第一个
 
-        this.getMainDisplayWindow().setCenterPanel(panel);
+        if (monitorStarted) {
+            return;
+        }
+        ThreadUtil.execAsync(new Runnable() { // 开始监控 selectedOrder
+            @SneakyThrows
+            @Override
+            public void run() {
+                while (true) {
+                    if (selectedOrder == null) {
+                        Thread.sleep(100);
+                        continue;
+                    }
+                    String orderId = selectedOrder.getRawOrderId();
+
+                    while (true) {
+                        if (selectedOrderChanged) {
+                            selectedOrderChanged = false;
+                            break;
+                        }
+                        Order currentOrder = null;
+                        // 从最新队列读取
+                        for (Order order : Trader.getInstance().getOrdersAllMap().keySet()) {
+//                        for (Order order : Trader.getInstance().getOrdersWaitForExecution()) {
+                            if (order.getRawOrderId().equals(orderId)) {
+                                currentOrder = order;
+                            }
+                        } // 查找具体
+                        if (currentOrder != null) {
+                            orderDetailPanel.updateText(currentOrder);
+                            responsePanel.updateText(currentOrder);
+                        }
+                        Thread.sleep(100); // 不断刷新响应
+                    }
+                }
+            }
+        }, true);
+
     }
 
     private OrderDetailPanel getDetailPanel() {
         return new OrderDetailPanel();
     }
 
+    private OrderResponsePanel getResponsePanel() {
+        return new OrderResponsePanel();
+    }
+
     private JList<OrderSimple> getOrderSimpleJListOfOrdersWaitForExecution() throws Exception {
         Trader trader = Trader.getInstance();
         PriorityBlockingQueue<Order> orders = trader.getOrdersWaitForExecution();
+
         Vector<OrderSimple> simpleOrders = Order.ordersForDisplay(new ArrayList<>(orders));
         if (simpleOrders.size() == 0) {
             simpleOrders.add(OrderSimple.getDummyOrderSimple());
@@ -265,7 +324,10 @@ public class ObjectTreeWindow extends FuncFrameS {
 
         DefaultListModelS<OrderSimple> model = new DefaultListModelS<>();
         model.flush(simpleOrders);
+
         JList<OrderSimple> jList = new JList<>(model);
+
+
         jList.setCellRenderer(new OrderListCellRendererS());
         jList.setForeground(COLOR_GRAY_COMMON);
         ThreadUtil.execAsync(new Runnable() {
@@ -274,12 +336,13 @@ public class ObjectTreeWindow extends FuncFrameS {
             public void run() {
                 while (true) { // 每半秒刷新model
                     Vector<OrderSimple> simpleOrders = Order
-                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersWaitForExecution()));
+                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersAllMap().keySet()));
+//                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersWaitForExecution()));
                     if (simpleOrders.size() == 0) {
                         simpleOrders.add(OrderSimple.getDummyOrderSimple());
                     }
                     model.flush(simpleOrders);
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 }
             }
         }, true);
@@ -298,6 +361,7 @@ public class ObjectTreeWindow extends FuncFrameS {
          * [对象查看, Trader, FsTransactionFetcher]
          * [对象查看, Trader, Strategy]
          * [对象查看, Trader, Queues!, ordersWaitForExecution]
+         * [对象查看, Trader, Queues!, ordersAllMap]
          * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
          * [对象查看, Trader, Queues!, ordersSuccessFinished]
          * [对象查看, Trader, Queues!, ordersResendFinished]
@@ -313,6 +377,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         public static final String STRATEGY = "[对象查看, Trader, Strategy]";
 
         public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
+        public static final String ORDER_ALL_MAP = "[对象查看, Trader, Queues!, ordersAllMap]";
         public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
                 "ordersWaitForCheckTransactionStatusMap]";
         public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";

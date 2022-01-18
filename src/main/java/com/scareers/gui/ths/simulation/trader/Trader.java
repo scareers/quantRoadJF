@@ -169,6 +169,7 @@ public class Trader {
     public Trader(long flushIntervalForAS, long commonApiPriorityForAS, long priorityRaiseTimeThresholdForAS,
                   long priorityRaiseForAS) throws IOException, TimeoutException {
         this.ordersWaitForExecution = new PriorityBlockingQueue<>();
+        this.ordersAllMap = new ConcurrentHashMap<>();
         this.ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
         this.ordersSuccessFinished = new ConcurrentHashMap<>();
 

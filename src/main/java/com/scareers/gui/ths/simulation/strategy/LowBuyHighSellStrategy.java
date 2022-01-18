@@ -25,7 +25,6 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
-import org.fife.ui.rtextarea.RTextAreaEditorKit;
 
 import java.io.FileNotFoundException;
 import java.sql.Connection;
@@ -163,11 +162,11 @@ public class LowBuyHighSellStrategy extends Strategy {
         if ("success".equals(response.getStr("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
 //            log.warn("待执行订单数量: {}", trader.getOrdersWaitForExecution().size());
-            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功");
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
             log.info(JSONUtil.parseArray(responses).toString());
-            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行失败");
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
         }
         trader.successFinishOrder(order, responses);
     }
@@ -175,7 +174,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     @Override
     protected void buyDecision() throws Exception {
         int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-        Thread.sleep(sleep * 1000);
+        Thread.sleep(sleep * 5000);
         Order order = null;
         int type = RandomUtil.randomInt(12);
         if (type < 3) {

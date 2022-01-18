@@ -228,8 +228,8 @@ public class TraderGui extends JFrame {
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
 
 
-                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
+//                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick();
                         mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
                         Trader.main0();
                     } catch (Exception ex) {

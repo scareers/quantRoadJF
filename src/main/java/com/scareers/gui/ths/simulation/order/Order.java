@@ -326,8 +326,9 @@ public class Order implements Comparable, Serializable {
         WAIT_EXECUTE("wait_execute"),
         EXECUTING("executing"),
         FINISH_EXECUTE("finish_execute"),
-        WAIT_CHECK_TRANSACTION_STATUS("wait_check_transaction_status"),
-        CHECKING("checking"),
+
+        WAIT_CHECKING("checking[wait checking]"),
+        CHECKED("checked"),
 
         RESENDED("resended"), //  已被重发的订单,随后finish
         FINISH("finish"); // 正常完成订单
