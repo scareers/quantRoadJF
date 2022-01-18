@@ -21,16 +21,20 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
 
     public void flush(List<T> newList) {
         Collections.sort(newList);
-        for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
-            this.set(i, newList.get(i));
-        }
-        if (newList.size() > this.getSize()) {
 
-            this.addAll(newList.subList(this.getSize(), newList.size()));
-        } else if (newList.size() < this.getSize()) {
-            this.removeRange(newList.size(), this.getSize() - 1); // 注意大的index需要-1
+        synchronized (this) {
+
+            for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
+                this.set(i, newList.get(i));
+            }
+            if (newList.size() > this.getSize()) {
+
+                this.addAll(newList.subList(this.getSize(), newList.size()));
+            } else if (newList.size() < this.getSize()) {
+                this.removeRange(newList.size(), this.getSize() - 1); // 注意大的index需要-1
+            }
         }
-//        this.clear(); // 若直接clear+addAll, 将发生自动选中bug.
-//        this.addAll(newList);
+
+
     }
 }

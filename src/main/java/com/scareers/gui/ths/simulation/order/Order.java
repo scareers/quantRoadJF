@@ -402,7 +402,6 @@ public class Order implements Comparable, Serializable {
         @Override
         public int compareTo(Object o) {
             if (o instanceof OrderSimple) {
-                OrderSimple orderSimpleDisplay = (OrderSimple) o;
                 return this.generateTime.compareTo(((OrderSimple) o).generateTime); // 默认使用时间排序
             } else {
                 throw new Exception("OrderSimple cant not compareTo other types");

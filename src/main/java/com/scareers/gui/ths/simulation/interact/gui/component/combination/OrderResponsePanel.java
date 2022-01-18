@@ -18,26 +18,26 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.js
  * @date: 2022/1/18/018-12:36:07
  */
 @Getter
-public class OrderResponsePanel extends Panel {
+public class OrderResponsePanel extends JPanel {
     JLabel label;
     String preText = ""; // 是否有必要更新?
 
     public OrderResponsePanel() {
         this.setLayout(new BorderLayout());
         label = new JLabel("尚未选中订单");
-        label.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
-//        label.setForeground(SettingsOfGuiGlobal.COLOR_GRAY_COMMON);
         label.setForeground(Color.green);
         label.setVerticalAlignment(JLabel.TOP);
         label.setHorizontalAlignment(JLabel.LEFT);
         label.setBorder(BorderFactory.createLineBorder(Color.green));
-        label.setPreferredSize(new Dimension(10000, 1000));
-//        label.setVerticalTextPosition(0);
-//        JScrollPane jScrollPane=new JScrollPane(label);
-//        jScrollPane.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
-//        this.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
-//        this.add(jScrollPane, BorderLayout.WEST);
-        this.add(label, BorderLayout.WEST);
+
+        JScrollPane jScrollPane = new JScrollPane();
+        jScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        jScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPane.setViewportView(label);
+        jScrollPane.getViewport().setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
+
+
+        this.add(jScrollPane, BorderLayout.CENTER);
     }
 
     public void updateText(Order order) throws Exception {

@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.alee.laf.list.ListDataAdapter;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderDetailPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderResponsePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
@@ -143,10 +144,12 @@ public class ObjectTreeWindow extends FuncFrameS {
                 "ordersWaitForCheckTransactionStatusMap");
         DefaultMutableTreeNode ordersSuccessFinished = new DefaultMutableTreeNode("ordersSuccessFinished");
         DefaultMutableTreeNode ordersResendFinished = new DefaultMutableTreeNode("ordersResendFinished");
+        DefaultMutableTreeNode ordersAllMap = new DefaultMutableTreeNode("ordersAllMap");
         queues.add(ordersWaitForExecution);
         queues.add(ordersWaitForCheckTransactionStatusMap);
         queues.add(ordersSuccessFinished);
         queues.add(ordersResendFinished);
+        queues.add(ordersAllMap);
 
         traderNode.add(queues);
         traderNode.add(orderExecutorNode);
@@ -187,166 +190,29 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
 
-    public void dispatch(String treePath) throws Exception {
+    public void dispatch(String treePath) {
+        // 1. 5类队列
         if (TreePathConstants.ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
-            // private PriorityBlockingQueue<Order> ordersWaitForExecution;
-            changeToOrdersWaitForExecution(); // 均为切换 mainDisplay 显示界面的方法.
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_WAIT_FOR_EXECUTION);
+        } else if (TreePathConstants.ORDER_ALL_MAP.equals(treePath)) {
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDER_ALL_MAP);
+        } else if (TreePathConstants.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP.equals(treePath)) {
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP);
+        } else if (TreePathConstants.ORDERS_SUCCESS_FINISHED.equals(treePath)) {
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_SUCCESS_FINISHED);
+        } else if (TreePathConstants.ORDERS_RESEND_FINISHED.equals(treePath)) {
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_RESEND_FINISHED);
+            // 2.其他
         } else {
             System.out.println(treePath);
         }
     }
 
-
-    private volatile OrderSimple selectedOrder; // 唯一被选中订单
-    private boolean monitorStarted; // 监控订单的线程是否启动
-    private boolean selectedOrderChanged = false; // 监控订单的线程是否启动
-
-    /**
-     * 等待执行的订单队列展示.
-     * JPanel --> 左 JList显示列表, 右详细内容.
-     * 均需要重设主界面的 CenterPanel (默认空panel)
-     */
-    private void changeToOrdersWaitForExecution() throws Exception {
-        JList<OrderSimple> jList = getOrderSimpleJListOfOrdersWaitForExecution();
-
-        JPanel panel = new JPanel();
-        panel.setLayout(new BorderLayout());
-        panel.add(jList, BorderLayout.WEST); // 添加列表
-        jList.setPreferredSize(new Dimension(300, 10000));
-        jList.setBackground(COLOR_THEME_TITLE);
-
-        JSplitPane orderContent = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // box 存放 order详情和响应
-        orderContent.setDividerLocation(500);
-
-        OrderDetailPanel orderDetailPanel = getDetailPanel();
-//        orderDetailPanel.setPreferredSize(new Dimension(700, 10));
-        orderContent.setLeftComponent(orderDetailPanel); // 添加响应
-
-        OrderResponsePanel responsePanel = getResponsePanel();
-        orderContent.setRightComponent(responsePanel); // 添加响应
-//        responsePanel.setPreferredSize(new Dimension(10000, 10000));
-
-
-        jList.addListSelectionListener(new ListSelectionListener() {
-            @SneakyThrows
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (e.getValueIsAdjusting()) {
-                    return; // 若是数据更新调整, 则无视
-                }
-                ThreadUtil.execAsync(new Runnable() {
-                    @SneakyThrows
-                    @Override
-                    public void run() {
-                        while (true) {
-                            int index = e.getLastIndex();
-                            try {
-                                selectedOrder = jList.getModel().getElementAt(index);
-                                selectedOrderChanged = true;
-                            } catch (Exception ex) {
-                                Thread.sleep(100);
-                                continue;
-                            }
-                            break; // 仅设置1次
-                        }
-                    }
-                }, true);
-            }
-        });
-
-        panel.add(orderContent, BorderLayout.CENTER); // 添加详情
-        panel.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                jList.setSize(300, 10000);
-                orderContent.setDividerLocation(0.35); // 分割位置百分比
-                orderContent.setBounds(0, 0, panel.getWidth()-300, panel.getHeight()); // 占满
-            }
-        });
-        this.getMainDisplayWindow().setCenterPanel(panel);
-        jList.setSelectedIndex(0); // 选择第一个
-
-        if (monitorStarted) {
-            return;
-        }
-        ThreadUtil.execAsync(new Runnable() { // 开始监控 selectedOrder
-            @SneakyThrows
-            @Override
-            public void run() {
-                while (true) {
-                    if (selectedOrder == null) {
-                        Thread.sleep(100);
-                        continue;
-                    }
-                    String orderId = selectedOrder.getRawOrderId();
-
-                    while (true) {
-                        if (selectedOrderChanged) {
-                            selectedOrderChanged = false;
-                            break;
-                        }
-                        Order currentOrder = null;
-                        // 从最新队列读取
-                        for (Order order : Trader.getInstance().getOrdersAllMap().keySet()) {
-//                        for (Order order : Trader.getInstance().getOrdersWaitForExecution()) {
-                            if (order.getRawOrderId().equals(orderId)) {
-                                currentOrder = order;
-                            }
-                        } // 查找具体
-                        if (currentOrder != null) {
-                            orderDetailPanel.updateText(currentOrder);
-                            responsePanel.updateText(currentOrder);
-                        }
-                        Thread.sleep(100); // 不断刷新响应
-                    }
-                }
-            }
-        }, true);
-
-    }
-
-    private OrderDetailPanel getDetailPanel() {
-        return new OrderDetailPanel();
-    }
-
-    private OrderResponsePanel getResponsePanel() {
-        return new OrderResponsePanel();
-    }
-
-    private JList<OrderSimple> getOrderSimpleJListOfOrdersWaitForExecution() throws Exception {
-        Trader trader = Trader.getInstance();
-        PriorityBlockingQueue<Order> orders = trader.getOrdersWaitForExecution();
-
-        Vector<OrderSimple> simpleOrders = Order.ordersForDisplay(new ArrayList<>(orders));
-        if (simpleOrders.size() == 0) {
-            simpleOrders.add(OrderSimple.getDummyOrderSimple());
-        }
-
-        DefaultListModelS<OrderSimple> model = new DefaultListModelS<>();
-        model.flush(simpleOrders);
-
-        JList<OrderSimple> jList = new JList<>(model);
-
-
-        jList.setCellRenderer(new OrderListCellRendererS());
-        jList.setForeground(COLOR_GRAY_COMMON);
-        ThreadUtil.execAsync(new Runnable() {
-            @SneakyThrows
-            @Override
-            public void run() {
-                while (true) { // 每半秒刷新model
-                    Vector<OrderSimple> simpleOrders = Order
-                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersAllMap().keySet()));
-//                            .ordersForDisplay(new ArrayList<>(Trader.getInstance().getOrdersWaitForExecution()));
-                    if (simpleOrders.size() == 0) {
-                        simpleOrders.add(OrderSimple.getDummyOrderSimple());
-                    }
-                    model.flush(simpleOrders);
-                    Thread.sleep(100);
-                }
-            }
-        }, true);
-        return jList;
+    private void changeToDisplayOrderList(OrderListAndDetailPanel.Type type) {
+        OrderListAndDetailPanel
+                .getInstance(this.getMainDisplayWindow())
+                .changeType(type)
+                .showInMainDisplayWindow();
     }
 
 

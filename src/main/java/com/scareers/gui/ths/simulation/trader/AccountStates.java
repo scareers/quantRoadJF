@@ -319,6 +319,7 @@ public class AccountStates {
             }
             log.debug("flush success: AccountStates.nineBaseFundsData: 已更新账户9项基本资金数据");
             nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
+            trader.successFinishOrder(order,responses);
         } else {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
             trader.reSendAndFinishOrder(order, responses); // 强制高优先级重入队列!因此队列中可能存在2个
@@ -353,6 +354,7 @@ public class AccountStates {
                 log.warn("empty df: {}", fieldName);
             }
             realFlushFieldAndTimestamp(fieldName, dfTemp);
+            trader.successFinishOrder(order,responses);
             log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
         } else {
             log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);

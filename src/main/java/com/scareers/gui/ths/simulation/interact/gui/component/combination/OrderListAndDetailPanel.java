@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
@@ -15,12 +16,8 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_GRAY_COMMON;
@@ -35,74 +32,121 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  * @date: 2022/1/19/019-00:06:06
  */
 public class OrderListAndDetailPanel extends JPanel {
-    // 本类对象池, 单类型单例
-    public static ConcurrentHashMap<Type, OrderListAndDetailPanel> objectPool = new ConcurrentHashMap<>();
+    public static volatile OrderListAndDetailPanel INSTANCE;
+    // @noti: 使用单例模式. 当在 5种类型切换时, 仅仅切换 Type, 而jList和两个order展示, 将实时根据Type获取数据
+    public static volatile Type currentDataFlushType = Type.ORDER_ALL_MAP; // 默认all
     // 股票列表池, 分为不同 Type. 将读取 objectPool 所有key(已注册的类型), 对对应key更新列表, 保存入 map.
-    public static ConcurrentHashMap<Type, Vector<OrderSimple>> orderListPool = new ConcurrentHashMap<>();
+    public static volatile Vector<OrderSimple> currentOrderListShouldDisplay = new Vector<>(
+            Arrays.asList(OrderSimple.getDummyOrderSimple()));
 
-    static {
-        ThreadUtil.execAsync(new Runnable() {
-            @SneakyThrows
-            @Override
-            public void run() {
-                // 等待 有控件被注册
-                waitUtil(() -> objectPool.size() != 0, Integer.MAX_VALUE, 1, null, false);
-                while (true) { // 开始更新所有注册控件类型的相关数据列表
-                    for (Type typeRegistered : objectPool.keySet()) {
+    /**
+     * 单例模式
+     *
+     * @param type
+     * @param mainDisplayWindow
+     * @return
+     */
+    public static OrderListAndDetailPanel getInstance(MainDisplayWindow mainDisplayWindow) {
+        if (INSTANCE == null) {
+            // 首次调用, 将开始更新数据
+            ThreadUtil.execAsync(new Runnable() {
+                @SneakyThrows
+                @Override
+                public void run() {
+                    //等待 有控件被注册
+                    try {
+                        waitUtil(() -> {
+                            try {
+                                return Trader.allOrderAmount > 0;
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return false;
+                        }, Integer.MAX_VALUE, 1, "等待首个订单生成", true);
+                    } catch (TimeoutException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    while (true) { // 开始更新所有注册控件类型的相关数据列表
                         Vector<OrderSimple> simpleOrders = new Vector<>();
-                        if (typeRegistered == Type.ORDERS_WAIT_FOR_EXECUTION) {
+                        if (currentDataFlushType == Type.ORDERS_WAIT_FOR_EXECUTION) {
                             simpleOrders = Order.ordersForDisplay(
-                                    new ArrayList<>(Trader.getInstance().getOrdersWaitForExecution()));
-                        } else if (typeRegistered == Type.ORDER_ALL_MAP) {
+                                    new ArrayList<>(Trader.ordersWaitForExecution));
+                        } else if (currentDataFlushType == Type.ORDER_ALL_MAP) {
+                            Trader.getInstance();
                             simpleOrders = Order.ordersForDisplay(
-                                    new ArrayList<>(Trader.getInstance().getOrdersAllMap().keySet()));
-                        }// todo: 其他类型
-
+                                    new ArrayList<>(Trader.ordersAllMap.keySet()));
+                        } else if (currentDataFlushType == Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP) {
+                            simpleOrders = Order.ordersForDisplay(
+                                    new ArrayList<>(
+                                            Trader.ordersWaitForCheckTransactionStatusMap.keySet()));
+                        } else if (currentDataFlushType == Type.ORDERS_SUCCESS_FINISHED) {
+                            simpleOrders = Order.ordersForDisplay(
+                                    new ArrayList<>(Trader.ordersSuccessFinished.keySet()));
+                        } else if (currentDataFlushType == Type.ORDERS_RESEND_FINISHED) {
+                            simpleOrders = Order.ordersForDisplay(
+                                    new ArrayList<>(Trader.ordersResendFinished.keySet()));
+                        } else {
+                            System.out.println("未知类型");
+                        }
                         if (simpleOrders.size() == 0) {
                             simpleOrders.add(OrderSimple.getDummyOrderSimple());
                         }
-                        orderListPool.put(typeRegistered, simpleOrders); // 真实更新数据池
+                        Collections.sort(simpleOrders); // 有序
+                        currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
+                        Thread.sleep(10);
                     }
-                    // 数据更新频率
-                    Thread.sleep(1);
                 }
-            }
-        }, true);
-    }
-
-    public static synchronized OrderListAndDetailPanel getInstance(Type type, MainDisplayWindow mainDisplayWindow) {
-        if (orderListPool.size() == 0) { // 首次,将开始更新 orderListPool,仅执行一次
-
+            }, true);
+            INSTANCE = new OrderListAndDetailPanel(Type.ORDER_ALL_MAP, mainDisplayWindow); // 默认所有订单,自行调用changeType
         }
-        return null;
+//        mainDisplayWindow.getCenterPanel().addComponentListener(new ComponentAdapter() {
+//            @Override
+//            public void componentResized(ComponentEvent e) {
+//                System.out.println("xxx");
+//                INSTANCE.setBounds(0, 0, mainDisplayWindow.getWidth(), mainDisplayWindow.getHeight());
+//            }
+//        });
+        return INSTANCE;
     }
 
+    /**
+     * 5类队列
+     */
     public enum Type {
         ORDERS_WAIT_FOR_EXECUTION,
-        ORDER_ALL_MAP
+        ORDER_ALL_MAP,
+        ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP,
+        ORDERS_SUCCESS_FINISHED,
+        ORDERS_RESEND_FINISHED
     }
 
 
-    private volatile OrderSimple selectedOrder; // 唯一被选中订单
+    private static volatile OrderSimple selectedOrder; // 唯一被选中订单
     MainDisplayWindow mainDisplayWindow; // 主显示区
-    private Type type; // 类型
+    private volatile Type type; // 类型
+    volatile JList<OrderSimple> jList;
 
-    private volatile boolean changeSelect = false;
+    private static volatile boolean changeSelect = false; // 标志订单是否改变.
 
     private OrderListAndDetailPanel() {
     }
 
-    public OrderListAndDetailPanel(Type type, MainDisplayWindow mainDisplayWindow) {
+    private OrderListAndDetailPanel(Type type, MainDisplayWindow mainDisplayWindow) {
         super();
         this.type = type;
         this.mainDisplayWindow = mainDisplayWindow;
-        objectPool.put(type, this); // 注册, 此时 orderListPool 将不断更新数据
+        currentDataFlushType = this.type;
 
         // 1.主容器
         this.setLayout(new BorderLayout());
 
         // 2.JList显示列表
-        JList<OrderSimple> jList = getOrderSimpleJList();
+        jList = getOrderSimpleJList();
+        jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
         this.add(jList, BorderLayout.WEST); // 添加列表
         jList.setPreferredSize(new Dimension(300, 10000));
         jList.setBackground(COLOR_THEME_TITLE);
@@ -123,31 +167,6 @@ public class OrderListAndDetailPanel extends JPanel {
         this.add(orderContent, BorderLayout.CENTER);
 
 
-        // 5.jList 绑定监听. 选择项目后, 死循环不断更新 orderDetailPanel 与 responsePanel 内容,
-        // 此时 Order对象固定,不会因 JList发生改变而改变
-        jList.addListSelectionListener(new ListSelectionListener() {
-            @SneakyThrows
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                if (e.getValueIsAdjusting()) {
-                    return; // 若是数据更新调整, 则无视
-                }
-                ThreadUtil.execAsync(new Runnable() {
-                    @SneakyThrows
-                    @Override
-                    public void run() {
-                        try {
-                            selectedOrder = jList.getModel().getElementAt(e.getLastIndex());
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        } finally {
-                            changeSelect = true;
-                        }
-                    }
-                }, true);
-            }
-        });
-
         // 6.主panel 添加尺寸改变监听. 改变 jList 和 orderContent尺寸
         this.addComponentListener(new ComponentAdapter() {
             @Override
@@ -157,51 +176,64 @@ public class OrderListAndDetailPanel extends JPanel {
                 orderContent.setBounds(300, 0, getWidth() - 300, getHeight()); // 其余占满
             }
         });
-        // 7.初始选择首个 Order, 监听器中含有 等待实际被选中的逻辑, 将等待实际被选中
-        jList.setSelectedIndex(0); // 选择第一个
 
-        // 8.开始线程, 不断根据 selectedOrder 而刷新 订单详情+订单响应界面的数据
+
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
                 while (true) {
-                    if (selectedOrder == null) { // 等待订单设定
-                        Thread.sleep(1);
+                    List<Order> allOrder = // 因此直接在全map中查找. 且像等待队列一类, 可能出现点击后消失, 找不到订单
+                            new ArrayList<>(Trader.ordersAllMap.keySet());
+                    Order currentOrder = null;
+                    if (jList.getSelectedIndex() == -1) {
+                        Thread.sleep(1); // 不断刷新
                         continue;
                     }
-                    // 成功选择订单,或者改变订单.  获取订单id
-                    changeSelect = false; // 将死循环遍历当前订单, 直到被其他线程 修改 changeSelect
-                    String orderId = selectedOrder.getRawOrderId(); // 这里逻辑上已经控制了Order可能的类型
-                    while (true) {
-                        if (changeSelect) {
-                            // 若选择改变, 则跳出刷新该订单, 将会读取 新的订单
-                            // 该 flag 显然在 JList 选择监听中修改
+                    String orderId = null; // 避免变化, 及时JList已经刷新, 也能展示当时点击的订单而非刷新后
+                    try {
+                        orderId = currentOrderListShouldDisplay.get(jList.getSelectedIndex())
+                                .getRawOrderId();
+                        // 因实时改变,需要防止越界
+                    } catch (Exception e) {
+                        Thread.sleep(1); // 不断刷新
+                        continue;
+                    }
+                    for (Order order : allOrder) {
+                        if (order.getRawOrderId().equals(orderId)) {
+                            currentOrder = order; // 找到唯一的 Order 对象
                             break;
                         }
-                        List<Order> allOrder = // 因此直接在全map中查找. 且像等待队列一类, 可能出现点击后消失, 找不到订单
-                                new ArrayList<>(Trader.getInstance().getOrdersAllMap().keySet());
-                        Order currentOrder = null;
-                        for (Order order : allOrder) {
-                            if (order.getRawOrderId().equals(orderId)) {
-                                currentOrder = order; // 找到唯一的 Order 对象
-                                break;
-                            }
-                        }
-                        if (currentOrder != null) {
-                            orderDetailPanel.updateText(currentOrder);
-                            responsePanel.updateText(currentOrder);
-                        }
-                        Thread.sleep(10); // 不断刷新
                     }
+                    if (currentOrder != null) {
+                        orderDetailPanel.updateText(currentOrder);
+                        responsePanel.updateText(currentOrder);
+                    }
+                    Thread.sleep(1); // 不断刷新
                 }
             }
         }, true);
+    }
 
+    public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身
         mainDisplayWindow.setCenterPanel(this);
     }
 
+    /**
+     * 修改类型达成展示列表的改变,
+     *
+     * @param newType
+     * @return
+     * @key3 实测
+     */
+    @SneakyThrows
+    public OrderListAndDetailPanel changeType(Type newType) {
+        this.type = newType;
+        currentDataFlushType = this.type; // 将更换刷新数据源
+        jList.setSelectedIndex(0); // 选择第一个.
+        return this;
+    }
 
     private OrderDetailPanel getDetailPanel() {
         return new OrderDetailPanel();
@@ -211,12 +243,14 @@ public class OrderListAndDetailPanel extends JPanel {
         return new OrderResponsePanel();
     }
 
+    /**
+     * 只需要 切换 type, 则达成 JList的数据改变
+     *
+     * @return
+     */
     private JList<Order.OrderSimple> getOrderSimpleJList() {
-        Vector<OrderSimple> simpleOrders = orderListPool // 尝试获取, 若尚未更新则显示dummy. 理论上极快就能更新
-                .getOrDefault(this.type, new Vector<>(Arrays.asList(OrderSimple.getDummyOrderSimple())));
-
         DefaultListModelS<Order.OrderSimple> model = new DefaultListModelS<>();
-        model.flush(simpleOrders);
+        model.flush(currentOrderListShouldDisplay);
 
         JList<Order.OrderSimple> jList = new JList<>(model);
         jList.setCellRenderer(new OrderListCellRendererS());
@@ -228,10 +262,8 @@ public class OrderListAndDetailPanel extends JPanel {
             @Override
             public void run() {
                 while (true) { // 每 100ms 刷新model
-                    Vector<OrderSimple> simpleOrders = orderListPool
-                            .getOrDefault(type, new Vector<>(Arrays.asList(OrderSimple.getDummyOrderSimple())));
-                    model.flush(simpleOrders);
-                    Thread.sleep(100);
+                    model.flush(currentOrderListShouldDisplay);
+                    Thread.sleep(1);
                 }
             }
         }, true);

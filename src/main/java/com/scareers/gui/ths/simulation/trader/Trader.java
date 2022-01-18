@@ -35,10 +35,7 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
@@ -54,14 +51,16 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  * java发送消息 --> python执行 --> python发送响应 --> java收到retrying继续等待,直到success --> java执行完毕.
  * 将 API 封装为串行
  *
+ * @key3 实测gui用 getter访问字段将访问空队列,觉察不到变化. 需要将队列设置为 静态属性, 方可及时察觉到变化!
  * @author: admin
  * @date: 2021/12/14/014-13:44
  */
-@Setter
 @Getter
+@Setter
 public class Trader {
     private static final Log log = LogUtil.getLogger();
-    private static Trader INSTANCE;
+    public static volatile Trader INSTANCE;
+    public static volatile int allOrderAmount = 0;
 
     public static Trader getInstance() throws Exception {
         // todo: 待完成
@@ -118,18 +117,22 @@ public class Trader {
     /**
      * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
      */
-    private PriorityBlockingQueue<Order> ordersWaitForExecution;
+    public static volatile PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
+    ;
 
     /**
      * 存放 所有曾出现过订单, 一旦订单加入 ordersWaitForExecution, 则加入此key,value为空列表.
      * 一旦获取到响应, 则设定value.
      */
-    private ConcurrentHashMap<Order, List<Response>> ordersAllMap;
+    public static volatile ConcurrentHashMap<Order, List<Response>> ordersAllMap = new ConcurrentHashMap<>();
+    ;
+
     /**
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
-    private ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap;
+    public static volatile ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
+    ;
 
     /**
      * check 后, 将被放入完成队列. check信息, 将被放入 order.生命周期 check_transaction_status的描述中.
@@ -137,23 +140,25 @@ public class Trader {
      *
      * @noti 某些重发的订单, 原始订单对象 应添加 RESENDED 生命周期后, 再放入本map, 含义为 "resended_finish"
      */
-    private ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished;
+    public static volatile ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished = new ConcurrentHashMap<>();
+    ;
     /**
      * 重发后视为完成的原始订单,resended 生命周期的 payload, 带有当次重发的"新订单" 的 rawOrderId
      */
-    private ConcurrentHashMap<Order, List<Response>> ordersResendFinished;
+    public static volatile ConcurrentHashMap<Order, List<Response>> ordersResendFinished = new ConcurrentHashMap<>();
+    ;
 
     // 各大子组件, 均单例模式
-    private OrderExecutor orderExecutor;
-    private Checker checker;
-    private AccountStates accountStates;
-    private Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成关连
-    private FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
+    public volatile OrderExecutor orderExecutor;
+    public volatile Checker checker;
+    public volatile AccountStates accountStates;
+    public volatile Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成关连
+    public volatile FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
 
     // 通道, 自行初始化
-    private Channel channelComsumer; // 自行初始化
-    private Channel channelProducer;
-    private Connection connOfRabbitmq;
+    public volatile Channel channelComsumer; // 自行初始化
+    public volatile Channel channelProducer;
+    public volatile Connection connOfRabbitmq;
 
     /**
      * 参数为子组件构建参数, 后缀ForXy 表明了用于构建哪个子控件
@@ -168,10 +173,6 @@ public class Trader {
      */
     public Trader(long flushIntervalForAS, long commonApiPriorityForAS, long priorityRaiseTimeThresholdForAS,
                   long priorityRaiseForAS) throws IOException, TimeoutException {
-        this.ordersWaitForExecution = new PriorityBlockingQueue<>();
-        this.ordersAllMap = new ConcurrentHashMap<>();
-        this.ordersWaitForCheckTransactionStatusMap = new ConcurrentHashMap<>();
-        this.ordersSuccessFinished = new ConcurrentHashMap<>();
 
         this.orderExecutor = OrderExecutor.getInstance(this);
         this.checker = Checker.getInstance(this);
@@ -307,7 +308,9 @@ public class Trader {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
         ordersAllMap.put(order, Arrays.asList()); // 暂无响应
+        allOrderAmount++;
         log.info("order enqueue: {} ", order.toString());
+//        log.info("order enqueued: {} ", ordersAllMap.size());
     }
 
     /**
@@ -409,5 +412,70 @@ public class Trader {
         resendFinishOrder(order, responses, newOrderId);
     }
 
+
+    public static Log getLog() {
+        return log;
+    }
+
+    public static Trader getINSTANCE() {
+        return INSTANCE;
+    }
+
+    public static int getAllOrderAmount() {
+        return allOrderAmount;
+    }
+
+    public static PriorityBlockingQueue<Order> getOrdersWaitForExecution() {
+        return ordersWaitForExecution;
+    }
+
+    public static ConcurrentHashMap<Order, List<Response>> getOrdersAllMap() {
+        return ordersAllMap;
+    }
+
+    public static ConcurrentHashMap<Order, List<Response>> getOrdersWaitForCheckTransactionStatusMap() {
+        return ordersWaitForCheckTransactionStatusMap;
+    }
+
+    public static ConcurrentHashMap<Order, List<Response>> getOrdersSuccessFinished() {
+        return ordersSuccessFinished;
+    }
+
+    public static ConcurrentHashMap<Order, List<Response>> getOrdersResendFinished() {
+        return ordersResendFinished;
+    }
+
+    public static void setINSTANCE(Trader INSTANCE) {
+        Trader.INSTANCE = INSTANCE;
+    }
+
+    public static void setAllOrderAmount(int allOrderAmount) {
+        Trader.allOrderAmount = allOrderAmount;
+    }
+
+    public static void setOrdersWaitForExecution(
+            PriorityBlockingQueue<Order> ordersWaitForExecution) {
+        Trader.ordersWaitForExecution = ordersWaitForExecution;
+    }
+
+    public static void setOrdersAllMap(
+            ConcurrentHashMap<Order, List<Response>> ordersAllMap) {
+        Trader.ordersAllMap = ordersAllMap;
+    }
+
+    public static void setOrdersWaitForCheckTransactionStatusMap(
+            ConcurrentHashMap<Order, List<Response>> ordersWaitForCheckTransactionStatusMap) {
+        Trader.ordersWaitForCheckTransactionStatusMap = ordersWaitForCheckTransactionStatusMap;
+    }
+
+    public static void setOrdersSuccessFinished(
+            ConcurrentHashMap<Order, List<Response>> ordersSuccessFinished) {
+        Trader.ordersSuccessFinished = ordersSuccessFinished;
+    }
+
+    public static void setOrdersResendFinished(
+            ConcurrentHashMap<Order, List<Response>> ordersResendFinished) {
+        Trader.ordersResendFinished = ordersResendFinished;
+    }
 }
 
