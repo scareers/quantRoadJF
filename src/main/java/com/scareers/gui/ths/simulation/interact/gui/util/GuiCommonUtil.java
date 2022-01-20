@@ -86,7 +86,7 @@ public class GuiCommonUtil {
             label.setForeground(Color.yellow);
         } else if (status == Order.LifePointStatus.FINISH_EXECUTE) {
             label.setForeground(Color.pink);
-        } else if (status == Order.LifePointStatus.WAIT_CHECKING) {
+        } else if (status == Order.LifePointStatus.CHECKING) {
             label.setForeground(Color.green);
         } else if (status == Order.LifePointStatus.CHECKED) {
             label.setForeground(Color.blue);

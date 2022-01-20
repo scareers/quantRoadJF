@@ -66,7 +66,7 @@ public class OrderExecutor {
                     List<Response> responses = execOrderUtilSuccess(order);
                     executingOrder = null;
                     order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
-                    order.addLifePoint(Order.LifePointStatus.WAIT_CHECKING,
+                    order.addLifePoint(Order.LifePointStatus.CHECKING,
                             "checking: 订单进入check队列,等待check完成");
 
                     order.setExecResponses(responses); // 响应字段设置

@@ -58,7 +58,8 @@ public class AccountStates {
     public ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
     public DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
     public DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
-    public DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交
+    public DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交:
+    // 成交时间	证券代码	证券名称	操作	成交数量  成交均价	成交金额	合同编号	成交编号
     public DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
 
     public Long nineBaseFundsDataFlushTimestamp = null; // 五大接口刷新时间戳! long, 实际被刷新后更新.

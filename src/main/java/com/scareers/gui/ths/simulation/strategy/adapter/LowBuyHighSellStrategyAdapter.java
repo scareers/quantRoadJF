@@ -1,9 +1,11 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
+import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -27,6 +29,7 @@ import java.util.List;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
+import static com.scareers.utils.CommonUtil.sendEmailSimple;
 
 /**
  * description:
@@ -353,30 +356,84 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @param orderType
      * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
      */
+
+    private long maxCheckSellOrderTime = 120 * 1000; // 超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+
     @Override
     public void checkSellOrder(Order order, List<Response> responses, String orderType) {
         if (responses.size() > 1) {
             log.warn("total retrying times maybe: 订单共计重试 {} 次", responses.size() - 1);
         }
-        JSONObject response = responses.get(responses.size() - 1);
+        Response response = responses.get(responses.size() - 1);
         String state = response.getStr("state");
         if ("success".equals(state)) {
-            log.info("执行成功: {}", order.getRawOrderId());
-            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
+            if (order.getLastLifePoint().getStatus() != Order.LifePointStatus.CHECKING) { // 第一次
+                String notes = response.getStr("notes");
+                if (notes != null && notes.contains("通过查询今日全部订单确定的订单成功id")) {
+                    log.warn("success noti: {}", notes);
+                }
+            }
+            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功: 开始checking");
+            if (orderAlreadyMatchAllBuyOrSell(order, response)) {
+                order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功: 已全部成交");
+                trader.successFinishOrder(order, responses);
+            } else {
+                long checkTimeElapsed = DateUtil.between(order.getLastLifePoint().getGenerateTime(), DateUtil.date(),
+                        DateUnit.MS, true); // checking 状态持续了多少 ms??
+                if (checkTimeElapsed > maxCheckSellOrderTime) {
+                    log.error("order response state[success] but check fail: {}ms 内未能全部成交 {} [{}]",
+                            order.getOrderType(),
+                            order.getParams());
+                    try {
+                        sendEmailSimple(
+                                StrUtil.format("Trader.Checker: 订单执行成功但{}ms内未能全部成交,注意手动确认!", maxCheckSellOrderTime),
+                                StrUtil.format("order 对象: \n{}", order.toStringPretty()), true);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功[check失败]: check失败,已进入失败队列,注意手动确认");
+                    trader.failFinishOrder(order, responses); // check失败, 不加入 checked生命周期, 直接进入失败队列, 需要人为观察
+                } else {
+                    // 继续checking
+                }
+            }
         } else if ("fail".equals(state)) {
             log.error("执行失败: {}", order.getRawOrderId());
             log.info(JSONUtil.parseArray(responses).toString());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
-        } else if ("exception".equals(state)) {
-            log.error("order response state[exception]: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toString());
-            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
-        } else { // 未知响应状态.
 
+        } else if ("exception".equals(state)) { // 极快,省掉 CHECKING 生命周期
+            log.error("order response state[exception]: {} [{}]", order.getOrderType(), order.getParams());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行异常: state为exception");
+            trader.failFinishOrder(order, responses);
+        } else { // 未知响应状态.
+            log.error("order response state[unknown]: 未知响应状态 {} [{}]", order.getOrderType(), order.getParams());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行错误: 未知响应状态:" + state);
+            trader.failFinishOrder(order, responses);
         }
         trader.successFinishOrder(order, responses);
 
 
+    }
+
+    // 成交时间	证券代码	证券名称	操作	成交数量	成交均价	成交金额	合同编号	成交编号
+    public boolean orderAlreadyMatchAllBuyOrSell(Order order, Response response) {
+        String orderId = response.getStr("orderId");
+        DataFrame<Object> clinchsDf = trader.getAccountStates().getTodayClinchs();
+        List<String> ids = DataFrameS.getColAsStringList(clinchsDf, "合同编号");
+        List<Integer> amounts = DataFrameS.getColAsIntegerList(clinchsDf, "成交数量");
+        int clinchAmount = 0;
+        for (int i = 0; i < ids.size(); i++) {
+            if (ids.get(i).equals(orderId)) {// 同花顺订单id.
+                clinchAmount += amounts.get(i);
+            }
+        }
+        // 判定某 order , 当前是否已经全部成交. 买卖但逻辑相同, 均对合同编号筛选, 求和所有成交数量.
+        // 缺陷在于 trader.getAccountStates().getTodayClinchs()刷新及时性
+        if (clinchAmount >= Integer.parseInt(response.getStr("amounts")) / 100 * 100) {
+            return true;
+        }
+        return false;
     }
 
     @Override
