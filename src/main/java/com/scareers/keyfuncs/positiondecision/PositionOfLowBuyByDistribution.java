@@ -388,9 +388,9 @@ public class PositionOfLowBuyByDistribution {
     /**
      * 给定 可能值, 及其权重 列表, 给定某个值, 求一个模拟的 该点 cdf !!
      *
-     * @param valuePercentOfLow 值列表 , 要求从小到大, 或者从小到大, 即有序.  一般更不利于我们的, 放在前面.
-     * @param weightsOfLow      权重列表
-     * @param value             求该点处cdf
+     * @param valuePercentOfLow 值列表 tick, 要求从小到大, 或者从小到大, 即有序.  一般更不利于我们的, 放在前面.
+     * @param weightsOfLow      对应权重列表
+     * @param value             求该点处cdf, 是一个百分比数值
      * @return 返回虚拟近似cdf ,
      */
     public static Double virtualCdfAsPositionForLowBuy(List<Double> valuePercentOfLow, List<Double> weightsOfLow,

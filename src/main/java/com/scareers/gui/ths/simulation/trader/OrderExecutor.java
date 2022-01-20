@@ -162,10 +162,20 @@ public class OrderExecutor {
             }
         };
 
-        trader.getChannelComsumer().basicConsume(ths_trader_p2j_queue, false, consumer);
-        while (!finish[0]) {
-            Thread.sleep(1); // 阻塞直到 非!retrying状态
+
+        while (true) {// 应对 AlreadyClosedException
+            try {
+                trader.getChannelComsumer().basicConsume(ths_trader_p2j_queue, false, consumer);
+                while (!finish[0]) {
+                    Thread.sleep(1); // 阻塞直到 非!retrying状态
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                continue;
+            }
+            break;
         }
+
         return responses;
     }
 

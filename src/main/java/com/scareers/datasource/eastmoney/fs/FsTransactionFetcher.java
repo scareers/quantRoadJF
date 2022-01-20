@@ -1,9 +1,10 @@
-package com.scareers.datasource.eastmoney.fstransaction;
+package com.scareers.datasource.eastmoney.fs;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -159,6 +160,7 @@ public class FsTransactionFetcher {
             }
             if (!firstTimeFinish.get()) {
                 log.warn("finish first: 首次抓取完成...");
+                Console.log(this.getFsTransactionDatas());
                 firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
             }
             if (epoch % logFreq == 0) {

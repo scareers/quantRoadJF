@@ -409,7 +409,7 @@ public class StockApi {
                 @Override
                 public DataFrame<Object> call() throws Exception {
                     return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex,
-                            timeoutOfReq,useCache);
+                            timeoutOfReq, useCache);
                 }
             }));
         }
@@ -450,6 +450,8 @@ public class StockApi {
         if (endDate == null) {
             endDate = "20500101";
         }
+        begDate = begDate.replace("-", ""); // 标准化
+        endDate = endDate.replace("-", "");
 
         String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
                 isIndex);

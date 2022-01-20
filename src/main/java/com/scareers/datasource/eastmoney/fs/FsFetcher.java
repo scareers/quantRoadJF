@@ -143,8 +143,9 @@ public class FsFetcher {
             if (epoch % logFreq == 0) {
                 epoch = 0;
                 log.info("fs finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
-                Console.log(this.getFsDatas());
             }
+            /*
+             */
         }
         threadPoolOfFetch.shutdown();
     }

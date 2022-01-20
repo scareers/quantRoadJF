@@ -503,9 +503,9 @@ public class PositionOfHighSellByDistribution {
     /**
      * 注意, 与LowBUy cdf 的算法, 只在于,  >, < 符号的差别.  因为低买tick是从大到小(不利->有利), 高卖tick相反
      *
-     * @param valuePercentOfLow
-     * @param weightsOfLow
-     * @param value
+     * @param valuePercentOfLow 值列表 tick, 要求从小到大, 或者从小到大, 即有序.  一般更不利于我们的, 放在前面.
+     * @param weightsOfLow      对应权重列表
+     * @param value             求该点处cdf, 是一个百分比数值
      * @return
      */
     public static Double virtualCdfAsPositionForHighSell(List<Double> valuePercentOfLow, List<Double> weightsOfLow,

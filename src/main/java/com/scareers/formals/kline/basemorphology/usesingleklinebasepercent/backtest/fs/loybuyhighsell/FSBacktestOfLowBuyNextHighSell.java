@@ -520,12 +520,13 @@ public class FSBacktestOfLowBuyNextHighSell {
                     // cdf 仓位卖出  . --> cdf使用highPrice低点,  其他均使用买入价格  sellPrice
                     Double highPrice = singleBuyPoint.getHighPricePercent(); // 仅计算cdf
                     Double sellPrice = singleBuyPoint.getSellPricePercent(); // 实际卖出价格
-                    Double indexPriceThatTime = singleBuyPoint.getIndexBelongPricePercentAtThatTime();
+                    Double indexPricePercentThatTime = singleBuyPoint.getIndexBelongPricePercentAtThatTime();
                     // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
                     if (highPrice <= execHighSellThreshold) { // @noti: 凡是阈值, 一般都包含等于, 虽然计算卖点时已经计算过.这里重复嫌疑
                         continue; // 必须大于等于阈值
                     }
-                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfHighSell(highPrice, indexPriceThatTime);
+                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfHighSell(highPrice, indexPricePercentThatTime,
+                            indexBelongThatTimePriceEnhanceArgHighSell);
                     // cdf使用 high 计算.  价格使用 sellPrice计算
                     Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, cdfCalcPrice,
                             tickGap);
@@ -935,7 +936,8 @@ public class FSBacktestOfLowBuyNextHighSell {
          * @param indexPriceThatTime
          * @return
          */
-        private Double calcEquivalenceCdfUsePriceOfHighSell(Double highPrice, Double indexPriceThatTime) {
+        public static Double calcEquivalenceCdfUsePriceOfHighSell(Double highPrice, Double indexPriceThatTime,
+                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell) {
             // return lowPrice; // @v1
             /*
              * @noti: 大盘当tick涨跌幅 加成算法: 卖出
