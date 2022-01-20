@@ -37,7 +37,7 @@ public class FsFetcher {
         FsFetcher fsFetcher = getInstance
                 (new StockPoolFromTushare(0, 10, true).createStockPool(),
                         1000,
-                        10, 16);
+                        10, 16, 100);
 
         fsFetcher.startFetch(); // 测试股票池
         waitEnter();
@@ -52,11 +52,12 @@ public class FsFetcher {
 
     public static FsFetcher getInstance(List<SecurityBeanEm> stockPool,
                                         int timeout, int logFreq,
-                                        int threadPoolCorePoolSize)
+                                        int threadPoolCorePoolSize,
+                                        int sleepPerEpoch)
             throws SQLException, InterruptedException {
         if (INSTANCE == null) {
             INSTANCE = new FsFetcher(stockPool, timeout, logFreq,
-                    threadPoolCorePoolSize);
+                    threadPoolCorePoolSize, sleepPerEpoch);
         }
         return INSTANCE;
     }
@@ -80,13 +81,16 @@ public class FsFetcher {
     private String saveTableName; // 保存数据表名称
     private final int logFreq; // 分时图抓取多少次,log一次时间
     public int threadPoolCorePoolSize; // 线程池数量
+    private int sleepPerEpoch; // 每轮后sleep;
 
-    private FsFetcher(List<SecurityBeanEm> stockPool, int timeout, int logFreq, int threadPoolCorePoolSize)
+    private FsFetcher(List<SecurityBeanEm> stockPool, int timeout, int logFreq, int threadPoolCorePoolSize,
+                      int sleepPerEpoch)
             throws SQLException, InterruptedException {
         // 4项全默认值
         this.fsDatas = new ConcurrentHashMap<>();
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
+        this.sleepPerEpoch = sleepPerEpoch;
 
         // yyyy-MM-dd HH:mm:ss.SSS // 决定保存数据表
         this.saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
@@ -144,7 +148,9 @@ public class FsFetcher {
                 epoch = 0;
                 log.info("fs finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
             }
+            Thread.sleep(sleepPerEpoch);
             /*
+
              */
         }
         threadPoolOfFetch.shutdown();

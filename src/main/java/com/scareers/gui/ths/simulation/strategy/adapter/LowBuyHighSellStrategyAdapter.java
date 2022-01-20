@@ -158,9 +158,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 int sellAlready = actualHighSelled.getOrDefault(stock, 0);
                 if (sellAlready < shouldSellAmountTotal) { // 四舍五入
                     // 三项数据: 此刻卖点应当总卖出 / 原总持仓  --  [早已经成功卖出]
-                    int amount = NumberUtil
-                            .round((shouldSellAmountTotal - sellAlready) / 100, 2)
-                            .intValue() * 100;
+                    int amount = (int) (NumberUtil
+                            .round((shouldSellAmountTotal - sellAlready) / 100, 0).doubleValue()) * 100;
+
                     // 四舍五入价格. 100 整数
                     if (amount + sellAlready > amountsTotal) {
                         amount = (amountsTotal - sellAlready) / 100 * 100;
@@ -290,9 +290,93 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         checkOtherOrder(order, responses, orderType);
     }
 
+
+    /*
+     *                     response = dict(state='success', description='卖出订单执行成功',
+     *                                     orderId=latest_order[headers.index("合同编号")],
+     *                                     stockCode=stockCode,
+     *                                     price=actual_price,
+     *                                     priceNote=priceNote,
+     *                                     amounts=amounts,
+     *                                     payload=confirm_info_dict,
+     *                                     notes="注意: 通过查询今日全部订单确定的订单成功id.",
+     *                                     rawOrder=order)
+     *
+     *           response = dict(state="fail", failReason=fail_reason.FAIL_ORDER_ARGS_ERROR,
+     *                         description='订单对象不合法[订单3参数设定错误]',
+     *                         payload=args_invalid_reason,  # list
+     *                         warning='请将订单修改为合法格式再行传递',
+     *                         rawOrder=order)
+     *
+     *           return dict(state="fail",
+     *                     failReason=fail_reason.FAIL_ORDER_AMOUNT_ZERO_MAYBE,
+     *                     description='数量被自动填充为0, 可能因可买卖数量不足1手',  # list
+     *                     warning='请检测可买卖数量是否不小于1手',
+     *                     rawOrder=order)
+     *
+     *                      response = dict(state='fail',
+     *                                 failReason=fail_reason.FAIL_ORDER_CONFIRM,
+     *                                 description=info_for_type_determine,  # list
+     *                                 rawOrder=order)  # 0.0
+     *              response = dict(state='success', description='卖出订单执行成功', orderId=orderId,
+     *                         stockCode=stockCode,
+     *                         price=actual_price,
+     *                         priceNote=priceNote,
+     *                         amounts=amounts,
+     *                         rawOrder=order)
+     *
+     *                     response = dict(state='fail',
+     *                         failReason=fail_reason.FAIL_ORDER_COMMIT,
+     *                         description=failReason,
+     *                         stockCode=stockCode,
+     *                         price=actual_price,
+     *                         priceNote=priceNote,
+     *                         amounts=amounts,
+     *                         rawOrder=order)
+     */
+
+    /**
+     * 对 sell order 的 check逻辑!
+     * Checker 将死循环监控所有订单, 因此, check逻辑并不需要保证将 order 移除队列到 finish队列
+     * 依据python api文档: 响应分为四大类状态. 其中:
+     * exception状态意味着无法处理. (通常直接进入最终失败队列)
+     * retrying意味着正在尝试(一半不会以此结束, 都会得到 success 或者 fail)
+     * success 以某种逻辑上的成功执行完成
+     * fail 以某种逻辑上的失败执行完成, 可尝试修改订单重试, 也可进入最终失败队列, 视情况而定
+     * <p>
+     * --------- 响应分类
+     * dispatch 将可能发送 exception 状态响应(2种),重试的retrying 响应, 以及重试达到上限的 fail 响应
+     * sell 自身api 可能响应如上.
+     *
+     * @param order
+     * @param responses
+     * @param orderType
+     * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
+     */
     @Override
     public void checkSellOrder(Order order, List<Response> responses, String orderType) {
-        checkOtherOrder(order, responses, orderType);
+        if (responses.size() > 1) {
+            log.warn("total retrying times maybe: 订单共计重试 {} 次", responses.size() - 1);
+        }
+        JSONObject response = responses.get(responses.size() - 1);
+        String state = response.getStr("state");
+        if ("success".equals(state)) {
+            log.info("执行成功: {}", order.getRawOrderId());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
+        } else if ("fail".equals(state)) {
+            log.error("执行失败: {}", order.getRawOrderId());
+            log.info(JSONUtil.parseArray(responses).toString());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
+        } else if ("exception".equals(state)) {
+            log.error("order response state[exception]: {}", order.getRawOrderId());
+            log.info(JSONUtil.parseArray(responses).toString());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
+        } else { // 未知响应状态.
+
+        }
+        trader.successFinishOrder(order, responses);
+
+
     }
 
     @Override

@@ -37,9 +37,10 @@ public class AccountStates {
     public static AccountStates getInstance(Trader trader, long flushInterval, long commonApiPriority,
                                             long priorityRaiseTimeThreshold,
                                             long priorityRaise) {
+        // noti: 最多提升10次优先级, 每次提高 priorityRaise
         if (INSTANCE == null) {
             INSTANCE = new AccountStates(trader, flushInterval, commonApiPriority, priorityRaiseTimeThreshold,
-                    priorityRaise);
+                    priorityRaise, 10);
         }
         return INSTANCE;
     }
@@ -76,14 +77,16 @@ public class AccountStates {
     private long priorityRaiseTimeThreshold;
     // 当某一项数据长时间没有更新, 优先级变更为 commonApiPriority - priorityRaise, 提高优先级,先于同类执行.优先级提高程度尽量小.例如
     private long priorityRaise;
+    private long maxRaiseTimes;
 
     private AccountStates(Trader trader, long flushInterval, long commonApiPriority, long priorityRaiseTimeThreshold,
-                          long priorityRaise) {
+                          long priorityRaise, long maxRaiseTimes) {
         this.trader = trader;
         this.flushInterval = flushInterval;
         this.commonApiPriority = commonApiPriority; // Order.PRIORITY_MEDIUM; // 5000, 不高
         this.priorityRaiseTimeThreshold = priorityRaiseTimeThreshold;
         this.priorityRaise = priorityRaise;
+        this.maxRaiseTimes = maxRaiseTimes;
     }
 
     /**
@@ -119,79 +122,127 @@ public class AccountStates {
                         }
                     }
                     for (String orderType : ORDER_TYPES) {
-                        if (!alreadyInQueue.contains(orderType)) { // 不存在则添加
-                            switch (orderType) {
-                                // 第一次将以最高优先级刷新, 否则常态
-                                case "get_account_funds_info":
-                                    if (nineBaseFundsData.size() == 0) {
-                                        flushNineBaseFundsDataImmediately();
-                                    } else {
-                                        if (System
-                                                .currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
-                                            flushNineBaseFundsData(Math.max(commonApiPriority - priorityRaise, 0));
-                                        }
-                                        flushNineBaseFundsData(commonApiPriority);
-                                    }
-                                    break;
-                                case "get_hold_stocks_info":
-                                    if (currentHolds == null) {
-                                        flushCurrentHoldsImmediately();
-                                    } else {
-                                        if (System
-                                                .currentTimeMillis() - currentHoldsFlushTimestamp > priorityRaiseTimeThreshold) {
-                                            flushCurrentHolds(Math.max(commonApiPriority - priorityRaise, 0));
-                                        }
-                                        flushCurrentHolds(commonApiPriority);
-                                    }
-                                    break;
-                                case "get_unsolds_not_yet":
-                                    if (canCancels == null) {
-                                        flushCanCancelsImmediately();
-                                    } else {
-                                        if (System
-                                                .currentTimeMillis() - canCancelsFlushTimestamp > priorityRaiseTimeThreshold) {
-                                            flushCanCancels(Math.max(commonApiPriority - priorityRaise, 0));
-                                        }
-                                        flushCanCancels(commonApiPriority);
-                                    }
-                                    break;
-                                case "get_today_clinch_orders":
-                                    if (todayClinchs == null) {
-                                        flushTodayClinchsImmediately();
-                                    } else {
-                                        if (System
-                                                .currentTimeMillis() - todayClinchsFlushTimestamp > priorityRaiseTimeThreshold) {
-                                            flushTodayClinchs(Math.max(commonApiPriority - priorityRaise, 0));
-                                        }
-                                        flushTodayClinchs(commonApiPriority);
-                                    }
-                                    break;
-                                case "get_today_consign_orders":
-                                    if (todayConsigns == null) {
-                                        flushTodayConsignsImmediately();
-                                    } else {
-                                        if (System
-                                                .currentTimeMillis() - todayConsignsFlushTimestamp > priorityRaiseTimeThreshold) {
-                                            flushTodayConsigns(Math.max(commonApiPriority - priorityRaise, 0));
-                                        }
-                                        flushTodayConsigns(commonApiPriority);
-                                    }
-                                    break;
-                                default:
-                                    throw new Exception("error orderType");
-                            }
+                        if (!alreadyInQueue.contains(orderType)) { // 不存在则 补充对应类型的 账户状态监控 订单
+                            supplementStateOrder(orderType);
+                        } else { // 账户监控订单, 若在队列中, 则需要检测一下 优先级, 若滞留时间长, 则考虑 提高优先级!
+                            tryRaisePriorityPossible(orderType);
                         }
                     }
                     Thread.sleep(flushInterval);
                 }
             }
         });
-
         accoutStatesFlushTask.setDaemon(true);
         accoutStatesFlushTask.setPriority(Thread.MAX_PRIORITY);
         accoutStatesFlushTask.setName("accoutStateFlush");
         accoutStatesFlushTask.start();
         log.warn("accoutStatesFlush start: 开始持续更新账户资金股票等状况");
+    }
+
+    private void supplementStateOrder(String orderType) throws Exception {
+        switch (orderType) {
+            // 第一次将以最高优先级刷新, 否则常态
+            case "get_account_funds_info":
+                if (nineBaseFundsData.size() == 0) {
+                    flushNineBaseFundsDataImmediately();
+                } else {
+                    flushNineBaseFundsData(commonApiPriority);
+                }
+                break;
+            case "get_hold_stocks_info":
+                if (currentHolds == null) {
+                    flushCurrentHoldsImmediately();
+                } else {
+                    flushCurrentHolds(commonApiPriority);
+                }
+                break;
+            case "get_unsolds_not_yet":
+                if (canCancels == null) {
+                    flushCanCancelsImmediately();
+                } else {
+                    flushCanCancels(commonApiPriority);
+                }
+                break;
+            case "get_today_clinch_orders":
+                if (todayClinchs == null) {
+                    flushTodayClinchsImmediately();
+                } else {
+                    flushTodayClinchs(commonApiPriority);
+                }
+                break;
+            case "get_today_consign_orders":
+                if (todayConsigns == null) {
+                    flushTodayConsignsImmediately();
+                } else {
+                    flushTodayConsigns(commonApiPriority);
+                }
+                break;
+            default:
+                throw new Exception("error orderType");
+        }
+    }
+
+    private void tryRaisePriorityPossible(String orderType) throws Exception {
+        switch (orderType) {
+            // 提高倍数优先级. 倍数为整数.
+            case "get_account_funds_info":
+                if (System.currentTimeMillis() - nineBaseFundsDataFlushTimestamp > priorityRaiseTimeThreshold) {
+                    raisePriority("get_account_funds_info",
+                            (System.currentTimeMillis() - nineBaseFundsDataFlushTimestamp) / priorityRaiseTimeThreshold);
+                }
+                break;
+            case "get_hold_stocks_info":
+                if (System
+                        .currentTimeMillis() - currentHoldsFlushTimestamp > priorityRaiseTimeThreshold) {
+                    raisePriority("get_hold_stocks_info",
+                            (System.currentTimeMillis() - currentHoldsFlushTimestamp) / priorityRaiseTimeThreshold);
+                }
+                break;
+            case "get_unsolds_not_yet":
+                if (System
+                        .currentTimeMillis() - canCancelsFlushTimestamp > priorityRaiseTimeThreshold) {
+                    raisePriority("get_unsolds_not_yet",
+                            (System.currentTimeMillis() - canCancelsFlushTimestamp) / priorityRaiseTimeThreshold);
+                }
+                break;
+            case "get_today_clinch_orders":
+                if (System
+                        .currentTimeMillis() - todayClinchsFlushTimestamp > priorityRaiseTimeThreshold) {
+                    raisePriority("get_today_clinch_orders",
+                            (System.currentTimeMillis() - todayClinchsFlushTimestamp) / priorityRaiseTimeThreshold);
+                }
+                break;
+            case "get_today_consign_orders":
+                if (System
+                        .currentTimeMillis() - todayConsignsFlushTimestamp > priorityRaiseTimeThreshold) {
+                    raisePriority("get_today_consign_orders",
+                            (System.currentTimeMillis() - todayClinchsFlushTimestamp) / priorityRaiseTimeThreshold);
+                }
+                break;
+            default:
+                throw new Exception("error orderType");
+        }
+    }
+
+    /**
+     * 相当于, 默认的 priorityRaiseTimeThreshold是 60000, 相当于每分钟, 提高一次优先级, 提高量是  priorityRaise.
+     * 最多提高次数是 20
+     *
+     * @param get_account_funds_info
+     * @param raiseRate
+     */
+    private void raisePriority(String get_account_funds_info, long raiseRate) {
+        raiseRate = Math.min(raiseRate, maxRaiseTimes);
+        for (Order order : Trader.getOrdersWaitForExecution()) {
+            if (order.getOrderType().equals(get_account_funds_info)) {
+                long newPriority = Math.max(commonApiPriority - raiseRate * priorityRaise, 0);
+                if (newPriority < order.getPriority()) {
+                    log.warn("raise priority: 账户状态监控api提高优先级: {}: {} --> {}", order.getOrderType(), order.getPriority()
+                            , newPriority);
+                    order.setPriority(newPriority);
+                }
+            }
+        }
     }
 
     /*
@@ -319,7 +370,7 @@ public class AccountStates {
             }
             log.debug("flush success: AccountStates.nineBaseFundsData: 已更新账户9项基本资金数据");
             nineBaseFundsDataFlushTimestamp = System.currentTimeMillis();
-            trader.successFinishOrder(order,responses);
+            trader.successFinishOrder(order, responses);
         } else {
             log.error("flush fail: AccountStates.nineBaseFundsData: 响应状态非success, 任务重入队列!!");
             trader.reSendAndFinishOrder(order, responses); // 强制高优先级重入队列!因此队列中可能存在2个
@@ -354,7 +405,7 @@ public class AccountStates {
                 log.warn("empty df: {}", fieldName);
             }
             realFlushFieldAndTimestamp(fieldName, dfTemp);
-            trader.successFinishOrder(order,responses);
+            trader.successFinishOrder(order, responses);
             log.debug("flush success: AccountStates.{}: 已更新{}", fieldName, successDescription);
         } else {
             log.error("flush fail: AccountStates.{}: 响应状态非success, 相同新任务重入队列!!", fieldName);

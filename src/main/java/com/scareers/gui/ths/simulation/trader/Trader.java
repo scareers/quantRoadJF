@@ -108,7 +108,7 @@ public class Trader {
                         "15:10:00", 500, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 500, 100, 16);
+        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 500, 100, 16, 100);
         trader.setFsFetcher(fsFetcher);
         fsFetcher.startFetch(); // fs图抓取
 
@@ -154,6 +154,10 @@ public class Trader {
      * 重发后视为完成的原始订单,resended 生命周期的 payload, 带有当次重发的"新订单" 的 rawOrderId
      */
     public static volatile Hashtable<Order, List<Response>> ordersResendFinished = new Hashtable<>();
+    /**
+     * 订单第三种结束状态, 即订单彻底失败, 通常需要手动进行确认修复 !
+     */
+    public static volatile Hashtable<Order, List<Response>> ordersFailedFinallyNeedManualHandle = new Hashtable<>();
 
 
     // 各大子组件, 均单例模式
@@ -340,7 +344,7 @@ public class Trader {
 
 
     /*
-     * 订单结束相关处理方法
+     * 订单结束相关处理方法: 成功完成. 重发完成.  失败完成需手动处理
      */
 
     /**
@@ -361,7 +365,7 @@ public class Trader {
 
     /**
      * 订单经由业务逻辑判定, 已经被重发, 策略后期应当跟踪重发的新订单!
-     * 此时原订单视为 finish. 将被放入 ordersResendFinished 队列
+     * 此时原订单视为 finish. 将被放入 ordersResendFinished 队列. 一般调用  reSendAndFinishOrder 以调用本方法
      *
      * @param order
      * @param responses
@@ -375,6 +379,19 @@ public class Trader {
                 newOrderId);
         order.addLifePoint(Order.LifePointStatus.FINISH, "resended_finish: 订单已被重发! 订单完成");
         ordersResendFinished.put(order, responses);
+    }
+
+    /**
+     * 失败完成需手动处理,
+     *
+     * @param order
+     * @param responses
+     */
+    public void failFinishOrder(Order order, List<Response> responses) {
+        ordersWaitForCheckTransactionStatusMap.remove(order);
+        order.addLifePoint(LifePointStatus.FAIL_FINALLY,
+                StrUtilS.format("failed_finally: 订单最终失败,需要自行手动处理! 进入队列: ordersWaitForCheckTransactionStatusMap"));
+        ordersFailedFinallyNeedManualHandle.put(order, responses);
     }
 
 
@@ -424,6 +441,7 @@ public class Trader {
         resendFinishOrder(order, responses, newOrderId);
     }
 
+
     public static int getAllOrderAmount() {
         return allOrderAmount;
     }
@@ -471,6 +489,15 @@ public class Trader {
     public static void setOrdersResendFinished(
             Hashtable<Order, List<Response>> ordersResendFinished) {
         Trader.ordersResendFinished = ordersResendFinished;
+    }
+
+    public static Hashtable<Order, List<Response>> getOrdersFailedFinallyNeedManualHandle() {
+        return ordersFailedFinallyNeedManualHandle;
+    }
+
+    public static void setOrdersFailedFinallyNeedManualHandle(
+            Hashtable<Order, List<Response>> ordersFailedFinallyNeedManualHandle) {
+        Trader.ordersFailedFinallyNeedManualHandle = ordersFailedFinallyNeedManualHandle;
     }
 }
 

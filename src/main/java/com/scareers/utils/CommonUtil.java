@@ -3,10 +3,13 @@ package com.scareers.utils;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.mail.MailUtil;
 import com.scareers.gui.ths.simulation.rabbitmq.ComsumerSimple;
+import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.*;
@@ -69,6 +72,7 @@ public class CommonUtil {
         }
         return res;
     }
+
 
     public static List<Integer> range(int start, int end) {
         return range(start, end, 1);
@@ -246,5 +250,24 @@ public class CommonUtil {
     public static boolean sumEqualApproximately(Collection<Double> doubles, double equalTo, double deviation) {
         return Math.abs(
                 doubles.stream().mapToDouble(value -> value).sum() - equalTo) < deviation;
+    }
+
+    public static void sendEmailSimple(String subject, String content, boolean async) {
+        if(!async){
+            MailUtil.send(SettingsCommon.receivers,
+                    subject,
+                    content,
+                    false, null);
+        }else{
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    MailUtil.send(SettingsCommon.receivers,
+                            subject,
+                            content,
+                            false, null);
+                }
+            });
+        }
     }
 }

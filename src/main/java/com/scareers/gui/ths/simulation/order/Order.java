@@ -10,6 +10,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.*;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.utils.log.LogUtil;
 import lombok.*;
 
@@ -51,9 +52,9 @@ public class Order implements Comparable, Serializable {
     private List<LifePoint> lifePoints; // 有序列表, 各个生命周期情况, 生命周期由java进行管理, 无关python
     private boolean timer; // 是否记录执行时间, 过于常用 , 默认 true, 几乎不需要修改
     private Map<String, Object> otherRawMessages; // 通常需要手动设定,手动修改
-    private Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
+    private volatile Long priority; // 优先级, 越低则优先级越高.   默认优先级最低10000.
     private Long resendTimes; // 某情况下check后的重发对象,可能多次重发, 记录重发次数, 默认0
-    private List<Map<String, Object>> execResponses;
+    private List<Response> execResponses;
     // 被python执行后的响应列表. 常规仅单个元素, retrying状态下可能多个,默认空al, 无论python做何响应, 应当添加.
     private String parentOrder; // 若为重发, 则指定父订单为原订单, 默认 null
 
@@ -327,6 +328,7 @@ public class Order implements Comparable, Serializable {
      * --> checking(checking中, 例如等待成交中., 例如完全成交, 部分成交等, 仅buy/sell存在. 查询订单直接确认)
      * --> resended 已经重发了, 该状态特殊情况, 重发后正常进入finish状态!
      * --> finish (订单彻底完成)
+     * --> failed_finally 订单最终失败, 一般需要手动处理, 着重关注.
      */
     public enum LifePointStatus implements Serializable {
         NEW("new"),
@@ -338,8 +340,9 @@ public class Order implements Comparable, Serializable {
         WAIT_CHECKING("checking[wait checking]"),
         CHECKED("checked"),
 
-        RESENDED("resended"), //  已被重发的订单,随后finish
-        FINISH("finish"); // 正常完成订单
+        RESENDED("resended"), //  已被重发的订单,随后 finish
+        FINISH("finish"), // 正常完成订单
+        FAIL_FINALLY("failed_finally"); // 彻底失败, 进入 最终失败 队列
 
         private static final long serialVersionUID = 101241855L;
 

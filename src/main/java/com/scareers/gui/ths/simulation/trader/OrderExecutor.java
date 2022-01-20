@@ -3,12 +3,10 @@ package com.scareers.gui.ths.simulation.trader;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.Consumer;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.*;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -71,6 +69,7 @@ public class OrderExecutor {
                     order.addLifePoint(Order.LifePointStatus.WAIT_CHECKING,
                             "checking: 订单进入check队列,等待check完成");
 
+                    order.setExecResponses(responses); // 响应字段设置
                     Trader.getOrdersWaitForCheckTransactionStatusMap().put(order, responses);
                     Trader.getOrdersAllMap().put(order, responses); // 也放入全订单队列
                 }
@@ -163,17 +162,15 @@ public class OrderExecutor {
         };
 
 
-        while (true) {// 应对 AlreadyClosedException
-            try {
-                trader.getChannelComsumer().basicConsume(ths_trader_p2j_queue, false, consumer);
-                while (!finish[0]) {
-                    Thread.sleep(1); // 阻塞直到 非!retrying状态
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
+        try {
+            trader.getChannelComsumer().basicConsume(ths_trader_p2j_queue, false, consumer);
+            while (!finish[0]) {
+                Thread.sleep(1); // 阻塞直到 非!retrying状态
             }
-            break;
+        } catch (AlreadyClosedException e) {
+            e.printStackTrace();
+            CommonUtil.sendEmailSimple("Trader: rabbitmq通道关闭异常, 请尝试重启程序", e.getMessage(), false);
+            System.exit(1); // 通道错误将退出程序, 重启即可修复
         }
 
         return responses;
