@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONObject;
@@ -153,12 +154,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 // @key3: 高卖仓位折算 * 倍率
                 Double epochTotalPosition = Math.min(1.0, positionCalcKeyArgsOfCdfHighSell * cdfOfPoint);
 
-                // 这是最新的应当卖出的总数量, 但是可能有部分卖出了, 需要查看 actualHighSelled
                 double shouldSellAmountTotal = epochTotalPosition * amountsTotal;
-                int sellAlready = actualHighSelled.get(stock);
-                if (sellAlready >= shouldSellAmountTotal) {
-                    log.warn("sell decision: 卖点出现, {} -> {} ; already [{}]  ", stock, shouldSellAmountTotal,
-                            sellAlready);
+                int sellAlready = actualHighSelled.getOrDefault(stock, 0);
+                if (sellAlready < shouldSellAmountTotal) { // 四舍五入
+                    // 三项数据: 此刻卖点应当总卖出 / 原总持仓  --  [早已经成功卖出]
                     int amount = NumberUtil
                             .round((shouldSellAmountTotal - sellAlready) / 100, 2)
                             .intValue() * 100;
@@ -166,12 +165,28 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     if (amount + sellAlready > amountsTotal) {
                         amount = (amountsTotal - sellAlready) / 100 * 100;
                     }
-                    // 卖出
-                    Order order = OrderFactory.generateSellOrderQuick(stock, amount, null, Order.PRIORITY_HIGH);
-                    trader.putOrderToWaitExecute(order);
+                    if (amount < 100) {
+                        log.warn("sell decision: 卖点出现,但折算卖出数量<100,不执行卖出, {} -> {}/{} ; already [{}], actual [{}]",
+                                stock,
+                                shouldSellAmountTotal,
+                                amountsTotal,
+                                sellAlready, amount);
+                    } else {
+                        // 卖出
+                        log.warn("sell decision: 卖点出现, {} -> {}/{} ; already [{}], actual [{}]", stock,
+                                shouldSellAmountTotal,
+                                amountsTotal,
+                                sellAlready, amount);
+
+                        Order order = OrderFactory.generateSellOrderQuick(stock, amount, null, Order.PRIORITY_HIGH);
+                        trader.putOrderToWaitExecute(order);
+
+                        actualHighSelled.put(stock, amount + sellAlready); // todo: 这里假装 卖出订单立即所有成交. 应当检测
+                    }
+
                 } else { //  新卖点,但没必要卖出更多.(多因为当前价格已经比上一次低, 导致仓位更低)
-                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} ->{} ; actual[{}]  ", stock,
-                            shouldSellAmountTotal, sellAlready);
+                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,
+                            shouldSellAmountTotal, amountsTotal, sellAlready);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -259,13 +274,15 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 DataFrame df0 = StockApi.getQuoteHistorySingle("000001", preTradeDate, preTradeDate,
                         "101", "qfq",
                         3, true, 2000, true);
-                shangZhengZhiShuPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘
+                shangZhengZhiShuPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘, 这是分时图
             }
 
             dfTemp =
                     trader.getFsTransactionFetcher().getFsTransactionDatas().get(shangZhengZhiShu);
         }
-        return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 2).toString()) / shangZhengZhiShuPreClose - 1;
+//        Console.log(dfTemp);
+        // 分时成交则是3
+        return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shangZhengZhiShuPreClose - 1;
     }
 
     @Override

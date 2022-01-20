@@ -160,7 +160,7 @@ public class FsTransactionFetcher {
             }
             if (!firstTimeFinish.get()) {
                 log.warn("finish first: 首次抓取完成...");
-                Console.log(this.getFsTransactionDatas());
+//                Console.log(this.getFsTransactionDatas());
                 firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
             }
             if (epoch % logFreq == 0) {
