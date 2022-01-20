@@ -398,6 +398,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 }
             }
         } else if ("fail".equals(state)) {
+            // todo
             log.error("执行失败: {}", order.getRawOrderId());
             log.info(JSONUtil.parseArray(responses).toString());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
