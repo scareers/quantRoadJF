@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -11,15 +10,9 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.Trader;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
-import joinery.DataFrame;
 
 import java.util.List;
-
-import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
-import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
-import static com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy.STR_SEC_CODE;
 
 /**
  * description:
@@ -27,16 +20,14 @@ import static com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy.ST
  * @author: admin
  * @date: 2022/1/20/020-11:39:56
  */
-public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
+public class LowBuyHighSellStrategyAdapter0 implements StrategyAdapter {
     LowBuyHighSellStrategy strategy;
     Trader trader;
-    String pre2Date; // yyyy-MM-dd
 
-    public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy,
-                                         Trader trader) throws Exception {
+    public LowBuyHighSellStrategyAdapter0(LowBuyHighSellStrategy strategy,
+                                          Trader trader) {
         this.strategy = strategy;
         this.trader = trader;
-        pre2Date = getPreNTradeDateStrict(DateUtil.today());
     }
 
     @Override
@@ -61,48 +52,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void sellDecision() throws Exception {
-        DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
-        // 证券代码	 证券名称	 股票余额	 可用余额	冻结数量	  成本价	   市价	       盈亏	盈亏比例(%)	   当日盈亏	当日盈亏比(%)	       市值	仓位占比(%)	交易市场	持股天数
-        for (int i = 0; i < yesterdayStockHoldsBeSell.size(); i++) {
-            List<Object> line = yesterdayStockHoldsBeSell.row(i);
-            String stock = line.get(0).toString();
-            int amountsTotal = Integer.parseInt(line.get(2).toString()); // 原始总持仓, 今日开卖
-            double costPrice = Double.parseDouble(line.get(5).toString()); // 成本价.
 
-            // 1. 读取前日收盘价
-            Double pre2ClosePrice = 0.0;
-            try {
-                //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
-                pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(stock, pre2Date, pre2Date,
-                        "101", "1", 3,
-                        false, 2000).row(0).get(2).toString());
-            } catch (Exception e) {
-                log.warn("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
-                continue;
-            }
-
-            // 2. 判定当前是否是卖点?
-
-
-        }
-
-
-    }
-
-    /**
-     * 卖点判定.
-     * 1.读取(真)分时图,
-     * 2.判定前几分钟分时图 连续上升 n
-     * 3.判定本分钟价格 比上一分钟 降低. (过半分钟的时间根据比例, 之前固定返回false)
-     * 4.返回false
-     *
-     * @return
-     * @key3 : 参考 SettingsOfFSBacktest 相关设定项
-     */
-    public boolean isSellPoint() {
-
-
-        return false;
     }
 
     @Override
@@ -129,6 +79,5 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
         trader.successFinishOrder(order, responses);
     }
-
     private static final Log log = LogUtil.getLogger();
 }

@@ -59,24 +59,24 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
-        Console.log(getFSTransaction(120, "000001", 1, 1000));
-        Console.log(timer.intervalRestart());
-
-        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
-        Console.log(timer.intervalRestart());
+//        Console.log(getFSTransaction(120, "000001", 1, 1000));
+//        Console.log(timer.intervalRestart());
+//
+//        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+//        Console.log(timer.intervalRestart());
 
         Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
         Console.log(timer.intervalRestart());
-        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
-        Console.log(timer.intervalRestart());
-
-        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
-        Console.log(timer.intervalRestart());
-        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
-        Console.log(timer.intervalRestart());
-
-        Console.log(getPreNTradeDateStrict("2021-01-08"));
-        Console.log(timer.intervalRestart());
+//        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+//        Console.log(timer.intervalRestart());
+//
+//        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
+//        Console.log(timer.intervalRestart());
+//        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
+//        Console.log(timer.intervalRestart());
+//
+//        Console.log(getPreNTradeDateStrict("2021-01-08"));
+//        Console.log(timer.intervalRestart());
 
     }
 
@@ -425,7 +425,8 @@ public class StockApi {
     }
 
     /**
-     * 单股票k线
+     * 单股票k线:
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
      *
      * @param stock       @noti: 绝对传递 simple模式, 是否指数由  isIndex 参数控制
      * @param begDate
