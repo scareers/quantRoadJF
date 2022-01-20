@@ -206,7 +206,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("stock select result: 自适应选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
 
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
-        initFinalDistribution(); // 计算等价分布
+        initFinalDistributionPdfAndCdf(); // 计算等价分布, 同时也将计算 cdf 累计密度函数, 使得计算权重更为方便
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
 
         ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
@@ -320,7 +320,7 @@ public class LowBuyHighSellStrategy extends Strategy {
      * @throws Exception
      * @noti: 调用方保证, 所有 formSet 的 tick和weight 列表size相同!
      */
-    private void initFinalDistribution() throws Exception {
+    private void initFinalDistributionPdfAndCdf() throws Exception {
         List<Double> ticksOfLow1Global = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
         List<Double> weightsOfLow1Global = null; // 44数据
         List<Double> ticksOfHigh1Global = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
