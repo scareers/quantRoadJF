@@ -112,7 +112,7 @@ public class AccountStates {
             public void run() {
                 while (true) {
                     List<String> alreadyInQueue = new ArrayList<>();
-                    for (Order order : trader.getOrdersWaitForExecution()) {
+                    for (Order order : Trader.getOrdersWaitForExecution()) {
                         if (ORDER_TYPES.contains(order.getOrderType())) {
                             // 得到已在队列中的类型. 对其余类型进行补齐
                             alreadyInQueue.add(order.getOrderType());

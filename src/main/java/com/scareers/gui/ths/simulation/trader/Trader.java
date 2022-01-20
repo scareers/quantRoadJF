@@ -45,6 +45,7 @@ import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
+import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
@@ -119,21 +120,21 @@ public class Trader {
      * 核心待执行订单优先级队列. 未指定容量, put将不会阻塞. take将可能阻塞
      */
     public static volatile PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
-    ;
+
 
     /**
      * 存放 所有曾出现过订单, 一旦订单加入 ordersWaitForExecution, 则加入此key,value为空列表.
      * 一旦获取到响应, 则设定value.
      */
     public static volatile Hashtable<Order, List<Response>> ordersAllMap = new Hashtable<>();
-    ;
+
 
     /**
      * 核心检测订单执行状态线程安全Map. 将遍历队列元素, 当元素check通过, 则去除元素,订单彻底完成.
      * key:value--> 订单对象: 对应的线程安全响应列表
      */
     public static volatile Hashtable<Order, List<Response>> ordersWaitForCheckTransactionStatusMap = new Hashtable<>();
-    ;
+
 
     /**
      * check 后, 将被放入完成队列. check信息, 将被放入 order.生命周期 check_transaction_status的描述中.
@@ -142,12 +143,12 @@ public class Trader {
      * @noti 某些重发的订单, 原始订单对象 应添加 RESENDED 生命周期后, 再放入本map, 含义为 "resended_finish"
      */
     public static volatile Hashtable<Order, List<Response>> ordersSuccessFinished = new Hashtable<>();
-    ;
+
     /**
      * 重发后视为完成的原始订单,resended 生命周期的 payload, 带有当次重发的"新订单" 的 rawOrderId
      */
     public static volatile Hashtable<Order, List<Response>> ordersResendFinished = new Hashtable<>();
-    ;
+
 
     // 各大子组件, 均单例模式
     public volatile OrderExecutor orderExecutor;
@@ -207,16 +208,17 @@ public class Trader {
      * @throws Exception
      */
     private void manualInteractive() throws Exception {
-        Scanner input = new Scanner(System.in);
-        while (true) {
-            String info = input.next();
-            System.out.println(info);
-            if ("q".equals(info)) {
-                break;
-            } else if ("s".equals(info)) {
-            } else if ("g".equals(info)) {
-            }
-        }
+//        Scanner input = new Scanner(System.in);
+//        while (true) {
+//            String info = input.next();
+//            System.out.println(info);
+//            if ("q".equals(info)) {
+//                break;
+//            } else if ("s".equals(info)) {
+//            } else if ("g".equals(info)) {
+//            }
+//        }
+        waitForever();
     }
 
     /*

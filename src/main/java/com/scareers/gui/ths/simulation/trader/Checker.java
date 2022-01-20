@@ -3,7 +3,6 @@ package com.scareers.gui.ths.simulation.trader;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
-import com.scareers.gui.ths.simulation.strategy.Strategy;
 import com.scareers.utils.log.LogUtil;
 import lombok.SneakyThrows;
 
@@ -54,8 +53,8 @@ public class Checker {
             @Override
             public void run() {
                 while (true) {
-                    for (Order order : trader.getOrdersWaitForCheckTransactionStatusMap().keySet()) {
-                        List<Response> responses = trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
+                    for (Order order : Trader.getOrdersWaitForCheckTransactionStatusMap().keySet()) {
+                        List<Response> responses = Trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
                         String orderType = order.getOrderType();
                         if (AccountStates.ORDER_TYPES.contains(orderType)) {
                             // 若是账户状态相关订单, 则交由  AccountStates 进行check

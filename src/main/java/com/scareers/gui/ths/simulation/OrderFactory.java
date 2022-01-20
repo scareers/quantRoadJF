@@ -91,7 +91,7 @@ public class OrderFactory {
         Assert.isTrue(waitFlushOrderId != null);
         Map<String, Object> params = new HashMap<>();
         params.put("waitFlushOrderId", waitFlushOrderId);
-        params.put("timeoutThreshold", timeoutThreshold);
+        params.put("timeoutThreshold", timeoutThreshold); // 10ms
         params.put("canCancelOnly", canCancelOnly);
         return new WaitOneBeFlushOrder(params);
     }

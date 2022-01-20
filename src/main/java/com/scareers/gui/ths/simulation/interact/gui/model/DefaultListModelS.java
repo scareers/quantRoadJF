@@ -21,7 +21,9 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
 
     public void flush(List<T> newList) {
         Collections.sort(newList);
-        newList = newList.subList(newList.size() - 201, newList.size() - 201); // todo: 暂取200
+        if (newList.size() > 200) {
+            newList = newList.subList(newList.size() - 201, newList.size() - 201); // todo: 暂取200
+        }
 
 
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
@@ -33,7 +35,5 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
         } else if (newList.size() < this.getSize()) {
             this.removeRange(newList.size(), this.getSize() - 1); // 注意大的index需要-1
         }
-
-
     }
 }

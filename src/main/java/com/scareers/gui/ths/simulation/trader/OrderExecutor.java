@@ -59,7 +59,7 @@ public class OrderExecutor {
             @Override
             public void run() {
                 while (true) {
-                    Order order = trader.getOrdersWaitForExecution().take(); // 最高优先级订单, 将可能被阻塞
+                    Order order = Trader.getOrdersWaitForExecution().take(); // 最高优先级订单, 将可能被阻塞
                     executedOrder.add(order); // 添加入已执行订单队列, 无视执行结果
                     executingOrder = order;
                     log.warn("order start execute: {} [{}] --> {}:{}", order.getOrderType(),
@@ -71,8 +71,8 @@ public class OrderExecutor {
                     order.addLifePoint(Order.LifePointStatus.WAIT_CHECKING,
                             "checking: 订单进入check队列,等待check完成");
 
-                    trader.getOrdersWaitForCheckTransactionStatusMap().put(order, responses);
-                    trader.getOrdersAllMap().put(order, responses); // 也放入全订单队列
+                    Trader.getOrdersWaitForCheckTransactionStatusMap().put(order, responses);
+                    Trader.getOrdersAllMap().put(order, responses); // 也放入全订单队列
                 }
             }
         });
