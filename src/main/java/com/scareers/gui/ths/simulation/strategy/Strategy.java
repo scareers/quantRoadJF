@@ -132,7 +132,7 @@ public abstract class Strategy {
         strategyTask.setPriority(Thread.MAX_PRIORITY);
         strategyTask.setName(strategyName);
         strategyTask.start();
-        log.warn("start: {} 开始执行策略生成订单...", strategyName);
+        log.error("show: start: {} 开始执行策略生成订单...", strategyName);
     }
 
     public String getStrategyName() {

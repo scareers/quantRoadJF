@@ -37,14 +37,14 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
         Thread.sleep(sleep * 2000);
         Order order = null;
-        int type = RandomUtil.randomInt(12);
-        if (type < 3) {
+        int type = RandomUtil.randomInt(22);
+        if (type < 8) {
             order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-        } else if (type < 6) {
+        } else if (type < 16) {
             order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-        } else if (type < 8) {
+        } else if (type < 18) {
             order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-        } else if (type < 10) {
+        } else if (type < 20) {
             order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
         } else {
             order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
