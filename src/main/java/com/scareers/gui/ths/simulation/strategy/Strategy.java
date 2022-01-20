@@ -23,6 +23,7 @@ import java.util.List;
 public abstract class Strategy {
     protected String strategyName; // 策略名称, 线程同名
     protected List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
+    protected StrategyAdapter adapter;
 
     protected Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
@@ -45,24 +46,36 @@ public abstract class Strategy {
      *
      * @throws Exception
      */
-    protected abstract void buyDecision() throws Exception;
+    protected void buyDecision() throws Exception {
+        adapter.buyDecision();
+    }
 
-    protected abstract void sellDecision() throws Exception;
+    protected void sellDecision() throws Exception {
+        adapter.sellDecision();
+    }
 
     /**
      * 针对 buy 订单check逻辑. 检测成交是否完成等  // 处理三大类型淡订单
      */
-    protected abstract void checkBuyOrder(Order order, List<Response> responses, String orderType);
+    protected void checkBuyOrder(Order order, List<Response> responses, String orderType) {
+        adapter.checkBuyOrder(order, responses, orderType);
+    }
+
 
     /**
      * 针对 sell 订单check逻辑. 检测成交是否完成等
      */
-    protected abstract void checkSellOrder(Order order, List<Response> responses, String orderType);
+    protected void checkSellOrder(Order order, List<Response> responses, String orderType) {
+        adapter.checkSellOrder(order, responses, orderType);
+    }
+
 
     /**
      * 针对 其余类型 订单check逻辑.较少 检测成交是否完成等
      */
-    protected abstract void checkOtherOrder(Order order, List<Response> responses, String orderType);
+    protected void checkOtherOrder(Order order, List<Response> responses, String orderType) {
+        adapter.checkOtherOrder(order, responses, orderType);
+    }
 
     /**
      * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), initYesterdayHolds(), + 两大指数
@@ -82,6 +95,7 @@ public abstract class Strategy {
      * 注意通常需要 waitUtil(AccountStates::alreadyInitialized, 120 * 1000, 100, "首次账户资金状态刷新完成");
      * 后执行. 或者需要数据库已经保存有 昨日收盘后持仓(尽量等 00:00证券公司完全刷新后,而非简单昨日收盘后)
      * 将昨日持仓更新到股票池. 将昨日收盘持仓和资金信息, 更新到属性
+     *
      * @return
      */
     protected abstract List<String> initYesterdayHolds() throws Exception;

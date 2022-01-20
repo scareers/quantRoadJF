@@ -5,7 +5,6 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -14,10 +13,8 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsTransaction;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.gui.ths.simulation.OrderFactory;
-import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
-import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.gui.ths.simulation.strategy.adapter.TestStrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.KlineFormsApi;
@@ -48,21 +45,21 @@ import static com.scareers.utils.SqlUtil.execSql;
 @Getter
 @Setter
 public class TestStrategy extends Strategy {
-    private static TestStrategy INSTANCE;
+    private static LowBuyHighSellStrategy INSTANCE;
 
-    public static TestStrategy getInstance(Trader trader, String strategyName,
-                                           List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
-                                           int suitableSelectStockCount, // 期望的选股结果数量
-                                           boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
-                                           List<Integer> keyInts) throws Exception {
+    public static LowBuyHighSellStrategy getInstance(Trader trader, String strategyName,
+                                                     List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
+                                                     int suitableSelectStockCount, // 期望的选股结果数量
+                                                     boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
+                                                     List<Integer> keyInts) throws Exception {
         if (INSTANCE == null) {
-            INSTANCE = new TestStrategy(trader, strategyName, forceManualExcludeStocks,
+            INSTANCE = new LowBuyHighSellStrategy(trader, strategyName, forceManualExcludeStocks,
                     suitableSelectStockCount, preferenceMoreStock, keyInts);
         }
         return INSTANCE;
     }
 
-    public static TestStrategy getInstance() {
+    public static LowBuyHighSellStrategy getInstance() {
         return INSTANCE;
     }
 
@@ -117,6 +114,7 @@ public class TestStrategy extends Strategy {
     private HashMap<Long, Double> formSerDistributionWeightMapFinal; // 最终选股结果后, formSet分布权重 Map
     private HashMap<String, Integer> stockSelectCountMapFinal; // 选股结果, value是出现次数
     // 四项, 分布和tick
+    //  计算cdf 见 virtualCdfAsPositionForHighSell / virtualCdfAsPositionForLowBuy 静态方法 keyfuncs.positiondecision
     private List<Double> ticksOfLow1GlobalFinal = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
     private List<Double> weightsOfLow1GlobalFinal = null; // 44数据
     private List<Double> ticksOfHigh1GlobalFinal = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
@@ -135,6 +133,7 @@ public class TestStrategy extends Strategy {
     ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
+        this.adapter = new TestStrategyAdapter(this); // 加载适配器,将设置 trader, 具备5方法
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
         this.preferenceMoreStock = preferenceMoreStock;
@@ -147,57 +146,6 @@ public class TestStrategy extends Strategy {
     }
 
     @Override
-    protected void checkBuyOrder(Order order, List<Response> responses, String orderType) {
-        checkOtherOrder(order, responses, orderType);
-    }
-
-    @Override
-    protected void checkSellOrder(Order order, List<Response> responses, String orderType) {
-        checkOtherOrder(order, responses, orderType);
-    }
-
-    @Override
-    protected void checkOtherOrder(Order order, List<Response> responses, String orderType) {
-        JSONObject response = responses.get(responses.size() - 1);
-        if ("success".equals(response.getStr("state"))) {
-            log.info("执行成功: {}", order.getRawOrderId());
-//            log.warn("待执行订单数量: {}", trader.getOrdersWaitForExecution().size());
-            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
-        } else {
-            log.error("执行失败: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toString());
-            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
-        }
-        trader.successFinishOrder(order, responses);
-    }
-
-    @Override
-    protected void buyDecision() throws Exception {
-        int sleep = RandomUtil.randomInt(1, 10);
-        Thread.sleep(sleep * 2000);
-
-        Order order;
-        int type = RandomUtil.randomInt(16);
-        if (type < 5) {
-            order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-        } else if (type < 10) {
-            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-        } else if (type < 12) {
-            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-        } else if (type < 14) {
-            order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
-        } else {
-            order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-        }
-        trader.putOrderToWaitExecute(order);
-    }
-
-    @Override
-    protected void sellDecision() throws Exception {
-
-    }
-
-    @Override
     protected List<SecurityBeanEm> initStockPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
         stockSelect(); // 选股for buy
@@ -207,7 +155,7 @@ public class TestStrategy extends Strategy {
         log.warn("stock select result: 自适应选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
 
         // 需要再初始化 formSetId 综合分布! 依据 formSerDistributionWeightMapFinal 权重map!.
-        initFinalDistribution(); // 计算等价分布
+        initFinalDistributionPdf(); // 计算等价分布,
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
 
         ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
@@ -321,7 +269,7 @@ public class TestStrategy extends Strategy {
      * @throws Exception
      * @noti: 调用方保证, 所有 formSet 的 tick和weight 列表size相同!
      */
-    private void initFinalDistribution() throws Exception {
+    private void initFinalDistributionPdf() throws Exception {
         List<Double> ticksOfLow1Global = null; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
         List<Double> weightsOfLow1Global = null; // 44数据
         List<Double> ticksOfHigh1Global = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
@@ -378,6 +326,7 @@ public class TestStrategy extends Strategy {
         weightsOfLow1GlobalFinal = weightsOfLow1Global; // 44数据
         ticksOfHigh1GlobalFinal = ticksOfHigh1Global; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
         weightsOfHigh1GlobalFinal = weightsOfHigh1Global; // 88数据
+
 
         Assert.isTrue(sumEqualApproximately(weightsOfLow1GlobalFinal, 1.0, 0.001));//权重和1
         Assert.isTrue(sumEqualApproximately(weightsOfHigh1GlobalFinal, 1.0, 0.001));//权重和1
