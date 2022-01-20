@@ -526,7 +526,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                 .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size())),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
-                        "101", "1", 3, false, 2000);
+                        "101", "1", 3, false, 2000,false);
 
         // int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
         for (String stock : datasMap.keySet()) {

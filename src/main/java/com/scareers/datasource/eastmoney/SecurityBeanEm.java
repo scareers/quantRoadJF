@@ -103,7 +103,7 @@ public class SecurityBeanEm {
     /**
      * 表示当前已转换类型! 保证仅转换一次!
      */
-    private enum ConvertState {
+    public enum ConvertState {
         NULL, // 尚未转换
         FAIL, // 转换失败
         STOCK, // 已转换为股票

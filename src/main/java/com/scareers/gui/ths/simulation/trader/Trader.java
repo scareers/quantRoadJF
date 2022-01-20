@@ -21,6 +21,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
+import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fstransaction.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
@@ -101,9 +102,12 @@ public class Trader {
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
                 FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,
-                        "15:10:00", 1000, 100, 32);
+                        "15:10:00", 500, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
+        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 500, 100, 16);
+        trader.setFsFetcher(fsFetcher);
+        fsFetcher.startFetch(); // fs图抓取
 
         // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
@@ -155,6 +159,7 @@ public class Trader {
     public volatile AccountStates accountStates;
     public volatile Strategy strategy; // 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成关连
     public volatile FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
+    public volatile FsFetcher fsFetcher; // 分时成交获取器, 需手动实例化后绑定
 
     // 通道, 自行初始化
     public volatile Channel channelComsumer; // 自行初始化

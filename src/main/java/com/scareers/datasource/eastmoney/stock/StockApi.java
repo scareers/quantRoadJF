@@ -65,7 +65,7 @@ public class StockApi {
 //        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
 //        Console.log(timer.intervalRestart());
 
-        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
         Console.log(timer.intervalRestart());
 //        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
 //        Console.log(timer.intervalRestart());
@@ -396,7 +396,8 @@ public class StockApi {
                                                                                String klType, String fq,
                                                                                int retrySingle,
                                                                                boolean isIndex,
-                                                                               int timeoutOfReq
+                                                                               int timeoutOfReq,
+                                                                               boolean useCache
     )
             throws ExecutionException, InterruptedException {
 
@@ -408,7 +409,7 @@ public class StockApi {
                 @Override
                 public DataFrame<Object> call() throws Exception {
                     return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex,
-                            timeoutOfReq);
+                            timeoutOfReq,useCache);
                 }
             }));
         }
@@ -440,7 +441,8 @@ public class StockApi {
     @Cached
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean isIndex, int timeout)
+                                                          int retrySingle, boolean isIndex, int timeout,
+                                                          boolean useCache)
             throws Exception {
         if (begDate == null) {
             begDate = "19900101";
@@ -451,7 +453,11 @@ public class StockApi {
 
         String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
                 isIndex);
-        DataFrame<Object> res = getQuoteHistorySingleCache.get(cacheKey);
+
+        DataFrame<Object> res = null;
+        if (useCache) { // 必须使用caCache 且真的存在缓存
+            res = getQuoteHistorySingleCache.get(cacheKey);
+        }
         if (res != null) {
             return res;
         }
@@ -491,10 +497,43 @@ public class StockApi {
 
         dfTemp = dfTemp.add("股票代码", values -> bean.getStockCodeSimple());
         res = dfTemp.add("股票名称", values -> bean.getName());
-        getQuoteHistorySingleCache.put(cacheKey, res);
+        getQuoteHistorySingleCache.put(cacheKey, res); // 将更新
         return res;
     }
 
+    /**
+     * 默认使用cache
+     *
+     * @param stock
+     * @param begDate
+     * @param endDate
+     * @param klType
+     * @param fq
+     * @param retrySingle
+     * @param isIndex
+     * @param timeout
+     * @return
+     * @throws Exception
+     */
+    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
+                                                          String endDate, String klType, String fq,
+                                                          int retrySingle, boolean isIndex, int timeout
+    ) throws Exception {
+        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex, timeout, true);
+    }
+
+    /**
+     * 默认使用cache
+     *
+     * @param stock
+     * @param begDate
+     * @param endDate
+     * @param klType
+     * @param fq
+     * @param retrySingle
+     * @return
+     * @throws Exception
+     */
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retrySingle)

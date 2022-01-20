@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONObject;
@@ -23,11 +24,43 @@ import static com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy.ST
 
 /**
  * description:
+ * /**
+ * *         回测框架相关设定项
+ * *         // cdf时tick距离. 千分之5
+ * *         tickGap = 0.005;
+ * *         // 常规低买参数
+ * *         positionUpperLimit = 1.4;
+ * *         positionCalcKeyArgsOfCdf = 1.6;
+ * *         execLowBuyThreshold = +0.005;
+ * *         continuousFallTickCountThreshold = 1;
+ * *
+ * *         // 指数当时tick加成
+ * *         indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
+ * *         indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
+ * *
+ * *         // 开盘强卖参数
+ * *         forceSellOpenWeakStock = false;
+ * *         weakStockOpenPercentThatDayThreshold = -0.02;
+ * *         weakStockOpenPercentTodayThreshold = -0.07;
+ * *
+ * *         // 常规高卖参数
+ * *         positionCalcKeyArgsOfCdfHighSell = 1.2;
+ * *         execHighSellThreshold = -0.02;
+ * *         continuousRaiseTickCountThreshold = 1;
  *
- * @author: admin
- * @date: 2022/1/20/020-11:39:56
+ * @author admin
  */
+
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
+    public static double tickGap = 0.005;
+
+    // 高卖参数
+    public static double indexBelongThatTimePriceEnhanceArgHighSell = -0.5;  // 指数当时价格加成
+    public static double positionCalcKeyArgsOfCdfHighSell = 1.5; // cdf 倍率
+    public static double execHighSellThreshold = -0.02; // 价格>此值(百分比)才考虑卖出
+    public static int continuousRaiseTickCountThreshold = 1; // 连续上升n个,本分钟下降
+
+
     LowBuyHighSellStrategy strategy;
     Trader trader;
     String pre2Date; // yyyy-MM-dd
@@ -94,12 +127,17 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * 1.读取(真)分时图,
      * 2.判定前几分钟分时图 连续上升 n
      * 3.判定本分钟价格 比上一分钟 降低. (过半分钟的时间根据比例, 之前固定返回false)
-     * 4.返回false
      *
      * @return
-     * @key3 : 参考 SettingsOfFSBacktest 相关设定项
+     * @see SettingsOfFSBacktest
      */
-    public boolean isSellPoint() {
+    public boolean isSellPoint(String stock) throws Exception {
+        // 获取今日分时图
+        // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
+        DataFrame<Object> fsDf = getQuoteHistorySingle(stock, null, null, // 日期区间无,默认今日最新
+                "1", "1", 3,
+                false, 2000, false); // 实时分时图
+        DateTime lastFsTick = DateUtil.parse(fsDf.get(fsDf.length() - 1, 0).toString().strip()); // 该格式支持
 
 
         return false;

@@ -91,6 +91,7 @@ public class SettingsOfFSBacktest {
         forceSellOpenWeakStock = false;
         weakStockOpenPercentThatDayThreshold = -0.02;
         weakStockOpenPercentTodayThreshold = -0.07;
+
         // 常规高卖参数
         positionCalcKeyArgsOfCdfHighSell = 1.2;
         execHighSellThreshold = -0.02;
