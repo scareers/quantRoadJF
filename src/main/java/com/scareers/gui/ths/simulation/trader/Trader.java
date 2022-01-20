@@ -27,7 +27,6 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
-import com.scareers.gui.ths.simulation.strategy.TestStrategy;
 import com.scareers.utils.StrUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -37,7 +36,6 @@ import lombok.SneakyThrows;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -92,7 +90,8 @@ public class Trader {
         waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
                 "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
         // 直到此时才实例化策略对象, 绑定到 trader
-        Strategy mainStrategy = TestStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
+        // todo
+        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
                 20, // 期望选股数量
                 false, // 偏向更多选股结果
@@ -110,7 +109,7 @@ public class Trader {
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
         mainStrategy.startDealWith();
 
-        trader.manualInteractive(); // 开始交互, 直到退出. 等待gui关闭
+        trader.manualInteractive(); // 开始交互, 必须死循环.
         trader.closeDualChannelAndConn(); // 关闭连接
         fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
     }
@@ -218,7 +217,9 @@ public class Trader {
 //            } else if ("g".equals(info)) {
 //            }
 //        }
-//        waitForever();
+        while (true) {
+            waitForever();
+        }
     }
 
     /*

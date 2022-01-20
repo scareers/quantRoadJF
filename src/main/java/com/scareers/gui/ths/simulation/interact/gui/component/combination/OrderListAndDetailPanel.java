@@ -178,7 +178,7 @@ public class OrderListAndDetailPanel extends JPanel {
             @Override
             public void componentResized(ComponentEvent e) {
                 jList.setBounds(0, 0, 300, getHeight()); // 固定宽 300
-                orderContent.setDividerLocation(0.32); // 分割位置百分比
+                orderContent.setDividerLocation(0.45); // 分割位置百分比
                 orderContent.setBounds(300, 0, getWidth() - 300, getHeight()); // 其余占满
             }
         });

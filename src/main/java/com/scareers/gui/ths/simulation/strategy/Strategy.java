@@ -5,9 +5,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.SneakyThrows;
+import lombok.*;
 
 import java.util.List;
 
@@ -20,6 +18,8 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
+@Setter
+@Getter
 public abstract class Strategy {
     protected String strategyName; // 策略名称, 线程同名
     protected List<SecurityBeanEm> stockPool; // 股票池. 使用东方财富股票代码
@@ -61,7 +61,6 @@ public abstract class Strategy {
         adapter.checkBuyOrder(order, responses, orderType);
     }
 
-
     /**
      * 针对 sell 订单check逻辑. 检测成交是否完成等
      */
@@ -76,6 +75,7 @@ public abstract class Strategy {
     protected void checkOtherOrder(Order order, List<Response> responses, String orderType) {
         adapter.checkOtherOrder(order, responses, orderType);
     }
+
 
     /**
      * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), initYesterdayHolds(), + 两大指数

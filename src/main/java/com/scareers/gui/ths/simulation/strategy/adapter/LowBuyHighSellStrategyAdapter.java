@@ -15,21 +15,19 @@ import com.scareers.utils.log.LogUtil;
 import java.util.List;
 
 /**
- * description: 低买高卖策略适配器, 着重的逻辑实现. LowBuyHighSellStrategy 5大方法
- * 将调用 adapter 对应方法
+ * description:
  *
  * @author: admin
- * @date: 2022/1/20/020-09:57:03
- * @self 方便查看核心实现
+ * @date: 2022/1/20/020-11:39:56
  */
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
-    private static final Log log = LogUtil.getLogger();
     LowBuyHighSellStrategy strategy;
     Trader trader;
 
-    public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy) {
+    public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy,
+                                         Trader trader) {
         this.strategy = strategy;
-        this.trader = strategy.getTrader();
+        this.trader = trader;
     }
 
     @Override
@@ -49,7 +47,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         } else {
             order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
         }
-        strategy.getTrader().putOrderToWaitExecute(order);
+        trader.putOrderToWaitExecute(order);
     }
 
     @Override
@@ -81,4 +79,5 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
         trader.successFinishOrder(order, responses);
     }
+    private static final Log log = LogUtil.getLogger();
 }

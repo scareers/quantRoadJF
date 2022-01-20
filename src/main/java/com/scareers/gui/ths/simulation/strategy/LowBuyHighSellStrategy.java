@@ -5,6 +5,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -13,7 +14,10 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsTransaction;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.gui.ths.simulation.OrderFactory;
+import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
+import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
@@ -133,7 +137,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
-        this.adapter = new LowBuyHighSellStrategyAdapter(this); // 加载适配器,将设置 trader, 具备5方法
+        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader);
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
         this.preferenceMoreStock = preferenceMoreStock;
@@ -144,6 +148,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
         bindSelf();
     }
+
 
     @Override
     protected List<SecurityBeanEm> initStockPool() throws Exception {
