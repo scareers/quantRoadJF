@@ -110,7 +110,7 @@ public class Trader {
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
         mainStrategy.startDealWith();
 
-        trader.manualInteractive(); // 开始交互, 直到退出.
+        trader.manualInteractive(); // 开始交互, 直到退出. 等待gui关闭
         trader.closeDualChannelAndConn(); // 关闭连接
         fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
     }
@@ -218,7 +218,7 @@ public class Trader {
 //            } else if ("g".equals(info)) {
 //            }
 //        }
-        waitForever();
+//        waitForever();
     }
 
     /*
