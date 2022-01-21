@@ -1,21 +1,14 @@
 package com.scareers;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.fastjson.JSON;
 
-import java.awt.*;
-
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfHighSell;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.calc5ItemValusOfLowBuy;
-import static com.scareers.utils.HardwareUtil.reportCpuMemoryDiskSubThread;
-import static com.scareers.utils.SqlUtil.execSql;
 
 /**
  * Hello world!
  */
 public class App {
-
 
     public static long fibonacci(long number) {
         if ((number == 0) || (number == 1)) {
@@ -26,10 +19,10 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
-
+        System.out.println(String.format("%.2f", 1.234));
         System.out.println("abc".getClass());
-        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-        Console.log(fontNames);
+//        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+//        Console.log(fontNames);
         while (true) {
 
             long start = System.currentTimeMillis();
@@ -37,18 +30,18 @@ public class App {
             for (long i = 0; i < 1000000; i++) {
                 JSONUtil.parseObj(
                         "{\n" +
-                        "            \"code\": 200,\n" +
-                        "            \"success\": true,\n" +
-                        "            \"payload\": {\n" +
-                        "                \"features\": [\n" +
-                        "                    \"awesome\",\n" +
-                        "                    \"easyAPI\",\n" +
-                        "                    \"lowLearningCurve\"\n" +
-                        "                ]\n" +
-                        "            }\n" +
-                        "        }"
+                                "            \"code\": 200,\n" +
+                                "            \"success\": true,\n" +
+                                "            \"payload\": {\n" +
+                                "                \"features\": [\n" +
+                                "                    \"awesome\",\n" +
+                                "                    \"easyAPI\",\n" +
+                                "                    \"lowLearningCurve\"\n" +
+                                "                ]\n" +
+                                "            }\n" +
+                                "        }"
 
-                      );
+                );
 
             }
             System.out.println(System.currentTimeMillis() - start);

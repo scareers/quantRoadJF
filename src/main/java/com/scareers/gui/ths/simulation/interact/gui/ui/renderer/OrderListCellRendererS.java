@@ -29,9 +29,7 @@ public class OrderListCellRendererS extends DefaultListCellRenderer {
         Order.OrderSimple orderSimple = (Order.OrderSimple) value;
         String toolTip = orderSimple.toToolTip();
         label.setToolTipText(jsonStrToHtmlFormat(toolTip)); // pretty json 可换行
-
         setLabelForeColorByOrderLifePoint(orderSimple.getOrder(), label);
-
         return label;
     }
 }

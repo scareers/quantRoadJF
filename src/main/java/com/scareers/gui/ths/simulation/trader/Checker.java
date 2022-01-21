@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -53,7 +54,7 @@ public class Checker {
             @Override
             public void run() {
                 while (true) {
-                    for (Order order : Trader.getOrdersWaitForCheckTransactionStatusMap().keySet()) {
+                    for (Order order : new CopyOnWriteArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
                         List<Response> responses = Trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
                         String orderType = order.getOrderType();
                         if (AccountStates.ORDER_TYPES.contains(orderType)) {

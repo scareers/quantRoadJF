@@ -179,7 +179,8 @@ public class Order implements Comparable, Serializable {
         return JSONUtil.toJsonStr(prepare(true)); // 直观显示
     }
 
-    public String toStringPretty() throws Exception {
+    @SneakyThrows
+    public String toStringPretty() {
         return JSONUtil.toJsonPrettyStr(prepare(true)); // 直观显示
     }
 
@@ -340,9 +341,10 @@ public class Order implements Comparable, Serializable {
         CHECKING("checking"),
         CHECKED("checked"),
 
-        RESENDED("resended"), //  已被重发的订单,随后 finish
-        FINISH("finish"), // 正常完成订单
-        FAIL_FINALLY("failed_finally"); // 彻底失败, 进入 最终失败 队列
+        // 最终状态 3种
+        RESENDED("resended"), //  已被重发的订单, resened_finish
+        FINISH("finish"), // 正常完成订单 success finish
+        FAIL_FINALLY("fail_finally"); // 彻底失败, 进入 最终失败 队列
 
         private static final long serialVersionUID = 101241855L;
 
@@ -402,11 +404,17 @@ public class Order implements Comparable, Serializable {
 
             if (this.order.getLastLifePoint().getStatus() == LifePointStatus.EXECUTING) {
                 builder.append(" <font color=\"red\">["); // 简单形式
-                builder.append(((double) DateUtil
+                builder.append(String.format("%.3f", ((double) DateUtil // 固定3位小数到ms
                         .between(this.order.getLastLifePoint().getGenerateTime(), new DateTime(), DateUnit.MS,
-                                false)) / 1000);
+                                false)) / 1000));
                 builder.append(" s]</font>"); // 简单形式
+            } else if (this.order.getLastLifePoint().getStatus() == LifePointStatus.CHECKING) {
+                builder.append(" <font color=\"red\">["); // 简单形式
+                builder.append("checking..");
+                builder.append("]</font>"); // 简单形式
             }
+
+
             builder.append("</html>");
             return builder.toString();
         }

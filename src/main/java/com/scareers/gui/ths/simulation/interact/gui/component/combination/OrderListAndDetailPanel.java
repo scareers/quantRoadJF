@@ -90,7 +90,10 @@ public class OrderListAndDetailPanel extends JPanel {
                         } else if (currentDataFlushType == Type.ORDERS_RESEND_FINISHED) {
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersResendFinished.keySet()));
-                        } else {
+                        } else if (currentDataFlushType == Type.ORDERS_FAILED_FINISHED) {
+                            simpleOrders = Order.ordersForDisplay(
+                                    new ArrayList<>(Trader.ordersFailedFinallyNeedManualHandle.keySet()));
+                        }else {
                             System.out.println("未知类型");
                         }
                         if (simpleOrders.size() == 0) {
@@ -122,7 +125,8 @@ public class OrderListAndDetailPanel extends JPanel {
         ORDER_ALL_MAP,
         ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP,
         ORDERS_SUCCESS_FINISHED,
-        ORDERS_RESEND_FINISHED
+        ORDERS_RESEND_FINISHED,
+        ORDERS_FAILED_FINISHED
     }
 
 

@@ -21,6 +21,7 @@ import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -94,22 +95,22 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void buyDecision() throws Exception {
-        int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-        Thread.sleep(sleep * 2000);
-        Order order = null;
-        int type = RandomUtil.randomInt(22);
-        if (type < 8) {
-            order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-        } else if (type < 16) {
-            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-        } else if (type < 18) {
-            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-        } else if (type < 20) {
-            order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
-        } else {
-            order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-        }
-        trader.putOrderToWaitExecute(order);
+//        int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
+//        Thread.sleep(sleep * 2000);
+//        Order order = null;
+//        int type = RandomUtil.randomInt(22);
+//        if (type < 8) {
+//            order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
+//        } else if (type < 16) {
+//            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
+//        } else if (type < 18) {
+//            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
+//        } else if (type < 20) {
+//            order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
+//        } else {
+//            order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
+//        }
+//        trader.putOrderToWaitExecute(order);
     }
 
     @Override
@@ -169,11 +170,11 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                         amount = (amountsTotal - sellAlready) / 100 * 100;
                     }
                     if (amount < 100) {
-                        log.warn("sell decision: 卖点出现,但折算卖出数量<100,不执行卖出, {} -> {}/{} ; already [{}], actual [{}]",
-                                stock,
-                                shouldSellAmountTotal,
-                                amountsTotal,
-                                sellAlready, amount);
+//                        log.warn("sell decision: 卖点出现,但折算卖出数量<100,不执行卖出, {} -> {}/{} ; already [{}], actual [{}]",
+//                                stock,
+//                                shouldSellAmountTotal,
+//                                amountsTotal,
+//                                sellAlready, amount);
                     } else {
                         // 卖出
                         log.warn("sell decision: 卖点出现, {} -> {}/{} ; already [{}], actual [{}]", stock,
@@ -188,8 +189,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     }
 
                 } else { //  新卖点,但没必要卖出更多.(多因为当前价格已经比上一次低, 导致仓位更低)
-                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,
-                            shouldSellAmountTotal, amountsTotal, sellAlready);
+//                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,
+//                            shouldSellAmountTotal, amountsTotal, sellAlready);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -357,13 +358,19 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
      */
 
-    private long maxCheckSellOrderTime = 120 * 1000; // 超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+    private long maxCheckSellOrderTime = 10 * 1000; // 超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
 
+    @SneakyThrows
     @Override
     public void checkSellOrder(Order order, List<Response> responses, String orderType) {
-        if (responses.size() > 1) {
-            log.warn("total retrying times maybe: 订单共计重试 {} 次", responses.size() - 1);
+        Thread.sleep(1);
+        if (order.getLastLifePoint().getStatus() != Order.LifePointStatus.CHECKING) { // 首次的逻辑
+            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功: 开始checking");
+            if (responses.size() > 1) {
+                log.warn("total retrying times maybe: 订单共计重试 {} 次", responses.size() - 1);
+            }
         }
+
         Response response = responses.get(responses.size() - 1);
         String state = response.getStr("state");
         if ("success".equals(state)) {
@@ -371,19 +378,29 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 String notes = response.getStr("notes");
                 if (notes != null && notes.contains("通过查询今日全部订单确定的订单成功id")) {
                     log.warn("success noti: {}", notes);
+                } else {
+                    log.warn("success start checking: {} {}", order.getOrderType(), order.getParams());
                 }
             }
-            order.addLifePoint(Order.LifePointStatus.CHECKING, "执行成功: 开始checking");
+
             if (orderAlreadyMatchAllBuyOrSell(order, response)) {
+                log.warn("checked ok: response [success]: 已全部成交: {} [{}]", order.getOrderType(), order.getParams());
                 order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功: 已全部成交");
                 trader.successFinishOrder(order, responses);
             } else {
                 long checkTimeElapsed = DateUtil.between(order.getLastLifePoint().getGenerateTime(), DateUtil.date(),
                         DateUnit.MS, true); // checking 状态持续了多少 ms??
+//                Console.log("{} {}", checkTimeElapsed > maxCheckSellOrderTime, order.getRawOrderId());
                 if (checkTimeElapsed > maxCheckSellOrderTime) {
-                    log.error("order response state[success] but check fail: {}ms 内未能全部成交 {} [{}]",
+                    log.error("checked: response [success] but check fail: {}ms 内未能全部成交 {} [{}]",
+                            maxCheckSellOrderTime,
                             order.getOrderType(),
                             order.getParams());
+                    order.addLifePoint(Order.LifePointStatus.CHECKED,
+                            StrUtil.format("执行成功[check失败]: check失败, {}ms 内未能全部成交 {} [{}]", maxCheckSellOrderTime,
+                                    order.getOrderType(),
+                                    order.getParams()));
+                    trader.reSendAndFinishOrder(order, responses); // check失败, 不加入 checked生命周期, 直接进入失败队列, 需要人为观察
                     try {
                         sendEmailSimple(
                                 StrUtil.format("Trader.Checker: 订单执行成功但{}ms内未能全部成交,注意手动确认!", maxCheckSellOrderTime),
@@ -391,30 +408,23 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功[check失败]: check失败,已进入失败队列,注意手动确认");
-                    trader.failFinishOrder(order, responses); // check失败, 不加入 checked生命周期, 直接进入失败队列, 需要人为观察
-                } else {
-                    // 继续checking
-                }
+                } // 继续checking
             }
         } else if ("fail".equals(state)) {
             // todo
-            log.error("执行失败: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toString());
-            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
-
+            log.error("checked: response[fail]: {} [{}]", order.getOrderType(), order.getParams());
+            order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败 todo");
+            trader.failFinishOrder(order, responses);
         } else if ("exception".equals(state)) { // 极快,省掉 CHECKING 生命周期
-            log.error("order response state[exception]: {} [{}]", order.getOrderType(), order.getParams());
+            log.error("checked: response[exception]: {} [{}]", order.getOrderType(), order.getParams());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行异常: state为exception");
             trader.failFinishOrder(order, responses);
         } else { // 未知响应状态.
-            log.error("order response state[unknown]: 未知响应状态 {} [{}]", order.getOrderType(), order.getParams());
+            log.error("checked: response[unknown]: 未知响应状态 {} [{}]", order.getOrderType(),
+                    order.getParams());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行错误: 未知响应状态:" + state);
             trader.failFinishOrder(order, responses);
         }
-        trader.successFinishOrder(order, responses);
-
-
     }
 
     // 成交时间	证券代码	证券名称	操作	成交数量	成交均价	成交金额	合同编号	成交编号

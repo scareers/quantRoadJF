@@ -85,15 +85,17 @@ public class GuiCommonUtil {
         if (status == Order.LifePointStatus.EXECUTING) {
             label.setForeground(Color.yellow);
         } else if (status == Order.LifePointStatus.FINISH_EXECUTE) {
-            label.setForeground(Color.pink);
+            label.setForeground(Color.gray);
         } else if (status == Order.LifePointStatus.CHECKING) {
-            label.setForeground(Color.green);
+            label.setForeground(Color.pink);
         } else if (status == Order.LifePointStatus.CHECKED) {
             label.setForeground(Color.blue);
         } else if (status == Order.LifePointStatus.RESENDED) {
-            label.setForeground(Color.red);
+            label.setForeground(Color.black);
         } else if (status == Order.LifePointStatus.FINISH) {
             label.setForeground(Color.CYAN);
+        } else if (status == Order.LifePointStatus.FAIL_FINALLY) {
+            label.setForeground(Color.red);
         } else {
             label.setForeground(Color.gray);
         }

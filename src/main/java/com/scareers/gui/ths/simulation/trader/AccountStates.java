@@ -126,7 +126,11 @@ public class AccountStates {
                         if (!alreadyInQueue.contains(orderType)) { // 不存在则 补充对应类型的 账户状态监控 订单
                             supplementStateOrder(orderType);
                         } else { // 账户监控订单, 若在队列中, 则需要检测一下 优先级, 若滞留时间长, 则考虑 提高优先级!
-                            tryRaisePriorityPossible(orderType);
+                            try {
+                                tryRaisePriorityPossible(orderType);
+                            } catch (Exception e) {
+
+                            }
                         }
                     }
                     Thread.sleep(flushInterval);

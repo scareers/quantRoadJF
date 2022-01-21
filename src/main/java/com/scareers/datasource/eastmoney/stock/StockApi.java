@@ -59,21 +59,18 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
-//        Console.log(getFSTransaction(120, "000001", 1, 1000));
+//        Console.log(getFSTransaction(120, "000001", 1, 1000)); // 8:55 得到空df
 //        Console.log(timer.intervalRestart());
 //
-//        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+//        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债"))); // 8:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用.其他字段 - 填充
 //        Console.log(timer.intervalRestart());
 
-        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
-        Console.log(timer.intervalRestart());
+//        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
+        // 分时图空df
+//        Console.log(timer.intervalRestart());
 //        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
-//        Console.log(timer.intervalRestart());
+//        Console.log(timer.intervalRestart()); // 日k正常, 但截至昨天
 //
-//        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
-//        Console.log(timer.intervalRestart());
-//        Console.log(getQuoteHistory(Arrays.asList("000001", "399001"), null, null, "101", "1", 3, true, 2000));
-//        Console.log(timer.intervalRestart());
 //
 //        Console.log(getPreNTradeDateStrict("2021-01-08"));
 //        Console.log(timer.intervalRestart());
@@ -241,7 +238,7 @@ public class StockApi {
      * @param stockCodeSimple   股票/指数简单代码, 不再赘述
      * @param market            0 深市  1 沪市    (上交所暂时 0)
      * @return 出错则返回空df, 不抛出异常
-     * @noti: 9:12  details字段已经重置为 [] 空列表  todo: 时间限制更严格
+     * @noti: 8:55  details字段已经重置为 [] 空列表  todo: 时间限制更严格
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
                                                      Integer market, int timeout) {
@@ -553,6 +550,7 @@ public class StockApi {
      */
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws Exception {
+        // 查询结果将被缓存.
         DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, 3000);
         List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {

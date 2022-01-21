@@ -75,7 +75,7 @@ public class FsTransactionFetcher {
 
     // 静态属性 设置项
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
-    public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
+    public static final List<String> newDayTimeThreshold = Arrays.asList("07:00", "08:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;

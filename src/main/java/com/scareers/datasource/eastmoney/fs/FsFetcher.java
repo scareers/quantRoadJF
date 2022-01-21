@@ -65,7 +65,7 @@ public class FsFetcher {
 
     // 静态属性 设置项
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
-    public static final List<String> newDayTimeThreshold = Arrays.asList("08:00", "09:00");
+    public static final List<String> newDayTimeThreshold = Arrays.asList("07:00", "08:00");
     public static ThreadPoolExecutor threadPoolOfFetch;
     private static final Log log = LogUtil.getLogger();
 
@@ -235,7 +235,10 @@ public class FsFetcher {
             }
             DataFrame<Object> dfNew = StockApi.getQuoteHistorySingle(stock.getStockCodeSimple(), null, null, "1",
                     "qfq", 3, isIndex, fetcher.getTimeout(), false);
-            fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
+            if (dfNew != null && dfNew.length() > 0) {
+                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
+            }
+
             return null;
         }
     }

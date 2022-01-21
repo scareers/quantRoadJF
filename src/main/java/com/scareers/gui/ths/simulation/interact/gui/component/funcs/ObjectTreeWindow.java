@@ -144,11 +144,13 @@ public class ObjectTreeWindow extends FuncFrameS {
                 "ordersWaitForCheckTransactionStatusMap");
         DefaultMutableTreeNode ordersSuccessFinished = new DefaultMutableTreeNode("ordersSuccessFinished");
         DefaultMutableTreeNode ordersResendFinished = new DefaultMutableTreeNode("ordersResendFinished");
+        DefaultMutableTreeNode ordersFailedFinished = new DefaultMutableTreeNode("ordersFailedFinallyNeedManualHandle");
         DefaultMutableTreeNode ordersAllMap = new DefaultMutableTreeNode("ordersAllMap");
         queues.add(ordersWaitForExecution);
         queues.add(ordersWaitForCheckTransactionStatusMap);
         queues.add(ordersSuccessFinished);
         queues.add(ordersResendFinished);
+        queues.add(ordersFailedFinished);
         queues.add(ordersAllMap);
 
         traderNode.add(queues);
@@ -200,6 +202,8 @@ public class ObjectTreeWindow extends FuncFrameS {
             changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP);
         } else if (TreePathConstants.ORDERS_SUCCESS_FINISHED.equals(treePath)) {
             changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_SUCCESS_FINISHED);
+        } else if (TreePathConstants.ORDERS_FAILED_FINISHED.equals(treePath)) {
+            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_FAILED_FINISHED);
         } else if (TreePathConstants.ORDERS_RESEND_FINISHED.equals(treePath)) {
             changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_RESEND_FINISHED);
             // 2.其他
@@ -231,6 +235,7 @@ public class ObjectTreeWindow extends FuncFrameS {
          * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
          * [对象查看, Trader, Queues!, ordersSuccessFinished]
          * [对象查看, Trader, Queues!, ordersResendFinished]
+         * [对象查看, Trader, Queues!, ordersFailedFinallyNeedManualHandle]
          */
         public static final String OBJECT_OBSERVER = "[对象查看]";
         public static final String TRADER = "[对象查看, Trader]";
@@ -248,6 +253,8 @@ public class ObjectTreeWindow extends FuncFrameS {
                 "ordersWaitForCheckTransactionStatusMap]";
         public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
         public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
+        public static final String ORDERS_FAILED_FINISHED = "[对象查看, Trader, Queues!, " +
+                "ordersFailedFinallyNeedManualHandle]";
 
     }
 }

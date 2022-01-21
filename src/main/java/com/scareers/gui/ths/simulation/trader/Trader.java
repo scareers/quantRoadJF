@@ -108,7 +108,7 @@ public class Trader {
                         "15:10:00", 500, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 500, 100, 16, 100);
+        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 1000, 100, 16, 100);
         trader.setFsFetcher(fsFetcher);
         fsFetcher.startFetch(); // fs图抓取
 
@@ -377,7 +377,6 @@ public class Trader {
         order.addLifePoint(LifePointStatus.RESENDED,
                 StrUtilS.format("resended: 原始订单已被重发,新订单id: {}", newOrderId),
                 newOrderId);
-        order.addLifePoint(Order.LifePointStatus.FINISH, "resended_finish: 订单已被重发! 订单完成");
         ordersResendFinished.put(order, responses);
     }
 
