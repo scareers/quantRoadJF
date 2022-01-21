@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -463,5 +464,26 @@ public class AccountStates {
 
     public void updateTodayConsigns(Order order, List<Response> responses) throws Exception {
         updateDfFields(order, responses, "todayConsigns", "今日委托订单列表");
+    }
+
+    /*
+    api
+     */
+
+    /**
+     * 给定股票, 从 当前持仓df中, 获取该股票的可用数量
+     *
+     * @param stock
+     * @return
+     */
+    public int getAvailableOfStock(String stock) {
+        List<Integer> availableRow = DataFrameS.getColAsIntegerList(currentHolds, "可用余额");
+        List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, "证券代码");
+        int index = stockCodes.indexOf(stock); // -1
+        if (index > 0) {
+            return availableRow.get(index);
+        } else {
+            return 0; // 可用数量返回0 是正常逻辑
+        }
     }
 }

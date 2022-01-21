@@ -62,6 +62,7 @@ import static com.scareers.utils.CommonUtil.sendEmailSimple;
  */
 
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
+    private long maxCheckSellOrderTime = 120 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
     public static double tickGap = 0.005;
 
     // 高卖参数
@@ -169,6 +170,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     if (amount + sellAlready > amountsTotal) {
                         amount = (amountsTotal - sellAlready) / 100 * 100;
                     }
+                    int available = trader.getAccountStates().getAvailableOfStock(stock);
+                    amount = Math.min(amount, available);
                     if (amount < 100) {
 //                        log.warn("sell decision: 卖点出现,但折算卖出数量<100,不执行卖出, {} -> {}/{} ; already [{}], actual [{}]",
 //                                stock,
@@ -177,10 +180,14 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 //                                sellAlready, amount);
                     } else {
                         // 卖出
-                        log.warn("sell decision: 卖点出现, {} -> {}/{} ; already [{}], actual [{}]", stock,
+                        log.warn("sell decision: 卖点出现, {} -> 理论[{}] 总仓[{}] 此前已卖参考[{}] 可用参考[{}] 订单实际[{}]",
+                                stock,
                                 shouldSellAmountTotal,
                                 amountsTotal,
-                                sellAlready, amount);
+                                sellAlready,
+                                available,
+                                amount
+                        );
 
                         Order order = OrderFactory.generateSellOrderQuick(stock, amount, null, Order.PRIORITY_HIGH);
                         trader.putOrderToWaitExecute(order);
@@ -364,7 +371,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
      */
 
-    private long maxCheckSellOrderTime = 10 * 1000; // 超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+
 
     @SneakyThrows
     @Override
