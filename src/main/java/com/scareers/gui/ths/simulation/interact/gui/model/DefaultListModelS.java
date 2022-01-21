@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.model;
 
 import com.alee.laf.list.ListDataAdapter;
+import oshi.hardware.platform.mac.MacDisplay;
 
 import javax.swing.*;
 import java.util.Collections;
@@ -19,10 +20,11 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
         this.addListDataListener(new ListDataAdapter());
     }
 
+    private int maxDisplayCount = 20;
     public void flush(List<T> newList) {
         Collections.sort(newList);
-        if (newList.size() > 100) {
-            newList = newList.subList(newList.size() - 201, newList.size() - 201); // todo: 暂取200
+        if (newList.size() > maxDisplayCount) {
+            newList = newList.subList(newList.size() - maxDisplayCount, newList.size()); // todo: 暂取200
         }
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
             this.set(i, newList.get(i));
