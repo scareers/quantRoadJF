@@ -59,19 +59,31 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
-//        Console.log(getFSTransaction(120, "000001", 1, 1000)); // 8:55 得到空df
+        Console.log(getFSTransaction(120, "000001", 1, 1000));
 //        Console.log(timer.intervalRestart());
-//
-//        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债"))); // 8:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用.其他字段 - 填充
-//        Console.log(timer.intervalRestart());
+        // 分时成交:
+        // 8:55 得到空df,
+        // 9:32 正常值.
 
-//        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
-        // 分时图空df
-//        Console.log(timer.intervalRestart());
-//        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
-//        Console.log(timer.intervalRestart()); // 日k正常, 但截至昨天
-//
-//
+
+        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+        // 实时截面数据
+        // 8:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用. 其他数值字段用 - 填充, 将解析失败
+        // 9:31正常值
+
+        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
+        // 1分钟分时图
+        // 9:29:30 就能得到一行 2022-01-21 09:31    ,是9:31的分时图
+        // 9:30:01
+        // 9:34:01 就能得到 31- 35(含) 了, 意味着 xx分钟 视为 xx+1 的分时图(但没有固定), 固定的是 xx的结果
+
+
+        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+        // 日k线
+        // 8:55 正常获取,但截至昨天
+        // 9:40 正常获取, 已含有今天
+
+
 //        Console.log(getPreNTradeDateStrict("2021-01-08"));
 //        Console.log(timer.intervalRestart());
 

@@ -21,6 +21,21 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  */
 @Data
 public class SecurityBeanEm {
+    @Override
+    public int hashCode() {
+        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SecurityBeanEm) {
+            SecurityBeanEm other = (SecurityBeanEm) obj;
+            return other.getStockCodeSimple().equals(this.getStockCodeSimple()) &&
+                    other.getMarket().equals(this.getMarket());
+        }
+        return false;
+    }
+
     private static final long serialVersionUID = 156415111L;
 
     /**
@@ -210,7 +225,6 @@ public class SecurityBeanEm {
         }
         return false;
     }
-
 
 
 }

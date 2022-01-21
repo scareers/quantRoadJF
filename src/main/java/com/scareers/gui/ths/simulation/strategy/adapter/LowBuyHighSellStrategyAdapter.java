@@ -137,11 +137,11 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     e.printStackTrace();
                     continue;
                 }
-                // 2. 判定当前是否是卖点? todo: 开市时间才能验证
-//                if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
-//                    log.warn("当前股票非卖点 {}", stock);
-//                    continue;
-//                }
+                // 2. 判定当前是否是卖点?
+                if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
+                    // log.warn("当前股票非卖点 {}", stock);
+                    continue;
+                }
 
 
                 double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
@@ -213,7 +213,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
         final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
         // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
-        fsDf = fsDf.select(value -> value.get(0).toString().compareTo(nowStr) <= 0); // 比直接去掉最后一条严谨
+
+        try {
+            fsDf = fsDf.select(value -> value.get(0).toString().compareTo(nowStr) <= 0); // 比直接去掉最后一条严谨
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         // 计算连续上涨数量
         List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
         int continuousRaise = 0;
@@ -400,7 +406,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                             StrUtil.format("执行成功[check失败]: check失败, {}ms 内未能全部成交 {} [{}]", maxCheckSellOrderTime,
                                     order.getOrderType(),
                                     order.getParams()));
-                    trader.reSendAndFinishOrder(order, responses); // check失败, 不加入 checked生命周期, 直接进入失败队列, 需要人为观察
+                    trader.failFinishOrder(order, responses);
                     try {
                         sendEmailSimple(
                                 StrUtil.format("Trader.Checker: 订单执行成功但{}ms内未能全部成交,注意手动确认!", maxCheckSellOrderTime),

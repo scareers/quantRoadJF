@@ -235,9 +235,10 @@ public class FsFetcher {
             }
             DataFrame<Object> dfNew = StockApi.getQuoteHistorySingle(stock.getStockCodeSimple(), null, null, "1",
                     "qfq", 3, isIndex, fetcher.getTimeout(), false);
-            if (dfNew != null && dfNew.length() > 0) {
-                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
-            }
+//            if (dfNew != null && dfNew.length() > 0) {
+//                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
+//            }
+            fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
 
             return null;
         }
