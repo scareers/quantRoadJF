@@ -39,6 +39,7 @@ public class OrderListAndDetailPanel extends JPanel {
     // 股票列表池, 分为不同 Type. 将读取 objectPool 所有key(已注册的类型), 对对应key更新列表, 保存入 map.
     public static volatile Vector<OrderSimple> currentOrderListShouldDisplay = new Vector<>(
             Arrays.asList(OrderSimple.getDummyOrderSimple()));
+    public static int maxDisplayCount = 20;
 
     /**
      * 单例模式
@@ -93,14 +94,20 @@ public class OrderListAndDetailPanel extends JPanel {
                         } else if (currentDataFlushType == Type.ORDERS_FAILED_FINISHED) {
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersFailedFinallyNeedManualHandle.keySet()));
-                        }else {
+                        } else {
                             System.out.println("未知类型");
                         }
                         if (simpleOrders.size() == 0) {
                             simpleOrders.add(OrderSimple.getDummyOrderSimple());
                         }
                         Collections.sort(simpleOrders); // 有序
-                        currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
+                        if (simpleOrders.size() > maxDisplayCount) {
+                            currentOrderListShouldDisplay =
+                                    new Vector(simpleOrders
+                                            .subList(simpleOrders.size() - maxDisplayCount, simpleOrders.size()));
+                        } else {
+                            currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
+                        }
                         Thread.sleep(10);
                     }
                 }

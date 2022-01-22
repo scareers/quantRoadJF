@@ -79,6 +79,7 @@ public class StockApi {
         // 14:59:x 正常df, 14:57:xx后无新数据
         // 15:00:x 正常df, 最后1-2条 15:00:00 tick
         // 23:50:x 正常df, 未重置刷新,同 15:00:x
+        // 周六同周五收盘后
 
 
         Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));

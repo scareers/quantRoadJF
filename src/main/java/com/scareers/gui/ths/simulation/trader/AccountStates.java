@@ -486,4 +486,19 @@ public class AccountStates {
             return 0; // 可用数量返回0 是正常逻辑
         }
     }
+
+    /**
+     * 获取全部最新可用的map, 参考上一方法
+     *
+     * @return
+     */
+    public Map<String,Integer> getAvailablesOfStocksMap() {
+        HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
+        List<Integer> availableRow = DataFrameS.getColAsIntegerList(currentHolds, "可用余额");
+        List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, "证券代码");
+        for (int i = 0; i < availableRow.size(); i++) {
+            stringIntegerHashMap.put(stockCodes.get(i), availableRow.get(i));
+        }
+        return stringIntegerHashMap;
+    }
 }

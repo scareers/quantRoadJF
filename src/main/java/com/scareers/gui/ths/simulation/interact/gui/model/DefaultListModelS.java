@@ -20,12 +20,12 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
         this.addListDataListener(new ListDataAdapter());
     }
 
-    private int maxDisplayCount = 20;
+    /**
+     * model更新全部传递来的数据. 数量最大数量由调用方控制,非model控制. 且顺序也由调用方控制
+     * @param newList
+     */
     public void flush(List<T> newList) {
         Collections.sort(newList);
-        if (newList.size() > maxDisplayCount) {
-            newList = newList.subList(newList.size() - maxDisplayCount, newList.size()); // todo: 暂取200
-        }
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
             this.set(i, newList.get(i));
         }

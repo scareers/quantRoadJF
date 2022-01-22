@@ -2,9 +2,7 @@ package com.scareers.gui.ths.simulation.strategy.adapter;
 
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -23,9 +21,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
@@ -85,6 +81,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     // 记录高卖操作, 实际卖出的数量. 该 table, 将监控 成交记录, 以更新各自卖出数量
     Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
+    Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
 
     public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy,
                                          Trader trader) throws Exception {
@@ -93,6 +90,25 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2);
         preTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1);
     }
+
+    private void initYesterdayHoldMapForSell() throws Exception {
+        for (int i = 0; i < strategy.getYesterdayStockHoldsBeSell().length(); i++) {
+            List<Object> line = strategy.getYesterdayStockHoldsBeSell().row(i);
+            String stock = line.get(0).toString();
+            int amountsTotal = Integer.parseInt(line.get(2).toString()); // 原始总持仓, 今日开卖
+            yesterdayStockHoldsBeSellMap.put(stock, amountsTotal);
+        }
+    }
+
+    private void initActualHighSelled() {
+        Map<String, Integer> map = trader.getAccountStates().getAvailablesOfStocksMap();
+        for (String key : map.keySet()) {
+            if (yesterdayStockHoldsBeSellMap.containsKey(key)) {
+                actualHighSelled.put(key, yesterdayStockHoldsBeSellMap.get(key) - map.get(key));
+            }
+        }
+    }
+
 
     @Override
     public void buyDecision() throws Exception {
@@ -116,8 +132,12 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void sellDecision() throws Exception {
-        DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
+        if (yesterdayStockHoldsBeSellMap.size() == 0) { // 开始决策后才会被正确初始化
+            initYesterdayHoldMapForSell(); // 初始化昨日持仓map
+            initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
+        }
 
+        DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
         // 证券代码	 证券名称	 股票余额	 可用余额	冻结数量	  成本价	   市价	       盈亏	盈亏比例(%)	   当日盈亏	当日盈亏比(%)	       市值	仓位占比(%)	交易市场	持股天数
         for (int i = 0; i < yesterdayStockHoldsBeSell.length(); i++) {
             try { // 捕获异常
@@ -138,6 +158,14 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     e.printStackTrace();
                     continue;
                 }
+
+                // 1.x: sell订单,单股票互斥: 在等待队列和check队列中查找所有sell订单, 判定其 stockCode参数是否为本stock,若存在则互斥跳过
+                if (hasMutualExclusionOfSellOrder(stock)) {
+                    // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
+                    continue;
+                }
+
+
                 // 2. 判定当前是否是卖点?
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
                     // log.warn("当前股票非卖点 {}", stock);
@@ -192,9 +220,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                         Order order = OrderFactory.generateSellOrderQuick(stock, amount, null, Order.PRIORITY_HIGH);
                         trader.putOrderToWaitExecute(order);
 
-                        actualHighSelled.put(stock, amount + sellAlready); // todo: 这里假装 卖出订单立即所有成交. 应当检测
+                        // todo: 这里一旦生成卖单, 将视为全部成交, 加入到已经卖出的部分
+                        // 若最终成交失败, 2分钟后check将失败, 需要手动处理!
+                        actualHighSelled.put(stock, amount + sellAlready);
                     }
-
                 } else { //  新卖点,但没必要卖出更多.(多因为当前价格已经比上一次低, 导致仓位更低)
 //                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,
 //                            shouldSellAmountTotal, amountsTotal, sellAlready);
@@ -203,6 +232,30 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 e.printStackTrace();
             }
         }
+    }
+
+
+    /**
+     * 卖单互斥. 即在等待队列和check队列, 不能存在其他 相同stock的卖单!
+     *
+     * @param stock
+     * @return
+     */
+    private boolean hasMutualExclusionOfSellOrder(String stock) {
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 无需保证, 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
+                return true;
+            }
+        }
+
+        for (Order order : new ArrayList<>(
+                Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -370,7 +423,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @param orderType
      * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
      */
-
 
 
     @SneakyThrows
