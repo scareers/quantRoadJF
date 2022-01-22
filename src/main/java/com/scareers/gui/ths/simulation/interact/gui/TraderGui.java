@@ -137,25 +137,27 @@ public class TraderGui extends JFrame {
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
                 // 尺寸改变回调, 调节左侧功能栏
-                mainDisplayWindow.addComponentListener(new ComponentAdapter() {
-                    @SneakyThrows
-                    @Override
-                    public void componentResized(ComponentEvent e) {
-                        CorePanel corePanel = mainWindow.getCorePanel();
-                        for (FuncButton btn : corePanel.getLeftTopButtonList()) { // 左侧功能窗口,刷新 左上 + 左下
-                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
-                            if (temp != null) {
-                                temp.flushBounds();
-                            }
-                        }
-                        for (FuncButton btn : corePanel.getLeftBottomButtonList()) {
-                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
-                            if (temp != null) {
-                                temp.flushBounds();
-                            }
-                        }
-                    }
-                });
+//                mainDisplayWindow.addComponentListener(new ComponentAdapter() {
+//                    @SneakyThrows
+//                    @Override
+//                    public void componentResized(ComponentEvent e) {
+//                        CorePanel corePanel = mainWindow.getCorePanel();
+//                        for (FuncButton btn : corePanel.getLeftTopButtonList()) { // 左侧功能窗口,刷新 左上 + 左下
+//                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
+//                            if (temp != null) {
+//                                temp.flushBounds();
+//                            }
+//                        }
+//                        for (FuncButton btn : corePanel.getLeftBottomButtonList()) {
+//                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
+//                            if (temp != null) {
+//                                temp.flushBounds();
+//                            }
+//                        }
+//                    }
+//                });
+                corePanel.getFuncPool().put(ButtonFactory.getButton("mainDisplay"), mainDisplayWindow); // 仅加入池,
+                // 无对应button
                 mainDisplayWindow.flushBounds(true);
                 mainDisplayWindow.setAutoMaxWidthOrHeight(corePanel.getWidth());
                 mainDisplayWindow.show();
@@ -173,6 +175,7 @@ public class TraderGui extends JFrame {
                                                 false,
                                                 true,
                                                 1200, 100, 0.3, 30, false, layerOfLogFuncWindow);
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(logsFunc, logFuncWindow);
                         if (logFuncWindow.isVisible()) {
                             logFuncWindow.flushBounds();
                             logFuncWindow.hide();
@@ -182,6 +185,7 @@ public class TraderGui extends JFrame {
                         }
                     }
                 });
+
 
                 FuncButton databaseFunc = ButtonFactory.getButton("数据库", true);
                 corePanel.registerFuncBtnWithoutFuncFrame(databaseFunc, FuncFrameS.Type.RIGHT_TOP);
@@ -193,6 +197,7 @@ public class TraderGui extends JFrame {
                                         "database", mainWindow, databaseFunc, true,
                                         true, false, true,
                                         1500, 100, 0.2, 30, false, layerOfDatabaseFuncWindow);
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(databaseFunc, databaseFuncWindow);
                         if (databaseFuncWindow.isVisible()) {
                             databaseFuncWindow.flushBounds();
                             databaseFuncWindow.hide();
@@ -213,6 +218,7 @@ public class TraderGui extends JFrame {
                                         mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.2, 30,
                                         false,
                                         layerOfObjectsTree + 1); // 一定不为null, 单例
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(objectsBtn, objectTreeWindow);
                         if (objectTreeWindow.isVisible()) {
                             objectTreeWindow.flushBounds();
                             objectTreeWindow.hide();

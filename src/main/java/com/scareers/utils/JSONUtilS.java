@@ -17,7 +17,7 @@ import java.util.List;
  * @author: admin
  * @date: 2021/12/22/022-16:30:37
  */
-public class JsonUtil {
+public class JSONUtilS {
     /**
      * 将json字符串, 解析为df<Object>, 不负责类型转换. 可对原始字符串进行截取. 提供的paths, 即["attr'],
      * 最终索引字符串内容应为 [], 单元素可以是字符串 ","分割(典型dc返回值), 也可 JSONArray.
@@ -101,6 +101,13 @@ public class JsonUtil {
             LogUtil.log.error("parse type error: 尚未支持的解析类型: {}", clazz);
         }
         return res;
+    }
+
+    public static JSONObject parseObj(String jsonStr) {
+        return new JSONObject(jsonStr);
+    }
+    public static JSONArray parseArray(String jsonStr) {
+        return new JSONArray(jsonStr);
     }
 
 }

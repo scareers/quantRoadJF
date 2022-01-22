@@ -80,26 +80,53 @@ public class GuiCommonUtil {
         return jsonPrettyStr;
     }
 
+    private static void setLabelColorIfChange(Component label, Color newColor) {
+        if (!label.getForeground().equals(newColor)) {
+            label.setForeground(newColor);
+        }
+    }
+
     public static void setLabelForeColorByOrderLifePoint(Order order, Component label) {
         Order.LifePointStatus status = order.getLastLifePoint().getStatus();
         if (status == Order.LifePointStatus.EXECUTING) {
-            label.setForeground(Color.yellow);
+            setLabelColorIfChange(label, Color.yellow);
         } else if (status == Order.LifePointStatus.FINISH_EXECUTE) {
-            label.setForeground(Color.gray);
+            setLabelColorIfChange(label, Color.gray);
         } else if (status == Order.LifePointStatus.CHECKING) {
-            label.setForeground(Color.pink);
+            setLabelColorIfChange(label, Color.pink);
         } else if (status == Order.LifePointStatus.CHECKED) {
-            label.setForeground(Color.blue);
+            setLabelColorIfChange(label, Color.blue);
         } else if (status == Order.LifePointStatus.RESENDED) {
-            label.setForeground(Color.black);
+            setLabelColorIfChange(label, Color.black);
         } else if (status == Order.LifePointStatus.FINISH) {
-            label.setForeground(Color.CYAN);
+            setLabelColorIfChange(label, Color.cyan);
         } else if (status == Order.LifePointStatus.FAIL_FINALLY) {
-            label.setForeground(Color.red);
+            setLabelColorIfChange(label, Color.red);
         } else {
-            label.setForeground(Color.gray);
+            setLabelColorIfChange(label, Color.gray);
         }
     }
+//
+//    public static void setLabelForeColorByOrderLifePoint(Order order, Component label) {
+//        Order.LifePointStatus status = order.getLastLifePoint().getStatus();
+//        if (status == Order.LifePointStatus.EXECUTING) {
+//            setLabelColorIfChange(label, Color.yellow);
+//        } else if (status == Order.LifePointStatus.FINISH_EXECUTE) {
+//            setLabelColorIfChange(label, Color.gray);
+//        } else if (status == Order.LifePointStatus.CHECKING) {
+//            setLabelColorIfChange(label, Color.pink);
+//        } else if (status == Order.LifePointStatus.CHECKED) {
+//            label.setForeground(Color.blue);
+//        } else if (status == Order.LifePointStatus.RESENDED) {
+//            label.setForeground(Color.black);
+//        } else if (status == Order.LifePointStatus.FINISH) {
+//            label.setForeground(Color.CYAN);
+//        } else if (status == Order.LifePointStatus.FAIL_FINALLY) {
+//            label.setForeground(Color.red);
+//        } else {
+//            label.setForeground(Color.gray);
+//        }
+//    }
 
 
 }

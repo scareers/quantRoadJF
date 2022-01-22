@@ -158,6 +158,7 @@ public class CorePanel extends JDesktopPane {
                     mainDisplayWindow.setAutoMaxWidthOrHeight(getWidth()); // 首次实例化后需自行调用
                 }
                 flushAllFuncFrameBounds(); // 容器大小改变, 应当自动改变主内容, 实测直接最大化无法自动完成,因此
+
             }
         });
     }
@@ -178,6 +179,7 @@ public class CorePanel extends JDesktopPane {
                                                 FuncFrameS.Type defaultType) {
         registerFuncBtnAndCorrespondFuncFrame(funcButton, null, defaultType);
     }
+
 
     private void registerFuncBtnAndCorrespondFuncFrame(FuncButton funcButton, FuncFrameS funcFrameS,
                                                        FuncFrameS.Type defaultType) {

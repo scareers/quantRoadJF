@@ -309,7 +309,14 @@ public class FsTransactionFetcher {
             // @noti: 分时有序: 取决于初始化时排序, 且纯新增数据有序后连接
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
                     .sortBy("time_tick");
-            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
+
+//            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
+            DataFrame<Object> dfCurrentAll = dataOriginal;
+            for (int i = 0; i < dfTemp.length(); i++) {
+                dfCurrentAll.append(dfTemp.row(i));
+            }
+
+
             if (dfTemp.length() > 0) { // 若存在纯新数据
                 threadPoolOfSave.submit(() -> {
                     try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
