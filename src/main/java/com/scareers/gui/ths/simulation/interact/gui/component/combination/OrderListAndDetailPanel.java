@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.ObjectTreeWindow;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.order.Order;
@@ -114,19 +115,6 @@ public class OrderListAndDetailPanel extends JPanel {
             }, true);
             INSTANCE = new OrderListAndDetailPanel(Type.ORDER_ALL_MAP, mainDisplayWindow); // 默认所有订单,自行调用changeType
         }
-//        mainDisplayWindow.getCenterPanel().addComponentListener(new ComponentAdapter() {
-//            @Override
-//            public void componentResized(ComponentEvent e) {
-//                System.out.println("xxx");
-//                INSTANCE.setBounds(0, 0, mainDisplayWindow.getWidth(), mainDisplayWindow.getHeight());
-//            }
-//        });
-        INSTANCE.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                INSTANCE.setBounds(0, 0, mainDisplayWindow.getWidth(), mainDisplayWindow.getHeight());
-            }
-        });
         return INSTANCE;
     }
 

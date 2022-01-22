@@ -90,6 +90,16 @@ public class ObjectTreeWindow extends FuncFrameS {
                              int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
+
+        ObjectTreeWindow temp = this; // 添加监听器. 树形变化时, 刷新主展示窗口size
+        this.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                temp.getMainDisplayWindow()
+                        .setBounds(temp.getWidth(), 0, temp.getMainPane().getWidth() - temp.getWidth(),
+                                temp.getMainPane().getHeight());
+            }
+        });
     }
 
     JTree tree;

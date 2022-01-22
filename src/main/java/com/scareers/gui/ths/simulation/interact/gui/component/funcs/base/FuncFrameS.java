@@ -15,6 +15,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -274,6 +276,7 @@ public abstract class FuncFrameS extends JInternalFrame {
         this.mainWindow = mainWindow;
         this.corePanel = this.mainWindow.getCorePanel();
         this.mainDisplayWindow = corePanel.getMainDisplayWindow();
+
         this.mainPane = this.corePanel.getMainPane();
         this.mainPaneWidth = this.mainPane.getWidth();
         this.mainPaneHeight = this.mainPane.getHeight();
