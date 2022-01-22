@@ -42,7 +42,7 @@ public class LowBuyHighSellStrategyAdapter0 implements StrategyAdapter {
             order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
         } else if (type < 18) {
             order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-        } else if (type < 20) {
+        } else if (type < 20)  {
             order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
         } else {
             order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
