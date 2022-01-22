@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
 import lombok.SneakyThrows;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -54,7 +55,7 @@ public class Checker {
             @Override
             public void run() {
                 while (true) {
-                    for (Order order : new CopyOnWriteArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
+                    for (Order order : new ArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
                         List<Response> responses = Trader.getOrdersWaitForCheckTransactionStatusMap().get(order);
                         String orderType = order.getOrderType();
                         if (AccountStates.ORDER_TYPES.contains(orderType)) {
@@ -64,6 +65,7 @@ public class Checker {
                             trader.getStrategy().checkOrder(order, responses, orderType);
                         }
                     }
+                    Thread.sleep(1);
                 }
             }
         });

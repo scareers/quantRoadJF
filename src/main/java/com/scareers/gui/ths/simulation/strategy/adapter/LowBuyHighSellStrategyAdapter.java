@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -132,6 +134,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void sellDecision() throws Exception {
+        Thread.sleep(1);
         if (yesterdayStockHoldsBeSellMap.size() == 0) { // 开始决策后才会被正确初始化
             initYesterdayHoldMapForSell(); // 初始化昨日持仓map
             initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
@@ -274,12 +277,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
         // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
 
-        try {
-            fsDf = fsDf.select(value -> value.get(0).toString().compareTo(nowStr) <= 0); // 比直接去掉最后一条严谨
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+        fsDf = dropAfter1Fs(fsDf, nowStr); // 将最后1行 fs记录去掉
+
         // 计算连续上涨数量
         List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
         int continuousRaise = 0;
@@ -302,9 +301,15 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> fsTransDf =
                 trader.getFsTransactionFetcher().getFsTransactionDatas()
                         .get(new SecurityBeanEm(stock).convertToStock());
-        String tickWithSecond0 = nowStr.substring(nowStr.length() - 5) + ":00";
-        DataFrame<Object> fsLastMinute = fsTransDf
-                .select(value -> value.get(2).toString().compareTo(tickWithSecond0) >= 0);
+        // 最后的有记录的时间, 前推 60s
+        String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
+        String tickWithSecond0 =
+                DateUtil.parse(DateUtil.today() + " " + lastFsTransTick).offset(DateField.MINUTE, -1)
+                        .toString(DatePattern.NORM_TIME_PATTERN); // 有记录的最后的时间tick, 减去1分钟.
+        // 筛选最后一分钟记录
+        DataFrame<Object> fsLastMinute = getLastMinuteAll(fsTransDf, tickWithSecond0);
+
+
         // 获取最新一分钟所有 成交记录. 价格列
         if (fsLastMinute.size() == 0) { // 未能获取到最新一分钟数据,返回false
             return false;
@@ -328,6 +333,35 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return true;
         }
         return false;
+    }
+
+    private DataFrame<Object> getLastMinuteAll(DataFrame<Object> fsTransDf, String tickWithSecond0) {
+        int rowStart = 0;
+        for (int i = fsTransDf.length() - 1; i >= 0; i--) {
+            if (fsTransDf.row(i).get(2).toString().compareTo(tickWithSecond0) < 0) {// 找到第一个小
+                rowStart = i + 1;
+                break;
+            }
+        }
+        return fsTransDf.slice(rowStart, fsTransDf.length());
+    }
+
+    /**
+     * 因东方财富 fs 获取, xx:01s 就将获取到 xx+1 的分时图, 因此需要去掉最新一分钟的分时图.
+     * 例如在  14:32:32, 去掉 14:33,保留到14:32, 这里不使用slice[0,-1], 而倒序遍历判定. 若使用 select 将性能瓶颈
+     *
+     * @param fsDf
+     * @return
+     */
+    private DataFrame<Object> dropAfter1Fs(DataFrame<Object> fsDf, String nowStr) {
+        int endRow = fsDf.length();
+        for (int i = fsDf.length() - 1; i >= 0; i--) {
+            if (fsDf.row(i).get(0).toString().compareTo(nowStr) <= 0) {
+                endRow = i; // 第一个<=的, 将>的全部排除
+                break;
+            }
+        }
+        return fsDf.slice(0, endRow + 1);
     }
 
     private double getCurrentIndexChangePercent(int market) throws Exception {
