@@ -39,7 +39,7 @@ public class OrderListAndDetailPanel extends JPanel {
     // 股票列表池, 分为不同 Type. 将读取 objectPool 所有key(已注册的类型), 对对应key更新列表, 保存入 map.
     public static volatile Vector<OrderSimple> currentOrderListShouldDisplay = new Vector<>(
             Arrays.asList(OrderSimple.getDummyOrderSimple()));
-    public static int maxDisplayCount = 20;
+    public static int maxDisplayCount = 15;
 
     /**
      * 单例模式
@@ -121,6 +121,12 @@ public class OrderListAndDetailPanel extends JPanel {
 //                INSTANCE.setBounds(0, 0, mainDisplayWindow.getWidth(), mainDisplayWindow.getHeight());
 //            }
 //        });
+        INSTANCE.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                INSTANCE.setBounds(0, 0, mainDisplayWindow.getWidth(), mainDisplayWindow.getHeight());
+            }
+        });
         return INSTANCE;
     }
 

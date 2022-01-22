@@ -310,6 +310,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return false;
         }
         List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
+        if (pricesLastMinute.size() == 0) { // 没有数据再等等
+            return false;
+        }
         newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
         if (newPercent < execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
