@@ -27,7 +27,11 @@ import java.util.*;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.positionUpperLimit;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
+import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.utils.CommonUtil.sendEmailSimple;
 
 /**
@@ -61,14 +65,22 @@ import static com.scareers.utils.CommonUtil.sendEmailSimple;
 
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     private long maxCheckSellOrderTime = 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+    private long maxCheckBuyOrderTime = 60 * 1000; // 买单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
 
     public static double tickGap = 0.005;
 
     // 高卖参数
-    public static double indexBelongThatTimePriceEnhanceArgHighSell = -0.5;  // 指数当时价格加成--高卖
-    public static double positionCalcKeyArgsOfCdfHighSell = 1.5; // cdf 倍率
+    public static double indexBelongThatTimePriceEnhanceArgHighSell = 5.0;  // 指数当时价格加成--高卖
+    public static double positionCalcKeyArgsOfCdfHighSell = 1.2; // cdf 倍率
     public static double execHighSellThreshold = -0.02; // 价格>=此值(百分比)才考虑卖出
     public static int continuousRaiseTickCountThreshold = 1; // 连续上升n个,本分钟下降
+
+    // 低买参数
+    public static double indexBelongThatTimePriceEnhanceArgLowBuy = 0.0;
+    public static double positionUpperLimit = 1.4; // 上限
+    public static double positionCalcKeyArgsOfCdf = 1.6; // cdf倍率
+    public static double execLowBuyThreshold = -0.0;
+    public static double continuousFallTickCountThreshold = 1;
 
     SecurityBeanEm shangZhengZhiShu = SecurityBeanEm.createIndexList(Arrays.asList("000001")).get(0);
     Double shangZhengZhiShuPreClose = null; // 上证昨日收盘点数
@@ -80,7 +92,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     String pre2TradeDate; // yyyy-MM-dd
     String preTradeDate; // yyyy-MM-dd
     // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义.
-    double newPercent;
+    volatile double newPercent;
 
     // 记录高卖操作, 实际卖出的数量. 该 table, 将监控 成交记录, 以更新各自卖出数量
     Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
@@ -115,14 +127,52 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void buyDecision() throws Exception {
-        List<String> stockListForBuy = strategy.getStockSelectedToday();
-        for (String stock : stockListForBuy) {
+        for (String stock : strategy.getStockSelectedToday()) {
             SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
+
+            // 1. 读取昨日收盘价
+            Double preClosePrice = 0.0;
+            try {
+                //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+                preClosePrice = Double.valueOf(getQuoteHistorySingle(stock, preTradeDate, preTradeDate,
+                        "101", "qfq", 3,
+                        false, 2000).row(0).get(2).toString());
+            } catch (Exception e) {
+                log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
+                e.printStackTrace();
+                continue;
+            }
+
+            // 2.买单也互斥
+            if (hasMutualExclusionOfBuySellOrder(stock, "buy")) {
+                continue;
+            }
+
+            // 3.买点判定
+            if (!isBuyPoint(stock, preClosePrice, stockBean)) {
+                continue;
+            }
+
+            double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
+            // 4.此刻是买点, 计算以最新价格的 应当买入的仓位 (相对于原始持仓)
+            Double cdfCalcPrice =
+                    FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy(
+                            newPercent, indexPricePercentThatTime,
+                            indexBelongThatTimePriceEnhanceArgLowBuy);
+            Double cdfOfPoint = virtualCdfAsPositionForLowBuy(
+                    strategy.getTicksOfLow1GlobalFinal(),
+                    strategy.getWeightsOfLow1GlobalFinal(),
+                    cdfCalcPrice,
+                    tickGap);
+            // @key2: 新的总仓位, 按照全资产计算. 本身是自身cdf仓位 * 1/(选股数量)
+            Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getStockSelectedToday().size();
+            epochTotalPosition = Math.min(epochTotalPosition, positionUpperLimit); // 强制控制上限
 
         }
 
 
     }
+
 
     @Override
     public void sellDecision() throws Exception {
@@ -151,7 +201,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 }
 
                 // 1.x: sell订单,单股票互斥: 在等待队列和check队列中查找所有sell订单, 判定其 stockCode参数是否为本stock,若存在则互斥跳过
-                if (hasMutualExclusionOfSellOrder(stock)) {
+                if (hasMutualExclusionOfBuySellOrder(stock, "sell")) {
                     // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
                     continue;
                 }
@@ -232,22 +282,90 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @param stock
      * @return
      */
-    private boolean hasMutualExclusionOfSellOrder(String stock) {
+    private boolean hasMutualExclusionOfBuySellOrder(String stock, String buyOrsell) {
         for (Order order : Trader.getOrdersWaitForExecution()) { // 无需保证, 线程安全且迭代器安全
-            if ("sell".equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
+            if (buyOrsell.equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
                 return true;
             }
         }
 
         for (Order order : new ArrayList<>(
                 Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
-            if ("sell".equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
+            if (buyOrsell.equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
                 return true;
             }
         }
 
         return false;
     }
+
+    private boolean isBuyPoint(String stock, Double preClosePrice, SecurityBeanEm stockBean) throws Exception {
+        // 获取今日分时图
+        // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
+        DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
+        final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
+        // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
+        fsDf = dropAfter1Fs(fsDf, nowStr); // 将最后1行 fs记录去掉
+
+        // 计算连续下降数量
+        List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
+        int continuousFall = 0;
+        for (int i = closes.size() - 1; i >= 1; i--) {
+            if (closes.get(i) <= closes.get(i - 1)) {
+                continuousFall++;
+            } else {
+                break;
+            }
+        }
+        if (DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN).compareTo("09:31:00") <= 0) {
+            continuousFall = Integer.MAX_VALUE; // 9:30:xx 只会有 9:31 的fs数据, 第一条fs图,此前视为连续上升.
+        }
+        if (continuousFall < continuousFallTickCountThreshold) { // 连续上升必须>=阈值
+            return false;
+        }
+
+        double lastFsClose = closes.get(closes.size() - 1); // 作为 计算最新一分钟 价格的基准, 计算涨跌
+        // 0	000010    	0          	09:15:09 	3.8  	177 	4
+        /*
+            stock_code,market,time_tick,price,vol,bs
+         */
+        DataFrame<Object> fsTransDf =
+                trader.getFsTransactionFetcher().getFsTransactionDatas()
+                        .get(SecurityBeanEm.createStock(stock));
+        // 最后的有记录的时间, 前推 60s
+        String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
+        String tickWithSecond0 =
+                DateUtil.parse(DateUtil.today() + " " + lastFsTransTick).offset(DateField.MINUTE, -1)
+                        .toString(DatePattern.NORM_TIME_PATTERN); // 有记录的最后的时间tick, 减去1分钟.
+        // 筛选最后一分钟记录
+        DataFrame<Object> fsLastMinute = getLastMinuteAll(fsTransDf, tickWithSecond0);
+
+
+        // 获取最新一分钟所有 成交记录. 价格列
+        if (fsLastMinute.size() == 0) { // 未能获取到最新一分钟数据,返回false
+            return false;
+        }
+        List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
+        if (pricesLastMinute.size() == 0) { // 没有数据再等等
+            return false;
+        }
+        newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / preClosePrice - 1;
+        if (newPercent > execLowBuyThreshold) {
+            return false; // 价格必须足够低, 才可能买入
+        }
+        // 计算对比  lastFsClose, 多少上升, 多少下降?
+        int countOfHigher = 0; // 最新一分钟, 价格比上一分钟收盘更高 的数量
+        for (Double price : pricesLastMinute) {
+            if (price > lastFsClose) {
+                countOfHigher++;
+            }
+        }
+        if (((double) countOfHigher) / pricesLastMinute.size() > 0.5) { // 判定该分钟close有很大可能价格涨, 视为买点
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * 卖点判定.

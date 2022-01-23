@@ -29,9 +29,10 @@ public class IndexRealTimeRaiseFallParameter {
     public static Connection klineForms = ConnectionFactory.getConnLocalKlineForms();
 
     public static void main(String[] args) throws Exception {
-        singleTableGroupByFormsetidAvg();
+//        singleTableGroupByFormsetidAvg();
 //
 //        renameAllTable();
+        singleTableAllAvg();
     }
 
     public static void singleTableGroupByFormsetidAvg() throws Exception {

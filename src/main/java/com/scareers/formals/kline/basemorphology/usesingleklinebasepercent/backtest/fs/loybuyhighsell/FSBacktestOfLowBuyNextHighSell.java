@@ -849,7 +849,8 @@ public class FSBacktestOfLowBuyNextHighSell {
                     }
 
                     // @key: cdfCalcPrice 就是以 BuyPoint各项属性(买点时各项数据), 折算一个仓位计算等价的price, 计算仓位
-                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfLowBuy(lowPrice, indexPriceThatTime);
+                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfLowBuy(lowPrice, indexPriceThatTime,
+                            indexBelongThatTimePriceEnhanceArgLowBuy);
 
                     // cdf使用low 计算.  价格使用buyPrice计算
                     Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, cdfCalcPrice,
@@ -914,7 +915,8 @@ public class FSBacktestOfLowBuyNextHighSell {
          * @param indexPriceThatTime
          * @return
          */
-        private Double calcEquivalenceCdfUsePriceOfLowBuy(Double lowPrice, Double indexPriceThatTime) {
+        public static Double calcEquivalenceCdfUsePriceOfLowBuy(Double lowPrice, Double indexPriceThatTime,
+                                                                Double indexBelongThatTimePriceEnhanceArgLowBuy) {
             // return lowPrice; // @v1
             /*
              * @noti: 大盘当tick涨跌幅 加成算法:
