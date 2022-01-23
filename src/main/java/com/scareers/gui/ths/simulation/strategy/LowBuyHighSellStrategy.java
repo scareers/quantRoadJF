@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
@@ -122,6 +123,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     private DataFrame<Object> yesterdayStockHoldsBeSell; // 持仓数据二维数组, 含表头, 昨日收盘时.
     private ConcurrentHashMap<String, Double> yesterdayNineBaseFundsData; // 9项基本数据, 昨日收盘时
     private String stockSelectResultSaveTableName;
+    private List<String> stockSelectedToday;
 
     private Trader trader;
 
@@ -160,6 +162,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
 
         ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
+        stockSelectedToday = new CopyOnWriteArrayList<>(stockSelectCountMapFinal.keySet()); // 赋值
         stocks.addAll(initYesterdayHolds());
         List<SecurityBeanEm> res = new StockPoolForFsTransaction(stocks, true).createStockPool();
         log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: {}", res.size());
@@ -526,7 +529,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                 .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size())),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
-                        "101", "1", 3, false, 2000,false);
+                        "101", "1", 3, false, 2000, false);
 
         // int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
         for (String stock : datasMap.keySet()) {

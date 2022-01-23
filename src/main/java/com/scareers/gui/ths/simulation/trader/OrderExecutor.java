@@ -96,7 +96,7 @@ public class OrderExecutor {
             throws Exception {
         String orderMsg = order.toJsonStrForTrans();
         String rawOrderId = order.getRawOrderId();
-        trader.sendMessageToPython(trader.getChannelProducer(), orderMsg);
+        trader.sendMessageToPython(orderMsg);
         return comsumeUntilNotRetryingState(rawOrderId);
     }
 

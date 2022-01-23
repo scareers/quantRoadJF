@@ -1,8 +1,12 @@
 package com.scareers.gui.ths.simulation.rabbitmq;
 
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.log.Log;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.utils.log.LogUtil;
+import lombok.SneakyThrows;
 
 import java.nio.charset.StandardCharsets;
 
@@ -25,23 +29,35 @@ import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_j
  * @date: 2021/12/14/014-12:52
  */
 public class ProducerSimple {
+    private static final Log log = LogUtil.getLogger();
     public static void main(String[] args) throws Exception {
         // 建立连接
         Connection conn = connectToRbServer();
         Channel channel = conn.createChannel();
         initDualChannel(channel);
 
-        for (int i = 0; i < 1; i++) {
-            // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
-            Order order = generateSellOrderQuick("600090", 100, 1.25);
-            String msg;
-            msg = order.toJsonStrForTrans();
-            channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-                    msg.getBytes(StandardCharsets.UTF_8));
-        }
+        ThreadUtil.execAsync(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                for (int i = 0; i < 100; i++) {
+                    // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
+                    Order order = generateSellOrderQuick("600090", 100, 1.25);
+                    String msg;
+                    msg = order.toJsonStrForTrans();
+                    Thread.sleep(2000);
+                    log.info("-->");
+                    channel.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
+                            msg.getBytes(StandardCharsets.UTF_8));
 
-        channel.close();
-        conn.close();
+
+                }
+
+            }
+        }, false);
+
+//        channel.close();
+//        conn.close();
     }
 
 

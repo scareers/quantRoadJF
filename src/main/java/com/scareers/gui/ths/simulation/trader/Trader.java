@@ -17,6 +17,7 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -44,6 +45,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
+import static com.scareers.gui.ths.simulation.OrderFactory.generateSellOrderQuick;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
@@ -80,7 +82,27 @@ public class Trader {
 
     public static void main0() throws Exception {
         Trader trader = Trader.getInstance();
-        // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
+
+
+//        ThreadUtil.execAsync(new Runnable() {
+//            @SneakyThrows
+//            @Override
+//            public void run() {
+//                for (int i = 0; i < 100; i++) {
+//                    // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
+//                    Order order = generateSellOrderQuick("600090", 100, 1.25);
+//                    String msg;
+//                    msg = order.toJsonStrForTrans();
+//                    Thread.sleep(2000);
+//                    trader.sendMessageToPython(order.toJsonStrForTrans());
+//
+//
+//                }
+//
+//            }
+//        }, false);
+
+//        TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
@@ -108,7 +130,7 @@ public class Trader {
                         "15:10:00", 500, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 1000, 100, 16, 100);
+        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 2000, 100, 16, 1000);
         trader.setFsFetcher(fsFetcher);
         fsFetcher.startFetch(); // fs图抓取
 
@@ -240,7 +262,7 @@ public class Trader {
 
     public void handshake() throws IOException, InterruptedException {
         log.warn("handshake start: 开始尝试与python握手");
-        sendMessageToPython(channelProducer, buildHandshakeMsg());
+        sendMessageToPython(buildHandshakeMsg());
         waitUtilPythonReady(channelComsumer);
         log.warn("handshake success: java<->python 握手成功");
     }
@@ -336,7 +358,7 @@ public class Trader {
      * @param jsonMsg
      * @throws IOException
      */
-    public void sendMessageToPython(Channel channelProducer, String jsonMsg) throws IOException {
+    public synchronized void sendMessageToPython(String jsonMsg) throws IOException {
         log.info("java --> python: {}", jsonMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));

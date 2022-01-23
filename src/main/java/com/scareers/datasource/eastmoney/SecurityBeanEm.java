@@ -5,9 +5,12 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
+import org.jfree.chart.util.HMSNumberFormat;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
@@ -50,6 +53,7 @@ public class SecurityBeanEm {
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (SecurityBeanEm bean : beans) {
             bean.convertToStock();
+            beanPool.put(bean.getStockCodeSimple() + "__stock", bean); // 放入缓存池
         }
         return beans; // 列表不变
     }
@@ -65,6 +69,7 @@ public class SecurityBeanEm {
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (SecurityBeanEm bean : beans) {
             bean.convertToIndex();
+            beanPool.put(bean.getStockCodeSimple() + "__index", bean); // 放入缓存池
         }
         return beans;
     }
@@ -140,7 +145,7 @@ public class SecurityBeanEm {
      *
      * @param stockCodeSimple
      */
-    public SecurityBeanEm(String stockCodeSimple) {
+    private SecurityBeanEm(String stockCodeSimple) {
         this.stockCodeSimple = stockCodeSimple; // 将被查询
         checkQueryResults();
     }
@@ -226,5 +231,36 @@ public class SecurityBeanEm {
         return false;
     }
 
+    public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
+
+    /**
+     * 单个实例工厂, 使用缓存. SecurityBeanEm 一旦被转换为股票或者指数后, 不可变
+     *
+     * @param stockCodeSimple
+     * @return
+     * @throws Exception
+     */
+    public static SecurityBeanEm createStock(String stockCodeSimple) throws Exception {
+        String cacheKey = stockCodeSimple + "__stock";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(stockCodeSimple).convertToStock();
+        beanPool.put(cacheKey, res);
+        return res;
+    }
+
+
+    public static SecurityBeanEm createIndex(String stockCodeSimple) throws Exception {
+        String cacheKey = stockCodeSimple + "__index";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(stockCodeSimple).convertToIndex();
+        beanPool.put(cacheKey, res);
+        return res;
+    }
 
 }

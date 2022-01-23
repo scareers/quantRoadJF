@@ -60,7 +60,8 @@ import static com.scareers.utils.CommonUtil.sendEmailSimple;
  */
 
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
-    private long maxCheckSellOrderTime = 120 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+    private long maxCheckSellOrderTime = 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+
     public static double tickGap = 0.005;
 
     // 高卖参数
@@ -114,22 +115,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     @Override
     public void buyDecision() throws Exception {
-//        int sleep = RandomUtil.randomInt(1, 10); // 睡眠n秒
-//        Thread.sleep(sleep * 2000);
-//        Order order = null;
-//        int type = RandomUtil.randomInt(22);
-//        if (type < 8) {
-//            order = OrderFactory.generateBuyOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGHEST);
-//        } else if (type < 16) {
-//            order = OrderFactory.generateSellOrderQuick("600090", 100, 1.2, Order.PRIORITY_HIGH);
-//        } else if (type < 18) {
-//            order = OrderFactory.generateCancelAllOrder("600090", Order.PRIORITY_HIGH);
-//        } else if (type < 20) {
-//            order = OrderFactory.generateCancelSellOrder("600090", Order.PRIORITY_HIGH);
-//        } else {
-//            order = OrderFactory.generateCancelBuyOrder("600090", Order.PRIORITY_HIGH);
-//        }
-//        trader.putOrderToWaitExecute(order);
+        List<String> stockListForBuy = strategy.getStockSelectedToday();
+        for (String stock : stockListForBuy) {
+            SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
+
+        }
+
+
     }
 
     @Override
@@ -140,14 +132,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
         }
 
-        DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
-        // 证券代码	 证券名称	 股票余额	 可用余额	冻结数量	  成本价	   市价	       盈亏	盈亏比例(%)	   当日盈亏	当日盈亏比(%)	       市值	仓位占比(%)	交易市场	持股天数
-        for (int i = 0; i < yesterdayStockHoldsBeSell.length(); i++) {
+        for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             try { // 捕获异常
-                List<Object> line = yesterdayStockHoldsBeSell.row(i);
-                String stock = line.get(0).toString();
-                SecurityBeanEm stockBean = new SecurityBeanEm(stock).convertToStock();
-                int amountsTotal = Integer.parseInt(line.get(2).toString()); // 原始总持仓, 今日开卖
+                SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
+                int amountsTotal = yesterdayStockHoldsBeSellMap.get(stock);
 
                 // 1. 读取前日收盘价
                 Double pre2ClosePrice = 0.0;
@@ -289,6 +277,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 break;
             }
         }
+        if (DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN).compareTo("09:31:00") <= 0) {
+            continuousRaise = Integer.MAX_VALUE; // 9:30:xx 只会有 9:31 的fs数据, 第一条fs图,此前视为连续上升.
+        }
         if (continuousRaise < continuousRaiseTickCountThreshold) { // 连续上升必须>=阈值
             return false;
         }
@@ -300,7 +291,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
          */
         DataFrame<Object> fsTransDf =
                 trader.getFsTransactionFetcher().getFsTransactionDatas()
-                        .get(new SecurityBeanEm(stock).convertToStock());
+                        .get(SecurityBeanEm.createStock(stock));
         // 最后的有记录的时间, 前推 60s
         String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
         String tickWithSecond0 =
@@ -329,7 +320,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 countOfLower++;
             }
         }
-        if (((double) countOfLower) / pricesLastMinute.size() > 0.4) { // 判定该分钟close有很大可能价格跌, 视为卖点
+        if (((double) countOfLower) / pricesLastMinute.size() > 0.5) { // 判定该分钟close有很大可能价格跌, 视为卖点
             return true;
         }
         return false;
