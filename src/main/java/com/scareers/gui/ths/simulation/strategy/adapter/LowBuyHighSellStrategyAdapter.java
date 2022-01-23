@@ -229,7 +229,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * 仅当 forBuyStock 优先级更高时, 尝试卖出 优先级更低的昨日持仓股票(可能多只以补足);
      */
     private void tryCashSchedule(String forBuyStock, double expectCash) {
-
+        log.error("尝试资金调度,暂未实现");
     }
 
 
