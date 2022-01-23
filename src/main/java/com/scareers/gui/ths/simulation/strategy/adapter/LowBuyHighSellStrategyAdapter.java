@@ -167,6 +167,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // @key2: 新的总仓位, 按照全资产计算. 本身是自身cdf仓位 * 1/(选股数量)
             Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getStockSelectedToday().size();
             epochTotalPosition = Math.min(epochTotalPosition, positionUpperLimit); // 强制设定的上限 1.4
+            // 总资产, 使用 AccountStates 实时获取最新!
 
         }
 
