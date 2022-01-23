@@ -268,7 +268,7 @@ public class FsTransactionFetcher {
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
-                    ThreadUtil.newNamedThreadFactory("FSFetcherPool-", null, true)
+                    ThreadUtil.newNamedThreadFactory("FSTransFtPool-", null, true)
             );
             log.debug("init threadPoolOfFetch: 初始化Fetch线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
         }

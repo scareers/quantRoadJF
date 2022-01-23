@@ -59,6 +59,7 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
+        //7 23.50 ok
         Console.log(getFSTransaction(120, "000001", 1, 1000).toString(250));
         // 分时成交:
         // 00:00

@@ -71,7 +71,7 @@ public class Trader {
     public static Trader getInstance() throws Exception {
         // todo: 待完成
         if (INSTANCE == null) {
-            INSTANCE = new Trader(10000, Order.PRIORITY_MEDIUM, 60000, 2);
+            INSTANCE = new Trader(10000, Order.PRIORITY_MEDIUM, 10000, 2);
         }
         return INSTANCE;
     }
@@ -127,7 +127,7 @@ public class Trader {
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
                 FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,
-                        "15:10:00", 500, 100, 32);
+                        "15:10:00", 1000, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
         FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 2000, 100, 16, 1000);
