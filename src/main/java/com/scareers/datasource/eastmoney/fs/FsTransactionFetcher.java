@@ -72,6 +72,13 @@ public class FsTransactionFetcher {
         return INSTANCE;
     }
 
+    public static Double getNewestPrice(SecurityBeanEm stock) {
+        DataFrame<Object> dfTemp = INSTANCE.getFsTransactionDatas().get(stock);
+        List<Object> priceCol = dfTemp.col("price");
+        return Double.valueOf(priceCol.get(priceCol.size() - 1).toString());
+
+    }
+
 
     // 静态属性 设置项
     // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1

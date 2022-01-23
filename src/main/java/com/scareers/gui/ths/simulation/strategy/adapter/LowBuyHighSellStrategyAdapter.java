@@ -9,7 +9,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.alee.managers.animation.easing.Back;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.FSBacktestOfLowBuyNextHighSell;
 import com.scareers.gui.ths.simulation.OrderFactory;
@@ -17,6 +19,7 @@ import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
+import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
@@ -98,6 +101,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
     Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
 
+    // 使用"冻结数量"表示今日曾买过数量,初始化. 每当实际执行买单, 无视成交状况, 全部增加对应value
+    Hashtable<String, Integer> todayStockHoldsAlreadyBuyMap = new Hashtable<>();
+
     public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy,
                                          Trader trader) throws Exception {
         this.strategy = strategy;
@@ -124,9 +130,16 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
     }
 
+    private void initTodayAlreadyBuyMap() { // todayStockHoldsAlreadyBuyMap
+        Map<String, Integer> map = trader.getAccountStates().getFrozenOfStocksMap();
+        todayStockHoldsAlreadyBuyMap.putAll(map);
+    }
 
     @Override
     public void buyDecision() throws Exception {
+        if (todayStockHoldsAlreadyBuyMap.size() == 0) {
+            initTodayAlreadyBuyMap();
+        }
         for (String stock : strategy.getStockSelectedToday()) {
             SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
 
@@ -168,10 +181,75 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getStockSelectedToday().size();
             epochTotalPosition = Math.min(epochTotalPosition, positionUpperLimit); // 强制设定的上限 1.4
             // 总资产, 使用 AccountStates 实时获取最新!
+            Double totalAssets = trader.getAccountStates().getTotalAssets(); // 最新总资产
+            Double shouldMarketValue = totalAssets * epochTotalPosition; // 应当的最新市值.
 
+            double shouldTotalAmount =
+                    shouldMarketValue / FsTransactionFetcher.getNewestPrice(stockBean);
+            Integer alreadyBuyAmount = todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0);
+
+            // 应当买入的数量, int形式, floor   100整数倍
+            int shouldBuyAmount = (int) Math.floor((shouldTotalAmount - alreadyBuyAmount) / 100) * 100;
+            if (shouldBuyAmount < 100) { // 不足 100无视
+                continue;
+            }
+
+            // 应当买入! 但是需要判定现金是否充足 ?!
+            Double availableCash = trader.getAccountStates().getAvailableCash();
+            int maxCanBuyAmount = (int) Math // 100整数倍
+                    .floor((availableCash / (FsTransactionFetcher.getNewestPrice(stockBean))) / 100) * 100;
+            if (shouldBuyAmount <= maxCanBuyAmount) { // 可正常全部买入
+                actualBuy(stock, shouldBuyAmount,
+                        todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, shouldBuyAmount);
+            } else { // 只可买入部分, 或者 0.
+                // @noti: 这里的重要决策是, 是否应当下单买入部分, 然后尝试资金调度.
+                // 或者不买入部分, 等待资金调度成功后,将被下次判定全部买入
+                // @key3: 这里采用的方法是: 买入部分,即maxCanBuyAmount, 然后调用资金调度函数,尝试回笼资金.
+                // 但本次买点执行完成. 悬挂的剩余部分, 应当由下次合理的买点进行分配, 本次买点不再关心!
+                // 简而言之: 当下现金最优. 并尝试调度资金(可能造成卖出后现金空闲一段时间).但不可避免
+
+                if (maxCanBuyAmount >= 100) {
+                    // 下单最大可买入, 并尝试调度资金. 资金调度优先级为高
+                    actualBuy(stock, shouldBuyAmount,
+                            todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, maxCanBuyAmount);
+                }
+                tryCashSchedule(stock,
+                        shouldBuyAmount * FsTransactionFetcher.getNewestPrice(stockBean) - availableCash); //
+                // 均需要尝试调度现金, 因为现金已经不够了.
+            }
         }
+    }
+
+    /**
+     * @param forBuyStock 因买入该股票现金不足而尝试调度现金
+     * @param expectCash  期望回笼的资金量, 不保证全部被回笼.
+     * @key3 尝试现金调度(昨日持仓股票尚未出现卖点时, 强制卖出部分股票以回笼现金),
+     * 当买入决策应当买入某股票时, 现金不足, 而尝试卖出部分其他股票, 回笼现金.
+     * @impl 应当对股票池中(所有)股票实现 schedule priority 逻辑, 计算该股票 被尝试资金调度时的优先级.
+     * 仅当 forBuyStock 优先级更高时, 尝试卖出 优先级更低的昨日持仓股票(可能多只以补足);
+     */
+    private void tryCashSchedule(String forBuyStock, double expectCash) {
+
+    }
 
 
+    public void actualBuy(String stock, double shouldBuyAmount, Integer todayAlreadyBuy, int maxCanBuyAmount,
+                          int actualBuyAmount) throws Exception {
+        // 卖出
+        log.warn("buy decision: 买点出现, {} -> 理论[{}] 此前已买参考[{}] 最大可买参考[{}] 订单实际[{}]",
+                stock,
+                shouldBuyAmount,
+                todayAlreadyBuy,
+                maxCanBuyAmount,
+                actualBuyAmount
+        );
+
+        Order order = OrderFactory.generateBuyOrderQuick(stock, actualBuyAmount, null, Order.PRIORITY_HIGH);
+        trader.putOrderToWaitExecute(order);
+
+        // todo: 这里一旦生成买单, 将视为全部成交, 加入到已经买入的部分
+        // 若最终成交失败, 一段时间(可设定)后check将失败, 需要手动处理!
+        todayStockHoldsAlreadyBuyMap.put(stock, todayAlreadyBuy + actualBuyAmount);
     }
 
 

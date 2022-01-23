@@ -492,7 +492,7 @@ public class AccountStates {
      *
      * @return
      */
-    public Map<String,Integer> getAvailablesOfStocksMap() {
+    public Map<String, Integer> getAvailablesOfStocksMap() {
         HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
         List<Integer> availableRow = DataFrameS.getColAsIntegerList(currentHolds, "可用余额");
         List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, "证券代码");
@@ -500,5 +500,33 @@ public class AccountStates {
             stringIntegerHashMap.put(stockCodes.get(i), availableRow.get(i));
         }
         return stringIntegerHashMap;
+    }
+
+    public Double getTotalAssets() {
+        return nineBaseFundsData.get("总资产"); // 基本不会null
+    }
+
+    /**
+     * 获取全部 冻结数量map
+     *
+     * @return
+     */
+    public Map<String, Integer> getFrozenOfStocksMap() {
+        HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
+        List<Integer> availableRow = DataFrameS.getColAsIntegerList(currentHolds, "冻结数量");
+        List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, "证券代码");
+        for (int i = 0; i < availableRow.size(); i++) {
+            stringIntegerHashMap.put(stockCodes.get(i), availableRow.get(i));
+        }
+        return stringIntegerHashMap;
+    }
+
+    /**
+     * 获取最新可用现金
+     *
+     * @return
+     */
+    public Double getAvailableCash() {
+        return nineBaseFundsData.get("可用金额");
     }
 }
