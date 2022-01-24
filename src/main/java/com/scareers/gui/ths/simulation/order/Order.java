@@ -465,6 +465,10 @@ public class Order implements Comparable, Serializable {
                 .equals(Boolean.TRUE);
     }
 
+    public void setAfterAuctionFirst(){
+        this.otherRawMessages.put("afterAuctionFirst", Boolean.TRUE);
+    }
+
 
     private static final Log log = LogUtil.getLogger();
 

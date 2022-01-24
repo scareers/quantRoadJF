@@ -355,9 +355,17 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                                 amount
                         );
 
-                        Order order = OrderFactory.generateSellOrderQuick(stock, amount, null, Order.PRIORITY_HIGH);
+                        Double price = null;
+                        String nowStr = DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN);
+                        boolean flag = nowStr.compareTo("09:25:00") > 0 && nowStr.compareTo("09:30:00") < 0;
+                        if (flag) {
+                            price = strategy.getPriceLimitMap().get(stock).get(1); // 跌停价
+                        }
+                        Order order = OrderFactory.generateSellOrderQuick(stock, amount, price, Order.PRIORITY_HIGH);
+                        if (flag) {
+                            order.setAfterAuctionFirst(); // 设置为竞价后订单
+                        }
                         trader.putOrderToWaitExecute(order);
-
                         // todo: 这里一旦生成卖单, 将视为全部成交, 加入到已经卖出的部分
                         // 若最终成交失败, 2分钟后check将失败, 需要手动处理!
                         actualHighSelled.put(stock, amount + sellAlready);
@@ -776,27 +784,18 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功: 已全部成交");
                 trader.successFinishOrder(order, responses);
             } else {
-                long checkTimeElapsed = DateUtil.between(order.getLastLifePoint().getGenerateTime(), DateUtil.date(),
-                        DateUnit.MS, true); // checking 状态持续了多少 ms??
-//                Console.log("{} {}", checkTimeElapsed > maxCheckSellOrderTime, order.getRawOrderId());
-                if (checkTimeElapsed > maxCheckSellOrderTime) {
-                    log.error("checked: response [success] but check fail: {}ms 内未能全部成交 {} [{}]",
-                            maxCheckSellOrderTime,
-                            order.getOrderType(),
-                            order.getParams());
-                    order.addLifePoint(Order.LifePointStatus.CHECKED,
-                            StrUtil.format("执行成功[check失败]: check失败, {}ms 内未能全部成交 {} [{}]", maxCheckSellOrderTime,
-                                    order.getOrderType(),
-                                    order.getParams()));
-                    trader.failFinishOrder(order, responses);
-                    try {
-                        sendEmailSimple(
-                                StrUtil.format("Trader.Checker: 订单执行成功但{}ms内未能全部成交,注意手动确认!", maxCheckSellOrderTime),
-                                StrUtil.format("order 对象: \n{}", order.toStringPretty()), true);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } // 继续checking
+                if (order.isAfterAuctionFirst()) { // 非集合竞价后首订单, 依据check延时设定
+                    long checkTimeElapsed = DateUtil
+                            .between(order.getLastLifePoint().getGenerateTime(), DateUtil.date(),
+                                    DateUnit.MS, true); // checking 状态持续了多少 ms??
+                    if (checkTimeElapsed > maxCheckSellOrderTime) {
+                        orderHasNotMatchAll(order, responses);
+                    } // 否则继续checking
+                } else {
+                    if ("09:31:00".compareTo(DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN)) < 0) {
+                        orderHasNotMatchAll(order, responses); // 集合竞价后首卖单超时时间固定
+                    }// 否则继续checking
+                }
             }
         } else if ("fail".equals(state)) {
             // todo
@@ -812,6 +811,25 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     order.getParams());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行错误: 未知响应状态:" + state);
             trader.failFinishOrder(order, responses);
+        }
+    }
+
+    private void orderHasNotMatchAll(Order order, List<Response> responses) {
+        log.error("checked: response [success] but check fail: {}ms 内未能全部成交 {} [{}]",
+                maxCheckSellOrderTime,
+                order.getOrderType(),
+                order.getParams());
+        order.addLifePoint(Order.LifePointStatus.CHECKED,
+                StrUtil.format("执行成功[check失败]: check失败, {}ms 内未能全部成交 {} [{}]", maxCheckSellOrderTime,
+                        order.getOrderType(),
+                        order.getParams()));
+        trader.failFinishOrder(order, responses);
+        try {
+            sendEmailSimple(
+                    StrUtil.format("Trader.Checker: 订单执行成功但{}ms内未能全部成交,注意手动确认!", maxCheckSellOrderTime),
+                    StrUtil.format("order 对象: \n{}", order.toStringPretty()), true);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
