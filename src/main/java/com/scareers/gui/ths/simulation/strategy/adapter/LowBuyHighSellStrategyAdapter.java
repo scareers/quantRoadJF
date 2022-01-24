@@ -110,8 +110,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     Trader trader;
     String pre2TradeDate; // yyyy-MM-dd
     String preTradeDate; // yyyy-MM-dd
-    // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义.
-    volatile double newPercent;
+    // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义,
+    private volatile double newPercent;
 
     // 记录高卖操作, 实际卖出的数量. 该 table, 将监控 成交记录, 以更新各自卖出数量
     Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
@@ -285,7 +285,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 int amountsTotal = yesterdayStockHoldsBeSellMap.get(stock);
 
                 // 1. 读取前日收盘价
-                Double pre2ClosePrice = 0.0;
+                Double pre2ClosePrice;
                 try {
                     //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
                     pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(stock, pre2TradeDate, pre2TradeDate,
@@ -302,7 +302,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
                     continue;
                 }
-
+                // todo: 强制卖出
 
                 // 2. 判定当前是否是卖点?
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
@@ -417,7 +417,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 return true;
             }
         }
-
         for (Order order : new ArrayList<>(
                 Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
             if (buyOrsell.equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
@@ -583,7 +582,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return false; // 最新价格必须 < 上一分时收盘, 否则无视.
         }
 
-        double newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
+        newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
         if (newPercent < execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
         }
