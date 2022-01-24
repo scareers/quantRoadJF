@@ -317,11 +317,11 @@ public class FsTransactionFetcher {
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
                     .sortBy("time_tick");
 
-//            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-            DataFrame<Object> dfCurrentAll = dataOriginal;
-            for (int i = 0; i < dfTemp.length(); i++) {
-                dfCurrentAll.append(dfTemp.row(i));
-            }
+            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
+//            DataFrame<Object> dfCurrentAll = dataOriginal;
+//            for (int i = 0; i < dfTemp.length(); i++) {
+//                dfCurrentAll.append(dfTemp.row(i));
+//            }
 
 
             if (dfTemp.length() > 0) { // 若存在纯新数据

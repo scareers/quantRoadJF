@@ -379,6 +379,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     }
 
     private boolean isBuyPoint(String stock, Double preClosePrice, SecurityBeanEm stockBean) throws Exception {
+//        log.info("isbuypoint");
         // 获取今日分时图
         // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
         DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
@@ -564,6 +565,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // stock_code,market,time_tick,price,vol,bs
             dfTemp =
                     trader.getFsTransactionFetcher().getFsTransactionDatas().get(shenZhengChengZhi);
+            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
         } else {
             if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
                 DataFrame df0 = StockApi.getQuoteHistorySingle("000001", preTradeDate, preTradeDate,
@@ -574,10 +576,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
             dfTemp =
                     trader.getFsTransactionFetcher().getFsTransactionDatas().get(shangZhengZhiShu);
+            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shangZhengZhiShuPreClose - 1;
         }
 //        Console.log(dfTemp);
         // 分时成交则是3
-        return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shangZhengZhiShuPreClose - 1;
     }
 
     @Override

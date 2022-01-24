@@ -165,7 +165,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         stockSelectedToday = new CopyOnWriteArrayList<>(stockSelectCountMapFinal.keySet()); // 赋值
         stocks.addAll(initYesterdayHolds());
         List<SecurityBeanEm> res = new StockPoolForFsTransaction(stocks, true).createStockPool();
-        log.warn("stockPool added: 已将昨日收盘后持有股票加入股票池! 新的股票池总大小: {}", res.size());
+        log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", res.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
     }
