@@ -119,7 +119,7 @@ public class Trader {
         // todo
         Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
-                20, // 期望选股数量
+                10, // 期望选股数量
                 false, // 偏向更多选股结果
                 Arrays.asList(0, 1) // 核心, 哪天买哪天卖的算法?
         ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
