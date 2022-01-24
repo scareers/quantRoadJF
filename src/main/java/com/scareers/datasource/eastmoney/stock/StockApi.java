@@ -19,10 +19,7 @@ import com.scareers.utils.Tqdm;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -55,9 +52,12 @@ public class StockApi {
         }
     }
 
+
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
+        //Console.log(getPriceLimitToday("000001", 2000));
+
 
         //7 23.50 ok
         Console.log(getFSTransaction(120, "000001", 1, 1000).toString(250));
@@ -297,6 +297,51 @@ public class StockApi {
         for (String key : temp.keySet()) {
             FS_DICT.put(key, temp.get(key).toString());
         }
+    }
+
+    /**
+     * 获取当日某个股的涨跌停限价. [涨停价,跌停价]
+     * 东方财富行情页面, 主api之一, 有很多字段, 包括盘口. 均使用此url, 可传递极多字段
+     * http://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f43,f57,f58,f169,f170,f46,f44,f51,f168,f47,f164,f163,f116,f60,f45,f52,f50,f48,f167,f117,f71,f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
+     * <p>
+     * 其中 f51(涨停),f52(跌停) 是该股票涨跌停价格
+     * jQuery112409228148447288975_1643015501069({"rc":0,"rt":4,"svr":181233083,"lt":1,"full":1,"data":{"f51":39.89,"f52":26.59}});
+     * https://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f51,f52&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
+     *
+     * @param stock
+     * @return
+     */
+    public static List<Double> getPriceLimitToday(String stockSimpleCode, int timeout) throws Exception {
+        SecurityBeanEm bean = SecurityBeanEm.createStock(stockSimpleCode);
+        String secId = bean.getSecId(); // 获取准确的secId
+
+        String url = "https://push2.eastmoney.com/api/qt/stock/get";
+        List<Double> res = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>(); // 参数map
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("invt", "2");
+        params.put("fltt", "2");
+        params.put("fields", "f51,f52");
+        params.put("secid", secId);
+        params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
+                System.currentTimeMillis() - RandomUtil.randomInt(1000)));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseKevin(url, params, timeout, 3);
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            log.error("get exception: 访问http失败: 获取涨跌停价: stock: {}", secId);
+            return null;
+        }
+        response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
+        JSONObject resp = JSONUtil.parseObj(response);
+
+        res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
+        res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
+        return res;
     }
 
 

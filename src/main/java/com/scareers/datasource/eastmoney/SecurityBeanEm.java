@@ -231,6 +231,14 @@ public class SecurityBeanEm {
         return false;
     }
 
+    public boolean isIndex() {
+        return this.convertState == ConvertState.INDEX;
+    }
+
+    public boolean isStock() {
+        return this.convertState == ConvertState.STOCK;
+    }
+
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
 
     /**

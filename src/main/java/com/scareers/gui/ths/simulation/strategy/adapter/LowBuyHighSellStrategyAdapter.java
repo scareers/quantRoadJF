@@ -9,7 +9,6 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.alee.managers.animation.easing.Back;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.stock.StockApi;
@@ -19,7 +18,6 @@ import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
-import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
@@ -30,9 +28,6 @@ import java.util.*;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.positionUpperLimit;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.utils.CommonUtil.sendEmailSimple;
@@ -85,9 +80,14 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     public static double execLowBuyThreshold = -0.0;
     public static double continuousFallTickCountThreshold = 1;
 
-    SecurityBeanEm shangZhengZhiShu = SecurityBeanEm.createIndexList(Arrays.asList("000001")).get(0);
+    // 卖点点提前机制, 秒数:条件百分比 设定
+    // 高卖时, 在 9:40:xx 不等待 9:41 的分时图确定生成 更低价分时, 而在 9:40:xx 就推断未来 9:41最终分时价格是降低的
+    // 该map为 key:value --> 当前秒数 --> 需要fs成交中,降低价格次数 / (降低+上涨) 的百分比 > value, 才视为提前生成卖点
+    public static HashMap<Integer, Double> highSellBeforehandThresholdMap;
+
+    SecurityBeanEm shangZhengZhiShu = SecurityBeanEm.createIndex("000001");
     Double shangZhengZhiShuPreClose = null; // 上证昨日收盘点数
-    SecurityBeanEm shenZhengChengZhi = SecurityBeanEm.createIndexList(Arrays.asList("399001")).get(0);
+    SecurityBeanEm shenZhengChengZhi = SecurityBeanEm.createIndex("399001");
     Double shenZhengChengZhiPreClose = null;
 
     LowBuyHighSellStrategy strategy;
@@ -111,6 +111,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2);
         preTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1);
     }
+
 
     private void initYesterdayHoldMapForSell() throws Exception {
         for (int i = 0; i < strategy.getYesterdayStockHoldsBeSell().length(); i++) {
@@ -260,6 +261,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             initYesterdayHoldMapForSell(); // 初始化昨日持仓map
             initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
         }
+        flashActualHighSelledWhenNoSellOrderInQueue(); // 刷新实际已卖,分股票
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             try { // 捕获异常
@@ -354,6 +356,38 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
     }
 
+    /**
+     * 当执行队列存在某股票sell订单时, 或者
+     * checking队列 存在执行成功的sell订单时(正在checking),
+     * 视为有该股票 sell 订单, 不刷新   ActualHighSelled 更新实际已经卖出.
+     * 其余的均刷新, 逻辑是 用 昨日收盘数量 - 当前可用
+     */
+    private void flashActualHighSelledWhenNoSellOrderInQueue() {
+        Set<String> hasSellOrderInQueueStocks = new HashSet<>();
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 无需保证, 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType())) {
+                hasSellOrderInQueueStocks.add(order.getParams().get("stockCode").toString());
+            }
+        }
+
+        for (Order order : new ArrayList<>(
+                Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType())) {
+                if (order.execSuccess()) { //正在等待checking, 将不加入
+                    hasSellOrderInQueueStocks.add(order.getParams().get("stockCode").toString());
+                } // 执行成功的
+            }
+        }
+
+        Map<String, Integer> map = trader.getAccountStates().getAvailablesOfStocksMap();
+        for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
+            if (!hasSellOrderInQueueStocks.contains(stock)) {
+                // 对于不存在卖单的, 刷新实际的已卖数量,而非使用 强制视为全部成交卖单机制 --> 实际刷新
+                actualHighSelled.put(stock, yesterdayStockHoldsBeSellMap.get(stock) - map.get(stock));
+            }
+        }
+    }
+
 
     /**
      * 卖单互斥. 即在等待队列和check队列, 不能存在其他 相同stock的卖单!
@@ -418,7 +452,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 DateUtil.parse(DateUtil.today() + " " + lastFsTransTick).offset(DateField.MINUTE, -1)
                         .toString(DatePattern.NORM_TIME_PATTERN); // 有记录的最后的时间tick, 减去1分钟.
         // 筛选最后一分钟记录
-        DataFrame<Object> fsLastMinute = getLastMinuteAll(fsTransDf, tickWithSecond0);
+        DataFrame<Object> fsLastMinute = getCurrentMinuteAll(fsTransDf, tickWithSecond0);
 
 
         // 获取最新一分钟所有 成交记录. 价格列
@@ -459,30 +493,52 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     public boolean isSellPoint(String stock, Double pre2ClosePrice, SecurityBeanEm stockBean) throws Exception {
         // 获取今日分时图
         // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
-        DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
-        final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
-        // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
+        // 数据池获取分时图, 因 9:25:xx 后将有 9:31 单条记录. 因此lenth<0时, 直接返回false
+        DataFrame<Object> fsCurrent = trader.getFsFetcher().getFsDatas().get(stockBean);
+        if (fsCurrent.length() == 0) {
+            return false; // 9:25:0x 之前  // 一般是 9:25:02左右
+        }
+        String nowTime = DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN);
+        if (nowTime.compareTo("09:25:00") <= 0) {
+            return false; // 集合竞价之前
+        }
+        if (nowTime.compareTo("09:25:00") > 0 && nowTime.compareTo("09:30:00") < 0) {
+            // 集合竞价结束后的五分钟, 应当 集合竞价处理
+            return true; // 固定返回true, 将整个5分钟均视为卖点, 但因相同股票卖单互斥, 因此不会重复下单.
+        }
 
-        fsDf = dropAfter1Fs(fsDf, nowStr); // 将最后1行 fs记录去掉
+        // 此时已经 9:30:0+ 开盘
+        final String nowStr = DateUtil.date().toString(DatePattern.NORM_DATETIME_MINUTE_PATTERN); // 2022-01-20 11:30
+        DataFrame<Object> fsDf = dropAfter1Fs(fsCurrent, nowStr);
+        // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
+        // 将最后1行 fs记录去掉
 
         // 计算连续上涨数量
-        List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
         int continuousRaise = 0;
-        for (int i = closes.size() - 1; i >= 1; i--) {
-            if (closes.get(i) >= closes.get(i - 1)) {
-                continuousRaise++;
-            } else {
-                break;
-            }
-        }
-        if (DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN).compareTo("09:31:00") <= 0) {
+        List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
+        if (nowTime.compareTo("09:31:00") <= 0) {
             continuousRaise = Integer.MAX_VALUE; // 9:30:xx 只会有 9:31 的fs数据, 第一条fs图,此前视为连续上升.
+        } else {
+            for (int i = closes.size() - 1; i >= 1; i--) {
+                if (closes.get(i) >= closes.get(i - 1)) {
+                    continuousRaise++;
+                } else {
+                    break;
+                }
+            }
         }
         if (continuousRaise < continuousRaiseTickCountThreshold) { // 连续上升必须>=阈值
             return false;
         }
+        double lastFsClose;
+        if (nowTime.compareTo("09:31:00") <= 0) {
+            // 9:30:xx
+            List<Double> temp = DataFrameS.getColAsDoubleList(fsDf, "开盘"); // 此时未筛选 9:31
+            lastFsClose = temp.get(temp.size() - 1); // 使用 第一条分时图的开盘, 视为 9:30那一刻的收盘!
+        } else {
+            lastFsClose = closes.get(closes.size() - 1); // 作为 计算最新一分钟 价格的基准, 计算涨跌
+        }
 
-        double lastFsClose = closes.get(closes.size() - 1); // 作为 计算最新一分钟 价格的基准, 计算涨跌
         // 0	000010    	0          	09:15:09 	3.8  	177 	4
         /*
             stock_code,market,time_tick,price,vol,bs
@@ -490,41 +546,42 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> fsTransDf =
                 trader.getFsTransactionFetcher().getFsTransactionDatas()
                         .get(SecurityBeanEm.createStock(stock));
-        // 最后的有记录的时间, 前推 60s
-        String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
-        String tickWithSecond0 =
-                DateUtil.parse(DateUtil.today() + " " + lastFsTransTick).offset(DateField.MINUTE, -1)
-                        .toString(DatePattern.NORM_TIME_PATTERN); // 有记录的最后的时间tick, 减去1分钟.
-        // 筛选最后一分钟记录
-        DataFrame<Object> fsLastMinute = getLastMinuteAll(fsTransDf, tickWithSecond0);
-
+        String tickWithSecond0 = nowTime.substring(0, 5) + ":00"; // 本分钟.开始时刻
+        // 筛选fs图最近一分钟所有记录,
+        DataFrame<Object> fsLastMinute = getCurrentMinuteAll(fsTransDf, tickWithSecond0);
 
         // 获取最新一分钟所有 成交记录. 价格列
         if (fsLastMinute.size() == 0) { // 未能获取到最新一分钟数据,返回false
             return false;
         }
         List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
-        if (pricesLastMinute.size() == 0) { // 没有数据再等等
-            return false;
-        }
-        newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
+        double newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
         if (newPercent < execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
         }
+
         // 计算对比  lastFsClose, 多少上升, 多少下降?
         int countOfLower = 0; // 最新一分钟, 价格比上一分钟收盘更低 的数量
+        int countOfHigher = 0; // 最新一分钟, 价格比上一分钟收盘更低 的数量
         for (Double price : pricesLastMinute) {
             if (price < lastFsClose) {
                 countOfLower++;
-            }
+            } else if (price > lastFsClose) {
+                countOfHigher++;
+            }// 等于无视
         }
+        if (countOfLower + countOfHigher == 0) {// 本分钟价格一点没变
+            return false;
+        }
+
+
         if (((double) countOfLower) / pricesLastMinute.size() > 0.5) { // 判定该分钟close有很大可能价格跌, 视为卖点
             return true;
         }
         return false;
     }
 
-    private DataFrame<Object> getLastMinuteAll(DataFrame<Object> fsTransDf, String tickWithSecond0) {
+    private DataFrame<Object> getCurrentMinuteAll(DataFrame<Object> fsTransDf, String tickWithSecond0) {
         int rowStart = 0;
         for (int i = fsTransDf.length() - 1; i >= 0; i--) {
             if (fsTransDf.row(i).get(2).toString().compareTo(tickWithSecond0) < 0) {// 找到第一个小
@@ -543,10 +600,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @return
      */
     private DataFrame<Object> dropAfter1Fs(DataFrame<Object> fsDf, String nowStr) {
+        if (fsDf.length() == 1) { // 9:30:0x 期间仅自身.返回值不被使用,会有其他处理方式
+            return fsDf;
+        }
         int endRow = fsDf.length();
         for (int i = fsDf.length() - 1; i >= 0; i--) {
             if (fsDf.row(i).get(0).toString().compareTo(nowStr) <= 0) {
-                endRow = i; // 第一个<=的, 将>的全部排除
+                endRow = i; // 第一个<=的, 将>的全部排除. 比select快
                 break;
             }
         }

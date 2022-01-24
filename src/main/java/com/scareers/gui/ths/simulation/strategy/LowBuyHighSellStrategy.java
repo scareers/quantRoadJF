@@ -126,6 +126,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     private List<String> stockSelectedToday;
 
     private Trader trader;
+    public ConcurrentHashMap<String, List<Double>> priceLimitMap; // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
     public LowBuyHighSellStrategy(Trader trader, String strategyName,
                                   List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
@@ -144,9 +145,21 @@ public class LowBuyHighSellStrategy extends Strategy {
                 keyInts.get(0), keyInts.get(1)); // 立即初始化表明保存结果
         this.strategyName = strategyName; // 同super
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
+        initPriceLimitMap();
         bindSelf();
     }
 
+
+    private void initPriceLimitMap() throws Exception {
+        log.info("init: 初始化涨跌停 map");
+        for (SecurityBeanEm bean : this.stockPool) {
+            if (bean.isStock()) { // 股票才有涨跌停
+                this.priceLimitMap
+                        .put(bean.getStockCodeSimple(),
+                                Objects.requireNonNull(StockApi.getPriceLimitToday(bean.getStockCodeSimple(), 2000)));
+            }
+        }
+    }
 
     @Override
     protected List<SecurityBeanEm> initStockPool() throws Exception {

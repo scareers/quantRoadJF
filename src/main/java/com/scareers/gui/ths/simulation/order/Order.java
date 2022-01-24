@@ -440,6 +440,21 @@ public class Order implements Comparable, Serializable {
         }
     }
 
+    /**
+     * 判定是否执行成功
+     *
+     * @return
+     */
+    public boolean execSuccess() {
+        if (execResponses.size() == 0) {
+            return false; // 未执行过
+        }
+        if (execResponses.get(execResponses.size() - 1).getStr("state").equals("success")) {
+            return true;
+        }
+        return false;
+    }
+
 
     private static final Log log = LogUtil.getLogger();
 
@@ -456,4 +471,6 @@ public class Order implements Comparable, Serializable {
         }
         return res;
     }
+
+
 }
