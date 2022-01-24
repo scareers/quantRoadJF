@@ -25,6 +25,7 @@ import joinery.DataFrame;
 import lombok.SneakyThrows;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getQuoteHistorySingle;
@@ -83,7 +84,22 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     // 卖点点提前机制, 秒数:条件百分比 设定
     // 高卖时, 在 9:40:xx 不等待 9:41 的分时图确定生成 更低价分时, 而在 9:40:xx 就推断未来 9:41最终分时价格是降低的
     // 该map为 key:value --> 当前秒数 --> 需要fs成交中,降低价格次数 / (降低+上涨) 的百分比 > value, 才视为提前生成卖点
-    public static HashMap<Integer, Double> highSellBeforehandThresholdMap;
+    public static ConcurrentHashMap<Integer, Double> highSellBeforehandThresholdMap; // 静态块实现
+
+    static {
+        initHighSellBeforehandThresholdMap();
+    }
+
+    private static void initHighSellBeforehandThresholdMap() {
+        highSellBeforehandThresholdMap = new ConcurrentHashMap<>();
+        // 注意, key 控制 当前秒数<key, 不包含
+        highSellBeforehandThresholdMap.put(10, 2.0); // 必须 价格降低次数 /(价格升高+降低) >= 此百分比, 显然2.0意味着不可能
+        highSellBeforehandThresholdMap.put(20, 1.0);
+        highSellBeforehandThresholdMap.put(30, 0.9);
+        highSellBeforehandThresholdMap.put(40, 0.7);
+        highSellBeforehandThresholdMap.put(50, 0.6);
+        highSellBeforehandThresholdMap.put(60, 0.0); // 最后10s视为绝对符合条件. 10和60并未用到
+    }
 
     SecurityBeanEm shangZhengZhiShu = SecurityBeanEm.createIndex("000001");
     Double shangZhengZhiShuPreClose = null; // 上证昨日收盘点数
@@ -482,10 +498,18 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
 
     /**
-     * 卖点判定.
-     * 1.读取(真)分时图,
-     * 2.判定前几分钟分时图 连续上升 n
-     * 3.判定本分钟价格 比上一分钟 降低. (过半分钟的时间根据比例, 之前固定返回false)
+     * 卖点判定机制.
+     * 1.集合竞价 9:25 后才可能出现卖点
+     * 2.集合竞价专属卖点! 唯一. 将于 9:25:xx (可能)产生, 该类订单 将在 otherRawMessages 属性中, 添加 afterAuctionFirst=True
+     * 注意对应的 sellCheck 逻辑也应当判定此类订单, 其等待成交的时长不应是固定1分钟, 而是 持续到例如 9:31为止!
+     * 见Order新增 isAfterAuctionFirst() 方法
+     * 3. 9:30-9:31之间, 连续上升条件视为达成, 且上个分时close, 取值为 9:32的open值, 其余逻辑同普通情况
+     * 4.一般情况:
+     * 判定前几分钟分时图 连续上升 n分钟, >=阈值
+     * 判定本分钟价格必须 < 上一分钟分时close.
+     * 取当前秒数, 若为0-9s, 返回false,不可能下单.
+     * 10-20s, 需要 上升成交记录数 /(上升+下降) >= 1.0; 时间越长, 该百分比限制越不严格, 直到 50-59s, 直接返回true.
+     * 见 highSellBeforehandThresholdMap 静态属性
      *
      * @return
      * @see SettingsOfFSBacktest
@@ -555,12 +579,17 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return false;
         }
         List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
+        if (pricesLastMinute.get(pricesLastMinute.size() - 1) >= lastFsClose) {
+            return false; // 最新价格必须 < 上一分时收盘, 否则无视.
+        }
+
         double newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / pre2ClosePrice - 1;
         if (newPercent < execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
         }
 
-        // 计算对比  lastFsClose, 多少上升, 多少下降?
+
+        // 计算对比  lastFsClose, 多少上升, 多少下降? // 此时已经确定最新价格更低了
         int countOfLower = 0; // 最新一分钟, 价格比上一分钟收盘更低 的数量
         int countOfHigher = 0; // 最新一分钟, 价格比上一分钟收盘更低 的数量
         for (Double price : pricesLastMinute) {
@@ -568,17 +597,25 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 countOfLower++;
             } else if (price > lastFsClose) {
                 countOfHigher++;
-            }// 等于无视
+            }
         }
         if (countOfLower + countOfHigher == 0) {// 本分钟价格一点没变
             return false;
         }
-
-
-        if (((double) countOfLower) / pricesLastMinute.size() > 0.5) { // 判定该分钟close有很大可能价格跌, 视为卖点
+        int currentSecond = Integer.parseInt(nowTime.substring(6, 8)); // 秒数
+        if (currentSecond < 10) {
+            return false; // 0-9s, 不会出现卖点
+        } else if (currentSecond < 20) { // 前10s
+            return ((double) countOfLower) / (countOfHigher + countOfLower) >= highSellBeforehandThresholdMap.get(20);
+        } else if (currentSecond < 30) { // 前10s
+            return ((double) countOfLower) / (countOfHigher + countOfLower) >= highSellBeforehandThresholdMap.get(30);
+        } else if (currentSecond < 40) { // 前10s
+            return ((double) countOfLower) / (countOfHigher + countOfLower) >= highSellBeforehandThresholdMap.get(40);
+        } else if (currentSecond < 50) { // 前10s
+            return ((double) countOfLower) / (countOfHigher + countOfLower) >= highSellBeforehandThresholdMap.get(50);
+        } else {
             return true;
         }
-        return false;
     }
 
     private DataFrame<Object> getCurrentMinuteAll(DataFrame<Object> fsTransDf, String tickWithSecond0) {

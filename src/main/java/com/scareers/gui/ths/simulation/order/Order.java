@@ -455,6 +455,16 @@ public class Order implements Comparable, Serializable {
         return false;
     }
 
+    /**
+     * 产生于 9:25 -- 9:30之间, 依据集合竞价数据, 产生第一比订单.
+     *
+     * @return
+     */
+    public boolean isAfterAuctionFirst() {
+        return this.otherRawMessages.getOrDefault("afterAuctionFirst", Boolean.FALSE)
+                .equals(Boolean.TRUE);
+    }
+
 
     private static final Log log = LogUtil.getLogger();
 
