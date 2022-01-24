@@ -302,7 +302,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
                     continue;
                 }
-                // todo: 强制卖出
+                // todo: 强制卖出 14:57
 
                 // 2. 判定当前是否是卖点?
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
