@@ -130,12 +130,13 @@ public class Trader {
                         "15:10:00", 1000, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 2000, 100, 16, 1000);
+        FsFetcher fsFetcher = FsFetcher.getInstance(mainStrategy.getStockPool(), 2000, 100, 16, 100);
         trader.setFsFetcher(fsFetcher);
         fsFetcher.startFetch(); // fs图抓取
 
         // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
+        fsFetcher.waitFirstEpochFinish(3600 * 1000);
         mainStrategy.startDealWith();
 
         trader.manualInteractive(); // 开始交互, 必须死循环.

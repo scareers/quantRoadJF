@@ -228,8 +228,14 @@ public class CommonUtil {
     }
 
     public static void waitForever()
-            throws TimeoutException, InterruptedException {
-        waitUtil(() -> false, Integer.MAX_VALUE, Integer.MAX_VALUE, "wait forever!", true);
+             {
+        while (true) {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void waitEnter() {
@@ -253,12 +259,12 @@ public class CommonUtil {
     }
 
     public static void sendEmailSimple(String subject, String content, boolean async) {
-        if(!async){
+        if (!async) {
             MailUtil.send(SettingsCommon.receivers,
                     subject,
                     content,
                     false, null);
-        }else{
+        } else {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {

@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
@@ -40,6 +41,41 @@ public class SecurityBeanEm {
     }
 
     private static final long serialVersionUID = 156415111L;
+    public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
+    public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
+    public static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
+
+
+    private static SecurityBeanEm initShIndex() {
+        SecurityBeanEm res;
+        while (true) {
+            try {
+                res = createIndex("000001");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("SecurityBeanEm init: 初始化[上证指数]失败");
+                continue;
+            }
+            break;
+        }
+        return res;
+    }
+
+    private static SecurityBeanEm initSzIndex() {
+        SecurityBeanEm res;
+        while (true) {
+            try {
+                res = createIndex("399001");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("SecurityBeanEm init: 初始化[深证成指]失败");
+                continue;
+            }
+            break;
+        }
+        return res;
+    }
+
 
     /**
      * 给定股票简单代码列表, 获取 已转换为 股票 的 SecurityBeanEm
@@ -90,9 +126,8 @@ public class SecurityBeanEm {
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public static List<SecurityBeanEm> getTwoGlobalMarketIndexList()
-            throws Exception {
-        return SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001"));
+    public static List<SecurityBeanEm> getTwoGlobalMarketIndexList() {
+        return new CopyOnWriteArrayList<>(Arrays.asList(SHANG_ZHENG_ZHI_SHU, SHEN_ZHENG_CHENG_ZHI));
     }
 
     private static final Log log = LogUtil.getLogger();
@@ -239,7 +274,6 @@ public class SecurityBeanEm {
         return this.convertState == ConvertState.STOCK;
     }
 
-    public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
 
     /**
      * 单个实例工厂, 使用缓存. SecurityBeanEm 一旦被转换为股票或者指数后, 不可变

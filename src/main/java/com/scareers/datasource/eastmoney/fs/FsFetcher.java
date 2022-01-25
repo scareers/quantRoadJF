@@ -1,7 +1,6 @@
 package com.scareers.datasource.eastmoney.fs;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
@@ -10,26 +9,32 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
-import com.scareers.sqlapi.TushareApi;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.SneakyThrows;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.scareers.utils.CommonUtil.waitEnter;
+import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
- * description: 参考 FsTransactionFetcher, 逻辑更为简单. 不同的是, 并不保存到数据库! 因分时图访问过于简单
- * 注意: 当某分钟开始后, fs将更新到 当分钟.
- * 例如当前 13:21:10, 则将更新到 13:22
+ * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas属性
+ *
+ * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
+ * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
+ * 直到时间超过 9:31:xx, 将出现第二条记录 9:32:xx.
+ * 即: 集合竞价与 9:30:xx 均作为 9:31 这一条fs K线图(不断更新).
+ * @noti 字段列表: 日期	            开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+ * @noti 数据实例: 2022-01-25 09:31	17.08	17.02	17.08	17.02	11145	19006426.00	0.35	-1.05	-0.18	0.01	000001	平安银行
+ * @noti 时间字段完整格式:  yyyy-MM-dd HH:mm       // DatePattern.NORM_DATETIME_MINUTE_PATTERN
+ * @noti 单次访问http将 retry==0; 失败返回null, 不进行重试
+ * @noti 内部stockPool 自动添加两大指数, 且去重, 线程安全, 保证可以动态添加, 减少股票
+ * @warning 因1分分时图api十分方便, 且并不保存到数据库, 且全量更新, 因此不对启动时间做过多限制. 启动时间由调用方保证合理
+ * @see StockApi.getFs1MToday()
  */
 @Data
 public class FsFetcher {
@@ -38,10 +43,27 @@ public class FsFetcher {
                 (new StockPoolFromTushare(0, 10, true).createStockPool(),
                         1000,
                         10, 16, 100);
-
         fsFetcher.startFetch(); // 测试股票池
-        waitEnter();
+        fsFetcher.waitFirstEpochFinishForever();
+        fsFetcher.stopFetch(); // 软停止,且等待完成
+        fsFetcher.reStartFetch(); // 再次开始
+        Thread.sleep(2000);
+
+        Console.log(fsFetcher.getFsDatas().size());
+        Console.log(fsFetcher.getStockPool().size());
+
+        Console.log(FsFetcher.getShangZhengZhiShuDf());
+        Console.log(FsFetcher.getShenZhengChengZhiDf());
+
+        SecurityBeanEm stock = SecurityBeanEm.createStock("000002");
+        DataFrame<Object> dataFrame = FsFetcher.getDf(stock).orElse(null);
+        Console.log(dataFrame);
+        Console.log(FsFetcher.getCertainLastClosePrice(stock));
+        Console.log(FsFetcher.getValueByTimeTick(stock, "9:31:59", 2, false));
+        Console.log(FsFetcher.getClosePriceByTimeTick(stock, "9:32"));
+        Console.log(DataFrameS.getColAsDoubleList(dataFrame, "开盘"));
     }
+
 
     private static FsFetcher INSTANCE;
 
@@ -53,8 +75,7 @@ public class FsFetcher {
     public static FsFetcher getInstance(List<SecurityBeanEm> stockPool,
                                         int timeout, int logFreq,
                                         int threadPoolCorePoolSize,
-                                        int sleepPerEpoch)
-            throws SQLException, InterruptedException {
+                                        int sleepPerEpoch) throws Exception {
         if (INSTANCE == null) {
             INSTANCE = new FsFetcher(stockPool, timeout, logFreq,
                     threadPoolCorePoolSize, sleepPerEpoch);
@@ -63,49 +84,57 @@ public class FsFetcher {
     }
 
 
-    // 静态属性 设置项
-    // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
-    public static final List<String> newDayTimeThreshold = Arrays.asList("07:00", "08:00");
-    public static ThreadPoolExecutor threadPoolOfFetch;
+    // 静态属性
     private static final Log log = LogUtil.getLogger();
+    public static ThreadPoolExecutor threadPoolOfFetch;
 
     // 实例属性
-    // 保存每只股票今日分时数据. 每次运行将删除原数据库, 然后对单只股票, 进行append语义插入
-    private volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas;
+    private volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas; // 数据Map
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
-    private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
+    private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源. 将等待正在进行的一轮结束后停止.可再次调用 startFetch()启动
 
-    // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量
-    private int timeout; // 单个http访问超时毫秒
-    private final List<SecurityBeanEm> stockPool;
-    private String saveTableName; // 保存数据表名称
-    private final int logFreq; // 分时图抓取多少次,log一次时间
-    public int threadPoolCorePoolSize; // 线程池数量
-    private int sleepPerEpoch; // 每轮后sleep;
+    private int timeout; // 单次http访问超时毫秒
+    private final List<SecurityBeanEm> stockPool; // 股票池需要提供
+    private final int logFreq; // 多少轮,log 一次时间
+    public int threadPoolCorePoolSize; // 线程池核心数量
+    private int sleepPerEpoch; // 每轮后强制 sleep;
+    private volatile boolean running; //标志正在抓取中
 
     private FsFetcher(List<SecurityBeanEm> stockPool, int timeout, int logFreq, int threadPoolCorePoolSize,
-                      int sleepPerEpoch)
-            throws SQLException, InterruptedException {
+                      int sleepPerEpoch) {
         // 4项全默认值
         this.fsDatas = new ConcurrentHashMap<>();
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
         this.sleepPerEpoch = sleepPerEpoch;
 
-        // yyyy-MM-dd HH:mm:ss.SSS // 决定保存数据表
-        this.saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
-        if (newDayDecide()) {
-            this.saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
-        }
-
         // 4项可设定
-        this.stockPool = stockPool;
+        HashSet<SecurityBeanEm> temp = new HashSet<>(stockPool);
+        temp.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
+        this.stockPool = new CopyOnWriteArrayList<>(temp);
         this.timeout = timeout; // 1000
         this.logFreq = logFreq;
         this.threadPoolCorePoolSize = threadPoolCorePoolSize;
+        this.running = false;
+        for (SecurityBeanEm stock : stockPool) {
+            this.fsDatas.put(stock, new DataFrame<>()); // 初始化置空, 使得不会访问到null, 最多空df
+        }
     }
 
+    /**
+     * 可停止后重启
+     */
+    public void reStartFetch() {
+        if (this.running) {
+            log.error("FSFetcher 正在运行中, 无法再次开始, 调用 stopFetch() 后可停止, 方可再次开始");
+            return;
+        }
+        startFetch();
+    }
 
+    /**
+     * 首次启动不会出现问题
+     */
     public void startFetch() {
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
@@ -116,99 +145,110 @@ public class FsFetcher {
         });
         fsFetchTask.setDaemon(true);
         fsFetchTask.setPriority(Thread.MAX_PRIORITY);
-        fsFetchTask.setName("FSFetcher");
+        fsFetchTask.setName("FS1MFetcher");
         fsFetchTask.start();
-        log.warn("FSTransFetcher start: 开始持续获取实时成交数据");
     }
 
+    /**
+     * 核心方法
+     *
+     * @throws Exception
+     */
     private void startFetch0() throws Exception {
+        this.running = true;
         initThreadPool(threadPoolCorePoolSize); // 懒加载一次
-
-        log.warn("start: 开始抓取数据,股票池数量: {}", stockPool.size());
+        log.warn("FS1MFetcher start: 开始持续获取 [1分钟分时] 数据,股票池数量: {}", stockPool.size());
         TimeInterval timer = DateUtil.timer();
         timer.start();
-
         int epoch = 0; // 抓取轮次, 控制 log 频率
         while (!stopFetch) {
             epoch++;
-            List<Future<Void>> futures = new ArrayList<>();
+            Boolean epochAllSuccess = true; // 本轮http全部成功
+
+            List<Future<Boolean>> futures = new ArrayList<>();
             for (SecurityBeanEm stock : stockPool) {
-                Future<Void> f = threadPoolOfFetch
+                Future<Boolean> f = threadPoolOfFetch
                         .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
             }
-            for (Future<Void> future : futures) {
-                future.get();
+
+            for (Future<Boolean> future : futures) {
+                Boolean reqSuccess = future.get();
+                if (!reqSuccess) {
+                    epochAllSuccess = false;
+                }
             }
-            if (!firstTimeFinish.get()) {
-                log.warn("fs finish first: 首次抓取完成...");
+            if (!firstTimeFinish.get() && epochAllSuccess) { // 需要第一轮全部抓取成功,否则延后
+                log.warn("fs_1m finish first: 首次抓取完成...");
                 firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
             }
             if (epoch % logFreq == 0) {
                 epoch = 0;
-                log.info("fs finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
+                log.info("fs_1m finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
             }
             Thread.sleep(sleepPerEpoch);
-            /*
-
-             */
         }
+        stopFetch = false; // 被停止后, 将stopFetch恢复为默认值false
+        this.firstTimeFinish = new AtomicBoolean(false); // 首次完成flag也重置
         threadPoolOfFetch.shutdown();
+        threadPoolOfFetch = null;
+        this.running = false; // 标志位
     }
 
-
-    private boolean newDayDecide() throws InterruptedException, SQLException {
-        DateTime now = DateUtil.date();
-        String today = DateUtil.today();
-        DateTime thresholdBefore = DateUtil.parse(today + " " + newDayTimeThreshold.get(0));
-        DateTime thresholdAfter = DateUtil.parse(today + " " + newDayTimeThreshold.get(1));
-
-        long gtBefore = DateUtil.between(thresholdBefore, now, DateUnit.SECOND, false); // 比下限大
-        long ltAfter = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false); // 比上限小
-
-        boolean res;
-        if (!TushareApi.isTradeDate(DateUtil.format(DateUtil.date(), "yyyyMMdd"))) {
-            log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
-            return false;
-        }
-        if (gtBefore <= 0) {
-            res = false;
-        } else if (ltAfter <= 0) {
-            res = true;
-        } else {
-            // 此时介于两者之间, 应当等待到 今日开始的时间阈值
-            log.error("wait: 当前时间介于昨日今日判定阈值设定之间, 需等待到: {}, 等待时间: {} 秒 / {}小时",
-                    newDayTimeThreshold.get(1), ltAfter, ((double) ltAfter) / 3600);
-            log.warn("waiting ...");
-            Thread.sleep(ltAfter * 1000);
-            res = true;
-        }
-        if (res) {
-            log.warn("date decide: 依据设定,应当抓取今日数据");
-        } else {
-            log.warn("date decide: 依据设定,应当抓取上一交易日数据");
-        }
-        return res;
-    }
-
-
-    public static void initThreadPool(int threadPoolCorePoolSize) {
+    /**
+     * 线程池初始化
+     *
+     * @param threadPoolCorePoolSize
+     */
+    private static void initThreadPool(int threadPoolCorePoolSize) {
         if (threadPoolOfFetch == null) {
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
-                    ThreadUtil.newNamedThreadFactory("FSFetcherPool-", null, true)
+                    ThreadUtil.newNamedThreadFactory("FS1MFetcherPool-", null, true)
             );
-            log.debug("init threadPoolOfFetch: 初始化Fetch线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
+            log.debug("init FS1MFetcherThreadPool: 核心线程数量: {}", threadPoolCorePoolSize);
         }
     }
 
+    /**
+     * 软关闭死循环http访问的抓取逻辑. 且关闭线程池释放. 下次start将重新初始化线程池
+     */
     public void stopFetch() {
-        // 关闭线程池即可
         stopFetch = true;
+        waitStopFetchSuccess();
     }
 
-    public static class FetchOneStockTask implements Callable<Void> {
+    /**
+     * 等待关闭完成, 等待关闭时那一轮执行完成
+     */
+    private void waitStopFetchSuccess() {
+        try {
+            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, "fs_1m 停止抓取");
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    /**
+     * 等待第一轮抓取完成(要求该轮所有http访问均成功)
+     *
+     * @param timeout 最多等待时间
+     * @throws TimeoutException
+     * @throws InterruptedException
+     */
+    public void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
+        waitUtil(() -> this.getFirstTimeFinish().get(), timeout, 10, "第一次tick数据抓取完成");
+    }
+
+    public void waitFirstEpochFinishForever() throws TimeoutException, InterruptedException {
+        waitFirstEpochFinish(Integer.MAX_VALUE);
+    }
+
+    private static class FetchOneStockTask implements Callable<Boolean> {
         SecurityBeanEm stock;
         FsFetcher fetcher;
 
@@ -218,14 +258,15 @@ public class FsFetcher {
         }
 
         /**
-         * 单只股票抓取逻辑. 整体为 增量更新.
+         * 单只股票抓取逻辑. 全量更新.
+         * 返回值 true表示成功获取最新数据(即使没有新的行). false表示 http 访问失败
          *
          * @return
          * @throws Exception
          */
         @Override
-        public Void call() throws Exception {
-            boolean isIndex = false;
+        public Boolean call() throws Exception {
+            boolean isIndex;
             if (stock.getConvertState() == SecurityBeanEm.ConvertState.INDEX) {
                 isIndex = true;
             } else if (stock.getConvertState() == SecurityBeanEm.ConvertState.STOCK) {
@@ -233,14 +274,152 @@ public class FsFetcher {
             } else {
                 throw new Exception("SecurityBeanEm stock --> 尚未转换为指数或者个股!");
             }
-            DataFrame<Object> dfNew = StockApi.getQuoteHistorySingle(stock.getStockCodeSimple(), null, null, "1",
-                    "qfq", 3, isIndex, fetcher.getTimeout(), false);
-//            if (dfNew != null && dfNew.length() > 0) {
-//                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
-//            }
-            fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
 
-            return null;
+            DataFrame<Object> dfNew = StockApi
+                    .getFs1MToday(stock.getStockCodeSimple(), isIndex, 0, fetcher.getTimeout());
+            if (dfNew != null) { // 访问失败将返回null.
+                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
+                return true; // 成功更新为最新
+            }
+            return false; // http访问失败
         }
+    }
+
+    /*
+    数据获取相关api, 一般需要给定 stock, 从数据池中获取相应数据
+     */
+
+    /**
+     * @param stockOrIndex
+     * @return 单股票/指数今日完整分时图 df; 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	股票代码	股票名称
+     */
+    public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
+        DataFrame<Object> res = INSTANCE.fsDatas.get(stockOrIndex);
+        if (res == null || res.length() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(res);
+    }
+
+    /**
+     * @param stockCodeSimple 6为简单股票代码,必须股票,不可指数
+     * @return 获取单股票 完整分时图df; 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     */
+    public static Optional<DataFrame<Object>> getDf(String stockCodeSimple) {
+        SecurityBeanEm stock;
+        try {
+            stock = SecurityBeanEm.createStock(stockCodeSimple);
+        } catch (Exception e) {
+            log.error("getDf: 从股票代码创建 SecurityBeanEm 对象失败, 返回空");
+            return Optional.empty();
+        }
+        return getDf(stock);
+    }
+
+    /**
+     * @return 上证指数df; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     */
+    public static Optional<DataFrame<Object>> getShangZhengZhiShuDf() {
+        return getDf(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
+    }
+
+    /**
+     * @return 深证成指df; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     */
+    public static Optional<DataFrame<Object>> getShenZhengChengZhiDf() {
+        return getDf(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
+    }
+
+    /**
+     * 直接采用倒数 2行, 当然 9:31:00之前 返回 唯一一行的close;
+     * 因该api底层 9:40:xx 将显示 到 9:41 的分时行.
+     * 本方法获取 已经确定的最后一个close, 本质是获取 9:40 这一行的close. 即倒数第二行.
+     * 不采用df.select, 速度极慢
+     * 也不采用传递 nowStr的方式, 这样即使相差n微秒(极短时间), 也能获取真正的 确定了的 最后1分时k线的 close
+     * 也不采用获取当前时间去秒数的方式
+     * 直接采用倒数 2行, 更符合确定的含义
+     *
+     * @param stockOrIndex
+     * @return 返回已确定的最后一个close价格, 常常为倒数第二行
+     * @deprecated 建议不直接调用此方法. 调用 getClosePriceByTimeTick 获取更加准确
+     */
+    public static Optional<Double> getCertainLastClosePrice(SecurityBeanEm stockOrIndex) {
+        Optional<DataFrame<Object>> dfTemp = getDf(stockOrIndex);
+        if (dfTemp.isPresent()) {
+            List<Object> closes = dfTemp.get().col("收盘");
+            return Optional.of(Double.valueOf(closes.get(Math.max(0, closes.size() - 1)).toString()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * @param stockOrIndex 股票
+     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式
+     * @return 给定时间tick的close价格, 默认倒序查找, 正序查找请传递 reverseFind=false
+     */
+    public static Optional<Double> getClosePriceByTimeTick(SecurityBeanEm stockOrIndex, String tickStr) {
+        return getClosePriceByTimeTick(stockOrIndex, tickStr, true);
+    }
+
+    /**
+     * @param stockOrIndex 股票
+     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式
+     * @param reverseFind  可指定不使用倒序,而正序查找
+     * @return 给定时间tick的close价格, 默认倒序查找, 正序查找请传递 reverseFind=false
+     */
+    public static Optional<Double> getClosePriceByTimeTick(SecurityBeanEm stockOrIndex, String tickStr,
+                                                           boolean reverseFind) {
+        Optional<Object> valueByTimeTick = getValueByTimeTick(stockOrIndex, tickStr, 2, reverseFind);
+        if (valueByTimeTick.isEmpty()) {
+            return Optional.empty();
+        }
+        Double res;
+        try {
+            res = Double.valueOf(valueByTimeTick.get().toString());
+        } catch (Exception e) {
+            log.error("getClosePriceByTimeTick: 或者值成功但转换Double失败, 返回 empty");
+            return Optional.empty();
+        }
+        return Optional.of(res);
+    }
+
+    /**
+     * @param stockOrIndex 股票/指数 SecurityBeanEm 对象
+     * @param tickStr      时间tick, 要求格式: 2022-01-25 09:31, 或者 hutool.DateUtil 能够转换的其他形式, 可自动设定日期为今天
+     * @param colIndex     列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param reverseFind  正序或者反向遍历, 可根据情况提高性能
+     * @return 给定股票/指数, 时间戳字符串, 列索引序号, 查找对应的值 Object 返回; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     */
+    public static Optional<Object> getValueByTimeTick(SecurityBeanEm stockOrIndex, String tickStr, int colIndex,
+                                                      boolean reverseFind) {
+        String tickStrSmart;
+        try { // 智能转换
+            tickStrSmart = DateUtil.parse(tickStr).toString(DatePattern.NORM_DATETIME_MINUTE_PATTERN);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("getValueByTimeTick fail: tick时间字符串参数错误, 建议形式: yyyy-MM-dd HH:mm");
+            return Optional.empty();
+        }
+        Optional<DataFrame<Object>> dfTemp = getDf(stockOrIndex);
+
+        if (dfTemp.isPresent()) {
+            DataFrame<Object> dataFrame = dfTemp.get();
+            if (reverseFind) {
+                for (int i = dataFrame.length() - 1; i >= 0; i--) {
+                    List<Object> line = dataFrame.row(i);
+                    if (line.get(0).toString().equals(tickStrSmart)) {
+                        return Optional.of(Double.valueOf(line.get(colIndex).toString()));
+                    }
+                }
+            } else {
+                for (int i = 0; i < dataFrame.length(); i++) {
+                    List<Object> line = dataFrame.row(i);
+                    if (line.get(0).toString().equals(tickStrSmart)) {
+                        return Optional.of(Double.valueOf(line.get(colIndex).toString()));
+                    }
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

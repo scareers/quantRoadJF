@@ -24,21 +24,29 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
-import static com.scareers.utils.CommonUtil.*;
+import static com.scareers.utils.CommonUtil.waitUtil;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 获取dfcf: tick数据3s.
+ * description: 获取东方财富, 分时成交数据: 即tick数据最快3s/条, 或5s/条;
  *
  * @author admin
  * @impl1: 该api来自于 dfcf 行情页面的 分时成交(个股) 或者 分笔(指数) 页面.
  * https://push2.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&fltt=2&cb=jQuery35107646502669044317_1640077292479&pos=-5900&secid=0.600000&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1640077292670
- * 该url使用安全的股票代码作为参数, secid=0.600000   0/1 分别代表 深市/ 上市
+ * 该url使用股票代码作为参数, secid=0.600000   0/1 分别代表 深市/ 上市
  * 科创板属于上市, 创业板属于深市. 目前 北交所前缀也为 0, 约等于深市.
  * @impl2: 该api为分页api. 实测可以更改单页数量到 5000. 同样需指定 market和code . 本质上两个api 返回值相同
  * https://push2ex.eastmoney.com/getStockFenShi?pagesize=5000&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&cb=jQuery112405998333817754311_1640090463418&pageindex=0&id=3990011&sort=1&ft=1&code=399001&market=0&_=1640090463419
- * 目前使用实现2. 两个url基本相同.  均使用单次访问的方式, url1直接设定 -x, url2设定单页内容 5000条
+ * 目前使用实现1. 两个url基本相同.  均使用单次访问的方式, url1直接设定 -x, url2设定单页内容 5000条
+ * @warning 因保存到数据库, 所以需要判定当前api获取得到的分时成交是 "昨日" 还是 "今日的", 具体哪一天的?
+ * 假设api数据于 每日 01:00:00 刷新为空, 将于9:25:02 刷新第一条今日数据! 则 01:00:00 前启动将保存到昨天数据库.
+ * 因此在为 00:00 - 01:00:00 (刷新时刻) 之间, 不可运行抓取程序. 因此 -->
+ * @noti 本类实现, 将在每一轮, 自动判定数据应当保存在 "昨日"还是"今日"数据库, 且切换时, 首先将所有数据设置为空df. 以免重复.
+ * @warning 见静态属性 sleepNoFetchDateTimeRange(将在此期间暂停). 时间后建立"今日"数据表, 时间前保存到昨日数据表, 时间中sleep(1000)
+ * @warning sleepNoFetchDateTimeRange 的两个时间, 均代表 "今天的某个时间区间", 不代表昨天的
+ * @warning 因自动切换隔天, 因此仅 stop机制, 无 restart机制
  * @date 2021/12/21/021-15:26:04
  * @see StockApi.getFSTransaction()
  */
@@ -51,7 +59,16 @@ public class FsTransactionFetcher {
                         10, 32);
 
         fsTransactionFetcher.startFetch(); // 测试股票池
-        waitEnter();
+        fsTransactionFetcher.waitFirstEpochFinishForever();
+        fsTransactionFetcher.stopFetch(); // 软停止,且等待完成
+        fsTransactionFetcher.reStartFetch(); // 再次开始
+        Thread.sleep(100000);
+        fsTransactionFetcher.waitFirstEpochFinishForever();
+
+        Console.log(fsTransactionFetcher.getFsTransactionDatas());
+        Console.log(fsTransactionFetcher.getStockPool());
+
+
     }
 
     private static FsTransactionFetcher INSTANCE;
@@ -63,8 +80,7 @@ public class FsTransactionFetcher {
 
     public static FsTransactionFetcher getInstance(List<SecurityBeanEm> stockPool, long redundancyRecords,
                                                    String limitTick, int timeout, int logFreq,
-                                                   int threadPoolCorePoolSize)
-            throws SQLException, InterruptedException {
+                                                   int threadPoolCorePoolSize) {
         if (INSTANCE == null) {
             INSTANCE = new FsTransactionFetcher(stockPool, redundancyRecords, limitTick, timeout, logFreq,
                     threadPoolCorePoolSize);
@@ -81,8 +97,8 @@ public class FsTransactionFetcher {
 
 
     // 静态属性 设置项
-    // 7:00之前记为昨日,抓取数据存入昨日数据表. 09:00以后抓取今日, 期间程序sleep,等待到 09:00. 需要 0<1
-    public static final List<String> newDayTimeThreshold = Arrays.asList("07:00", "08:00");
+    // todo: 需要正确更新这个 隔天交替时间!
+    public static final List<String> sleepNoFetchDateTimeRange = Arrays.asList("07:00:00", "09:00:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
@@ -100,34 +116,45 @@ public class FsTransactionFetcher {
     private DateTime limitTick;
     private int timeout; // 单个http访问超时毫秒
     private final List<SecurityBeanEm> stockPool;
-    private String saveTableName; // 保存数据表名称
     private final int logFreq; // 分时图抓取多少次,log一次时间
     public int threadPoolCorePoolSize; // 线程池数量
 
+    private String saveTableName; // 保存数据表名称, 每一轮初始化, 使用 日期作为表名
+    private String preSaveTableName; // 保存上一次数据表名称, 初始 "", 将被判定隔日切换时, 从新空表获取已抓取数据
+    private volatile boolean running = false;
+
     private FsTransactionFetcher(List<SecurityBeanEm> stockPool, long redundancyRecords,
-                                 String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize)
-            throws SQLException, InterruptedException {
+                                 String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize) {
         // 4项全默认值
-        this.processes = new ConcurrentHashMap<>();
-        this.fsTransactionDatas = new ConcurrentHashMap<>();
+        this.processes = new ConcurrentHashMap<>(); // 自动设置 00:00:00 作为初始
+        this.fsTransactionDatas = new ConcurrentHashMap<>(); // 将自动设置空df
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
 
-        // yyyy-MM-dd HH:mm:ss.SSS // 决定保存数据表
-        this.saveTableName = DateUtil.format(DateUtil.date(), "yyyyMMdd"); // 今日, tushare 通用格式
-        if (newDayDecide()) {
-            this.saveTableName = TushareApi.getPreTradeDate(saveTableName); // 查找上一个交易日 作为数据表名称
-        }
-
         // 4项可设定
-        this.stockPool = stockPool;
+        HashSet<SecurityBeanEm> temp = new HashSet<>(stockPool);
+        temp.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
+        this.stockPool = new CopyOnWriteArrayList<>(temp);
         this.redundancyRecords = redundancyRecords; // 10
         this.limitTick = DateUtil.parse(DateUtil.today() + " " + limitTick); // "15:10:00"
         this.timeout = timeout; // 1000
         this.logFreq = logFreq;
         this.threadPoolCorePoolSize = threadPoolCorePoolSize;
+
+        this.saveTableName = null; // 将每轮自动设定
+        this.preSaveTableName = ""; // 将在隔日切换时
     }
 
+    /**
+     * 可停止后重启
+     */
+    public void reStartFetch() {
+        if (this.running) {
+            log.error("FSTransFetcher 正在运行中, 无法再次开始, 调用 stopFetch() 后可停止, 方可再次开始");
+            return;
+        }
+        startFetch();
+    }
 
     public void startFetch() {
         Thread fsFetchTask = new Thread(new Runnable() {
@@ -145,29 +172,53 @@ public class FsTransactionFetcher {
     }
 
     private void startFetch0() throws Exception {
-        initThreadPool(threadPoolCorePoolSize); // 懒加载一次
-        createSaveTable(saveTableName);
-        initProcessAndRawDatas(saveTableName);
-
         log.warn("start: 开始抓取数据,股票池数量: {}", stockPool.size());
+        this.running = true;
         TimeInterval timer = DateUtil.timer();
         timer.start();
-
         int epoch = 0; // 抓取轮次, 控制 log 频率
         while (!stopFetch) {
+            initThreadPool(threadPoolCorePoolSize); // 懒加载一次
+            newDayDecide(); // 决定是否是新的一天, 将可能设定或者更新 saveTableName 字段, 该字段为null时表示隔天切换, sleep
+            if (saveTableName == null) {
+                String today = DateUtil.today();
+                DateTime now = DateUtil.date(); // now, 即使这一刻过 00:00:00, 影响不大, 因sleep 使用 abs值, 极小
+                DateTime thresholdAfter = DateUtil.parse(today + " " + sleepNoFetchDateTimeRange.get(1));
+                long sleepMs = DateUtil.between(now, thresholdAfter, DateUnit.MS, true); // 需要abs
+                log.error("show: wait: 当前时间介于昨日今日判定阈值{}之间, 需要 sleep: {} s",
+                        sleepNoFetchDateTimeRange, ((double) sleepMs) / 1000);
+                if (sleepMs < 10000) { // 将会10s一次
+                    Thread.sleep(sleepMs);
+                } else {
+                    Thread.sleep(10000);
+                }
+                continue;
+            }
+            createSaveTable(saveTableName); // 此时若在前一天则saveTableName不变, 否则新的一天. 建表将查询已建表缓存.
+            if (!preSaveTableName.equals(saveTableName)) { // 隔日切换 以及 第一次初始化时
+                initProcessAndRawDatas(saveTableName);
+                preSaveTableName = saveTableName;
+                epoch = 0;
+                timer.restart();
+            }
+
             epoch++;
-            List<Future<Void>> futures = new ArrayList<>();
+            List<Future<Boolean>> futures = new ArrayList<>();
             for (SecurityBeanEm stock : stockPool) {
-                Future<Void> f = threadPoolOfFetch
+                Future<Boolean> f = threadPoolOfFetch
                         .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
             }
-            for (Future<Void> future : futures) {
-                future.get();
+
+            boolean allSuccess = true;
+            for (Future<Boolean> future : futures) {
+                boolean success = future.get();
+                if (!success) {
+                    allSuccess = false;
+                }
             }
-            if (!firstTimeFinish.get()) {
+            if (!firstTimeFinish.get() && allSuccess) {
                 log.warn("finish first: 首次抓取完成...");
-//                Console.log(this.getFsTransactionDatas());
                 firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
             }
             if (epoch % logFreq == 0) {
@@ -175,8 +226,13 @@ public class FsTransactionFetcher {
                 log.info("finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
             }
         }
+        this.stopFetch = false;
+        this.firstTimeFinish = new AtomicBoolean(false); // 首次完成flag也重置
         threadPoolOfFetch.shutdown();
         threadPoolOfSave.shutdown();
+        threadPoolOfFetch = null;
+        threadPoolOfSave = null;
+        this.running = false;
     }
 
     /**
@@ -192,49 +248,42 @@ public class FsTransactionFetcher {
                             .equals(stock.getMarket().toString()));
             datasOfOneStock = datasOfOneStock.sortBy("time_tick"); // 保证有序
             fsTransactionDatas.put(stock, datasOfOneStock); // 可空
-            processes.putIfAbsent(stock, "09:00:00"); // 默认值
-
+            processes.putIfAbsent(stock, "00:00:00"); // 默认值
             List<String> timeTicks = DataFrameS.getColAsStringList(datasOfOneStock, "time_tick");
             Optional<String> maxTick = timeTicks.stream().max(Comparator.naturalOrder());
             maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
         }
+
         log.warn("init process And datas: 初始化完成");
     }
 
 
-    private boolean newDayDecide() throws InterruptedException, SQLException {
+    @SneakyThrows
+    private void newDayDecide() {
         DateTime now = DateUtil.date();
         String today = DateUtil.today();
-        DateTime thresholdBefore = DateUtil.parse(today + " " + newDayTimeThreshold.get(0));
-        DateTime thresholdAfter = DateUtil.parse(today + " " + newDayTimeThreshold.get(1));
+        DateTime thresholdBefore = DateUtil.parse(today + " " + sleepNoFetchDateTimeRange.get(0));
+        DateTime thresholdAfter = DateUtil.parse(today + " " + sleepNoFetchDateTimeRange.get(1));
 
-        long gtBefore = DateUtil.between(thresholdBefore, now, DateUnit.SECOND, false); // 比下限大
-        long ltAfter = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false); // 比上限小
+        boolean beforeLowLimit = DateUtil.between(now, thresholdBefore, DateUnit.SECOND, false) >= 0; // 比下限小
+        boolean afterHighLimit = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false) <= 0;  // 比上限大
 
-        boolean res;
-        if (!TushareApi.isTradeDate(DateUtil.format(DateUtil.date(), "yyyyMMdd"))) {
+        if (!TushareApi.isTradeDate(DateUtil.format(now, "yyyyMMdd"))) {
             log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
-            return false;
+            this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
         }
-        if (gtBefore <= 0) {
-            res = false;
-        } else if (ltAfter <= 0) {
-            res = true;
+        if (beforeLowLimit) {
+            this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
+        } else if (afterHighLimit) {
+            this.saveTableName = today.replace("-", "");
         } else {
-            // 此时介于两者之间, 应当等待到 今日开始的时间阈值
-            log.error("wait: 当前时间介于昨日今日判定阈值设定之间, 需等待到: {}, 等待时间: {} 秒 / {}小时",
-                    newDayTimeThreshold.get(1), ltAfter, ((double) ltAfter) / 3600);
-            log.warn("waiting ...");
-            Thread.sleep(ltAfter * 1000);
-            res = true;
+            // 此时介于两者之间, 应当等待到今日开始的时间阈值
+            this.saveTableName = null; // 设置空表示应当sleep
         }
-        if (res) {
-            log.warn("date decide: 依据设定,应当抓取今日数据");
-        } else {
-            log.warn("date decide: 依据设定,应当抓取上一交易日数据");
-        }
-        return res;
     }
+
+
+    public static CopyOnWriteArraySet<String> alreadyCreatedTableName = new CopyOnWriteArraySet<>();
 
     /**
      * 手动建表, 以防多线程  df.to_sql 错误;  全字段索引
@@ -243,6 +292,9 @@ public class FsTransactionFetcher {
      * @throws Exception
      */
     public static void createSaveTable(String saveTableName) throws Exception {
+        if (alreadyCreatedTableName.contains(saveTableName)) {
+            return; // 建过的表无视
+        }
         String sql = StrUtilS.format("create table if not exists `{}`\n" +
                 "        (\n" +
                 "            stock_code varchar(128)   null,\n" +
@@ -259,6 +311,7 @@ public class FsTransactionFetcher {
                 "            index vol_index (vol ASC)\n" +
                 "        );", saveTableName);
         execSql(sql, connSave);
+        alreadyCreatedTableName.add(saveTableName);
         log.info("create table: 创建数据表成功: {}", saveTableName);
     }
 
@@ -285,9 +338,32 @@ public class FsTransactionFetcher {
     public void stopFetch() {
         // 关闭线程池即可
         stopFetch = true;
+        waitStopFetchSuccess();
     }
 
-    public static class FetchOneStockTask implements Callable<Void> {
+
+    /**
+     * 等待关闭完成, 等待关闭时那一轮执行完成
+     */
+    private void waitStopFetchSuccess() {
+        try {
+            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, "fs_trans 停止抓取");
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
+        waitUtil(() -> this.getFirstTimeFinish().get(), timeout, 10, "第一次tick数据抓取完成");
+    }
+
+    public void waitFirstEpochFinishForever() throws TimeoutException, InterruptedException {
+        waitFirstEpochFinish(Integer.MAX_VALUE);
+    }
+
+    public static class FetchOneStockTask implements Callable<Boolean> {
         SecurityBeanEm stock;
         FsTransactionFetcher fetcher;
 
@@ -303,28 +379,30 @@ public class FsTransactionFetcher {
          * @throws Exception
          */
         @Override
-        public Void call() throws Exception {
+        public Boolean call() {
             String process = fetcher.getProcesses().get(stock); // 进度, time_tick表示
             DataFrame<Object> dataOriginal = fetcher.getFsTransactionDatas().get(stock); // 原全数据.
             // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
             int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + fetcher.getRedundancyRecords());
-            DataFrame<Object> dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
-                    stock.getMarket(), fetcher.timeout);
+
+            DataFrame<Object> dfNew = null;
+            try {
+                dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
+                        stock.getMarket(), fetcher.timeout);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
             // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
             HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameS.getColAsStringList(dataOriginal,
                     "time_tick"));
             // @noti: 分时有序: 取决于初始化时排序, 且纯新增数据有序后连接
             DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
                     .sortBy("time_tick");
-
+            // 实测使用concat不比遍历添加行慢
             DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-//            DataFrame<Object> dfCurrentAll = dataOriginal;
-//            for (int i = 0; i < dfTemp.length(); i++) {
-//                dfCurrentAll.append(dfTemp.row(i));
-//            }
 
-
-            if (dfTemp.length() > 0) { // 若存在纯新数据
+            if (dfTemp.length() > 0) { // 若存在纯新数据, 保存到数据库
                 threadPoolOfSave.submit(() -> {
                     try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
                         DataFrameS.toSql(dfTemp, fetcher.saveTableName, connSave, "append", null);
@@ -335,7 +413,8 @@ public class FsTransactionFetcher {
             }
             // 有序判定
             // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
-            fetcher.getFsTransactionDatas().put(stock, dfCurrentAll);
+
+            fetcher.getFsTransactionDatas().put(stock, dfCurrentAll); // 真实更新
             Optional<String> processNew =
                     (DataFrameS.getColAsStringList(dfCurrentAll, "time_tick")).stream()
                             .max(Comparator.naturalOrder());
@@ -343,10 +422,10 @@ public class FsTransactionFetcher {
                 fetcher.getProcesses().put(stock, processNew.get());
             } else {
                 // 例如停牌则没有数据
-                fetcher.getProcesses().put(stock, "09:00:00");
+                fetcher.getProcesses().put(stock, "00:00:00");
             }
             log.debug("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
-            return null;
+            return true;
         }
 
         public long calcCountsBetweenNowAndProcess(String process) {

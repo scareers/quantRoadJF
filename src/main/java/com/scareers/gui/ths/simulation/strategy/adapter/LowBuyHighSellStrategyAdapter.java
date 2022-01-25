@@ -536,6 +536,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         if (nowTime.compareTo("09:25:00") <= 0) {
             return false; // 集合竞价之前
         }
+        //System.out.println(nowTime); // 09:28:10
         if (nowTime.compareTo("09:25:00") > 0 && nowTime.compareTo("09:30:00") < 0) {
             // 集合竞价结束后的五分钟, 应当 集合竞价处理
             return true; // 固定返回true, 将整个5分钟均视为卖点, 但因相同股票卖单互斥, 因此不会重复下单.
@@ -588,10 +589,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> fsLastMinute = getCurrentMinuteAll(fsTransDf, tickWithSecond0);
 
         // 获取最新一分钟所有 成交记录. 价格列
-        if (fsLastMinute.size() == 0) { // 未能获取到最新一分钟数据,返回false
+        if (fsLastMinute.size() <= 0) { // 未能获取到最新一分钟数据,返回false
             return false;
         }
         List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
+        if (pricesLastMinute.size() <= 0) {
+            return false;
+        }
         if (pricesLastMinute.get(pricesLastMinute.size() - 1) >= lastFsClose) {
             return false; // 最新价格必须 < 上一分时收盘, 否则无视.
         }
@@ -790,7 +794,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功: 已全部成交");
                 trader.successFinishOrder(order, responses);
             } else {
-                if (order.isAfterAuctionFirst()) { // 非集合竞价后首订单, 依据check延时设定
+                if (!order.isAfterAuctionFirst()) { // 非集合竞价后首订单, 依据check延时设定
                     long checkTimeElapsed = DateUtil
                             .between(order.getLastLifePoint().getGenerateTime(), DateUtil.date(),
                                     DateUnit.MS, true); // checking 状态持续了多少 ms??

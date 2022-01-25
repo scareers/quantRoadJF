@@ -102,7 +102,7 @@ public class StockApi {
         // 15:00:x 正常df
         // 23:50:x 正常df
 
-        Console.log(getQuoteHistorySingle("000001", null, null, "1", "qfq", 3));
+        Console.log(getFs1MToday("000001", false, 0, 2000));
         // 1分钟分时图
         // 00:00
         // 06:00
@@ -358,9 +358,9 @@ public class StockApi {
      * @noti: 8:55  details字段已经重置为 [] 空列表  todo: 时间限制更严格
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
-                                                     Integer market, int timeout) {
+                                                     Integer market, int timeout) throws Exception {
         List<String> columns = Arrays.asList("stock_code", "market", "time_tick", "price", "vol", "bs");
-        DataFrame<Object> res = new DataFrame<>(columns);
+        DataFrame<Object> res;
         String keyUrl = "https://push2.eastmoney.com/api/qt/stock/details/get";
         String response;
         try {
@@ -376,9 +376,8 @@ public class StockApi {
 
             response = getAsStrUseHutool(keyUrl, params, timeout, 1);
         } catch (Exception e) {
-            // e.printStackTrace();
             log.error("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
-            return res;
+            throw e;
         }
 
         try {
@@ -386,16 +385,16 @@ public class StockApi {
                     Arrays.asList("data", "details"), String.class, Arrays.asList(3),
                     Arrays.asList(stockCodeSimple, market));
         } catch (Exception e) {
-            e.printStackTrace();
             log.warn("get exception: 获取数据错误. stock: {}.{}", market, stockCodeSimple);
             log.warn("raw data: 原始响应字符串: {}", response);
+            throw e;
         }
         return res;
     }
 
 
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
-                                                     Integer market) {
+                                                     Integer market) throws Exception {
         return getFSTransaction(lastRecordAmounts, stockCodeSimple, market, DEFAULT_TIMEOUT);
     }
 
@@ -599,7 +598,7 @@ public class StockApi {
         params.put("fqt", fq);
 
         String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
-        String response = null;
+        String response;
         try {
             response = getAsStrUseHutool(url, params, timeout, retrySingle);
         } catch (Exception e) {
@@ -655,6 +654,19 @@ public class StockApi {
                                                           int retrySingle)
             throws Exception {
         return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false, 2000);
+    }
+
+    /**
+     * @param stock
+     * @param isIndex
+     * @param retrySingle
+     * @param timeout
+     * @return 1分钟分时图当日; 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
+     * @throws Exception
+     */
+    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout)
+            throws Exception {
+        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout);
     }
 
     /**

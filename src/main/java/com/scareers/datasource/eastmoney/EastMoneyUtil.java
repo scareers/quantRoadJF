@@ -70,7 +70,7 @@ public class EastMoneyUtil {
     }
 
     /**
-     * get 快捷;  将最多重试三次抛出异常
+     * get 快捷;  retry 代表: 失败后最多重试几次? 因此最多可能执行 1+retry次
      *
      * @param url
      * @param params
@@ -94,7 +94,7 @@ public class EastMoneyUtil {
                                 .header(Header.REFERER, HEADER_VALUE_OF_REFERER);
                 res = request.execute().body();
             } catch (Exception e) {
-                if (i >= retry) {
+                if (i > retry) {
                     throw e;
                 }
             }
@@ -125,7 +125,7 @@ public class EastMoneyUtil {
             try {
                 res = addDefaultSettings(HttpRequest.get(url), timeout).form(params).body();
             } catch (Exception e) {
-                if (i >= retry) {
+                if (i > retry) {
                     throw e;
                 }
             }

@@ -15,6 +15,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -107,9 +108,10 @@ public class OrderListAndDetailPanel extends JPanel {
                                 }
                                 temp.add(simpleOrders.get(i)); // 前面的非账户监控的所有
                             }
-                            currentOrderListShouldDisplay = // 最新20
-                                    new Vector(simpleOrders
+                            temp.addAll(
+                                    simpleOrders
                                             .subList(simpleOrders.size() - remainDisplayCount, simpleOrders.size()));
+                            currentOrderListShouldDisplay = temp;
                         } else {
                             currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
                         }
