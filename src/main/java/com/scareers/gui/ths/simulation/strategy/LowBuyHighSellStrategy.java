@@ -126,7 +126,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     private List<String> stockSelectedToday;
 
     private Trader trader;
-    public ConcurrentHashMap<String, List<Double>> priceLimitMap; // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
+    public ConcurrentHashMap<String, List<Double>> priceLimitMap=new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
     public LowBuyHighSellStrategy(Trader trader, String strategyName,
                                   List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.

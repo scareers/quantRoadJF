@@ -257,11 +257,12 @@ public class TraderGui extends JFrame {
             //捕获窗口最小化事件
             @Override
             public void windowIconified(WindowEvent e) {
-                if (SystemTray.isSupported()) {
-                    setVisible(false);
-                } else {
-                    // 默认行为, 最小化到任务栏
-                }
+//                if (SystemTray.isSupported()) {
+//                    setVisible(false);
+//
+//                } else {
+//                     默认行为, 最小化到任务栏
+//                }
             }
         });
 

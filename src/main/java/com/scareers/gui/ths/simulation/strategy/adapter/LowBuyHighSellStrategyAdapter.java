@@ -442,6 +442,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
         final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
         // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
+        if (fsDf.length() == 0) { // 不到 9:25
+            return false;
+        }
         fsDf = dropAfter1Fs(fsDf, nowStr); // 将最后1行 fs记录去掉
 
         // 计算连续下降数量
@@ -540,6 +543,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
         // 此时已经 9:30:0+ 开盘
         final String nowStr = DateUtil.date().toString(DatePattern.NORM_DATETIME_MINUTE_PATTERN); // 2022-01-20 11:30
+        if (fsCurrent.length() == 0) {
+            return false;
+        }
         DataFrame<Object> fsDf = dropAfter1Fs(fsCurrent, nowStr);
         // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
         // 将最后1行 fs记录去掉

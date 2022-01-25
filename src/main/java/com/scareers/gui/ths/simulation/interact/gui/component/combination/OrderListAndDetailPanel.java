@@ -1,20 +1,17 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.ObjectTreeWindow;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.OrderSimple;
+import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -40,7 +37,7 @@ public class OrderListAndDetailPanel extends JPanel {
     // 股票列表池, 分为不同 Type. 将读取 objectPool 所有key(已注册的类型), 对对应key更新列表, 保存入 map.
     public static volatile Vector<OrderSimple> currentOrderListShouldDisplay = new Vector<>(
             Arrays.asList(OrderSimple.getDummyOrderSimple()));
-    public static int maxDisplayCount = 15;
+    public static int remainDisplayCount = 20; // 显示最新20全部,以及此前的所有非账户信息监控
 
     /**
      * 单例模式
@@ -102,10 +99,17 @@ public class OrderListAndDetailPanel extends JPanel {
                             simpleOrders.add(OrderSimple.getDummyOrderSimple());
                         }
                         Collections.sort(simpleOrders); // 有序
-                        if (simpleOrders.size() > maxDisplayCount) {
-                            currentOrderListShouldDisplay =
+                        if (simpleOrders.size() > remainDisplayCount) {
+                            Vector<OrderSimple> temp = new Vector<>();
+                            for (int i = 0; i < simpleOrders.size() - remainDisplayCount; i++) {
+                                if (AccountStates.ORDER_TYPES.contains(simpleOrders.get(i).getOrderType())) {
+                                    continue;
+                                }
+                                temp.add(simpleOrders.get(i)); // 前面的非账户监控的所有
+                            }
+                            currentOrderListShouldDisplay = // 最新20
                                     new Vector(simpleOrders
-                                            .subList(simpleOrders.size() - maxDisplayCount, simpleOrders.size()));
+                                            .subList(simpleOrders.size() - remainDisplayCount, simpleOrders.size()));
                         } else {
                             currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
                         }
