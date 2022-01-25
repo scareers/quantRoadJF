@@ -141,7 +141,7 @@ public class Trader {
 
         trader.manualInteractive(); // 开始交互, 必须死循环.
         trader.closeDualChannelAndConn(); // 关闭连接
-        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
+//        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
     }
 
     // 属性: 4大队列, 将初始化为 空队列/map

@@ -24,6 +24,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 /**
  * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas属性
  *
+ * @author admin
  * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
  * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
  * 直到时间超过 9:31:xx, 将出现第二条记录 9:32:xx.
@@ -240,7 +241,7 @@ public class FsFetcher {
      * @throws TimeoutException
      * @throws InterruptedException
      */
-    public void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
+    private void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
         waitUtil(() -> this.getFirstTimeFinish().get(), timeout, 10, "第一次tick数据抓取完成");
     }
 
@@ -290,8 +291,10 @@ public class FsFetcher {
      */
 
     /**
+     * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	股票代码	股票名称
+     *
      * @param stockOrIndex
-     * @return 单股票/指数今日完整分时图 df; 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return 单股票/指数今日完整分时图 df;
      */
     public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
         DataFrame<Object> res = INSTANCE.fsDatas.get(stockOrIndex);
@@ -302,8 +305,10 @@ public class FsFetcher {
     }
 
     /**
+     * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     *
      * @param stockCodeSimple 6为简单股票代码,必须股票,不可指数
-     * @return 获取单股票 完整分时图df; 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return 获取单股票 完整分时图df;
      */
     public static Optional<DataFrame<Object>> getDf(String stockCodeSimple) {
         SecurityBeanEm stock;
@@ -317,27 +322,30 @@ public class FsFetcher {
     }
 
     /**
-     * @return 上证指数df; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     *
+     * @return 上证指数df;
      */
     public static Optional<DataFrame<Object>> getShangZhengZhiShuDf() {
         return getDf(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
     }
 
     /**
-     * @return 深证成指df; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     *
+     * @return 深证成指df;
      */
     public static Optional<DataFrame<Object>> getShenZhengChengZhiDf() {
         return getDf(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
     }
 
     /**
-     * 直接采用倒数 2行, 当然 9:31:00之前 返回 唯一一行的close;
-     * 因该api底层 9:40:xx 将显示 到 9:41 的分时行.
      * 本方法获取 已经确定的最后一个close, 本质是获取 9:40 这一行的close. 即倒数第二行.
-     * 不采用df.select, 速度极慢
-     * 也不采用传递 nowStr的方式, 这样即使相差n微秒(极短时间), 也能获取真正的 确定了的 最后1分时k线的 close
+     * 直接采用倒数 2行, 当然 9:31:00之前 返回 唯一一行的close;;
+     * 因该api底层 9:40:xx 将显示 到 9:41 的分时行.
+     * 不采用传递 nowStr的方式, 这样即使相差n微秒(极短时间), 也能获取真正的 确定了的 最后1分时k线的 close
      * 也不采用获取当前时间去秒数的方式
-     * 直接采用倒数 2行, 更符合确定的含义
+     * 直接采用倒数 2行, 更符合确定的含义 - CertainLastClose
      *
      * @param stockOrIndex
      * @return 返回已确定的最后一个close价格, 常常为倒数第二行
@@ -349,12 +357,13 @@ public class FsFetcher {
             List<Object> closes = dfTemp.get().col("收盘");
             return Optional.of(Double.valueOf(closes.get(Math.max(0, closes.size() - 1)).toString()));
         }
+        getCertainLastClosePrice()
         return Optional.empty();
     }
 
     /**
      * @param stockOrIndex 股票
-     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式
+     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式,用到小时和分钟意义
      * @return 给定时间tick的close价格, 默认倒序查找, 正序查找请传递 reverseFind=false
      */
     public static Optional<Double> getClosePriceByTimeTick(SecurityBeanEm stockOrIndex, String tickStr) {
