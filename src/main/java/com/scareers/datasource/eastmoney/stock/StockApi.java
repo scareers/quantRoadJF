@@ -28,7 +28,7 @@ import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIME
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
- * description:
+ * description: 东方财富股票 相关api; 可选底层http实现: hutool.http 或者 Kevin 库, 某些api仅其中之一可正常访问.
  *
  * @author: admin
  * @date: 2021/12/21/021-22:10:19
@@ -40,7 +40,7 @@ public class StockApi {
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
     public static Cache<String, DataFrame<Object>> getQuoteHistorySingleCache = CacheUtil.newLRUCache(1024,
-            24 * 3600 * 1000);//k线
+            24 * 3600 * 1000); // k线
 
     public static ThreadPoolExecutor poolExecutor;
 
@@ -62,7 +62,7 @@ public class StockApi {
         //7 23.50 ok
         Console.log(getFSTransaction(120, "000001", 1, 1000).toString(250));
         // 分时成交:
-        // 00:00
+        // 02:11 昨日df
         // 06:00
         // 08:55 得到空df,
         // 09:10
@@ -85,7 +85,7 @@ public class StockApi {
         Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
         // 实时截面数据
         // 00:00
-        // 06:00
+        // 02:10 昨日df
         // 08:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用. 其他数值字段用 - 填充, 将解析失败
         // 09:10
         // 09:14:x 占位df
@@ -104,7 +104,7 @@ public class StockApi {
 
         Console.log(getFs1MToday("000001", false, 0, 2000));
         // 1分钟分时图
-        // 00:00
+        // 02:10 昨日df
         // 06:00
         // 08:55
         // 09:10
@@ -126,7 +126,7 @@ public class StockApi {
         Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
         // 日k线
         // 00:00
-        // 06:00
+        // 02:10 截至昨天df
         // 08:55 截至昨天df
         // 09:14:x 截至昨天df
         // 09:15:x 截至昨天df

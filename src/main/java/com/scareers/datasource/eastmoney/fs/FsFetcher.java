@@ -22,18 +22,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
- * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas属性
+ * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas 属性
  *
  * @author admin
- * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
- * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
- * 直到时间超过 9:31:xx, 将出现第二条记录 9:32:xx.
- * 即: 集合竞价与 9:30:xx 均作为 9:31 这一条fs K线图(不断更新).
  * @noti 字段列表: 日期	            开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
  * @noti 数据实例: 2022-01-25 09:31	17.08	17.02	17.08	17.02	11145	19006426.00	0.35	-1.05	-0.18	0.01	000001	平安银行
+ * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
+ * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
+ * 直到时间超过 9:31:xx, 将出现第二条记录 9:32
+ * 即: 集合竞价与 9:30:xx 均作为 9:31 这一条fs K线图(不断更新).
  * @noti 时间字段完整格式:  yyyy-MM-dd HH:mm       // DatePattern.NORM_DATETIME_MINUTE_PATTERN
- * @noti 单次访问http将 retry==0; 失败返回null, 不进行重试
- * @noti 内部stockPool 自动添加两大指数, 且去重, 线程安全, 保证可以动态添加, 减少股票
+ * @noti 单次访问http将 retry==0; 失败返回null,不进行重试
+ * @noti 内部 stockPool 自动添加两大指数, 且去重, 线程安全, 保证可以动态添加, 减少股票
  * @warning 因1分分时图api十分方便, 且并不保存到数据库, 且全量更新, 因此不对启动时间做过多限制. 启动时间由调用方保证合理
  * @see StockApi.getFs1MToday()
  */
@@ -357,7 +357,6 @@ public class FsFetcher {
             List<Object> closes = dfTemp.get().col("收盘");
             return Optional.of(Double.valueOf(closes.get(Math.max(0, closes.size() - 1)).toString()));
         }
-        getCertainLastClosePrice()
         return Optional.empty();
     }
 

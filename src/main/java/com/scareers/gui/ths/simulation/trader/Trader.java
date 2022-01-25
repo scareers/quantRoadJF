@@ -136,7 +136,7 @@ public class Trader {
 
         // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
         waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
-        fsFetcher.waitFirstEpochFinish(3600 * 1000);
+        fsFetcher.waitFirstEpochFinishForever();
         mainStrategy.startDealWith();
 
         trader.manualInteractive(); // 开始交互, 必须死循环.
