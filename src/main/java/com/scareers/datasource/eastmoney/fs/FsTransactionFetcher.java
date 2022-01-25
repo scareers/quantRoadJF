@@ -62,8 +62,10 @@ public class FsTransactionFetcher {
         fsTransactionFetcher.waitFirstEpochFinishForever();
         fsTransactionFetcher.stopFetch(); // 软停止,且等待完成
         fsTransactionFetcher.reStartFetch(); // 再次开始
-        Thread.sleep(100000);
         fsTransactionFetcher.waitFirstEpochFinishForever();
+
+        fsTransactionFetcher.stopFetch();
+        fsTransactionFetcher.waitSaveOk();
 
         Console.log(fsTransactionFetcher.getFsTransactionDatas());
         Console.log(fsTransactionFetcher.getStockPool());
@@ -230,8 +232,9 @@ public class FsTransactionFetcher {
         this.firstTimeFinish = new AtomicBoolean(false); // 首次完成flag也重置
         threadPoolOfFetch.shutdown();
         threadPoolOfSave.shutdown();
-        threadPoolOfFetch = null;
-        threadPoolOfSave = null;
+        //threadPoolOfFetch = null;
+        //threadPoolOfSave = null; // 因为需要等待 保存线程池保存ok; 这里不重置null;
+        // init线程池处, 对 threadPool.isShutDown() 也进行了判定
         this.running = false;
     }
 
@@ -317,7 +320,7 @@ public class FsTransactionFetcher {
 
 
     public static void initThreadPool(int threadPoolCorePoolSize) {
-        if (threadPoolOfFetch == null) {
+        if (threadPoolOfFetch == null || threadPoolOfFetch.isShutdown()) {
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -325,7 +328,7 @@ public class FsTransactionFetcher {
             );
             log.debug("init threadPoolOfFetch: 初始化Fetch线程池完成,核心线程数量: {}", threadPoolCorePoolSize);
         }
-        if (threadPoolOfSave == null) { // 保存线程相同数量, 否则将成为瓶颈
+        if (threadPoolOfSave == null || threadPoolOfSave.isShutdown()) { // 保存线程相同数量, 否则将成为瓶颈
             threadPoolOfSave = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -335,7 +338,7 @@ public class FsTransactionFetcher {
         }
     }
 
-    public void stopFetch() {
+    private void stopFetch() {
         // 关闭线程池即可
         stopFetch = true;
         waitStopFetchSuccess();
@@ -362,6 +365,19 @@ public class FsTransactionFetcher {
     public void waitFirstEpochFinishForever() throws TimeoutException, InterruptedException {
         waitFirstEpochFinish(Integer.MAX_VALUE);
     }
+
+    /**
+     * 等待保存线程池保存任务彻底完成, 注意, 需要先调用 stopFetch(), 将使得线程池 shutDown, 才能调用 isTerminated()
+     * 这是线程池 isTerminated() 所要求
+     *
+     * @throws TimeoutException
+     * @throws InterruptedException
+     */
+    private void waitSaveOk() throws TimeoutException, InterruptedException {
+        waitUtil(() -> threadPoolOfSave.isTerminated(), 200000, 10, "保存完成");
+    }
+
+
 
     public static class FetchOneStockTask implements Callable<Boolean> {
         SecurityBeanEm stock;
