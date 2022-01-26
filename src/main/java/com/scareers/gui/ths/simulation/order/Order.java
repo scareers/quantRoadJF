@@ -4,6 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -455,22 +456,38 @@ public class Order implements Comparable, Serializable {
         return false;
     }
 
+    public boolean isBuyOrder() {
+        return "buy".equals(this.orderType);
+    }
+
+    public boolean isSellOrder() {
+        return "sell".equals(this.orderType);
+    }
+
+    public boolean isBuyOrSellOrder() {
+        return isBuyOrder() || isSellOrder();
+    }
+
     /**
-     * 产生于 9:25 -- 9:30之间, 依据集合竞价数据, 产生第一比订单.
+     * 产生于 9:25 -- 9:30之间, 依据集合竞价数据, 产生第一笔订单.
+     * 仅 买卖订单 可设定
      *
      * @return
      */
     public boolean isAfterAuctionFirst() {
+        Assert.isTrue(isBuyOrSellOrder());
         return this.otherRawMessages.getOrDefault("afterAuctionFirst", Boolean.FALSE)
                 .equals(Boolean.TRUE);
     }
 
-    public void setAfterAuctionFirst(){
+    public void setAfterAuctionFirst() {
+        Assert.isTrue(isBuyOrSellOrder());
         this.otherRawMessages.put("afterAuctionFirst", Boolean.TRUE);
     }
 
 
     private static final Log log = LogUtil.getLogger();
+
 
     /**
      * 获取简单展示列表, gui JList 的model使用
@@ -485,6 +502,5 @@ public class Order implements Comparable, Serializable {
         }
         return res;
     }
-
 
 }
