@@ -76,7 +76,6 @@ public class OrderListAndDetailPanel extends JPanel {
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersWaitForExecution));
                         } else if (currentDataFlushType == Type.ORDER_ALL_MAP) {
-                            Trader.getAndStartInstance();
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersAllMap.keySet()));
                         } else if (currentDataFlushType == Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP) {

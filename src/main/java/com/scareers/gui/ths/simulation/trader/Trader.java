@@ -49,6 +49,7 @@ import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChan
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
+import static java.lang.Thread.MAX_PRIORITY;
 
 /**
  * description: ths 自动交易程序
@@ -69,13 +70,17 @@ public class Trader {
     public static Trader getAndStartInstance() throws Exception {
         // todo: 待完成
         if (INSTANCE == null) {
-            ThreadUtil.execAsync(new Runnable() {
+            Thread task = new Thread(new Runnable() {
                 @SneakyThrows
                 @Override
                 public void run() {
                     main0();
                 }
             });
+            task.setName("Trader");
+            task.setPriority(MAX_PRIORITY);
+            task.setDaemon(false);
+            task.start();
         }
         waitUtil(() -> INSTANCE != null, Integer.MAX_VALUE, 1, null, false);
         return INSTANCE;

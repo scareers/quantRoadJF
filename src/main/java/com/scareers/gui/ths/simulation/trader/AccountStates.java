@@ -54,9 +54,6 @@ public class AccountStates {
         return INSTANCE;
     }
 
-    public static final List<String> ORDER_TYPES = Arrays
-            .asList("get_account_funds_info", "get_hold_stocks_info", "get_unsolds_not_yet",
-                    "get_today_clinch_orders", "get_today_consign_orders"); // 常量,对应5项数据api
 
     // 实例属性
     public ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
@@ -95,14 +92,33 @@ public class AccountStates {
     }
 
     /**
+     * 可设定监控某几项, 对应需要修改 alreadyInitialized()
+     */
+    public static final List<String> ORDER_TYPES = Arrays
+            .asList(
+                    "get_account_funds_info",
+                    "get_hold_stocks_info",
+//                    "get_unsolds_not_yet",
+                    "get_today_clinch_orders"
+//                    "get_today_consign_orders"
+            ); // 常量,对应5项数据api
+
+    /**
      * 等待已被第一次初始化, Map做size()检测, 其余做非null检测
      *
      * @return 第一次是否初始化完成.
      */
     public boolean alreadyInitialized() {
-        return nineBaseFundsData
-                .size() > 0 && currentHolds != null
-                && canCancels != null && todayClinchs != null && todayConsigns != null;
+//        return nineBaseFundsData
+//                .size() > 0 && currentHolds != null
+//                && canCancels != null && todayClinchs != null && todayConsigns != null;
+
+        return nineBaseFundsData.size() > 0
+                && currentHolds != null
+//                && canCancels != null
+                && todayClinchs != null
+//                && todayConsigns != null
+                ;
     }
 
     public void waitFirstInitFinish() {

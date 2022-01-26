@@ -69,7 +69,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     public static double tickGap = 0.005;
 
     // 高卖参数
-    public static double indexBelongThatTimePriceEnhanceArgHighSell = 5.0;  // 指数当时价格加成--高卖
+    public static double indexBelongThatTimePriceEnhanceArgHighSell = 0.0;  // 指数当时价格加成--高卖
     public static double positionCalcKeyArgsOfCdfHighSell = 1.2; // cdf 倍率
     public static double execHighSellThreshold = -0.02; // 价格>=此值(百分比)才考虑卖出
     public static int continuousRaiseTickCountThreshold = 1; // 连续上升n个,本分钟下降
@@ -177,7 +177,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             if (hasMutualExclusionOfBuySellOrder(stock, "buy")) {
                 continue;
             }
-
             // 3.买点判定
             if (!isBuyPoint(stock, preClosePrice, stockBean)) {
                 continue;
@@ -303,6 +302,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     continue;
                 }
                 // todo: 强制卖出 14:57
+
 
                 // 2. 判定当前是否是卖点?
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
