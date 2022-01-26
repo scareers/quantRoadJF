@@ -6,6 +6,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
+import com.rabbitmq.client.Return;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
@@ -14,11 +15,15 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.poi.ss.formula.functions.T;
+import oshi.hardware.platform.linux.LinuxSoundCard;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+import static com.scareers.datasource.eastmoney.EastMoneyUtil.getColAsObject;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
@@ -45,10 +50,10 @@ public class FsFetcher {
                         1000,
                         10, 16, 100);
         fsFetcher.startFetch(); // 测试股票池
-        fsFetcher.waitFirstEpochFinishForever();
+        fsFetcher.waitFirstEpochFinish();
         fsFetcher.stopFetch(); // 软停止,且等待完成
         fsFetcher.reStartFetch(); // 再次开始
-        Thread.sleep(2000);
+        fsFetcher.waitFirstEpochFinish();
 
         Console.log(fsFetcher.getFsDatas().size());
         Console.log(fsFetcher.getStockPool().size());
@@ -63,9 +68,18 @@ public class FsFetcher {
         Console.log(FsFetcher.getValueByTimeTick(stock, "9:31:59", 2, false));
         Console.log(FsFetcher.getClosePriceByTimeTick(stock, "9:32"));
         Console.log(DataFrameS.getColAsDoubleList(dataFrame, "开盘"));
+
+        Console.log(FsFetcher.getColumnByColNameOrIndex(stock, 0));
+        Console.log(FsFetcher.getColumnByColNameOrIndex(stock, "开盘"));
+        Console.log(FsFetcher.getColumnByColNameOrIndexAsDouble(stock, "开盘"));
+        Console.log(FsFetcher.getColumnByColNameOrIndexAsString(stock, "日期"));
+
+        fsFetcher.stopFetch(); // 软停止,且等待完成
     }
 
-
+    /**
+     * 单例模式
+     */
     private static FsFetcher INSTANCE;
 
     public static FsFetcher getInstance() {
@@ -76,7 +90,7 @@ public class FsFetcher {
     public static FsFetcher getInstance(List<SecurityBeanEm> stockPool,
                                         int timeout, int logFreq,
                                         int threadPoolCorePoolSize,
-                                        int sleepPerEpoch) throws Exception {
+                                        int sleepPerEpoch) {
         if (INSTANCE == null) {
             INSTANCE = new FsFetcher(stockPool, timeout, logFreq,
                     threadPoolCorePoolSize, sleepPerEpoch);
@@ -118,7 +132,7 @@ public class FsFetcher {
         this.threadPoolCorePoolSize = threadPoolCorePoolSize;
         this.running = false;
         for (SecurityBeanEm stock : stockPool) {
-            this.fsDatas.put(stock, new DataFrame<>()); // 初始化置空, 使得不会访问到null, 最多空df
+            this.fsDatas.put(stock, new DataFrame<>()); // 数据初始化置空, 使得不会访问到null, 最多空df
         }
     }
 
@@ -134,9 +148,10 @@ public class FsFetcher {
     }
 
     /**
-     * 首次启动不会出现问题
+     * 首次启动, 新建线程启动, 调用方自行sleep, 否则将结束
      */
     public void startFetch() {
+        this.running = true;
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
@@ -181,7 +196,7 @@ public class FsFetcher {
             }
             if (!firstTimeFinish.get() && epochAllSuccess) { // 需要第一轮全部抓取成功,否则延后
                 log.warn("fs_1m finish first: 首次抓取完成...");
-                firstTimeFinish.compareAndSet(false, true); // 第一次设置true, 此后设置失败不报错
+                firstTimeFinish.compareAndSet(false, true); // 第一次成功设置true
             }
             if (epoch % logFreq == 0) {
                 epoch = 0;
@@ -192,7 +207,6 @@ public class FsFetcher {
         stopFetch = false; // 被停止后, 将stopFetch恢复为默认值false
         this.firstTimeFinish = new AtomicBoolean(false); // 首次完成flag也重置
         threadPoolOfFetch.shutdown();
-        threadPoolOfFetch = null;
         this.running = false; // 标志位
     }
 
@@ -202,7 +216,7 @@ public class FsFetcher {
      * @param threadPoolCorePoolSize
      */
     private static void initThreadPool(int threadPoolCorePoolSize) {
-        if (threadPoolOfFetch == null) {
+        if (threadPoolOfFetch == null || threadPoolOfFetch.isTerminated()) {
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(),
@@ -213,7 +227,7 @@ public class FsFetcher {
     }
 
     /**
-     * 软关闭死循环http访问的抓取逻辑. 且关闭线程池释放. 下次start将重新初始化线程池
+     * 软关闭死循环http访问的抓取逻辑. 且关闭线程池. 下次start将重新初始化线程池
      */
     public void stopFetch() {
         stopFetch = true;
@@ -225,7 +239,9 @@ public class FsFetcher {
      */
     private void waitStopFetchSuccess() {
         try {
-            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, "fs_1m 停止抓取");
+            waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null,false);
+            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null,false);
+            log.warn("FsFetcher: 停止抓取完成");
         } catch (TimeoutException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -241,13 +257,10 @@ public class FsFetcher {
      * @throws TimeoutException
      * @throws InterruptedException
      */
-    private void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
-        waitUtil(() -> this.getFirstTimeFinish().get(), timeout, 10, "第一次tick数据抓取完成");
+    public void waitFirstEpochFinish() throws TimeoutException, InterruptedException {
+        waitUtil(() -> this.getFirstTimeFinish().get(), Integer.MAX_VALUE, 10, "第一次tick数据抓取完成");
     }
 
-    public void waitFirstEpochFinishForever() throws TimeoutException, InterruptedException {
-        waitFirstEpochFinish(Integer.MAX_VALUE);
-    }
 
     private static class FetchOneStockTask implements Callable<Boolean> {
         SecurityBeanEm stock;
@@ -430,4 +443,77 @@ public class FsFetcher {
         }
         return Optional.empty();
     }
+
+    /**
+     * 给定股票bean和列名, 返回对应列.
+     *
+     * @param stockOrIndex   SecurityBeanEm
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return List<Object> 整列数据
+     */
+    public static Optional<List<Object>> getColumnByColNameOrIndex(SecurityBeanEm stockOrIndex,
+                                                                   Object colNameOrIndex) {
+        return getColAsObject(colNameOrIndex, getDf(stockOrIndex), log, stockOrIndex);
+    }
+
+    /**
+     * 返回 List<String> 列. 即将列元素转换为String;;
+     * 使用 Optional对象 map方法
+     *
+     * @param stockOrIndex
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return
+     */
+    public static Optional<List<String>> getColumnByColNameOrIndexAsString(SecurityBeanEm stockOrIndex,
+                                                                           Object colNameOrIndex) {
+        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(Object::toString).collect(Collectors.toList()));
+    }
+
+    /**
+     * 返回 List<Long> 列. 即将列元素转换为 Long;;
+     * 使用 Optional对象 map方法
+     *
+     * @param stockOrIndex
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return
+     */
+    public static Optional<List<Long>> getColumnByColNameOrIndexAsLong(SecurityBeanEm stockOrIndex,
+                                                                       Object colNameOrIndex) {
+        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Long.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * 返回 List<Integer> 列. 即将列元素转换为 Integer;;
+     * 使用 Optional对象 map方法
+     *
+     * @param stockOrIndex
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return
+     */
+    public static Optional<List<Integer>> getColumnByColNameOrIndexAsInteger(SecurityBeanEm stockOrIndex,
+                                                                             Object colNameOrIndex) {
+        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Integer.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * 返回 List<Double> 列. 即将列元素转换为 Double;;
+     * 使用 Optional对象 map方法
+     *
+     * @param stockOrIndex
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return
+     */
+    public static Optional<List<Double>> getColumnByColNameOrIndexAsDouble(SecurityBeanEm stockOrIndex,
+                                                                           Object colNameOrIndex) {
+        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Double.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+
 }

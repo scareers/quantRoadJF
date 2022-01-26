@@ -47,6 +47,7 @@ public class TushareApi {
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, String> preTradeDateCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
     public static HashMap<String, String> stockWithBoardAsMapCache;
 
 
@@ -472,14 +473,20 @@ public class TushareApi {
      * @return
      */
     public static boolean isTradeDate(String date) throws SQLException {
+        Boolean res = isTradeDateCache.get(date);
+        if (res != null) {
+            return res;
+        }
         String sql = StrUtil.format("select is_open from sds_trade_dates_tu_stock where cal_date='{}' and " +
                 "exchange='SSE'", date);
         DataFrame<Object> dataFrame = DataFrame.readSql(connLocalTushare, sql);
         if ("1".equals(dataFrame.get(0, 0).toString())) {
-            return true;
+            res = Boolean.TRUE;
         } else {
-            return false;
+            res = Boolean.FALSE;
         }
+        isTradeDateCache.put(date, res);
+        return res;
     }
 
 

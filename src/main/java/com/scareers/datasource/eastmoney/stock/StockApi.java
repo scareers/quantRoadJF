@@ -354,7 +354,7 @@ public class StockApi {
      * @param lastRecordAmounts 单页数量,
      * @param stockCodeSimple   股票/指数简单代码, 不再赘述
      * @param market            0 深市  1 沪市    (上交所暂时 0)
-     * @return 出错则返回空df, 不抛出异常
+     * @return 出错则抛出异常
      * @noti: 8:55  details字段已经重置为 [] 空列表  todo: 时间限制更严格
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,

@@ -23,7 +23,9 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+import static com.scareers.datasource.eastmoney.EastMoneyUtil.getColAsObject;
 import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
 import static com.scareers.utils.CommonUtil.waitUtil;
@@ -44,9 +46,10 @@ import static com.scareers.utils.SqlUtil.execSql;
  * 假设api数据于 每日 01:00:00 刷新为空, 将于9:25:02 刷新第一条今日数据! 则 01:00:00 前启动将保存到昨天数据库.
  * 因此在为 00:00 - 01:00:00 (刷新时刻) 之间, 不可运行抓取程序. 因此 -->
  * @noti 本类实现, 将在每一轮, 自动判定数据应当保存在 "昨日"还是"今日"数据库, 且切换时, 首先将所有数据设置为空df. 以免重复.
+ * @noti 列参考:       stock_code	market	time_tick	price	 vol	bs
+ * @noti 列数据实例:     000002    	0     	09:15:00 	20.82	 6   	4
  * @warning 见静态属性 sleepNoFetchDateTimeRange(将在此期间暂停). 时间后建立"今日"数据表, 时间前保存到昨日数据表, 时间中sleep(1000)
  * @warning sleepNoFetchDateTimeRange 的两个时间, 均代表 "今天的某个时间区间", 不代表昨天的
- * @warning 因自动切换隔天, 因此仅 stop机制, 无 restart机制
  * @date 2021/12/21/021-15:26:04
  * @see StockApi.getFSTransaction()
  */
@@ -59,18 +62,21 @@ public class FsTransactionFetcher {
                         10, 32);
 
         fsTransactionFetcher.startFetch(); // 测试股票池
-        fsTransactionFetcher.waitFirstEpochFinishForever();
+        fsTransactionFetcher.waitFirstEpochFinish();
         fsTransactionFetcher.stopFetch(); // 软停止,且等待完成
         fsTransactionFetcher.reStartFetch(); // 再次开始
-        fsTransactionFetcher.waitFirstEpochFinishForever();
+        fsTransactionFetcher.waitFirstEpochFinish();
+
+        Console.log(fsTransactionFetcher.getFsTransactionDatas().size());
+        Console.log(fsTransactionFetcher.getStockPool().size());
+        SecurityBeanEm stock = SecurityBeanEm.createStock("000002");
+
+        Console.log(FsTransactionFetcher.getDf(stock));
+        Console.log(FsTransactionFetcher.getColByColNameOrIndex(stock, "price"));
+        Console.log(FsTransactionFetcher.getColByColNameOrIndexAsDouble(stock, "price"));
+        Console.log(FsTransactionFetcher.getNewestPrice(stock));
 
         fsTransactionFetcher.stopFetch();
-        fsTransactionFetcher.waitSaveOk();
-
-        Console.log(fsTransactionFetcher.getFsTransactionDatas());
-        Console.log(fsTransactionFetcher.getStockPool());
-
-
     }
 
     private static FsTransactionFetcher INSTANCE;
@@ -89,14 +95,6 @@ public class FsTransactionFetcher {
         }
         return INSTANCE;
     }
-
-    public static Double getNewestPrice(SecurityBeanEm stock) {
-        DataFrame<Object> dfTemp = INSTANCE.getFsTransactionDatas().get(stock);
-        List<Object> priceCol = dfTemp.col("price");
-        return Double.valueOf(priceCol.get(priceCol.size() - 1).toString());
-
-    }
-
 
     // 静态属性 设置项
     // todo: 需要正确更新这个 隔天交替时间!
@@ -119,10 +117,10 @@ public class FsTransactionFetcher {
     private int timeout; // 单个http访问超时毫秒
     private final List<SecurityBeanEm> stockPool;
     private final int logFreq; // 分时图抓取多少次,log一次时间
-    public int threadPoolCorePoolSize; // 线程池数量
+    private int threadPoolCorePoolSize; // 线程池数量
 
-    private String saveTableName; // 保存数据表名称, 每一轮初始化, 使用 日期作为表名
-    private String preSaveTableName; // 保存上一次数据表名称, 初始 "", 将被判定隔日切换时, 从新空表获取已抓取数据
+    private volatile String saveTableName; // 保存数据表名称, 每一轮初始化, 使用 日期作为表名
+    private volatile String preSaveTableName; // 保存上一次数据表名称, 初始 "", 将被判定隔日切换时, 从新空表获取已抓取数据
     private volatile boolean running = false;
 
     private FsTransactionFetcher(List<SecurityBeanEm> stockPool, long redundancyRecords,
@@ -159,6 +157,7 @@ public class FsTransactionFetcher {
     }
 
     public void startFetch() {
+        this.running = true;
         Thread fsFetchTask = new Thread(new Runnable() {
             @SneakyThrows
             @Override
@@ -203,6 +202,7 @@ public class FsTransactionFetcher {
                 epoch = 0;
                 timer.restart();
             }
+
 
             epoch++;
             List<Future<Boolean>> futures = new ArrayList<>();
@@ -271,10 +271,12 @@ public class FsTransactionFetcher {
         boolean beforeLowLimit = DateUtil.between(now, thresholdBefore, DateUnit.SECOND, false) >= 0; // 比下限小
         boolean afterHighLimit = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false) <= 0;  // 比上限大
 
+        //todo: 合理应当判定今日是否交易日, 依赖tushare. 等有其他更好方式再替换.
         if (!TushareApi.isTradeDate(DateUtil.format(now, "yyyyMMdd"))) {
             log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
             this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
         }
+
         if (beforeLowLimit) {
             this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
         } else if (afterHighLimit) {
@@ -286,7 +288,7 @@ public class FsTransactionFetcher {
     }
 
 
-    public static CopyOnWriteArraySet<String> alreadyCreatedTableName = new CopyOnWriteArraySet<>();
+    private static CopyOnWriteArraySet<String> alreadyCreatedTableName = new CopyOnWriteArraySet<>();
 
     /**
      * 手动建表, 以防多线程  df.to_sql 错误;  全字段索引
@@ -294,7 +296,7 @@ public class FsTransactionFetcher {
      * @param saveTableName
      * @throws Exception
      */
-    public static void createSaveTable(String saveTableName) throws Exception {
+    private static void createSaveTable(String saveTableName) throws Exception {
         if (alreadyCreatedTableName.contains(saveTableName)) {
             return; // 建过的表无视
         }
@@ -319,7 +321,7 @@ public class FsTransactionFetcher {
     }
 
 
-    public static void initThreadPool(int threadPoolCorePoolSize) {
+    private static void initThreadPool(int threadPoolCorePoolSize) {
         if (threadPoolOfFetch == null || threadPoolOfFetch.isShutdown()) {
             threadPoolOfFetch = new ThreadPoolExecutor(threadPoolCorePoolSize,
                     threadPoolCorePoolSize * 2, 10000, TimeUnit.MILLISECONDS,
@@ -338,19 +340,22 @@ public class FsTransactionFetcher {
         }
     }
 
-    private void stopFetch() {
+    public void stopFetch() {
         // 关闭线程池即可
         stopFetch = true;
-        waitStopFetchSuccess();
+        waitStopFetchAndSaveSuccess();
     }
 
 
     /**
      * 等待关闭完成, 等待关闭时那一轮执行完成
      */
-    private void waitStopFetchSuccess() {
+    private void waitStopFetchAndSaveSuccess() {
         try {
-            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, "fs_trans 停止抓取");
+            waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null, false);
+            waitSaveOk();
+            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null, false);
+            log.warn("FsTransactionFetcher: stop fetch and save success");
         } catch (TimeoutException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -358,13 +363,10 @@ public class FsTransactionFetcher {
         }
     }
 
-    public void waitFirstEpochFinish(int timeout) throws TimeoutException, InterruptedException {
-        waitUtil(() -> this.getFirstTimeFinish().get(), timeout, 10, "第一次tick数据抓取完成");
+    public void waitFirstEpochFinish() throws TimeoutException, InterruptedException {
+        waitUtil(() -> this.getFirstTimeFinish().get(), Integer.MAX_VALUE, 10, "第一次tick数据抓取完成");
     }
 
-    public void waitFirstEpochFinishForever() throws TimeoutException, InterruptedException {
-        waitFirstEpochFinish(Integer.MAX_VALUE);
-    }
 
     /**
      * 等待保存线程池保存任务彻底完成, 注意, 需要先调用 stopFetch(), 将使得线程池 shutDown, 才能调用 isTerminated()
@@ -374,12 +376,11 @@ public class FsTransactionFetcher {
      * @throws InterruptedException
      */
     private void waitSaveOk() throws TimeoutException, InterruptedException {
-        waitUtil(() -> threadPoolOfSave.isTerminated(), 200000, 10, "保存完成");
+        waitUtil(() -> threadPoolOfSave.isTerminated(), 200000, 10, null, false);
     }
 
 
-
-    public static class FetchOneStockTask implements Callable<Boolean> {
+    private static class FetchOneStockTask implements Callable<Boolean> {
         SecurityBeanEm stock;
         FsTransactionFetcher fetcher;
 
@@ -406,7 +407,7 @@ public class FsTransactionFetcher {
                 dfNew = StockApi.getFSTransaction(suitableCounts, stock.getStockCodeSimple(),
                         stock.getMarket(), fetcher.timeout);
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 return false;
             }
             // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
@@ -458,4 +459,99 @@ public class FsTransactionFetcher {
             return Math.min(between / 3 + 1, 5000); // 上限5000
         }
     }
+
+    /*
+    数据获取api, 均需要INSTANCE实例化后
+     */
+
+    /**
+     * 给定股票/指数,获取其全部数据df
+     *
+     * @param stockOrIndex
+     * @return 股票数据df; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
+        DataFrame<Object> dfTemp = INSTANCE.fsTransactionDatas.get(stockOrIndex);
+        if (dfTemp == null || dfTemp.length() == 0) {
+            return Optional.empty();
+        }
+        return Optional.of(dfTemp);
+    }
+
+
+    /**
+     * 给定股票/指数,获取其df中 某列数据
+     *
+     * @param stockOrIndex
+     * @return 股票数据df某列; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<List<Object>> getColByColNameOrIndex(SecurityBeanEm stockOrIndex, Object colNameOrIndex) {
+        return getColAsObject(colNameOrIndex, getDf(stockOrIndex), log, stockOrIndex);
+    }
+
+    /**
+     * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Double 类型
+     *
+     * @param stockOrIndex
+     * @return 某列List<Double>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<List<Double>> getColByColNameOrIndexAsDouble(SecurityBeanEm stockOrIndex,
+                                                                        Object colNameOrIndex) {
+        return getColByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Double.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * 给定股票/指数,获取其df中 某列数据, 且元素转换为 String 类型
+     *
+     * @param stockOrIndex
+     * @return 某列List<String>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<List<String>> getColByColNameOrIndexAsString(SecurityBeanEm stockOrIndex,
+                                                                        Object colNameOrIndex) {
+        return getColByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> String.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Long 类型
+     *
+     * @param stockOrIndex
+     * @return 某列List<Long>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<List<Long>> getColByColNameOrIndexAsLong(SecurityBeanEm stockOrIndex,
+                                                                    Object colNameOrIndex) {
+        return getColByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Long.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+    /**
+     * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Integer 类型
+     *
+     * @param stockOrIndex
+     * @return 某列List<Integer>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     */
+    public static Optional<List<Integer>> getColByColNameOrIndexAsInteger(SecurityBeanEm stockOrIndex,
+                                                                          Object colNameOrIndex) {
+        return getColByColNameOrIndex(stockOrIndex, colNameOrIndex)
+                .map(objects -> objects.stream().map(value -> Integer.valueOf(value.toString()))
+                        .collect(Collectors.toList()));
+    }
+
+
+    /**
+     * 给定股票/指数,获取最新成交价格. 即最后一条成交记录的新价格.
+     * 指数则是最新指数点数
+     *
+     * @param stock
+     * @return 最后一条成交记录的新价格;; 列参考: stock_code	market	time_tick	price	 vol	bs
+     */
+    public static Optional<Double> getNewestPrice(SecurityBeanEm stockOrIndex) {
+        return getColByColNameOrIndex(stockOrIndex, "price")
+                .map(objects -> Double.valueOf(objects.get(objects.size() - 1).toString()));
+    }
+
 }

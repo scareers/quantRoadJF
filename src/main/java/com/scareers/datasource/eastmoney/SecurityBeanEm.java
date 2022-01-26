@@ -25,20 +25,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  */
 @Data
 public class SecurityBeanEm {
-    @Override
-    public int hashCode() {
-        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode();
-    }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof SecurityBeanEm) {
-            SecurityBeanEm other = (SecurityBeanEm) obj;
-            return other.getStockCodeSimple().equals(this.getStockCodeSimple()) &&
-                    other.getMarket().equals(this.getMarket());
-        }
-        return false;
-    }
 
     private static final long serialVersionUID = 156415111L;
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
@@ -209,6 +196,9 @@ public class SecurityBeanEm {
      * @noti: 不新建对象
      */
     public SecurityBeanEm convertToStock() throws Exception {
+        if (convertState != ConvertState.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
         if (convertState != ConvertState.STOCK) {
             if (convert(Arrays.asList("AStock", "23"))) {
                 convertState = ConvertState.STOCK;
@@ -226,6 +216,9 @@ public class SecurityBeanEm {
      * @return
      */
     public SecurityBeanEm convertToIndex() throws Exception {
+        if (convertState != ConvertState.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
         if (convertState != ConvertState.INDEX) {
             if (!convert(Arrays.asList("Index"))) {
                 convertState = ConvertState.FAIL;
@@ -305,4 +298,18 @@ public class SecurityBeanEm {
         return res;
     }
 
+    @Override
+    public int hashCode() {
+        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SecurityBeanEm) {
+            SecurityBeanEm other = (SecurityBeanEm) obj;
+            return other.getStockCodeSimple().equals(this.getStockCodeSimple()) &&
+                    other.getMarket().equals(this.getMarket());
+        }
+        return false;
+    }
 }

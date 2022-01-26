@@ -113,8 +113,8 @@ public class Trader {
 
         // 启动账户资金获取程序
         trader.getAccountStates().startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
-        waitUtil(trader.getAccountStates()::alreadyInitialized, 120 * 1000, 10,
-                "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
+        trader.getAccountStates().waitFirstInitFinish(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
+
         // 直到此时才实例化策略对象, 绑定到 trader
         // todo
         Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
@@ -135,13 +135,14 @@ public class Trader {
         fsFetcher.startFetch(); // fs图抓取
 
         // 需等待第一次fs抓取完成后, 通常很快, 主策略开始执行买卖
-        waitUtil(() -> fsTransactionFetcher.getFirstTimeFinish().get(), 3600 * 1000, 100, "第一次tick数据抓取完成");
-        fsFetcher.waitFirstEpochFinishForever();
+        fsTransactionFetcher.waitFirstEpochFinish();
+        fsFetcher.waitFirstEpochFinish();
         mainStrategy.startDealWith();
 
         trader.manualInteractive(); // 开始交互, 必须死循环.
         trader.closeDualChannelAndConn(); // 关闭连接
-//        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
+        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
+        fsFetcher.startFetch();
     }
 
     // 属性: 4大队列, 将初始化为 空队列/map

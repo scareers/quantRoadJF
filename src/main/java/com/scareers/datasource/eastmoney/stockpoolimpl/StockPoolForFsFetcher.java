@@ -15,11 +15,11 @@ import java.util.List;
  * @author: admin
  * @date: 2021/12/21/021-18:16:14
  */
-public class StockPoolForFsTransaction implements StockPoolFactory {
+public class StockPoolForFsFetcher implements StockPoolFactory {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        StockPoolForFsTransaction stockPoolForFsTransaction = new StockPoolForFsTransaction(
+        StockPoolForFsFetcher stockPoolForFsTransaction = new StockPoolForFsFetcher(
                 Arrays.asList("000001", "600001"), false);
         Console.log(stockPoolForFsTransaction.createStockPool());
     }
@@ -27,7 +27,7 @@ public class StockPoolForFsTransaction implements StockPoolFactory {
     private List<String> stockPoolSimple; // 纯股票代码列表
     private boolean addTwoMarketIndex; // 是否添加两大指数
 
-    public StockPoolForFsTransaction(List<String> stockPoolSimple, boolean addTwoMarketIndex) {
+    public StockPoolForFsFetcher(List<String> stockPoolSimple, boolean addTwoMarketIndex) {
         this.stockPoolSimple = stockPoolSimple;
         this.addTwoMarketIndex = addTwoMarketIndex;
     }

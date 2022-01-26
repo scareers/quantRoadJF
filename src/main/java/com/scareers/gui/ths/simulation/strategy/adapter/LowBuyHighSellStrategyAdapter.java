@@ -202,7 +202,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             Double shouldMarketValue = totalAssets * epochTotalPosition; // 应当的最新市值.
 
             double shouldTotalAmount =
-                    shouldMarketValue / FsTransactionFetcher.getNewestPrice(stockBean);
+                    shouldMarketValue / FsTransactionFetcher.getNewestPrice(stockBean).get();
             Integer alreadyBuyAmount = todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0);
 
             // 应当买入的数量, int形式, floor   100整数倍
@@ -214,7 +214,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // 应当买入! 但是需要判定现金是否充足 ?!
             Double availableCash = trader.getAccountStates().getAvailableCash();
             int maxCanBuyAmount = (int) Math // 100整数倍
-                    .floor((availableCash / (FsTransactionFetcher.getNewestPrice(stockBean))) / 100) * 100;
+                    .floor((availableCash / (FsTransactionFetcher.getNewestPrice(stockBean)).get()) / 100) * 100;
             if (shouldBuyAmount <= maxCanBuyAmount) { // 可正常全部买入
                 actualBuy(stock, shouldBuyAmount,
                         todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, shouldBuyAmount);
@@ -231,7 +231,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                             todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, maxCanBuyAmount);
                 }
                 tryCashSchedule(stock,
-                        shouldBuyAmount * FsTransactionFetcher.getNewestPrice(stockBean) - availableCash); //
+                        shouldBuyAmount * FsTransactionFetcher.getNewestPrice(stockBean).get() - availableCash); //
                 // 均需要尝试调度现金, 因为现金已经不够了.
             }
         }

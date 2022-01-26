@@ -5,10 +5,8 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
-import com.scareers.gui.ths.simulation.rabbitmq.ComsumerSimple;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
@@ -218,7 +216,7 @@ public class CommonUtil {
             LogUtil.log.warn("wait util time consume: {}s", timer.interval() / 1000.0);
         }
         if (description != null) {
-            LogUtil.log.warn("wait finish: {}", description);
+            LogUtil.log.warn("wait finish: {} finish!", description);
         }
     }
 

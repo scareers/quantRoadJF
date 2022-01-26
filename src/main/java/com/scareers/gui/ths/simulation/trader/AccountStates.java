@@ -14,6 +14,9 @@ import lombok.SneakyThrows;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
+
+import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
  * 账号状态监控类. 当前 5项数据
@@ -102,6 +105,16 @@ public class AccountStates {
                 && canCancels != null && todayClinchs != null && todayConsigns != null;
     }
 
+    public void waitFirstInitFinish() {
+        try {
+            waitUtil(this::alreadyInitialized, Integer.MAX_VALUE, 10,
+                    "首次账户资金状态刷新完成"); // 等待第一次账户状态5信息获取完成. 首次优先级为 0L
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * 刷新账户信息主逻辑,可控制不同种类更新频率等. 将订单放入队列(可不同优先级).
