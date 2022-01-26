@@ -26,17 +26,16 @@ public class AssetLife {
     public static final double continuousRaiseTickCountThreshold = 1; // fs连续上升n分钟以上,本分钟下降, 才可能高卖
 
     // 1.2. 指数当时tick涨跌幅加成倍率
+    // 1.2.1. 说明
+    // 低买最早实现: lowPrice - indexBelongThatTimePriceEnhanceArgLowBuy * indexPriceThatTime; // @v2 FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy
+    // --> 低买: 当倍率和当时大盘指数+时, 意味着大盘很好, 此时等价价格较小, 因低买分布tick是从大到小的, 这意味着等价价格右移, 即增大低买仓位,快速买入,以免来不及
+    // --> 因此调节倍率为 负数, 可将大盘影响反向反馈
+    // 高卖最早实现: highPrice - indexBelongThatTimePriceEnhanceArgHighSell * indexPriceThatTime; // @v2 FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfHighSell
+    // --> 高卖, 当倍率和大盘+时, 意味着大盘很好, 此时等价价格减小, 因高卖分时分布是从小到大的, 意味着等价价格左移,即减小高卖仓位,等待更高价位再卖出
+    // --> 因此倍率若设定负数, 则大盘指数时负反馈
     public static final double indexBelongThatTimePriceEnhanceArgLowBuy = 1; // fs连续上升n分钟以上,本分钟下降, 才可能高卖
     public static final double indexBelongThatTimePriceEnhanceArgHighSell = 1; // fs连续上升n分钟以上,本分钟下降, 才可能高卖
 
-    // FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy
-    // FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay
-    //                                // stock_code,market,time_tick,price,vol,bs
-    //                                .calcEquivalenceCdfUsePriceOfHighSell(newPercent, indexPricePercentThatTime,
-    //                                        indexBelongThatTimePriceEnhanceArgHighSell);
-
-    // lowPrice - indexBelongThatTimePriceEnhanceArgLowBuy * indexPriceThatTime; // @v2
-    // highPrice - indexBelongThatTimePriceEnhanceArgHighSell * indexPriceThatTime; // @v2
 
 
     // 基本实例属性
