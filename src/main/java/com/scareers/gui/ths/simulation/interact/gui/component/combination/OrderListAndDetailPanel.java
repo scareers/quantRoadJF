@@ -15,7 +15,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
@@ -77,7 +76,7 @@ public class OrderListAndDetailPanel extends JPanel {
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersWaitForExecution));
                         } else if (currentDataFlushType == Type.ORDER_ALL_MAP) {
-                            Trader.getInstance();
+                            Trader.getAndStartInstance();
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersAllMap.keySet()));
                         } else if (currentDataFlushType == Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP) {

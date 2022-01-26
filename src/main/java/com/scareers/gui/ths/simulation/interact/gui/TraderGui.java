@@ -21,7 +21,6 @@ import javax.swing.*;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
-import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -67,6 +66,13 @@ public class TraderGui extends JFrame {
         TraderGui gui = new TraderGui();
         gui.setVisible(true);
         gui.showSystemTray();
+//        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+//            @SneakyThrows
+//            @Override
+//            public void run() {
+//                Trader.getInstance().stopTrade();
+//            }
+//        }));
         waitForever();
     }
 
@@ -123,6 +129,7 @@ public class TraderGui extends JFrame {
     }
 
     ObjectTreeWindow objectTreeWindow;
+    static volatile Trader trader;
 
     private void addListeners() {
         TraderGui mainWindow = this;
@@ -232,12 +239,10 @@ public class TraderGui extends JFrame {
                 ThreadUtil.execAsync(() -> {
                     try {
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
-
-
                         mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
 //                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
                         mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
-                        Trader.main0();
+                        Trader.getAndStartInstance();
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -245,11 +250,13 @@ public class TraderGui extends JFrame {
             }
 
             //捕获窗口关闭事件
+            @SneakyThrows
             @Override
             public void windowClosing(WindowEvent e) {
                 int res = JOptionPane.showConfirmDialog(mainWindow, "确定关闭?", "是否关闭程序", JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
+                    Trader.getInstance().stopTrade();
                     System.exit(0);
                 }
             }

@@ -225,8 +225,7 @@ public class CommonUtil {
         waitUtil(booleanSupplier, timeout, interval, description, true);
     }
 
-    public static void waitForever()
-             {
+    public static void waitForever() {
         while (true) {
             try {
                 Thread.sleep(Long.MAX_VALUE);

@@ -241,7 +241,7 @@ public class FsFetcher {
         try {
             waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null,false);
             waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null,false);
-            log.warn("FsFetcher: 停止抓取完成");
+            log.warn("FsFetcher: stop fetch success");
         } catch (TimeoutException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

@@ -21,6 +21,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.alee.managers.animation.easing.Back;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
@@ -37,10 +38,7 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -65,24 +63,39 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 @Setter
 public class Trader {
     private static final Log log = LogUtil.getLogger();
-    public static volatile Trader INSTANCE;
+    private static volatile Trader INSTANCE;
     public static volatile int allOrderAmount = 0;
 
-    public static Trader getInstance() throws Exception {
+    public static Trader getAndStartInstance() throws Exception {
         // todo: 待完成
         if (INSTANCE == null) {
-            INSTANCE = new Trader(10000, Order.PRIORITY_MEDIUM, 10000, 2);
+            ThreadUtil.execAsync(new Runnable() {
+                @SneakyThrows
+                @Override
+                public void run() {
+                    main0();
+                }
+            });
         }
+        waitUtil(() -> INSTANCE != null, Integer.MAX_VALUE, 1, null, false);
+        return INSTANCE;
+    }
+
+    public static Trader getInstance() {
+        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 
     public static void main(String[] args) throws Exception {
-        main0();
+        getAndStartInstance();
+
+        INSTANCE.manualInteractive(); // 开始交互, 必须死循环.
+        INSTANCE.stopTrade(); // 关闭连接和抓取
     }
 
     public static void main0() throws Exception {
-        Trader trader = Trader.getInstance();
-
+        Trader trader = new Trader(5000, 10000L, 10000, 2);
+        INSTANCE = trader;
 
 //        ThreadUtil.execAsync(new Runnable() {
 //            @SneakyThrows
@@ -138,11 +151,6 @@ public class Trader {
         fsTransactionFetcher.waitFirstEpochFinish();
         fsFetcher.waitFirstEpochFinish();
         mainStrategy.startDealWith();
-
-        trader.manualInteractive(); // 开始交互, 必须死循环.
-        trader.closeDualChannelAndConn(); // 关闭连接
-        fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
-        fsFetcher.startFetch();
     }
 
     // 属性: 4大队列, 将初始化为 空队列/map
@@ -253,9 +261,7 @@ public class Trader {
 //            } else if ("g".equals(info)) {
 //            }
 //        }
-        while (true) {
-            waitForever();
-        }
+        waitForever();
     }
 
     /*
@@ -464,6 +470,15 @@ public class Trader {
         resendFinishOrder(order, responses, newOrderId);
     }
 
+    public void stopTrade() throws IOException, TimeoutException {
+        this.closeDualChannelAndConn(); // 关闭连接
+        if (fsTransactionFetcher != null) {
+            fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
+        }
+        if (fsFetcher != null) {
+            fsFetcher.stopFetch();
+        }
+    }
 
     public static int getAllOrderAmount() {
         return allOrderAmount;
