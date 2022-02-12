@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.order.Order;

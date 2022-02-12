@@ -366,7 +366,7 @@ public class Order implements Comparable, Serializable {
      */
     @Setter
     @Getter
-    public static class OrderSimple implements Comparable {
+    public static class OrderPo implements Comparable {
         private static final long serialVersionUID = 78921545L;
 
         String orderType;
@@ -375,17 +375,17 @@ public class Order implements Comparable, Serializable {
         Map<String, Object> params;
         Order order;
 
-        private static OrderSimple DUMMY_ORDER_SIMPLE;
+        private static OrderPo DUMMY_ORDER_SIMPLE;
 
-        public static OrderSimple getDummyOrderSimple() {
+        public static OrderPo getDummyOrderSimple() {
             if (DUMMY_ORDER_SIMPLE == null) {
-                DUMMY_ORDER_SIMPLE = new OrderSimple(new Order("当前尚无订单"));
+                DUMMY_ORDER_SIMPLE = new OrderPo(new Order("当前尚无订单"));
             }
             return DUMMY_ORDER_SIMPLE;
         }
 
 
-        public OrderSimple(Order order) {
+        public OrderPo(Order order) {
             this.order = order;
             this.orderType = order.getOrderType();
             this.generateTime = order.getGenerateTime();
@@ -433,10 +433,10 @@ public class Order implements Comparable, Serializable {
         @SneakyThrows
         @Override
         public int compareTo(Object o) {
-            if (o instanceof OrderSimple) {
-                return this.generateTime.compareTo(((OrderSimple) o).generateTime); // 默认使用时间排序
+            if (o instanceof OrderPo) {
+                return this.generateTime.compareTo(((OrderPo) o).generateTime); // 默认使用时间排序
             } else {
-                throw new Exception("OrderSimple cant not compareTo other types");
+                throw new Exception("OrderPo cant not compareTo other types");
             }
         }
     }
@@ -495,10 +495,10 @@ public class Order implements Comparable, Serializable {
      * @param orders
      * @return
      */
-    public static Vector<OrderSimple> ordersForDisplay(List<Order> orders) {
+    public static Vector<OrderPo> ordersForDisplay(List<Order> orders) {
         Vector res = new Vector();
         for (Order order : orders) {
-            res.add(new OrderSimple(order));
+            res.add(new OrderPo(order));
         }
         return res;
     }

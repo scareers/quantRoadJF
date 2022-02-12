@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
@@ -6,7 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayW
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.order.Order;
-import com.scareers.gui.ths.simulation.order.Order.OrderSimple;
+import com.scareers.gui.ths.simulation.order.Order.OrderPo;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.SneakyThrows;
@@ -35,8 +35,8 @@ public class OrderListAndDetailPanel extends JPanel {
     // @noti: 使用单例模式. 当在 5种类型切换时, 仅仅切换 Type, 而jList和两个order展示, 将实时根据Type获取数据
     public static volatile Type currentDataFlushType = Type.ORDER_ALL_MAP; // 默认all
     // 股票列表池, 分为不同 Type. 将读取 objectPool 所有key(已注册的类型), 对对应key更新列表, 保存入 map.
-    public static volatile Vector<OrderSimple> currentOrderListShouldDisplay = new Vector<>(
-            Arrays.asList(OrderSimple.getDummyOrderSimple()));
+    public static volatile Vector<OrderPo> currentOrderListShouldDisplay = new Vector<>(
+            Arrays.asList(Order.OrderPo.getDummyOrderSimple()));
     public static int remainDisplayCount = 20; // 显示最新20全部,以及此前的所有非账户信息监控
 
     /**
@@ -71,7 +71,7 @@ public class OrderListAndDetailPanel extends JPanel {
 
 
                     while (true) { // 开始更新所有注册控件类型的相关数据列表
-                        Vector<OrderSimple> simpleOrders = new Vector<>();
+                        Vector<Order.OrderPo> simpleOrders = new Vector<>();
                         if (currentDataFlushType == Type.ORDERS_WAIT_FOR_EXECUTION) {
                             simpleOrders = Order.ordersForDisplay(
                                     new ArrayList<>(Trader.ordersWaitForExecution));
@@ -95,11 +95,11 @@ public class OrderListAndDetailPanel extends JPanel {
                             System.out.println("未知类型");
                         }
                         if (simpleOrders.size() == 0) {
-                            simpleOrders.add(OrderSimple.getDummyOrderSimple());
+                            simpleOrders.add(OrderPo.getDummyOrderSimple());
                         }
                         Collections.sort(simpleOrders); // 有序
                         if (simpleOrders.size() > remainDisplayCount) {
-                            Vector<OrderSimple> temp = new Vector<>();
+                            Vector<OrderPo> temp = new Vector<>();
                             for (int i = 0; i < simpleOrders.size() - remainDisplayCount; i++) {
                                 if (AccountStates.ORDER_TYPES.contains(simpleOrders.get(i).getOrderType())) {
                                     continue;
@@ -135,15 +135,10 @@ public class OrderListAndDetailPanel extends JPanel {
     }
 
 
-    private static volatile OrderSimple selectedOrder; // 唯一被选中订单
     MainDisplayWindow mainDisplayWindow; // 主显示区
     private volatile Type type; // 类型
-    volatile JList<OrderSimple> jList;
+    volatile JList<Order.OrderPo> jList;
 
-    private static volatile boolean changeSelect = false; // 标志订单是否改变.
-
-    private OrderListAndDetailPanel() {
-    }
 
     private OrderListAndDetailPanel(Type type, MainDisplayWindow mainDisplayWindow) {
         super();
@@ -226,7 +221,7 @@ public class OrderListAndDetailPanel extends JPanel {
                         orderDetailPanel.updateText(currentOrder);
                         responsePanel.updateText(currentOrder);
                     }
-                    Thread.sleep(1); // 不断刷新
+                    Thread.sleep(10); // 不断刷新
                 }
             }
         }, true);
@@ -265,11 +260,11 @@ public class OrderListAndDetailPanel extends JPanel {
      *
      * @return
      */
-    private JList<Order.OrderSimple> getOrderSimpleJList() {
-        DefaultListModelS<Order.OrderSimple> model = new DefaultListModelS<>();
+    private JList<OrderPo> getOrderSimpleJList() {
+        DefaultListModelS<Order.OrderPo> model = new DefaultListModelS<>();
         model.flush(currentOrderListShouldDisplay);
 
-        JList<Order.OrderSimple> jList = new JList<>(model);
+        JList<Order.OrderPo> jList = new JList<>(model);
         jList.setCellRenderer(new OrderListCellRendererS());
         jList.setForeground(COLOR_GRAY_COMMON);
 
@@ -280,7 +275,7 @@ public class OrderListAndDetailPanel extends JPanel {
             public void run() {
                 while (true) { // 每 100ms 刷新model
                     model.flush(currentOrderListShouldDisplay);
-                    Thread.sleep(1);
+                    Thread.sleep(10);
                 }
             }
         }, true);

@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
 import cn.hutool.json.JSONUtil;
 import com.scareers.gui.ths.simulation.Response;

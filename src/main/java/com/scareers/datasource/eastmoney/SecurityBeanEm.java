@@ -1,17 +1,27 @@
 package com.scareers.datasource.eastmoney;
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import org.jfree.chart.util.HMSNumberFormat;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
@@ -25,8 +35,6 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  */
 @Data
 public class SecurityBeanEm {
-
-
     private static final long serialVersionUID = 156415111L;
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
     public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
@@ -229,6 +237,8 @@ public class SecurityBeanEm {
         return this;
     }
 
+    JSONObject convertRawJsonObject;
+
     private boolean convert(List<String> typeConditions) {
         for (int i = 0; i < queryResults.size(); i++) {
             JSONObject ele = queryResults.getJSONObject(i);
@@ -249,6 +259,8 @@ public class SecurityBeanEm {
                     TypeUS = ele.get("TypeUS").toString();
                     UnifiedCode = ele.get("UnifiedCode").toString();
                     InnerCode = ele.get("InnerCode").toString();
+
+                    convertRawJsonObject = ele;
                     return true;
                 } catch (NumberFormatException e) {
                     e.printStackTrace();
@@ -311,5 +323,102 @@ public class SecurityBeanEm {
                     other.getMarket().equals(this.getMarket());
         }
         return false;
+    }
+
+    @Setter
+    @Getter
+    public static class SecurityEmPo implements Comparable {
+        // 两大集合将在选股完成后立即填充.
+        public static CopyOnWriteArraySet<SecurityBeanEm> yesterdayHolds = new CopyOnWriteArraySet<>(); // 昨日持仓
+        public static CopyOnWriteArraySet<SecurityBeanEm> todaySelected = new CopyOnWriteArraySet<>(); // 今日选中.
+
+        private static final long serialVersionUID = 78921546L;
+
+        @SneakyThrows
+        @Override
+        public int compareTo(Object o) {
+            if (o instanceof SecurityEmPo) {
+                if (this.type.equals(((SecurityEmPo) o).type)) {
+                    return this.stockCodeSimple.compareTo(((SecurityEmPo) o).stockCodeSimple); // 代码优先
+                } else { // 类型优先
+                    return this.type.compareTo(((SecurityEmPo) o).type);
+                }
+            } else {
+                throw new Exception("OrderPo cant not compareTo other types");
+            }
+        }
+
+        String stockCodeSimple;
+        Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.
+        // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
+        String name;
+        SecurityBeanEm bean;
+        Integer type; // 类型: 0代表指数, 1代表今日选股(可买), 2代表昨日持仓(可卖), 3代表昨日有持仓且今日被选中, 4.未知
+
+        public SecurityEmPo(SecurityBeanEm securityBeanEm) {
+            this.stockCodeSimple = securityBeanEm.getStockCodeSimple();
+            this.market = securityBeanEm.getMarket();
+            this.name = securityBeanEm.getName();
+            this.bean = securityBeanEm;
+            if (bean.isIndex()) {
+                this.type = 0;
+            } else {
+                if (yesterdayHolds.contains(bean)) {
+                    if (todaySelected.contains(bean)) {
+                        this.type = 3;
+                    } else {
+                        this.type = 2;
+                    }
+                } else {
+                    if (todaySelected.contains(bean)) {
+                        this.type = 1;
+                    } else {
+                        this.type = 4;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public String toString() { // 显示 代码.市场[中文名称]
+            StringBuilder builder = new StringBuilder();
+            builder.append("<html>");
+            builder.append(stockCodeSimple);
+            builder.append(".");
+            builder.append(market.toString());
+            builder.append(" ["); // 简单形式
+            builder.append(name); // 简单形式
+            builder.append("]"); // 简单形式
+
+            builder.append(" "); // 类型分类
+            if (this.type == 0) {
+                builder.append(" <font color=\"red\">["); // 红色表示指数
+                builder.append("指数");
+                builder.append("]</font>"); // 简单形式
+            } else if (this.type == 1) {
+                builder.append(" <font color=\"yellow\">["); // 蓝色表示选股
+                builder.append("今日选股");
+                builder.append("]</font>"); // 简单形式
+            } else if (this.type == 2) {
+                builder.append(" <font color=\"green\">["); // 绿色表示昨日持仓
+                builder.append("昨日持仓");
+                builder.append("]</font>"); // 简单形式
+            } else if (this.type == 3) {
+                builder.append(" <font color=\"purple\">["); // 紫色表示今日选股且昨日持仓
+                builder.append("昨日持仓");
+                builder.append("]</font>"); // 简单形式
+            } else {
+                builder.append(" <font color=\"red\">[");
+                builder.append("未知类型");
+                builder.append("]</font>"); // 简单形式
+            }
+
+            builder.append("</html>");
+            return builder.toString();
+        }
+
+        public String toToolTip() { // 提示文字, 显示
+            return JSONUtil.toJsonPrettyStr(bean.getConvertRawJsonObject());
+        }
     }
 }

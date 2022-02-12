@@ -15,6 +15,7 @@ import lombok.SneakyThrows;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static com.scareers.utils.CommonUtil.waitUtil;
 
@@ -92,16 +93,29 @@ public class AccountStates {
     }
 
     /**
-     * 可设定监控某几项, 对应需要修改 alreadyInitialized()
+     * 可设定监控某几项, 对应需要修改 alreadyInitialized().
+     * 全部可能的账户状态刷新订单类型.  配合 EXCLUDE_ORDER_TYPES 排除某些类型, 剩下的实际执行.
      */
     public static final List<String> ORDER_TYPES = Arrays
             .asList(
                     "get_account_funds_info",
                     "get_hold_stocks_info",
-//                    "get_unsolds_not_yet",
-                    "get_today_clinch_orders"
-//                    "get_today_consign_orders"
+                    "get_unsolds_not_yet",
+                    "get_today_clinch_orders",
+                    "get_today_consign_orders"
             ); // 常量,对应5项数据api
+
+    /**
+     * @noti 可设定强制排除这些
+     */
+    public static final List<String> EXCLUDE_ORDER_TYPES = Arrays
+            .asList(
+                    "get_unsolds_not_yet",
+                    "get_today_consign_orders"
+            ); // 常量,对应5项数据api
+
+    public static final List<String> SHOULD_ORDER_TYPES =
+            ORDER_TYPES.stream().filter(type -> !EXCLUDE_ORDER_TYPES.contains(type)).collect(Collectors.toList());
 
     /**
      * 等待已被第一次初始化, Map做size()检测, 其余做非null检测
@@ -109,16 +123,36 @@ public class AccountStates {
      * @return 第一次是否初始化完成.
      */
     public boolean alreadyInitialized() {
-//        return nineBaseFundsData
-//                .size() > 0 && currentHolds != null
-//                && canCancels != null && todayClinchs != null && todayConsigns != null;
-
-        return nineBaseFundsData.size() > 0
-                && currentHolds != null
-//                && canCancels != null
-                && todayClinchs != null
-//                && todayConsigns != null
-                ;
+        for (String type : ORDER_TYPES) { // 全类型检查
+            if (!EXCLUDE_ORDER_TYPES.contains(type)) { // 实际使用了的api
+                if ("get_account_funds_info".equals(type)) {
+                    if (!(nineBaseFundsData.size() > 0)) {
+                        return false;
+                    }
+                }
+                if ("get_hold_stocks_info".equals(type)) {
+                    if (currentHolds == null) {
+                        return false;
+                    }
+                }
+                if ("get_unsolds_not_yet".equals(type)) {
+                    if (canCancels == null) {
+                        return false;
+                    }
+                }
+                if ("get_today_clinch_orders".equals(type)) {
+                    if (todayClinchs == null) {
+                        return false;
+                    }
+                }
+                if ("get_today_consign_orders".equals(type)) {
+                    if (todayConsigns == null) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     public void waitFirstInitFinish() {
@@ -147,12 +181,12 @@ public class AccountStates {
                 while (true) {
                     List<String> alreadyInQueue = new ArrayList<>();
                     for (Order order : Trader.getOrdersWaitForExecution()) {
-                        if (ORDER_TYPES.contains(order.getOrderType())) {
+                        if (SHOULD_ORDER_TYPES.contains(order.getOrderType())) {
                             // 得到已在队列中的类型. 对其余类型进行补齐
                             alreadyInQueue.add(order.getOrderType());
                         }
                     }
-                    for (String orderType : ORDER_TYPES) {
+                    for (String orderType : SHOULD_ORDER_TYPES) {
                         if (!alreadyInQueue.contains(orderType)) { // 不存在则 补充对应类型的 账户状态监控 订单
                             supplementStateOrder(orderType);
                         } else { // 账户监控订单, 若在队列中, 则需要检测一下 优先级, 若滞留时间长, 则考虑 提高优先级!

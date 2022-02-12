@@ -126,7 +126,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     private List<String> stockSelectedToday;
 
     private Trader trader;
-    public ConcurrentHashMap<String, List<Double>> priceLimitMap=new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
+    public ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
     public LowBuyHighSellStrategy(Trader trader, String strategyName,
                                   List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
@@ -176,7 +176,15 @@ public class LowBuyHighSellStrategy extends Strategy {
 
         ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
         stockSelectedToday = new CopyOnWriteArrayList<>(stockSelectCountMapFinal.keySet()); // 赋值
-        stocks.addAll(initYesterdayHolds());
+
+        SecurityBeanEm.SecurityEmPo.todaySelected
+                .addAll(SecurityBeanEm.createStockList(stockSelectedToday)); //@noti: 使得PO对象可区分类型
+
+        List<String> yesterdayH = initYesterdayHolds();
+        SecurityBeanEm.SecurityEmPo.yesterdayHolds
+                .addAll(SecurityBeanEm.createStockList(yesterdayH)); //@noti: 使得PO对象可区分类型
+
+        stocks.addAll(yesterdayH);
         List<SecurityBeanEm> res = new StockPoolForFsFetcher(stocks, true).createStockPool();
         log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", res.size());
         log.warn("finish init stockPool: 完成初始化股票池...");

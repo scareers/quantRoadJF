@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * description: 列表使用的可变model, 新增 刷新功能(检测新的项目并添加), 新增 排序功能,
- * 泛型T 应当实现比较接口,  OrderSimple 依据时间戳进行比较
+ * 泛型T 应当实现比较接口,  OrderPo 依据时间戳进行比较
  *
  * @author: admin
  * @date: 2022/1/18/018-09:44:56

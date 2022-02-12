@@ -6,6 +6,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
+import com.mysql.jdbc.log.NullLogger;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
@@ -75,6 +76,14 @@ public class FsFetcher {
         fsFetcher.stopFetch(); // 软停止,且等待完成
     }
 
+    public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getFsDatas() {
+        return fsDatas;
+    }
+
+    public static List<SecurityBeanEm> getStockPool() {
+        return stockPool;
+    }
+
     /**
      * 单例模式
      */
@@ -84,6 +93,17 @@ public class FsFetcher {
         Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
+
+    public static void waitInstanceNotNull() {
+        try {
+            waitUtil(() -> INSTANCE != null, Integer.MAX_VALUE, 1, null, false);
+        } catch (TimeoutException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static FsFetcher getInstance(List<SecurityBeanEm> stockPool,
                                         int timeout, int logFreq,
@@ -102,35 +122,35 @@ public class FsFetcher {
     public static ThreadPoolExecutor threadPoolOfFetch;
 
     // 实例属性
-    private volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas; // 数据Map
+    public static volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas; // 数据Map
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
     private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源. 将等待正在进行的一轮结束后停止.可再次调用 startFetch()启动
 
     private int timeout; // 单次http访问超时毫秒
-    private final List<SecurityBeanEm> stockPool; // 股票池需要提供
+    private static  List<SecurityBeanEm> stockPool; // 股票池需要提供
     private final int logFreq; // 多少轮,log 一次时间
     public int threadPoolCorePoolSize; // 线程池核心数量
     private int sleepPerEpoch; // 每轮后强制 sleep;
     private volatile boolean running; //标志正在抓取中
 
-    private FsFetcher(List<SecurityBeanEm> stockPool, int timeout, int logFreq, int threadPoolCorePoolSize,
+    private FsFetcher(List<SecurityBeanEm> stockPool0, int timeout, int logFreq, int threadPoolCorePoolSize,
                       int sleepPerEpoch) {
         // 4项全默认值
-        this.fsDatas = new ConcurrentHashMap<>();
+        fsDatas = new ConcurrentHashMap<>();
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
         this.sleepPerEpoch = sleepPerEpoch;
 
         // 4项可设定
-        HashSet<SecurityBeanEm> temp = new HashSet<>(stockPool);
+        HashSet<SecurityBeanEm> temp = new HashSet<>(stockPool0);
         temp.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
-        this.stockPool = new CopyOnWriteArrayList<>(temp);
+        stockPool = new CopyOnWriteArrayList<>(temp);
         this.timeout = timeout; // 1000
         this.logFreq = logFreq;
         this.threadPoolCorePoolSize = threadPoolCorePoolSize;
         this.running = false;
         for (SecurityBeanEm stock : stockPool) {
-            this.fsDatas.put(stock, new DataFrame<>()); // 数据初始化置空, 使得不会访问到null, 最多空df
+            fsDatas.put(stock, new DataFrame<>()); // 数据初始化置空, 使得不会访问到null, 最多空df
         }
     }
 
@@ -237,8 +257,8 @@ public class FsFetcher {
      */
     private void waitStopFetchSuccess() {
         try {
-            waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null,false);
-            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null,false);
+            waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null, false);
+            waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null, false);
             log.warn("FsFetcher: stop fetch success");
         } catch (TimeoutException e) {
             e.printStackTrace();
@@ -290,7 +310,10 @@ public class FsFetcher {
             DataFrame<Object> dfNew = StockApi
                     .getFs1MToday(stock.getStockCodeSimple(), isIndex, 0, fetcher.getTimeout());
             if (dfNew != null) { // 访问失败将返回null.
-                fetcher.fsDatas.put(stock, dfNew); // 直接替换数据.
+                ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasNew = new ConcurrentHashMap<>(
+                        fsDatas);
+                datasNew.put(stock, dfNew); // 直接替换数据.
+                fsDatas = datasNew;
                 return true; // 成功更新为最新
             }
             return false; // http访问失败
@@ -308,7 +331,7 @@ public class FsFetcher {
      * @return 单股票/指数今日完整分时图 df;
      */
     public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
-        DataFrame<Object> res = INSTANCE.fsDatas.get(stockOrIndex);
+        DataFrame<Object> res = fsDatas.get(stockOrIndex);
         if (res == null || res.length() == 0) {
             return Optional.empty();
         }

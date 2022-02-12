@@ -1,38 +1,27 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.thread.ThreadUtil;
-import com.alee.laf.list.ListDataAdapter;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderDetailPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderListAndDetailPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.OrderResponsePanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.fs.FsFetcherListAndDataPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
-import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.TreeCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
-import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
-import com.scareers.gui.ths.simulation.order.Order;
-import com.scareers.gui.ths.simulation.order.Order.OrderSimple;
-import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
-import javax.swing.event.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.plaf.basic.BasicInternalFrameUI;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.PriorityBlockingQueue;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
@@ -145,6 +134,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         DefaultMutableTreeNode checkerNode = new DefaultMutableTreeNode("Checker");
         DefaultMutableTreeNode accountStatesNode = new DefaultMutableTreeNode("AccountStates");
         DefaultMutableTreeNode fsTransactionFetcherNode = new DefaultMutableTreeNode("FsTransactionFetcher");
+        DefaultMutableTreeNode fsFetcherNode = new DefaultMutableTreeNode("FsFetcher");
         DefaultMutableTreeNode strategyNode = new DefaultMutableTreeNode("Strategy");
 
         // 4大队列/map
@@ -168,6 +158,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         traderNode.add(checkerNode);
         traderNode.add(accountStatesNode);
         traderNode.add(fsTransactionFetcherNode);
+        traderNode.add(fsFetcherNode);
         traderNode.add(strategyNode);
 
         root.add(traderNode);
@@ -216,6 +207,9 @@ public class ObjectTreeWindow extends FuncFrameS {
             changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_FAILED_FINISHED);
         } else if (TreePathConstants.ORDERS_RESEND_FINISHED.equals(treePath)) {
             changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_RESEND_FINISHED);
+            // 2.1分钟分时图
+        } else if (TreePathConstants.FS_FETCHER.equals(treePath)) {
+            changeToDisplayFs1MData();
             // 2.其他
         } else {
             System.out.println(treePath);
@@ -229,6 +223,11 @@ public class ObjectTreeWindow extends FuncFrameS {
                 .showInMainDisplayWindow();
     }
 
+    private void changeToDisplayFs1MData() {
+        FsFetcherListAndDataPanel.getInstance(getMainDisplayWindow())
+                .showInMainDisplayWindow();
+    }
+
 
     public static class TreePathConstants { // 路径常量, 字符串配置
         /**
@@ -239,6 +238,7 @@ public class ObjectTreeWindow extends FuncFrameS {
          * [对象查看, Trader, Checker]
          * [对象查看, Trader, AccountStates]
          * [对象查看, Trader, FsTransactionFetcher]
+         * [对象查看, Trader, FsFetcher]
          * [对象查看, Trader, Strategy]
          * [对象查看, Trader, Queues!, ordersWaitForExecution]
          * [对象查看, Trader, Queues!, ordersAllMap]
@@ -255,6 +255,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         public static final String CHECKER = "[对象查看, Trader, Checker]";
         public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
         public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
+        public static final String FS_FETCHER = "[对象查看, Trader, FsFetcher]";
         public static final String STRATEGY = "[对象查看, Trader, Strategy]";
 
         public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
