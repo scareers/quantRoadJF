@@ -1,7 +1,9 @@
 package com.scareers.utils.charts;
 
 import cn.hutool.core.lang.Console;
+import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import org.apache.commons.collections.functors.FalsePredicate;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 
@@ -31,32 +33,48 @@ public class ChartUtil {
         df.add("b", Arrays.asList(2, 3, 4, 5));
         df.add("c", Arrays.asList(2, 7, 4, 5));
         // 手动调用. 可调用不同的构造器
-        File file = new File("c:/tempself/text.png");
-        BarChartForDf chart = new BarChartForDf(df, file, null);
-        chart.showIt();
-        chart.saveIt();
+//        File file = new File("c:/tempself/text.png");
+//        BarChartForDf chart = new BarChartForDf(df, file, null);
+//        chart.showIt();
+//        chart.saveIt();
         // 静态方法, 默认调用最简化构造器
 //        dfAsLineChartSimple(df, false, null);
 //        dfAsBarChartSimple(df, false, null);
 
+        dfAsBarChartSimple(df);
+
+
     }
 
-    public static void listOfDoubleAsBarChartSimple(List<Double> doubles, boolean save, File file,
+    public static void listOfDoubleAsBarChartSimple(List<Double> doubles0, boolean save, File file,
                                                     List<Object> xUseColValues)
             throws IOException {
+        ArrayList<Object> doubles = new ArrayList<>(doubles0);
         DataFrame<Object> dataFrame = new DataFrame<>();
         dataFrame.add("temp_col", doubles);
         dataFrame.add("xLabels", xUseColValues);
         dfAsBarChartSimple(dataFrame, save, file, "xLabels");
     }
 
-    public static void listOfDoubleAsLineChartSimple(List<Double> doubles, boolean save, File file,
+    public static void listOfDoubleAsBarChartSimple(List<Double> doubles)
+            throws IOException {
+        listOfDoubleAsBarChartSimple(doubles, false, null, null);
+    }
+
+    public static void listOfDoubleAsLineChartSimple(List<Double> doubles0, boolean save, File file,
                                                      List<Double> xUseColValues)
             throws IOException {
+
+        ArrayList<Object> doubles = new ArrayList<>(doubles0);
         DataFrame<Object> dataFrame = new DataFrame<>();
-        dataFrame.add("temp_col", doubles);
-        dataFrame.add("xLabels", xUseColValues);
-        dfAsLineChartSimple(dataFrame, save, file, "xLabels");
+        dataFrame.add(doubles);
+        dataFrame = dataFrame.add("xLabels", xUseColValues);
+        dfAsLineChartSimple(dataFrame, save, file, null);
+    }
+
+    public static void listOfDoubleAsLineChartSimple(List<Double> doubles)
+            throws IOException {
+        listOfDoubleAsLineChartSimple(doubles, false, null, null);
     }
 
     public static void dfAsBarChartSimple(DataFrame<Object> df, boolean save, File file, String xUseCol)
@@ -68,6 +86,11 @@ public class ChartUtil {
         }
     }
 
+    public static void dfAsBarChartSimple(DataFrame<Object> df)
+            throws IOException {
+        dfAsBarChartSimple(df, false, null, null);
+    }
+
     public static void dfAsLineChartSimple(DataFrame<Object> df, boolean save, File file, String xUseCol)
             throws IOException {
         LineChartForDf chart = new LineChartForDf(df, file, xUseCol);
@@ -75,6 +98,11 @@ public class ChartUtil {
         if (save) {
             chart.saveIt();
         }
+    }
+
+    public static void dfAsLineChartSimple(DataFrame<Object> df)
+            throws IOException {
+        dfAsLineChartSimple(df, false, null, null);
     }
 
     /**

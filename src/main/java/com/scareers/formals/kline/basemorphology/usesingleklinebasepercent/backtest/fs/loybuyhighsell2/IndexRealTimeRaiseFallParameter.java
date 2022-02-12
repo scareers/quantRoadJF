@@ -1,4 +1,4 @@
-package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.parameter;
+package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileWriter;
@@ -10,15 +10,15 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.StrUtilS;
 import com.scareers.utils.charts.ChartUtil;
 import joinery.DataFrame;
-import joinery.impl.Aggregation;
-import org.apache.commons.math3.stat.StatUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.scareers.sqlapi.CommonSqlApi.getAllTables;
@@ -43,16 +43,23 @@ public class IndexRealTimeRaiseFallParameter {
 
 
     public static void test() throws SQLException, IOException {
+//        String sql = "select lbhs_weighted_profit_conservative\n" +
+//                "from `fs_backtest_lowbuy_highsell_next0b1s_v2_1.0_1.0` `fbln0b1sis1.41.61.20.00.0`\n" +
+//                "where form_set_id = {} order by trade_date";
+
+
+
         String sql = "select lbhs_weighted_profit_conservative\n" +
-                "from `fs_bk_lbhs_next0b1s_indexper_scale1.41.61.2_0.0_0.0` `fbln0b1sis1.41.61.20.00.0`\n" +
+                "from `fs_bk_lbhs_next0b1s_indexper_scale1.41.61.2_1.0_1.0` `fbln0b1sis1.41.61.20.00.0`\n" +
                 "where form_set_id = {} order by trade_date";
+
+
         DataFrame<Object> dataFrame = DataFrameS.readSql(ConnectionFactory.getConnLocalKlineForms(),
-                StrUtil.format(sql, 18));
+                StrUtil.format(sql, 618));
 
 
         List<Double> doubles1 = DataFrameS.getColAsDoubleList(dataFrame, 0);
-        doubles1 = doubles1.subList(0, 200);
-
+//        doubles1 = doubles1.subList(200, 400);
 
 
         Console.log(doubles1.stream().mapToDouble(value -> value).summaryStatistics());

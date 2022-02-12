@@ -45,6 +45,7 @@ public class TushareApi {
     public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(256);
     public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, Double> percentChangeCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, String> preTradeDateCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
@@ -432,6 +433,7 @@ public class TushareApi {
      *
      * @return
      */
+    @Cached
     public static List<String> getKeyIntsDateByStockAndToday(String stock, String today, List<Integer> keyInts)
             throws SQLException {
         String cacheKey = StrUtil.format("{}__{}__{}", stock, today, keyInts);
@@ -464,6 +466,35 @@ public class TushareApi {
         }
         keyIntsDateByStockAndTodayCache.put(cacheKey, keyIntsDates);
         return keyIntsDates;
+    }
+
+    /**
+     * 非常简单读取 某股票某日收盘价格变化百分比
+     *
+     * @param stock
+     * @param date
+     * @return
+     */
+    public static Double getPercentChangeOfCloseByDateAndStock(String stock, String date) throws SQLException {
+        String cacheKey = stock + date;
+        Double res = percentChangeCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        String sql = StrUtil.format("select pct_chg from {} where ts_code='{}' and " +
+                "trade_date='{}'", StrUtil.format(STOCK_PRICE_DAILY_TABLENAME_TEMPLATE,
+                "nofq"), stock, date); // 包括今天,且从0开始
+        DataFrame<Object> dfTemp = DataFrameS.readSql(connLocalTushare, sql);
+
+        if (dfTemp.length() > 0) {
+            res = Double.valueOf(dfTemp.get(0, 0).toString());
+        } else {
+            log.warn("获取某股票某日收盘价涨跌幅失败: {} -- {}, 返回0.0替代", stock, date);
+            return 0.0; // 默认返回 0.0
+        }
+        percentChangeCache.put(cacheKey, res);
+        return res;
     }
 
     /**

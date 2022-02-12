@@ -191,6 +191,21 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         return res;
     }
 
+    public static double[] getColAsDoubleArray(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
+        double[] res = new double[df.length()];
+        for (int i = 0; i < df.length(); i++) {
+            res[i] = Double.parseDouble(col.get(i).toString());
+        }
+        return res;
+    }
+
+
     public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
         //System.out.println(df.columns());
         List<Object> col;

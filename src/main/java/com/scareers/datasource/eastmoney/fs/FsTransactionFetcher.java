@@ -260,6 +260,7 @@ public class FsTransactionFetcher {
         log.warn("init process And datas: 初始化完成");
     }
 
+    private boolean logged = false;
 
     @SneakyThrows
     private void newDayDecide() {
@@ -273,7 +274,10 @@ public class FsTransactionFetcher {
 
         //todo: 合理应当判定今日是否交易日, 依赖tushare. 等有其他更好方式再替换.
         if (!TushareApi.isTradeDate(DateUtil.format(now, "yyyyMMdd"))) {
-            log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
+            if (!logged) {
+                log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
+                logged = true;
+            }
             this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
         }
 

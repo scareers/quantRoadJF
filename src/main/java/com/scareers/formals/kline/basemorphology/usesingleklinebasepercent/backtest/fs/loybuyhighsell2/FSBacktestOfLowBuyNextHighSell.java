@@ -1,4 +1,4 @@
-package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
+package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
@@ -25,12 +25,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.*;
-import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.SettingsOfFSBacktest.connLocalTushare;
+import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2.SettingsOfFSBacktest.*;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.sqlapi.KlineFormsApi.*;
-import static com.scareers.sqlapi.TushareApi.*;
+import static com.scareers.sqlapi.TushareApi.closePriceOfQfqStockSpecialDay;
+import static com.scareers.sqlapi.TushareApi.getKeyIntsDateByStockAndToday;
 import static com.scareers.sqlapi.TushareFSApi.getFs1mStockPriceOneDayAsDfFromTushare;
 import static com.scareers.utils.CommonUtil.range;
 import static com.scareers.utils.FSUtil.fsTimeStrParseToTickDouble;
@@ -60,19 +60,19 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class FSBacktestOfLowBuyNextHighSell {
     public static void main(String[] args) throws Exception {
         reportCpuMemoryDiskSubThread(false); // 播报硬件信息
-        double[] argOfLowBuys = {0.0};
-//        double[] argOfLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
-        double[] argOfHighSells = {0.0};
-//        double[] argOfHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        double[] argOfIndexLowBuys = {0.0};
+//        double[] argOfIndexLowBuys = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
+        double[] argOfIndexHighSells = {0.0};
+//        double[] argOfIndexHighSells = {-5.0, -3.0, -1.0, 0.0, 1.0, 3.0, 5.0};
 
-        for (int i = 0; i < argOfLowBuys.length; i++) {
-            Double lowbuyArg = argOfLowBuys[i];
-            for (int j = 0; j < argOfHighSells.length; j++) {
-                Double highSellArg = argOfHighSells[j];
+
+        for (int i = 0; i < argOfIndexLowBuys.length; i++) {
+            Double lowbuyArg = argOfIndexLowBuys[i];
+            for (int j = 0; j < argOfIndexHighSells.length; j++) {
+                Double highSellArg = argOfIndexHighSells[j];
 
                 Console.log("current settings: lowbuy: {}  highsell: {}", lowbuyArg, highSellArg);
-//                flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
-                flushSettingsOfPreDayCloseChangePercentEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
+                flushSettingsOfIndexBelongThatTimePriceEnhanceArg(lowbuyArg, highSellArg);// 刷新参数
                 Console.log(saveTablenameFSBacktest);
                 main0(); // 因同一进程, 因此相关sql查询结果已经被缓存
                 // @warning: 注意内存使用.    缓存了太多东西
@@ -244,9 +244,6 @@ public class FSBacktestOfLowBuyNextHighSell {
             // @2021/12/08 当时, 此买点的股票, 所属两大指数(上证或深成), 当刻涨跌幅. 9:30视为当日open
             Double indexBelongPricePercentAtThatTime;
 
-            // @2022/2/12 买入当天,前一天close的涨跌幅百分比. 简单表示着该股票前一天的强弱
-            Double stdDayCloseChangePercent; // 以基准那一天收盘涨跌幅作为参考
-
 
             public List<Double> toList() {
                 return Arrays.asList(timeTick, lowPricePercent, buyPricePercent, indexBelongPricePercentAtThatTime);
@@ -263,9 +260,6 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             // 对应low buy
             Double indexBelongPricePercentAtThatTime;
-
-            // @2022/2/12 卖出当天,前一天close的涨跌幅百分比. 简单表示着该股票卖出前一天收盘强弱
-            Double buyDayCloseChangePercent; // 以买入那天收盘涨跌幅作为参考
 
             public List<Double> toList() {
                 return Arrays.asList(timeTick, highPricePercent, sellPricePercent, indexBelongPricePercentAtThatTime);
@@ -531,7 +525,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     if (highPrice <= execHighSellThreshold) { // @noti: 凡是阈值, 一般都包含等于, 虽然计算卖点时已经计算过.这里重复嫌疑
                         continue; // 必须大于等于阈值
                     }
-                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfHighSell(singleBuyPoint,
+                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfHighSell(highPrice, indexPricePercentThatTime,
                             indexBelongThatTimePriceEnhanceArgHighSell);
                     // cdf使用 high 计算.  价格使用 sellPrice计算
                     Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, cdfCalcPrice,
@@ -712,7 +706,6 @@ public class FSBacktestOfLowBuyNextHighSell {
             for (String stock : stockHasPosition) {
                 resOfSellOpenAndClose.putIfAbsent(stock, Arrays.asList(0.0, 0.0)); // 赋值时, open和close分布设置 0/1 即可
                 String highSellDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(1); // get1 是卖出日期
-                String lowBuyDate = getKeyIntsDateByStockAndToday(stock, tradeDate, keyInts).get(0); // get1 是卖出日期
                 DataFrame<Object> dfFSHighSellDay = getFs1mStockPriceOneDayAsDfFromTushare(connOfFS, stock,
                         highSellDate,
                         fsSpecialUseFields); // Arrays.asList("trade_time", "close")
@@ -777,27 +770,33 @@ public class FSBacktestOfLowBuyNextHighSell {
                             // 买入点, 必须 越来越低, 才符合 cdf 仓位算法!. 因此 需判定此前是否已经有买入点?
                             Double highPrice = closeCol.get(i) / stdCloseOfHighSell - 1; // 高点价格
                             if (sellPoints.size() == 0) { // 我是第一个卖点, 直接加入
+//                                Double buyPrice = i != lenth - 1 ?  // 折算卖出价格. 高点和下一tick(低) 的平均值
+//                                        (closeCol.get(i) + closeCol
+//                                                .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+
                                 Double buyPrice = i != lenth - 1 ?  // 折算卖出价格. 高点和下一tick(低) 的平均值
-                                        (closeCol.get(i) + closeCol
-                                                .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+                                        (closeCol
+                                                .get(i + 1)) / ( stdCloseOfHighSell) - 1 : highPrice;
 
                                 // @update: 加入当时对应指数的涨跌幅. 9:30, 则为当日 open 的涨跌幅
                                 Double indexPricePercent = getCurrentBelongIndexPricePercent(i, stock,
                                         highSellDate);
                                 sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice,
-                                        indexPricePercent,
-                                        TushareApi.getPercentChangeOfCloseByDateAndStock(stock, lowBuyDate)));
+                                        indexPricePercent));
                             } else { // 此前有买入点, 当前价格, 应当 高于此前最后一个高点的 高点价格, 当然是百分比
                                 Double lastLowPrice = sellPoints.get(sellPoints.size() - 1).getHighPricePercent();
                                 if (highPrice > lastLowPrice) { // 必须更大, 才可能添加, 符合 cdf仓位算法
-                                    Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                            (closeCol.get(i) + closeCol
-                                                    .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+//                                    Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+//                                            (closeCol.get(i) + closeCol
+//                                                    .get(i + 1)) / (2 * stdCloseOfHighSell) - 1 : highPrice;
+
+                                    Double buyPrice = i != lenth - 1 ?  // 折算卖出价格. 高点和下一tick(低) 的平均值
+                                            (closeCol
+                                                    .get(i + 1)) / ( stdCloseOfHighSell) - 1 : highPrice;
                                     Double indexPricePercent = getCurrentBelongIndexPricePercent(i, stock,
                                             highSellDate);
                                     sellPoints.add(new SellPoint(tickDoubleCol.get(i), highPrice, buyPrice,
-                                            indexPricePercent,
-                                            TushareApi.getPercentChangeOfCloseByDateAndStock(stock, lowBuyDate)));
+                                            indexPricePercent));
                                 }
                             }
                         }
@@ -851,14 +850,14 @@ public class FSBacktestOfLowBuyNextHighSell {
                     // cdf 仓位买入  . --> cdf使用lowPrice低点,  其他均使用买入价格  buyPrice
                     Double lowPrice = singleBuyPoint.getLowPricePercent(); // 仅计算cdf
                     Double buyPrice = singleBuyPoint.getBuyPricePercent(); // 实际买入价格
-                    // Double indexPriceThatTime = singleBuyPoint.getIndexBelongPricePercentAtThatTime(); // 当时对应指数的涨跌
+                    Double indexPriceThatTime = singleBuyPoint.getIndexBelongPricePercentAtThatTime(); // 当时对应指数的涨跌
                     // @update: 实际值应当小于此值, 而HighSell 的实际值, 也应当小于此值.  但是注意LowBuy是 正-->负, HighSell相反
                     if (lowPrice > execLowBuyThreshold) { // @noti: 凡是阈值, 一般都包含等于
                         continue; // 必须小于等于阈值. 当然这是 低点的 绝对具体数值限制
                     }
 
                     // @key: cdfCalcPrice 就是以 BuyPoint各项属性(买点时各项数据), 折算一个仓位计算等价的price, 计算仓位
-                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfLowBuy(singleBuyPoint,
+                    Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfLowBuy(lowPrice, indexPriceThatTime,
                             indexBelongThatTimePriceEnhanceArgLowBuy);
 
                     // cdf使用low 计算.  价格使用buyPrice计算
@@ -934,25 +933,7 @@ public class FSBacktestOfLowBuyNextHighSell {
              * 同理, 大盘形势差, 需要更小的仓位, 需要更大的等价"price", 因此需要 - (大盘负数涨跌幅)
              *
              */
-            return lowPrice
-                    - indexBelongThatTimePriceEnhanceArgLowBuy * indexPriceThatTime; // @v2
-        }
-
-        //@noti: 更新
-        public static Double calcEquivalenceCdfUsePriceOfLowBuy(BuyPoint buyPoint,
-                                                                Double indexBelongThatTimePriceEnhanceArgLowBuy) {
-            // return lowPrice; // @v1
-            /*
-             * @noti: 大盘当tick涨跌幅 加成算法:
-             * 1.低买的tick是 前大后小, 且计算cdf是 按序的, 因此, 想要更大仓位, 需要 让"price" 更小.
-             * 因此, 在大盘此时形势很好, 正数, 在当前低点, 我应该用更高的仓位,激进一些, 因此 让 price更小, 则需要 - (大盘正涨跌幅)
-             * 同理, 大盘形势差, 需要更小的仓位, 需要更大的等价"price", 因此需要 - (大盘负数涨跌幅)
-             * 2.基准当天收盘涨跌幅参数: 同理, 做减法
-             */
-            return buyPoint.getLowPricePercent() - // 当时价格
-                    buyPoint.getIndexBelongPricePercentAtThatTime() * indexBelongThatTimePriceEnhanceArgLowBuy // 当时指数影响
-                    - buyPoint.getStdDayCloseChangePercent() // 前收盘涨跌幅影响
-                    ;
+            return lowPrice - indexBelongThatTimePriceEnhanceArgLowBuy * indexPriceThatTime; // @v2
         }
 
         /**
@@ -975,26 +956,7 @@ public class FSBacktestOfLowBuyNextHighSell {
              * 同理, 大盘形势差, 需要更大的仓位, 需要更大的等价"price", 因此需要 - (大盘负数涨跌幅)
              *
              */
-            return highPrice
-                    - indexBelongThatTimePriceEnhanceArgHighSell * indexPriceThatTime; // @v2
-        }
-
-        // @noti: 更新
-        public static Double calcEquivalenceCdfUsePriceOfHighSell(SellPoint sellPoint,
-                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell) {
-            // return lowPrice; // @v1
-            /*
-             * @noti: 大盘当tick涨跌幅 加成算法: 卖出
-             * 1.高卖的tick是 前小后大, 且计算cdf是 按序的, 因此, 想要更大仓位, 需要 让"price" 更大, 与低买相反
-             * 因此, 在大盘此时形势很好, 正数, 在当前高点, 我应该用更小的仓位, 博更高, 因此让 price更小, 则需要 - (大盘正涨跌幅)
-             * 同理, 大盘形势差, 需要更大的仓位, 需要更大的等价"price", 因此需要 - (大盘负数涨跌幅)
-             * 2.买入当天收盘涨跌幅参数: 同理, 做减法
-             */
-            return sellPoint.getHighPricePercent() -// 当时价格
-                    sellPoint
-                            .getIndexBelongPricePercentAtThatTime() * indexBelongThatTimePriceEnhanceArgHighSell// 当时指数影响
-                    - sellPoint.getBuyDayCloseChangePercent() // 买入当天收盘涨跌幅影响.
-                    ;
+            return highPrice - indexBelongThatTimePriceEnhanceArgHighSell * indexPriceThatTime; // @v2
         }
 
         public static Double calcWeightedGlobalPrice(HashMap<String, List<Double>> stockWithActualValueAndPosition) {
@@ -1101,27 +1063,33 @@ public class FSBacktestOfLowBuyNextHighSell {
                             // 买入点, 必须 越来越低, 才符合 cdf 仓位算法!. 因此 需判定此前是否已经有买入点?
                             Double lowPrice = closeCol.get(i) / stdCloseOfLowBuy - 1; // 低点价格
                             if (buyPoints.size() == 0) { // 我是第一个买点, 直接加入
+//                                Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+//                                        (closeCol.get(i) + closeCol
+//                                                .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
                                 Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                        (closeCol.get(i) + closeCol
-                                                .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                        (closeCol
+                                                .get(i + 1)) / (stdCloseOfLowBuy) - 1 : lowPrice;
+
                                 // @update: 加入当时对应指数的涨跌幅. 9:30, 则为当日 open 的涨跌幅
                                 Double indexPricePercent = getCurrentBelongIndexPricePercent(i, stock,
                                         lowBuyDate);
-
                                 buyPoints
-                                        .add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice, indexPricePercent
-                                                , TushareApi.getPercentChangeOfCloseByDateAndStock(stock, tradeDate)));
+                                        .add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice,
+                                                indexPricePercent));
                             } else { // 此前有买入点, 当前价格, 应当 低于此前最后一个低点的 低点价格, 当然是百分比
                                 Double lastLowPrice = buyPoints.get(buyPoints.size() - 1).getLowPricePercent();
                                 if (lowPrice < lastLowPrice) { // 必须更小, 才可能添加, 符合 cdf仓位算法
-                                    Double buyPrice = (i != lenth - 1) ?  // 折算买入价格. 低点和下一tick(高) 的平均值
-                                            (closeCol.get(i) + closeCol
-                                                    .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+//                                    Double buyPrice = (i != lenth - 1) ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+//                                            (closeCol.get(i) + closeCol
+//                                                    .get(i + 1)) / (2 * stdCloseOfLowBuy) - 1 : lowPrice;
+                                    Double buyPrice = i != lenth - 1 ?  // 折算买入价格. 低点和下一tick(高) 的平均值
+                                            (closeCol
+                                                    .get(i + 1)) / (stdCloseOfLowBuy) - 1 : lowPrice;
+
                                     Double indexPricePercent = getCurrentBelongIndexPricePercent(i, stock,
                                             lowBuyDate); // 对应
                                     buyPoints.add(new BuyPoint(tickDoubleCol.get(i), lowPrice, buyPrice,
-                                            indexPricePercent,
-                                            TushareApi.getPercentChangeOfCloseByDateAndStock(stock, tradeDate)));
+                                            indexPricePercent));
                                 }
                             }
                         }

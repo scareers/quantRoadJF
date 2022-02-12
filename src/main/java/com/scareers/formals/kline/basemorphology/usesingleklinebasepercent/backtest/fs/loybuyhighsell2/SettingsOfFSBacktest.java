@@ -1,9 +1,8 @@
-package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell;
+package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.sun.scenario.effect.impl.prism.sw.PSWDrawable;
 
 import java.sql.Connection;
 import java.util.Arrays;
@@ -33,8 +32,7 @@ public class SettingsOfFSBacktest {
     }
 
     /**
-     * 当对某参数进行回测时, 调用此方法, 可刷新对应参数, 当然需要传递参数过来.
-     * 本方法刷新 : 指数当时tick加成
+     * 当对某参数进行回测时, 调用此方法, 可刷新对应参数, 当然需要传递参数过来
      */
     public static void flushSettingsOfIndexBelongThatTimePriceEnhanceArg(
             Double indexBelongThatTimePriceEnhanceArgLowBuy0,
@@ -48,7 +46,7 @@ public class SettingsOfFSBacktest {
         Console.log("刷新设置项: {} {}", indexBelongThatTimePriceEnhanceArgLowBuy0,
                 indexBelongThatTimePriceEnhanceArgHighSell0);
         // 修改数据表相关设定
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_{}_{}";
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_v2_{}_{}";
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
                 keyInts.get(1), indexBelongThatTimePriceEnhanceArgLowBuy0, indexBelongThatTimePriceEnhanceArgHighSell0);
         // 因数据表刷新, 因此删除和创建sql也需要刷新
@@ -63,39 +61,7 @@ public class SettingsOfFSBacktest {
     }
 
     /**
-     * 类似的, 刷新以前日收盘涨跌幅简单表示的股票强弱参数倍率
-     *
-     * @param stdDayClosePercentChangeArgLowBuy
-     * @param buyDayClosePercentChangeArgHighSell
-     */
-    public static void flushSettingsOfPreDayCloseChangePercentEnhanceArg(
-            Double stdDayClosePercentChangeArgLowBuy0,
-            Double buyDayClosePercentChangeArgHighSell0
-    ) {
-        flushSettingsCore(); // 先重置, 再修改新的参数
-
-        // 指数当时tick加成
-        stdDayClosePercentChangeArgLowBuy = stdDayClosePercentChangeArgLowBuy0;
-        buyDayClosePercentChangeArgHighSell = buyDayClosePercentChangeArgHighSell0;
-
-        Console.log("刷新设置项: {} {}", stdDayClosePercentChangeArgLowBuy0,
-                buyDayClosePercentChangeArgHighSell0);
-        // 修改数据表相关设定
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_cp{}_cp{}"; // cp--> close percent
-        saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
-                keyInts.get(1), stdDayClosePercentChangeArgLowBuy0, buyDayClosePercentChangeArgHighSell0);
-        // 因数据表刷新, 因此删除和创建sql也需要刷新
-        sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
-        sqlCreateSaveTableFSBacktest = StrUtil.format(sqlCreateSaveTableFSBacktestRaw,
-                saveTablenameFSBacktest);
-        sqlDeleteExistDateRangeFSRaw = "delete from `{}` where stat_date_range=\'{}\'";
-        sqlDeleteExistDateRangeFSBacktest = StrUtil.format(sqlDeleteExistDateRangeFSRaw,
-                saveTablenameFSBacktest);
-    }
-
-    /**
-     * 刷新参数方法. 全部为默认参数. 请选择一组较优参数作为默认设定;
-     * 将被具体刷新某项参数的刷新设置方法调用,以重置默认设定后修改
+     * 刷新参数方法.
      * 对于几乎不会变的参数, 不在本函数刷新, 一旦设定, 至少在一次运行, 那些参数固定
      *
      * @noti: 注意一些少量的依赖关系.
@@ -117,13 +83,9 @@ public class SettingsOfFSBacktest {
         execLowBuyThreshold = +0.005;
         continuousFallTickCountThreshold = 1;
 
-        // 指数当时tick加成倍率
-        indexBelongThatTimePriceEnhanceArgLowBuy = 0.5;
-        indexBelongThatTimePriceEnhanceArgHighSell = 0.5;
-
-        // 买卖前日收盘前加成倍率
-        stdDayClosePercentChangeArgLowBuy = 0.5;
-        buyDayClosePercentChangeArgHighSell = 0.5;
+        // 指数当时tick加成
+        indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
+        indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
 
         // 开盘强卖参数
         forceSellOpenWeakStock = false;
@@ -138,7 +100,7 @@ public class SettingsOfFSBacktest {
 
 
     public static void settingTablenameRelative() { // 保存数据表相关设定
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s";
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_v2";
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
                 keyInts.get(1));
         sqlCreateSaveTableFSBacktestRaw = getSaveTableTemplate();
@@ -168,10 +130,6 @@ public class SettingsOfFSBacktest {
     // lb1: 大盘当时tick的涨跌幅加成算法.  两参数为0, 则相当于无此加成. 正数则符合现实意义, 也可尝试负数; 低买高卖参数可不同
     public static Double indexBelongThatTimePriceEnhanceArgLowBuy;   // 对大盘当时涨跌幅, 计入仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
     public static Double indexBelongThatTimePriceEnhanceArgHighSell;   // 对大盘当时涨跌幅, 计入 仓位算法时的倍率. 越大则大盘当时涨跌幅影响越大
-
-    // lb2: 低买则基准日, 高卖则低买日, 那日收盘价涨跌幅, 简单表示股票前日强弱, 该强弱对 低买/高卖仓位应当有所影响.
-    public static Double stdDayClosePercentChangeArgLowBuy; // 同lb1, 表示倍率.
-    public static Double buyDayClosePercentChangeArgHighSell;
 
     // 高卖设定
     // 1.强制开盘卖出弱势股设定. 弱势股定义: 开盘价真实涨跌幅<阈值 且 小于相对于today涨跌幅阈值
