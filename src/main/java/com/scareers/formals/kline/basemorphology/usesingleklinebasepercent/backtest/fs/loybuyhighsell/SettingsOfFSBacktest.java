@@ -48,7 +48,7 @@ public class SettingsOfFSBacktest {
         Console.log("刷新设置项: {} {}", indexBelongThatTimePriceEnhanceArgLowBuy0,
                 indexBelongThatTimePriceEnhanceArgHighSell0);
         // 修改数据表相关设定
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_{}_{}";
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_v2_ix{}_ix{}";
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
                 keyInts.get(1), indexBelongThatTimePriceEnhanceArgLowBuy0, indexBelongThatTimePriceEnhanceArgHighSell0);
         // 因数据表刷新, 因此删除和创建sql也需要刷新
@@ -81,7 +81,7 @@ public class SettingsOfFSBacktest {
         Console.log("刷新设置项: {} {}", stdDayClosePercentChangeArgLowBuy0,
                 buyDayClosePercentChangeArgHighSell0);
         // 修改数据表相关设定
-        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_cp{}_cp{}"; // cp--> close percent
+        saveTablenameFSBacktestRaw = "fs_backtest_lowbuy_highsell_next{}b{}s_v3_cp{}_cp{}"; // cp--> close percent
         saveTablenameFSBacktest = StrUtil.format(saveTablenameFSBacktestRaw, keyInts.get(0),
                 keyInts.get(1), stdDayClosePercentChangeArgLowBuy0, buyDayClosePercentChangeArgHighSell0);
         // 因数据表刷新, 因此删除和创建sql也需要刷新
