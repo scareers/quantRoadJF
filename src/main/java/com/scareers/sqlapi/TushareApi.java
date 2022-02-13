@@ -45,7 +45,7 @@ public class TushareApi {
     public static Cache<String, Object[]> stockPriceLimitMaxMinCache = CacheUtil.newLRUCache(256);
     public static Cache<String, List<String>> keyIntsDateByStockAndTodayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Double> closePriceOfQfqStockSpecialDayCache = CacheUtil.newLRUCache(2048);
-    public static Cache<String, Double> percentChangeCache = CacheUtil.newLRUCache(2048);
+    public static Cache<String, Double> percentChangeCache = CacheUtil.newLRUCache(4096);
     public static Cache<String, DataFrame<Object>> stockPriceOneDayCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, String> preTradeDateCache = CacheUtil.newLRUCache(2048);
     public static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
@@ -475,6 +475,7 @@ public class TushareApi {
      * @param date
      * @return
      */
+    @Cached
     public static Double getPercentChangeOfCloseByDateAndStock(String stock, String date) throws SQLException {
         String cacheKey = stock + date;
         Double res = percentChangeCache.get(cacheKey);
