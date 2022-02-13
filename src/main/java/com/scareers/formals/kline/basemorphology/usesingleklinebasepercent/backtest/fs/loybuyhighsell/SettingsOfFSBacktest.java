@@ -74,7 +74,6 @@ public class SettingsOfFSBacktest {
     ) {
         flushSettingsCore(); // 先重置, 再修改新的参数
 
-        // 指数当时tick加成
         stdDayClosePercentChangeArgLowBuy = stdDayClosePercentChangeArgLowBuy0;
         buyDayClosePercentChangeArgHighSell = buyDayClosePercentChangeArgHighSell0;
 

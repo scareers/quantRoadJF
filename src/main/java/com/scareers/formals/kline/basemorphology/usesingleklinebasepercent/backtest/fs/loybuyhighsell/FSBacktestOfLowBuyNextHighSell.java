@@ -532,7 +532,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                         continue; // 必须大于等于阈值
                     }
                     Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfHighSell(singleBuyPoint,
-                            indexBelongThatTimePriceEnhanceArgHighSell);
+                            indexBelongThatTimePriceEnhanceArgHighSell, buyDayClosePercentChangeArgHighSell);
                     // cdf使用 high 计算.  价格使用 sellPrice计算
                     Double cdfOfPoint = virtualCdfAsPositionForHighSell(ticksOfHigh1, weightsOfHigh1, cdfCalcPrice,
                             tickGap);
@@ -859,7 +859,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
                     // @key: cdfCalcPrice 就是以 BuyPoint各项属性(买点时各项数据), 折算一个仓位计算等价的price, 计算仓位
                     Double cdfCalcPrice = calcEquivalenceCdfUsePriceOfLowBuy(singleBuyPoint,
-                            indexBelongThatTimePriceEnhanceArgLowBuy);
+                            indexBelongThatTimePriceEnhanceArgLowBuy, stdDayClosePercentChangeArgLowBuy);
 
                     // cdf使用low 计算.  价格使用buyPrice计算
                     Double cdfOfPoint = virtualCdfAsPositionForLowBuy(ticksOfLow1, weightsOfLow1, cdfCalcPrice,
@@ -940,7 +940,8 @@ public class FSBacktestOfLowBuyNextHighSell {
 
         //@noti: 更新
         public static Double calcEquivalenceCdfUsePriceOfLowBuy(BuyPoint buyPoint,
-                                                                Double indexBelongThatTimePriceEnhanceArgLowBuy) {
+                                                                Double indexBelongThatTimePriceEnhanceArgLowBuy,
+                                                                Double stdDayClosePercentChangeArgLowBuy) {
             // return lowPrice; // @v1
             /*
              * @noti: 大盘当tick涨跌幅 加成算法:
@@ -951,7 +952,7 @@ public class FSBacktestOfLowBuyNextHighSell {
              */
             return buyPoint.getLowPricePercent() - // 当时价格
                     buyPoint.getIndexBelongPricePercentAtThatTime() * indexBelongThatTimePriceEnhanceArgLowBuy // 当时指数影响
-                    - buyPoint.getStdDayCloseChangePercent() // 前收盘涨跌幅影响
+                    - buyPoint.getStdDayCloseChangePercent() * stdDayClosePercentChangeArgLowBuy // 前收盘涨跌幅影响
                     ;
         }
 
@@ -966,7 +967,8 @@ public class FSBacktestOfLowBuyNextHighSell {
          * @return
          */
         public static Double calcEquivalenceCdfUsePriceOfHighSell(Double highPrice, Double indexPriceThatTime,
-                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell) {
+                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell
+                                                                  ) {
             // return lowPrice; // @v1
             /*
              * @noti: 大盘当tick涨跌幅 加成算法: 卖出
@@ -981,7 +983,8 @@ public class FSBacktestOfLowBuyNextHighSell {
 
         // @noti: 更新
         public static Double calcEquivalenceCdfUsePriceOfHighSell(SellPoint sellPoint,
-                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell) {
+                                                                  Double indexBelongThatTimePriceEnhanceArgHighSell,
+                                                                  Double buyDayClosePercentChangeArgHighSell) {
             // return lowPrice; // @v1
             /*
              * @noti: 大盘当tick涨跌幅 加成算法: 卖出
@@ -993,7 +996,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             return sellPoint.getHighPricePercent() -// 当时价格
                     sellPoint
                             .getIndexBelongPricePercentAtThatTime() * indexBelongThatTimePriceEnhanceArgHighSell// 当时指数影响
-                    - sellPoint.getBuyDayCloseChangePercent() // 买入当天收盘涨跌幅影响.
+                    - sellPoint.getBuyDayCloseChangePercent() * buyDayClosePercentChangeArgHighSell // 买入当天收盘涨跌幅影响.
                     ;
         }
 
