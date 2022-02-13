@@ -71,7 +71,7 @@ public class IndexRealTimeRaiseFallParameter {
         double pow = Math.pow(product, (double) 1 / doubleList.size()) - 1;
         Console.log(pow);
 
-        ChartUtil.listOfDoubleAsLineChartSimple(products);
+        ChartUtil.listOfDoubleAsLineChartSimple(products,null,true);
 
     }
 

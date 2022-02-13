@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.fs.FsF
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.TreeCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import lombok.Getter;
@@ -103,8 +104,10 @@ public class ObjectTreeWindow extends FuncFrameS {
         tree.setLocation(0, 0);
         JScrollPane jScrollPane = new JScrollPane(jPanel);
         jScrollPane.setBorder(null);
-        jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
-        jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPane, COLOR_THEME_MINOR, COLOR_SCROLL_BAR_THUMB); // 替换自定义barUi
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.add(jScrollPane, BorderLayout.CENTER);

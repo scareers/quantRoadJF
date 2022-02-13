@@ -1,6 +1,8 @@
 package com.scareers.pandasdummy;
 
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -218,6 +220,22 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         List<String> res = new ArrayList<>();
         for (Object o : col) {
             res.add(o.toString());
+        }
+        return res;
+    }
+
+    public static List<DateTime> getColAsDateList(DataFrame<Object> df, Object colNameOrIndex) {
+        //System.out.println(df.columns());
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            //e.printStackTrace();
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
+        List<DateTime> res = new ArrayList<>();
+        for (Object o : col) {
+            res.add(DateUtil.parse(o.toString()));
         }
         return res;
     }

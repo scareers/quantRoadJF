@@ -10,6 +10,7 @@ import cn.hutool.extra.mail.MailUtil;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
@@ -22,10 +23,12 @@ import java.util.function.BooleanSupplier;
  */
 public class CommonUtil {
     public static void main(String[] args) throws TimeoutException, InterruptedException {
-        Console.log(countTrueOfListBooleans(Arrays.asList(true, false, true)));
-        Console.log(Collections.frequency(Arrays.asList(true, false, true), true));
-        waitEnter();
+//        Console.log(countTrueOfListBooleans(Arrays.asList(true, false, true)));
+//        Console.log(Collections.frequency(Arrays.asList(true, false, true), true));
+//        waitEnter();
 //        waitForever();
+
+        openUrlWithDefaultBrowser("https://www.baidu.com");
     }
 
     /**
@@ -271,6 +274,25 @@ public class CommonUtil {
                             false, null);
                 }
             });
+        }
+    }
+
+    /**
+     * 默认浏览器打开某url
+     *
+     * @param args
+     */
+    public static void openUrlWithDefaultBrowser(String url) {
+        if (java.awt.Desktop.isDesktopSupported()) {
+            try {
+                java.net.URI uri = java.net.URI.create(url);
+                java.awt.Desktop dp = java.awt.Desktop.getDesktop();
+                if (dp.isSupported(java.awt.Desktop.Action.BROWSE)) {
+                    dp.browse(uri);
+                }
+            } catch (NullPointerException | IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

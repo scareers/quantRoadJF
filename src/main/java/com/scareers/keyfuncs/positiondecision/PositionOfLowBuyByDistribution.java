@@ -452,7 +452,7 @@ public class PositionOfLowBuyByDistribution {
             weightObjs.add(new WeightObj<>(valuePercents.get(i), weights.get(i)));
         }
         if (showDistribution) {
-            listOfDoubleAsLineChartSimple(weights, false, null, valuePercents);
+            listOfDoubleAsLineChartSimple(weights, null,true);
         }
         return RandomUtil.weightRandom(weightObjs);
     }

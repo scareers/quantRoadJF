@@ -1,7 +1,11 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.log;
 
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
+
 import javax.swing.*;
 import java.awt.*;
+
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
  * description: log文本展示
@@ -23,6 +27,8 @@ public class DisplayForLog extends JPanel {
                 JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane.setViewportView(logTextPane);
         jScrollPane.setBorder(null);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPane, COLOR_THEME_MAIN , COLOR_SCROLL_BAR_THUMB); // 替换自定义barUi
         this.add(jScrollPane, BorderLayout.CENTER);
         this.setBorder(null);
     }

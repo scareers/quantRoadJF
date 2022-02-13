@@ -307,7 +307,7 @@ public abstract class FuncFrameS extends JInternalFrame {
         if (bindToCorePane) {
             registerSelfToCorePane(); // 将自身 注册到 corePane,将显示.
         }
-
+        this.setBorder(null);
         this.flushBounds(true); // 首次刷新, 将尽量采用默认尺寸
     }
 

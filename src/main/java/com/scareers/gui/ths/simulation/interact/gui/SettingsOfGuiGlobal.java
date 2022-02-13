@@ -20,10 +20,12 @@ public class SettingsOfGuiGlobal {
     public static Color COLOR_THEME_TITLE = new Color(59, 71, 84); // 主色3, 子组件标题栏颜色
     public static Color COLOR_GRAY_COMMON = new Color(187, 187, 187); // 常规灰,按钮字颜色
     public static Color COLOR_TREE_ITEM_SELECTED = new Color(75, 110, 175); // 树形菜单被选中
+    public static Color COLOR_SCROLL_BAR_THUMB = new Color(94,97,97); // 滚动条背景
+    public static Color COLOR_SPLIT_PANE_DIVIDER_BACK = new Color(49,51,53); // 分割面板分隔条主颜色
 
     public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
 
-    public static Color colorTest = new Color(51, 51, 51); // 测试颜色.., 方便看..
+    public static Color colorTest = new Color(200, 221, 242); // 测试颜色.., 方便看..
 
     // 2.主界面相关设定
     public static final String ICON_TITLE_PATH = "gui/img/titleIcon0.png"; // 图标

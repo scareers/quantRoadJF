@@ -1,12 +1,15 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.order.Order;
 import lombok.Getter;
 
 import javax.swing.*;
 import java.awt.*;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_SCROLL_BAR_THUMB;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.setLabelForeColorByOrderLifePoint;
 
@@ -27,15 +30,19 @@ public class OrderDetailPanel extends JPanel {
         label.setForeground(Color.green);
         label.setVerticalAlignment(JLabel.TOP);
         label.setHorizontalAlignment(JLabel.LEFT);
-        label.setBorder(BorderFactory.createLineBorder(Color.green));
+        label.setBorder(BorderFactory.createLineBorder(COLOR_THEME_MINOR));
+//        label.setBorder(null);
 
         JScrollPane jScrollPane = new JScrollPane();
         jScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPane.setViewportView(label);
         jScrollPane.getViewport().setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
-
-
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPane, COLOR_THEME_MINOR, COLOR_SCROLL_BAR_THUMB); // 替换自定义barUi
+//        jScrollPane.setBorder(null);
+        jScrollPane.setBorder(BorderFactory.createLineBorder(COLOR_THEME_MINOR));
+        this.setBorder(BorderFactory.createLineBorder(COLOR_THEME_MINOR));
         this.add(jScrollPane, BorderLayout.CENTER);
 
 

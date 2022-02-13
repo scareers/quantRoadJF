@@ -4,6 +4,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.OrderListCellRendererS;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.OrderPo;
@@ -12,6 +13,9 @@ import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicScrollBarUI;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -19,8 +23,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_GRAY_COMMON;
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
@@ -145,6 +148,8 @@ public class OrderListAndDetailPanel extends JPanel {
         this.type = type;
         this.mainDisplayWindow = mainDisplayWindow;
         currentDataFlushType = this.type;
+        this.setBorder(BorderFactory.createLineBorder(Color.black));
+        mainDisplayWindow.setBackground(COLOR_THEME_MINOR);
 
         // 1.主容器
         this.setLayout(new BorderLayout());
@@ -153,17 +158,23 @@ public class OrderListAndDetailPanel extends JPanel {
         jList = getOrderSimpleJList();
         jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
         jList.setPreferredSize(new Dimension(300, 10000));
-        jList.setBackground(COLOR_THEME_TITLE);
+        jList.setBackground(COLOR_THEME_MAIN);
+        jList.setBorder(null);
         JScrollPane jScrollPaneForList = new JScrollPane();
+        jScrollPaneForList.setBorder(null);
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setViewportView(jList);
         jScrollPaneForList.getViewport().setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
         this.add(jScrollPaneForList, BorderLayout.WEST); // 添加列表
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义barUi
 
         // 3.JSplitPane 分割显示 Order详情 及 响应对象
         JSplitPane orderContent = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // box 存放 order详情和响应
+        orderContent.setBorder(null);
         orderContent.setDividerLocation(500);
+        orderContent.setDividerSize(5);
 
         // 3.1. Order详情控件
         OrderDetailPanel orderDetailPanel = getDetailPanel();
@@ -172,6 +183,25 @@ public class OrderListAndDetailPanel extends JPanel {
         // 3.2. Order响应控件
         OrderResponsePanel responsePanel = getResponsePanel();
         orderContent.setRightComponent(responsePanel);
+
+
+        // 3.3 分割线对象: @noti: 设置分割线颜色 必须重写ui类和 divider类才行
+        BasicSplitPaneUI ui = new BasicSplitPaneUI() {
+            @Override
+            public BasicSplitPaneDivider createDefaultDivider() {
+                BasicSplitPaneDivider divider = new BasicSplitPaneDivider(this) {
+                    @Override
+                    public void paint(Graphics g) {
+                        super.paint(g);
+                        Dimension size = getSize();
+                        g.setColor(COLOR_SPLIT_PANE_DIVIDER_BACK); //
+                        g.fillRect(0, 0, size.width, size.height);
+                    }
+                };
+                return divider;
+            }
+        };
+        orderContent.setUI(ui);
 
         // 4.添加分割面板
         this.add(orderContent, BorderLayout.CENTER);

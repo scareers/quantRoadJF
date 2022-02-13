@@ -226,7 +226,7 @@ public class TraderGui extends JFrame {
                     public void actionPerformed(ActionEvent e) {
                         objectTreeWindow = ObjectTreeWindow
                                 .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
-                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.2, 30,
+                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.15, 30,
                                         false,
                                         layerOfObjectsTree + 1); // 一定不为null, 单例
                         corePanel.registerFuncBtnAndCorrespondFuncFrame(objectsBtn, objectTreeWindow);
@@ -242,10 +242,12 @@ public class TraderGui extends JFrame {
 
                 ThreadUtil.execAsync(() -> {
                     try {
+                        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
                         mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
 //                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
                         mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
+
                         Trader.getAndStartInstance();
                     } catch (Exception ex) {
                         ex.printStackTrace();
@@ -384,6 +386,16 @@ public class TraderGui extends JFrame {
         UIManager.put("InternalFrame.activeTitleForeground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
         UIManager.put("InternalFrame.inactiveTitleBackground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
         UIManager.put("InternalFrame.inactiveTitleForeground", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
+
+        // 分割面板
+        UIManager.put("SplitPaneDivider.draggingColor", new javax.swing.plaf.ColorUIResource(Color.red));
+        UIManager.put("SplitPaneDivider.border", null);
+
+        // 滚动条
+        UIManager.put("ScrollBar.width", 12); // 滚动条宽度
+        UIManager.put("ScrollBar.thumb", new javax.swing.plaf.ColorUIResource(Color.black)); // 滚动条上下按钮背景色
+
+
 
     }
 

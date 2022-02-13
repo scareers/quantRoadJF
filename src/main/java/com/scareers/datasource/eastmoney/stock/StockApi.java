@@ -147,6 +147,8 @@ public class StockApi {
 //        Console.log(getPreNTradeDateStrict("2021-01-08"));
 //        Console.log(timer.intervalRestart());
 
+        Console.log(getPreCloseAndTodayOpenOfIndex("000001", 2000));
+
     }
 
     static {
@@ -300,18 +302,183 @@ public class StockApi {
     }
 
     /**
-     * 获取当日某个股的涨跌停限价. [涨停价,跌停价]
+     * 获取当日某个股的涨跌停限价. [涨停价,跌停价]. 调用盘口api
+     *
+     * @param stock
+     * @return
+     */
+    public static List<Double> getPriceLimitToday(String stockSimpleCode, int timeout) throws Exception {
+        JSONObject resp = getStockHandicapCore(stockSimpleCode, "f51,f52", timeout);
+        List<Double> res = new ArrayList<>();
+        res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
+        res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
+        return res;
+    }
+
+    /**
+     * 获取昨收今开
+     *
+     * @param stockSimpleCode
+     * @param timeout
+     * @return
+     * @throws Exception
+     */
+    public static List<Double> getPreCloseAndTodayOpen(String stockSimpleCode, int timeout) throws Exception {
+        JSONObject resp = getStockHandicapCore(stockSimpleCode, "f60,f46", timeout);
+        List<Double> res = new ArrayList<>();
+        res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
+        res.add(Double.valueOf(resp.getByPath("data.f46").toString())); // 今开
+        return res;
+    }
+
+    /**
+     * 实时核心盘口数据. 该api可访问极多数据项.
      * 东方财富行情页面, 主api之一, 有很多字段, 包括盘口. 均使用此url, 可传递极多字段
      * http://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f43,f57,f58,f169,f170,f46,f44,f51,f168,f47,f164,f163,f116,f60,f45,f52,f50,f48,f167,f117,f71,f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
      * <p>
      * 其中 f51(涨停),f52(跌停) 是该股票涨跌停价格
      * jQuery112409228148447288975_1643015501069({"rc":0,"rt":4,"svr":181233083,"lt":1,"full":1,"data":{"f51":39.89,"f52":26.59}});
      * https://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f51,f52&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
+     * <p>
+     * {
+     * "rc": 0,
+     * "rt": 4,
+     * "svr": 181669437,
+     * "lt": 1,
+     * "full": 1,
+     * "data": {
+     * "f43": 8.74, 最新
+     * "f44": 8.76, 最高
+     * "f45": 8.67, 最低
+     * "f46": 8.7,  今开
+     * "f47": 376829, 总手
+     * "f48": 328719168.0,  金额
+     * "f49": 221532, 外盘
+     * "f50": 0.96,  量比
+     * "f51": 9.56,  涨停
+     * "f52": 7.82,  跌停
+     * "f55": 1.415091382, 公司核心数据-收益(三)
+     * "f57": "600000", 股票代码
+     * "f58": "浦发银行", 名称
+     * "f60": 8.69, 昨收
+     * "f62": 3,
+     * "f71": 8.72, 均价
+     * "f78": 0,
+     * "f80": "[{\"b\":202202110930,\"e\":202202111130},{\"b\":202202111300,\"e\":202202111500}]", 交易时间
+     * "f84": 29352168006.0, 总股本
+     * "f85": 29352168006.0, 流通股本
+     * "f86": 1644566391,
+     * "f92": 18.7324153, 每股净资产
+     * "f104": 191137000000.0,
+     * "f105": 41536000000.0, 净利润
+     * "f107": 1,
+     * "f110": 1,
+     * "f111": 2,
+     * "f116": 256537948372.44, 总市值
+     * "f117": 256537948372.44, 流通市值
+     * "f127": "银行",
+     * "f128": "上海板块",
+     * "f135": 129358320.0,
+     * "f136": 129068671.0,
+     * "f137": 289649.0,
+     * "f138": 38749279.0,
+     * "f139": 51406071.0,
+     * "f140": -12656792.0,
+     * "f141": 90609041.0,
+     * "f142": 77662600.0,
+     * "f143": 12946441.0,
+     * "f144": 99927841.0,
+     * "f145": 109458394.0,
+     * "f146": -9530553.0,
+     * "f147": 88260797.0,
+     * "f148": 79019893.0,
+     * "f149": 9240904.0,
+     * "f161": 155297,  内盘
+     * "f162": 4.63,  市盈率[动]
+     * "f163": 4.4,
+     * "f164": 4.65,
+     * "f167": 0.47, 市净率
+     * "f168": 0.13, 换手 0.13%
+     * "f169": 0.05,  涨跌价格值
+     * "f170": 0.58, // 涨幅%
+     * "f173": 7.25,  ROE%
+     * "f177": 577,
+     * "f183": 143484000000.0,  总营收
+     * "f184": -3.5278455736, 总营收同比
+     * "f185": -7.165526798087, 净利润同比
+     * "f186": 0.0,  毛利率%
+     * "f187": 29.3614619052, 净利率
+     * "f188": 91.6841375217, 负债率
+     * "f189": 19991110,
+     * "f190": 6.300658948334, 每股未分配利润(元)
+     * "f191": -41.62, 委比
+     * "f192": -25487, 委差
+     * "f193": 0.09,
+     * "f194": -3.85,
+     * "f195": 3.94,
+     * "f196": -2.9,
+     * "f197": 2.81,
+     * "f199": 90,
+     * "f250": "-",
+     * "f251": "-",
+     * "f252": "-",
+     * "f253": "-",
+     * "f254": "-",
+     * "f255": 0,
+     * "f256": "-",
+     * "f257": 0,
+     * "f258": "-",
+     * "f262": "110059",
+     * "f263": 1,
+     * "f264": "浦发转债",
+     * "f266": 107.32,
+     * "f267": 106.98,
+     * "f268": -0.32,
+     * "f269": "-",
+     * "f270": 0,
+     * "f271": "-",
+     * "f273": "-",
+     * "f274": "-",
+     * "f275": "-",
+     * "f280": "-",
+     * "f281": "-",
+     * "f282": "-",
+     * "f284": 0,
+     * "f285": "-",
+     * "f286": 0,
+     * "f287": "-",
+     * "f292": 5,
+     * "f31": 8.78, // 卖5
+     * "f32": 7546, // 卖5量
+     * "f33": 8.77, // 卖4
+     * "f34": 5681,
+     * "f35": 8.76, // 卖3
+     * "f36": 11189,
+     * "f37": 8.75, // 卖2
+     * "f38": 10413,
+     * "f39": 8.74, // 卖1
+     * "f40": 8531, // 卖1量
+     * "f19": 8.73, // 买1
+     * "f20": 3553, // 买1量
+     * "f17": 8.72,
+     * "f18": 4841,
+     * "f15": 8.71,
+     * "f16": 1406,
+     * "f13": 8.7,
+     * "f14": 6429,
+     * "f11": 8.69, // 买5
+     * "f12": 1644 // 买5量
+     * }
+     * }
      *
-     * @param stock
-     * @return
+     * @param stockSimpleCode
+     * @param fields          访问的字段列表, 逗号分割
+     * @param timeout
+     * @return 解析的json响应. 具体字段的访问由调用方决定. date.字段名: Double.valueOf(resp.getByPath("data.f51").toString())
+     * @throws Exception
      */
-    public static List<Double> getPriceLimitToday(String stockSimpleCode, int timeout) throws Exception {
+    private static JSONObject getStockHandicapCore(String stockSimpleCode, String fields, int timeout)
+            throws Exception {
         SecurityBeanEm bean = SecurityBeanEm.createStock(stockSimpleCode);
         String secId = bean.getSecId(); // 获取准确的secId
 
@@ -321,7 +488,7 @@ public class StockApi {
         params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
         params.put("invt", "2");
         params.put("fltt", "2");
-        params.put("fields", "f51,f52");
+        params.put("fields", fields);
         params.put("secid", secId);
         params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
                 System.currentTimeMillis() - RandomUtil.randomInt(1000)));
@@ -337,11 +504,117 @@ public class StockApi {
             return null;
         }
         response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
-        JSONObject resp = JSONUtil.parseObj(response);
+        return JSONUtil.parseObj(response);
+    }
 
-        res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
-        res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
+    /**
+     * 获取指数昨收今开, 使用盘口api
+     *
+     * @param indexSimpleCode
+     * @param timeout
+     * @return
+     * @throws Exception
+     */
+    public static List<Double> getPreCloseAndTodayOpenOfIndex(String indexSimpleCode, int timeout) throws Exception {
+        JSONObject resp = getIndexHandicapCore(indexSimpleCode, "f60,f46", timeout); // 字段同个股. 昨收今开
+        List<Double> res = new ArrayList<>();
+        res.add(Double.valueOf(resp.getByPath("data.f60").toString()) / 100); // 昨收 , 注意/100
+        res.add(Double.valueOf(resp.getByPath("data.f46").toString()) / 100); // 今开
         return res;
+    }
+
+    /**
+     * 指数实时行情. 盘口
+     * http://push2.eastmoney.com/api/qt/stock/get?invt=2&fltt=1&cb=jQuery351037846734899553613_1644751180897&fields=f58%2Cf107%2Cf57%2Cf43%2Cf59%2Cf169%2Cf170%2Cf152%2Cf46%2Cf60%2Cf44%2Cf45%2Cf47%2Cf48%2Cf19%2Cf532%2Cf39%2Cf161%2Cf49%2Cf171%2Cf50%2Cf86%2Cf600%2Cf601%2Cf154%2Cf84%2Cf85%2Cf168%2Cf108%2Cf116%2Cf167%2Cf164%2Cf92%2Cf71%2Cf117%2Cf292%2Cf113%2Cf114%2Cf115%2Cf119%2Cf120%2Cf121%2Cf122&secid=1.000001&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1644751180898
+     * 数据实例
+     * {
+     * "rc": 0,
+     * "rt": 4,
+     * "svr": 182995791,
+     * "lt": 1,
+     * "full": 1,
+     * "data": {
+     * "f43": 346295, 最新
+     * "f44": 350015, 最高
+     * "f45": 345933, 最低
+     * "f46": 347228, 今开
+     * "f47": 361356091, 成交量
+     * "f48": 426297925632.0, 成交额
+     * "f49": 168609531, 外盘
+     * "f50": 107,
+     * "f57": "000001",
+     * "f58": "上证指数",
+     * "f59": 2,
+     * "f60": 348591, 昨收
+     * "f71": "-",
+     * "f84": 4629436239233.0,
+     * "f85": 4061217883902.0,
+     * "f86": 1644566379,
+     * "f92": "-",
+     * "f107": 1,
+     * "f108": "-",
+     * "f113": 285, 涨家数
+     * "f114": 1765, 跌家数
+     * "f115": 44, 平家数
+     * "f116": 49300990877782.0,
+     * "f117": 41749793711638.0, 流通市值
+     * "f119": 302, 5日涨跌幅, /100百分比
+     * "f120": -326, 20日涨跌幅
+     * "f121": -198, 60日
+     * "f122": -486, 今年
+     * "f152": 2,
+     * "f154": 4,
+     * "f161": 192746560, 内盘
+     * "f164": "-",
+     * "f167": "-",
+     * "f168": 89, 换手率, /100百分比, 0.89%
+     * "f169": -2296, 涨跌点数, 注意 /100, 实际 22.96点
+     * "f170": -66, 涨跌幅度, 同样 /100且百分比,  -0.66%
+     * "f171": 117, 振幅, /100百分比  1.17%
+     * "f292": 5,
+     * "f39": "-",
+     * "f40": "-",
+     * "f19": "-",
+     * "f20": "-",
+     * "f600": "-",
+     * "f601": "-"
+     * }
+     * }
+     *
+     * @param indexCodeSimple
+     * @param fields
+     * @param timeout
+     * @return
+     * @throws Exception
+     */
+    private static JSONObject getIndexHandicapCore(String indexCodeSimple, String fields, int timeout)
+            throws Exception {
+        SecurityBeanEm bean = SecurityBeanEm.createIndex(indexCodeSimple);
+        String secId = bean.getSecId(); // 获取准确的secId
+
+        String url = "https://push2.eastmoney.com/api/qt/stock/get";
+
+        List<Double> res = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>(); // 参数map
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("invt", "2");
+        params.put("fltt", "1"); // 与股票相比, 仅本参数由2变1
+        params.put("fields", fields);
+        params.put("secid", secId);
+        params.put("cb", StrUtil.format("jQuery351037846734899553613_{}", // callback有变化
+                System.currentTimeMillis() - RandomUtil.randomInt(1000)));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseKevin(url, params, timeout, 3);
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("get exception: 访问http失败: 获取涨跌停价: stock: {}", secId);
+            return null;
+        }
+        response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
+        return JSONUtil.parseObj(response);
     }
 
 

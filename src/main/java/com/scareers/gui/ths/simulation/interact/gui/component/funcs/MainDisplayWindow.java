@@ -85,5 +85,4 @@ public class MainDisplayWindow extends FuncFrameS {
     protected List<FuncButton> getToolButtons2() {
         return super.defaultToolsButtonList2();
     }
-
 }
