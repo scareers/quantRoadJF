@@ -2,14 +2,24 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.fs;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
+import com.scareers.gui.ths.simulation.trader.Trader;
+import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.charts.ChartUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +28,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -169,7 +181,10 @@ public class FsFetcherListAndDataPanel extends JPanel {
         /**
          * @param parent 仅用于位置修复
          */
+        FsFetcherListAndDataPanel parent;
+
         public Fs1MPanel(FsFetcherListAndDataPanel parent) {
+            this.parent = parent;
             this.setBorder(null);
             this.setLayout(new BorderLayout());
 
@@ -194,7 +209,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
             buttonGraph.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    fullFlushFlag = true; // 下一次将全量更新
+                    showFs1MDialog();
                 }
             });
 
@@ -202,6 +217,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
             JPanel panel = new JPanel();
             panel.setLayout(new FlowLayout(FlowLayout.LEFT));
             panel.add(buttonFlush);
+            panel.add(buttonGraph);
             panel.setBorder(null);
             this.add(panel, BorderLayout.NORTH);
             this.add(jScrollPane, BorderLayout.CENTER);
@@ -265,6 +281,38 @@ public class FsFetcherListAndDataPanel extends JPanel {
             Vector<Object> cols = new Vector<>(fsDataOfStock.columns());
             model.setDataVector(datas, cols);
         }
+
+        /**
+         * fs图显示对话框
+         *
+         * @param owner
+         * @param parentComponent
+         */
+        private void showFs1MDialog() {
+            String title = StrUtil.format("分时图 - {} [{}]", preBean.getStockCodeSimple(), preBean.getName());
+            final JDialog dialog = new JDialog(TraderGui.INSTANCE, title, true);
+            dialog.setSize(800, 600);
+            dialog.setResizable(true);
+            dialog.setLocationRelativeTo(this.parent);
+
+            DataFrame<Object> dataDf = FsFetcher.getFsDatas().get(preBean);
+            DataFrame<Object> chartDf = dataDf.slice(0, dataDf.length(), 8, 9); // 价格列?
+            Console.log(chartDf);
+            JFreeChart chart = ChartFactory.createLineChart(
+                    null,
+                    "", "", ChartUtil.createDefaultCategoryDataset(
+                            chartDf,
+                            null));
+            ChartPanel chartPanel = new ChartPanel(chart);
+
+
+            // 设置对话框的内容面板
+            dialog.setContentPane(chartPanel);
+            // 显示对话框
+            dialog.setVisible(true);
+        }
+
+
     }
 
     public void showInMainDisplayWindow() {

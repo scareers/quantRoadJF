@@ -13,6 +13,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
+import com.sun.jna.platform.win32.Guid;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -45,6 +46,8 @@ import static com.scareers.utils.CommonUtil.waitForever;
 @Setter
 @Getter
 public class TraderGui extends JFrame {
+    public static TraderGui INSTANCE;
+
     private static final Log log = LogUtil.getLogger();
     public static int screenW; // 除去任务栏, 可用的全屏宽度/高度, 暂时未使用
     public static int screenH;
@@ -64,6 +67,7 @@ public class TraderGui extends JFrame {
 
     public static void main0(String[] agrs) throws Exception {
         TraderGui gui = new TraderGui();
+        INSTANCE = gui;
         gui.setVisible(true);
         gui.showSystemTray();
 //        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
