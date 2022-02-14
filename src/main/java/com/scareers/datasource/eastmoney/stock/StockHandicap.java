@@ -5,12 +5,18 @@ import java.util.HashMap;
 /**
  * description: 表示个股实时盘口各项数据的对象. rawJson保存了原始 json 对象.
  * 全字段参考下文, 但只保存部分字段, 且顺序类似 东财行情页面
+ * 1.5档盘口的金额由计算得到
+ * 2.包含5档盘口和16项常用盘口数据+委差委比; 不包含对应可转债 以及 基本面数据;
  *
  * @author: admin
  * @date: 2022/2/14/014-17:54:01
  * @see StockApi.getStockHandicap() 访问实时盘口
  */
 public class StockHandicap {
+    // 股票代码,名称
+    String stockCodeSimple; // "f57": "600000", 股票代码
+    String stockName; // "f58": "浦发银行", 名称
+
     // 委比,委差
     Double consignRatio; // "f191": -41.62, 委比
     Double consignDifference; // "f192": -25487, 委差
