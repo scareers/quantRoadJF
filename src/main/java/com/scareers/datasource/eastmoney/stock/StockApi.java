@@ -339,6 +339,7 @@ public class StockApi {
      * 获取个股昨收今开.
      * 1小时有效期缓存.
      * 通常昨收不会有问题, 今开在开盘以前为 "-", 将解析错误, 使用-1.0 替代
+     * TODO: 2022/2/14/014 该api数据刷新时间??
      *
      * @param stockCodeSimple
      * @param timeout
@@ -373,6 +374,7 @@ public class StockApi {
 
     /**
      * 个股实时盘口数据, 包含买卖盘, 常规行情项等.
+     * TODO: 2022/2/14/014 该api数据刷新时间??
      *
      * @param stockCodeSimple
      * @param fields
@@ -576,7 +578,7 @@ public class StockApi {
     }
 
     /**
-     * 获取指数昨收今开, 使用盘口api
+     * 获取指数昨收今开, 使用指数盘口api // 类似个股
      * 用-1.0 代表 - , 即暂无数据.
      *
      * @param indexSimpleCode
