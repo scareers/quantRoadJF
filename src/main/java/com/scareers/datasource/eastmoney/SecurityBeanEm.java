@@ -1,23 +1,16 @@
 package com.scareers.datasource.eastmoney;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.jfree.chart.util.HMSNumberFormat;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -28,7 +21,9 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsToBeanList;
 
 /**
- * description: 代表一特定证券/指数等资产. Em 东方财富.
+ * description: 代表一特定证券/指数/板块等资产. Em 东方财富.
+ * 内部查询api 可使用资产代码或者名称进行查询. 本类统一使用代码进行查询
+ * 注意, 单个bean, 仅可转换一次, 转换为特定类型后不可变化
  *
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
@@ -106,6 +101,22 @@ public class SecurityBeanEm {
     }
 
     /**
+     * 给定股票简单代码列表, 获取 已转换为 板块 的 SecurityBeanEm
+     *
+     * @param stockListSimple
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createBKList(List<String> stockListSimple) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+        for (SecurityBeanEm bean : beans) {
+            bean.convertToBK();
+            beanPool.put(bean.getStockCodeSimple() + "__bk", bean); // 放入缓存池
+        }
+        return beans;
+    }
+
+    /**
      * @param stockListSimple
      * @return
      * @throws Exception
@@ -128,9 +139,8 @@ public class SecurityBeanEm {
     private static final Log log = LogUtil.getLogger();
     private static final int retry = 3; // 查询时3次
 
-
     String stockCodeSimple;
-    Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.
+    Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.    板块为 90?
     // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
     private JSONArray queryResults; // 全部查询结果, 以下为结果字段
     // Code --> stockCodeSimple, MktNum--> market , QuoteID --> secId
@@ -157,7 +167,8 @@ public class SecurityBeanEm {
         NULL, // 尚未转换
         FAIL, // 转换失败
         STOCK, // 已转换为股票
-        INDEX // 已转换为指数
+        INDEX, // 已转换为指数
+        BK, // 已转换为板块
     }
 
     /**
@@ -198,7 +209,6 @@ public class SecurityBeanEm {
 
     /**
      * 尝试从查询结果中, 读取到股票结果, 填充各个字段, 然后返回this
-     * 调用后均需要判定转换成功与否!
      *
      * @return
      * @noti: 不新建对象
@@ -213,6 +223,27 @@ public class SecurityBeanEm {
             } else {
                 convertState = ConvertState.FAIL;
                 throw new Exception("转换StockBean为股票Bean异常");
+            }
+        }
+        return this;
+    }
+
+    /**
+     * 尝试从查询结果中, 读取到板块结果, 填充各个字段, 然后返回this
+     *
+     * @return
+     * @noti: 不新建对象
+     */
+    public SecurityBeanEm convertToBK() throws Exception {
+        if (convertState != ConvertState.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
+        if (convertState != ConvertState.BK) {
+            if (convert(Arrays.asList("BK"))) {
+                convertState = ConvertState.BK;
+            } else {
+                convertState = ConvertState.FAIL;
+                throw new Exception("转换StockBean为板块Bean异常");
             }
         }
         return this;
@@ -237,6 +268,9 @@ public class SecurityBeanEm {
         return this;
     }
 
+    /**
+     * 转换中具体的那一条json结果
+     */
     JSONObject convertRawJsonObject;
 
     private boolean convert(List<String> typeConditions) {
@@ -279,6 +313,10 @@ public class SecurityBeanEm {
         return this.convertState == ConvertState.STOCK;
     }
 
+    public boolean isBK() {
+        return this.convertState == ConvertState.BK;
+    }
+
 
     /**
      * 单个实例工厂, 使用缓存. SecurityBeanEm 一旦被转换为股票或者指数后, 不可变
@@ -310,9 +348,21 @@ public class SecurityBeanEm {
         return res;
     }
 
+    public static SecurityBeanEm createBK(String stockCodeSimple) throws Exception {
+        String cacheKey = stockCodeSimple + "__bk";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(stockCodeSimple).convertToBK();
+        beanPool.put(cacheKey, res);
+        return res;
+    }
+
+
     @Override
     public int hashCode() {
-        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode();
+        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode() | this.getSecId().hashCode();
     }
 
     @Override
@@ -320,7 +370,7 @@ public class SecurityBeanEm {
         if (obj instanceof SecurityBeanEm) {
             SecurityBeanEm other = (SecurityBeanEm) obj;
             return other.getStockCodeSimple().equals(this.getStockCodeSimple()) &&
-                    other.getMarket().equals(this.getMarket());
+                    other.getMarket().equals(this.getMarket()) && this.getSecId().equals(other.getSecId());
         }
         return false;
     }
