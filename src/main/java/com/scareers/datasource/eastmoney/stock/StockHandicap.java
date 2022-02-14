@@ -30,6 +30,73 @@ public class StockHandicap {
         initFieldsStr();
     }
 
+    /* toString()
+    StockHandicap(
+        stockCodeSimple=000001,
+        stockName=平安银行,
+        consignRatio=11.02,
+        consignDifference=1426.0,
+
+        sell5Price=16.63,
+        sell5Vol=839.0,
+        sell5Amount=1395257.0,
+
+        sell4Price=16.62,
+        sell4Vol=1158.0,
+        sell4Amount=1924596.0000000002,
+
+        sell3Price=16.61,
+        sell3Vol=947.0,
+        sell3Amount=1572967.0,
+
+        sell2Price=16.6,
+        sell2Vol=1996.0,
+        sell2Amount=3313360.0000000005,
+
+        sell1Price=16.59,
+        sell1Vol=821.0,
+        sell1Amount=1362039.0,
+
+        buy1Price=16.58,
+        buy1Vol=390.0,
+        buy1Amount=646619.9999999999,
+
+        buy2Price=16.57,
+        buy2Vol=2162.0,
+        buy2Amount=3582434.0000000005,
+
+        buy3Price=16.56,
+        buy3Vol=729.0,
+        buy3Amount=1207224.0,
+
+        buy4Price=16.55,
+        buy4Vol=2905.0,
+        buy4Amount=4807775.0,
+
+        buy5Price=16.54,
+        buy5Vol=1001.0,
+        buy5Amount=1655654.0,
+
+        newPrice=16.58,
+        avgPrice=16.67,
+        changePercent=-3.04,
+        changeValue=-0.52,
+        totalVol=1150659.0,
+        totalAmount=1.917613424E9,
+        turnoverRate=0.59,
+        volRatio=0.93,
+        highPrice=17.15,
+        lowPrice=16.51,
+        todayOpen=17.1,
+        preClose=17.1,
+        highLimitPrice=18.81,
+        lowLimitPrice=15.39,
+        outerVol=447054.0,
+        innerVol=703604.0,
+
+        rawJson={"f50":0.93,"f60":17.1,"f71":16.67,"f169":-0.52,"f52":15.39,"f168":0.59,"f51":18.81,"f43":16.58,"f45":16.51,"f44":17.15,"f47":1150659,"f58":"平安银行","f46":17.1,"f57":"000001","f161":703604,"f49":447054,"f48":1917613424,"f170":-3.04,"f192":1426,"f191":11.02}
+        )
+     */
 
     private static void initFieldsMap() {
         fieldsMap = new HashMap<>();
@@ -78,8 +145,15 @@ public class StockHandicap {
         fieldsMap.put("f161", "内盘");
     }
 
+    /**
+     * 实测需要传递全部字段, 该url才可以正常获取5档盘口数据, 若只传递5档字段, 将获取失败
+     * getStockHandicapCore()
+     * http://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f43,f57,f58,f169,f170,f46,f44,f51,f168,f47,f164,f163,f116,f60,f45,f52,f50,f48,f167,f117,f71,f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
+     */
     private static void initFieldsStr() {
-        fieldsStr = StrUtil.join(",", fieldsMap.keySet());
+        //fieldsStr = StrUtil.join(",", fieldsMap.keySet());
+        fieldsStr = "f43,f57,f58,f169,f170,f46,f44,f51,f168,f47,f164,f163,f116,f60,f45,f52,f50,f48,f167,f117,f71," +
+                "f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288";
     }
 
     // 股票代码,名称
@@ -196,32 +270,32 @@ public class StockHandicap {
         this.sell5Price = rawJson.getDouble("f31");
         this.sell5Vol = rawJson.getDouble("f32");
         if (this.sell5Price != null && this.sell5Vol != null) {
-            this.sell5Amount = sell5Price * sell5Amount * 100;
+            this.sell5Amount = sell5Price * sell5Vol * 100;
         }
 
         this.sell4Price = rawJson.getDouble("f33");
         this.sell4Vol = rawJson.getDouble("f34");
         if (this.sell4Price != null && this.sell4Vol != null) {
-            this.sell4Amount = sell4Price * sell4Amount * 100;
+            this.sell4Amount = sell4Price * sell4Vol * 100;
         }
 
         this.sell3Price = rawJson.getDouble("f35");
         this.sell3Vol = rawJson.getDouble("f36");
         if (this.sell3Price != null && this.sell3Vol != null) {
-            this.sell3Amount = sell3Price * sell3Amount * 100;
+            this.sell3Amount = sell3Price * sell3Vol * 100;
         }
 
 
         this.sell2Price = rawJson.getDouble("f37");
         this.sell2Vol = rawJson.getDouble("f38");
         if (this.sell2Price != null && this.sell2Vol != null) {
-            this.sell2Amount = sell2Price * sell2Amount * 100;
+            this.sell2Amount = sell2Price * sell2Vol * 100;
         }
 
         this.sell1Price = rawJson.getDouble("f39");
         this.sell1Vol = rawJson.getDouble("f40");
         if (this.sell1Price != null && this.sell1Vol != null) {
-            this.sell1Amount = sell1Price * sell1Amount * 100;
+            this.sell1Amount = sell1Price * sell1Vol * 100;
         }
     }
 
@@ -229,32 +303,32 @@ public class StockHandicap {
         this.buy5Price = rawJson.getDouble("f11");
         this.buy5Vol = rawJson.getDouble("f12");
         if (this.buy5Price != null && this.buy5Vol != null) {
-            this.buy5Amount = buy5Price * buy5Amount * 100;
+            this.buy5Amount = buy5Price * buy5Vol * 100;
         }
 
         this.buy4Price = rawJson.getDouble("f13");
         this.buy4Vol = rawJson.getDouble("f14");
         if (this.buy4Price != null && this.buy4Vol != null) {
-            this.buy4Amount = buy4Price * buy4Amount * 100;
+            this.buy4Amount = buy4Price * buy4Vol * 100;
         }
 
         this.buy3Price = rawJson.getDouble("f15");
         this.buy3Vol = rawJson.getDouble("f16");
         if (this.buy3Price != null && this.buy3Vol != null) {
-            this.buy3Amount = buy3Price * buy3Amount * 100;
+            this.buy3Amount = buy3Price * buy3Vol * 100;
         }
 
 
         this.buy2Price = rawJson.getDouble("f17");
         this.buy2Vol = rawJson.getDouble("f18");
         if (this.buy2Price != null && this.buy2Vol != null) {
-            this.buy2Amount = buy2Price * buy2Amount * 100;
+            this.buy2Amount = buy2Price * buy2Vol * 100;
         }
 
         this.buy1Price = rawJson.getDouble("f19");
         this.buy1Vol = rawJson.getDouble("f20");
         if (this.buy1Price != null && this.buy1Vol != null) {
-            this.buy1Amount = buy1Price * buy1Amount * 100;
+            this.buy1Amount = buy1Price * buy1Vol * 100;
         }
     }
 }
