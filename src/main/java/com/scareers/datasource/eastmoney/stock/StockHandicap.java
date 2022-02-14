@@ -1,5 +1,9 @@
 package com.scareers.datasource.eastmoney.stock;
 
+import cn.hutool.core.lang.Dict;
+import cn.hutool.json.JSONObject;
+import lombok.Getter;
+
 import java.util.HashMap;
 
 /**
@@ -7,12 +11,69 @@ import java.util.HashMap;
  * 全字段参考下文, 但只保存部分字段, 且顺序类似 东财行情页面
  * 1.5档盘口的金额由计算得到
  * 2.包含5档盘口和16项常用盘口数据+委差委比; 不包含对应可转债 以及 基本面数据;
+ * 3.字段若解析失败, 调用get将得到null, 而非使用 -1.0填充
  *
  * @author: admin
  * @date: 2022/2/14/014-17:54:01
  * @see StockApi.getStockHandicap() 访问实时盘口
  */
+@Getter // 仅可获取属性
 public class StockHandicap {
+    public static HashMap<String, String> fieldsMap; // 当前使用的字段 及 对应描述.
+
+    static {
+        initFieldsMap();
+    }
+
+    private static void initFieldsMap() {
+        fieldsMap = new HashMap<>();
+        fieldsMap.put("f57", "股票代码");
+        fieldsMap.put("f58", "股票名称");
+        fieldsMap.put("f191", "委比");
+        fieldsMap.put("f192", "委差");
+
+        fieldsMap.put("f31", "卖五");
+        fieldsMap.put("f32", "卖五量");
+        fieldsMap.put("f33", "卖四");
+        fieldsMap.put("f34", "卖四量");
+        fieldsMap.put("f35", "卖三");
+        fieldsMap.put("f36", "卖三量");
+        fieldsMap.put("f37", "卖二");
+        fieldsMap.put("f38", "卖二量");
+        fieldsMap.put("f39", "卖一");
+        fieldsMap.put("f40", "卖一量");
+
+        fieldsMap.put("f19", "买一");
+        fieldsMap.put("f20", "买一量");
+        fieldsMap.put("f17", "买二");
+        fieldsMap.put("f18", "买二量");
+        fieldsMap.put("f15", "买三");
+        fieldsMap.put("f16", "买三量");
+        fieldsMap.put("f13", "买四");
+        fieldsMap.put("f14", "买四量");
+        fieldsMap.put("f11", "买五");
+        fieldsMap.put("f12", "买五量");
+
+        fieldsMap.put("f43", "最新");
+        fieldsMap.put("f71", "均价");
+        fieldsMap.put("f170", "涨幅");
+        fieldsMap.put("f169", "涨跌");
+        fieldsMap.put("f47", "总手");
+        fieldsMap.put("f48", "金额");
+        fieldsMap.put("f168", "换手率");
+        fieldsMap.put("f50", "量比");
+        fieldsMap.put("f44", "最高");
+        fieldsMap.put("f45", "最低");
+        fieldsMap.put("f46", "今开");
+        fieldsMap.put("f60", "昨收");
+        fieldsMap.put("f51", "涨停");
+        fieldsMap.put("f52", "跌停");
+        fieldsMap.put("f49", "外盘");
+        fieldsMap.put("f161", "内盘");
+
+
+    }
+
     // 股票代码,名称
     String stockCodeSimple; // "f57": "600000", 股票代码
     String stockName; // "f58": "浦发银行", 名称
@@ -43,24 +104,24 @@ public class StockHandicap {
     Double sell1Amount;
 
     // 买盘5档, 注意字段顺序类似卖盘.
-    Double buy1Price; // "f19": 8.78, // 卖5
-    Double buy1Vol; // "f20": 7546, // 卖5量
+    Double buy1Price; // "f19": 8.78, // 买1
+    Double buy1Vol; // "f20": 7546, // 买1量
     Double buy1Amount; // 自行计算的 价格 * 手数 * 100 == 金额. 类似tushare, amount表示金额
 
-    Double buy2Price; // "f17": 8.78, // 卖5
-    Double buy2Vol; // "f18": 7546, // 卖5量
+    Double buy2Price; // "f17": 8.78, // 买2
+    Double buy2Vol; // "f18": 7546, // 买2量
     Double buy2Amount;
 
-    Double buy3Price; // "f15": 8.78, // 卖5
-    Double buy3Vol; // "f16": 7546, // 卖5量
+    Double buy3Price; // "f15": 8.78, // 买3
+    Double buy3Vol; // "f16": 7546, // 买3量
     Double buy3Amount;
 
-    Double buy4Price; // "f13": 8.78, // 卖5
-    Double buy4Vol; // "f14": 7546, // 卖5量
+    Double buy4Price; // "f13": 8.78, // 买4
+    Double buy4Vol; // "f14": 7546, // 买4量
     Double buy4Amount;
 
-    Double buy5Price; // "f11": 8.78, // 卖5
-    Double buy5Vol; // "f12": 7546, // 卖5量
+    Double buy5Price; // "f11": 8.78, // 买5
+    Double buy5Vol; // "f12": 7546, // 买5量
     Double buy5Amount;
 
     // 16项常用盘口数据, dc布局为8*2. 这里按照从左到右, 从上到下顺序对应
@@ -81,7 +142,15 @@ public class StockHandicap {
     Double outerVol; // "f49": 221532, 外盘 量
     Double innerVol; // "f161": 155297,  内盘
 
+    JSONObject rawJson;
 
+    public StockHandicap(JSONObject rawJson) {
+        this.rawJson = rawJson;
+        parseAttrs();
+    }
+
+    private void parseAttrs() {
+    }
 }
 
 /*
