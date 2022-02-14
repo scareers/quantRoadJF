@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
+import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
@@ -254,7 +255,8 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
         public void updateText(SecurityBeanEm currentBean) {
             if (jTable == null) {
-                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
+//                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
+                DataFrame<Object> fsDataOfStock = FsTransactionFetcher.getDf(currentBean).get();
 
                 Vector<Vector<Object>> datas = new Vector<>();
                 for (int i = 0; i < fsDataOfStock.length(); i++) {
@@ -267,7 +269,8 @@ public class FsFetcherListAndDataPanel extends JPanel {
                 jTable.setModel(model);
                 jScrollPane.setViewportView(jTable);
             } else {
-                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
+//                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
+                DataFrame<Object> fsDataOfStock = FsTransactionFetcher.getDf(currentBean).get();
                 //fsDataOfStock = fsDataOfStock.slice(0, anInt);
 
                 DefaultTableModel model = (DefaultTableModel) jTable.getModel();
@@ -358,7 +361,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
             Double preClose;
             if (!preBean.isIndex()) {
-                preClose = StockApi.getPreCloseAndTodayOpen(preBean.getStockCodeSimple(), 2000).get(0);// 昨收
+                preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getStockCodeSimple(), 2000).get(0);// 昨收
             } else {
                 preClose = StockApi.getPreCloseAndTodayOpenOfIndex(preBean.getStockCodeSimple(), 2000).get(0);// 昨收
             }

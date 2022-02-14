@@ -55,6 +55,10 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 @Data
 public class FsTransactionFetcher {
+    public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getFsTransactionDatas() {
+        return fsTransactionDatas;
+    }
+
     public static void main(String[] args) throws Exception {
         FsTransactionFetcher fsTransactionFetcher = getInstance
                 (new StockPoolFromTushare(0, 10, true).createStockPool(),
@@ -67,7 +71,7 @@ public class FsTransactionFetcher {
         fsTransactionFetcher.reStartFetch(); // 再次开始
         fsTransactionFetcher.waitFirstEpochFinish();
 
-        Console.log(fsTransactionFetcher.getFsTransactionDatas().size());
+        Console.log(fsTransactionDatas.size());
         Console.log(fsTransactionFetcher.getStockPool().size());
         SecurityBeanEm stock = SecurityBeanEm.createStock("000002");
 
@@ -108,7 +112,7 @@ public class FsTransactionFetcher {
     // 保存每只股票进度. key:value --> 股票id: 已被抓取的最新的时间 tick
     private volatile ConcurrentHashMap<SecurityBeanEm, String> processes;
     // 保存每只股票今日分时成交所有数据. 首次将可能从数据库加载!
-    private volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas;
+    public static volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsTransactionDatas;
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
     private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
     private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
@@ -127,7 +131,7 @@ public class FsTransactionFetcher {
                                  String limitTick, int timeout, int logFreq, int threadPoolCorePoolSize) {
         // 4项全默认值
         this.processes = new ConcurrentHashMap<>(); // 自动设置 00:00:00 作为初始
-        this.fsTransactionDatas = new ConcurrentHashMap<>(); // 将自动设置空df
+        fsTransactionDatas = new ConcurrentHashMap<>(); // 将自动设置空df
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
 
@@ -402,7 +406,7 @@ public class FsTransactionFetcher {
         @Override
         public Boolean call() {
             String process = fetcher.getProcesses().get(stock); // 进度, time_tick表示
-            DataFrame<Object> dataOriginal = fetcher.getFsTransactionDatas().get(stock); // 原全数据.
+            DataFrame<Object> dataOriginal = fsTransactionDatas.get(stock); // 原全数据.
             // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
             int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + fetcher.getRedundancyRecords());
 
@@ -435,7 +439,7 @@ public class FsTransactionFetcher {
             // 有序判定
             // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
 
-            fetcher.getFsTransactionDatas().put(stock, dfCurrentAll); // 真实更新
+            fsTransactionDatas.put(stock, dfCurrentAll); // 真实更新
             Optional<String> processNew =
                     (DataFrameS.getColAsStringList(dfCurrentAll, "time_tick")).stream()
                             .max(Comparator.naturalOrder());
@@ -475,7 +479,7 @@ public class FsTransactionFetcher {
      * @return 股票数据df; 列参考: stock_code	 market	time_tick	price	 vol	bs
      */
     public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
-        DataFrame<Object> dfTemp = INSTANCE.fsTransactionDatas.get(stockOrIndex);
+        DataFrame<Object> dfTemp = fsTransactionDatas.get(stockOrIndex);
         if (dfTemp == null || dfTemp.length() == 0) {
             return Optional.empty();
         }

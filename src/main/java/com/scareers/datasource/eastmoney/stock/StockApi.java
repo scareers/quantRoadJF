@@ -12,7 +12,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.scareers.annotations.Cached;
+import com.scareers.annotations.CanCache;
+import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.Tqdm;
@@ -39,8 +40,12 @@ public class StockApi {
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
-    public static Cache<String, DataFrame<Object>> getQuoteHistorySingleCache = CacheUtil.newLRUCache(1024,
-            24 * 3600 * 1000); // k线
+    public static Cache<String, DataFrame<Object>> quoteHistorySingleCache = CacheUtil.newLRUCache(1024,
+            4 * 3600 * 1000); // 历史k线,分时图等
+    public static Cache<String, List<Double>> stockPriceLimitCache = CacheUtil.newLRUCache(1024,
+            3600 * 1000); // 个股今日涨跌停
+    public static Cache<String, List<Double>> stockPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
+            3600 * 1000); // 个股昨收和今开盘价
 
     public static ThreadPoolExecutor poolExecutor;
 
@@ -56,9 +61,11 @@ public class StockApi {
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
-        //Console.log(getPriceLimitToday("000001", 2000));
-//8.29 都没有重置
 
+        // 个股今日涨跌停
+        Console.log(getStockPriceLimitToday("000001", 2000));
+
+        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
         //7 23.50 ok
         Console.log(getFSTransaction(120, "000001", 1, 1000).toString(250));
         // 分时成交:
@@ -161,6 +168,7 @@ public class StockApi {
 
     /**
      * # 股票、ETF、债券 K 线表头
+     * {f61=换手率, f60=涨跌额, f52=开盘, f51=日期, f54=最高, f53=收盘, f56=成交量, f55=最低, f58=振幅, f57=成交额, f59=涨跌幅}
      * EASTMONEY_KLINE_FIELDS = {
      * 'f51': '日期',
      * 'f52': '开盘',
@@ -184,9 +192,13 @@ public class StockApi {
         for (String key : temp.keySet()) {
             EASTMONEY_KLINE_FIELDS.put(key, temp.get(key).toString());
         }
-        // EASTMONEY_KLINE_FIELDS.put("f18", "昨日收盘");  // 无此字段
+        //
     }
 
+    /**
+     * 市场类型代码
+     * {142=上海能源期货交易所, 0=深A, 1=沪A, 155=英股, 113=上期所, 114=大商所, 115=郑商所, 105=美股, 116=港股, 106=美股, 128=港股, 90=板块, 107=美股, 8=中金所}
+     */
     private static void initMARKETNUMBERDICT() {
         String rawJsonFromPython = "{\"0\": \"\\u6df1A\", \"1\": \"\\u6caaA\", \"105\": \"\\u7f8e\\u80a1\", \"106\": " +
                 "\"\\u7f8e\\u80a1\", \"107\": \"\\u7f8e\\u80a1\", \"116\": \"\\u6e2f\\u80a1\", \"128\": \"\\u6e2f\\u80a1\", \"113\": \"\\u4e0a\\u671f\\u6240\", \"114\": \"\\u5927\\u5546\\u6240\", \"115\": \"\\u90d1\\u5546\\u6240\", \"8\": \"\\u4e2d\\u91d1\\u6240\", \"142\": \"\\u4e0a\\u6d77\\u80fd\\u6e90\\u671f\\u8d27\\u4ea4\\u6613\\u6240\", \"155\": \"\\u82f1\\u80a1\", \"90\": \"\\u677f\\u5757\"}\n";
@@ -198,8 +210,9 @@ public class StockApi {
 
 
     /**
-     * 常态表头
+     * 常态行情表头: getRealtimeQuotes 实时截面数据api的表头
      * ['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21', 'f13']
+     * {f10=量比, f21=流通市值, f20=总市值, f12=代码, f14=名称, f13=市场编号, f16=最低, f15=最高, f2=最新价, f18=昨日收盘, f3=涨跌幅, f17=今开, f4=涨跌额, f5=成交量, f6=成交额, f8=换手率, f9=动态市盈率}
      * <p>
      * # 股票、债券榜单表头
      * EASTMONEY_QUOTE_FIELDS = {
@@ -229,10 +242,12 @@ public class StockApi {
         for (String key : temp.keySet()) {
             EASTMONEY_QUOTE_FIELDS.put(key, temp.get(key).toString());
         }
+        Console.log(EASTMONEY_QUOTE_FIELDS);
     }
 
     /**
      * python json.dumps() 复制而来, java处理为 ConcurrentHashMap
+     * 实时截面数据可以传递的市场参数有:
      * 实际的市场参数可传递的列表是:
      * ['bond', '可转债', 'stock', '沪深A股', '沪深京A股', '北证A股', '北A', 'futures', '期货', '上证A股', '沪A',
      * '深证A股', '深A', '新股', '创业板', '科创板', '沪股通', '深股通', '风险警示板', '两网及退市',
@@ -254,28 +269,22 @@ public class StockApi {
      * # 期货
      * 'futures': 'm:113,m:114,m:115,m:8,m:142',
      * '期货': 'm:113,m:114,m:115,m:8,m:142',
-     * <p>
      * '上证A股': 'm:1 t:2,m:1 t:23',
      * '沪A': 'm:1 t:2,m:1 t:23',
-     * <p>
      * '深证A股': 'm:0 t:6,m:0 t:80',
      * '深A': 'm:0 t:6,m:0 t:80',
-     * <p>
      * # 沪深新股
      * '新股': 'm:0 f:8,m:1 f:8',
-     * <p>
      * '创业板': 'm:0 t:80',
      * '科创板': 'm:1 t:23',
      * '沪股通': 'b:BK0707',
      * '深股通': 'b:BK0804',
      * '风险警示板': 'm:0 f:4,m:1 f:4',
      * '两网及退市': 'm:0 s:3',
-     * <p>
      * # 板块
      * '地域板块': 'm:90 t:1 f:!50',
      * '行业板块': 'm:90 t:2 f:!50',
      * '概念板块': 'm:90 t:3 f:!50',
-     * <p>
      * # 指数
      * '上证系列指数': 'm:1 s:2',
      * '深证系列指数': 'm:0 t:5',
@@ -284,7 +293,6 @@ public class StockApi {
      * 'ETF': 'b:MK0021,b:MK0022,b:MK0023,b:MK0024',
      * # LOF 基金
      * 'LOF': 'b:MK0404,b:MK0405,b:MK0406,b:MK0407',
-     * <p>
      * '美股': 'm:105,m:106,m:107',
      * '港股': 'm:128 t:3,m:128 t:4,m:128 t:1,m:128 t:2',
      * '英股': 'm:155 t:1,m:155 t:2,m:155 t:3,m:156 t:1,m:156 t:2,m:156 t:5,m:156 t:6,m:156 t:7,m:156 t:8',
@@ -303,31 +311,47 @@ public class StockApi {
     }
 
     /**
-     * 获取当日某个股的涨跌停限价. [涨停价,跌停价]. 调用盘口api
+     * 获取当日某个股的涨跌停限价. [涨停价,跌停价]. 调用盘口 api;
+     * 一般而言并不会出现 "-" 导致解析错误
+     * TODO: 2022/2/14/014 该api数据刷新时间??
      *
      * @param stock
      * @return
      */
-    public static List<Double> getPriceLimitToday(String stockSimpleCode, int timeout) throws Exception {
-        JSONObject resp = getStockHandicapCore(stockSimpleCode, "f51,f52", timeout);
-        List<Double> res = new ArrayList<>();
+    @TimeoutCache(timeout = "1 * 3600 * 1000")
+    public static List<Double> getStockPriceLimitToday(String stockCodeSimple, int timeout) throws Exception {
+        String cacheKey = stockCodeSimple;
+        List<Double> res = stockPriceLimitCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new ArrayList<>();
+        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout);
         res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
         res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
+        stockPriceLimitCache.put(cacheKey, res);
         return res;
     }
 
     /**
-     * 获取昨收今开
+     * 获取个股昨收今开.
+     * 1小时有效期缓存.
+     * 通常昨收不会有问题, 今开在开盘以前为 "-", 将解析错误, 使用-1.0 替代
      *
-     * @param stockSimpleCode
+     * @param stockCodeSimple
      * @param timeout
      * @return
      * @throws Exception
      */
-    public static List<Double> getPreCloseAndTodayOpen(String stockSimpleCode, int timeout) throws Exception {
-        JSONObject resp = getStockHandicapCore(stockSimpleCode, "f60,f46", timeout);
-        List<Double> res = new ArrayList<>();
-
+    @TimeoutCache(timeout = "1 * 3600 * 1000")
+    public static List<Double> getStockPreCloseAndTodayOpen(String stockCodeSimple, int timeout) throws Exception {
+        String cacheKey = stockCodeSimple;
+        List<Double> res = stockPreCloseAndTodayOpenCache.get(cacheKey);
+        if (res != null && !res.contains(-1.0)) { // 注意可能并未刷新, 因此需要加上此限制条件
+            return res;
+        }
+        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout);
+        res = new ArrayList<>();
         try {
             res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
         } catch (NumberFormatException e) {
@@ -340,10 +364,35 @@ public class StockApi {
             e.printStackTrace();
             res.add(-1.0);
         }
+        stockPreCloseAndTodayOpenCache.put(cacheKey, res);
         return res;
     }
 
     /**
+     * 个股实时盘口数据, 包含买卖盘, 常规行情项等.
+     *
+     * @param stockCodeSimple
+     * @param fields
+     * @param timeout
+     * @return
+     * @see getStockHandicapCore
+     */
+    private static StockHandicap getStockHandicap(String stockCodeSimple, String fields, int timeout) {
+        JSONObject resp;
+        try {
+            resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout);
+        } catch (Exception e) {
+            log.error("get exception: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+        }
+        return null;
+    }
+
+
+
+
+    /**
+     * private, 不使用缓存. 由各个具体字段api, 自行决定缓存机制
+     * <p>
      * 实时核心盘口数据. 该api可访问极多数据项.
      * 东方财富行情页面, 主api之一, 有很多字段, 包括盘口. 均使用此url, 可传递极多字段
      * http://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f43,f57,f58,f169,f170,f46,f44,f51,f168,f47,f164,f163,f116,f60,f45,f52,f50,f48,f167,f117,f71,f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288&secid=0.300059&cb=jQuery112409228148447288975_1643015501069&_=1643015501237
@@ -847,7 +896,8 @@ public class StockApi {
      * @param quoteIdMode
      * @return
      */
-    @Cached
+    @CanCache
+    @TimeoutCache(timeout = "4 * 3600 * 1000")
     public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retrySingle, boolean isIndex, int timeout,
@@ -867,7 +917,7 @@ public class StockApi {
 
         DataFrame<Object> res = null;
         if (useCache) { // 必须使用caCache 且真的存在缓存
-            res = getQuoteHistorySingleCache.get(cacheKey);
+            res = quoteHistorySingleCache.get(cacheKey);
         }
         if (res != null) {
             return res;
@@ -908,7 +958,7 @@ public class StockApi {
 
         dfTemp = dfTemp.add("股票代码", values -> bean.getStockCodeSimple());
         res = dfTemp.add("股票名称", values -> bean.getName());
-        getQuoteHistorySingleCache.put(cacheKey, res); // 将更新
+        quoteHistorySingleCache.put(cacheKey, res); // 将更新
         return res;
     }
 
