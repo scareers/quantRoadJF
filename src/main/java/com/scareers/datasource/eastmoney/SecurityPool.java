@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * 4.Trader/TraderGui: 可在交易过程中, 手动添加股票池
  *
  * @noti 为保证gui多线程可见性, 全部使用静态属性维护
+ * @noti 因股票池可能动态改变, 导致其他线程遍历时出现错误, 定义 xxxCopy 方法, 将返回一个新的浅复制的集合,以供遍历.
  * @author: admin
  * @date: 2022/2/14/014-17:05:04
  */
@@ -23,30 +24,30 @@ public class SecurityPool {
     /**
      * 所有 SecurityBeanEm, 包括所有股票,指数,板块. 自身不直接all元素, 其他分类股票池添加时, 均会添加到此集合
      */
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> allSecuritySet = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> allSecuritySet = new CopyOnWriteArraySet<>();
 
     /**
      * 昨日持仓股票 + 今日选中股票(可以逻辑选,可以手动选) + 其他关心的热点股票, 买卖池可有交集, 一般其余关心池互斥二者
      */
     // 今日选股, key
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocks = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocks = new CopyOnWriteArraySet<>();
     // 昨日持仓,卖出
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocks = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocks = new CopyOnWriteArraySet<>();
     // 其他热点股票
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareStocks = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareStocks = new CopyOnWriteArraySet<>();
 
     /**
      * 核心板块 及 其他关心的板块, 一般互斥
      */
     // 核心板块, 往往是选股和昨日持仓股票的板块
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBKs = new CopyOnWriteArraySet<>();
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> careBKs = new CopyOnWriteArraySet<>(); // 其他热点板块
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBKs = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareBKs = new CopyOnWriteArraySet<>(); // 其他热点板块
 
     /**
      * 核心指数 及 其他关心的指数, 一般互斥
      */
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyIndexs = new CopyOnWriteArraySet<>();
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> careIndexs = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> keyIndexes = new CopyOnWriteArraySet<>();
+    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
 
     private static final Log log = LogUtil.getLogger();
 
@@ -119,5 +120,92 @@ public class SecurityPool {
         addMultiBeanToSet(otherCareStocks, beans, "stock");
     }
 
+    /**
+     * 4个板块添加方法
+     *
+     * @param beanEm
+     */
+    public static void addToKeyBKs(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(keyBKs, beanEm, "bk");
+    }
+
+    public static void addToKeyBKs(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(keyBKs, beans, "bk");
+    }
+
+    public static void addToOtherCareBKs(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(otherCareBKs, beanEm, "bk");
+    }
+
+    public static void addToOtherCareBKs(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(otherCareBKs, beans, "bk");
+    }
+
+    /**
+     * 4个指数添加方法
+     *
+     * @param beanEm
+     */
+    public static void addToKeyIndexes(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(keyIndexes, beanEm, "index");
+    }
+
+    public static void addToKeyIndexes(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(keyIndexes, beans, "index");
+    }
+
+    public static void addToOtherCareIndexes(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(otherCareIndexes, beanEm, "index");
+    }
+
+    public static void addToOtherCareIndexes(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(otherCareIndexes, beans, "index");
+    }
+
+    /*
+     * 构造浅复制股票池以遍历! iterXxx
+     */
+
+    private static CopyOnWriteArraySet<SecurityBeanEm> iterSets(CopyOnWriteArraySet<SecurityBeanEm>... sets) {
+        CopyOnWriteArraySet<SecurityBeanEm> res = new CopyOnWriteArraySet<>();
+        for (CopyOnWriteArraySet<SecurityBeanEm> set : sets) {
+            res.addAll(set);
+        }
+        return res;
+    }
+
+    /**
+     * 8个单池浅复制.
+     * @return
+     */
+    public static CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocksCopy() {
+        return iterSets(todaySelectedStocks);
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocksCopy() {
+        return iterSets(yesterdayHoldStocks);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareStocksCopy() {
+        return iterSets(otherCareStocks);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> keyBKsCopy() {
+        return iterSets(keyBKs);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareBKsCopy() {
+        return iterSets(otherCareBKs);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> keyIndexesCopy() {
+        return iterSets(keyIndexes);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexesCopy() {
+        return iterSets(otherCareIndexes);
+    }
+    public static CopyOnWriteArraySet<SecurityBeanEm> allSecuritySetCopy() {
+        return iterSets(allSecuritySet);
+    }
+
+    /**
+     * 3个组合池复制
+     */
 
 }
