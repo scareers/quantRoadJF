@@ -1,5 +1,6 @@
 package com.scareers.datasource.eastmoney;
 
+import cn.hutool.core.lang.Assert;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class SecurityPool {
     /**
-     * 所有 SecurityBeanEm, 包括所有股票,指数,板块
+     * 所有 SecurityBeanEm, 包括所有股票,指数,板块. 自身不直接all元素, 其他分类股票池添加时, 均会添加到此集合
      */
     public static volatile CopyOnWriteArraySet<SecurityBeanEm> allSecuritySet = new CopyOnWriteArraySet<>();
 
@@ -54,34 +55,68 @@ public class SecurityPool {
      *
      * @param singleBeanOrCollection
      */
-    public static void addToTodaySelectedStocks(SecurityBeanEm beanEm) {
-        todaySelectedStocks.add(beanEm);
+
+    /**
+     * 3个辅助方法.
+     *
+     * @param whichSet
+     * @param beanEm
+     * @param checkType
+     */
+    private static void addSingleBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet, SecurityBeanEm beanEm,
+                                           String checkType) {
+        checkType(beanEm, checkType);
+        whichSet.add(beanEm);
         allSecuritySet.add(beanEm);
+    }
+
+    private static void addMultiBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet,
+                                          Collection<SecurityBeanEm> beans,
+                                          String checkType) {
+        for (SecurityBeanEm bean : beans) {
+            checkType(bean, checkType);
+        }
+        whichSet.addAll(beans);
+        allSecuritySet.addAll(beans);
+    }
+
+    private static void checkType(SecurityBeanEm beanEm, String checkType) {
+        if ("bk".equals(checkType)) {
+            Assert.isTrue(beanEm.isBK());
+        } else if ("index".equals(checkType)) {
+            Assert.isTrue(beanEm.isIndex());
+        } else {
+            Assert.isTrue(beanEm.isStock());
+        }
+    }
+
+    /**
+     * 6个股票添加方法
+     *
+     * @param beanEm
+     */
+    public static void addToTodaySelectedStocks(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(todaySelectedStocks, beanEm, "stock");
     }
 
     public static void addToTodaySelectedStocks(Collection<SecurityBeanEm> beans) {
-        todaySelectedStocks.addAll(beans);
-        allSecuritySet.addAll(beans);
+        addMultiBeanToSet(todaySelectedStocks, beans, "stock");
     }
 
     public static void addToYesterdayHoldStocks(SecurityBeanEm beanEm) {
-        yesterdayHoldStocks.add(beanEm);
-        allSecuritySet.add(beanEm);
+        addSingleBeanToSet(yesterdayHoldStocks, beanEm, "stock");
     }
 
     public static void addToYesterdayHoldStocks(Collection<SecurityBeanEm> beans) {
-        yesterdayHoldStocks.addAll(beans);
-        allSecuritySet.addAll(beans);
+        addMultiBeanToSet(yesterdayHoldStocks, beans, "stock");
     }
 
     public static void addToOtherCareStocks(SecurityBeanEm beanEm) {
-        otherCareStocks.add(beanEm);
-        allSecuritySet.add(beanEm);
+        addSingleBeanToSet(otherCareStocks, beanEm, "stock");
     }
 
     public static void addToOtherCareStocks(Collection<SecurityBeanEm> beans) {
-        otherCareStocks.addAll(beans);
-        allSecuritySet.addAll(beans);
+        addMultiBeanToSet(otherCareStocks, beans, "stock");
     }
 
 
