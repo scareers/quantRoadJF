@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.util.HashMap;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
  * @see StockApi.getStockHandicap() 访问实时盘口
  */
 @Getter // 仅可获取属性
+@ToString
 public class StockHandicap {
     public static HashMap<String, String> fieldsMap; // 当前使用的字段 及 对应描述.
     public static String fieldsStr; // 字段字符串. , 分割
@@ -178,16 +180,16 @@ public class StockHandicap {
         changeValue = rawJson.getDouble("f169");
         totalVol = rawJson.getDouble("f47");
         totalAmount = rawJson.getDouble("f48");
-        turnoverRate = rawJson.getDouble("f43");
-        volRatio = rawJson.getDouble("f43");
-        highPrice = rawJson.getDouble("f43");
-        lowPrice = rawJson.getDouble("f43");
-        todayOpen = rawJson.getDouble("f43");
-        preClose = rawJson.getDouble("f43");
-        highLimitPrice = rawJson.getDouble("f43");
-        lowLimitPrice = rawJson.getDouble("f43");
-        outerVol = rawJson.getDouble("f43");
-        innerVol = rawJson.getDouble("f43");
+        turnoverRate = rawJson.getDouble("f168");
+        volRatio = rawJson.getDouble("f50");
+        highPrice = rawJson.getDouble("f44");
+        lowPrice = rawJson.getDouble("f45");
+        todayOpen = rawJson.getDouble("f46");
+        preClose = rawJson.getDouble("f60");
+        highLimitPrice = rawJson.getDouble("f51");
+        lowLimitPrice = rawJson.getDouble("f52");
+        outerVol = rawJson.getDouble("f49");
+        innerVol = rawJson.getDouble("f161");
     }
 
     private void initSells() {
