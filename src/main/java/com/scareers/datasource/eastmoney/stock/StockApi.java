@@ -103,6 +103,7 @@ public class StockApi {
         // 23:50:x 正常df
 
         Console.log(getFs1MToday("000001", false, 0, 2000));
+        // @noti: 两大指数大约 6,7秒开始出现下一分钟分时, 个股大约1-2s之间
         // 1分钟分时图
         // 02:10 昨日df
         // 06:00
@@ -326,8 +327,19 @@ public class StockApi {
     public static List<Double> getPreCloseAndTodayOpen(String stockSimpleCode, int timeout) throws Exception {
         JSONObject resp = getStockHandicapCore(stockSimpleCode, "f60,f46", timeout);
         List<Double> res = new ArrayList<>();
-        res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
-        res.add(Double.valueOf(resp.getByPath("data.f46").toString())); // 今开
+
+        try {
+            res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            res.add(-1.0);
+        }
+        try {
+            res.add(Double.valueOf(resp.getByPath("data.f46").toString())); // 今开
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            res.add(-1.0);
+        }
         return res;
     }
 
@@ -509,6 +521,7 @@ public class StockApi {
 
     /**
      * 获取指数昨收今开, 使用盘口api
+     * 用-1.0 代表 - , 即暂无数据.
      *
      * @param indexSimpleCode
      * @param timeout
@@ -518,8 +531,18 @@ public class StockApi {
     public static List<Double> getPreCloseAndTodayOpenOfIndex(String indexSimpleCode, int timeout) throws Exception {
         JSONObject resp = getIndexHandicapCore(indexSimpleCode, "f60,f46", timeout); // 字段同个股. 昨收今开
         List<Double> res = new ArrayList<>();
-        res.add(Double.valueOf(resp.getByPath("data.f60").toString()) / 100); // 昨收 , 注意/100
-        res.add(Double.valueOf(resp.getByPath("data.f46").toString()) / 100); // 今开
+        try {
+            res.add(Double.valueOf(resp.getByPath("data.f60").toString()) / 100); // 昨收 , 注意/100
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.add(-1.0);
+        }
+        try {
+            res.add(Double.valueOf(resp.getByPath("data.f46").toString()) / 100); // 今开
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.add(-1.0);
+        }
         return res;
     }
 
@@ -937,9 +960,16 @@ public class StockApi {
      * @return 1分钟分时图当日; 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
      * @throws Exception
      */
-    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout)
+    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout,
+                                                 boolean useCache)
             throws Exception {
-        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout);
+        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout, useCache);
+    }
+
+    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout
+    )
+            throws Exception {
+        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout, true);
     }
 
     /**

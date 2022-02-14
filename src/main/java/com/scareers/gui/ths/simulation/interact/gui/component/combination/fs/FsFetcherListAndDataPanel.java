@@ -254,7 +254,8 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
         public void updateText(SecurityBeanEm currentBean) {
             if (jTable == null) {
-                DataFrame<Object> fsDataOfStock = FsFetcher.getFsDatas().get(currentBean);
+                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
+
                 Vector<Vector<Object>> datas = new Vector<>();
                 for (int i = 0; i < fsDataOfStock.length(); i++) {
                     datas.add(new Vector<>(fsDataOfStock.row(i)));
@@ -266,7 +267,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
                 jTable.setModel(model);
                 jScrollPane.setViewportView(jTable);
             } else {
-                DataFrame<Object> fsDataOfStock = FsFetcher.getFsDatas().get(currentBean);
+                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
                 //fsDataOfStock = fsDataOfStock.slice(0, anInt);
 
                 DefaultTableModel model = (DefaultTableModel) jTable.getModel();
