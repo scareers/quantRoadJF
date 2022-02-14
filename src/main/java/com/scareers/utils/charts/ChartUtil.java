@@ -63,7 +63,7 @@ public class ChartUtil {
 //        dfAsLineChartSimple(df, true);
 
         DataFrame<Object> fs1MDf = StockApi.getFs1MToday("000001", false, 0, 2000);
-        Double preClose = StockApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "股票代码").toString(), 2000).get(0);// 昨收
+        Double preClose = StockApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "股票代码").toString(), 2000, 2).get(0);// 昨收
         JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "股票代码").toString() + " [" + fs1MDf.get(0,
                 "股票名称").toString() + "]", KLineYType.PERCENT);
         showChartSimple(chart);
@@ -256,7 +256,7 @@ public class ChartUtil {
             } else {
                 double yHeight = Math.max(Math.abs(highValue), Math.abs(minValue));
                 y1Axis.setRange(0 - yHeight, 0 + yHeight); // 大约正中间
-                y1Axis.setTickUnit(new NumberTickUnit(yHeight/5, new DecimalFormat("####0.00%"))); // 设置刻度显示的密度
+                y1Axis.setTickUnit(new NumberTickUnit(yHeight / 5, new DecimalFormat("####0.00%"))); // 设置刻度显示的密度
             }
         } else {
             y1Axis.setRange(minValue * 0.99, highValue * 1.01); // 大约正中间

@@ -62,9 +62,9 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
-        Console.log(getStockHandicap("000001", 2000));
+        Console.log(getStockHandicap("000001", 2000, 1));
         // 个股今日涨跌停
-        Console.log(getStockPriceLimitToday("000001", 2000));
+        Console.log(getStockPriceLimitToday("000001", 2000, 1));
 
         Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
         //7 23.50 ok
@@ -320,14 +320,15 @@ public class StockApi {
      * @return
      */
     @TimeoutCache(timeout = "1 * 3600 * 1000")
-    public static List<Double> getStockPriceLimitToday(String stockCodeSimple, int timeout) throws Exception {
+    public static List<Double> getStockPriceLimitToday(String stockCodeSimple, int timeout, int retry)
+            throws Exception {
         String cacheKey = stockCodeSimple;
         List<Double> res = stockPriceLimitCache.get(cacheKey);
         if (res != null) {
             return res;
         }
         res = new ArrayList<>();
-        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout);
+        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout, retry);
         res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
         res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
         stockPriceLimitCache.put(cacheKey, res);
@@ -345,13 +346,14 @@ public class StockApi {
      * @throws Exception
      */
     @TimeoutCache(timeout = "1 * 3600 * 1000")
-    public static List<Double> getStockPreCloseAndTodayOpen(String stockCodeSimple, int timeout) throws Exception {
+    public static List<Double> getStockPreCloseAndTodayOpen(String stockCodeSimple, int timeout, int retry)
+            throws Exception {
         String cacheKey = stockCodeSimple;
         List<Double> res = stockPreCloseAndTodayOpenCache.get(cacheKey);
         if (res != null && !res.contains(-1.0)) { // 注意可能并未刷新, 因此需要加上此限制条件
             return res;
         }
-        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout);
+        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout, retry);
         res = new ArrayList<>();
         try {
             res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
@@ -378,10 +380,10 @@ public class StockApi {
      * @return
      * @see getStockHandicapCore
      */
-    private static StockHandicap getStockHandicap(String stockCodeSimple, int timeout) {
+    private static StockHandicap getStockHandicap(String stockCodeSimple, int timeout, int retry) {
         JSONObject resp;
         try {
-            resp = getStockHandicapCore(stockCodeSimple, StockHandicap.fieldsStr, timeout);
+            resp = getStockHandicapCore(stockCodeSimple, StockHandicap.fieldsStr, timeout, retry);
         } catch (Exception e) {
             log.error("get exception: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
             return null;
@@ -543,7 +545,7 @@ public class StockApi {
      * @return 解析的json响应. 具体字段的访问由调用方决定. date.字段名: Double.valueOf(resp.getByPath("data.f51").toString())
      * @throws Exception
      */
-    private static JSONObject getStockHandicapCore(String stockSimpleCode, String fields, int timeout)
+    private static JSONObject getStockHandicapCore(String stockSimpleCode, String fields, int timeout, int retry)
             throws Exception {
         SecurityBeanEm bean = SecurityBeanEm.createStock(stockSimpleCode);
         String secId = bean.getSecId(); // 获取准确的secId
@@ -562,7 +564,7 @@ public class StockApi {
 
         String response;
         try {
-            response = getAsStrUseKevin(url, params, timeout, 3);
+            response = getAsStrUseKevin(url, params, timeout, retry);
         } catch (Exception e) {
             e.printStackTrace();
 

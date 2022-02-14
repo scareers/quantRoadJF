@@ -156,7 +156,8 @@ public class LowBuyHighSellStrategy extends Strategy {
             if (bean.isStock()) { // 股票才有涨跌停
                 this.priceLimitMap
                         .put(bean.getStockCodeSimple(),
-                                Objects.requireNonNull(StockApi.getStockPriceLimitToday(bean.getStockCodeSimple(), 2000)));
+                                Objects.requireNonNull(StockApi.getStockPriceLimitToday(bean.getStockCodeSimple(),
+                                        2000,3)));
             }
         }
     }

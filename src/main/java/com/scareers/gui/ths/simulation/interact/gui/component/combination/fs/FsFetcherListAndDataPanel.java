@@ -361,7 +361,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
             Double preClose;
             if (!preBean.isIndex()) {
-                preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getStockCodeSimple(), 2000).get(0);// 昨收
+                preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getStockCodeSimple(), 2000, 1).get(0);// 昨收
             } else {
                 preClose = StockApi.getPreCloseAndTodayOpenOfIndex(preBean.getStockCodeSimple(), 2000).get(0);// 昨收
             }
