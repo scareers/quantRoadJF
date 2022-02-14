@@ -62,6 +62,7 @@ public class StockApi {
         TimeInterval timer = DateUtil.timer();
         timer.start();
 
+        Console.log(getStockHandicap("000001", 2000));
         // 个股今日涨跌停
         Console.log(getStockPriceLimitToday("000001", 2000));
 
@@ -377,17 +378,21 @@ public class StockApi {
      * @return
      * @see getStockHandicapCore
      */
-    private static StockHandicap getStockHandicap(String stockCodeSimple, String fields, int timeout) {
+    private static StockHandicap getStockHandicap(String stockCodeSimple, int timeout) {
         JSONObject resp;
         try {
-            resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout);
+            resp = getStockHandicapCore(stockCodeSimple, StockHandicap.fieldsStr, timeout);
         } catch (Exception e) {
             log.error("get exception: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            return null;
         }
-        return null;
+        JSONObject rawJson = (JSONObject) resp.get("data");
+        if (rawJson == null) {
+            log.error("data字段为null: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            return null;
+        }
+        return new StockHandicap(rawJson);
     }
-
-
 
 
     /**

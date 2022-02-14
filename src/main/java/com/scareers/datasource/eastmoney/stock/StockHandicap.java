@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney.stock;
 
 import cn.hutool.core.lang.Dict;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import lombok.Getter;
 
@@ -20,10 +21,13 @@ import java.util.HashMap;
 @Getter // 仅可获取属性
 public class StockHandicap {
     public static HashMap<String, String> fieldsMap; // 当前使用的字段 及 对应描述.
+    public static String fieldsStr; // 字段字符串. , 分割
 
     static {
         initFieldsMap();
+        initFieldsStr();
     }
+
 
     private static void initFieldsMap() {
         fieldsMap = new HashMap<>();
@@ -70,8 +74,10 @@ public class StockHandicap {
         fieldsMap.put("f52", "跌停");
         fieldsMap.put("f49", "外盘");
         fieldsMap.put("f161", "内盘");
+    }
 
-
+    private static void initFieldsStr() {
+        fieldsStr = StrUtil.join(",", fieldsMap.keySet());
     }
 
     // 股票代码,名称
@@ -142,6 +148,7 @@ public class StockHandicap {
     Double outerVol; // "f49": 221532, 外盘 量
     Double innerVol; // "f161": 155297,  内盘
 
+    // {"f50":0.93,"f60":17.1,"f71":16.67,"f169":-0.52,"f52":15.39,"f168":0.59,"f51":18.81,"f43":16.58,"f45":16.51,"f44":17.15,"f47":1150659,"f58":"平安银行","f46":17.1,"f57":"000001","f161":703604,"f49":447054,"f48":1917613424,"f170":-3.04,"f192":1426,"f191":11.02}
     JSONObject rawJson;
 
     public StockHandicap(JSONObject rawJson) {
@@ -150,6 +157,103 @@ public class StockHandicap {
     }
 
     private void parseAttrs() {
+        this.stockCodeSimple = rawJson.getStr("f57");
+        this.stockName = rawJson.getStr("f58");
+
+        this.consignRatio = rawJson.getDouble("f191");
+        this.consignDifference = rawJson.getDouble("f192");
+
+        initSells();
+        initBuys();
+        initCommonSixteen();
+    }
+
+    /**
+     * 16项常用盘口
+     */
+    private void initCommonSixteen() {
+        newPrice = rawJson.getDouble("f43");
+        avgPrice = rawJson.getDouble("f71");
+        changePercent = rawJson.getDouble("f170");
+        changeValue = rawJson.getDouble("f169");
+        totalVol = rawJson.getDouble("f47");
+        totalAmount = rawJson.getDouble("f48");
+        turnoverRate = rawJson.getDouble("f43");
+        volRatio = rawJson.getDouble("f43");
+        highPrice = rawJson.getDouble("f43");
+        lowPrice = rawJson.getDouble("f43");
+        todayOpen = rawJson.getDouble("f43");
+        preClose = rawJson.getDouble("f43");
+        highLimitPrice = rawJson.getDouble("f43");
+        lowLimitPrice = rawJson.getDouble("f43");
+        outerVol = rawJson.getDouble("f43");
+        innerVol = rawJson.getDouble("f43");
+    }
+
+    private void initSells() {
+        this.sell5Price = rawJson.getDouble("f31");
+        this.sell5Vol = rawJson.getDouble("f32");
+        if (this.sell5Price != null && this.sell5Vol != null) {
+            this.sell5Amount = sell5Price * sell5Amount * 100;
+        }
+
+        this.sell4Price = rawJson.getDouble("f33");
+        this.sell4Vol = rawJson.getDouble("f34");
+        if (this.sell4Price != null && this.sell4Vol != null) {
+            this.sell4Amount = sell4Price * sell4Amount * 100;
+        }
+
+        this.sell3Price = rawJson.getDouble("f35");
+        this.sell3Vol = rawJson.getDouble("f36");
+        if (this.sell3Price != null && this.sell3Vol != null) {
+            this.sell3Amount = sell3Price * sell3Amount * 100;
+        }
+
+
+        this.sell2Price = rawJson.getDouble("f37");
+        this.sell2Vol = rawJson.getDouble("f38");
+        if (this.sell2Price != null && this.sell2Vol != null) {
+            this.sell2Amount = sell2Price * sell2Amount * 100;
+        }
+
+        this.sell1Price = rawJson.getDouble("f39");
+        this.sell1Vol = rawJson.getDouble("f40");
+        if (this.sell1Price != null && this.sell1Vol != null) {
+            this.sell1Amount = sell1Price * sell1Amount * 100;
+        }
+    }
+
+    private void initBuys() {
+        this.buy5Price = rawJson.getDouble("f11");
+        this.buy5Vol = rawJson.getDouble("f12");
+        if (this.buy5Price != null && this.buy5Vol != null) {
+            this.buy5Amount = buy5Price * buy5Amount * 100;
+        }
+
+        this.buy4Price = rawJson.getDouble("f13");
+        this.buy4Vol = rawJson.getDouble("f14");
+        if (this.buy4Price != null && this.buy4Vol != null) {
+            this.buy4Amount = buy4Price * buy4Amount * 100;
+        }
+
+        this.buy3Price = rawJson.getDouble("f15");
+        this.buy3Vol = rawJson.getDouble("f16");
+        if (this.buy3Price != null && this.buy3Vol != null) {
+            this.buy3Amount = buy3Price * buy3Amount * 100;
+        }
+
+
+        this.buy2Price = rawJson.getDouble("f17");
+        this.buy2Vol = rawJson.getDouble("f18");
+        if (this.buy2Price != null && this.buy2Vol != null) {
+            this.buy2Amount = buy2Price * buy2Amount * 100;
+        }
+
+        this.buy1Price = rawJson.getDouble("f19");
+        this.buy1Vol = rawJson.getDouble("f20");
+        if (this.buy1Price != null && this.buy1Vol != null) {
+            this.buy1Amount = buy1Price * buy1Amount * 100;
+        }
     }
 }
 
