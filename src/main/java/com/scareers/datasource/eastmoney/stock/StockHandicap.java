@@ -1,7 +1,6 @@
 package com.scareers.datasource.eastmoney.stock;
 
-import cn.hutool.core.lang.Dict;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
 import lombok.Getter;
 import lombok.ToString;
@@ -32,6 +31,8 @@ public class StockHandicap {
 
     /* toString()
     StockHandicap(
+        dateTime=2022-02-14 19:19:36
+
         stockCodeSimple=000001,
         stockName=平安银行,
         consignRatio=11.02,
@@ -96,6 +97,8 @@ public class StockHandicap {
 
         rawJson={"f50":0.93,"f60":17.1,"f71":16.67,"f169":-0.52,"f52":15.39,"f168":0.59,"f51":18.81,"f43":16.58,"f45":16.51,"f44":17.15,"f47":1150659,"f58":"平安银行","f46":17.1,"f57":"000001","f161":703604,"f49":447054,"f48":1917613424,"f170":-3.04,"f192":1426,"f191":11.02}
         )
+
+        + 时间,普通秒形式
      */
 
     private static void initFieldsMap() {
@@ -156,6 +159,7 @@ public class StockHandicap {
                 "f161,f49,f530,f135,f136,f137,f138,f139,f141,f142,f144,f145,f147,f148,f140,f143,f146,f149,f55,f62,f162,f92,f173,f104,f105,f84,f85,f183,f184,f185,f186,f187,f188,f189,f190,f191,f192,f107,f111,f86,f177,f78,f110,f260,f261,f262,f263,f264,f267,f268,f250,f251,f252,f253,f254,f255,f256,f257,f258,f266,f269,f270,f271,f273,f274,f275,f127,f199,f128,f193,f196,f194,f195,f197,f80,f280,f281,f282,f284,f285,f286,f287,f292,f293,f181,f294,f295,f279,f288";
     }
 
+    String dateTime; // 由于该api没有时间字段. 自行在new时生成 yyyy-MM-dd HH:mm:ss 形式 DateUtil.now();
     // 股票代码,名称
     String stockCodeSimple; // "f57": "600000", 股票代码
     String stockName; // "f58": "浦发银行", 名称
@@ -229,6 +233,8 @@ public class StockHandicap {
 
     public StockHandicap(JSONObject rawJson) {
         this.rawJson = rawJson;
+        this.dateTime = DateUtil.now();
+
         parseAttrs();
     }
 
