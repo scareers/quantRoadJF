@@ -45,7 +45,7 @@ public class EastMoneyUtil {
     }
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
-        Console.log(querySecurityId("000001"));
+        Console.log(querySecurityId("BK1063"));
 
 
     }

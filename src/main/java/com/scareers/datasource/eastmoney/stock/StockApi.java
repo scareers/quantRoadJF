@@ -605,6 +605,13 @@ public class StockApi {
     }
 
     /**
+     * 指数流入流出全
+     * http://push2.eastmoney.com/api/qt/stock/get?invt=2&fltt=1&cb=jQuery35103898435803189497_1644838786831&fields=f135%2Cf136%2Cf137%2Cf138%2Cf139%2Cf140%2Cf141%2Cf142%2Cf143%2Cf144%2Cf145%2Cf146%2Cf147%2Cf148%2Cf149&secid=1.000001&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1644838786832
+     * 个股资金8项, 主流流入是大单+超大单. 净流入是减法. 因此使用8项数据计算
+     * http://push2.eastmoney.com/api/qt/stock/get?ut=fa5fd1943c7b386f172d6893dbfba10b&invt=2&fltt=2&fields=f138,f139,f141,f142,f144,f145,f147,f148&secid=1.600000&cb=jQuery112409761295519601547_1644839078324&_=1644839078325
+     */
+
+    /**
      * 指数实时行情. 盘口
      * http://push2.eastmoney.com/api/qt/stock/get?invt=2&fltt=1&cb=jQuery351037846734899553613_1644751180897&fields=f58%2Cf107%2Cf57%2Cf43%2Cf59%2Cf169%2Cf170%2Cf152%2Cf46%2Cf60%2Cf44%2Cf45%2Cf47%2Cf48%2Cf19%2Cf532%2Cf39%2Cf161%2Cf49%2Cf171%2Cf50%2Cf86%2Cf600%2Cf601%2Cf154%2Cf84%2Cf85%2Cf168%2Cf108%2Cf116%2Cf167%2Cf164%2Cf92%2Cf71%2Cf117%2Cf292%2Cf113%2Cf114%2Cf115%2Cf119%2Cf120%2Cf121%2Cf122&secid=1.000001&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1644751180898
      * 数据实例
