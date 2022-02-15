@@ -1,8 +1,7 @@
 package com.scareers;
 
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import cn.hutool.log.Log;
+import com.scareers.utils.log.LogUtil;
 
 
 /**
@@ -18,35 +17,40 @@ public class App {
         }
     }
 
+    private static final Log log = LogUtil.getLogger();
+
     public static void main(String[] args) throws Exception {
-        System.out.println(String.format("%.2f", 1.234));
-        System.out.println("abc".getClass());
-//        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
-//        Console.log(fontNames);
-        while (true) {
 
-            long start = System.currentTimeMillis();
-//            fibonacci(40);
-            for (long i = 0; i < 1000000; i++) {
-                JSONUtil.parseObj(
-                        "{\n" +
-                                "            \"code\": 200,\n" +
-                                "            \"success\": true,\n" +
-                                "            \"payload\": {\n" +
-                                "                \"features\": [\n" +
-                                "                    \"awesome\",\n" +
-                                "                    \"easyAPI\",\n" +
-                                "                    \"lowLearningCurve\"\n" +
-                                "                ]\n" +
-                                "            }\n" +
-                                "        }"
+//        System.out.println(String.format("%.2f", 1.234));
+//        System.out.println("abc".getClass());
+////        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+////        Console.log(fontNames);
+//        while (true) {
+//
+//            long start = System.currentTimeMillis();
+////            fibonacci(40);
+//            for (long i = 0; i < 1000000; i++) {
+//                JSONUtil.parseObj(
+//                        "{\n" +
+//                                "            \"code\": 200,\n" +
+//                                "            \"success\": true,\n" +
+//                                "            \"payload\": {\n" +
+//                                "                \"features\": [\n" +
+//                                "                    \"awesome\",\n" +
+//                                "                    \"easyAPI\",\n" +
+//                                "                    \"lowLearningCurve\"\n" +
+//                                "                ]\n" +
+//                                "            }\n" +
+//                                "        }"
+//
+//                );
+//
+//            }
+//            System.out.println(System.currentTimeMillis() - start);
+//            break;
+//        }
 
-                );
 
-            }
-            System.out.println(System.currentTimeMillis() - start);
-            break;
-        }
 //        System.out.println(fibonacci(40));
 
 //        String x = "\u51fa\u73b0\u4e86\u5f02\u5e38, \u5f02\u5e38\u6808" ;

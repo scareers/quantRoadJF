@@ -3,7 +3,6 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.back
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.sun.scenario.effect.impl.prism.sw.PSWDrawable;
 
 import java.sql.Connection;
 import java.util.Arrays;

@@ -19,17 +19,48 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.seleniumhq.selenium/selenium-java -->
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-base</artifactId>
-            <version>11</version>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-java</artifactId>
+            <version>4.1.0</version>
         </dependency>
 
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-swing</artifactId>
-            <version>11</version>
+            <groupId>com.googlecode.soundlibs</groupId>
+            <artifactId>mp3spi</artifactId>
+            <version>1.9.5.4</version>
         </dependency>
+
+
+        <!--        <dependency>-->
+<!--            <groupId>org.openjfx</groupId>-->
+<!--            <artifactId>javafx-base</artifactId>-->
+<!--            <version>17.0.2</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.openjfx</groupId>-->
+<!--            <artifactId>javafx-swing</artifactId>-->
+<!--            <version>17.0.2</version>-->
+<!--        </dependency>-->
+
+<!--        <dependency>-->
+<!--            <groupId>org.openjfx</groupId>-->
+<!--            <artifactId>javafx-controls</artifactId>-->
+<!--            <version>17.0.2</version>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/org.openjfx/javafx-media &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>org.openjfx</groupId>-->
+<!--            <artifactId>javafx-media</artifactId>-->
+<!--            <version>11</version>-->
+<!--        </dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/Javax.media/jmf -->
+
+
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -37,11 +68,6 @@
             <version>3.6.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>11</version>
-        </dependency>
 
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -274,12 +300,11 @@
 
 
         <!-- https://mvnrepository.com/artifact/org.jfree/jfreechart -->
-<!--        <dependency>-->
-<!--            <groupId>org.jfree</groupId>-->
-<!--            <artifactId>jfreechart</artifactId>-->
-<!--            <version>1.5.3</version>-->
-<!--        </dependency>-->
-
+        <!--        <dependency>-->
+        <!--            <groupId>org.jfree</groupId>-->
+        <!--            <artifactId>jfreechart</artifactId>-->
+        <!--            <version>1.5.3</version>-->
+        <!--        </dependency>-->
 
 
         <dependency>

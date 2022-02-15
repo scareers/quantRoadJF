@@ -273,7 +273,11 @@ public class OrderListAndDetailPanel extends JPanel {
     public OrderListAndDetailPanel changeType(Type newType) {
         this.type = newType;
         currentDataFlushType = this.type; // 将更换刷新数据源
-        jList.setSelectedIndex(0); // 选择第一个.
+        try {
+            jList.setSelectedIndex(0); // 选择第一个.
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return this;
     }
 
