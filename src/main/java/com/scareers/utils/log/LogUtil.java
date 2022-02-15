@@ -38,7 +38,7 @@ public class LogUtil {
     }
 
     public static Log getLogger() {
-        LogFactory.setCurrentLogFactory(new Slf4jLogFactory());
+        LogFactory.setCurrentLogFactory(new Log4jLogFactory());
         return LogFactory.get();
     }
 

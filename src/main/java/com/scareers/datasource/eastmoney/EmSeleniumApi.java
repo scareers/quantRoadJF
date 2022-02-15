@@ -3,8 +3,6 @@ package com.scareers.datasource.eastmoney;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.parameter.IndexRealTimeRaiseFallParameter;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import org.openqa.selenium.By;
@@ -20,6 +18,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
  * description: 东方财富某些api, 因加密极难破解, 因此使用 selenium技术获取数据.
@@ -41,6 +41,7 @@ public class EmSeleniumApi {
     //    public static CopyOnWriteArrayList<WebDriver> driverPool;
     public static WebDriver driver;
     public static final Object driverLock = new Object();
+    public static boolean headless = false; // dirver是否隐藏, 可更改
     public static final List<String> stockPopularityListColNames = Arrays.asList("当前排名", "排名较昨日变动", "历史趋势", "代码",
             "股票名称", "相关",
             "最新价", "涨跌额", "涨跌幅",
@@ -51,23 +52,73 @@ public class EmSeleniumApi {
             "最新价", "涨跌额", "涨跌幅",
             "新晋粉丝", "铁杆粉丝"); // 个股人气飙升榜 表头.
 
-    public static void checkDriver() {
-        if (driver == null) {
-            ChromeOptions chromeOptions = new ChromeOptions();
-//            chromeOptions.addArguments("--headless");
-            // 摆脱日志繁琐,  logback.xml 控制netty等库日志
-            chromeOptions.setLogLevel(ChromeDriverLogLevel.WARNING);
-            driver = new ChromeDriver(chromeOptions);
-            driver.manage().timeouts().implicitlyWait(Duration.of(20, ChronoUnit.SECONDS));
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+    public static void main(String[] args) {
+        setHeadless(false);
+        DataFrame<Object> dataFrame = stockPopularityRaisingList();
+//        Console.log(dataFrame.col("当前排名"));
+//        Console.log(dataFrame.col("排名较昨日变动"));
+//        Console.log(dataFrame.col("历史趋势"));
+//        Console.log(dataFrame.col("股票名称"));
+//        Console.log(dataFrame.col("涨跌额"));
+//        Console.log(dataFrame.col("新晋粉丝"));
+//        Console.log(dataFrame.col("铁杆粉丝"));
+//        Console.log(dataFrame.col("相关"));
 
+        Console.log(dataFrame);
+
+        setHeadless(true);
+        checkDriver(true);
+
+        DataFrame<Object> dataFrame2 = stockPopularityOnTheList();
+        Console.log(dataFrame2);
+        closeDriver();
+    }
+
+    /**
+     * 可强制更新driver, 将关闭原driver, 打开新driver
+     *
+     * @param forceUpdate
+     */
+    public static void checkDriver(boolean forceUpdate) {
+        if (forceUpdate) { // 强制更新
+            closeDriver(); // 关闭旧,
+            driver = buildDriver(); // 替换新
+        } else {
+            if (driver == null) {
+                driver = buildDriver();
             }
-
         }
     }
+
+    /**
+     * 更新设置, 然后可强制更新 driver对象
+     *
+     * @param headless1
+     */
+    public static void setHeadless(boolean headless1) {
+        log.warn("driver set headless: {}", headless1);
+        headless = headless1;
+    }
+
+    private static WebDriver buildDriver() {
+        ChromeOptions chromeOptions = new ChromeOptions();
+        if (headless) {
+            chromeOptions.addArguments("--headless");
+        }
+        // 摆脱日志繁琐,  logback.xml 控制netty等库日志
+        chromeOptions.setLogLevel(ChromeDriverLogLevel.WARNING);
+        WebDriver driver0 = new ChromeDriver(chromeOptions);
+        driver0.manage().timeouts().implicitlyWait(Duration.of(20, ChronoUnit.SECONDS));
+        return driver0;
+    }
+
+    /**
+     * 默认不强制
+     */
+    public static void checkDriver() {
+        checkDriver(false);
+    }
+
 
     public static void closeDriver() {
         if (driver != null) {
@@ -76,18 +127,6 @@ public class EmSeleniumApi {
         }
     }
 
-    public static void main(String[] args) {
-        DataFrame<Object> dataFrame = stockPopularityRaisingList();
-        Console.log(dataFrame.col("当前排名"));
-        Console.log(dataFrame.col("排名较昨日变动"));
-        Console.log(dataFrame.col("历史趋势"));
-        Console.log(dataFrame.col("股票名称"));
-        Console.log(dataFrame.col("涨跌额"));
-        Console.log(dataFrame.col("新晋粉丝"));
-        Console.log(dataFrame.col("铁杆粉丝"));
-        Console.log(dataFrame.col("相关"));
-        closeDriver();
-    }
 
     /**
      * 原因: 实测股票排名api, 返回的数据股票列表需要 AES 解密. 且js源代码因压缩而难以阅读.
@@ -110,9 +149,17 @@ public class EmSeleniumApi {
 
         synchronized (driverLock) {
             driver.get("https://guba.eastmoney.com/rank/");
-
-            for (int i = 0; i < 5; i++) {
-                getOnePage(res, i);
+            int i = 0;
+            while (i < 5) {
+                try {
+                    getOnePage(res, i);
+                } catch (Exception e) {
+                    driver.navigate().refresh(); // 刷新一下
+                    res = new DataFrame<>(stockPopularityListColNames);
+                    i = 0; //
+                    continue;
+                }
+                i++;
             }
         }
 
@@ -121,7 +168,6 @@ public class EmSeleniumApi {
         res.set(2, "当前排名", "3");
 
         repairPopularityList(res);
-//        https://guba.eastmoney.com/rank/stock?code=002395
 
         return res;
     }
@@ -139,26 +185,27 @@ public class EmSeleniumApi {
             driver.get("https://guba.eastmoney.com/rank/");
             ExpectedConditions.presenceOfElementLocated(By.xpath(raisingListXPath));
             driver.findElement(By.xpath(raisingListXPath)).click();// 飙升榜按钮
-            // //*[@id="rankCont"]/div[1]/div[1]/div[1]/span[2]
 
             int i = 0;
             while (i < 5) {
                 try {
                     getOnePage(res, i);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     driver.navigate().refresh(); // 刷新一下
                     ExpectedConditions.presenceOfElementLocated(By.xpath(raisingListXPath));
                     driver.findElement(By.xpath(raisingListXPath)).click();// 飙升榜按钮
                     res = new DataFrame<>(stockPopularityRaisingListColNames);
                     i = 0;
+                    continue;
                 }
 
                 // 判定是否从人气榜, 成功转换到飙升榜?, 若未能, 则重置所有
+                // 如果不小心跳转到人气榜, 此时不应判定 "当前排名"列, 而是 "排名较昨日变动". 因为两个api这两列位置相反
                 if (i == 0) {
-                    List<Integer> ranks = DataFrameS.getColAsIntegerList(res, "当前排名");
                     boolean notChangeFlag = true;
                     for (int j = 3; j < 20; j++) {
-                        if (ranks.get(j) != j + 1) {
+                        if (Integer.parseInt(res.get(j, "排名较昨日变动").toString()) != j + 1) {
                             notChangeFlag = false;
                             break;
                         }
@@ -178,12 +225,16 @@ public class EmSeleniumApi {
         return res;
     }
 
+    /**
+     * 自定义的修改
+     *
+     * @param res
+     */
     private static void repairPopularityList(DataFrame<Object> res) {
         for (int i = 0; i < res.length(); i++) {
             String[] fans = res.get(i, "新晋粉丝").toString().split("\n");
             res.set(i, "新晋粉丝", fans[0]);
             res.set(i, "铁杆粉丝", fans[1]);
-
             res.set(i, "历史趋势",
                     StrUtil.format("https://guba.eastmoney.com/rank/stock?code={}", res.get(i, "代码").toString()));
             res.set(i, "相关",
@@ -191,6 +242,13 @@ public class EmSeleniumApi {
         }
     }
 
+    /**
+     * 对于单页数据, 将等待第一行 无 -- 数据, 即全部渲染完成
+     *
+     * @param res
+     * @param i
+     * @throws Exception
+     */
     private static void getOnePage(DataFrame<Object> res, int i) throws Exception {
         if (i != 0) {
             driver.findElement(By.linkText("下一页")).click(); // 点击4次下一页
@@ -199,17 +257,22 @@ public class EmSeleniumApi {
         ExpectedConditions.presenceOfElementLocated(By.className("rank_table"));
         WebElement rankTable = driver.findElement(By.className("rank_table"));
         WebElement stockBody = rankTable.findElement(By.className("stock_tbody"));
-        ExpectedConditions.textToBe(By.xpath("//*[@id=\"rankCont\"]/div[1]/div[2]/table/tbody/tr[20]/td[1" +
-                "]"), Integer.valueOf(20 * (i + 1)).toString()); // 等待最后一行的 排名数值正确刷新!!!
 
-        WebElement firstLine = stockBody.findElement(By.tagName("tr"));
-        List<String> firstLineContent =
-                firstLine.findElements(By.tagName("td")).stream().map(WebElement::getText).collect(Collectors.toList());
-        if (firstLineContent.contains("--") || firstLineContent.contains("")) {
-            // 此时表示第一行显示有缺失, 这是常见的bug, 由调用方解决
+        try {
+            waitUtil(() -> {
+                WebElement firstLine = stockBody.findElement(By.tagName("tr")); // 第一行
+                List<String> firstLineContent =
+                        firstLine.findElements(By.tagName("td")).stream().map(WebElement::getText)
+                                .collect(Collectors.toList());
+                if (firstLineContent.contains("--")) {
+                    // 此时表示第一行显示有缺失, 这是常见的bug, 由调用方解决
+                    return false;
+                }
+                return true;
+            }, 2000, 10, null, false);
+        } catch (Exception e) {
             throw new Exception("第一行数据渲染缺失");
         }
-
 
         List<WebElement> stockList = stockBody.findElements(By.tagName("tr"));
         for (WebElement webElement : stockList) {
