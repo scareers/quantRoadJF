@@ -157,7 +157,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                 this.priceLimitMap
                         .put(bean.getSecCode(),
                                 Objects.requireNonNull(StockApi.getStockPriceLimitToday(bean.getSecCode(),
-                                        2000,3,false)));
+                                        2000, 3, false)));
             }
         }
     }
@@ -545,14 +545,18 @@ public class LowBuyHighSellStrategy extends Strategy {
         String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
         log.warn("stock amounts: 已获取两市主板股票数量: {}", mainboardStocks.size());
-        ConcurrentHashMap<String, DataFrame<Object>> datasMap =
-                StockApi.getQuoteHistory(
-                        new ArrayList<>(mainboardStocks)
-                                .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size())),
+        ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasMap0 =
+                StockApi.getQuoteHistoryBatch(
+                        SecurityBeanEm.createStockList(new ArrayList<>(mainboardStocks)
+                                .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size()))),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
-                        "101", "1", 3, SecurityBeanEm.SecType.STOCK, 2000, false);
+                        "101", "1", 3,  2000, false);
 
+        ConcurrentHashMap<String, DataFrame<Object>> datasMap = new ConcurrentHashMap<>();
+        for (SecurityBeanEm beanEm : datasMap0.keySet()) {
+            datasMap.put(beanEm.getSecCode(), datasMap0.get(beanEm));
+        }
         // int windowUsePeriodsCoreArg = keyInts.get(1) + 7; // 等价于原来高卖那一天. 这里8, 理论上, 应当获取最后6日数据, 拼接几行空值
         for (String stock : datasMap.keySet()) {
             DataFrame<Object> dfRaw = datasMap.get(stock); // dfRaw的日期默认为 yyyy-MM-dd, 虽然起止参数是 yyyyMMdd 形式

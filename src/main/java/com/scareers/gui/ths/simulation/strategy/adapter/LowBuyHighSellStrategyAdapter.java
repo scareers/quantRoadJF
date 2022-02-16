@@ -166,7 +166,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             try {
                 //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
                 preClosePrice =
-                        Double.valueOf(getQuoteHistorySingle(stock, SecurityBeanEm.SecType.STOCK, preTradeDate,
+                        Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock), preTradeDate,
                                 preTradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
             } catch (Exception e) {
                 log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
@@ -291,8 +291,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 Double pre2ClosePrice;
                 try {
                     //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
-                    pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(stock,
-                            SecurityBeanEm.SecType.STOCK, pre2TradeDate,
+                    pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock),
+                            pre2TradeDate,
                             pre2TradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
                 } catch (Exception e) {
                     log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
@@ -675,7 +675,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> dfTemp;
         if (market == 0) { // 深证成指
             if (shenZhengChengZhiPreClose == null) { // 上证指数昨日收盘
-                DataFrame<Object> df0 = StockApi.getQuoteHistorySingle(true, "399001", SecurityBeanEm.SecType.INDEX,
+                DataFrame<Object> df0 = StockApi.getQuoteHistorySingle(true, SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI,
                         preTradeDate, preTradeDate,
                         "101", "qfq",
                         3, 2000);
@@ -687,7 +687,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
         } else {
             if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
-                DataFrame df0 = StockApi.getQuoteHistorySingle(true, "000001", SecurityBeanEm.SecType.INDEX,
+                DataFrame df0 = StockApi.getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU,
                         preTradeDate, preTradeDate,
                         "101", "qfq",
                         3, 2000);

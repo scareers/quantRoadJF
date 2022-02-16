@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getColAsObject;
-import static com.scareers.datasource.eastmoney.stock.StockApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
 import static com.scareers.utils.CommonUtil.waitUtil;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -282,11 +281,11 @@ public class FsTransactionFetcher {
                 log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
                 logged = true;
             }
-            this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
+            this.saveTableName = StockApi.getPreTradeDateStrict(today).replace("-", "");
         }
 
         if (beforeLowLimit) {
-            this.saveTableName = getPreNTradeDateStrict(today).replace("-", "");
+            this.saveTableName = StockApi.getPreTradeDateStrict(today).replace("-", "");
         } else if (afterHighLimit) {
             this.saveTableName = today.replace("-", "");
         } else {

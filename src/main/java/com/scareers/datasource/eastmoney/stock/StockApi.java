@@ -11,7 +11,6 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -114,10 +113,6 @@ public class StockApi {
     }
 
     public static void main(String[] args) throws Exception {
-//        Console.log("分时成交数据:");
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
 
 
 //        Console.log("个股今日涨跌停:");
@@ -128,13 +123,25 @@ public class StockApi {
 //        Console.log("个股盘口数据:");
 //        Console.log(getStockHandicap("002432", 2000, 1));
 
-        Console.log("指数/板块昨收今开");
-        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+//        Console.log("指数/板块昨收今开");
+//        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+//        Console.log("指数/板块盘口数据:");
+//        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
 
-        Console.log(getIndexOrBKHandicapCore(SecurityBeanEm.createBK("bk1030"), IndexBkHandicap.fieldsStr, 3000, 2));
+//        Console.log("分时成交数据:");
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
 
-        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
+//        Console.log("各市场实时行情截面数据");
+//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
 
+
+//        Console.log("历史行情k线数据 -- 可分时数据");
+//        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
+        Console.log("批量历史行情k线数据 -- 可分时数据");
+        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
+                false));
         waitForever();
 
     }
@@ -174,7 +181,7 @@ public class StockApi {
         // 15:00:x 正常df
         // 23:50:x 正常df
 
-        Console.log(getFs1MToday("000001", SecurityBeanEm.SecType.STOCK, 0, 2000));
+        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 0, 2000));
         // @noti: 两大指数大约 6,7秒开始出现下一分钟分时, 个股大约1-2s之间
         // 1分钟分时图
         // 02:10 昨日df
@@ -196,7 +203,7 @@ public class StockApi {
         // 23:50:x 正常df, 同上截止于 15:00
 
 
-        Console.log(getQuoteHistorySingle("000001", SecurityBeanEm.SecType.STOCK, null, null, "101", "qfq", 3, 2000));
+        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "101", "qfq", 3, 2000));
         // 日k线
         // 00:00
         // 02:10 截至昨天df
@@ -717,6 +724,8 @@ public class StockApi {
      * * '深证A股', '深A', '新股', '创业板', '科创板', '沪股通', '深股通', '风险警示板', '两网及退市',
      * * '地域板块', '行业板块', '概念板块', '上证系列指数', '深证系列指数', '沪深系列指数', 'ETF', 'LOF',
      * * '美股', '港股', '英股', '中概股', '中国概念股']
+     * <p>
+     * Quotes: 行情
      *
      * @param markets
      * @return
@@ -759,91 +768,43 @@ public class StockApi {
     }
 
     /**
-     * 获取k线. 复刻 efinance   get_quote_history
+     * 批量资产获取k线. 复刻 efinance   get_quote_history
      * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
-     * <p>
-     * 获取股票的 K 线数据
-     * <p>
-     * Parameters
-     * ----------
-     * stock_codes : Union[str,List[str]]
-     * 股票代码、名称 或者 股票代码、名称构成的列表
-     * beg : str, optional
-     * 开始日期，默认为 ``'19000101'`` ，表示 1900年1月1日
-     * end : str, optional
-     * 结束日期，默认为 ``'20500101'`` ，表示 2050年1月1日
-     * klt : int, optional
-     * 行情之间的时间间隔，默认为 ``101`` ，可选示例如下
-     * <p>
-     * - ``1`` : 分钟
-     * - ``5`` : 5 分钟
-     * - ``15`` : 15 分钟
-     * - ``30`` : 30 分钟
-     * - ``60`` : 60 分钟
-     * - ``101`` : 日
-     * - ``102`` : 周
-     * - ``103`` : 月
-     * <p>
-     * fqt : int, optional
-     * 复权方式，默认为 ``1`` ，可选示例如下
-     * <p>
-     * - ``0`` : 不复权
-     * - ``1`` : 前复权
-     * - ``2`` : 后复权
-     * <p>
-     * Returns
-     * -------
-     * Union[DataFrame, Dict[str, DataFrame]]
-     * 股票的 K 线数据
-     * <p>
-     * - ``DataFrame`` : 当 ``stock_codes`` 是 ``str`` 时
-     * - ``Dict[str, DataFrame]`` : 当 ``stock_codes`` 是 ``List[str]`` 时
-     * <p>
-     * Examples
-     * // @noti: 前后两日期都包含, 且天然升序!
      *
-     * @param stockCodesSimple
-     * @param begDate
-     * @param endDate
-     * @param klType
-     * @param fq
-     * @param retrySingle
-     * @param isIndex          给的股票代码列表, 是否指数??
      * @return
      * @throws ExecutionException
      * @throws InterruptedException
      */
-    public static ConcurrentHashMap<String, DataFrame<Object>> getQuoteHistory(List<String> stockCodesSimple,
-                                                                               String begDate,
-                                                                               String endDate,
-                                                                               String klType, String fq,
-                                                                               int retrySingle,
-                                                                               SecurityBeanEm.SecType secType,
-                                                                               int timeoutOfReq,
-                                                                               boolean useCache
+    public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getQuoteHistoryBatch(
+            List<SecurityBeanEm> beanEmList,
+            String begDate,
+            String endDate,
+            String klType, String fq,
+            int retrySingle,
+            int timeoutOfReq,
+            boolean useCache
     )
             throws ExecutionException, InterruptedException {
 
-        log.info("klines gets batch: 线程池批量获取k线, 股票数量: {}", stockCodesSimple.size());
+        log.info("klines gets batch: 线程池批量获取k线, 股票数量: {}", beanEmList.size());
         checkPoolExecutor();
-        HashMap<String, Future<DataFrame<Object>>> futures = new HashMap<>();
-        for (String stock : stockCodesSimple) {
-            futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
+        HashMap<SecurityBeanEm, Future<DataFrame<Object>>> futures = new HashMap<>();
+        for (SecurityBeanEm beanEm : beanEmList) {
+            futures.put(beanEm, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    return getQuoteHistorySingle(useCache, stock, secType, begDate, endDate, klType, fq, retrySingle,
+                    return getQuoteHistorySingle(useCache, beanEm, begDate, endDate, klType, fq, retrySingle,
                             timeoutOfReq);
                 }
             }));
         }
-        ConcurrentHashMap<String, DataFrame<Object>> res = new ConcurrentHashMap<>();
-        for (String stock : Tqdm.tqdm(stockCodesSimple, "process: ")) {
-            DataFrame<Object> dfTemp = futures.get(stock).get();
+        ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> res = new ConcurrentHashMap<>();
+        for (SecurityBeanEm beanEm : Tqdm.tqdm(beanEmList, "process: ")) {
+            DataFrame<Object> dfTemp = futures.get(beanEm).get();
             if (dfTemp != null) {
-                res.put(stock, dfTemp);
+                res.put(beanEm, dfTemp);
             }
         }
-        Console.log();
         log.info("finish klines gets batch: 线程池批量获取k线完成");
         return res;
     }
@@ -857,7 +818,7 @@ public class StockApi {
      * @param secCode  资产简单数字代码, 板块为 BK 开头
      * @param secType  secCode代表 的资产类型, 目前支持 股票/指数/板块(BK开头)
      * @param begDate  开始日期, null则默认19900101, 格式可 yyyy-MM-dd, 将被转换
-     * @param endDate  结束日期, 默认 20500101, 同上
+     * @param endDate  结束日期, 默认 21000101, 同上
      * @param klType   代表k线类型(不同周期)的字符串, 1/5/15/30/60代表各分钟. 101/102/103 代表日/周/月
      * @param fq       复权方式, 0 / 1/ 2 代表 不/前/后复权
      * @param retry    http访问重试次数
@@ -868,8 +829,7 @@ public class StockApi {
     @CanCache
     @TimeoutCache(timeout = "4 * 3600 * 1000")
     public static DataFrame<Object> getQuoteHistorySingle(boolean useCache,
-                                                          String secCode,
-                                                          SecurityBeanEm.SecType secType, String begDate,
+                                                          SecurityBeanEm bean, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retry,
                                                           int timeout)
@@ -878,14 +838,14 @@ public class StockApi {
             begDate = "19900101";
         }
         if (endDate == null) {
-            endDate = "20500101";
+            endDate = "21000101";
         }
         begDate = begDate.replace("-", ""); // 标准化
         endDate = endDate.replace("-", "");
 
         String cacheKey = StrUtil
-                .format("{}__{}__{}__{}__{}__{}__{}", secCode, begDate, endDate, klType, fq, retry,
-                        secType);
+                .format("{}__{}__{}__{}__{}__{}__{}", bean.getSecCode(), begDate, endDate, klType, fq,
+                        bean.getSecType());
 
         DataFrame<Object> res = null;
         if (useCache) { // 必须使用caCache 且真的存在缓存
@@ -897,9 +857,7 @@ public class StockApi {
 
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
-        JSONArray quoteRes = querySecurityId(secCode);
 
-        SecurityBeanEm bean = SecurityBeanEm.createBeanWithType(secCode, secType);
         String quoteId = bean.getSecId();
 
         HashMap<String, Object> params = new HashMap<>();
@@ -932,7 +890,7 @@ public class StockApi {
     }
 
     /**
-     * 默认使用 cache
+     * 默认使用 cache, 这针对非分时图.  分时图将默认不使用cache
      *
      * @param secCode
      * @param begDate
@@ -945,12 +903,11 @@ public class StockApi {
      * @return
      * @throws Exception
      */
-    public static DataFrame<Object> getQuoteHistorySingle(String secCode,
-                                                          SecurityBeanEm.SecType secType, String begDate,
+    public static DataFrame<Object> getQuoteHistorySingle(SecurityBeanEm bean, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retry,
                                                           int timeout) throws Exception {
-        return getQuoteHistorySingle(true, secCode, secType, begDate, endDate, klType, fq, retry, timeout);
+        return getQuoteHistorySingle(true, bean, begDate, endDate, klType, fq, retry, timeout);
     }
 
     /**
@@ -961,20 +918,29 @@ public class StockApi {
      * @return 1分钟分时图当日; 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
      * @throws Exception
      */
-    public static DataFrame<Object> getFs1MToday(String stock, SecurityBeanEm.SecType secType, int retrySingle,
+    public static DataFrame<Object> getFs1MToday(SecurityBeanEm bean, int retrySingle,
                                                  int timeout,
                                                  boolean useCache)
             throws Exception {
-        return getQuoteHistorySingle(useCache, stock, secType, null, null, "1", "qfq", retrySingle,
+        return getQuoteHistorySingle(useCache, bean, null, null, "1", "qfq", retrySingle,
                 timeout);
     }
 
-    public static DataFrame<Object> getFs1MToday(String stock, SecurityBeanEm.SecType secType, int retrySingle,
-                                                 int timeout
-    )
+    /**
+     * 分时图将默认不使用cache
+     *
+     * @param bean
+     * @param retrySingle
+     * @param timeout
+     * @return
+     * @throws Exception
+     */
+    public static DataFrame<Object> getFs1MToday(SecurityBeanEm bean, int retrySingle,
+                                                 int timeout)
             throws Exception {
-        return getQuoteHistorySingle(true, stock, secType, null, null, "1", "qfq", retrySingle, timeout);
+        return getFs1MToday(bean, retrySingle, timeout, false);
     }
+
 
     /**
      * 给定一个具体日期, yyyy-MM-dd 形式, 因为em默认日期格式是这样, 方便比较.  返回上n个交易日的日期,
@@ -987,9 +953,9 @@ public class StockApi {
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws Exception {
         // 查询结果将被缓存.
-        DataFrame<Object> dfTemp = getQuoteHistorySingle(false, "000001", SecurityBeanEm.SecType.INDEX, "19900101",
+        DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, "19900101",
                 "21000101", "101", "1", 3,
-                3000);
+                3000); // 使用缓存
         List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
@@ -1005,7 +971,14 @@ public class StockApi {
         return null;
     }
 
-    public static String getPreNTradeDateStrict(String todayDate) throws Exception {
+    /**
+     * 获取上一交易日
+     *
+     * @param todayDate
+     * @return
+     * @throws Exception
+     */
+    public static String getPreTradeDateStrict(String todayDate) throws Exception {
         return getPreNTradeDateStrict(todayDate, 1); // 默认获取today上一交易日
     }
 
