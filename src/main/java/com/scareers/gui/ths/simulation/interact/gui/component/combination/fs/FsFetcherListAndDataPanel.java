@@ -351,7 +351,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
             if (preBean == null) {
                 return;
             }
-            String title = StrUtil.format("分时图 - {} [{}]", preBean.getStockCodeSimple(), preBean.getName());
+            String title = StrUtil.format("分时图 - {} [{}]", preBean.getSecCode(), preBean.getName());
             final JDialog dialog = new JDialog(TraderGui.INSTANCE, title, false);
             dialog.setSize((int) (TraderGui.INSTANCE.getWidth() * 0.8), (int) (TraderGui.INSTANCE.getHeight() * 0.8));
             dialog.setResizable(true);
@@ -361,7 +361,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
             Double preClose;
             if (!preBean.isIndex()) {
-                preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getStockCodeSimple(), 2000, 1, true).get(0);
+                preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getSecCode(), 2000, 1, true).get(0);
                 // 昨收
             } else {
                 preClose = StockApi.getPreCloseAndTodayOpenOfIndexOrBK(preBean, 2000, 3).get(0);// 昨收
@@ -369,7 +369,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
 
             JFreeChart chart = ChartUtil
                     .createFs1MKLineOfEm(dataDf, preClose,
-                            StrUtil.format("{} [{}]", preBean.getStockCodeSimple(), preBean.getName()),
+                            StrUtil.format("{} [{}]", preBean.getSecCode(), preBean.getName()),
                             ChartUtil.KLineYType.PERCENT);
             chart.setBackgroundPaint(ChartColor.WHITE);
 //            ChartUtil.showChartSimple(chart);

@@ -694,7 +694,7 @@ public class StockApi {
         try {
             res = jsonStrToDf(response, "(", ")", fSTransactionCols,
                     Arrays.asList("data", "details"), String.class, Arrays.asList(3),
-                    Arrays.asList(bean.getStockCodeSimple(), bean.getMarket()));
+                    Arrays.asList(bean.getSecCode(), bean.getMarket()));
         } catch (Exception e) {
             log.warn("get exception: 获取数据错误. stock: {} -- {}", bean.getSecId(), bean.getName());
             log.warn("raw data: 原始响应字符串: {}", response);
@@ -921,7 +921,7 @@ public class StockApi {
                 Arrays.asList("data", "klines"), String.class, Arrays.asList(),
                 Arrays.asList());
 
-        dfTemp = dfTemp.add("股票代码", values -> bean.getStockCodeSimple());
+        dfTemp = dfTemp.add("股票代码", values -> bean.getSecCode());
         res = dfTemp.add("股票名称", values -> bean.getName());
         quoteHistorySingleCache.put(cacheKey, res); // 将更新
         return res;

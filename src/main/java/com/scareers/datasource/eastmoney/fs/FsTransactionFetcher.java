@@ -250,7 +250,7 @@ public class FsTransactionFetcher {
         DataFrame<Object> dfAll = DataFrame.readSql(connSave, sqlSelectAll);
         for (SecurityBeanEm stock : stockPool) {
             DataFrame<Object> datasOfOneStock =
-                    dfAll.select(value -> value.get(0).toString().equals(stock.getStockCodeSimple()) && value.get(1)
+                    dfAll.select(value -> value.get(0).toString().equals(stock.getSecCode()) && value.get(1)
                             .toString()
                             .equals(stock.getMarket().toString()));
             datasOfOneStock = datasOfOneStock.sortBy("time_tick"); // 保证有序

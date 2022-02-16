@@ -332,7 +332,7 @@ public class FsFetcher {
             }
 
             DataFrame<Object> dfNew = StockApi
-                    .getFs1MToday(stock.getStockCodeSimple(), SecurityBeanEm.SecType.STOCK, 0, fetcher.getTimeout(),
+                    .getFs1MToday(stock.getSecCode(), SecurityBeanEm.SecType.STOCK, 0, fetcher.getTimeout(),
                             false);
             if (dfNew != null) { // 访问失败将返回null.
 //                ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasNew = new ConcurrentHashMap<>(

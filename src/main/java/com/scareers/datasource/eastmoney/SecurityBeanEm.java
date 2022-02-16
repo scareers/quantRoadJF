@@ -83,7 +83,7 @@ public class SecurityBeanEm {
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (SecurityBeanEm bean : beans) {
             bean.convertToStock();
-            beanPool.put(bean.getStockCodeSimple() + "__stock", bean); // 放入缓存池
+            beanPool.put(bean.getSecCode() + "__stock", bean); // 放入缓存池
         }
         return beans; // 列表不变
     }
@@ -99,7 +99,7 @@ public class SecurityBeanEm {
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (SecurityBeanEm bean : beans) {
             bean.convertToIndex();
-            beanPool.put(bean.getStockCodeSimple() + "__index", bean); // 放入缓存池
+            beanPool.put(bean.getSecCode() + "__index", bean); // 放入缓存池
         }
         return beans;
     }
@@ -115,7 +115,7 @@ public class SecurityBeanEm {
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
         for (SecurityBeanEm bean : beans) {
             bean.convertToBK();
-            beanPool.put(bean.getStockCodeSimple() + "__bk", bean); // 放入缓存池
+            beanPool.put(bean.getSecCode() + "__bk", bean); // 放入缓存池
         }
         return beans;
     }
@@ -143,7 +143,7 @@ public class SecurityBeanEm {
     private static final Log log = LogUtil.getLogger();
     private static final int retry = 3; // 查询时3次
 
-    String stockCodeSimple;
+    String secCode;
     Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.    板块为 90?
     // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
     private JSONArray queryResults; // 全部查询结果, 以下为结果字段
@@ -191,10 +191,10 @@ public class SecurityBeanEm {
     /**
      * 给定股票简单代码构造, 将一定执行查询.  不建议过多单独调用, 应使用线程池版本创建股票池
      *
-     * @param stockCodeSimple
+     * @param secCode
      */
-    private SecurityBeanEm(String stockCodeSimple) {
-        this.stockCodeSimple = stockCodeSimple; // 将被查询
+    private SecurityBeanEm(String secCode) {
+        this.secCode = secCode; // 将被查询
         checkQueryResults();
     }
 
@@ -202,7 +202,7 @@ public class SecurityBeanEm {
         int retry_ = 0;
         while (queryResults == null) {
             try {
-                this.queryResults = querySecurityId(stockCodeSimple);
+                this.queryResults = querySecurityId(secCode);
             } catch (Exception e) {
                 if (retry_ >= retry) {
                     log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败");
@@ -281,7 +281,7 @@ public class SecurityBeanEm {
                 // 三项基本
                 try {
                     secId = ele.get("QuoteID").toString();
-                    stockCodeSimple = ele.get("Code").toString();
+                    secCode = ele.get("Code").toString();
                     market = Integer.valueOf(ele.get("MktNum").toString());
                     Name = ele.get("Name").toString();
                     PinYin = ele.get("PinYin").toString();
@@ -380,7 +380,7 @@ public class SecurityBeanEm {
      */
     @Override
     public int hashCode() {
-        return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode() | this.getSecId().hashCode();
+        return this.getSecCode().hashCode() | this.getMarket().hashCode() | this.getSecId().hashCode();
     }
 
     /**
@@ -393,7 +393,7 @@ public class SecurityBeanEm {
     public boolean equals(Object obj) {
         if (obj instanceof SecurityBeanEm) {
             SecurityBeanEm other = (SecurityBeanEm) obj;
-            return other.getStockCodeSimple().equals(this.getStockCodeSimple()) &&
+            return other.getSecCode().equals(this.getSecCode()) &&
                     other.getMarket().equals(this.getMarket()) && this.getSecId().equals(other.getSecId());
         }
         return false;
@@ -436,7 +436,7 @@ public class SecurityBeanEm {
         Integer type; // 类型: 0代表指数, 1代表今日选股(可买), 2代表昨日持仓(可卖), 3代表昨日有持仓且今日被选中, 4.未知
 
         public SecurityEmPo(SecurityBeanEm securityBeanEm) {
-            this.stockCodeSimple = securityBeanEm.getStockCodeSimple();
+            this.stockCodeSimple = securityBeanEm.getSecCode();
             this.market = securityBeanEm.getMarket();
             this.name = securityBeanEm.getName();
             this.bean = securityBeanEm;
