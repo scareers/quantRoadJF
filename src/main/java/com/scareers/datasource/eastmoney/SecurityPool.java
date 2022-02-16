@@ -182,7 +182,7 @@ public class SecurityPool {
     }
 
     /**
-     * 8个单池浅复制.
+     * 8个单池浅复制. 以遍历
      *
      * @return
      */
@@ -219,7 +219,7 @@ public class SecurityPool {
     }
 
     /**
-     * 3个组合池复制
+     * 3个组合池复制, 以遍历
      */
     public static ArrayList<SecurityBeanEm> allStocksCopy() {
         ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
@@ -248,16 +248,38 @@ public class SecurityPool {
      */
 
     /**
-     * 个股池构造.
+     * 将读取东财某些市场全部标的列表, 随机选择n个, 或者前n个. debug用
+     * type准确性自行保证
      *
      * @param stockPoolSimple
      * @param addTwoMarketIndex
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createStockPool(List<String> stockPoolSimple, boolean addTwoMarketIndex)
+    private static List<SecurityBeanEm> createSecurityPoolRandom(int amount, boolean random, List<String> markets,
+                                                                 SecurityBeanEm.SecType type)
             throws Exception {
-        List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stockPoolSimple);
+        DataFrame<Object> tick = StockApi.getRealtimeQuotes(markets);
+        List<String> stockCode = DataFrameS.getColAsStringList(tick, "股票代码"); // 可能是指数/板块代码
+        List<String> stocks;
+        if (random) {
+            stocks = RandomUtil.randomEleList(stockCode, amount);
+        } else {
+            stocks = stockCode.subList(0, Math.min(amount, stockCode.size()));
+        }
+        if (type == SecurityBeanEm.SecType.INDEX) {
+            return SecurityBeanEm.createStockList(stocks);
+        } else if (type == SecurityBeanEm.SecType.BK) {
+            return SecurityBeanEm.createBKList(stocks);
+        } else {
+            return SecurityBeanEm.createStockList(stocks);
+        }
+    }
+
+    public static List<SecurityBeanEm> createStockPool(int amount, boolean random, boolean addTwoMarketIndex)
+            throws Exception {
+        List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, Arrays.asList("stock"),
+                SecurityBeanEm.SecType.STOCK);
         if (addTwoMarketIndex) {
             results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
         }
@@ -265,28 +287,58 @@ public class SecurityPool {
     }
 
     /**
-     * 将读取东财所有 A股列表, 随机选择n个, 或者前n个.
+     * @param amount
+     * @param random
+     * @param markets Arrays.asList("概念板块","行业板块","地域板块")
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createBKPool(int amount, boolean random, List<String> markets)
+            throws Exception {
+        List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, markets,
+                SecurityBeanEm.SecType.BK);
+        return results;
+    }
+
+    /**
+     * @param amount
+     * @param random
+     * @param markets Arrays.asList("上证系列指数", "深证系列指数", "沪深系列指数")
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createIndexPool(int amount, boolean random, List<String> markets)
+            throws Exception {
+        List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, markets,
+                SecurityBeanEm.SecType.INDEX);
+        return results;
+    }
+
+    /**
+     * 个股池构造.
      *
-     * @param stockPoolSimple
+     * @param stockCodes
      * @param addTwoMarketIndex
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createStockPool(int amount, boolean random, boolean addTwoMarketIndex)
+    public static List<SecurityBeanEm> createStockPool(List<String> stockCodes, boolean addTwoMarketIndex)
             throws Exception {
-        DataFrame<Object> tick = StockApi.getRealtimeQuotes(Arrays.asList("stock"));
-        List<String> stockCode = DataFrameS.getColAsStringList(tick, "股票代码");
-        List<String> stocks;
-        if (random) {
-            stocks = RandomUtil.randomEleList(stockCode, amount);
-        } else {
-            stocks = stockCode.subList(0, Math.min(amount, stockCode.size()));
-        }
-        List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stocks);
+        List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stockCodes);
         if (addTwoMarketIndex) {
             results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
         }
         return results;
+    }
+
+    public static List<SecurityBeanEm> createIndexPool(List<String> indexCodes)
+            throws Exception {
+        return SecurityBeanEm.createIndexList(indexCodes);
+    }
+
+    public static List<SecurityBeanEm> createBKPool(List<String> bkCodes)
+            throws Exception {
+        return SecurityBeanEm.createBKList(bkCodes);
     }
 
 
