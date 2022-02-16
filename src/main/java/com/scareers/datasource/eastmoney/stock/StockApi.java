@@ -134,7 +134,9 @@ public class StockApi {
 //        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
 
         Console.log("各市场实时行情截面数据");
-        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+        Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
+        Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
 
 
 //        Console.log("历史行情k线数据 -- 可分时数据");

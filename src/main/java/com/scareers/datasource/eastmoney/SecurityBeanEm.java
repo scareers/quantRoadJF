@@ -1,5 +1,6 @@
 package com.scareers.datasource.eastmoney;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
@@ -216,18 +217,20 @@ public class SecurityBeanEm {
 
     /**
      * 尝试从查询结果中, 读取到股票结果, 填充各个字段, 然后返回this
+     * NEEQ 似乎为新三板股票+北交所  23 为科创板
      *
-     * @return
+     * @return Arrays.asList(" AStock ", " 23 ", " NEEQ ")
      * @noti: 不新建对象
      */
     private SecurityBeanEm convertToStock() throws Exception {
         if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convert(Arrays.asList("AStock", "23"))) {
+        if (convert(Arrays.asList("AStock", "23", "NEEQ"))) {
             secType = SecType.STOCK;
         } else {
             secType = SecType.FAIL;
+            Console.log(this.queryResults);
             throw new Exception("转换StockBean为股票Bean异常");
         }
         return this;

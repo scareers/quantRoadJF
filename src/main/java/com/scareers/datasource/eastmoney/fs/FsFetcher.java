@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
@@ -16,6 +17,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -45,13 +47,18 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 @Data
 public class FsFetcher {
     public static void main(String[] args) throws Exception {
-
+        // 测试初始化股票池
+//        Console.log(SecurityBeanEm.createStock("603112").getClassify());
+        SecurityPool.setExcludeBad(true);
+        SecurityPool.addToPoolForFsFetcher(SecurityPool.createBKPool(100, true, Arrays.asList("概念板块")));
+        SecurityPool.addToPoolForFsFetcher(SecurityPool.createStockPool(1000, true, true));
+        SecurityPool.addToPoolForFsFetcher(SecurityPool.createIndexPool(100, true, Arrays.asList("上证系列指数")));
+        Console.log(SecurityPool.poolForFsFetcherCopy());
 
         FsFetcher fsFetcher = getInstance
                 (
                         1000,
-                        10, 16, 100);
-        Console.log(getStockPool());
+                        10, 32, 100);
         fsFetcher.startFetch(); // 测试股票池
         fsFetcher.waitFirstEpochFinish();
         fsFetcher.stopFetch(); // 软停止,且等待完成
@@ -64,11 +71,12 @@ public class FsFetcher {
         Console.log(FsFetcher.getShangZhengZhiShuFs());
         Console.log(FsFetcher.getShenZhengChengZhiFs());
 
-        SecurityBeanEm stock = SecurityBeanEm.createStock("000002");
+        SecurityBeanEm stock = RandomUtil.randomEle(SecurityPool.poolForFsFetcherCopy());
         DataFrame<Object> dataFrame = FsFetcher.getFsData(stock);
         Console.log(dataFrame);
         Console.log(FsFetcher.getValueByTimeTick(stock, "9:31:59", 2, false));
         Console.log(FsFetcher.getClosePriceByTimeTick(stock, "9:32"));
+        Console.log(dataFrame);
         Console.log(DataFrameS.getColAsDoubleList(dataFrame, "开盘"));
 
         Console.log(FsFetcher.getColumnByColNameOrIndex(stock, 0));
@@ -85,7 +93,12 @@ public class FsFetcher {
                 String preStr = "";
                 while (true) {
 //                    getFsDatas().values().stream().forEach(value -> Console.log(value.row(value.length() - 1)));
-                    DataFrame<Object> data = getFsData(SecurityBeanEm.createStock("000002"));
+                    SecurityBeanEm bean = RandomUtil.randomEle(SecurityPool.poolForFsFetcherCopy());
+                    DataFrame<Object> data = getFsData(bean);
+                    if(data.length()==0){
+                        Console.log(bean.getName());
+                        continue;
+                    }
                     String x = data.get(data.length() - 1, 0).toString();
                     if (!x.equals(preStr)) {
                         log.warn(x);
@@ -94,6 +107,7 @@ public class FsFetcher {
                 }
             }
         }, true);
+
         waitForever();
 
     }
