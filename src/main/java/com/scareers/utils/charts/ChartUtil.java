@@ -64,7 +64,8 @@ public class ChartUtil {
 //        dfAsLineChartSimple(df, true);
 
         DataFrame<Object> fs1MDf = StockApi.getFs1MToday("000001", SecurityBeanEm.SecType.INDEX, 0, 2000);
-        Double preClose = StockApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "股票代码").toString(), 2000, 2).get(0);// 昨收
+        Double preClose = StockApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "股票代码").toString(), 2000, 2,true).get(0);
+        // 昨收
         JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "股票代码").toString() + " [" + fs1MDf.get(0,
                 "股票名称").toString() + "]", KLineYType.PERCENT);
         showChartSimple(chart);

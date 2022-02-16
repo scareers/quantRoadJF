@@ -157,7 +157,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                 this.priceLimitMap
                         .put(bean.getStockCodeSimple(),
                                 Objects.requireNonNull(StockApi.getStockPriceLimitToday(bean.getStockCodeSimple(),
-                                        2000,3)));
+                                        2000,3,false)));
             }
         }
     }
