@@ -1,10 +1,17 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.stock.StockApi;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
+import joinery.DataFrame;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -166,8 +173,8 @@ public class SecurityPool {
      * 构造浅复制股票池以遍历! iterXxx
      */
 
-    private static CopyOnWriteArraySet<SecurityBeanEm> iterSets(CopyOnWriteArraySet<SecurityBeanEm>... sets) {
-        CopyOnWriteArraySet<SecurityBeanEm> res = new CopyOnWriteArraySet<>();
+    private static ArrayList<SecurityBeanEm> iterSets(CopyOnWriteArraySet<SecurityBeanEm>... sets) {
+        ArrayList<SecurityBeanEm> res = new ArrayList<>();
         for (CopyOnWriteArraySet<SecurityBeanEm> set : sets) {
             res.addAll(set);
         }
@@ -176,36 +183,111 @@ public class SecurityPool {
 
     /**
      * 8个单池浅复制.
+     *
      * @return
      */
-    public static CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocksCopy() {
+    public static ArrayList<SecurityBeanEm> todaySelectedStocksCopy() {
         return iterSets(todaySelectedStocks);
     }
 
-    public static CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocksCopy() {
+    public static ArrayList<SecurityBeanEm> yesterdayHoldStocksCopy() {
         return iterSets(yesterdayHoldStocks);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareStocksCopy() {
+
+    public static ArrayList<SecurityBeanEm> otherCareStocksCopy() {
         return iterSets(otherCareStocks);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> keyBKsCopy() {
+
+    public static ArrayList<SecurityBeanEm> keyBKsCopy() {
         return iterSets(keyBKs);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareBKsCopy() {
+
+    public static ArrayList<SecurityBeanEm> otherCareBKsCopy() {
         return iterSets(otherCareBKs);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> keyIndexesCopy() {
+
+    public static ArrayList<SecurityBeanEm> keyIndexesCopy() {
         return iterSets(keyIndexes);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexesCopy() {
+
+    public static ArrayList<SecurityBeanEm> otherCareIndexesCopy() {
         return iterSets(otherCareIndexes);
     }
-    public static CopyOnWriteArraySet<SecurityBeanEm> allSecuritySetCopy() {
+
+    public static ArrayList<SecurityBeanEm> allSecuritySetCopy() {
         return iterSets(allSecuritySet);
     }
 
     /**
      * 3个组合池复制
      */
+    public static ArrayList<SecurityBeanEm> allStocksCopy() {
+        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
+        beanEms.addAll(todaySelectedStocks);
+        beanEms.addAll(yesterdayHoldStocks);
+        beanEms.addAll(otherCareStocks);
+        return beanEms;
+    }
+
+    public static ArrayList<SecurityBeanEm> allIndexesCopy() {
+        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
+        beanEms.addAll(keyIndexes);
+        beanEms.addAll(otherCareIndexes);
+        return beanEms;
+    }
+
+    public static ArrayList<SecurityBeanEm> allBKsCopy() {
+        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
+        beanEms.addAll(keyBKs);
+        beanEms.addAll(otherCareBKs);
+        return beanEms;
+    }
+
+    /*
+    资产池构造静态方法.
+     */
+
+    /**
+     * 个股池构造.
+     *
+     * @param stockPoolSimple
+     * @param addTwoMarketIndex
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createStockPool(List<String> stockPoolSimple, boolean addTwoMarketIndex)
+            throws Exception {
+        List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stockPoolSimple);
+        if (addTwoMarketIndex) {
+            results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
+        }
+        return results;
+    }
+
+    /**
+     * 将读取东财所有 A股列表, 随机选择n个, 或者前n个.
+     *
+     * @param stockPoolSimple
+     * @param addTwoMarketIndex
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createStockPool(int amount, boolean random, boolean addTwoMarketIndex)
+            throws Exception {
+        DataFrame<Object> tick = StockApi.getRealtimeQuotes(Arrays.asList("stock"));
+        List<String> stockCode = DataFrameS.getColAsStringList(tick, "股票代码");
+        List<String> stocks;
+        if (random) {
+            stocks = RandomUtil.randomEleList(stockCode, amount);
+        } else {
+            stocks = stockCode.subList(0, Math.min(amount, stockCode.size()));
+        }
+        List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stocks);
+        if (addTwoMarketIndex) {
+            results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
+        }
+        return results;
+    }
+
 
 }

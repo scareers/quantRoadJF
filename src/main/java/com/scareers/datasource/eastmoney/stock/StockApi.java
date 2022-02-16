@@ -133,8 +133,8 @@ public class StockApi {
 //        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
 //        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
 
-//        Console.log("各市场实时行情截面数据");
-//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+        Console.log("各市场实时行情截面数据");
+        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
 
 
 //        Console.log("历史行情k线数据 -- 可分时数据");
@@ -726,6 +726,9 @@ public class StockApi {
      * * '美股', '港股', '英股', '中概股', '中国概念股']
      * <p>
      * Quotes: 行情
+     * 列:
+     * 股票代码	 股票名称	涨跌幅	最新价	最高 最低	 今开	 涨跌额	         换手率	          量比	          动态市盈率
+     * 成交量	                 成交额	          昨日收盘	           总市值	          流通市值	市场编号	    行情id	市场类型
      *
      * @param markets
      * @return
@@ -973,6 +976,7 @@ public class StockApi {
 
     /**
      * 获取上一交易日
+     * 返回  yyyy-MM-dd 形式
      *
      * @param todayDate
      * @return

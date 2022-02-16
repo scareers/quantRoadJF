@@ -411,7 +411,12 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             if (!hasSellOrderInQueueStocks.contains(stock)) {
                 // 对于不存在卖单的, 刷新实际的已卖数量,而非使用 强制视为全部成交卖单机制 --> 实际刷新
-                actualHighSelled.put(stock, yesterdayStockHoldsBeSellMap.get(stock) - map.get(stock));
+                try {
+
+                    actualHighSelled.put(stock, yesterdayStockHoldsBeSellMap.get(stock) - map.get(stock));
+                } catch (Exception e) {
+
+                }
             }
         }
     }

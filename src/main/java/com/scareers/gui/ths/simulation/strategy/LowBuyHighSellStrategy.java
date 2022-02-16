@@ -10,8 +10,8 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.stock.StockApi;
-import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolForFsFetcher;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
@@ -186,7 +186,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                 .addAll(SecurityBeanEm.createStockList(yesterdayH)); //@noti: 使得PO对象可区分类型
 
         stocks.addAll(yesterdayH);
-        List<SecurityBeanEm> res = new StockPoolForFsFetcher(stocks, true).createStockPool();
+        List<SecurityBeanEm> res = SecurityPool.createStockPool(stocks, true);
         log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", res.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;

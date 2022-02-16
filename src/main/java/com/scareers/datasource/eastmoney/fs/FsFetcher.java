@@ -7,8 +7,8 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.stock.StockApi;
-import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -45,7 +45,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 public class FsFetcher {
     public static void main(String[] args) throws Exception {
         FsFetcher fsFetcher = getInstance
-                (new StockPoolFromTushare(0, 10, true).createStockPool(),
+                (SecurityPool.createStockPool(10, false, true),
                         1000,
                         10, 16, 100);
         Console.log(stockPool);
