@@ -2,6 +2,8 @@ package com.scareers.datasource.eastmoney.stock;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
+import cn.hutool.log.Log;
+import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -30,21 +32,22 @@ public class IndexBkHandicap {
     }
 
     /*
-    IndexBkHandicap(
-        dateTime=2022-02-16 18:53:11,
+        IndexBkHandicap(
+        dateTime=2022-02-16 19:07:37,
         secCode=BK1030,
         stockName=电机,
 
-        newPrice=140238.0,
-        highPrice=140574.0,
-        lowPrice=138200.0,
-        todayOpen=138677.0,
+        newPrice=1402.38,
+        highPrice=1405.74,
+        lowPrice=1382.0,
+        todayOpen=1386.77,
         totalVol=1862596.0,
         totalAmount=3.200639856E9,
+
         outerVol=954799.0,
         innerVol=907797.0,
-        volRatio=81.0,
-        preClose=137843.0,
+        volRatio=0.81,
+        preClose=1378.43,
 
         raisingStockCount=19.0,
         fallStockCount=1.0,
@@ -53,17 +56,19 @@ public class IndexBkHandicap {
         totalMarketValue=1.65554563E11,
         flowMarketValue=1.28519345E11,
 
-        changePercentOf5Day=-150.0,
-        changePercentOf20Day=-870.0,
-        changePercentOf60Day=-993.0,
-        changePercentOfThisYear=-1218.0,
+        changePercentOf5Day=-1.5,
+        changePercentOf20Day=-8.7,
+        changePercentOf60Day=-9.93,
+        changePercentOfThisYear=-12.18,
 
-        changePercent=174.0,
-        changeValue=2395.0,
-        turnoverRate=239.0,
-        amplitude=172.0,
+        changePercent=1.74,
+        changeValue=23.95,
+        turnoverRate=2.39,
+        amplitude=1.72,
 
         rawJson={"f50":81,"f115":0,"f71":"-","f114":1,"f113":19,"f154":4,"f152":2,"f58":"电机","f57":"BK1030","f171":172,"f292":5,"f59":2,"f170":174,"f39":"-","f19":"-","f119":-150,"f117":128519345000,"f116":165554563000,"f60":137843,"f169":2395,"f85":7808567296,"f168":239,"f84":9346113792,"f167":"-","f40":"-","f43":140238,"f122":-1218,"f86":1644997202,"f121":-993,"f20":"-","f45":138200,"f120":-870,"f164":"-","f44":140574,"f47":1862596,"f46":138677,"f161":907797,"f49":954799,"f48":3200639856,"f108":"-","f107":90,"f92":"-","f601":"-","f600":"-"})
+
+
 
      */
 
@@ -157,36 +162,59 @@ public class IndexBkHandicap {
         parseAttrs();
     }
 
+    /**
+     * 指数和板块的数据 , 比起个股, 多数字段需要 / 100, 但是需要检查一下null.
+     *
+     * @return
+     */
+    private static final Log log = LogUtil.getLogger();
+
+    private Double tryParseDoubleAndDivide100(String field) {
+        Double res = null;
+        try {
+            res = rawJson.getDouble(field);
+        } catch (Exception e) {
+            log.warn("IndexBkHandicap 字段解析为Double错误!");
+            e.printStackTrace();
+        }
+
+        if (res != null) {
+            return res / 100.0;
+        }
+        return null;
+    }
+
     private void parseAttrs() {
         this.secCode = rawJson.getStr("f57");
         this.stockName = rawJson.getStr("f58");
 
-        newPrice = rawJson.getDouble("f43");
-        highPrice = rawJson.getDouble("f44");
-        lowPrice = rawJson.getDouble("f45");
-        todayOpen = rawJson.getDouble("f46");
+        newPrice = tryParseDoubleAndDivide100("f43");
+        highPrice = tryParseDoubleAndDivide100("f44");
+        lowPrice = tryParseDoubleAndDivide100("f45");
+        todayOpen = tryParseDoubleAndDivide100("f46");
         totalVol = rawJson.getDouble("f47");
         totalAmount = rawJson.getDouble("f48");
         outerVol = rawJson.getDouble("f49");
         innerVol = rawJson.getDouble("f161");
-        volRatio = rawJson.getDouble("f50");
-        preClose = rawJson.getDouble("f60");
+        volRatio = tryParseDoubleAndDivide100("f50");
+        preClose = tryParseDoubleAndDivide100("f60");
 
         raisingStockCount = rawJson.getDouble("f113");
         fallStockCount = rawJson.getDouble("f114");
         flatStockCount = rawJson.getDouble("f115");
+
         totalMarketValue = rawJson.getDouble("f116");
         flowMarketValue = rawJson.getDouble("f117");
 
-        changePercentOf5Day = rawJson.getDouble("f119");
-        changePercentOf20Day = rawJson.getDouble("f120");
-        changePercentOf60Day = rawJson.getDouble("f121");
-        changePercentOfThisYear = rawJson.getDouble("f122");
+        changePercentOf5Day = tryParseDoubleAndDivide100("f119");
+        changePercentOf20Day = tryParseDoubleAndDivide100("f120");
+        changePercentOf60Day = tryParseDoubleAndDivide100("f121");
+        changePercentOfThisYear = tryParseDoubleAndDivide100("f122");
 
-        changePercent = rawJson.getDouble("f170");
-        changeValue = rawJson.getDouble("f169");
-        turnoverRate = rawJson.getDouble("f168");
-        amplitude = rawJson.getDouble("f171");
+        changePercent = tryParseDoubleAndDivide100("f170");
+        changeValue = tryParseDoubleAndDivide100("f169");
+        turnoverRate = tryParseDoubleAndDivide100("f168");
+        amplitude = tryParseDoubleAndDivide100("f171");
     }
 
 
@@ -196,130 +224,54 @@ public class IndexBkHandicap {
  * {
  * "rc": 0,
  * "rt": 4,
- * "svr": 181669437,
+ * "svr": 182995791,
  * "lt": 1,
  * "full": 1,
  * "data": {
- * "f43": 8.74, 最新
- * "f44": 8.76, 最高
- * "f45": 8.67, 最低
- * "f46": 8.7,  今开
- * "f47": 376829, 总手
- * "f48": 328719168.0,  金额
- * "f49": 221532, 外盘
- * "f50": 0.96,  量比
- * "f51": 9.56,  涨停
- * "f52": 7.82,  跌停
- * "f55": 1.415091382, 公司核心数据-收益(三)
- * "f57": "600000", 股票代码
- * "f58": "浦发银行", 名称
- * "f60": 8.69, 昨收
- * "f62": 3,
- * "f71": 8.72, 均价
- * "f78": 0,
- * "f80": "[{\"b\":202202110930,\"e\":202202111130},{\"b\":202202111300,\"e\":202202111500}]", 交易时间
- * "f84": 29352168006.0, 总股本
- * "f85": 29352168006.0, 流通股本
- * "f86": 1644566391,
- * "f92": 18.7324153, 每股净资产
- * "f104": 191137000000.0,
- * "f105": 41536000000.0, 净利润
+ * "f43": 346295, 最新
+ * "f44": 350015, 最高
+ * "f45": 345933, 最低
+ * "f46": 347228, 今开
+ * "f47": 361356091, 成交量
+ * "f48": 426297925632.0, 成交额
+ * "f49": 168609531, 外盘
+ * "f50": 107,
+ * "f57": "000001",
+ * "f58": "上证指数",
+ * "f59": 2,
+ * "f60": 348591, 昨收
+ * "f71": "-",
+ * "f84": 4629436239233.0,
+ * "f85": 4061217883902.0,
+ * "f86": 1644566379,
+ * "f92": "-",
  * "f107": 1,
- * "f110": 1,
- * "f111": 2,
- * "f116": 256537948372.44, 总市值
- * "f117": 256537948372.44, 流通市值
- * "f127": "银行",
- * "f128": "上海板块",
- * "f135": 129358320.0,
- * "f136": 129068671.0,
- * "f137": 289649.0,
- * "f138": 38749279.0,
- * "f139": 51406071.0,
- * "f140": -12656792.0,
- * "f141": 90609041.0,
- * "f142": 77662600.0,
- * "f143": 12946441.0,
- * "f144": 99927841.0,
- * "f145": 109458394.0,
- * "f146": -9530553.0,
- * "f147": 88260797.0,
- * "f148": 79019893.0,
- * "f149": 9240904.0,
- * "f161": 155297,  内盘
- * "f162": 4.63,  市盈率[动]
- * "f163": 4.4,
- * "f164": 4.65,
- * "f167": 0.47, 市净率
- * "f168": 0.13, 换手 0.13%
- * "f169": 0.05,  涨跌价格值
- * "f170": 0.58, // 涨幅%
- * "f173": 7.25,  ROE%
- * "f177": 577,
- * "f183": 143484000000.0,  总营收
- * "f184": -3.5278455736, 总营收同比
- * "f185": -7.165526798087, 净利润同比
- * "f186": 0.0,  毛利率%
- * "f187": 29.3614619052, 净利率
- * "f188": 91.6841375217, 负债率
- * "f189": 19991110,
- * "f190": 6.300658948334, 每股未分配利润(元)
- * "f191": -41.62, 委比
- * "f192": -25487, 委差
- * "f193": 0.09,
- * "f194": -3.85,
- * "f195": 3.94,
- * "f196": -2.9,
- * "f197": 2.81,
- * "f199": 90,
- * "f250": "-",
- * "f251": "-",
- * "f252": "-",
- * "f253": "-",
- * "f254": "-",
- * "f255": 0,
- * "f256": "-",
- * "f257": 0,
- * "f258": "-",
- * "f262": "110059",
- * "f263": 1,
- * "f264": "浦发转债",
- * "f266": 107.32,
- * "f267": 106.98,
- * "f268": -0.32,
- * "f269": "-",
- * "f270": 0,
- * "f271": "-",
- * "f273": "-",
- * "f274": "-",
- * "f275": "-",
- * "f280": "-",
- * "f281": "-",
- * "f282": "-",
- * "f284": 0,
- * "f285": "-",
- * "f286": 0,
- * "f287": "-",
+ * "f108": "-",
+ * "f113": 285, 涨家数
+ * "f114": 1765, 跌家数
+ * "f115": 44, 平家数
+ * "f116": 49300990877782.0,
+ * "f117": 41749793711638.0, 流通市值
+ * "f119": 302, 5日涨跌幅, /100百分比
+ * "f120": -326, 20日涨跌幅
+ * "f121": -198, 60日
+ * "f122": -486, 今年
+ * "f152": 2,
+ * "f154": 4,
+ * "f161": 192746560, 内盘
+ * "f164": "-",
+ * "f167": "-",
+ * "f168": 89, 换手率, /100百分比, 0.89%
+ * "f169": -2296, 涨跌点数, 注意 /100, 实际 22.96点
+ * "f170": -66, 涨跌幅度, 同样 /100且百分比,  -0.66%
+ * "f171": 117, 振幅, /100百分比  1.17%
  * "f292": 5,
- * "f31": 8.78, // 卖5
- * "f32": 7546, // 卖5量
- * "f33": 8.77, // 卖4
- * "f34": 5681,
- * "f35": 8.76, // 卖3
- * "f36": 11189,
- * "f37": 8.75, // 卖2
- * "f38": 10413,
- * "f39": 8.74, // 卖1
- * "f40": 8531, // 卖1量
- * "f19": 8.73, // 买1
- * "f20": 3553, // 买1量
- * "f17": 8.72,
- * "f18": 4841,
- * "f15": 8.71,
- * "f16": 1406,
- * "f13": 8.7,
- * "f14": 6429,
- * "f11": 8.69, // 买5
- * "f12": 1644 // 买5量
+ * "f39": "-",
+ * "f40": "-",
+ * "f19": "-",
+ * "f20": "-",
+ * "f600": "-",
+ * "f601": "-"
+ * }
  * }
  */
