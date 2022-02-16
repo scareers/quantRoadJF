@@ -15,12 +15,13 @@ import joinery.DataFrame;
 import lombok.Data;
 import lombok.SneakyThrows;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtil.getColAsObject;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
@@ -58,13 +59,12 @@ public class FsFetcher {
         Console.log(fsFetcher.getFsDatas().size());
         Console.log(fsFetcher.getStockPool().size());
 
-        Console.log(FsFetcher.getShangZhengZhiShuDf());
-        Console.log(FsFetcher.getShenZhengChengZhiDf());
+        Console.log(FsFetcher.getShangZhengZhiShuFs());
+        Console.log(FsFetcher.getShenZhengChengZhiFs());
 
         SecurityBeanEm stock = SecurityBeanEm.createStock("000002");
-        DataFrame<Object> dataFrame = FsFetcher.getDf(stock).orElse(null);
+        DataFrame<Object> dataFrame = FsFetcher.getFsData(stock);
         Console.log(dataFrame);
-        Console.log(FsFetcher.getCertainLastClosePrice(stock));
         Console.log(FsFetcher.getValueByTimeTick(stock, "9:31:59", 2, false));
         Console.log(FsFetcher.getClosePriceByTimeTick(stock, "9:32"));
         Console.log(DataFrameS.getColAsDoubleList(dataFrame, "开盘"));
@@ -83,7 +83,7 @@ public class FsFetcher {
                 String preStr = "";
                 while (true) {
 //                    getFsDatas().values().stream().forEach(value -> Console.log(value.row(value.length() - 1)));
-                    DataFrame<Object> data = getData(SecurityBeanEm.createStock("000002"));
+                    DataFrame<Object> data = getFsData(SecurityBeanEm.createStock("000002"));
                     String x = data.get(data.length() - 1, 0).toString();
                     if (!x.equals(preStr)) {
                         log.warn(x);
@@ -98,10 +98,6 @@ public class FsFetcher {
 
     public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getFsDatas() {
         return fsDatas;
-    }
-
-    public static DataFrame<Object> getData(SecurityBeanEm bean) {
-        return fsDatas.get(bean);
     }
 
     public static List<SecurityBeanEm> getStockPool() {
@@ -352,32 +348,11 @@ public class FsFetcher {
     /**
      * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	股票代码	股票名称
      *
-     * @param stockOrIndex
+     * @param bean
      * @return 单股票/指数今日完整分时图 df;
      */
-    public static Optional<DataFrame<Object>> getDf(SecurityBeanEm stockOrIndex) {
-        DataFrame<Object> res = fsDatas.get(stockOrIndex);
-        if (res == null || res.length() == 0) {
-            return Optional.empty();
-        }
-        return Optional.of(res);
-    }
-
-    /**
-     * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
-     *
-     * @param stockCodeSimple 6为简单股票代码,必须股票,不可指数
-     * @return 获取单股票 完整分时图df;
-     */
-    public static Optional<DataFrame<Object>> getDf(String stockCodeSimple) {
-        SecurityBeanEm stock;
-        try {
-            stock = SecurityBeanEm.createStock(stockCodeSimple);
-        } catch (Exception e) {
-            log.error("getDf: 从股票代码创建 SecurityBeanEm 对象失败, 返回空");
-            return Optional.empty();
-        }
-        return getDf(stock);
+    public static DataFrame<Object> getFsData(SecurityBeanEm bean) {
+        return fsDatas.get(bean);
     }
 
     /**
@@ -385,8 +360,8 @@ public class FsFetcher {
      *
      * @return 上证指数df;
      */
-    public static Optional<DataFrame<Object>> getShangZhengZhiShuDf() {
-        return getDf(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
+    public static DataFrame<Object> getShangZhengZhiShuFs() {
+        return getFsData(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
     }
 
     /**
@@ -394,112 +369,92 @@ public class FsFetcher {
      *
      * @return 深证成指df;
      */
-    public static Optional<DataFrame<Object>> getShenZhengChengZhiDf() {
-        return getDf(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
+    public static DataFrame<Object> getShenZhengChengZhiFs() {
+        return getFsData(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
     }
 
     /**
-     * 本方法获取 已经确定的最后一个close, 本质是获取 9:40 这一行的close. 即倒数第二行.
-     * 直接采用倒数 2行, 当然 9:31:00之前 返回 唯一一行的close;;
-     * 因该api底层 9:40:xx 将显示 到 9:41 的分时行.
-     * 不采用传递 nowStr的方式, 这样即使相差n微秒(极短时间), 也能获取真正的 确定了的 最后1分时k线的 close
-     * 也不采用获取当前时间去秒数的方式
-     * 直接采用倒数 2行, 更符合确定的含义 - CertainLastClose
-     *
-     * @param stockOrIndex
-     * @return 返回已确定的最后一个close价格, 常常为倒数第二行
-     * @deprecated 建议不直接调用此方法. 调用 getClosePriceByTimeTick 获取更加准确
-     */
-    public static Optional<Double> getCertainLastClosePrice(SecurityBeanEm stockOrIndex) {
-        Optional<DataFrame<Object>> dfTemp = getDf(stockOrIndex);
-        if (dfTemp.isPresent()) {
-            List<Object> closes = dfTemp.get().col("收盘");
-            return Optional.of(Double.valueOf(closes.get(Math.max(0, closes.size() - 1)).toString()));
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * @param stockOrIndex 股票
-     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式,用到小时和分钟意义
+     * @param bean    股票
+     * @param tickStr NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式,用到小时和分钟意义
      * @return 给定时间tick的close价格, 默认倒序查找, 正序查找请传递 reverseFind=false
      */
-    public static Optional<Double> getClosePriceByTimeTick(SecurityBeanEm stockOrIndex, String tickStr) {
-        return getClosePriceByTimeTick(stockOrIndex, tickStr, true);
+    public static Double getClosePriceByTimeTick(SecurityBeanEm bean, String tickStr) {
+        return getClosePriceByTimeTick(bean, tickStr, true);
     }
 
     /**
-     * @param stockOrIndex 股票
-     * @param tickStr      NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式
-     * @param reverseFind  可指定不使用倒序,而正序查找
+     * @param bean        股票
+     * @param tickStr     NORM_DATETIME_MINUTE_PATTERN 或者 hutool.DateUtil 能够转换的其他形式
+     * @param reverseFind 可指定不使用倒序,而正序查找
      * @return 给定时间tick的close价格, 默认倒序查找, 正序查找请传递 reverseFind=false
      */
-    public static Optional<Double> getClosePriceByTimeTick(SecurityBeanEm stockOrIndex, String tickStr,
-                                                           boolean reverseFind) {
-        Optional<Object> valueByTimeTick = getValueByTimeTick(stockOrIndex, tickStr, 2, reverseFind);
-        if (valueByTimeTick.isEmpty()) {
-            return Optional.empty();
+    public static Double getClosePriceByTimeTick(SecurityBeanEm bean, String tickStr,
+                                                 boolean reverseFind) {
+        Object valueByTimeTick = getValueByTimeTick(bean, tickStr, 2, reverseFind);
+        if (valueByTimeTick == null) {
+            return null;
         }
         Double res;
         try {
-            res = Double.valueOf(valueByTimeTick.get().toString());
+            res = Double.valueOf(valueByTimeTick.toString());
         } catch (Exception e) {
             log.error("getClosePriceByTimeTick: 或者值成功但转换Double失败, 返回 empty");
-            return Optional.empty();
+            return null;
         }
-        return Optional.of(res);
+        return res;
     }
 
     /**
+     * 可索引各列. 返回Object
+     *
      * @param stockOrIndex 股票/指数 SecurityBeanEm 对象
      * @param tickStr      时间tick, 要求格式: 2022-01-25 09:31, 或者 hutool.DateUtil 能够转换的其他形式, 可自动设定日期为今天
      * @param colIndex     列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @param reverseFind  正序或者反向遍历, 可根据情况提高性能
      * @return 给定股票/指数, 时间戳字符串, 列索引序号, 查找对应的值 Object 返回; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      */
-    public static Optional<Object> getValueByTimeTick(SecurityBeanEm stockOrIndex, String tickStr, int colIndex,
-                                                      boolean reverseFind) {
+    public static Object getValueByTimeTick(SecurityBeanEm stockOrIndex, String tickStr, int colIndex,
+                                            boolean reverseFind) {
         String tickStrSmart;
         try { // 智能转换
             tickStrSmart = DateUtil.parse(tickStr).toString(DatePattern.NORM_DATETIME_MINUTE_PATTERN);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("getValueByTimeTick fail: tick时间字符串参数错误, 建议形式: yyyy-MM-dd HH:mm");
-            return Optional.empty();
+            return null;
         }
-        Optional<DataFrame<Object>> dfTemp = getDf(stockOrIndex);
+        DataFrame<Object> dfTemp = getFsData(stockOrIndex);
 
-        if (dfTemp.isPresent()) {
-            DataFrame<Object> dataFrame = dfTemp.get();
+        if (dfTemp != null && dfTemp.length() > 0) {
             if (reverseFind) {
-                for (int i = dataFrame.length() - 1; i >= 0; i--) {
-                    List<Object> line = dataFrame.row(i);
+                for (int i = dfTemp.length() - 1; i >= 0; i--) {
+                    List<Object> line = dfTemp.row(i);
                     if (line.get(0).toString().equals(tickStrSmart)) {
-                        return Optional.of(Double.valueOf(line.get(colIndex).toString()));
+                        return line.get(colIndex).toString();
                     }
                 }
             } else {
-                for (int i = 0; i < dataFrame.length(); i++) {
-                    List<Object> line = dataFrame.row(i);
+                for (int i = 0; i < dfTemp.length(); i++) {
+                    List<Object> line = dfTemp.row(i);
                     if (line.get(0).toString().equals(tickStrSmart)) {
-                        return Optional.of(Double.valueOf(line.get(colIndex).toString()));
+                        return line.get(colIndex).toString();
                     }
                 }
             }
         }
-        return Optional.empty();
+        return null;
     }
 
     /**
      * 给定股票bean和列名, 返回对应列.
      *
-     * @param stockOrIndex   SecurityBeanEm
+     * @param bean           SecurityBeanEm
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @return List<Object> 整列数据
      */
-    public static Optional<List<Object>> getColumnByColNameOrIndex(SecurityBeanEm stockOrIndex,
-                                                                   Object colNameOrIndex) {
-        return getColAsObject(colNameOrIndex, getDf(stockOrIndex), log, stockOrIndex);
+    public static List<Object> getColumnByColNameOrIndex(SecurityBeanEm bean,
+                                                         Object colNameOrIndex) {
+        return DataFrameS.getColAsObjectList(getFsData(bean), colNameOrIndex);
     }
 
     /**
@@ -510,10 +465,9 @@ public class FsFetcher {
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @return
      */
-    public static Optional<List<String>> getColumnByColNameOrIndexAsString(SecurityBeanEm stockOrIndex,
-                                                                           Object colNameOrIndex) {
-        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
-                .map(objects -> objects.stream().map(Object::toString).collect(Collectors.toList()));
+    public static List<String> getColumnByColNameOrIndexAsString(SecurityBeanEm bean,
+                                                                 Object colNameOrIndex) {
+        return DataFrameS.getColAsStringList(getFsData(bean), colNameOrIndex);
     }
 
     /**
@@ -524,11 +478,9 @@ public class FsFetcher {
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @return
      */
-    public static Optional<List<Long>> getColumnByColNameOrIndexAsLong(SecurityBeanEm stockOrIndex,
-                                                                       Object colNameOrIndex) {
-        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
-                .map(objects -> objects.stream().map(value -> Long.valueOf(value.toString()))
-                        .collect(Collectors.toList()));
+    public static List<Long> getColumnByColNameOrIndexAsLong(SecurityBeanEm bean,
+                                                             Object colNameOrIndex) {
+        return DataFrameS.getColAsLongList(getFsData(bean), colNameOrIndex);
     }
 
     /**
@@ -539,11 +491,9 @@ public class FsFetcher {
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @return
      */
-    public static Optional<List<Integer>> getColumnByColNameOrIndexAsInteger(SecurityBeanEm stockOrIndex,
-                                                                             Object colNameOrIndex) {
-        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
-                .map(objects -> objects.stream().map(value -> Integer.valueOf(value.toString()))
-                        .collect(Collectors.toList()));
+    public static List<Integer> getColumnByColNameOrIndexAsInteger(SecurityBeanEm bean,
+                                                                   Object colNameOrIndex) {
+        return DataFrameS.getColAsIntegerList(getFsData(bean), colNameOrIndex);
     }
 
     /**
@@ -554,11 +504,9 @@ public class FsFetcher {
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
      * @return
      */
-    public static Optional<List<Double>> getColumnByColNameOrIndexAsDouble(SecurityBeanEm stockOrIndex,
-                                                                           Object colNameOrIndex) {
-        return getColumnByColNameOrIndex(stockOrIndex, colNameOrIndex)
-                .map(objects -> objects.stream().map(value -> Double.valueOf(value.toString()))
-                        .collect(Collectors.toList()));
+    public static List<Double> getColumnByColNameOrIndexAsDouble(SecurityBeanEm bean,
+                                                                 Object colNameOrIndex) {
+        return DataFrameS.getColAsDoubleList(getFsData(bean), colNameOrIndex);
     }
 
 

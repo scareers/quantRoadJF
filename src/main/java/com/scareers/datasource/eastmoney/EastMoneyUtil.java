@@ -11,6 +11,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.annotations.Cached;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
@@ -239,23 +240,5 @@ public class EastMoneyUtil {
 
     private static final Log log = LogUtil.getLogger();
 
-    public static Optional<List<Object>> getColAsObject(Object colNameOrIndex, Optional<DataFrame<Object>> df, Log log,
-                                                        SecurityBeanEm stockOrIndex) {
-        Optional<DataFrame<Object>> dfTemp = df;
-        List<Object> res;
-        if (dfTemp.isPresent()) {
-            try {
-                res = dfTemp.get().col(colNameOrIndex);
-            } catch (Exception e) {
-                try {
-                    res = dfTemp.get().col(Integer.parseInt(colNameOrIndex.toString()));
-                } catch (NumberFormatException ex) {
-                    log.error("getColumnByColNameOrIndex: 列参数异常, 找不到列: {}", colNameOrIndex.toString());
-                    return Optional.empty();
-                }
-            }
-            return Optional.of(res);
-        }
-        return Optional.empty();
-    }
+
 }

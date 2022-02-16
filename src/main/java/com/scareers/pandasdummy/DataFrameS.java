@@ -224,6 +224,18 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         return res;
     }
 
+    public static List<Object> getColAsObjectList(DataFrame<Object> df, Object colNameOrIndex) {
+        //System.out.println(df.columns());
+        List<Object> col;
+        try {
+            col = df.col(colNameOrIndex);
+        } catch (Exception e) {
+            //e.printStackTrace();
+            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+        }
+        return col;
+    }
+
     public static List<DateTime> getColAsDateList(DataFrame<Object> df, Object colNameOrIndex) {
         //System.out.println(df.columns());
         List<Object> col;

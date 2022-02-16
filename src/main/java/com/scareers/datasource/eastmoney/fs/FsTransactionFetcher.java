@@ -25,7 +25,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.EastMoneyUtil.getColAsObject;
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
 import static com.scareers.utils.CommonUtil.waitUtil;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -492,7 +491,7 @@ public class FsTransactionFetcher {
      * @return 股票数据df某列; 列参考: stock_code	 market	time_tick	price	 vol	bs
      */
     public static Optional<List<Object>> getColByColNameOrIndex(SecurityBeanEm stockOrIndex, Object colNameOrIndex) {
-        return getColAsObject(colNameOrIndex, getDf(stockOrIndex), log, stockOrIndex);
+        return null;
     }
 
     /**
