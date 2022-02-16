@@ -29,6 +29,43 @@ public class IndexBkHandicap {
         initFieldsStr();
     }
 
+    /*
+    IndexBkHandicap(
+        dateTime=2022-02-16 18:53:11,
+        secCode=BK1030,
+        stockName=电机,
+
+        newPrice=140238.0,
+        highPrice=140574.0,
+        lowPrice=138200.0,
+        todayOpen=138677.0,
+        totalVol=1862596.0,
+        totalAmount=3.200639856E9,
+        outerVol=954799.0,
+        innerVol=907797.0,
+        volRatio=81.0,
+        preClose=137843.0,
+
+        raisingStockCount=19.0,
+        fallStockCount=1.0,
+        flatStockCount=0.0,
+
+        totalMarketValue=1.65554563E11,
+        flowMarketValue=1.28519345E11,
+
+        changePercentOf5Day=-150.0,
+        changePercentOf20Day=-870.0,
+        changePercentOf60Day=-993.0,
+        changePercentOfThisYear=-1218.0,
+
+        changePercent=174.0,
+        changeValue=2395.0,
+        turnoverRate=239.0,
+        amplitude=172.0,
+
+        rawJson={"f50":81,"f115":0,"f71":"-","f114":1,"f113":19,"f154":4,"f152":2,"f58":"电机","f57":"BK1030","f171":172,"f292":5,"f59":2,"f170":174,"f39":"-","f19":"-","f119":-150,"f117":128519345000,"f116":165554563000,"f60":137843,"f169":2395,"f85":7808567296,"f168":239,"f84":9346113792,"f167":"-","f40":"-","f43":140238,"f122":-1218,"f86":1644997202,"f121":-993,"f20":"-","f45":138200,"f120":-870,"f164":"-","f44":140574,"f47":1862596,"f46":138677,"f161":907797,"f49":954799,"f48":3200639856,"f108":"-","f107":90,"f92":"-","f601":"-","f600":"-"})
+
+     */
 
     private static void initFieldsMap() {
         fieldsMap = new HashMap<>();
@@ -109,6 +146,8 @@ public class IndexBkHandicap {
     Double turnoverRate; // "f168": 0.13, 换手率 0.13%
     Double amplitude; // f171 振幅
 
+    //{"f50":81,"f115":0,"f71":"-","f114":1,"f113":19,"f154":4,"f152":2,"f58":"电机","f57":"BK1030",
+    // "f171":172,"f292":5,"f59":2,"f170":174,"f39":"-","f19":"-","f119":-150,"f117":128519345000,"f116":165554563000,"f60":137843,"f169":2395,"f85":7808567296,"f168":239,"f84":9346113792,"f167":"-","f40":"-","f43":140238,"f122":-1218,"f86":1644997202,"f121":-993,"f20":"-","f45":138200,"f120":-870,"f164":"-","f44":140574,"f47":1862596,"f46":138677,"f161":907797,"f49":954799,"f48":3200639856,"f108":"-","f107":90,"f92":"-","f601":"-","f600":"-"}
     JSONObject rawJson;
 
     public IndexBkHandicap(JSONObject rawJson) {

@@ -131,8 +131,12 @@ public class StockApi {
         Console.log("指数/板块昨收今开");
         Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
 
-        Console.log(getIndexOrBKHandicapCore(SecurityBeanEm.createBK("bk1030"), StockHandicap.fieldsStr, 3000, 2));
+        Console.log(getIndexOrBKHandicapCore(SecurityBeanEm.createBK("bk1030"), IndexBkHandicap.fieldsStr, 3000, 2));
+
+        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
+
         waitForever();
+
     }
 
     private static void checkPoolExecutor() {
@@ -529,20 +533,20 @@ public class StockApi {
      * @param retry
      * @return
      */
-    public static StockHandicap getIndexOrBKHandicap(String stockCodeSimple, int timeout, int retry) {
+    public static IndexBkHandicap getIndexOrBKHandicap(SecurityBeanEm bean, int timeout, int retry) {
         JSONObject resp;
         try {
-            resp = getStockHandicapCore(stockCodeSimple, StockHandicap.fieldsStr, timeout, retry);
+            resp = getIndexOrBKHandicapCore(bean, IndexBkHandicap.fieldsStr, timeout, retry);
         } catch (Exception e) {
-            log.error("get exception: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getSecId());
             return null;
         }
         JSONObject rawJson = (JSONObject) resp.get("data");
         if (rawJson == null) {
-            log.error("data字段为null: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getSecId());
             return null;
         }
-        return new StockHandicap(rawJson);
+        return new IndexBkHandicap(rawJson);
     }
 
     /**
