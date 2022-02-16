@@ -16,7 +16,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
- * description: 维护全局唯一股票池! 以下功能均访问此唯一股票(指数/概念)池
+ * description: 维护全局唯一股票(资产)池! 以下功能均访问此唯一股票(指数/概念)池
+ * <p>
  * 1.FsFetcher: 将获取 股票/指数/概念 1分钟分时图
  * 2.FsTransactionFetcher: 获取个股/指数/概念 tick成交数据. 通常3s/5s每秒
  * 3.Strategy: 主策略相关子类, 含选股策略等, 将可能动态填充本类股票池!
@@ -59,6 +60,40 @@ public class SecurityPool {
     private static final Log log = LogUtil.getLogger();
 
     /*
+    @key: 全局股票池. 例如供 FsFetcher 等爬虫遍历的股票池; 以及其添加方法/复制以遍历方法
+    @key: 可添加其他动态股票池
+    @key: 因此 FsFetcher 等爬虫运行之前, 一般需要先往对应股票池添加bean
+     */
+
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> poolForFsFetcher = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> poolForFsTransactionFetcher = new CopyOnWriteArraySet<>();
+
+    public static void addToPoolForFsFetcher(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(poolForFsFetcher, beanEm, null); // null则不验证bean类型
+    }
+
+    public static void addToPoolForFsFetcher(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(poolForFsFetcher, beans, null);
+    }
+
+    public static void addToPoolForFsTransactionFetcher(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(poolForFsTransactionFetcher, beanEm, null);
+    }
+
+    public static void addToPoolForFsTransactionFetcher(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(poolForFsTransactionFetcher, beans, null);
+    }
+
+    public static ArrayList<SecurityBeanEm> poolForFsFetcherCopy() {
+        return iterSets(poolForFsFetcher);
+    }
+
+    public static ArrayList<SecurityBeanEm> poolForFsTransactionFetcherCopy() {
+        return iterSets(poolForFsTransactionFetcher);
+    }
+
+
+    /*
      * 各项集合的添加方法.
      *
      * @param singleBeanOrCollection
@@ -93,9 +128,9 @@ public class SecurityPool {
             Assert.isTrue(beanEm.isBK());
         } else if ("index".equals(checkType)) {
             Assert.isTrue(beanEm.isIndex());
-        } else {
+        } else if ("stock".equals(checkType)) {
             Assert.isTrue(beanEm.isStock());
-        }
+        } // 可不传递 checkType, 则 无视类型, 均添加到某池
     }
 
     /**
@@ -222,25 +257,15 @@ public class SecurityPool {
      * 3个组合池复制, 以遍历
      */
     public static ArrayList<SecurityBeanEm> allStocksCopy() {
-        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
-        beanEms.addAll(todaySelectedStocks);
-        beanEms.addAll(yesterdayHoldStocks);
-        beanEms.addAll(otherCareStocks);
-        return beanEms;
+        return iterSets(todaySelectedStocks, yesterdayHoldStocks, otherCareStocks);
     }
 
     public static ArrayList<SecurityBeanEm> allIndexesCopy() {
-        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
-        beanEms.addAll(keyIndexes);
-        beanEms.addAll(otherCareIndexes);
-        return beanEms;
+        return iterSets(keyIndexes, otherCareIndexes);
     }
 
     public static ArrayList<SecurityBeanEm> allBKsCopy() {
-        ArrayList<SecurityBeanEm> beanEms = new ArrayList<>();
-        beanEms.addAll(keyBKs);
-        beanEms.addAll(otherCareBKs);
-        return beanEms;
+        return iterSets(keyBKs, otherCareBKs);
     }
 
     /*

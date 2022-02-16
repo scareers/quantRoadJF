@@ -16,7 +16,6 @@ import lombok.Data;
 import lombok.SneakyThrows;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -26,9 +25,10 @@ import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
- * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas 属性
+ * description: 给定股票池, 抓取 1分钟分时数据, 保存于 fsDatas 静态属性
  *
  * @author admin
+ * @noti 单例模式. 实例维护不需要gui展示的属性. 与gui相关字段全部设置静态属性
  * @noti 字段列表: 日期	            开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
  * @noti 数据实例: 2022-01-25 09:31	17.08	17.02	17.08	17.02	11145	19006426.00	0.35	-1.05	-0.18	0.01	000001	平安银行
  * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
@@ -45,19 +45,21 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 @Data
 public class FsFetcher {
     public static void main(String[] args) throws Exception {
+
+
         FsFetcher fsFetcher = getInstance
-                (SecurityPool.createStockPool(10, false, true),
+                (
                         1000,
                         10, 16, 100);
-        Console.log(stockPool);
+        Console.log(getStockPool());
         fsFetcher.startFetch(); // 测试股票池
         fsFetcher.waitFirstEpochFinish();
         fsFetcher.stopFetch(); // 软停止,且等待完成
         fsFetcher.reStartFetch(); // 再次开始
         fsFetcher.waitFirstEpochFinish();
 
-        Console.log(fsFetcher.getFsDatas().size());
-        Console.log(fsFetcher.getStockPool().size());
+        Console.log(FsFetcher.getFsDatas().size());
+        Console.log(FsFetcher.getStockPool().size());
 
         Console.log(FsFetcher.getShangZhengZhiShuFs());
         Console.log(FsFetcher.getShenZhengChengZhiFs());
@@ -101,7 +103,7 @@ public class FsFetcher {
     }
 
     public static List<SecurityBeanEm> getStockPool() {
-        return stockPool;
+        return SecurityPool.poolForFsFetcherCopy();
     }
 
     /**
@@ -125,12 +127,12 @@ public class FsFetcher {
     }
 
 
-    public static FsFetcher getInstance(List<SecurityBeanEm> stockPool,
-                                        int timeout, int logFreq,
-                                        int threadPoolCorePoolSize,
-                                        int sleepPerEpoch) {
+    public static FsFetcher getInstance(
+            int timeout, int logFreq,
+            int threadPoolCorePoolSize,
+            int sleepPerEpoch) {
         if (INSTANCE == null) {
-            INSTANCE = new FsFetcher(stockPool, timeout, logFreq,
+            INSTANCE = new FsFetcher(timeout, logFreq,
                     threadPoolCorePoolSize, sleepPerEpoch);
         }
         return INSTANCE;
@@ -141,19 +143,19 @@ public class FsFetcher {
     private static final Log log = LogUtil.getLogger();
     public static ThreadPoolExecutor threadPoolOfFetch;
 
-    // 实例属性
+    // gui
     public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas; // 数据Map
+
+    // 实例属性
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
     private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源. 将等待正在进行的一轮结束后停止.可再次调用 startFetch()启动
-
     private int timeout; // 单次http访问超时毫秒
-    private static List<SecurityBeanEm> stockPool; // 股票池需要提供
     private final int logFreq; // 多少轮,log 一次时间
     public int threadPoolCorePoolSize; // 线程池核心数量
     private int sleepPerEpoch; // 每轮后强制 sleep;
     private volatile boolean running; //标志正在抓取中
 
-    private FsFetcher(List<SecurityBeanEm> stockPool0, int timeout, int logFreq, int threadPoolCorePoolSize,
+    private FsFetcher(int timeout, int logFreq, int threadPoolCorePoolSize,
                       int sleepPerEpoch) {
         // 4项全默认值
         fsDatas = new ConcurrentHashMap<>();
@@ -161,17 +163,10 @@ public class FsFetcher {
         this.stopFetch = false;
         this.sleepPerEpoch = sleepPerEpoch;
 
-        // 4项可设定
-        HashSet<SecurityBeanEm> temp = new HashSet<>(stockPool0);
-        temp.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
-        stockPool = new CopyOnWriteArrayList<>(temp);
         this.timeout = timeout; // 1000
         this.logFreq = logFreq;
         this.threadPoolCorePoolSize = threadPoolCorePoolSize;
         this.running = false;
-        for (SecurityBeanEm stock : stockPool) {
-            fsDatas.put(stock, new DataFrame<>()); // 数据初始化置空, 使得不会访问到null, 最多空df
-        }
     }
 
     /**
@@ -211,7 +206,7 @@ public class FsFetcher {
     private void startFetch0() throws Exception {
         this.running = true;
         initThreadPool(threadPoolCorePoolSize); // 懒加载一次
-        log.warn("FS1MFetcher start: 开始持续获取 [1分钟分时] 数据,股票池数量: {}", stockPool.size());
+        log.warn("FS1MFetcher start: 开始持续获取 [1分钟分时] 数据,暂时股票池数量: {}", getStockPool().size());
         TimeInterval timer = DateUtil.timer();
         timer.start();
         int epoch = 0; // 抓取轮次, 控制 log 频率
@@ -220,7 +215,7 @@ public class FsFetcher {
             Boolean epochAllSuccess = true; // 本轮http全部成功
 
             List<Future<Boolean>> futures = new ArrayList<>();
-            for (SecurityBeanEm stock : stockPool) {
+            for (SecurityBeanEm stock : getStockPool()) {
                 Future<Boolean> f = threadPoolOfFetch
                         .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
@@ -318,15 +313,6 @@ public class FsFetcher {
          */
         @Override
         public Boolean call() throws Exception {
-            boolean isIndex;
-            if (stock.getSecType() == SecurityBeanEm.SecType.INDEX) {
-                isIndex = true;
-            } else if (stock.getSecType() == SecurityBeanEm.SecType.STOCK) {
-                isIndex = false;
-            } else {
-                throw new Exception("SecurityBeanEm stock --> 尚未转换为指数或者个股!");
-            }
-
             DataFrame<Object> dfNew = StockApi
                     .getFs1MToday(stock, 0, fetcher.getTimeout());
             if (dfNew != null) { // 访问失败将返回null.
