@@ -64,8 +64,8 @@ import static com.scareers.utils.CommonUtil.sendEmailSimple;
  */
 
 public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
-    private long maxCheckSellOrderTime = 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
-    private long maxCheckBuyOrderTime = 60 * 1000; // 买单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+    private long maxCheckSellOrderTime = 2 * 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
+    private long maxCheckBuyOrderTime = 2 * 60 * 1000; // 买单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
 
     public static double tickGap = 0.005;
 
@@ -165,9 +165,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             Double preClosePrice = 0.0;
             try {
                 //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
-                preClosePrice = Double.valueOf(getQuoteHistorySingle(stock, preTradeDate, preTradeDate,
-                        "101", "qfq", 3,
-                        false, 2000).row(0).get(2).toString());
+                preClosePrice =
+                        Double.valueOf(getQuoteHistorySingle(stock, SecurityBeanEm.SecType.STOCK, preTradeDate,
+                                preTradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
             } catch (Exception e) {
                 log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
                 e.printStackTrace();
@@ -291,9 +291,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 Double pre2ClosePrice;
                 try {
                     //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
-                    pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(stock, pre2TradeDate, pre2TradeDate,
-                            "101", "qfq", 3,
-                            false, 2000).row(0).get(2).toString());
+                    pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(stock,
+                            SecurityBeanEm.SecType.STOCK, pre2TradeDate,
+                            pre2TradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
                 } catch (Exception e) {
                     log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
                     e.printStackTrace();
@@ -675,9 +675,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> dfTemp;
         if (market == 0) { // 深证成指
             if (shenZhengChengZhiPreClose == null) { // 上证指数昨日收盘
-                DataFrame<Object> df0 = StockApi.getQuoteHistorySingle("399001", preTradeDate, preTradeDate,
+                DataFrame<Object> df0 = StockApi.getQuoteHistorySingle(true, "399001", SecurityBeanEm.SecType.INDEX,
+                        preTradeDate, preTradeDate,
                         "101", "qfq",
-                        3, true, 2000, true);
+                        3, 2000);
                 shenZhengChengZhiPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘
             }
             // stock_code,market,time_tick,price,vol,bs
@@ -686,9 +687,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
         } else {
             if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
-                DataFrame df0 = StockApi.getQuoteHistorySingle("000001", preTradeDate, preTradeDate,
+                DataFrame df0 = StockApi.getQuoteHistorySingle(true, "000001", SecurityBeanEm.SecType.INDEX,
+                        preTradeDate, preTradeDate,
                         "101", "qfq",
-                        3, true, 2000, true);
+                        3, 2000);
                 shangZhengZhiShuPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘, 这是分时图
             }
 
@@ -806,7 +808,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                         orderHasNotMatchAll(order, responses);
                     } // 否则继续checking
                 } else {
-                    if ("09:31:00".compareTo(DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN)) < 0) {
+                    if ("09:35:00".compareTo(DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN)) < 0) {
                         orderHasNotMatchAll(order, responses); // 集合竞价后首卖单超时时间固定
                     }// 否则继续checking
                 }

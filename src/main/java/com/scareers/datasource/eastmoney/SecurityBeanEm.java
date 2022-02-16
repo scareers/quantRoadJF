@@ -23,7 +23,10 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
 /**
  * description: 代表一特定证券/指数/板块等资产. Em 东方财富.
  * 内部查询api 可使用资产代码或者名称进行查询. 本类统一使用代码进行查询
- * 注意, 单个bean, 仅可转换一次, 转换为特定类型后不可变化
+ * <p>
+ * 1.单个bean, 仅可转换一次, 转换为特定类型后不可变化
+ * 2.且本类仅包含一种资产的各种属性, 原则上不包含 "数据(特指k线,分时图等)", 应当将本类实例组合进代表数据的类中
+ * 3.东财所有相关api, 建议使用 SecurityBeanEm 作为参数, 而非简单使用股票代码等
  *
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
@@ -31,6 +34,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
 @Data
 public class SecurityBeanEm {
     private static final long serialVersionUID = 156415111L;
+    // 缓存. key为 代码+类型
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
     public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
     public static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
@@ -122,7 +126,7 @@ public class SecurityBeanEm {
      * @throws Exception
      * @noti 仅构建列表, 并未转换,  转换需要调用 toStockList / toIndexList 方法
      */
-    public static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
+    private static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
         return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
     }
 
@@ -143,7 +147,7 @@ public class SecurityBeanEm {
     Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.    板块为 90?
     // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
     private JSONArray queryResults; // 全部查询结果, 以下为结果字段
-    // Code --> stockCodeSimple, MktNum--> market , QuoteID --> secId
+    // Code --> stockCodeSimple, MktNum--> market , QuoteID --> secId ,形如1.000001
     private String secId;
 
     private String Name;
@@ -158,21 +162,24 @@ public class SecurityBeanEm {
     private String UnifiedCode;
     private String InnerCode;
 
-    private ConvertState convertState = ConvertState.NULL;
+    private SecType secType = SecType.NULL;
+
 
     /**
      * 表示当前已转换类型! 保证仅转换一次!
+     * 代表了资产类型
      */
-    public enum ConvertState {
-        NULL, // 尚未转换
+    public enum SecType {
+        NULL, // 尚未转换的类型
         FAIL, // 转换失败
         STOCK, // 已转换为股票
         INDEX, // 已转换为指数
         BK, // 已转换为板块
+        OTHER, // 其他类型, 尚未实现的转换类型冗余
     }
 
     /**
-     * 给定查询结果构造
+     * 给定查询结果构造.
      *
      * @param queryResults
      */
@@ -213,17 +220,15 @@ public class SecurityBeanEm {
      * @return
      * @noti: 不新建对象
      */
-    public SecurityBeanEm convertToStock() throws Exception {
-        if (convertState != ConvertState.NULL) {
+    private SecurityBeanEm convertToStock() throws Exception {
+        if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convertState != ConvertState.STOCK) {
-            if (convert(Arrays.asList("AStock", "23"))) {
-                convertState = ConvertState.STOCK;
-            } else {
-                convertState = ConvertState.FAIL;
-                throw new Exception("转换StockBean为股票Bean异常");
-            }
+        if (convert(Arrays.asList("AStock", "23"))) {
+            secType = SecType.STOCK;
+        } else {
+            secType = SecType.FAIL;
+            throw new Exception("转换StockBean为股票Bean异常");
         }
         return this;
     }
@@ -234,17 +239,15 @@ public class SecurityBeanEm {
      * @return
      * @noti: 不新建对象
      */
-    public SecurityBeanEm convertToBK() throws Exception {
-        if (convertState != ConvertState.NULL) {
+    private SecurityBeanEm convertToBK() throws Exception {
+        if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convertState != ConvertState.BK) {
-            if (convert(Arrays.asList("BK"))) {
-                convertState = ConvertState.BK;
-            } else {
-                convertState = ConvertState.FAIL;
-                throw new Exception("转换StockBean为板块Bean异常");
-            }
+        if (convert(Arrays.asList("BK"))) {
+            secType = SecType.BK;
+        } else {
+            secType = SecType.FAIL;
+            throw new Exception("转换StockBean为板块Bean异常");
         }
         return this;
     }
@@ -254,17 +257,15 @@ public class SecurityBeanEm {
      *
      * @return
      */
-    public SecurityBeanEm convertToIndex() throws Exception {
-        if (convertState != ConvertState.NULL) {
+    private SecurityBeanEm convertToIndex() throws Exception {
+        if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convertState != ConvertState.INDEX) {
-            if (!convert(Arrays.asList("Index"))) {
-                convertState = ConvertState.FAIL;
-                throw new Exception("转换StockBean为指数Bean异常");
-            }
-            convertState = ConvertState.INDEX;
+        if (!convert(Arrays.asList("Index"))) {
+            secType = SecType.FAIL;
+            throw new Exception("转换StockBean为指数Bean异常");
         }
+        secType = SecType.INDEX;
         return this;
     }
 
@@ -306,15 +307,15 @@ public class SecurityBeanEm {
     }
 
     public boolean isIndex() {
-        return this.convertState == ConvertState.INDEX;
+        return this.secType == SecType.INDEX;
     }
 
     public boolean isStock() {
-        return this.convertState == ConvertState.STOCK;
+        return this.secType == SecType.STOCK;
     }
 
     public boolean isBK() {
-        return this.convertState == ConvertState.BK;
+        return this.secType == SecType.BK;
     }
 
 
@@ -359,12 +360,35 @@ public class SecurityBeanEm {
         return res;
     }
 
+    public static SecurityBeanEm createBeanWithType(String stockCodeSimple, SecType type) throws Exception {
+        if (type == SecType.INDEX) {
+            return createIndex(stockCodeSimple);
+        } else if (type == SecType.STOCK) {
+            return createStock(stockCodeSimple);
+        } else if (type == SecType.BK) {
+            return createBK(stockCodeSimple);
+        } else {
+            throw new Exception("未知资产类型, 无法创建");
+        }
+    }
 
+
+    /**
+     * 核心字段: 代码, 市场, 以及唯一的 SecId. (虽然前两周构成SecId)
+     *
+     * @return
+     */
     @Override
     public int hashCode() {
         return this.getStockCodeSimple().hashCode() | this.getMarket().hashCode() | this.getSecId().hashCode();
     }
 
+    /**
+     * 同样要求3字段equal
+     *
+     * @param obj
+     * @return
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof SecurityBeanEm) {
@@ -375,6 +399,12 @@ public class SecurityBeanEm {
         return false;
     }
 
+    /**
+     * PO 展示对象.
+     * 方便GUI展示, 持有简单字段
+     * 实现 toString 以便gui展示.
+     * toToolTip 展示提示
+     */
     @Setter
     @Getter
     public static class SecurityEmPo implements Comparable {

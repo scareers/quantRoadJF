@@ -6,7 +6,6 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.mysql.jdbc.log.NullLogger;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.datasource.eastmoney.stockpoolimpl.StockPoolFromTushare;
@@ -324,16 +323,17 @@ public class FsFetcher {
         @Override
         public Boolean call() throws Exception {
             boolean isIndex;
-            if (stock.getConvertState() == SecurityBeanEm.ConvertState.INDEX) {
+            if (stock.getSecType() == SecurityBeanEm.SecType.INDEX) {
                 isIndex = true;
-            } else if (stock.getConvertState() == SecurityBeanEm.ConvertState.STOCK) {
+            } else if (stock.getSecType() == SecurityBeanEm.SecType.STOCK) {
                 isIndex = false;
             } else {
                 throw new Exception("SecurityBeanEm stock --> 尚未转换为指数或者个股!");
             }
 
             DataFrame<Object> dfNew = StockApi
-                    .getFs1MToday(stock.getStockCodeSimple(), isIndex, 0, fetcher.getTimeout(), false);
+                    .getFs1MToday(stock.getStockCodeSimple(), SecurityBeanEm.SecType.STOCK, 0, fetcher.getTimeout(),
+                            false);
             if (dfNew != null) { // 访问失败将返回null.
 //                ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasNew = new ConcurrentHashMap<>(
 //                        fsDatas);

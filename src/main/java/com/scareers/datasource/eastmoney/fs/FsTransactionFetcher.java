@@ -412,7 +412,7 @@ public class FsTransactionFetcher {
 
             DataFrame<Object> dfNew = null;
             try {
-                dfNew = StockApi.getFSTransaction(suitableCounts, stock, fetcher.timeout);
+                dfNew = StockApi.getFSTransaction(suitableCounts, stock, 1, fetcher.timeout);
             } catch (Exception e) {
                 //e.printStackTrace();
                 return false;

@@ -25,7 +25,6 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.*;
-import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.DEFAULT_TIMEOUT;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
@@ -40,6 +39,9 @@ public class StockApi {
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
+    public static final List<String> fSTransactionCols = Arrays.asList("stock_code", "market", "time_tick", "price",
+            "vol", "bs"); // 分时成交数据列名称
+
     public static Cache<String, DataFrame<Object>> quoteHistorySingleCache = CacheUtil.newLRUCache(1024,
             4 * 3600 * 1000); // 历史k线,分时图等
     public static Cache<String, List<Double>> stockPriceLimitCache = CacheUtil.newLRUCache(1024,
@@ -47,28 +49,22 @@ public class StockApi {
     public static Cache<String, List<Double>> stockPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股昨收和今开盘价
 
-    public static ThreadPoolExecutor poolExecutor;
+    public static ThreadPoolExecutor poolExecutor; // 可能的线程池
+
+    public static void main(String[] args) throws Exception {
+        Console.log("分时成交数据:");
+        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
+
+    }
 
     public static void checkPoolExecutor() {
         if (poolExecutor == null) {
             poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
-                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("klineGet-", null, true));
+                    new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("EM.StockApi-", null, true));
 
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-//        stockPopularityOnTheList();
-//
-//        while (true) {
-//            StockHandicap stockHandicap = getStockHandicap("002432", 2000, 1);
-//            log.warn("buy1 --> {}  --  {}", stockHandicap.getBuy1Price(), stockHandicap.getBuy1Vol());
-//            Thread.sleep(200);
-//        }
-
-
-        Console.log(getFSTransaction(120, SecurityBeanEm.createBK("BK1030"), 1000).toString(250));
-
     }
 
 
@@ -83,28 +79,6 @@ public class StockApi {
         Console.log(getStockPriceLimitToday("000001", 2000, 1));
 
         Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
-        //7 23.50 ok
-        Console.log(getFSTransaction(120, "000001", 1, 1000).toString(250));
-        // 分时成交:
-        // 02:11 昨日df
-        // 06:00
-        // 08:55 得到空df,
-        // 09:10
-        // 09:14:x 得到空df,
-        // 09:15:x 得到空df,
-        // 09:24:x 得到空df,
-        // 09:25:x 单行记录 09:25:07 	3508.24	2924545	1 , 表示竞价结果, 意味着无竞价过程.
-        // 09:30:x 正常添加记录df
-        // 09:40:x 正常df
-        // 11:30:x 正常df, 但最大时间可能超过 11:30:00, 少数.
-        // 13:00:x 正常df, 第一个常为 13:00:01
-        // 14:54:x 正常df
-        // 14:57:x 正常df, 但 14:57:05后一直不会有新数据, 持续到收盘 15:00:00 有1-2条收盘数据
-        // 14:59:x 正常df, 14:57:xx后无新数据
-        // 15:00:x 正常df, 最后1-2条 15:00:00 tick
-        // 23:50:x 正常df, 未重置刷新,同 15:00:x
-        // 周六同周五收盘后
-
 
         Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
         // 实时截面数据
@@ -126,7 +100,7 @@ public class StockApi {
         // 15:00:x 正常df
         // 23:50:x 正常df
 
-        Console.log(getFs1MToday("000001", false, 0, 2000));
+        Console.log(getFs1MToday("000001", SecurityBeanEm.SecType.STOCK, 0, 2000));
         // @noti: 两大指数大约 6,7秒开始出现下一分钟分时, 个股大约1-2s之间
         // 1分钟分时图
         // 02:10 昨日df
@@ -148,7 +122,7 @@ public class StockApi {
         // 23:50:x 正常df, 同上截止于 15:00
 
 
-        Console.log(getQuoteHistorySingle("000001", null, null, "101", "qfq", 3));
+        Console.log(getQuoteHistorySingle("000001", SecurityBeanEm.SecType.STOCK, null, null, "101", "qfq", 3, 2000));
         // 日k线
         // 00:00
         // 02:10 截至昨天df
@@ -723,67 +697,65 @@ public class StockApi {
 
 
     /**
-     * 获取分时成交
+     * 获取资产的分时成交
      * // @using
      * https://push2.eastmoney.com/api/qt/stock/details/get?ut=fa5fd1943c7b386f172d6893dbfba10b&fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&pos=-1400&secid=0.000153&cb=jQuery112409885675811656662_1640099646776&_=1640099646777
-     * // @noti: 升序, 但是最新 x 条数据
+     * // @noti: 该url结果为升序, 但是最新 x 条数据
+     * 数据刷新时间点:
+     * --> 02:00 得到昨日(上个交易日) 的完整数据df
+     * --> 08:55 数据字段刷新为[], 可得到空df  ********* 重置点1
+     * --> 09:15:0x  指数依旧空[], 个股则可以获取集合竞价数据. 集合竞价每次价格改变, 则生成一条记录. ****** 早盘集合竞价
+     * --> 09:25:0x   指数可获得一条集合竞价结果数据. 个股则整个竞价记录
+     * --> 09:30:x 正常df
+     * --> 11:30:x 正常df, 但最大时间可能超过 11:30:00 少数几条记录
+     * --> 13:00:x 正常df, 第一个常为 13:00:01
+     * --> 14:57:0x 正常df,个股/指数/板块 14:57:0x 后一直不会有新数据,
+     * 持续到收盘 15:00:00 有1-2条收盘集合竞价数据; ************* 尾盘集合竞价
+     * --> 15:00:x 正常df, 最后大约1-2条 15:00:00 tick
+     * --> 周六同周五收盘后, 数据不变
      *
-     * @param lastRecordAmounts 单页数量,
-     * @param stockCodeSimple   股票/指数简单代码, 不再赘述
-     * @param market            0 深市  1 沪市    (上交所暂时 0)
-     * @return 出错则抛出异常
-     * @noti: 8:55  details字段已经重置为 [] 空列表  todo: 时间限制更严格
+     * @param lastRecordAmounts 单页数量, 最新多少条数据?
+     * @param stockCodeSimple   资产代码, 不再赘述
+     * @param market
+     * @return 出错则抛出异常.
+     * @noti: 8:55  details字段已经重置为 [] 空列表
      */
-    private static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
-                                                      Integer market, int timeout) throws Exception {
-        List<String> columns = Arrays.asList("stock_code", "market", "time_tick", "price", "vol", "bs");
-        DataFrame<Object> res;
+    public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts,
+                                                     SecurityBeanEm bean,
+                                                     int retry, int timeout)
+            throws Exception {
         String keyUrl = "https://push2.eastmoney.com/api/qt/stock/details/get";
         String response;
-        try {
-            Map<String, Object> params = new HashMap<>(); // 参数map
-            params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
-            params.put("fields1", "f1,f2,f3,f4");
-            params.put("fields2", "f51,f52,f53,f54,f55");
-            params.put("pos", StrUtil.format("-{}", lastRecordAmounts));
-            params.put("secid", StrUtil.format("{}.{}", market, stockCodeSimple));
-            params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
-                    System.currentTimeMillis() - RandomUtil.randomInt(1000)));
-            params.put("_", System.currentTimeMillis());
 
-            response = getAsStrUseHutool(keyUrl, params, timeout, 1);
+        Map<String, Object> params = new HashMap<>(); // 参数map
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("fields1", "f1,f2,f3,f4");
+        params.put("fields2", "f51,f52,f53,f54,f55");
+        params.put("pos", StrUtil.format("-{}", lastRecordAmounts));
+        params.put("secid", bean.getSecId());
+        params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
+                System.currentTimeMillis() - RandomUtil.randomInt(1000)));
+        params.put("_", System.currentTimeMillis());
+        try {
+            response = getAsStrUseHutool(keyUrl, params, timeout, retry);
         } catch (Exception e) {
-            log.error("get exception: 访问http失败: stock: {}.{}", market, stockCodeSimple);
+            log.error("get exception: 访问http失败: stock: {} -- {}", bean.getSecId(), bean.getName());
             throw e;
         }
 
+        DataFrame<Object> res;
         try {
-            res = jsonStrToDf(response, "(", ")", columns,
+            res = jsonStrToDf(response, "(", ")", fSTransactionCols,
                     Arrays.asList("data", "details"), String.class, Arrays.asList(3),
-                    Arrays.asList(stockCodeSimple, market));
+                    Arrays.asList(bean.getStockCodeSimple(), bean.getMarket()));
         } catch (Exception e) {
-            log.warn("get exception: 获取数据错误. stock: {}.{}", market, stockCodeSimple);
+            log.warn("get exception: 获取数据错误. stock: {} -- {}", bean.getSecId(), bean.getName());
             log.warn("raw data: 原始响应字符串: {}", response);
             throw e;
         }
         return res;
     }
 
-
-    public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, String stockCodeSimple,
-                                                     Integer market) throws Exception {
-        return getFSTransaction(lastRecordAmounts, stockCodeSimple, market, DEFAULT_TIMEOUT);
-    }
-
-    public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, SecurityBeanEm bean, int timeout)
-            throws Exception {
-        return getFSTransaction(lastRecordAmounts, bean.getStockCodeSimple(), bean.getMarket(), timeout);
-    }
-
-    public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts, SecurityBeanEm bean)
-            throws Exception {
-        return getFSTransaction(lastRecordAmounts, bean, DEFAULT_TIMEOUT);
-    }
 
     /**
      * efinance get_realtime_quotes 重载实现.  给定市场列表, 返回, 这些市场所有股票列表 截面数据
@@ -895,7 +867,7 @@ public class StockApi {
                                                                                String endDate,
                                                                                String klType, String fq,
                                                                                int retrySingle,
-                                                                               boolean isIndex,
+                                                                               SecurityBeanEm.SecType secType,
                                                                                int timeoutOfReq,
                                                                                boolean useCache
     )
@@ -908,8 +880,8 @@ public class StockApi {
             futures.put(stock, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
                 public DataFrame<Object> call() throws Exception {
-                    return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex,
-                            timeoutOfReq, useCache);
+                    return getQuoteHistorySingle(useCache, stock, secType, begDate, endDate, klType, fq, retrySingle,
+                            timeoutOfReq);
                 }
             }));
         }
@@ -925,25 +897,31 @@ public class StockApi {
         return res;
     }
 
+
     /**
-     * 单股票k线:
+     * 单资产历史k线: 字段:
      * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
      *
-     * @param stock       @noti: 绝对传递 simple模式, 是否指数由  isIndex 参数控制
-     * @param begDate
-     * @param endDate
-     * @param klType
-     * @param fq
-     * @param retrySingle
-     * @param quoteIdMode
+     * @param useCache 指定是否使用缓存. 默认缓存有效期为4小时,且数量存在上限, 不使用缓存则强制http访问
+     * @param secCode  资产简单数字代码, 板块为 BK 开头
+     * @param secType  secCode代表 的资产类型, 目前支持 股票/指数/板块(BK开头)
+     * @param begDate  开始日期, null则默认19900101, 格式可 yyyy-MM-dd, 将被转换
+     * @param endDate  结束日期, 默认 20500101, 同上
+     * @param klType   代表k线类型(不同周期)的字符串, 1/5/15/30/60代表各分钟. 101/102/103 代表日/周/月
+     * @param fq       复权方式, 0 / 1/ 2 代表 不/前/后复权
+     * @param retry    http访问重试次数
+     * @param timeout  http访问超时
      * @return
+     * @throws Exception
      */
     @CanCache
     @TimeoutCache(timeout = "4 * 3600 * 1000")
-    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
+    public static DataFrame<Object> getQuoteHistorySingle(boolean useCache,
+                                                          String secCode,
+                                                          SecurityBeanEm.SecType secType, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean isIndex, int timeout,
-                                                          boolean useCache)
+                                                          int retry,
+                                                          int timeout)
             throws Exception {
         if (begDate == null) {
             begDate = "19900101";
@@ -954,8 +932,9 @@ public class StockApi {
         begDate = begDate.replace("-", ""); // 标准化
         endDate = endDate.replace("-", "");
 
-        String cacheKey = StrUtil.format("{}__{}__{}__{}__{}__{}__{}", stock, begDate, endDate, klType, fq, retrySingle,
-                isIndex);
+        String cacheKey = StrUtil
+                .format("{}__{}__{}__{}__{}__{}__{}", secCode, begDate, endDate, klType, fq, retry,
+                        secType);
 
         DataFrame<Object> res = null;
         if (useCache) { // 必须使用caCache 且真的存在缓存
@@ -964,16 +943,13 @@ public class StockApi {
         if (res != null) {
             return res;
         }
+
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
-        JSONArray quoteRes = querySecurityId(stock);
-        SecurityBeanEm bean = new SecurityBeanEm(quoteRes);
-        String quoteId = null;
-        try { // 转换失败
-            quoteId = isIndex ? bean.convertToIndex().getSecId() : bean.convertToStock().getSecId();
-        } catch (Exception e) {
-            throw e;
-        }
+        JSONArray quoteRes = querySecurityId(secCode);
+
+        SecurityBeanEm bean = SecurityBeanEm.createBeanWithType(secCode, secType);
+        String quoteId = bean.getSecId();
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
@@ -988,7 +964,7 @@ public class StockApi {
         String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get";
         String response;
         try {
-            response = getAsStrUseHutool(url, params, timeout, retrySingle);
+            response = getAsStrUseHutool(url, params, timeout, retry);
         } catch (Exception e) {
             return null;
         }
@@ -1005,43 +981,25 @@ public class StockApi {
     }
 
     /**
-     * 默认使用cache
+     * 默认使用 cache
      *
-     * @param stock
+     * @param secCode
      * @param begDate
      * @param endDate
      * @param klType
      * @param fq
-     * @param retrySingle
+     * @param retry
      * @param isIndex
      * @param timeout
      * @return
      * @throws Exception
      */
-    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
+    public static DataFrame<Object> getQuoteHistorySingle(String secCode,
+                                                          SecurityBeanEm.SecType secType, String begDate,
                                                           String endDate, String klType, String fq,
-                                                          int retrySingle, boolean isIndex, int timeout
-    ) throws Exception {
-        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, isIndex, timeout, true);
-    }
-
-    /**
-     * 默认使用cache
-     *
-     * @param stock
-     * @param begDate
-     * @param endDate
-     * @param klType
-     * @param fq
-     * @param retrySingle
-     * @return
-     * @throws Exception
-     */
-    public static DataFrame<Object> getQuoteHistorySingle(String stock, String begDate,
-                                                          String endDate, String klType, String fq,
-                                                          int retrySingle)
-            throws Exception {
-        return getQuoteHistorySingle(stock, begDate, endDate, klType, fq, retrySingle, false, 2000);
+                                                          int retry,
+                                                          int timeout) throws Exception {
+        return getQuoteHistorySingle(true, secCode, secType, begDate, endDate, klType, fq, retry, timeout);
     }
 
     /**
@@ -1052,16 +1010,19 @@ public class StockApi {
      * @return 1分钟分时图当日; 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
      * @throws Exception
      */
-    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout,
+    public static DataFrame<Object> getFs1MToday(String stock, SecurityBeanEm.SecType secType, int retrySingle,
+                                                 int timeout,
                                                  boolean useCache)
             throws Exception {
-        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout, useCache);
+        return getQuoteHistorySingle(useCache, stock, secType, null, null, "1", "qfq", retrySingle,
+                timeout);
     }
 
-    public static DataFrame<Object> getFs1MToday(String stock, boolean isIndex, int retrySingle, int timeout
+    public static DataFrame<Object> getFs1MToday(String stock, SecurityBeanEm.SecType secType, int retrySingle,
+                                                 int timeout
     )
             throws Exception {
-        return getQuoteHistorySingle(stock, null, null, "1", "qfq", retrySingle, isIndex, timeout, true);
+        return getQuoteHistorySingle(true, stock, secType, null, null, "1", "qfq", retrySingle, timeout);
     }
 
     /**
@@ -1075,7 +1036,9 @@ public class StockApi {
     public static String getPreNTradeDateStrict(String todayDate, int n)
             throws Exception {
         // 查询结果将被缓存.
-        DataFrame<Object> dfTemp = getQuoteHistorySingle("000001", "19900101", "21000101", "101", "1", 3, true, 3000);
+        DataFrame<Object> dfTemp = getQuoteHistorySingle(false, "000001", SecurityBeanEm.SecType.INDEX, "19900101",
+                "21000101", "101", "1", 3,
+                3000);
         List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");
         for (int i = dates.size() - 1; i >= 0; i--) {
             if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
