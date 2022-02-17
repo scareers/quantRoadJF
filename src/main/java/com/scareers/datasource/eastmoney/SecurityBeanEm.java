@@ -411,10 +411,6 @@ public class SecurityBeanEm {
     @Setter
     @Getter
     public static class SecurityEmPo implements Comparable {
-        // 两大集合将在选股完成后立即填充.
-        public static CopyOnWriteArraySet<SecurityBeanEm> yesterdayHolds = new CopyOnWriteArraySet<>(); // 昨日持仓
-        public static CopyOnWriteArraySet<SecurityBeanEm> todaySelected = new CopyOnWriteArraySet<>(); // 今日选中.
-
         private static final long serialVersionUID = 78921546L;
 
         @SneakyThrows
@@ -443,17 +439,18 @@ public class SecurityBeanEm {
             this.market = securityBeanEm.getMarket();
             this.name = securityBeanEm.getName();
             this.bean = securityBeanEm;
+
             if (bean.isIndex()) {
                 this.type = 0;
             } else {
-                if (yesterdayHolds.contains(bean)) {
-                    if (todaySelected.contains(bean)) {
+                if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
+                    if (SecurityPool.todaySelectedStocks.contains(bean)) {
                         this.type = 3;
                     } else {
                         this.type = 2;
                     }
                 } else {
-                    if (todaySelected.contains(bean)) {
+                    if (SecurityPool.todaySelectedStocks.contains(bean)) {
                         this.type = 1;
                     } else {
                         this.type = 4;

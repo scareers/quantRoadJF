@@ -22,10 +22,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * 4.Trader/TraderGui: 可在交易过程中, 手动添加股票池
  * <p>
  * -----------> 特殊
- * 1.将调用 EmSeleniumApi 获取东方财富个股人气榜和人气飙升榜.
+ * 1.todo: 将调用 EmSeleniumApi 获取东方财富个股人气榜和人气飙升榜.
  *
  * @noti 为保证gui多线程可见性, 全部使用静态属性维护
  * @noti 因股票池可能动态改变, 导致其他线程遍历时出现错误, 定义 xxxCopy 方法, 将返回一个新的浅复制的集合,以供遍历.
+ * @noti 各股票池public, 当不需要遍历时可直接使用某些方法, 例如 contains?
  * @author: admin
  * @date: 2022/2/14/014-17:05:04
  */
@@ -33,30 +34,30 @@ public class SecurityPool {
     /**
      * 所有 SecurityBeanEm, 包括所有股票,指数,板块. 自身不直接all元素, 其他分类股票池添加时, 均会添加到此集合
      */
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> allSecuritySet = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> allSecuritySet = new CopyOnWriteArraySet<>();
 
     /**
      * 昨日持仓股票 + 今日选中股票(可以逻辑选,可以手动选) + 其他关心的热点股票, 买卖池可有交集, 一般其余关心池互斥二者
      */
     // 今日选股, key
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocks = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> todaySelectedStocks = new CopyOnWriteArraySet<>();
     // 昨日持仓,卖出
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocks = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldStocks = new CopyOnWriteArraySet<>();
     // 其他热点股票
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareStocks = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareStocks = new CopyOnWriteArraySet<>();
 
     /**
      * 核心板块 及 其他关心的板块, 一般互斥
      */
     // 核心板块, 往往是选股和昨日持仓股票的板块
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBKs = new CopyOnWriteArraySet<>();
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareBKs = new CopyOnWriteArraySet<>(); // 其他热点板块
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBKs = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareBKs = new CopyOnWriteArraySet<>(); // 其他热点板块
 
     /**
      * 核心指数 及 其他关心的指数, 一般互斥
      */
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> keyIndexes = new CopyOnWriteArraySet<>();
-    private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyIndexes = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
 
     private static final Log log = LogUtil.getLogger();
 

@@ -178,12 +178,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         ArrayList<String> stocks = new ArrayList<>(stockSelectCountMapFinal.keySet());
         stockSelectedToday = new CopyOnWriteArrayList<>(stockSelectCountMapFinal.keySet()); // 赋值
 
-        SecurityBeanEm.SecurityEmPo.todaySelected
-                .addAll(SecurityBeanEm.createStockList(stockSelectedToday)); //@noti: 使得PO对象可区分类型
-
         List<String> yesterdayH = initYesterdayHolds();
-        SecurityBeanEm.SecurityEmPo.yesterdayHolds
-                .addAll(SecurityBeanEm.createStockList(yesterdayH)); //@noti: 使得PO对象可区分类型
 
         // todo: 优化股票池添加逻辑
         SecurityPool.addToTodaySelectedStocks(SecurityBeanEm.createStockList(stockSelectedToday));// 今选
