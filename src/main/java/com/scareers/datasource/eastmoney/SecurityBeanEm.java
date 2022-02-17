@@ -11,8 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -36,23 +35,34 @@ public class SecurityBeanEm {
     private static final long serialVersionUID = 156415111L;
     // 缓存. key为 代码+类型
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
+
+    /**
+     * 个股类型/指数/板块 的SecurityTypeName, 以此来转换bean类型;
+     * 个股的创业板显示深A, 科创板单独显示,非沪A
+     * 每种类型有相关的 类型判定方法. isXxx()
+     */
+    private static HashSet<String> stockSecurityTypeNames = new HashSet<>(
+            Arrays.asList("深A", "沪A", "京A", "科创板", "三板", "深B", "沪B"));
+    private static HashSet<String> bkSecurityTypeNames = new HashSet<>(Collections.singletonList("板块"));
+    private static HashSet<String> indexSecurityTypeNames = new HashSet<>(Collections.singletonList("指数"));
     public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
     public static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
 
 
     public static void main(String[] args) throws Exception {
-        SecurityBeanEm stock = SecurityBeanEm.createStock("430090");
+        SecurityBeanEm stock = SecurityBeanEm.createIndex("H30597");
         Console.log(stock);
 
-        SecurityBeanEm stock2 = SecurityBeanEm.createStock("000001");
+        SecurityBeanEm stock2 = SecurityBeanEm.createIndex("000001");
         Console.log(stock2);
     }
+
 
     private static SecurityBeanEm initShIndex() {
         SecurityBeanEm res;
         while (true) {
             try {
-                res = createIndex("000001");
+                res = createIndex("上证指数");
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("SecurityBeanEm init: 初始化[上证指数]失败");
@@ -67,7 +77,7 @@ public class SecurityBeanEm {
         SecurityBeanEm res;
         while (true) {
             try {
-                res = createIndex("399001");
+                res = createIndex("深证成指");
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("SecurityBeanEm init: 初始化[深证成指]失败");
@@ -87,8 +97,8 @@ public class SecurityBeanEm {
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createStockList(List<String> stockListSimple) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+    public static List<SecurityBeanEm> createStockList(List<String> queryConditionList) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
         for (SecurityBeanEm bean : beans) {
             bean.convertToStock();
             beanPool.put(bean.getSecCode() + "__stock", bean); // 放入缓存池
@@ -99,12 +109,12 @@ public class SecurityBeanEm {
     /**
      * 给定股票简单代码列表, 获取 已转换为 指数 的 SecurityBeanEm
      *
-     * @param stockListSimple
+     * @param queryConditionList
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createIndexList(List<String> stockListSimple) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+    public static List<SecurityBeanEm> createIndexList(List<String> queryConditionList) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
         for (SecurityBeanEm bean : beans) {
             bean.convertToIndex();
             beanPool.put(bean.getSecCode() + "__index", bean); // 放入缓存池
@@ -115,12 +125,12 @@ public class SecurityBeanEm {
     /**
      * 给定股票简单代码列表, 获取 已转换为 板块 的 SecurityBeanEm
      *
-     * @param stockListSimple
+     * @param queryConditionList
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createBKList(List<String> stockListSimple) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(stockListSimple);
+    public static List<SecurityBeanEm> createBKList(List<String> queryConditionList) throws Exception {
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
         for (SecurityBeanEm bean : beans) {
             bean.convertToBK();
             beanPool.put(bean.getSecCode() + "__bk", bean); // 放入缓存池
@@ -129,13 +139,14 @@ public class SecurityBeanEm {
     }
 
     /**
-     * @param stockListSimple
+     * @param queryConditionList
      * @return
      * @throws Exception
      * @noti 仅构建列表, 并未转换,  转换需要调用 toStockList / toIndexList 方法
      */
-    private static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> stockListSimple) throws Exception {
-        return querySecurityIdsToBeanList(stockListSimple); // 使用线程池
+    private static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> queryConditionList)
+            throws Exception {
+        return querySecurityIdsToBeanList(queryConditionList); // 使用线程池
     }
 
 
@@ -191,26 +202,28 @@ public class SecurityBeanEm {
      *
      * @param queryResults
      */
-    public SecurityBeanEm(JSONArray queryResults) {
+    private String queryCondition;
+
+    public SecurityBeanEm(JSONArray queryResults, String queryCondition) {
+        this.queryCondition = queryCondition;
         this.queryResults = queryResults;
-        checkQueryResults(); // 若null将强制查询
     }
 
     /**
      * 给定股票简单代码构造, 将一定执行查询.  不建议过多单独调用, 应使用线程池版本创建股票池
      *
-     * @param secCode
+     * @param queryCondition
      */
-    private SecurityBeanEm(String secCode) {
-        this.secCode = secCode; // 将被查询
+    private SecurityBeanEm(String queryCondition) {
+        this.queryCondition = queryCondition;
         checkQueryResults();
     }
 
-    private void checkQueryResults() { // 死循环查询 3次
+    private void checkQueryResults() { // 死循环查询 3 次
         int retry_ = 0;
         while (queryResults == null) {
             try {
-                this.queryResults = querySecurityId(secCode);
+                this.queryResults = querySecurityId(queryCondition);
             } catch (Exception e) {
                 if (retry_ >= retry) {
                     log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败");
@@ -233,7 +246,7 @@ public class SecurityBeanEm {
         if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convert(Arrays.asList("AStock", "23", "NEEQ"))) {
+        if (convert(stockSecurityTypeNames)) {
             secType = SecType.STOCK;
         } else {
             secType = SecType.FAIL;
@@ -253,7 +266,7 @@ public class SecurityBeanEm {
         if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (convert(Arrays.asList("BK"))) {
+        if (convert(bkSecurityTypeNames)) {
             secType = SecType.BK;
         } else {
             secType = SecType.FAIL;
@@ -271,7 +284,7 @@ public class SecurityBeanEm {
         if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
-        if (!convert(Arrays.asList("Index"))) {
+        if (!convert(indexSecurityTypeNames)) {
             secType = SecType.FAIL;
             throw new Exception("转换StockBean为指数Bean异常");
         }
@@ -284,10 +297,10 @@ public class SecurityBeanEm {
      */
     JSONObject convertRawJsonObject;
 
-    private boolean convert(List<String> typeConditions) {
+    private boolean convert(Set<String> typeConditions) {
         for (int i = 0; i < queryResults.size(); i++) {
             JSONObject ele = queryResults.getJSONObject(i);
-            if (typeConditions.contains(ele.get("Classify").toString())) {
+            if (typeConditions.contains(ele.get("SecurityTypeName").toString())) {
                 // 三项基本
                 try {
                     secId = ele.get("QuoteID").toString();
@@ -328,55 +341,82 @@ public class SecurityBeanEm {
         return this.secType == SecType.BK;
     }
 
+    public boolean isShenA() {
+        return this.getSecurityTypeName().equals("深A");
+    }
+
+    public boolean isHuA() {
+        return this.getSecurityTypeName().equals("沪A");
+    }
+
+    public boolean isShenB() {
+        return this.getSecurityTypeName().equals("深B");
+    }
+
+    public boolean isHuB() {
+        return this.getSecurityTypeName().equals("沪B");
+    }
+
+    public boolean isJingA() {
+        return this.getSecurityTypeName().equals("京A");
+    }
+
+    public boolean isKCB() {
+        return this.getSecurityTypeName().equals("科创板");
+    }
+
+    public boolean isXSB() {
+        return this.getSecurityTypeName().equals("三板");
+    }
 
     /**
      * 单个实例工厂, 使用缓存. SecurityBeanEm 一旦被转换为股票或者指数后, 不可变
      *
-     * @param stockCodeSimple
+     * @param queryCondition
      * @return
      * @throws Exception
      */
-    public static SecurityBeanEm createStock(String stockCodeSimple) throws Exception {
-        String cacheKey = stockCodeSimple + "__stock";
+    public static SecurityBeanEm createStock(String queryCondition) throws Exception {
+        String cacheKey = queryCondition + "__stock";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new SecurityBeanEm(stockCodeSimple).convertToStock();
+        res = new SecurityBeanEm(queryCondition).convertToStock();
         beanPool.put(cacheKey, res);
         return res;
     }
 
 
-    public static SecurityBeanEm createIndex(String stockCodeSimple) throws Exception {
-        String cacheKey = stockCodeSimple + "__index";
+    public static SecurityBeanEm createIndex(String queryCondition) throws Exception {
+        String cacheKey = queryCondition + "__index";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new SecurityBeanEm(stockCodeSimple).convertToIndex();
+        res = new SecurityBeanEm(queryCondition).convertToIndex();
         beanPool.put(cacheKey, res);
         return res;
     }
 
-    public static SecurityBeanEm createBK(String stockCodeSimple) throws Exception {
-        String cacheKey = stockCodeSimple + "__bk";
+    public static SecurityBeanEm createBK(String queryCondition) throws Exception {
+        String cacheKey = queryCondition + "__bk";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new SecurityBeanEm(stockCodeSimple).convertToBK();
+        res = new SecurityBeanEm(queryCondition).convertToBK();
         beanPool.put(cacheKey, res);
         return res;
     }
 
-    public static SecurityBeanEm createBeanWithType(String stockCodeSimple, SecType type) throws Exception {
+    public static SecurityBeanEm createBeanWithType(String queryCondition, SecType type) throws Exception {
         if (type == SecType.INDEX) {
-            return createIndex(stockCodeSimple);
+            return createIndex(queryCondition);
         } else if (type == SecType.STOCK) {
-            return createStock(stockCodeSimple);
+            return createStock(queryCondition);
         } else if (type == SecType.BK) {
-            return createBK(stockCodeSimple);
+            return createBK(queryCondition);
         } else {
             throw new Exception("未知资产类型, 无法创建");
         }
@@ -424,9 +464,9 @@ public class SecurityBeanEm {
         @Override
         public int compareTo(Object o) {
             if (o instanceof SecurityEmPo) {
-                if (this.type.equals(((SecurityEmPo) o).type)) {
-                    return this.secCode.compareTo(((SecurityEmPo) o).secCode); // 代码优先
-                } else { // 类型优先
+                if (this.type.equals(((SecurityEmPo) o).type)) {// 1.类型优先
+                    return this.secCode.compareTo(((SecurityEmPo) o).secCode); // 2.代码优先
+                } else {
                     return this.type.compareTo(((SecurityEmPo) o).type);
                 }
             } else {

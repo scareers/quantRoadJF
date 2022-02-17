@@ -201,25 +201,36 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                 int index = jList.getSelectedIndex();
                 SecurityBeanEm.SecurityEmPo po = securityEmPos.get(index);
                 String url = "";
-                if (po.getBean().getClassify().equals("AStock")) {
+                if (po.getBean().getClassify().equals("AStock") || po.getBean().getClassify().equals("23")) {
                     if (po.getMarket().equals(0)) {
                         url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
-                    }else{
+                    } else {
                         url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
                     }
-                } else if (po.getBean().getClassify().equals("AStock")) {
+                } else if (po.getBean().getClassify().equals("NEEQ")) {
+                    // http://quote.eastmoney.com/bj/430090.html
+                    if (po.getBean().getSecurityTypeName().equals("三板")) {
+                        url = StrUtil.format("http://xinsanban.eastmoney.com/QuoteCenter/{}.html", po.getSecCode());
+                    } else if (po.getBean().getSecurityTypeName().equals("京A")) {
+                        url = StrUtil.format("http://quote.eastmoney.com/bj/{}.html", po.getSecCode());
+                    }
+                } else if (po.getBean().isBK()) {
+                    url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", po.getBean().getSecId());
+                }else if(po.getBean().isBK()){
+                    url = StrUtil.format("http://quote.eastmoney.com/zs{}.html",po.getSecCode());
+
                 }
 
-                if (po.getMarket().equals(0)) {
-                    prefix = "sz"; // 深证
-                } else if (po.getMarket().equals(1)) {
-                    prefix = "sh";// 上证
-                } else {
-                    log.warn("unknown: 尝试打开url, 但股票所属市场未知: {}", securityEmPos.get(index).toString());
-                    return;
-                }
-                CommonUtil.openUrlWithDefaultBrowser(
-                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getSecCode()));
+//                if (po.getMarket().equals(0)) {
+//                    prefix = "sz"; // 深证
+//                } else if (po.getMarket().equals(1)) {
+//                    prefix = "sh";// 上证
+//                } else {
+//                    log.warn("unknown: 尝试打开url, 但股票所属市场未知: {}", securityEmPos.get(index).toString());
+//                    return;
+//                }
+//                CommonUtil.openUrlWithDefaultBrowser(
+//                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getSecCode()));
             }
         });
 

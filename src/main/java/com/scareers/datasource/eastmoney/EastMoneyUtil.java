@@ -47,7 +47,8 @@ public class EastMoneyUtil {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
 //        Console.log(querySecurityId("BK1063"));
-        Console.log(querySecurityId("BK1063"));
+        Console.log(querySecurityId("400012"));
+        Console.log(querySecurityId("清水源"));
 
 
     }
@@ -230,7 +231,7 @@ public class EastMoneyUtil {
             // 可能null, 但是具体构建时, 会再次对 查询结果进行null check, 直到获取成功
             JSONArray temp = futures.get(stockCodeSimple).get();
             if (temp != null) {
-                beans.add(new SecurityBeanEm(temp));
+                beans.add(new SecurityBeanEm(temp, stockCodeSimple));
             } else {
                 log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}!", stockCodeSimple);
             }
