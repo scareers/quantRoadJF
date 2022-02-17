@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
 /**
- * description: 东方财富某些api, 因加密极难破解, 因此使用 selenium技术获取数据.
+ * description: 东方财富某些api, 因加密极难破解, 因此使用 selenium获取数据.
  * 使用谷歌浏览器, 自行保证 chromedriver.exe 位于path中, 且版本匹配.
  * WebDriver driver 对象, 将懒加载为静态属性, 每个api均检测其是否初始化.
  * <p>

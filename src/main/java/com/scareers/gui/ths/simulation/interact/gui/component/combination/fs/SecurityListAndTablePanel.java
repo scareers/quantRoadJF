@@ -173,13 +173,13 @@ public abstract class SecurityListAndTablePanel extends JPanel {
      */
     private JList<SecurityBeanEm.SecurityEmPo> getSecurityEmJList() {
         DefaultListModelS<SecurityBeanEm.SecurityEmPo> model = new DefaultListModelS<>();
-        model.flush(securityEmPos);
+        model.flush(securityEmPos); // 刷新一次数据, 首次为空
 
         JList<SecurityBeanEm.SecurityEmPo> jList = new JList<>(model);
-        jList.setCellRenderer(new SecurityEmListCellRendererS());
+        jList.setCellRenderer(new SecurityEmListCellRendererS()); // 设置render
         jList.setForeground(COLOR_GRAY_COMMON);
 
-        // 单例单线程
+        // 持续刷新列表, 100 ms一次. securityEmPos 应该为持续变化
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
@@ -191,7 +191,7 @@ public abstract class SecurityListAndTablePanel extends JPanel {
             }
         }, true);
 
-        // 双击事件监听
+        // 双击事件监听, 跳转到东方财富资产行情页面
         jList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {

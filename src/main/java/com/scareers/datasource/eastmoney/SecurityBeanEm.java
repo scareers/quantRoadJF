@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
@@ -40,6 +39,14 @@ public class SecurityBeanEm {
     public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
     public static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
 
+
+    public static void main(String[] args) throws Exception {
+        SecurityBeanEm stock = SecurityBeanEm.createStock("430090");
+        Console.log(stock);
+
+        SecurityBeanEm stock2 = SecurityBeanEm.createStock("000001");
+        Console.log(stock2);
+    }
 
     private static SecurityBeanEm initShIndex() {
         SecurityBeanEm res;
