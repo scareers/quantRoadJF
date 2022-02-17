@@ -218,7 +218,7 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                     url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", po.getBean().getSecId());
                 }else if(po.getBean().isBK()){
                     url = StrUtil.format("http://quote.eastmoney.com/zs{}.html",po.getSecCode());
-
+// todo: 依据类型判定
                 }
 
 //                if (po.getMarket().equals(0)) {
