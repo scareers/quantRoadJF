@@ -454,6 +454,7 @@ public class Trader {
 
     public void stopTrade() throws IOException, TimeoutException {
         this.closeDualChannelAndConn(); // 关闭连接
+        this.getAccountStates().closeDualChannelAndConn();
         if (fsTransactionFetcher != null) {
             fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
         }

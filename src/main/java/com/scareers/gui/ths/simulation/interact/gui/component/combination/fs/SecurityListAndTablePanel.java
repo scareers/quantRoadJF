@@ -38,86 +38,94 @@ import java.util.stream.Collectors;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
- * description: 1分钟分时图爬虫, 相关数据展示panel
+ * description: 基类展示控件. 语义为: panel, 展示资产列表, 以及它对应的 某项 df形式的数据(用Table展示df)
  *
  * @author: admin
  * @date: 2022/2/12/012-12:56:23
  */
-public class FsFetcherListAndDataPanel extends JPanel {
-    public static volatile FsFetcherListAndDataPanel INSTANCE;
-    public static volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 开始空, 随后基本不变
+public abstract class SecurityListAndTablePanel extends JPanel {
 
-    MainDisplayWindow mainDisplayWindow; // 主显示区
-    volatile JList<SecurityBeanEm.SecurityEmPo> jList; // 展示股票的 list
 
-    public static FsFetcherListAndDataPanel getInstance(MainDisplayWindow mainDisplayWindow) {
-        if (INSTANCE == null) {
-            // 首次调用, 将开始更新数据
-            ThreadUtil.execAsync(new Runnable() {
-                @SneakyThrows
-                @Override
-                public void run() {
-                    //等待 有控件被注册
-                    try {
-                        FsFetcher.waitInstanceNotNull();
-                        FsFetcher.getInstance().waitFirstEpochFinish();
-                    } catch (TimeoutException | InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    securityEmPos = FsFetcher.getStockPool().stream()
-                            .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
-                    mainDisplayWindow.flushBounds();
-                }
-            }, true);
-
-            INSTANCE = new FsFetcherListAndDataPanel(mainDisplayWindow); // 默认所有订单,自行调用changeType
-            mainDisplayWindow.flushBounds();
-        }
-        return INSTANCE;
+    public static SecurityListAndTablePanel getInstance(MainDisplayWindow mainDisplayWindow) {
+//        if (INSTANCE == null) {
+//            // 首次调用, 将开始更新数据
+//            ThreadUtil.execAsync(new Runnable() {
+//                @SneakyThrows
+//                @Override
+//                public void run() {
+//                    //等待 有控件被注册
+//                    try {
+//                        FsFetcher.waitInstanceNotNull();
+//                        FsFetcher.getInstance().waitFirstEpochFinish();
+//                    } catch (TimeoutException | InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                    securityEmPos = FsFetcher.getStockPool().stream()
+//                            .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
+//                    mainDisplayWindow.flushBounds();
+//                }
+//            }, true);
+//
+//            INSTANCE = new SecurityListAndTablePanel(mainDisplayWindow); // 默认所有订单,自行调用changeType
+//            mainDisplayWindow.flushBounds();
+//        }
+//        return INSTANCE;
+        return null;
     }
 
-    private FsFetcherListAndDataPanel(MainDisplayWindow mainDisplayWindow) {
-        super();
+    volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 开始空, 随后不变
+    MainDisplayWindow mainDisplayWindow; // 主显示区
+    volatile JList<SecurityBeanEm.SecurityEmPo> jList; //  展示股票的 list
+    int jListWidth = 300;
+
+    /**
+     * 实例初始化之前需要进行的一些等待,
+     * 以及 资产列表刷新的逻辑(可一次, 或者持续)
+     * 已异步执行.
+     */
+    private void waitAndFlushSecurityListAsync() {
+        try {
+            FsFetcher.waitInstanceNotNull();
+            FsFetcher.getInstance().waitFirstEpochFinish();
+        } catch (TimeoutException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        securityEmPos = FsFetcher.getStockPool().stream()
+                .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
+        mainDisplayWindow.flushBounds();
+    }
+
+    protected SecurityListAndTablePanel(MainDisplayWindow mainDisplayWindow, int jListWidth) {
+        // 异步开始等待某些状态, 并一次或者持续刷新股票列表
+        ThreadUtil.execAsync(this::waitAndFlushSecurityListAsync, true);
+        this.jListWidth = jListWidth;
         this.mainDisplayWindow = mainDisplayWindow;
 
         // 1.布局
-        this.setLayout(new BorderLayout());
+        this.setLayout(new BorderLayout()); // border布局, 列表在左, 表格在右
 
         // 2.JList显示列表
         jList = getSecurityEmJList();
-        jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
-        jList.setPreferredSize(new Dimension(300, 10000));
-        jList.setBackground(COLOR_THEME_MAIN);
-        jList.setBorder(null);
-        JScrollPane jScrollPaneForList = new JScrollPane();
-        jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jScrollPaneForList.setViewportView(jList);
-        jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
-        this.add(jScrollPaneForList, BorderLayout.WEST); // 添加列表
-        BasicScrollBarUIS
-                .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义barUi
+        this.add(jListWrappedWithJScrollPane(), BorderLayout.WEST); // 添加列表
 
         // 3. 1分钟fs详情控件, 表格.
-        Fs1MPanel fs1MPanel = new Fs1MPanel(this);
+        DfDisplayPanel dfDisplayPanel = new DfDisplayPanel(this);
+        this.add(dfDisplayPanel, BorderLayout.CENTER);
 
-        this.add(fs1MPanel, BorderLayout.CENTER);
-
-        // 6.主panel 添加尺寸改变监听. 改变 jList 和 orderContent尺寸
+        // 6.主 展示窗口 添加尺寸改变监听. 改变 jList 和 orderContent尺寸.
         this.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                jList.setBounds(0, 0, 300, getHeight()); // 固定宽 300
-                fs1MPanel.setBounds(300, 0, getWidth() - 300, getHeight()); // 其余占满
+                jList.setBounds(0, 0, jListWidth, getHeight()); // 固定宽默认 300
+                dfDisplayPanel.setBounds(jListWidth, 0, getWidth() - jListWidth, getHeight()); // 其余占满
             }
         });
 
-        // 7.更新选择的股票以显示分时图
+        // 7.更新选择的股票以显示 对应的内容. 为了实时刷新的效果, 这里 持续刷新
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
-
                 while (true) {
                     SecurityBeanEm currentBean;
                     if (jList.getSelectedIndex() == -1) {
@@ -128,26 +136,41 @@ public class FsFetcherListAndDataPanel extends JPanel {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                        Thread.sleep(1); // 不断刷新
+                        Thread.sleep(10);
                         continue;
                     }
                     try {
                         currentBean = securityEmPos.get(jList.getSelectedIndex()).getBean();
                     } catch (Exception e) {
-                        Thread.sleep(1); // 不断刷新
+                        Thread.sleep(10);
                         continue;
                     }
-
                     if (currentBean != null) {
-                        fs1MPanel.updateText(currentBean);
+                        dfDisplayPanel.updateText(currentBean);
                     }
-                    Thread.sleep(100); // 不断刷新
+                    Thread.sleep(100);
                 }
             }
         }, true);
 
     }
 
+    private JScrollPane jListWrappedWithJScrollPane() {
+        JScrollPane jScrollPaneForList = new JScrollPane();
+        jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForList.setViewportView(jList);
+        jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+        return jScrollPaneForList;
+    }
+
+    /**
+     * 资产列表控件. 可重写
+     *
+     * @return
+     */
     private JList<SecurityBeanEm.SecurityEmPo> getSecurityEmJList() {
         DefaultListModelS<SecurityBeanEm.SecurityEmPo> model = new DefaultListModelS<>();
         model.flush(securityEmPos);
@@ -190,12 +213,20 @@ public class FsFetcherListAndDataPanel extends JPanel {
                         StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getStockCodeSimple()));
             }
         });
+
+        jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+        jList.setPreferredSize(new Dimension(300, 10000));
+        jList.setBackground(COLOR_THEME_MAIN);
+        jList.setBorder(null);
         return jList;
     }
 
     private static final Log log = LogUtil.getLogger();
 
-    public static class Fs1MPanel extends JPanel {
+    /**
+     * 表格展示df 的Panel
+     */
+    public static class DfDisplayPanel extends JPanel {
         public static JTable jTable;
         public static JScrollPane jScrollPane = new JScrollPane();
         public static JButton buttonFlush; // 全量刷新按钮
@@ -208,9 +239,9 @@ public class FsFetcherListAndDataPanel extends JPanel {
         /**
          * @param parent 仅用于位置修复
          */
-        FsFetcherListAndDataPanel parent;
+        SecurityListAndTablePanel parent;
 
-        public Fs1MPanel(FsFetcherListAndDataPanel parent) {
+        public DfDisplayPanel(SecurityListAndTablePanel parent) {
             this.parent = parent;
             this.setBorder(null);
             this.setLayout(new BorderLayout());

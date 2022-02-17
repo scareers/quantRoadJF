@@ -22,15 +22,21 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
 
     /**
      * model更新全部传递来的数据. 数量最大数量由调用方控制,非model控制. 且顺序也由调用方控制
+     *
      * @param newList
      */
     public void flush(List<T> newList) {
-        Collections.sort(newList);
+        Collections.sort(newList); // 对元素排序
+        // 当元素发生变化, 才更新
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
-            this.set(i, newList.get(i));
+            try {
+                if (!this.get(i).equals(newList.get(i))) {
+                    this.set(i, newList.get(i));
+                }
+            } catch (Exception ignored) {
+            }
         }
         if (newList.size() > this.getSize()) {
-
             this.addAll(newList.subList(this.getSize(), newList.size()));
         } else if (newList.size() < this.getSize()) {
             this.removeRange(newList.size(), this.getSize() - 1); // 注意大的index需要-1

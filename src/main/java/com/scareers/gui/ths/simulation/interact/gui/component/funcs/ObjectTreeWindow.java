@@ -214,7 +214,10 @@ public class ObjectTreeWindow extends FuncFrameS {
             // 2.1分钟分时图
         } else if (TreePathConstants.FS_FETCHER.equals(treePath)) {
             changeToDisplayFs1MData();
-            // 2.其他
+            // 2.2.账户状态
+        }  else if (TreePathConstants.FS_TRANSACTION_FETCHER.equals(treePath)) {
+            changeToDisplayFs1MData();
+            // 2.2.账户状态
         } else {
             System.out.println(treePath);
         }
