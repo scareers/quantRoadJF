@@ -425,7 +425,7 @@ public class SecurityBeanEm {
         public int compareTo(Object o) {
             if (o instanceof SecurityEmPo) {
                 if (this.type.equals(((SecurityEmPo) o).type)) {
-                    return this.stockCodeSimple.compareTo(((SecurityEmPo) o).stockCodeSimple); // 代码优先
+                    return this.secCode.compareTo(((SecurityEmPo) o).secCode); // 代码优先
                 } else { // 类型优先
                     return this.type.compareTo(((SecurityEmPo) o).type);
                 }
@@ -434,7 +434,7 @@ public class SecurityBeanEm {
             }
         }
 
-        String stockCodeSimple;
+        String secCode;
         Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.
         // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
         String name;
@@ -442,7 +442,7 @@ public class SecurityBeanEm {
         Integer type; // 类型: 0代表指数, 1代表今日选股(可买), 2代表昨日持仓(可卖), 3代表昨日有持仓且今日被选中, 4.未知
 
         public SecurityEmPo(SecurityBeanEm securityBeanEm) {
-            this.stockCodeSimple = securityBeanEm.getSecCode();
+            this.secCode = securityBeanEm.getSecCode();
             this.market = securityBeanEm.getMarket();
             this.name = securityBeanEm.getName();
             this.bean = securityBeanEm;
@@ -470,7 +470,7 @@ public class SecurityBeanEm {
         public String toString() { // 显示 代码.市场[中文名称]
             StringBuilder builder = new StringBuilder();
             builder.append("<html>");
-            builder.append(stockCodeSimple);
+            builder.append(secCode);
             builder.append(".");
             builder.append(market.toString());
             builder.append(" ["); // 简单形式

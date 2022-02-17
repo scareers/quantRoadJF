@@ -187,7 +187,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
                     return;
                 }
                 CommonUtil.openUrlWithDefaultBrowser(
-                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getStockCodeSimple()));
+                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getSecCode()));
             }
         });
         return jList;

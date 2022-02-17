@@ -200,7 +200,16 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                 }
                 int index = jList.getSelectedIndex();
                 SecurityBeanEm.SecurityEmPo po = securityEmPos.get(index);
-                String prefix = "";
+                String url = "";
+                if (po.getBean().getClassify().equals("AStock")) {
+                    if (po.getMarket().equals(0)) {
+                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
+                    }else{
+                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
+                    }
+                } else if (po.getBean().getClassify().equals("AStock")) {
+                }
+
                 if (po.getMarket().equals(0)) {
                     prefix = "sz"; // 深证
                 } else if (po.getMarket().equals(1)) {
@@ -210,7 +219,7 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                     return;
                 }
                 CommonUtil.openUrlWithDefaultBrowser(
-                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getStockCodeSimple()));
+                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getSecCode()));
             }
         });
 
