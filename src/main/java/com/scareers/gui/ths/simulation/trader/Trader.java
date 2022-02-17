@@ -17,11 +17,9 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
-import com.alee.managers.animation.easing.Back;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
@@ -43,9 +41,8 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.ths.simulation.OrderFactory.generateSellOrderQuick;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
+import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannelForTrader;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
@@ -65,7 +62,6 @@ import static java.lang.Thread.MAX_PRIORITY;
 public class Trader {
     private static final Log log = LogUtil.getLogger();
     private static volatile Trader INSTANCE;
-    public static volatile int allOrderAmount = 0;
 
     public static Trader getAndStartInstance() throws Exception {
         // todo: 待完成
@@ -99,11 +95,17 @@ public class Trader {
     }
 
     public static void main0() throws Exception {
-        Trader trader = new Trader(5000, 10000L, 10000, 2);
+        Trader trader = new Trader();
+        // 将会关联 trader. 实例化账户状态刷新程序, 将使用与trader完全不同的通道, 与另一个python模拟操作客户端通信, 只死循环执行账号状态刷新程序
+        AccountStates accountStates = AccountStates.getInstance(trader, 5000, 10000L,
+                10000, 2);
         INSTANCE = trader;
+        accountStates.handshake(); // 同样握手. 逻辑同trader, 仅仅通道不一样
+        // 启动账户资金获取程序
+        accountStates.startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
 
 
-//        TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
+        // TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
 
         // 启动执行器, 将遍历优先级队列, 发送订单到python, 并获取响应
@@ -112,12 +114,9 @@ public class Trader {
         // check可能用到strategy, 此时strategy为null, 因此需要保证strategy被设置前, 不调用策略相关api, 此处仅调用账户信息相关api
         trader.getChecker().startCheckTransactionStatus();
 
-        // 启动账户资金获取程序
-        trader.getAccountStates().startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
-        trader.getAccountStates().waitFirstInitFinish(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
+        accountStates.waitFirstInitFinish(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
 
         // 直到此时才实例化策略对象, 绑定到 trader
-        // todo
         Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
                 30, // 期望选股数量
@@ -131,7 +130,7 @@ public class Trader {
                         "15:10:00", 1000, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
-        FsFetcher fsFetcher = FsFetcher.getInstance( 2000, 100, 16, 10);
+        FsFetcher fsFetcher = FsFetcher.getInstance(2000, 100, 16, 10);
         trader.setFsFetcher(fsFetcher);
         fsFetcher.startFetch(); // fs图抓取
 
@@ -188,7 +187,7 @@ public class Trader {
     public volatile FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
     public volatile FsFetcher fsFetcher; // 分时成交获取器, 需手动实例化后绑定
 
-    // 通道, 自行初始化
+    // 通道, 构造器初始化
     public volatile Channel channelComsumer; // 自行初始化
     public volatile Channel channelProducer;
     public volatile Connection connOfRabbitmq;
@@ -204,13 +203,9 @@ public class Trader {
      * @throws IOException
      * @throws TimeoutException
      */
-    public Trader(long flushIntervalForAS, long commonApiPriorityForAS, long priorityRaiseTimeThresholdForAS,
-                  long priorityRaiseForAS) throws IOException, TimeoutException {
-
+    public Trader() throws IOException, TimeoutException {
         this.orderExecutor = OrderExecutor.getInstance(this);
         this.checker = Checker.getInstance(this);
-        this.accountStates = AccountStates.getInstance(this, flushIntervalForAS, commonApiPriorityForAS,
-                priorityRaiseTimeThresholdForAS, priorityRaiseForAS);
         this.initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
     }
@@ -222,9 +217,9 @@ public class Trader {
     public void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
         connOfRabbitmq = connectToRbServer();
         channelProducer = connOfRabbitmq.createChannel();
-        initDualChannel(channelProducer);
+        initDualChannelForTrader(channelProducer);
         channelComsumer = connOfRabbitmq.createChannel();
-        initDualChannel(channelComsumer);
+        initDualChannelForTrader(channelComsumer);
     }
 
     public void closeDualChannelAndConn() throws IOException, TimeoutException {
@@ -257,10 +252,10 @@ public class Trader {
      */
 
     public void handshake() throws IOException, InterruptedException {
-        log.warn("handshake start: 开始尝试与python握手");
+        log.warn("[trader] handshake start: 开始尝试与python握手");
         sendMessageToPython(buildHandshakeMsg());
         waitUtilPythonReady(channelComsumer);
-        log.warn("handshake success: java<->python 握手成功");
+        log.warn("[trader] handshake success: java<->python 握手成功");
     }
 
     public String buildHandshakeMsg() {
@@ -342,7 +337,6 @@ public class Trader {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
         ordersAllMap.put(order, Arrays.asList()); // 暂无响应
-        allOrderAmount++;
         log.info("order enqueue: {} ", order.toString());
 //        log.info("order enqueued: {} ", ordersAllMap.size());
     }
@@ -355,7 +349,7 @@ public class Trader {
      * @throws IOException
      */
     public synchronized void sendMessageToPython(String jsonMsg) throws IOException {
-        log.info("java --> python: {}", jsonMsg);
+        log.info("[trader] java --> python: {}", jsonMsg);
         channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
                 jsonMsg.getBytes(StandardCharsets.UTF_8));
     }
@@ -468,9 +462,6 @@ public class Trader {
         }
     }
 
-    public static int getAllOrderAmount() {
-        return allOrderAmount;
-    }
 
     public static PriorityBlockingQueue<Order> getOrdersWaitForExecution() {
         return ordersWaitForExecution;

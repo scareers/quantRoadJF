@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
@@ -60,15 +61,13 @@ public class OrderListAndDetailPanel extends JPanel {
                     try {
                         waitUtil(() -> {
                             try {
-                                return Trader.allOrderAmount > 0;
+                                return Trader.getOrdersAllMap().size() > 0;
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
                             return false;
                         }, Integer.MAX_VALUE, 1, "等待首个订单生成", true);
-                    } catch (TimeoutException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
+                    } catch (TimeoutException | InterruptedException e) {
                         e.printStackTrace();
                     }
 

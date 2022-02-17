@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
+import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannelForTrader;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
 
 /**
@@ -23,7 +23,7 @@ public class ComsumerSimple {
         // 建立连接
         Connection conn = connectToRbServer();
         Channel channel = conn.createChannel();
-        initDualChannel(channel);
+        initDualChannelForTrader(channel);
 
         System.out.println(" Waiting for message....");
         // 创建消费者

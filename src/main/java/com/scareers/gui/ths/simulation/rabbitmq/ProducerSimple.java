@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
 import static com.scareers.gui.ths.simulation.OrderFactory.generateSellOrderQuick;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannel;
+import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannelForTrader;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_j2p_exchange;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_j2p_routing_key;
 
@@ -34,7 +34,7 @@ public class ProducerSimple {
         // 建立连接
         Connection conn = connectToRbServer();
         Channel channel = conn.createChannel();
-        initDualChannel(channel);
+        initDualChannelForTrader(channel);
 
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows

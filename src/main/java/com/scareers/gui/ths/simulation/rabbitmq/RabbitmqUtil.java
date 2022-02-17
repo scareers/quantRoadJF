@@ -40,12 +40,12 @@ public class RabbitmqUtil {
     }
 
     /**
-     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道
+     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道.  --> Trader
      *
      * @param channel
      * @return
      */
-    public static boolean initDualChannel(Channel channel) {
+    public static boolean initDualChannelForTrader(Channel channel) {
         // java到python的队列
         try {
             channel.exchangeDeclare(ths_trader_j2p_exchange, "fanout", true);
@@ -60,6 +60,34 @@ public class RabbitmqUtil {
             channel.exchangeDeclare(ths_trader_p2j_exchange, "fanout", true);
             channel.queueDeclare(ths_trader_p2j_queue, true, false, false, null);
             channel.queueBind(ths_trader_p2j_queue, ths_trader_p2j_exchange, ths_trader_p2j_routing_key);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道.  --> AccountStates
+     *
+     * @param channel
+     * @return
+     */
+    public static boolean initDualChannelForAccountStates(Channel channel) {
+        // java到python的队列
+        try {
+            channel.exchangeDeclare(ths_trader_j2p_exchange_as, "fanout", true);
+            channel.queueDeclare(ths_trader_j2p_queue_as, true, false, false, null);
+            channel.queueBind(ths_trader_j2p_queue_as, ths_trader_j2p_exchange_as, ths_trader_j2p_routing_key_as);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        // python到java 的队列
+        try {
+            channel.exchangeDeclare(ths_trader_p2j_exchange_as, "fanout", true);
+            channel.queueDeclare(ths_trader_p2j_queue_as, true, false, false, null);
+            channel.queueBind(ths_trader_p2j_queue_as, ths_trader_p2j_exchange_as, ths_trader_p2j_routing_key_as);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
