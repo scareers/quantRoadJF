@@ -54,6 +54,54 @@ public class StockApi {
             3600 * 1000); // 个股昨收和今开盘价
     public static ThreadPoolExecutor poolExecutor; // 可能的线程池
 
+
+    public static void main(String[] args) throws Exception {
+
+
+        Console.log("个股今日涨跌停:");
+        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
+        Console.log("个股昨收今开:");
+        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
+
+        Console.log("个股盘口数据:");
+        Console.log(getStockHandicap("002432", 2000, 1));
+
+        Console.log("指数/板块昨收今开");
+        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+        Console.log("指数/板块盘口数据:");
+        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
+
+        Console.log("分时成交数据:");
+        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
+
+        Console.log("各市场实时行情截面数据");
+        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+        Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
+        Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
+        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
+        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+
+
+        Console.log("历史行情k线数据 -- 可分时数据");
+        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
+        Console.log("批量历史行情k线数据 -- 可分时数据");
+        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
+                false));
+
+        Console.log("1分钟分时图数据");
+        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 2000));
+
+
+        Console.log("给定日期的上 n 个交易日:");
+        Console.log(getPreNTradeDateStrict(DateUtil.today(), 1));
+        Console.log(getPreTradeDateStrict(DateUtil.today()));
+        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
+
+
+    }
+
     static {
         initFSDICT();
         initEASTMONEYQUOTEFIELDS();
@@ -85,12 +133,25 @@ public class StockApi {
 
         // 个股昨收今开价格: 昨收肯定存在. 因此该时间点代表 今开尚未刷新
         flushTimeMap.put("getStockPreCloseAndTodayOpen", DateUtil.parse(DateUtil.today() + " 09:25:05"));
-        flushTimeInfoMap.put("getStockPreCloseAndTodayOpen", "警告: 个股今日开盘价格数据尚未开始刷新, 预计9点30分开始刷新");
+        flushTimeInfoMap.put("getStockPreCloseAndTodayOpen", "警告: 今日开盘价格数据尚未开始刷新, 预计9点30分开始刷新");
 
         // 个股实时盘口数据
         flushTimeMap.put("getStockHandicap", DateUtil.parse(DateUtil.today() + " 09:15:05"));
-        flushTimeInfoMap.put("getStockHandicap", "警告: 个股盘口数据尚未开始刷新, 预计9点15分开始刷新");
+        flushTimeInfoMap.put("getStockHandicap", "警告: 盘口数据尚未开始刷新, 预计9点15分开始刷新");
 
+        // 个股/指数实时盘口数据
+        flushTimeMap.put("getFSTransaction1", DateUtil.parse(DateUtil.today() + " 09:15:05"));
+        flushTimeInfoMap.put("getFSTransaction1", "警告: 个股成交数据尚未开始刷新, 预计9点15分开始刷新");
+        flushTimeMap.put("getFSTransaction2", DateUtil.parse(DateUtil.today() + " 09:25:05"));
+        flushTimeInfoMap.put("getFSTransaction2", "警告: 指数成交数据尚未开始刷新, 预计9点25分开始刷新");
+
+        // 市场截面数据
+        flushTimeMap.put("getRealtimeQuotes", DateUtil.parse(DateUtil.today() + " 09:25:05"));
+        flushTimeInfoMap.put("getRealtimeQuotes", "警告: 市场截面数据尚未开始刷新, 预计9点25分开始刷新");
+
+        // 1分钟分时数据
+        flushTimeMap.put("getFs1MToday", DateUtil.parse(DateUtil.today() + " 09:25:05"));
+        flushTimeInfoMap.put("getFs1MToday", "警告: 1分钟分时数据尚未开始刷新, 预计9点25分开始刷新");
 
     }
 
@@ -112,41 +173,6 @@ public class StockApi {
         }
     }
 
-    public static void main(String[] args) throws Exception {
-
-
-//        Console.log("个股今日涨跌停:");
-//        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
-//        Console.log("个股昨收今开:");
-//        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
-
-//        Console.log("个股盘口数据:");
-//        Console.log(getStockHandicap("002432", 2000, 1));
-
-//        Console.log("指数/板块昨收今开");
-//        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
-//        Console.log("指数/板块盘口数据:");
-//        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
-
-//        Console.log("分时成交数据:");
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
-
-        Console.log("各市场实时行情截面数据");
-//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
-        Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
-        Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
-
-
-//        Console.log("历史行情k线数据 -- 可分时数据");
-//        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
-        Console.log("批量历史行情k线数据 -- 可分时数据");
-        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
-                false));
-        waitForever();
-
-    }
 
     private static void checkPoolExecutor() {
         if (poolExecutor == null) {
@@ -154,82 +180,6 @@ public class StockApi {
                     new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("EM.StockApi-", null, true));
 
         }
-    }
-
-
-    public static void main0(String[] args) throws Exception {
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
-
-        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
-
-        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
-        // 实时截面数据
-        // 00:00
-        // 02:10 昨日df
-        // 08:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用. 其他数值字段用 - 填充, 将解析失败
-        // 09:10
-        // 09:14:x 占位df
-        // 09:15:x 涨跌幅,最新价,涨跌额填充,其余 -
-        // 09:24:x 涨跌幅,最新价,涨跌额填充,其余 -
-        // 09:25:x 正常全填充df
-        // 09:30:x 正常df
-        // 09:40:x 正常df
-        // 11:30:x 正常df
-        // 13:00:x 正常df
-        // 14:54:x 正常df
-        // 14:57:x 正常df
-        // 14:59:x 正常df
-        // 15:00:x 正常df
-        // 23:50:x 正常df
-
-        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 0, 2000));
-        // @noti: 两大指数大约 6,7秒开始出现下一分钟分时, 个股大约1-2s之间
-        // 1分钟分时图
-        // 02:10 昨日df
-        // 06:00
-        // 08:55
-        // 09:10
-        // 09:14:x 得到空df,
-        // 09:15:x 得到空df,
-        // 09:24:x 得到空df,
-        // 09:25:x 单行 9:31 的df.
-        // 09:30:x 单行 9:31 的df.
-        // 09:40:x 正常df, 分钟+1: 得到 41, 意味着此刻xx分钟 视为 xx+1 的分时图(但没有固定), 分时图xx分钟已固定
-        // 11:30:x 正常df, 显然最大只能达到 11:30 (合理)
-        // 13:00:x 于13:00:01, 立即开始出现 13:01 的数据, 规律不变.
-        // 14:54:x 正常df, 算后一分
-        // 14:57:x 正常df, 算后一分
-        // 14:59:x 正常df, 算后一分, 此时已经出现 15:00 的分时图, 只是动态的,等待15:00:00 盖棺定论
-        // 15:00:x 正常df, 不再有 15:01, 盖棺定论
-        // 23:50:x 正常df, 同上截止于 15:00
-
-
-        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "101", "qfq", 3, 2000));
-        // 日k线
-        // 00:00
-        // 02:10 截至昨天df
-        // 08:55 截至昨天df
-        // 09:14:x 截至昨天df
-        // 09:15:x 截至昨天df
-        // 09:24:x 截至昨天df
-        // 09:25:x 已经出现含今日df
-        // 09:30:x 含今日正常df
-        // 09:40:x 含今日正常df
-        // 11:30:x 含今日正常df
-        // 13:00:x 含今日正常df
-        // 14:54:x 含今日正常df
-        // 14:57:x 含今日正常df
-        // 14:59:x 含今日正常df
-        // 15:00:x 含今日正常df
-        // 21:00:x 含今日正常df
-        // 23:50:x 含今日正常df
-
-
-//        Console.log(getPreNTradeDateStrict("2021-01-08"));
-//        Console.log(timer.intervalRestart());
-
-
     }
 
 
@@ -682,8 +632,7 @@ public class StockApi {
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts,
                                                      SecurityBeanEm bean,
-                                                     int retry, int timeout)
-            throws Exception {
+                                                     int retry, int timeout) {
         String keyUrl = "https://push2.eastmoney.com/api/qt/stock/details/get";
         String response;
 
@@ -699,8 +648,8 @@ public class StockApi {
         try {
             response = getAsStrUseHutool(keyUrl, params, timeout, retry);
         } catch (Exception e) {
-            log.error("get exception: 访问http失败: stock: {} -- {}", bean.getSecId(), bean.getName());
-            throw e;
+            log.error("Fs成交 tick数据获取失败, 返回null: stock: {} -- {}", bean.getSecId(), bean.getName());
+            return null;
         }
 
         DataFrame<Object> res;
@@ -731,6 +680,15 @@ public class StockApi {
      * 列:
      * 股票代码	 股票名称	涨跌幅	最新价	最高 最低	 今开	 涨跌额	         换手率	          量比	          动态市盈率
      * 成交量	                 成交额	          昨日收盘	           总市值	          流通市值	市场编号	    行情id	市场类型
+     * <p>
+     * 数据刷新时间点:
+     * // 02:10 昨日df
+     * // 08:55 能得到正确df,但 只有动态市盈率,昨日收盘和市值字段可用. 其他数值字段用 - 填充, 将解析失败. 即占位df
+     * // 09:14:x 占位df
+     * // 09:15:x 涨跌幅,最新价,涨跌额填充,其余 -
+     * // 09:24:x 涨跌幅,最新价,涨跌额填充,其余 -
+     * // 09:25:x 正常全填充df
+     * // 09:30:x 正常df
      *
      * @param markets
      * @return
@@ -818,6 +776,14 @@ public class StockApi {
     /**
      * 单资产历史k线: 字段:
      * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+     * <p>
+     * 数据刷新时间:
+     * // 日k线
+     * // 02:10 截至昨天df
+     * // 08:55 截至昨天df
+     * // 09:24:x 截至昨天df
+     * // 09:25:x 已经出现含今日df. 此后动态变化
+     * // 23:50:x 含今日正常df
      *
      * @param useCache 指定是否使用缓存. 默认缓存有效期为4小时,且数量存在上限, 不使用缓存则强制http访问
      * @param secCode  资产简单数字代码, 板块为 BK 开头
@@ -828,7 +794,7 @@ public class StockApi {
      * @param fq       复权方式, 0 / 1/ 2 代表 不/前/后复权
      * @param retry    http访问重试次数
      * @param timeout  http访问超时
-     * @return
+     * @return 异常返回 null
      * @throws Exception
      */
     @CanCache
@@ -837,8 +803,7 @@ public class StockApi {
                                                           SecurityBeanEm bean, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retry,
-                                                          int timeout)
-            throws Exception {
+                                                          int timeout) {
         if (begDate == null) {
             begDate = "19900101";
         }
@@ -911,28 +876,48 @@ public class StockApi {
     public static DataFrame<Object> getQuoteHistorySingle(SecurityBeanEm bean, String begDate,
                                                           String endDate, String klType, String fq,
                                                           int retry,
-                                                          int timeout) throws Exception {
+                                                          int timeout) {
         return getQuoteHistorySingle(true, bean, begDate, endDate, klType, fq, retry, timeout);
     }
 
     /**
+     * 1分钟分时数据, 本身使用 getQuoteHistorySingle().
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+     *
+     * <p>
+     * 数据刷新时刻:
+     * // 1分钟分时图
+     * // 02:10 昨日df
+     * // 09:24:x 得到空df,
+     * // 09:25:x 单行 9:31 的df.
+     * // 09:30:x 单行 9:31 的df.
+     * // 09:40:x 正常df, 分钟+1: 得到 41, 意味着此刻xx分钟 视为 xx+1 的分时图(但没有固定), 分时图xx分钟已固定
+     * // 11:30:x 正常df, 显然最大只能达到 11:30 (合理)
+     * // 13:00:x 于13:00:01, 立即开始出现 13:01 的数据, 规律不变.
+     * // 14:59:x 正常df, 算后一分, 此时已经出现 15:00 的分时图, 只是动态的,等待15:00:00 盖棺定论
+     * // 15:00:x 正常df, 不再有 15:01, 盖棺定论
+     *
      * @param stock
      * @param isIndex
      * @param retrySingle
      * @param timeout
      * @return 1分钟分时图当日; 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
      * @throws Exception
+     * @noti 两大指数大约 6,7 秒开始出现下一分钟分时, 个股大约 1-2s 之间, 个股极快
      */
     public static DataFrame<Object> getFs1MToday(SecurityBeanEm bean, int retrySingle,
                                                  int timeout,
-                                                 boolean useCache)
-            throws Exception {
-        return getQuoteHistorySingle(useCache, bean, null, null, "1", "qfq", retrySingle,
-                timeout);
+                                                 boolean useCache) {
+        DataFrame<Object> res = getQuoteHistorySingle(useCache, bean, null, null, "1", "qfq", retrySingle, timeout);
+        if (res == null) {
+            log.error("Fs1M kline获取失败, 返回null: stock: {} -- {}", bean.getSecCode(), bean.getName());
+        }
+        return res;
     }
 
     /**
-     * 分时图将默认不使用cache
+     * 分时图将默认不使用cache,比较实时
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
      *
      * @param bean
      * @param retrySingle
@@ -941,8 +926,7 @@ public class StockApi {
      * @throws Exception
      */
     public static DataFrame<Object> getFs1MToday(SecurityBeanEm bean, int retrySingle,
-                                                 int timeout)
-            throws Exception {
+                                                 int timeout) {
         return getFs1MToday(bean, retrySingle, timeout, false);
     }
 
@@ -955,8 +939,7 @@ public class StockApi {
      * @param todayDate
      * @return
      */
-    public static String getPreNTradeDateStrict(String todayDate, int n)
-            throws Exception {
+    public static String getPreNTradeDateStrict(String todayDate, int n) {
         // 查询结果将被缓存.
         DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, "19900101",
                 "21000101", "101", "1", 3,

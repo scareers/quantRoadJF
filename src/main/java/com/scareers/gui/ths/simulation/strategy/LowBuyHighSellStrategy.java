@@ -185,8 +185,15 @@ public class LowBuyHighSellStrategy extends Strategy {
         SecurityBeanEm.SecurityEmPo.yesterdayHolds
                 .addAll(SecurityBeanEm.createStockList(yesterdayH)); //@noti: 使得PO对象可区分类型
 
+        // todo: 优化股票池添加逻辑
+        SecurityPool.addToTodaySelectedStocks(SecurityBeanEm.createStockList(stockSelectedToday));// 今选
+        SecurityPool.addToYesterdayHoldStocks(SecurityBeanEm.createStockList(yesterdayH));// 昨持
+        SecurityPool.addToKeyIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
+
         stocks.addAll(yesterdayH);
-        List<SecurityBeanEm> res = SecurityPool.createStockPool(stocks, true);
+
+        List<SecurityBeanEm> res = SecurityPool.createStockPool(stocks);
+        res.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
         log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", res.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
         return res;
@@ -551,7 +558,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                 .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size()))),
                         pre7TradeDate.replace("-", ""),
                         pre1TradeDate.replace("-", ""), // @noti: 若使用today, 则盘中选股将出现今日日期结果
-                        "101", "1", 3,  2000, false);
+                        "101", "1", 3, 2000, false);
 
         ConcurrentHashMap<String, DataFrame<Object>> datasMap = new ConcurrentHashMap<>();
         for (SecurityBeanEm beanEm : datasMap0.keySet()) {

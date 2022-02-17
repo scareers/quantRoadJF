@@ -11,6 +11,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.FSBacktestOfLowBuyNextHighSell;
@@ -201,8 +202,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             Double totalAssets = trader.getAccountStates().getTotalAssets(); // 最新总资产
             Double shouldMarketValue = totalAssets * epochTotalPosition; // 应当的最新市值.
 
+            Double newestPrice = FsTransactionFetcher.getNewestPrice(stockBean);
+            if (newestPrice == null) {
+                log.warn("股票最新成交价格 无数据: {}", stockBean.getName());
+                continue;
+            }
             double shouldTotalAmount =
-                    shouldMarketValue / FsTransactionFetcher.getNewestPrice(stockBean).get();
+                    shouldMarketValue / newestPrice;
             Integer alreadyBuyAmount = todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0);
 
             // 应当买入的数量, int形式, floor   100整数倍
@@ -214,7 +220,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // 应当买入! 但是需要判定现金是否充足 ?!
             Double availableCash = trader.getAccountStates().getAvailableCash();
             int maxCanBuyAmount = (int) Math // 100整数倍
-                    .floor((availableCash / (FsTransactionFetcher.getNewestPrice(stockBean)).get()) / 100) * 100;
+                    .floor((availableCash / (newestPrice)) / 100) * 100;
             if (shouldBuyAmount <= maxCanBuyAmount) { // 可正常全部买入
                 actualBuy(stock, shouldBuyAmount,
                         todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, shouldBuyAmount);
@@ -231,7 +237,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                             todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, maxCanBuyAmount);
                 }
                 tryCashSchedule(stock,
-                        shouldBuyAmount * FsTransactionFetcher.getNewestPrice(stockBean).get() - availableCash); //
+                        shouldBuyAmount * newestPrice - availableCash); //
                 // 均需要尝试调度现金, 因为现金已经不够了.
             }
         }
@@ -448,7 +454,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 //        log.info("isbuypoint");
         // 获取今日分时图
         // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
-        DataFrame<Object> fsDf = trader.getFsFetcher().getFsDatas().get(stockBean);
+        DataFrame<Object> fsDf = FsFetcher.getFsData(stockBean);
         final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
         // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
         if (fsDf.length() == 0) { // 不到 9:25
@@ -478,9 +484,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         /*
             stock_code,market,time_tick,price,vol,bs
          */
-        DataFrame<Object> fsTransDf =
-                trader.getFsTransactionFetcher().getFsTransactionDatas()
-                        .get(SecurityBeanEm.createStock(stock));
+        DataFrame<Object> fsTransDf =FsTransactionFetcher.getFsTransData(SecurityBeanEm.createStock(stock));
         // 最后的有记录的时间, 前推 60s
         String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
         String tickWithSecond0 =
@@ -537,7 +541,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         // 获取今日分时图
         // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
         // 数据池获取分时图, 因 9:25:xx 后将有 9:31 单条记录. 因此lenth<0时, 直接返回false
-        DataFrame<Object> fsCurrent = trader.getFsFetcher().getFsDatas().get(stockBean);
+        DataFrame<Object> fsCurrent = FsFetcher.getFsData(stockBean);
         if (fsCurrent.length() == 0) {
             return false; // 9:25:0x 之前  // 一般是 9:25:02左右
         }

@@ -254,8 +254,8 @@ public class FsFetcherListAndDataPanel extends JPanel {
         }
 
         public void updateText(SecurityBeanEm currentBean) {
-            DataFrame<Object> fsDataOfStock = FsTransactionFetcher.getFsTransactionDatas().get(currentBean);
-            if(fsDataOfStock==null){
+            DataFrame<Object> fsDataOfStock = FsTransactionFetcher.getFsTransData(currentBean);
+            if (fsDataOfStock == null) {
                 return;
             }
             if (jTable == null) {
@@ -271,9 +271,6 @@ public class FsFetcherListAndDataPanel extends JPanel {
                 jTable.setModel(model);
                 jScrollPane.setViewportView(jTable);
             } else {
-//                DataFrame<Object> fsDataOfStock = FsFetcher.getData(currentBean);
-                //fsDataOfStock = fsDataOfStock.slice(0, anInt);
-
                 DefaultTableModel model = (DefaultTableModel) jTable.getModel();
                 if (currentBean == preBean) { // 股票选中没变, 考虑增加行
                     if (fullFlushFlag) {
@@ -358,7 +355,7 @@ public class FsFetcherListAndDataPanel extends JPanel {
             dialog.setResizable(true);
             dialog.setLocationRelativeTo(TraderGui.INSTANCE);
 
-            DataFrame<Object> dataDf = FsFetcher.getFsDatas().get(preBean);
+            DataFrame<Object> dataDf = FsFetcher.getFsData(preBean);
 
             Double preClose;
             if (!preBean.isIndex()) {

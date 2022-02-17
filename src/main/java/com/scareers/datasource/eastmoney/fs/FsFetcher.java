@@ -36,11 +36,11 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
  * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
  * 直到时间超过 9:31:xx, 将出现第二条记录 9:32
- * 即: 集合竞价与 9:30:xx 均作为 9:31 这一条fs K线图(不断更新).
+ * 即: 集合竞价与 9:30:xx 均作为 9:31 这一条fs K线图(不断更新). // 指数
  * @noti 时间字段完整格式:  yyyy-MM-dd HH:mm       // DatePattern.NORM_DATETIME_MINUTE_PATTERN
  * @noti 单次访问http将 retry==0; 失败返回null,不进行重试
- * @noti 内部 stockPool 自动添加两大指数, 且去重, 线程安全, 保证可以动态添加, 减少股票
  * @warning 因1分分时图api十分方便, 且并不保存到数据库, 且全量更新, 因此不对启动时间做过多限制. 启动时间由调用方保证合理
+ * @noti 各数据api获取失败返回 null!
  * @noti y
  * @see StockApi.getFs1MToday()
  */
@@ -48,17 +48,16 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 public class FsFetcher {
     public static void main(String[] args) throws Exception {
         // 测试初始化股票池
-//        Console.log(SecurityBeanEm.createStock("603112").getClassify());
-        SecurityPool.setExcludeBad(true);
-        SecurityPool.addToPoolForFsFetcher(SecurityPool.createBKPool(100, true, Arrays.asList("概念板块")));
-        SecurityPool.addToPoolForFsFetcher(SecurityPool.createStockPool(1000, true, true));
-        SecurityPool.addToPoolForFsFetcher(SecurityPool.createIndexPool(100, true, Arrays.asList("上证系列指数")));
-        Console.log(SecurityPool.poolForFsFetcherCopy());
+        SecurityPool.addToOtherCareBKs(SecurityPool.createBKPool(10, true, Arrays.asList("概念板块")));
+        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
+        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
+        SecurityPool.addToOtherCareIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());
+
+        Console.log(FsFetcher.getStockPool());
 
         FsFetcher fsFetcher = getInstance
-                (
-                        1000,
-                        10, 32, 100);
+                (1000,
+                        10, 16, 100);
         fsFetcher.startFetch(); // 测试股票池
         fsFetcher.waitFirstEpochFinish();
         fsFetcher.stopFetch(); // 软停止,且等待完成
@@ -67,7 +66,6 @@ public class FsFetcher {
 
         Console.log(FsFetcher.getFsDatas().size());
         Console.log(FsFetcher.getStockPool().size());
-
         Console.log(FsFetcher.getShangZhengZhiShuFs());
         Console.log(FsFetcher.getShenZhengChengZhiFs());
 
@@ -95,8 +93,8 @@ public class FsFetcher {
 //                    getFsDatas().values().stream().forEach(value -> Console.log(value.row(value.length() - 1)));
                     SecurityBeanEm bean = RandomUtil.randomEle(SecurityPool.poolForFsFetcherCopy());
                     DataFrame<Object> data = getFsData(bean);
-                    if(data.length()==0){
-                        Console.log(bean.getName());
+                    if (data==null) { // 未上市, 已退市, 停牌等
+//                        Console.log(bean.getName());
                         continue;
                     }
                     String x = data.get(data.length() - 1, 0).toString();
@@ -112,7 +110,7 @@ public class FsFetcher {
 
     }
 
-    public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getFsDatas() {
+    private static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> getFsDatas() {
         return fsDatas;
     }
 
@@ -140,7 +138,6 @@ public class FsFetcher {
         }
     }
 
-
     public static FsFetcher getInstance(
             int timeout, int logFreq,
             int threadPoolCorePoolSize,
@@ -158,7 +155,9 @@ public class FsFetcher {
     public static ThreadPoolExecutor threadPoolOfFetch;
 
     // gui
-    public static ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas; // 数据Map
+    private static volatile ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> fsDatas = new ConcurrentHashMap<>();
+    ;
+    // 数据Map
 
     // 实例属性
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
@@ -171,8 +170,7 @@ public class FsFetcher {
 
     private FsFetcher(int timeout, int logFreq, int threadPoolCorePoolSize,
                       int sleepPerEpoch) {
-        // 4项全默认值
-        fsDatas = new ConcurrentHashMap<>();
+        // 默认值
         this.firstTimeFinish = new AtomicBoolean(false); //
         this.stopFetch = false;
         this.sleepPerEpoch = sleepPerEpoch;
@@ -289,9 +287,7 @@ public class FsFetcher {
             waitUtil(() -> threadPoolOfFetch.isTerminated(), Integer.MAX_VALUE, 10, null, false);
             waitUtil(() -> !this.running, Integer.MAX_VALUE, 10, null, false);
             log.warn("FsFetcher: stop fetch success");
-        } catch (TimeoutException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (TimeoutException | InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -326,15 +322,14 @@ public class FsFetcher {
          * @throws Exception
          */
         @Override
-        public Boolean call() throws Exception {
+        public Boolean call() {
+            // fsDatas.putIfAbsent(stock, new DataFrame<>());
+            // 未抓取过数据将返回 null
+            // 而抓取成功但没有数据, 将返回空
             DataFrame<Object> dfNew = StockApi
                     .getFs1MToday(stock, 0, fetcher.getTimeout());
             if (dfNew != null) { // 访问失败将返回null.
-//                ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasNew = new ConcurrentHashMap<>(
-//                        fsDatas);
-//                datasNew.put(stock, dfNew); // 直接替换数据.
                 fsDatas.put(stock, dfNew);
-//                fsDatas = datasNew;
                 return true; // 成功更新为最新
             }
             return false; // http访问失败
@@ -398,7 +393,7 @@ public class FsFetcher {
         try {
             res = Double.valueOf(valueByTimeTick.toString());
         } catch (Exception e) {
-            log.error("getClosePriceByTimeTick: 或者值成功但转换Double失败, 返回 empty");
+            log.error("getClosePriceByTimeTick: 或者值成功但转换Double失败, 返回 null");
             return null;
         }
         return res;
@@ -454,12 +449,15 @@ public class FsFetcher {
      */
     public static List<Object> getColumnByColNameOrIndex(SecurityBeanEm bean,
                                                          Object colNameOrIndex) {
-        return DataFrameS.getColAsObjectList(getFsData(bean), colNameOrIndex);
+        DataFrame<Object> fsData = getFsData(bean);
+        if (fsData == null) {
+            return null;
+        }
+        return DataFrameS.getColAsObjectList(fsData, colNameOrIndex);
     }
 
     /**
-     * 返回 List<String> 列. 即将列元素转换为String;;
-     * 使用 Optional对象 map方法
+     * 返回 List<String> 列.
      *
      * @param stockOrIndex
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
@@ -467,12 +465,15 @@ public class FsFetcher {
      */
     public static List<String> getColumnByColNameOrIndexAsString(SecurityBeanEm bean,
                                                                  Object colNameOrIndex) {
-        return DataFrameS.getColAsStringList(getFsData(bean), colNameOrIndex);
+        DataFrame<Object> fsData = getFsData(bean);
+        if (fsData == null) {
+            return null;
+        }
+        return DataFrameS.getColAsStringList(fsData, colNameOrIndex);
     }
 
     /**
-     * 返回 List<Long> 列. 即将列元素转换为 Long;;
-     * 使用 Optional对象 map方法
+     * 返回 List<Long> 列.
      *
      * @param stockOrIndex
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
@@ -480,12 +481,15 @@ public class FsFetcher {
      */
     public static List<Long> getColumnByColNameOrIndexAsLong(SecurityBeanEm bean,
                                                              Object colNameOrIndex) {
-        return DataFrameS.getColAsLongList(getFsData(bean), colNameOrIndex);
+        DataFrame<Object> fsData = getFsData(bean);
+        if (fsData == null) {
+            return null;
+        }
+        return DataFrameS.getColAsLongList(fsData, colNameOrIndex);
     }
 
     /**
-     * 返回 List<Integer> 列. 即将列元素转换为 Integer;;
-     * 使用 Optional对象 map方法
+     * 返回 List<Integer> 列.
      *
      * @param stockOrIndex
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
@@ -493,12 +497,15 @@ public class FsFetcher {
      */
     public static List<Integer> getColumnByColNameOrIndexAsInteger(SecurityBeanEm bean,
                                                                    Object colNameOrIndex) {
-        return DataFrameS.getColAsIntegerList(getFsData(bean), colNameOrIndex);
+        DataFrame<Object> fsData = getFsData(bean);
+        if (fsData == null) {
+            return null;
+        }
+        return DataFrameS.getColAsIntegerList(fsData, colNameOrIndex);
     }
 
     /**
-     * 返回 List<Double> 列. 即将列元素转换为 Double;;
-     * 使用 Optional对象 map方法
+     * 返回 List<Double> 列.
      *
      * @param stockOrIndex
      * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
@@ -506,7 +513,11 @@ public class FsFetcher {
      */
     public static List<Double> getColumnByColNameOrIndexAsDouble(SecurityBeanEm bean,
                                                                  Object colNameOrIndex) {
-        return DataFrameS.getColAsDoubleList(getFsData(bean), colNameOrIndex);
+        DataFrame<Object> fsData = getFsData(bean);
+        if (fsData == null) {
+            return null;
+        }
+        return DataFrameS.getColAsDoubleList(fsData, colNameOrIndex);
     }
 
 

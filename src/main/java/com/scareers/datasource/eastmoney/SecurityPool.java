@@ -20,6 +20,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * 2.FsTransactionFetcher: 获取个股/指数/概念 tick成交数据. 通常3s/5s每秒
  * 3.Strategy: 主策略相关子类, 含选股策略等, 将可能动态填充本类股票池!
  * 4.Trader/TraderGui: 可在交易过程中, 手动添加股票池
+ * <p>
+ * -----------> 特殊
+ * 1.将调用 EmSeleniumApi 获取东方财富个股人气榜和人气飙升榜.
  *
  * @noti 为保证gui多线程可见性, 全部使用静态属性维护
  * @noti 因股票池可能动态改变, 导致其他线程遍历时出现错误, 定义 xxxCopy 方法, 将返回一个新的浅复制的集合,以供遍历.
@@ -56,56 +59,30 @@ public class SecurityPool {
     private static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
 
     private static final Log log = LogUtil.getLogger();
-    // st 以及 退市 股票代码列表, 在添加股票到股票池时, 默认排除这些股票
-    public static final Set<String> stStocks = new HashSet<>(DataFrameS.getColAsStringList(StockApi.getRealtimeQuotes(
-            Arrays.asList("风险警示板")), "股票代码"));
-    public static final Set<String> exitMarketStocks = new HashSet<>(
-            DataFrameS.getColAsStringList(StockApi.getRealtimeQuotes(
-                    Arrays.asList("两网及退市")), "股票代码"));
-    public static final Set<String> badStocks = new HashSet<>(); // 坏股票以上两类
 
-    public static void setExcludeBad(boolean excludeBad) {
-        SecurityPool.excludeBad = excludeBad;
-    }
-
-    private static boolean excludeBad = true;
-
-    static {
-        badStocks.addAll(stStocks);
-        badStocks.addAll(exitMarketStocks);
-    }
 
     /*
-    @key: 全局股票池. 例如供 FsFetcher 等爬虫遍历的股票池; 以及其添加方法/复制以遍历方法
+    @key: 全局股票池. 例如供 FsFetcher 等爬虫遍历的股票池; 仅提高copy方法, 自行实现逻辑. 一般组合以上7种基本的股票池, 作为爬取对象
     @key: 可添加其他动态股票池
-    @key: 因此 FsFetcher 等爬虫运行之前, 一般需要先往对应股票池添加bean
+    @key: 因此 FsFetcher 等爬虫运行之前, 一般需要先往对应股票池添加 bean
      */
 
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> poolForFsFetcher = new CopyOnWriteArraySet<>();
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> poolForFsTransactionFetcher = new CopyOnWriteArraySet<>();
-
-    public static void addToPoolForFsFetcher(SecurityBeanEm beanEm) {
-        addSingleBeanToSet(poolForFsFetcher, beanEm, null); // null则不验证bean类型
-    }
-
-    public static void addToPoolForFsFetcher(Collection<SecurityBeanEm> beans) {
-        addMultiBeanToSet(poolForFsFetcher, beans, null);
-    }
-
-    public static void addToPoolForFsTransactionFetcher(SecurityBeanEm beanEm) {
-        addSingleBeanToSet(poolForFsTransactionFetcher, beanEm, null);
-    }
-
-    public static void addToPoolForFsTransactionFetcher(Collection<SecurityBeanEm> beans) {
-        addMultiBeanToSet(poolForFsTransactionFetcher, beans, null);
-    }
-
+    /**
+     * FsFetcher 使用的股票池, 自行实现逻辑.
+     *
+     * @return
+     */
     public static ArrayList<SecurityBeanEm> poolForFsFetcherCopy() {
-        return iterSets(poolForFsFetcher);
+        return iterSets(allSecuritySet);
     }
 
+    /**
+     * FsTransactionFetcher 使用的股票池, 自行实现逻辑.
+     *
+     * @return
+     */
     public static ArrayList<SecurityBeanEm> poolForFsTransactionFetcherCopy() {
-        return iterSets(poolForFsTransactionFetcher);
+        return iterSets(allSecuritySet);
     }
 
 
@@ -118,15 +95,7 @@ public class SecurityPool {
     /**
      * 3个辅助方法.
      *
-     * @param whichSet
-     * @param beanEm
-     * @param checkType
      */
-    private static void addSingleBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet, SecurityBeanEm beanEm,
-                                           String checkType) {
-        addSingleBeanToSet(whichSet, beanEm, checkType, excludeBad);
-    }
-
     /**
      * @param whichSet
      * @param beanEm
@@ -134,13 +103,8 @@ public class SecurityPool {
      * @param excludeBad 是否强制忽略st和退市股票, 默认忽略. 可通过设置 excludeBad 属性 修改
      */
     public static void addSingleBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet, SecurityBeanEm beanEm,
-                                          String checkType, boolean excludeBad) {
+                                          String checkType) {
         checkType(beanEm, checkType);
-        if (excludeBad) {
-            if (beanEm.isStock() && badStocks.contains(beanEm.getSecCode())) {
-                return;
-            }
-        }
         whichSet.add(beanEm);
         allSecuritySet.add(beanEm);
     }
@@ -148,24 +112,13 @@ public class SecurityPool {
     private static void addMultiBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet,
                                           Collection<SecurityBeanEm> beans,
                                           String checkType) {
-        addMultiBeanToSet(whichSet, beans, checkType, excludeBad);
-    }
-
-    private static void addMultiBeanToSet(CopyOnWriteArraySet<SecurityBeanEm> whichSet,
-                                          Collection<SecurityBeanEm> beans,
-                                          String checkType, boolean excludeBad) {
         for (SecurityBeanEm bean : beans) {
             checkType(bean, checkType);
         }
         for (SecurityBeanEm beanEm : beans) {
-            if (excludeBad) {
-                if (beanEm.isStock() && badStocks.contains(beanEm.getSecCode())) {
-                    continue; // 跳过
-                }
-            }
             whichSet.add(beanEm);
-            allSecuritySet.add(beanEm);
         }
+        allSecuritySet.addAll(beans);
     }
 
     private static void checkType(SecurityBeanEm beanEm, String checkType) {
@@ -354,13 +307,10 @@ public class SecurityPool {
      * @throws Exception
      * @noti 若市场设置为 "stock" 则会包含新三板,代号 NEED,  北交所.
      */
-    public static List<SecurityBeanEm> createStockPool(int amount, boolean random, boolean addTwoMarketIndex)
+    public static List<SecurityBeanEm> createStockPool(int amount, boolean random)
             throws Exception {
         List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, Arrays.asList("沪深A股"),
                 SecurityBeanEm.SecType.STOCK);
-        if (addTwoMarketIndex) {
-            results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
-        }
         return results;
     }
 
@@ -400,12 +350,9 @@ public class SecurityPool {
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createStockPool(List<String> stockCodes, boolean addTwoMarketIndex)
+    public static List<SecurityBeanEm> createStockPool(List<String> stockCodes)
             throws Exception {
         List<SecurityBeanEm> results = SecurityBeanEm.createStockList(stockCodes);
-        if (addTwoMarketIndex) {
-            results.addAll(SecurityBeanEm.getTwoGlobalMarketIndexList());
-        }
         return results;
     }
 

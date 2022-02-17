@@ -102,23 +102,6 @@ public class Trader {
         Trader trader = new Trader(5000, 10000L, 10000, 2);
         INSTANCE = trader;
 
-//        ThreadUtil.execAsync(new Runnable() {
-//            @SneakyThrows
-//            @Override
-//            public void run() {
-//                for (int i = 0; i < 100; i++) {
-//                    // 生产者, 生产到 j2p 队列!!  --> 注意该静态属性, 表示 需要ack 的发送, 否则将重发
-//                    Order order = generateSellOrderQuick("600090", 100, 1.25);
-//                    String msg;
-//                    msg = order.toJsonStrForTrans();
-//                    Thread.sleep(2000);
-//                    trader.sendMessageToPython(order.toJsonStrForTrans());
-//
-//
-//                }
-//
-//            }
-//        }, false);
 
 //        TraderUtil.startPythonApp(); // 是否自启动python程序, 单机可用但无法查看python状态
         trader.handshake(); // 与python握手, 握手不通过订单执行器, 直接收发握手消息, 直到握手成功
@@ -144,7 +127,7 @@ public class Trader {
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
-                FsTransactionFetcher.getInstance(mainStrategy.getStockPool(), 10,
+                FsTransactionFetcher.getInstance(10,
                         "15:10:00", 1000, 100, 32);
         trader.setFsTransactionFetcher(fsTransactionFetcher); // 需要显式绑定
         fsTransactionFetcher.startFetch();  // 策略所需股票池实时数据抓取. 核心字段: fsTransactionDatas
