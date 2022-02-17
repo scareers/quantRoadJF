@@ -205,6 +205,7 @@ public class SecurityBeanEm {
     private String queryCondition;
 
     public SecurityBeanEm(JSONArray queryResults, String queryCondition) {
+        Objects.requireNonNull(queryResults);
         this.queryCondition = queryCondition;
         this.queryResults = queryResults;
     }
