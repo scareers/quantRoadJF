@@ -10,7 +10,7 @@ import lombok.ToString;
 import java.util.HashMap;
 
 /**
- * description: 表示个股实时盘口各项数据的对象. rawJson保存了原始 json 对象.
+ * description: 表示指数或板块实时盘口各项数据的对象. rawJson保存了原始 json 对象.
  * 全字段参考下文, 但只保存部分字段, 且顺序类似 东财行情页面
  * 1.5档盘口的金额由计算得到
  * 2.包含5档盘口和16项常用盘口数据+委差委比; 不包含对应可转债 以及 基本面数据;
@@ -22,7 +22,7 @@ import java.util.HashMap;
  */
 @Getter // 仅可获取属性
 @ToString
-public class IndexBkHandicap {
+public class IndexBkHandicap extends Handicap {
     public static HashMap<String, String> fieldsMap; // 当前使用的字段 及 对应描述.
     public static String fieldsStr; // 字段字符串. , 分割
 
