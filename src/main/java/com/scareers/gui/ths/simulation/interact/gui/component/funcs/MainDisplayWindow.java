@@ -62,7 +62,8 @@ public class MainDisplayWindow extends FuncFrameS {
     public void initCenterPanel() { // 抽象方法
         JPanel panel = new JPanel(new BorderLayout()); // 默认空panel
         panel.add(new JLabel("xxxxx"), BorderLayout.CENTER);
-        panel.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MAIN);
+        panel.setBackground(SettingsOfGuiGlobal.COLOR_THEME_MINOR);
+        this.setBorder(null);
         setCenterPanel(panel);
     }
 
@@ -84,5 +85,15 @@ public class MainDisplayWindow extends FuncFrameS {
     @Override
     protected List<FuncButton> getToolButtons2() {
         return super.defaultToolsButtonList2();
+    }
+
+    @Override
+    public void flushBounds() {
+        super.flushBounds();
+    }
+
+    @Override
+    public void flushBounds(boolean first) {
+        super.flushBounds(first);
     }
 }

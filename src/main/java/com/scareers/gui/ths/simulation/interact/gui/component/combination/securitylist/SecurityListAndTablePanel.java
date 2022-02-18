@@ -153,10 +153,10 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                 if (e.getClickCount() != 2) { // 非双击
                     return;
                 }
-
-
                 int index = jList.getSelectedIndex();
-                SecurityBeanEm.SecurityEmPo po = securityEmPos.get(index);
+                SecurityBeanEm.SecurityEmPo po = jList.getModel().getElementAt(index);
+
+
                 String url = null;
                 if (po.getBean().isBK()) {
                     url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", po.getBean().getSecId());

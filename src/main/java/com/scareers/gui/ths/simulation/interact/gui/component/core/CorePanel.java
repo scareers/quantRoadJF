@@ -18,6 +18,7 @@ import java.awt.event.ComponentEvent;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.createPlaceholderLabel;
 
@@ -103,7 +104,7 @@ public class CorePanel extends JDesktopPane {
 
     private void initMainPane() {
         mainPane = new JDesktopPane(); // 核心层级pane
-        mainPane.setBackground(COLOR_THEME_TITLE);
+        mainPane.setBackground(COLOR_THEME_MINOR);
     }
 
 
@@ -143,6 +144,15 @@ public class CorePanel extends JDesktopPane {
         }
         if (mainDisplayWindow != null) {
             mainDisplayWindow.flushBounds();
+        }
+    }
+
+    public void flushAllLeftFuncFrameBounds() {
+        for (FuncFrameS dialog : funcPool.values()) { // 其他关联的功能窗口, 也刷新
+            if (dialog.getType().equals(FuncFrameS.Type.LEFT_TOP) || dialog.getType()
+                    .equals(FuncFrameS.Type.LEFT_BOTTOM)) {
+                dialog.flushBounds();
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.Getter;
 

@@ -143,7 +143,7 @@ public class TraderGui extends JFrame {
             @Override
             public void windowOpened(WindowEvent e) {
                 MainDisplayWindow mainDisplayWindow = MainDisplayWindow.getInstance(
-                        "编辑器", mainWindow, true, false, true,
+                        "编辑器", mainWindow, false, false, true,
                         4096, 100, 1.0, 0, layerOfMainDisplay
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定

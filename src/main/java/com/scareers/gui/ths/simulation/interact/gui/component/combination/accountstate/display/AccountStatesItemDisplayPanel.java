@@ -8,9 +8,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
+import javax.swing.table.*;
 import java.awt.*;
 import java.util.Enumeration;
 import java.util.Vector;
@@ -27,6 +25,14 @@ import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.js
  * @date: 2022/2/18/018-17:02:42
  */
 public class AccountStatesItemDisplayPanel extends DisplayPanel {
+    // 当前持仓数据的title, 以及根据哪一列, 设置行文字 红绿
+    public static Object CURRENT_HOLD_TITLE = "当前持仓";
+    public static int todayProfitColIndex = 9;
+
+    private JLabel titleLabel = new JLabel();
+    private String title = "";
+
+
     Object newData;
     private JTable jTable;
     private JScrollPane jScrollPane;
@@ -37,8 +43,9 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
         this.update();
     }
 
-    public AccountStatesItemDisplayPanel() {
-        this.setBorder(null);
+    public AccountStatesItemDisplayPanel(String title) {
+        this.title = title;
+        this.setBorder(BorderFactory.createLineBorder(Color.black, 1, true));
         this.setLayout(new BorderLayout());
 
         jLabel = new JLabel("数据不存在"); // 默认显示内容
@@ -51,7 +58,51 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
 
+        titleLabel.setText(title);
+        titleLabel.setForeground(Color.red);
+        titleLabel.setPreferredSize(new Dimension(4096, 20));
         this.add(jScrollPane, BorderLayout.CENTER);
+        this.add(titleLabel, BorderLayout.NORTH);
+    }
+
+    /**
+     * 给定表格JTable, 给定某一列索引, 若某一行该列值 >0 , 则整行文字颜色为 红, == 则白, < 则绿色
+     *
+     * @param table
+     * @param index
+     */
+    public static void setJTableColorAccordingColValueCompareToZero(JTable table, int index) {
+        try {
+            DefaultTableCellRenderer dtcr = new DefaultTableCellRenderer() {
+                //重写getTableCellRendererComponent 方法
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                               boolean hasFocus, int row, int column) {
+                    // @key: 需要把视图的 row转换为 模型里面真实的row, 得到真正的数据! 有 行列号, 转换为view/model中 4大方法
+                    row = table.convertRowIndexToModel(row);
+
+                    //##################### 这里是你需要看需求修改的部分
+                    DefaultTableModel model = (DefaultTableModel) table.getModel();
+                    setBackground(COLOR_THEME_MINOR);
+                    double accordingValue = Double.parseDouble(model.getDataVector().get(row).get(index).toString());
+                    if (accordingValue < 0.0) {
+                        setForeground(Color.green);
+                    } else if (accordingValue > 0.0) {
+                        setForeground(Color.red);
+                    } else {
+                        setForeground(Color.white);
+                    }
+                    return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                }
+            };
+            //对每行的每一个单元格
+            int columnCount = table.getColumnCount();
+            for (int i = 0; i < columnCount; i++) {
+                table.getColumn(table.getColumnName(i)).setCellRenderer(dtcr);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -63,28 +114,71 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
 
         if (newData instanceof DataFrame) { // 账户状态: 各种df数据
             DataFrame<Object> newDf = (DataFrame) newData;
-
+            if (title.equals(CURRENT_HOLD_TITLE)) {
+                newDf.convert();
+                for (int i = 0; i < newDf.length(); i++) {
+                    try {
+                        String val = newDf.get(i, "证券代码").toString();
+                        if (val.length() < 6) {
+                            int diff = 6 - val.length();
+                            for (int j = 0; j < diff; j++) {
+                                val += "0";
+                            }
+                        }
+                        newDf.set(i, "证券代码", val);
+                    } catch (Exception e) {
+                        log.error("AccountStatesItemDisplayPanel: 今日持仓没有 {} 列", "\"证券代码\"");
+                        break;
+                    }
+                }
+            }
             if (jTable == null) { // 首次刷新
                 Vector<Vector<Object>> datas = new Vector<>();
                 for (int i = 0; i < newDf.length(); i++) {
                     datas.add(new Vector<>(newDf.row(i)));
                 }
                 Vector<Object> cols = new Vector<>(newDf.columns());
-                DefaultTableModel model = new DefaultTableModel(datas, cols);
+                DefaultTableModel model = new DefaultTableModel(datas, cols) {
+                    @Override
+                    public Class getColumnClass(int column) {
+                        Class returnValue;
+                        if ((column >= 0) && (column < getColumnCount())) {
+                            returnValue = getValueAt(0, column).getClass();
+//                            try {
+//                                Double.parseDouble(getValueAt(0, column).toString()); // 尝试转换Double, 失败则视为Object
+//                                return Double.class;
+//                            } catch (Exception e) {
+//                                returnValue = Object.class;
+//                            }
+                        } else {
+                            returnValue = Object.class;
+                        }
+                        return returnValue;
+                    }
+                };
 
                 jTable = new JTable();
+                jTable.setGridColor(Color.black);
+                jTable.setBackground(COLOR_THEME_MINOR);
                 jTable.setModel(model);
+                jTable.setRowSorter(new TableRowSorter<DefaultTableModel>(model));
+
                 jScrollPane.setViewportView(jTable); // 默认显式"数据获取中", 第一次刷新
-                fitTableColumns(jTable);
             } else { // 不断更新时
                 DefaultTableModel model = (DefaultTableModel) jTable.getModel();
                 fullFlushDfData(newDf, model);
-                fitTableColumns(jTable);
+            }
+            fitTableColumns(jTable);
+            if (title.equals(CURRENT_HOLD_TITLE)) {
+                setJTableColorAccordingColValueCompareToZero(jTable, todayProfitColIndex); //首次设置
             }
         } else if (newData instanceof ConcurrentHashMap) { // 账户状态: 9项资金数据
             ConcurrentHashMap<String, Double> newMap = (ConcurrentHashMap) newData;
             String content = jsonStrToHtmlFormat(JSONUtil.toJsonPrettyStr(newMap));
             jLabel.setText(content);
+            if (title.equals(CURRENT_HOLD_TITLE)) {
+                setJTableColorAccordingColValueCompareToZero(jTable, todayProfitColIndex); //首次设置
+            }
         }
 
     }

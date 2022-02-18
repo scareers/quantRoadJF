@@ -2,13 +2,14 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.accou
 
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.display.AccountStatesItemDisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
 import java.awt.*;
+
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.display.AccountStatesItemDisplayPanel.CURRENT_HOLD_TITLE;
 
 /**
  * description:
@@ -36,6 +37,8 @@ public class AccountStatesDisplayPanel extends JPanel {
     AccountStatesItemDisplayPanel todayConsignsPanel;
     MainDisplayWindow mainDisplayWindow;
 
+    volatile boolean addedSubComps = false;
+
     /*
         public ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
     public DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
@@ -47,33 +50,45 @@ public class AccountStatesDisplayPanel extends JPanel {
 
     public AccountStatesDisplayPanel(MainDisplayWindow mainDisplayWindow) {
         this.mainDisplayWindow = mainDisplayWindow;
-        nineBaseFundsDataPanel = new AccountStatesItemDisplayPanel();
-        currentHoldsPanel = new AccountStatesItemDisplayPanel();
-        canCancelsPanel = new AccountStatesItemDisplayPanel();
-        todayClinchsPanel = new AccountStatesItemDisplayPanel();
-        todayConsignsPanel = new AccountStatesItemDisplayPanel();
 
+        GridLayout layout = new GridLayout(3, 2);
+        layout.setVgap(10);
+        layout.setHgap(20);
+        this.setLayout(layout);
+        this.add(new JLabel("数据获取中"));
+        this.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
-        this.setLayout(new GridLayout(3, 2));
-        this.setBorder(null);
-
-        this.add(nineBaseFundsDataPanel);
-        this.add(currentHoldsPanel);
-        this.add(canCancelsPanel);
-        this.add(todayClinchsPanel);
-        this.add(todayConsignsPanel);
-
+        AccountStatesDisplayPanel panel = this;
         // 7.更新选择的股票以显示 对应的内容. 为了实时刷新的效果, 这里 持续刷新
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
+                nineBaseFundsDataPanel = new AccountStatesItemDisplayPanel("账户资金状况");
+                currentHoldsPanel = new AccountStatesItemDisplayPanel(CURRENT_HOLD_TITLE.toString());
+                todayClinchsPanel = new AccountStatesItemDisplayPanel("今日成交");
+                canCancelsPanel = new AccountStatesItemDisplayPanel("当前可撤");
+                todayConsignsPanel = new AccountStatesItemDisplayPanel("今日委托");
+
                 while (true) {
-                    nineBaseFundsDataPanel.update(AccountStates.getNineBaseFundsData());
-                    currentHoldsPanel.update(AccountStates.getCurrentHolds());
-                    canCancelsPanel.update(AccountStates.getCanCancels());
-                    todayClinchsPanel.update(AccountStates.getTodayClinchs());
-                    todayConsignsPanel.update(AccountStates.getTodayConsigns());
+                    if (addedSubComps) {
+                        nineBaseFundsDataPanel.update(AccountStates.getNineBaseFundsData());
+                        currentHoldsPanel.update(AccountStates.getCurrentHolds());
+                        canCancelsPanel.update(AccountStates.getCanCancels());
+                        todayClinchsPanel.update(AccountStates.getTodayClinchs());
+                        todayConsignsPanel.update(AccountStates.getTodayConsigns());
+                    } else {
+                        if (AccountStates.getInstance().alreadyInitialized()) {
+
+                            panel.removeAll();
+                            panel.add(nineBaseFundsDataPanel);
+                            panel.add(currentHoldsPanel);
+                            panel.add(todayClinchsPanel);
+                            panel.add(canCancelsPanel);
+                            panel.add(todayConsignsPanel);
+                            addedSubComps = true;
+                        }
+                    }
                     Thread.sleep(100);
                 }
             }

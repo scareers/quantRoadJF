@@ -405,6 +405,7 @@ public class AccountStates {
                         order.addLifePoint(Order.LifePointStatus.FINISH, "finish: [账户状态刷新订单]执行完成, 简单finish");
                         order.setExecResponses(responses); // 响应字段设置
                         ordersFinished.put(order, responses); // 
+                        Trader.ordersAllMap.put(order, responses); // 注意应当更新响应
                     }
                 }
             });
