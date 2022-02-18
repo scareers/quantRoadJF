@@ -198,44 +198,38 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                 if (e.getClickCount() != 2) { // 非双击
                     return;
                 }
+
+
                 int index = jList.getSelectedIndex();
                 SecurityBeanEm.SecurityEmPo po = securityEmPos.get(index);
-                String url = "";
-                if (po.getBean().getClassify().equals("AStock") || po.getBean().getClassify().equals("23")) {
-                    if (po.getMarket().equals(0)) {
-                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
-                    } else {
-                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
-                    }
-                } else if (po.getBean().getClassify().equals("NEEQ")) {
-                    // http://quote.eastmoney.com/bj/430090.html
-                    if (po.getBean().getSecurityTypeName().equals("三板")) {
-                        url = StrUtil.format("http://xinsanban.eastmoney.com/QuoteCenter/{}.html", po.getSecCode());
-                    } else if (po.getBean().getSecurityTypeName().equals("京A")) {
-                        url = StrUtil.format("http://quote.eastmoney.com/bj/{}.html", po.getSecCode());
-                    }
-                } else if (po.getBean().isBK()) {
+                String url = null;
+                if (po.getBean().isBK()) {
                     url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", po.getBean().getSecId());
-                }else if(po.getBean().isBK()){
-                    url = StrUtil.format("http://quote.eastmoney.com/zs{}.html",po.getSecCode());
-// todo: 依据类型判定
+                } else if (po.getBean().isIndex()) {
+                    url = StrUtil.format("http://quote.eastmoney.com/zs{}.html", po.getBean().getSecCode());
+                } else if (po.getBean().isStock()) {
+                    if (po.getBean().isHuA() || po.getBean().isHuB()) {
+                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
+                    } else if (po.getBean().isShenA() || po.getBean().isShenB()) {
+                        url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
+                    } else if (po.getBean().isJingA()) {
+                        url = StrUtil.format("http://quote.eastmoney.com/bj/{}.html", po.getSecCode());
+                    } else if (po.getBean().isXSB()) {
+                        url = StrUtil.format("http://xinsanban.eastmoney.com/QuoteCenter/{}.html", po.getSecCode());
+                    } else if (po.getBean().isKCB()) {
+                        url = StrUtil.format("http://quote.eastmoney.com/kcb/{}.html", po.getSecCode());
+                    }
                 }
-
-//                if (po.getMarket().equals(0)) {
-//                    prefix = "sz"; // 深证
-//                } else if (po.getMarket().equals(1)) {
-//                    prefix = "sh";// 上证
-//                } else {
-//                    log.warn("unknown: 尝试打开url, 但股票所属市场未知: {}", securityEmPos.get(index).toString());
-//                    return;
-//                }
-//                CommonUtil.openUrlWithDefaultBrowser(
-//                        StrUtil.format("https://quote.eastmoney.com/{}{}.html", prefix, po.getSecCode()));
+                if (url == null) {
+                    log.warn("未知资产类别, 无法打开行情页面: {}", po.getBean().getName(), po.getBean().getSecurityTypeName());
+                    return;
+                }
+                CommonUtil.openUrlWithDefaultBrowser(url);
             }
         });
 
         jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
-        jList.setPreferredSize(new Dimension(300, 10000));
+        jList.setPreferredSize(new Dimension(jListWidth, 10000));
         jList.setBackground(COLOR_THEME_MAIN);
         jList.setBorder(null);
         return jList;
