@@ -4,7 +4,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.DfDisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDfDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
@@ -47,8 +47,8 @@ public abstract class SecurityListAndTablePanel extends JPanel {
      *
      * @return
      */
-    protected abstract DfDisplayPanel buildDisplayPanel();
-    // new DfDisplayPanel(this, this.jListWidth);
+    protected abstract SecurityDfDisplayPanel buildDisplayPanel();
+    // new SecurityDfDisplayPanel(this, this.jListWidth);
 
     protected SecurityListAndTablePanel(MainDisplayWindow mainDisplayWindow, int jListWidth) {
         // 异步开始等待某些状态, 并一次或者持续刷新股票列表
@@ -64,15 +64,15 @@ public abstract class SecurityListAndTablePanel extends JPanel {
         this.add(jListWrappedWithJScrollPane(), BorderLayout.WEST); // 添加列表
 
         // 3. 1分钟fs详情控件, 表格.
-        DfDisplayPanel dfDisplayPanel = buildDisplayPanel();
-        this.add(dfDisplayPanel, BorderLayout.CENTER);
+        SecurityDfDisplayPanel securityDfDisplayPanel = buildDisplayPanel();
+        this.add(securityDfDisplayPanel, BorderLayout.CENTER);
 
         // 6.主 展示窗口 添加尺寸改变监听. 改变 jList 和 orderContent尺寸.
         this.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
                 jList.setBounds(0, 0, jListWidth, getHeight()); // 固定宽默认 300
-                dfDisplayPanel.setBounds(jListWidth, 0, getWidth() - jListWidth, getHeight()); // 其余占满
+                securityDfDisplayPanel.setBounds(jListWidth, 0, getWidth() - jListWidth, getHeight()); // 其余占满
             }
         });
 
@@ -101,7 +101,7 @@ public abstract class SecurityListAndTablePanel extends JPanel {
                         continue;
                     }
                     if (currentBean != null) {
-                        dfDisplayPanel.update(currentBean);
+                        securityDfDisplayPanel.update(currentBean);
                     }
                     Thread.sleep(100);
                 }

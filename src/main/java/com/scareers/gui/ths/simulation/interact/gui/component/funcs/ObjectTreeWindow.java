@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
@@ -215,9 +216,13 @@ public class ObjectTreeWindow extends FuncFrameS {
             // 2.1分钟分时图
         } else if (TreePathConstants.FS_FETCHER.equals(treePath)) {
             changeToDisplayFs1MData();
-            // 2.2.账户状态
+            // 2.分时成交
         } else if (TreePathConstants.FS_TRANSACTION_FETCHER.equals(treePath)) {
             changeToDisplayFsTransData();
+            // 2.2.账户状态
+        } else if (TreePathConstants.ACCOUNT_STATES.equals(treePath)) {
+            changeToDisplayAccountStates();
+
             // 2.2.账户状态
         } else {
             System.out.println(treePath);
@@ -238,6 +243,11 @@ public class ObjectTreeWindow extends FuncFrameS {
 
     private void changeToDisplayFsTransData() {
         FsTransFetcherListAndDataPanel.getInstance(getMainDisplayWindow(), 300) // 此处决定资产列表的宽度
+                .showInMainDisplayWindow();
+    }
+
+    private void changeToDisplayAccountStates() {
+        AccountStatesDisplayPanel.getInstance(getMainDisplayWindow()) // 此处决定资产列表的宽度
                 .showInMainDisplayWindow();
     }
 

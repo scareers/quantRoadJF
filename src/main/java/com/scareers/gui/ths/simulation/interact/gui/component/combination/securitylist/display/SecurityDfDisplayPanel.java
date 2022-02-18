@@ -41,9 +41,11 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
 /**
  * 表格展示df 的Panel
  * 1.buttonContainer 展示于表格上方, 默认仅有全量刷新按钮. flow left布局, 可添加按钮
+ *
+ * @author admin
  */
 @Getter
-public abstract class DfDisplayPanel extends SecurityDisplayPanel {
+public abstract class SecurityDfDisplayPanel extends SecurityDisplayPanel {
     private JTable jTable;
     private JScrollPane jScrollPane;
 
@@ -58,7 +60,7 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
      */
     SecurityListAndTablePanel parent;
 
-    public DfDisplayPanel(
+    public SecurityDfDisplayPanel(
             SecurityListAndTablePanel parent,
             int listWidth) {
         this.parent = parent;
@@ -101,10 +103,9 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
      */
     public abstract DataFrame<Object> getShowDf(SecurityBeanEm currentBean);
 
-
     @Override
-    public void update(SecurityBeanEm currentBean) {
-        DataFrame<Object> fsDataOfStock = getShowDf(currentBean);
+    public void update() {
+        DataFrame<Object> fsDataOfStock = getShowDf(newBean);
         if (fsDataOfStock == null) {
             return;
         }
@@ -123,7 +124,7 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
             fitTableColumns(jTable);
         } else { // 不断更新时
             DefaultTableModel model = (DefaultTableModel) jTable.getModel();
-            if (currentBean == preBean) { // 股票选中没变, 考虑增加行
+            if (newBean == preBean) { // 股票选中没变, 考虑增加行
                 if (fullFlushFlag) {
                     fullFlushFlag = false;
                     fullFlush(fsDataOfStock, model);
@@ -142,9 +143,8 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
                 fullFlush(fsDataOfStock, model);
                 fitTableColumns(jTable);
             }
-            preBean = currentBean;
+            preBean = newBean;
         }
-
     }
 
     private static final Log log = LogUtil.getLogger();
@@ -159,7 +159,10 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
         int rowCount = myTable.getRowCount();
 
         Enumeration columns = myTable.getColumnModel().getColumns();
-        while (columns.hasMoreElements()) {
+
+
+//        while (columns.hasMoreElements()) {
+        if (columns.hasMoreElements()) {
             TableColumn column = (TableColumn) columns.nextElement();
             int col = header.getColumnModel().getColumnIndex(column.getIdentifier());
             int width = (int) myTable.getTableHeader().getDefaultRenderer()
@@ -172,7 +175,7 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
             }
             header.setResizingColumn(column); // 此行很重要
             column.setWidth(width + myTable.getIntercellSpacing().width + 5); // 多5
-            break; // 仅第一列日期. 其他的平均
+//            break; // 仅第一列日期. 其他的平均
         }
     }
 
@@ -183,12 +186,29 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
      * @param model
      */
     protected void fullFlush(DataFrame<Object> fsDataOfStock, DefaultTableModel model) {
-        Vector<Vector<Object>> datas = new Vector<>();
+//        Vector<Vector<Object>> datas = new Vector<>();
+//        for (int i = 0; i < fsDataOfStock.length(); i++) {
+//            datas.add(new Vector<>(fsDataOfStock.row(i)));
+//        }
+//        Vector<Object> cols = new Vector<>(fsDataOfStock.columns());
+//        model.setDataVector(datas, cols);
+
+
+        Vector<Vector> oldDatas = model.getDataVector();
+        Vector<Vector> newDatas = new Vector<>();
         for (int i = 0; i < fsDataOfStock.length(); i++) {
-            datas.add(new Vector<>(fsDataOfStock.row(i)));
+            newDatas.add(new Vector<>(fsDataOfStock.row(i)));
         }
-        Vector<Object> cols = new Vector<>(fsDataOfStock.columns());
-        model.setDataVector(datas, cols);
+        // 将自动增减行, 若新数据行少, 则多的行不会显示, 但本身存在
+        model.setRowCount(newDatas.size());
+
+        for (int i = 0; i < Math.min(oldDatas.size(), newDatas.size()); i++) {
+            for (int j = 0; j < model.getColumnCount(); j++) {
+                if (!newDatas.get(i).get(j).equals(oldDatas.get(i).get(j))) {
+                    model.setValueAt(newDatas.get(i).get(j), i, j);
+                }
+            }
+        }
     }
 
     /**

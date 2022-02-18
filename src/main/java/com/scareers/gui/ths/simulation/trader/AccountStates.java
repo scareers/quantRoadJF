@@ -60,13 +60,14 @@ public class AccountStates {
         accountStates.startFlush(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
         accountStates.waitFirstInitFinish(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
 
-        Console.log(accountStates.getNineBaseFundsData());
-        Console.log(accountStates.getCurrentHolds());
-        Console.log(accountStates.getCanCancels());
-        Console.log(accountStates.getTodayClinchs());
-        Console.log(accountStates.getTodayConsigns());
+        Console.log(getNineBaseFundsData());
+        Console.log(getCurrentHolds());
+        Console.log(getCanCancels());
+        Console.log(getTodayClinchs());
+        Console.log(getTodayConsigns());
         waitForever();
     }
+
 
     public static AccountStates getInstance(Trader trader, long flushInterval, long commonApiPriority,
                                             long priorityRaiseTimeThreshold,
@@ -121,19 +122,19 @@ public class AccountStates {
     public static volatile PriorityBlockingQueue<Order> ordersWaitForExecution = new PriorityBlockingQueue<>();
     public static volatile Hashtable<Order, List<Response>> ordersFinished = new Hashtable<>();
 
-    // 实例属性, 维持数据
-    public ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>(); // get_account_funds_info
-    public DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
-    public DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
-    public DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交:
+    public static volatile ConcurrentHashMap<String, Double> nineBaseFundsData = new ConcurrentHashMap<>();// get_account_funds_info
+    public static volatile DataFrame<Object> currentHolds = null; // get_hold_stocks_info // 持仓
+    public static volatile DataFrame<Object> canCancels = null; // get_unsolds_not_yet 当前可撤, 即未成交
+    public static volatile DataFrame<Object> todayClinchs = null; // get_today_clinch_orders 今日成交:
     // 成交时间	证券代码	证券名称	操作	成交数量  成交均价	成交金额	合同编号	成交编号
-    public DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
+    public static volatile DataFrame<Object> todayConsigns = null; // get_today_consign_orders 今日所有委托
 
-    public Long nineBaseFundsDataFlushTimestamp = null; // 五大接口刷新时间戳! long, 实际被刷新后更新.
-    public Long currentHoldsFlushTimestamp = null; // 均为 毫秒  System.currentTimeMillis()
-    public Long canCancelsFlushTimestamp = null;
-    public Long todayClinchsFlushTimestamp = null;
-    public Long todayConsignsFlushTimestamp = null;
+    // 实例属性, 维持数据
+    public static volatile Long nineBaseFundsDataFlushTimestamp = null; // 五大接口刷新时间戳! long, 实际被刷新后更新.
+    public static volatile Long currentHoldsFlushTimestamp = null; // 均为 毫秒  System.currentTimeMillis()
+    public static volatile Long canCancelsFlushTimestamp = null;
+    public static volatile Long todayClinchsFlushTimestamp = null;
+    public static volatile Long todayConsignsFlushTimestamp = null;
 
     // 核心trader, 以便访问其他组件
     private Trader trader;
@@ -898,5 +899,66 @@ public class AccountStates {
      */
     public Double getAvailableCash() {
         return nineBaseFundsData.get("可用金额");
+    }
+
+
+    public static List<String> getOrderTypes() {
+        return ORDER_TYPES;
+    }
+
+    public static List<String> getExcludeOrderTypes() {
+        return EXCLUDE_ORDER_TYPES;
+    }
+
+    public static List<String> getShouldOrderTypes() {
+        return SHOULD_ORDER_TYPES;
+    }
+
+    public static PriorityBlockingQueue<Order> getOrdersWaitForExecution() {
+        return ordersWaitForExecution;
+    }
+
+    public static Hashtable<Order, List<Response>> getOrdersFinished() {
+        return ordersFinished;
+    }
+
+    public static ConcurrentHashMap<String, Double> getNineBaseFundsData() {
+        return nineBaseFundsData;
+    }
+
+    public static DataFrame<Object> getCurrentHolds() {
+        return currentHolds;
+    }
+
+    public static DataFrame<Object> getCanCancels() {
+        return canCancels;
+    }
+
+    public static DataFrame<Object> getTodayClinchs() {
+        return todayClinchs;
+    }
+
+    public static DataFrame<Object> getTodayConsigns() {
+        return todayConsigns;
+    }
+
+    public static Long getNineBaseFundsDataFlushTimestamp() {
+        return nineBaseFundsDataFlushTimestamp;
+    }
+
+    public static Long getCurrentHoldsFlushTimestamp() {
+        return currentHoldsFlushTimestamp;
+    }
+
+    public static Long getCanCancelsFlushTimestamp() {
+        return canCancelsFlushTimestamp;
+    }
+
+    public static Long getTodayClinchsFlushTimestamp() {
+        return todayClinchsFlushTimestamp;
+    }
+
+    public static Long getTodayConsignsFlushTimestamp() {
+        return todayConsignsFlushTimestamp;
     }
 }

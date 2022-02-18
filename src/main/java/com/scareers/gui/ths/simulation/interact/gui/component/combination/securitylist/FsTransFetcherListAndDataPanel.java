@@ -3,7 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.secur
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.DfDisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDfDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -54,12 +54,12 @@ public class FsTransFetcherListAndDataPanel extends SecurityListAndTablePanel {
     }
 
     @Override
-    protected DfDisplayPanel buildDisplayPanel() {
-        return new DisplayTablePanelFs1M(this, this.jListWidth);
+    protected SecurityDfDisplayPanel buildDisplayPanel() {
+        return new DisplayTablePanelFs1MSecurity(this, this.jListWidth);
     }
 
-    public static class DisplayTablePanelFs1M extends DfDisplayPanel {
-        public DisplayTablePanelFs1M(
+    public static class DisplayTablePanelFs1MSecurity extends SecurityDfDisplayPanel {
+        public DisplayTablePanelFs1MSecurity(
                 SecurityListAndTablePanel parent, int listWidth) {
             super(parent, listWidth);
         }
