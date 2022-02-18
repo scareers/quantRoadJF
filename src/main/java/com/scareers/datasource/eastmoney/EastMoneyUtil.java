@@ -2,6 +2,7 @@ package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.Method;
 import cn.hutool.json.JSONArray;
@@ -15,6 +16,7 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,15 +63,17 @@ public class EastMoneyUtil {
      * @return
      */
     public static HttpRequest addDefaultSettings(HttpRequest request, int timeout) {
-        return request.header("User-Agent", HEADER_VALUE_OF_USER_AGENT)
+        HttpRequest request1 = request.header("User-Agent", HEADER_VALUE_OF_USER_AGENT)
                 .header("Accept", HEADER_VALUE_OF_ACCEPT)
                 .header("Accept-Language", HEADER_VALUE_OF_ACCEPT_LANGUAGE)
                 .header("Referer", HEADER_VALUE_OF_REFERER)
                 .header("Connection", HEADER_VALUE_OF_CONNECTION)
                 .header("Accept-Encoding", HEADER_VALUE_OF_ACCEPT_ENCODING)
                 .connectTimeout(timeout)
-                .readTimeout(timeout)
-                ;
+                .readTimeout(timeout);
+
+        Console.log(request1.method());
+        return request1;
     }
 
     public static HttpRequest addDefaultSettings(HttpRequest request) {
@@ -90,10 +94,11 @@ public class EastMoneyUtil {
         while (true) {
             i++;
             try {
+                url += URLUtil.buildQuery(params, StandardCharsets.UTF_8);
                 cn.hutool.http.HttpRequest request =
                         new cn.hutool.http.HttpRequest(url)
                                 .method(Method.GET)
-                                .form(params)
+                                // .form(params)
                                 .timeout(timeout)
                                 .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
                                 .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
@@ -101,6 +106,7 @@ public class EastMoneyUtil {
                                 .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
                                 .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
                                 .header(Header.ACCEPT_ENCODING, HEADER_VALUE_OF_ACCEPT_ENCODING);
+                Console.log(request);
                 res = request.execute().body();
             } catch (Exception e) {
                 if (i > retry) {
@@ -132,7 +138,10 @@ public class EastMoneyUtil {
         while (true) {
             i++;
             try {
-                res = addDefaultSettings(HttpRequest.get(url), timeout).form(params).body();
+                url += URLUtil.buildQuery(params, StandardCharsets.UTF_8);
+                res = addDefaultSettings(HttpRequest.get(url), timeout)
+                        // .form(params)
+                        .body();
             } catch (Exception e) {
                 if (i > retry) {
                     throw e;
@@ -142,7 +151,6 @@ public class EastMoneyUtil {
                 break;
             }
         }
-        Console.log(res);
         return res;
     }
 

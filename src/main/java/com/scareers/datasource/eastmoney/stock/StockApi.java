@@ -10,6 +10,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.URLUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -22,6 +23,9 @@ import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
+import java.beans.JavaBean;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -714,7 +718,10 @@ public class StockApi {
         params.put("fid", "f3");
         params.put("securitylist", marketArgsStr);
         params.put("fields", fieldsStr);
-        String response = getAsStrUseKevin(url, params, 4000);
+
+        url = "http://push2.eastmoney.com/api/qt/clist/get?fid=f3&np=1&invt=2&fltt=2&pz=1000000&fields=f12%2Cf14%2Cf3" +
+                "%2Cf2%2Cf15%2Cf16%2Cf17%2Cf4%2Cf8%2Cf10%2Cf9%2Cf5%2Cf6%2Cf18%2Cf20%2Cf21%2Cf13&fs=m%3A0+t%3A6%2Cm%3A0+t%3A80%2Cm%3A1+t%3A2%2Cm%3A1+t%3A23&pn=1&po=1";
+        String response = getAsStrUseHutool(url, params, 4000);
         DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
                 fields, Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),
                 Arrays.asList());
