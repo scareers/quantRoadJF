@@ -1,4 +1,4 @@
-//package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2;
+//package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.securitylist.loybuyhighsell2;
 //
 //import cn.hutool.core.date.DateUtil;
 //import cn.hutool.core.date.TimeInterval;
@@ -25,7 +25,7 @@
 //import java.util.concurrent.*;
 //import java.util.stream.Collectors;
 //
-//import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell2.SettingsOfFSBacktest.*;
+//import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.securitylist.loybuyhighsell2.SettingsOfFSBacktest.*;
 //import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 //import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 //import static com.scareers.sqlapi.KlineFormsApi.*;

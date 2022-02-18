@@ -24,8 +24,9 @@ public class SettingsOfEastMoney {
     public static String HEADER_VALUE_OF_ACCEPT = "*/*";
     public static String HEADER_VALUE_OF_ACCEPT_LANGUAGE = "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2";
     public static String HEADER_VALUE_OF_REFERER = "http://quote.eastmoney.com/center/gridlist.html";
+    public static String HEADER_VALUE_OF_CONNECTION = "keep-alive";
+    public static String HEADER_VALUE_OF_ACCEPT_ENCODING = "gzip";
 
     public static int DEFAULT_TIMEOUT = 3 * 1000;
-
 
 }

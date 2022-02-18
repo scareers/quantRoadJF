@@ -660,7 +660,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     }
 
     /**
-     * 因东方财富 fs 获取, xx:01s 就将获取到 xx+1 的分时图, 因此需要去掉最新一分钟的分时图.
+     * 因东方财富 securitylist 获取, xx:01s 就将获取到 xx+1 的分时图, 因此需要去掉最新一分钟的分时图.
      * 例如在  14:32:32, 去掉 14:33,保留到14:32, 这里不使用slice[0,-1], 而倒序遍历判定. 若使用 select 将性能瓶颈
      *
      * @param fsDf

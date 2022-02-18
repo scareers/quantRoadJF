@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.fs;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -43,14 +43,14 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  * @author: admin
  * @date: 2022/2/12/012-12:56:23
  */
-public class FsFetcherListAndDataPanel extends JPanel {
-    public static volatile FsFetcherListAndDataPanel INSTANCE;
+public class FsFetcherListAndDataPanel2 extends JPanel {
+    public static volatile FsFetcherListAndDataPanel2 INSTANCE;
     public static volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 开始空, 随后基本不变
 
     MainDisplayWindow mainDisplayWindow; // 主显示区
     volatile JList<SecurityBeanEm.SecurityEmPo> jList; // 展示股票的 list
 
-    public static FsFetcherListAndDataPanel getInstance(MainDisplayWindow mainDisplayWindow) {
+    public static FsFetcherListAndDataPanel2 getInstance(MainDisplayWindow mainDisplayWindow) {
         if (INSTANCE == null) {
             // 首次调用, 将开始更新数据
             ThreadUtil.execAsync(new Runnable() {
@@ -70,13 +70,13 @@ public class FsFetcherListAndDataPanel extends JPanel {
                 }
             }, true);
 
-            INSTANCE = new FsFetcherListAndDataPanel(mainDisplayWindow); // 默认所有订单,自行调用changeType
+            INSTANCE = new FsFetcherListAndDataPanel2(mainDisplayWindow); // 默认所有订单,自行调用changeType
             mainDisplayWindow.flushBounds();
         }
         return INSTANCE;
     }
 
-    private FsFetcherListAndDataPanel(MainDisplayWindow mainDisplayWindow) {
+    private FsFetcherListAndDataPanel2(MainDisplayWindow mainDisplayWindow) {
         super();
         this.mainDisplayWindow = mainDisplayWindow;
 
@@ -208,9 +208,9 @@ public class FsFetcherListAndDataPanel extends JPanel {
         /**
          * @param parent 仅用于位置修复
          */
-        FsFetcherListAndDataPanel parent;
+        FsFetcherListAndDataPanel2 parent;
 
-        public Fs1MPanel(FsFetcherListAndDataPanel parent) {
+        public Fs1MPanel(FsFetcherListAndDataPanel2 parent) {
             this.parent = parent;
             this.setBorder(null);
             this.setLayout(new BorderLayout());

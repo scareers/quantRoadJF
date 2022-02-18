@@ -55,7 +55,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                                      List<Integer> keyInts) throws Exception {
         if (INSTANCE == null) {
             INSTANCE = new LowBuyHighSellStrategy(trader, strategyName, forceManualExcludeStocks,
-                    suitableSelectStockCount, preferenceMoreStock, keyInts);
+                    10, preferenceMoreStock, keyInts);
         }
         return INSTANCE;
     }

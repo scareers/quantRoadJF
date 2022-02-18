@@ -65,6 +65,8 @@ public class EastMoneyUtil {
                 .header("Accept", HEADER_VALUE_OF_ACCEPT)
                 .header("Accept-Language", HEADER_VALUE_OF_ACCEPT_LANGUAGE)
                 .header("Referer", HEADER_VALUE_OF_REFERER)
+                .header("Connection", HEADER_VALUE_OF_CONNECTION)
+                .header("Accept-Encoding", HEADER_VALUE_OF_ACCEPT_ENCODING)
                 .connectTimeout(timeout)
                 .readTimeout(timeout)
                 ;
@@ -96,7 +98,9 @@ public class EastMoneyUtil {
                                 .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
                                 .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
                                 .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
-                                .header(Header.REFERER, HEADER_VALUE_OF_REFERER);
+                                .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
+                                .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
+                                .header(Header.ACCEPT_ENCODING, HEADER_VALUE_OF_ACCEPT_ENCODING);
                 res = request.execute().body();
             } catch (Exception e) {
                 if (i > retry) {
@@ -138,6 +142,7 @@ public class EastMoneyUtil {
                 break;
             }
         }
+        Console.log(res);
         return res;
     }
 
