@@ -357,7 +357,7 @@ public class TraderGui extends JFrame {
      * @throws UnsupportedLookAndFeelException
      */
     public static void initGlobalStyle() throws UnsupportedLookAndFeelException {
-        ToolTipManager.sharedInstance().setDismissDelay(100 * 000); // tooptip持续时间
+        ToolTipManager.sharedInstance().setDismissDelay(50000000); // tooptip持续时间
         UIManager.setLookAndFeel(new MetalLookAndFeel()); // 重写ui类, 继承 Metal相关. 此为默认lookandfeel, 显式设置一下
         UIDefaults defs = UIManager.getDefaults();
 

@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist;
 
-import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fs.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
@@ -9,7 +8,6 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayW
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
-import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -20,17 +18,17 @@ import java.util.stream.Collectors;
  * @author: admin
  * @date: 2022/2/12/012-12:56:23
  */
-public class FsFetcherListAndDataPanel extends SecurityListAndTablePanel {
-    private static FsFetcherListAndDataPanel INSTANCE;
+public class FsTransFetcherListAndDataPanel extends SecurityListAndTablePanel {
+    private static FsTransFetcherListAndDataPanel INSTANCE;
 
-    public static FsFetcherListAndDataPanel getInstance(MainDisplayWindow mainDisplayWindow, int jListWidth) {
+    public static FsTransFetcherListAndDataPanel getInstance(MainDisplayWindow mainDisplayWindow, int jListWidth) {
         if (INSTANCE == null) {
-            INSTANCE = new FsFetcherListAndDataPanel(mainDisplayWindow, jListWidth);
+            INSTANCE = new FsTransFetcherListAndDataPanel(mainDisplayWindow, jListWidth);
         }
         return INSTANCE;
     }
 
-    protected FsFetcherListAndDataPanel(
+    protected FsTransFetcherListAndDataPanel(
             MainDisplayWindow mainDisplayWindow, int jListWidth) {
         super(mainDisplayWindow, jListWidth);
     }
@@ -49,7 +47,7 @@ public class FsFetcherListAndDataPanel extends SecurityListAndTablePanel {
 //                .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
 
         while (true) {
-            securityEmPos = FsFetcher.getStockPool().stream()
+            securityEmPos = FsTransactionFetcher.getStockPool().stream()
                     .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
             Thread.sleep(100);
         }
@@ -68,7 +66,7 @@ public class FsFetcherListAndDataPanel extends SecurityListAndTablePanel {
 
         @Override
         public DataFrame<Object> getShowDf(SecurityBeanEm currentBean) {
-            return FsFetcher.getFsData(currentBean);
+            return FsTransactionFetcher.getFsTransData(currentBean);
         }
     }
 }

@@ -4,8 +4,10 @@ import com.alee.laf.list.ListDataAdapter;
 import oshi.hardware.platform.mac.MacDisplay;
 
 import javax.swing.*;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * description: 列表使用的可变model, 新增 刷新功能(检测新的项目并添加), 新增 排序功能,
@@ -25,8 +27,9 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
      *
      * @param newList
      */
-    public void flush(List<T> newList) {
-        Collections.sort(newList); // 对元素排序
+    public void flush(List<T> newList0) {
+        ArrayList<T> newList = new ArrayList<>(newList0);
+        Collections.sort(newList); // 不对原列表进行更新, 保证稳定性
         // 当元素发生变化, 才更新
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
             try {

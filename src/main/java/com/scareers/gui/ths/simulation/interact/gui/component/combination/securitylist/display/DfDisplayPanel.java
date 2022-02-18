@@ -15,6 +15,7 @@ import com.scareers.datasource.eastmoney.stock.StockApi;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.SecurityListAndTablePanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.utils.charts.ChartUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -35,7 +36,7 @@ import java.awt.event.ActionListener;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
  * 表格展示df 的Panel
@@ -70,6 +71,8 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
         label.setForeground(Color.red);
         jScrollPane.setViewportView(label); // 占位
         jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
 
         buttonFlushAll = ButtonFactory.getButton("全量刷新");
         buttonFlushAll.setMaximumSize(new Dimension(60, 20));
@@ -105,6 +108,7 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
         if (fsDataOfStock == null) {
             return;
         }
+
         if (jTable == null) { // 首次刷新
             Vector<Vector<Object>> datas = new Vector<>();
             for (int i = 0; i < fsDataOfStock.length(); i++) {
@@ -116,14 +120,16 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
             jTable = new JTable();
             jTable.setModel(model);
             jScrollPane.setViewportView(jTable); // 默认显式"数据获取中", 第一次刷新
+            fitTableColumns(jTable);
         } else { // 不断更新时
             DefaultTableModel model = (DefaultTableModel) jTable.getModel();
             if (currentBean == preBean) { // 股票选中没变, 考虑增加行
                 if (fullFlushFlag) {
                     fullFlushFlag = false;
                     fullFlush(fsDataOfStock, model);
+                    fitTableColumns(jTable);
                     log.info("已全量刷新");
-                } else { // 增量刷新
+                } else { // 增量刷新, 无需更新列宽
                     if (fsDataOfStock.length() > model.getRowCount()) { // 因保证必然有序, 所以只添加新的行.
                         int oldRowCount = model.getRowCount();
                         // 添加数据
@@ -134,10 +140,11 @@ public abstract class DfDisplayPanel extends SecurityDisplayPanel {
                 }
             } else { // 股票选择变化, 则全量更新
                 fullFlush(fsDataOfStock, model);
+                fitTableColumns(jTable);
             }
             preBean = currentBean;
         }
-        fitTableColumns(jTable);
+
     }
 
     private static final Log log = LogUtil.getLogger();
