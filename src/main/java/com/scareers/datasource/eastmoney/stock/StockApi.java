@@ -10,7 +10,6 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
@@ -23,15 +22,11 @@ import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
-import java.beans.JavaBean;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
-import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseKevin;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
@@ -62,46 +57,46 @@ public class StockApi {
         Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
 
 
-//        Console.log("个股今日涨跌停:");
-//        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
-//        Console.log("个股昨收今开:");
-//        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
-//
-//        Console.log("个股盘口数据:");
-//        Console.log(getStockHandicap("002432", 2000, 1));
-//
-//        Console.log("指数/板块昨收今开");
-//        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
-//        Console.log("指数/板块盘口数据:");
-//        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
-//
-//        Console.log("分时成交数据:");
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
-//        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
-//
-//        Console.log("各市场实时行情截面数据");
-//        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
-//        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
-//
-//
-//        Console.log("历史行情k线数据 -- 可分时数据");
-//        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
-//        Console.log("批量历史行情k线数据 -- 可分时数据");
-//        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
-//                false));
-//
-//        Console.log("1分钟分时图数据");
-//        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 2000));
-//
-//
-//        Console.log("给定日期的上 n 个交易日:");
-//        Console.log(getPreNTradeDateStrict(DateUtil.today(), 1));
-//        Console.log(getPreTradeDateStrict(DateUtil.today()));
-//        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
+        Console.log("个股今日涨跌停:");
+        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
+        Console.log("个股昨收今开:");
+        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
+
+        Console.log("个股盘口数据:");
+        Console.log(getStockHandicap("002432", 2000, 1));
+
+        Console.log("指数/板块昨收今开");
+        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+        Console.log("指数/板块盘口数据:");
+        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
+
+        Console.log("分时成交数据:");
+        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
+        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
+
+        Console.log("各市场实时行情截面数据");
+        Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
+        Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
+        Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
+        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
+        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+
+
+        Console.log("历史行情k线数据 -- 可分时数据");
+        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
+        Console.log("批量历史行情k线数据 -- 可分时数据");
+        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
+                false));
+
+        Console.log("1分钟分时图数据");
+        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 2000));
+
+
+        Console.log("给定日期的上 n 个交易日:");
+        Console.log(getPreNTradeDateStrict(DateUtil.today(), 1));
+        Console.log(getPreTradeDateStrict(DateUtil.today()));
+        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
 
 
     }
@@ -450,7 +445,7 @@ public class StockApi {
 
         String response;
         try {
-            response = getAsStrUseKevin(url, params, timeout, retry);
+            response = getAsStrUseHutool(url, params, timeout, retry);
         } catch (Exception e) {
             e.printStackTrace();
 
@@ -600,7 +595,7 @@ public class StockApi {
 
         String response;
         try {
-            response = getAsStrUseKevin(url, params, timeout, retry);
+            response = getAsStrUseHutool(url, params, timeout, retry);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("get exception: 访问http失败: 获取指数板块行情: index/bk: {}", secId);
@@ -703,6 +698,8 @@ public class StockApi {
     public static DataFrame<Object> getRealtimeQuotes(List<String> markets) {
         List<String> realMarketArgs = markets.stream().map(value -> FS_DICT.get(value)).collect(Collectors.toList());
         String marketArgsStr = StrUtil.join(",", realMarketArgs);
+        // @bugfix: 实测市场列表参数, python将自动把 " "转换+, 不会出现bug. 而java的自动转换是 %20. 将出现错误?
+        marketArgsStr = marketArgsStr.replace(" ", "+");
         //['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21', 'f13']
         String url = "http://push2.eastmoney.com/api/qt/clist/get";
         List<String> fields = Arrays.asList("f12", "f14", "f3", "f2", "f15", "f16", "f17", "f4", "f8",
@@ -716,11 +713,9 @@ public class StockApi {
         params.put("fltt", "2");
         params.put("invt", "2");
         params.put("fid", "f3");
-        params.put("securitylist", marketArgsStr);
+        params.put("fs", marketArgsStr);
         params.put("fields", fieldsStr);
 
-        url = "http://push2.eastmoney.com/api/qt/clist/get?fid=f3&np=1&invt=2&fltt=2&pz=1000000&fields=f12%2Cf14%2Cf3" +
-                "%2Cf2%2Cf15%2Cf16%2Cf17%2Cf4%2Cf8%2Cf10%2Cf9%2Cf5%2Cf6%2Cf18%2Cf20%2Cf21%2Cf13&fs=m%3A0+t%3A6%2Cm%3A0+t%3A80%2Cm%3A1+t%3A2%2Cm%3A1+t%3A23&pn=1&po=1";
         String response = getAsStrUseHutool(url, params, 4000);
         DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
                 fields, Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),

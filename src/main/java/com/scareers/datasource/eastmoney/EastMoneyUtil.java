@@ -2,7 +2,6 @@ package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.URLUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.Method;
 import cn.hutool.json.JSONArray;
@@ -12,15 +11,11 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.annotations.Cached;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
-import joinery.DataFrame;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -91,22 +86,21 @@ public class EastMoneyUtil {
     public static String getAsStrUseHutool(String url, Map<String, Object> params, int timeout, int retry) {
         String res = null;
         int i = 0;
+        cn.hutool.http.HttpRequest request =
+                new cn.hutool.http.HttpRequest(url)
+                        .method(Method.GET)
+                        .form(params)
+                        .timeout(timeout)
+                        .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
+                        .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
+                        .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
+                        .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
+                        .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
+                        .header(Header.ACCEPT_ENCODING, HEADER_VALUE_OF_ACCEPT_ENCODING);
+
         while (true) {
             i++;
             try {
-                url += URLUtil.buildQuery(params, StandardCharsets.UTF_8);
-                cn.hutool.http.HttpRequest request =
-                        new cn.hutool.http.HttpRequest(url)
-                                .method(Method.GET)
-                                // .form(params)
-                                .timeout(timeout)
-                                .header(Header.ACCEPT, HEADER_VALUE_OF_ACCEPT)
-                                .header(Header.USER_AGENT, HEADER_VALUE_OF_USER_AGENT)
-                                .header(Header.ACCEPT_LANGUAGE, HEADER_VALUE_OF_ACCEPT_LANGUAGE)
-                                .header(Header.REFERER, HEADER_VALUE_OF_REFERER)
-                                .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
-                                .header(Header.ACCEPT_ENCODING, HEADER_VALUE_OF_ACCEPT_ENCODING);
-                Console.log(request);
                 res = request.execute().body();
             } catch (Exception e) {
                 if (i > retry) {
@@ -132,31 +126,35 @@ public class EastMoneyUtil {
      * @param timeout
      * @return
      */
-    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout, int retry) {
-        String res = null;
-        int i = 0;
-        while (true) {
-            i++;
-            try {
-                url += URLUtil.buildQuery(params, StandardCharsets.UTF_8);
-                res = addDefaultSettings(HttpRequest.get(url), timeout)
-                        // .form(params)
-                        .body();
-            } catch (Exception e) {
-                if (i > retry) {
-                    throw e;
-                }
-            }
-            if (res != null) {
-                break;
-            }
-        }
-        return res;
-    }
-
-    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout) {
-        return getAsStrUseKevin(url, params, timeout, 3);
-    }
+//    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout, int retry) {
+//        // /api/qt/clist/get?fid=f3&np=1&invt=2&fltt=2&pz=1000000&fields=f12%2Cf14%2Cf3%2Cf2%2Cf15%2Cf16%2Cf17%2Cf4%2Cf8%2Cf10%2Cf9%2Cf5%2Cf6%2Cf18%2Cf20%2Cf21%2Cf13&fs=m%3A0+t%3A6%2Cm%3A0+t%3A80%2Cm%3A1+t%3A2%2Cm%3A1+t%3A23&pn=1&po=1
+//        String res = null;
+//        int i = 0;
+//        while (true) {
+//            i++;
+//            try {
+//                if (params != null) {
+//                    url += "?";
+//                    url += URLUtil.buildQuery(params, StandardCharsets.UTF_8);
+//                }
+//                res = addDefaultSettings(HttpRequest.get(url), timeout)
+//                        // .form(params)
+//                        .body();
+//            } catch (Exception e) {
+//                if (i > retry) {
+//                    throw e;
+//                }
+//            }
+//            if (res != null) {
+//                break;
+//            }
+//        }
+//        return res;
+//    }
+//
+//    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout) {
+//        return getAsStrUseKevin(url, params, timeout, 3);
+//    }
 
 
     /**
