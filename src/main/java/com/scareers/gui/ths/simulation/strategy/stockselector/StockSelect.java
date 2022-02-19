@@ -13,5 +13,5 @@ public interface StockSelect {
 
     List<String> getSelectResults() throws Exception;
 
-    void resetSelectResults() throws Exception; // 一般设置结果为null, 才可再次调用选股方法
+    void resetSelectResults() throws Exception; // 一般设置结 果为null, 才可再次调用选股方法
 }
