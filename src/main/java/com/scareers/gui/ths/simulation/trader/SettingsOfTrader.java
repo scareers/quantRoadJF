@@ -65,7 +65,8 @@ public class SettingsOfTrader {
     @key: 属性前缀说明:
         STR : 表示某些常量字符串. 例如各种表头名称(因客户端不同而不同)
      */
-    public static String STR_SEC_CODE; // "证券代码" 表头
+    public static String STR_SEC_CODE; // "证券代码" 表头, 常见于
+
 
 
     /*
@@ -86,5 +87,8 @@ public class SettingsOfTrader {
     public static String DT_FT_WITH_MS = "yyyy-MM-dd HH:mm:ss.SSS"; // 日期时间格式带毫秒 // NORM_DATETIME_PATTERN
     public static String DT_FT_WITHOUT_SECONDS = "yyyy-MM-dd HH:mm"; // 日期时间格式不带秒 // NORM_DATETIME_MINUTE_PATTERN // 分时图
 
-
+    /**
+     * 非客户端相关的df数据 表头
+     */
+    public static String STR_STOCK_CODE_EM_HEADER; // "股票代码" 表头, 东财市场截面tick使用此
 }
