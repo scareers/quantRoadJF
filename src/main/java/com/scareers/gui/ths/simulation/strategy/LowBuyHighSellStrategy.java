@@ -11,10 +11,11 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.stock.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.StockApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
+import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.KlineFormsApi;
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.stock.StockApi.getRealtimeQuotes;
+import static com.scareers.datasource.eastmoney.quotecenter.StockApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.utils.CommonUtil.*;
@@ -55,7 +56,7 @@ public class LowBuyHighSellStrategy extends Strategy {
                                                      List<Integer> keyInts) throws Exception {
         if (INSTANCE == null) {
             INSTANCE = new LowBuyHighSellStrategy(trader, strategyName, forceManualExcludeStocks,
-                    10, preferenceMoreStock, keyInts);
+                    suitableSelectStockCount, preferenceMoreStock, keyInts);
         }
         return INSTANCE;
     }
@@ -70,16 +71,15 @@ public class LowBuyHighSellStrategy extends Strategy {
     // 首先尝试从数据库直接获取  昨日持仓与账户初始资金信息, 若无, 则:
     // 将(今日)首次获取的账户信息, 作为昨日收盘后初始信息, 保存到数据库(下一次启动将读取该数据)
     public static String tableNameOfYesterdayStockHoldsAndAccountsInfoBefore = "stock_yesterday_holds_and_account_info";
-    public static String STR_SEC_CODE = "证券代码"; // 获取代码列需要
+
     // 当今日选股结果记录数量>此值,视为已执行选股.今日不再执行, 当然也可手动强制执行全量选股
     public static long hasStockSelectResultTodayThreshold = 1000; // 常态要么 0(无结果), 要么 3200+ 所有主板执行过选股
-    public static String SIMPLEST_DATE_FORMAT = "yyyyMMdd"; // 最简单的日期格式
     public static Connection connOfStockSelectResult = ConnectionFactory.getConnLocalKlineForms();
-    public static final List<String> fieldsOfDfRaw = Arrays
-            .asList("trade_date", "open", "close", "high", "low", "vol", "amount"); // 股票日k线数据列
+    // 用于适配东财的k线api, 与 tushare的k线数据表. 因调用相关函数使用研究时函数, 需要表头适配 dfRaw.rename() 改列名
     public static Map<String, Object> fieldsRenameDict = Dict.create().set("日期", "trade_date").set("开盘", "open")
             .set("收盘", "close")
             .set("最高", "high").set("最低", "low").set("成交量", "vol").set("成交额", "amount");
+
     public static String sqlCreateStockSelectResultSaveTableTemplate = "create table if not exists " +
             "`{}`\n" +
             "(\n" +
@@ -120,6 +120,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     private List<Double> weightsOfLow1GlobalFinal = null; // 44数据
     private List<Double> ticksOfHigh1GlobalFinal = null; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
     private List<Double> weightsOfHigh1GlobalFinal = null; // 88数据
+
     private DataFrame<Object> yesterdayStockHoldsBeSell; // 持仓数据二维数组, 含表头, 昨日收盘时.
     private ConcurrentHashMap<String, Double> yesterdayNineBaseFundsData; // 9项基本数据, 昨日收盘时
     private String stockSelectResultSaveTableName;
@@ -136,7 +137,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
-        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader);
+        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader); // 策略实际方法
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
         this.preferenceMoreStock = preferenceMoreStock;
@@ -146,7 +147,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         this.strategyName = strategyName; // 同super
         this.stockPool = initStockPool(); // 构建器自动初始化股票池!
         initPriceLimitMap();
-        bindSelf();
+        bindSelf(); // trader绑定自身
     }
 
 
@@ -244,7 +245,8 @@ public class LowBuyHighSellStrategy extends Strategy {
         tempMap.keySet().stream()
                 .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));
         log.warn("init success: 昨日持仓与账户资金状况, 初始化完成");
-        List<String> stocksYesterdayHolds = DataFrameS.getColAsStringList(yesterdayStockHoldsBeSell, STR_SEC_CODE);
+        List<String> stocksYesterdayHolds = DataFrameS.getColAsStringList(yesterdayStockHoldsBeSell,
+                SettingsOfTrader.STR_SEC_CODE);
         log.warn("after yesterday close: 昨日收盘后持有股票数量: {} ;代码: {}", stocksYesterdayHolds.size(), stocksYesterdayHolds);
         log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);

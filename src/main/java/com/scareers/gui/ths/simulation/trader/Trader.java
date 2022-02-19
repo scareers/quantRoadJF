@@ -21,7 +21,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
-import com.scareers.datasource.eastmoney.fs.FsFetcher;
+import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
@@ -119,7 +119,7 @@ public class Trader {
         // 直到此时才实例化策略对象, 绑定到 trader
         Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
                 new ArrayList<>(), // 强制排除选股结果
-                30, // 期望选股数量
+                10, // 期望选股数量
                 false, // 偏向更多选股结果
                 Arrays.asList(0, 1) // 核心, 哪天买哪天卖的算法?
         ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用

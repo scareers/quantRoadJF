@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist;
 
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.fs.FsFetcher;
+import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDfDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import joinery.DataFrame;

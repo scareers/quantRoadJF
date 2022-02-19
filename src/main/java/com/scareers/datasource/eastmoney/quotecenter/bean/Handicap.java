@@ -1,4 +1,4 @@
-package com.scareers.datasource.eastmoney.stock;
+package com.scareers.datasource.eastmoney.quotecenter.bean;
 
 /**
  * description: 盘口类; 仅用作 个股/指数/板块 具体盘口类继承. 比直接使用Object含义明确

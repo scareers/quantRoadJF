@@ -1,4 +1,4 @@
-package com.scareers.datasource.eastmoney.fs;
+package com.scareers.datasource.eastmoney.fetcher;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -9,7 +9,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.stock.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.StockApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -93,7 +93,7 @@ public class FsFetcher {
 //                    getFsDatas().values().stream().forEach(value -> Console.log(value.row(value.length() - 1)));
                     SecurityBeanEm bean = RandomUtil.randomEle(SecurityPool.poolForFsFetcherCopy());
                     DataFrame<Object> data = getFsData(bean);
-                    if (data==null) { // 未上市, 已退市, 停牌等
+                    if (data == null || data.length() == 0) { // 未上市, 已退市, 停牌等
 //                        Console.log(bean.getName());
                         continue;
                     }

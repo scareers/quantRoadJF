@@ -80,7 +80,7 @@ public class AccountStatesDisplayPanel extends JPanel {
                     todayClinchsPanel.update(AccountStates.getTodayClinchs());
                     todayConsignsPanel.update(AccountStates.getTodayConsigns());
 
-                    Thread.sleep(100);
+                    Thread.sleep(10);
                 }
             }
         }, true);

@@ -1,7 +1,8 @@
-package com.scareers.datasource.eastmoney.stock;
+package com.scareers.datasource.eastmoney.quotecenter.bean;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
+import com.scareers.datasource.eastmoney.quotecenter.StockApi;
 import lombok.Getter;
 import lombok.ToString;
 
