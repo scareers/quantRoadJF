@@ -29,8 +29,8 @@ public class JSONUtilS {
      * @param paths                访问到核心字段的 属性列表
      * @param columns              df 列名称列表
      * @param clazz                核心列表类型为 String.class(需要split), 或者 JSONArray(索引访问)
-     * @param dropIndexes          可不保留全部字段, 去掉相关字段的索引列表
-     * @param constantColumnValues 可放多个固定值列, 于最前方
+     * @param dropIndexes          可不保留全部字段, 去掉相关字段的索引列表, 不能为null
+     * @param constantColumnValues 可放多个固定值列, 于最前方, 因此必须保证 columns 最前方有相关的列名
      *                             // @noti: 相关参数不可null, 需传递空列表
      * @return
      */
@@ -106,6 +106,7 @@ public class JSONUtilS {
     public static JSONObject parseObj(String jsonStr) {
         return new JSONObject(jsonStr);
     }
+
     public static JSONArray parseArray(String jsonStr) {
         return new JSONArray(jsonStr);
     }

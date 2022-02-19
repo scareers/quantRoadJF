@@ -90,5 +90,4 @@ public class SettingsOfTrader {
     /**
      * 非客户端相关的df数据 表头
      */
-    public static String STR_STOCK_CODE_EM_HEADER; // "股票代码" 表头, 东财市场截面tick使用此
 }

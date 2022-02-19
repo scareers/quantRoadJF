@@ -29,4 +29,10 @@ public class SettingsOfEastMoney {
 
     public static int DEFAULT_TIMEOUT = 3 * 1000;
 
+    /**
+     * 表头字符串字段
+     */
+    public static String STR_SEC_CODE = "资产代码";
+    public static String STR_SEC_NAME = "资产名称";
+
 }

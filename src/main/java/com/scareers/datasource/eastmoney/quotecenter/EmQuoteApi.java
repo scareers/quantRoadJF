@@ -7,6 +7,7 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -29,6 +30,8 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_CODE;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_NAME;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
@@ -39,10 +42,10 @@ import static com.scareers.utils.JSONUtilS.jsonStrToDf;
  */
 public class EmQuoteApi {
     private static final Log log = LogUtil.getLogger();
-    public static ConcurrentHashMap<String, String> FS_DICT = new ConcurrentHashMap<>();
+    public static Map<String, Object> MARKETS_ARGS_DICT = new ConcurrentHashMap<>();
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
-    public static ConcurrentHashMap<String, String> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
+    public static Map<String, Object> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
     public static final List<String> fSTransactionCols = Arrays.asList("stock_code", "market", "time_tick", "price",
             "vol", "bs"); // 分时成交数据列名称
 
@@ -56,49 +59,50 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
-        Console.log(getRealtimeQuotes(Arrays.asList("概念板块")));
-
-
-        Console.log("个股今日涨跌停:");
-        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
-        Console.log("个股昨收今开:");
-        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
-
-        Console.log("个股盘口数据:");
-        Console.log(getStockHandicap("002432", 2000, 1));
-
-        Console.log("指数/板块昨收今开");
-        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
-        Console.log("指数/板块盘口数据:");
-        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
-
-        Console.log("分时成交数据:");
-        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
-        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
-        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
+        Console.log(MARKETS_ARGS_DICT.keySet());
+//
+//
+//        Console.log("个股今日涨跌停:");
+//        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
+//        Console.log("个股昨收今开:");
+//        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
+//
+//        Console.log("个股盘口数据:");
+//        Console.log(getStockHandicap("002432", 2000, 1));
+//
+//        Console.log("指数/板块昨收今开");
+//        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+//        Console.log("指数/板块盘口数据:");
+//        Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
+//
+//        Console.log("分时成交数据:");
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createBK("BK1030"), 1, 2000).toString(250));
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createStock("000001"), 1, 2000).toString(250));
+//        Console.log(getFSTransaction(10, SecurityBeanEm.createIndex("000001"), 1, 2000).toString(250));
 
         Console.log("各市场实时行情截面数据");
         Console.log(getRealtimeQuotes(Arrays.asList("沪深A股")));
         Console.log(getRealtimeQuotes(Arrays.asList("两网及退市")));
         Console.log(getRealtimeQuotes(Arrays.asList("风险警示板")));
-        Console.log(getRealtimeQuotes(Arrays.asList("概念板块", "行业板块", "地域板块")));
-        Console.log(getRealtimeQuotes(Arrays.asList("stock", "可转债")));
+        Console.log(getRealtimeQuotes(Arrays.asList("所有板块")));
+        Console.log(getRealtimeQuotes(Arrays.asList("上证主板", "深证主板")));
+        Console.log(getRealtimeQuotes(Arrays.asList("可转债")));
 
 
-        Console.log("历史行情k线数据 -- 可分时数据");
-        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
-        Console.log("批量历史行情k线数据 -- 可分时数据");
-        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
-                false));
-
-        Console.log("1分钟分时图数据");
-        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 2000));
-
-
-        Console.log("给定日期的上 n 个交易日:");
-        Console.log(getPreNTradeDateStrict(DateUtil.today(), 1));
-        Console.log(getPreTradeDateStrict(DateUtil.today()));
-        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
+//        Console.log("历史行情k线数据 -- 可分时数据");
+//        Console.log(getQuoteHistorySingle(SecurityBeanEm.createIndex("000001"), null, null, "1", "1", 3, 3000));
+//        Console.log("批量历史行情k线数据 -- 可分时数据");
+//        Console.log(getQuoteHistoryBatch(SecurityBeanEm.getTwoGlobalMarketIndexList(), null, null, "1", "1", 3, 3000,
+//                false));
+//
+//        Console.log("1分钟分时图数据");
+//        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 2000));
+//
+//
+//        Console.log("给定日期的上 n 个交易日:");
+//        Console.log(getPreNTradeDateStrict(DateUtil.today(), 1));
+//        Console.log(getPreTradeDateStrict(DateUtil.today()));
+//        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
 
 
     }
@@ -669,13 +673,9 @@ public class EmQuoteApi {
 
     /**
      * efinance get_realtime_quotes 重载实现.  给定市场列表, 返回, 这些市场所有股票列表 截面数据
-     * // ['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21',
-     * 'f13']
-     * <p>
-     * * ['bond', '可转债', 'stock', '沪深A股', '沪深京A股', '北证A股', '北A', 'futures', '期货', '上证A股', '沪A',
-     * * '深证A股', '深A', '新股', '创业板', '科创板', '沪股通', '深股通', '风险警示板', '两网及退市',
-     * * '地域板块', '行业板块', '概念板块', '上证系列指数', '深证系列指数', '沪深系列指数', 'ETF', 'LOF',
-     * * '美股', '港股', '英股', '中概股', '中国概念股']
+     * 可传递市场:
+     * [可转债, 沪深京A股, 沪深A股, 上证A股, 深证A股, 北证A股, 上证主板, 深证主板, 创业板, 科创板, 沪股通, 深股通, 风险警示板, 两网及退市,
+     * 地域板块, 行业板块, 概念板块, 所有板块, 上证系列指数, 深证系列指数, 沪深系列指数, ETF, LOF, 美股, 港股, 英股, 中概股, 期货]
      * <p>
      * Quotes: 行情
      * 列:
@@ -693,15 +693,17 @@ public class EmQuoteApi {
      *
      * @param markets
      * @return
+     * @noti 个股市场重复了语义也可以正常工作
      * @see EmQuoteApi.FS_DICT
      * @see EmQuoteApi.EASTMONEY_QUOTE_FIELDS
      * @see EmQuoteApi.MARKET_NUMBER_DICT
      */
     public static DataFrame<Object> getRealtimeQuotes(List<String> markets) {
-        List<String> realMarketArgs = markets.stream().map(value -> FS_DICT.get(value)).collect(Collectors.toList());
+        List<String> realMarketArgs =
+                markets.stream().map(value -> MARKETS_ARGS_DICT.get(value).toString()).collect(Collectors.toList());
         String marketArgsStr = StrUtil.join(",", realMarketArgs);
         // @bugfix: 实测市场列表参数, python将自动把 " "转换+, 不会出现bug. 而java的自动转换是 %20. 将出现错误?
-        marketArgsStr = marketArgsStr.replace(" ", "+");
+//        marketArgsStr = marketArgsStr.replace(" ", "+");
         //['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21', 'f13']
         String url = "http://push2.eastmoney.com/api/qt/clist/get";
         List<String> fields = Arrays.asList("f12", "f14", "f3", "f2", "f15", "f16", "f17", "f4", "f8",
@@ -723,14 +725,9 @@ public class EmQuoteApi {
                 fields, Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),
                 Arrays.asList());
         dfTemp = dfTemp.rename(EASTMONEY_QUOTE_FIELDS);
-        dfTemp = dfTemp.add("行情id", values ->
-                values.get(16).toString() + "." + values.get(0).toString()
-        );
-        dfTemp = dfTemp.add("市场类型", values ->
+        dfTemp = dfTemp.add("市场名称", values ->
                 MARKET_NUMBER_DICT.get(values.get(16).toString())
         );
-        dfTemp = dfTemp.rename("代码", "股票代码");
-        dfTemp = dfTemp.rename("名称", "股票名称");
         return dfTemp;
     }
 
@@ -779,7 +776,7 @@ public class EmQuoteApi {
 
     /**
      * 单资产历史k线: 字段:
-     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
      * <p>
      * 数据刷新时间:
      * // 日k线
@@ -814,24 +811,27 @@ public class EmQuoteApi {
         if (endDate == null) {
             endDate = "21000101";
         }
-        begDate = begDate.replace("-", ""); // 标准化
-        endDate = endDate.replace("-", "");
+        if (begDate.length() > 8) {
+            begDate = begDate.replace("-", ""); // 标准化
+        }
+        if (endDate.length() > 8) {
+            endDate = endDate.replace("-", "");
+        }
 
         String cacheKey = StrUtil
                 .format("{}__{}__{}__{}__{}__{}__{}", bean.getSecCode(), begDate, endDate, klType, fq,
                         bean.getSecType());
 
         DataFrame<Object> res = null;
-        if (useCache) { // 必须使用caCache 且真的存在缓存
+        if (useCache) { // 必须使用 caCache 且真的存在缓存
             res = quoteHistorySingleCache.get(cacheKey);
         }
         if (res != null) {
             return res;
         }
 
-        String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61";// k线字段
+        String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"; // k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
-
         String quoteId = bean.getSecId();
 
         HashMap<String, Object> params = new HashMap<>();
@@ -851,14 +851,16 @@ public class EmQuoteApi {
         } catch (Exception e) {
             return null;
         }
+
+
         DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
                 fields.stream().map(value -> EASTMONEY_KLINE_FIELDS.get(value).toString())
                         .collect(Collectors.toList()),
                 Arrays.asList("data", "klines"), String.class, Arrays.asList(),
                 Arrays.asList());
 
-        dfTemp = dfTemp.add("股票代码", values -> bean.getSecCode());
-        res = dfTemp.add("股票名称", values -> bean.getName());
+        dfTemp = dfTemp.add(STR_SEC_CODE, values -> bean.getSecCode());
+        res = dfTemp.add(STR_SEC_NAME, values -> bean.getName());
         quoteHistorySingleCache.put(cacheKey, res); // 将更新
         return res;
     }
@@ -982,146 +984,129 @@ public class EmQuoteApi {
 
 
     /**
-     * # 股票、ETF、债券 K 线表头
-     * {f61=换手率, f60=涨跌额, f52=开盘, f51=日期, f54=最高, f53=收盘, f56=成交量, f55=最低, f58=振幅, f57=成交额, f59=涨跌幅}
-     * EASTMONEY_KLINE_FIELDS = {
-     * 'f51': '日期',
-     * 'f52': '开盘',
-     * 'f53': '收盘',
-     * 'f54': '最高',
-     * 'f55': '最低',
-     * 'f56': '成交量',
-     * 'f57': '成交额',
-     * 'f58': '振幅',
-     * 'f59': '涨跌幅',
-     * 'f60': '涨跌额',
-     * 'f61': '换手率'
-     * <p>
-     * }
-     * <p>
+     * 股票、ETF、债券 (历史) K 线表头
+     * 待定添加:
      * 'f18': '昨日收盘', ???
      */
     private static void initEASTMONEYKLINEFIELDS() {
-        String rawJsonFromPython = "{\"f51\": \"\\u65e5\\u671f\", \"f52\": \"\\u5f00\\u76d8\", \"f53\": \"\\u6536\\u76d8\", \"f54\": \"\\u6700\\u9ad8\", \"f55\": \"\\u6700\\u4f4e\", \"f56\": \"\\u6210\\u4ea4\\u91cf\", \"f57\": \"\\u6210\\u4ea4\\u989d\", \"f58\": \"\\u632f\\u5e45\", \"f59\": \"\\u6da8\\u8dcc\\u5e45\", \"f60\": \"\\u6da8\\u8dcc\\u989d\", \"f61\": \"\\u6362\\u624b\\u7387\"}\n";
-        Map<String, Object> temp = JSONUtil.parseObj(rawJsonFromPython);
-        for (String key : temp.keySet()) {
-            EASTMONEY_KLINE_FIELDS.put(key, temp.get(key).toString());
-        }
-        //
+        EASTMONEY_KLINE_FIELDS = Dict.create()
+                .set("f51", "日期")
+                .set("f52", "开盘")
+                .set("f53", "收盘")
+                .set("f54", "最高")
+                .set("f55", "最低")
+                .set("f56", "成交量")
+                .set("f57", "成交额")
+                .set("f58", "振幅")
+                .set("f59", "涨跌幅")
+                .set("f60", "涨跌额")
+                .set("f61", "换手率")
+        ;
     }
 
     /**
-     * 市场类型代码
-     * {142=上海能源期货交易所, 0=深A, 1=沪A, 155=英股, 113=上期所, 114=大商所, 115=郑商所, 105=美股, 116=港股, 106=美股, 128=港股, 90=板块, 107=美股, 8=中金所}
+     * 市场类型代码: 名称.  将在获取单个市场所有标的行情时用到
      */
     private static void initMARKETNUMBERDICT() {
-        String rawJsonFromPython = "{\"0\": \"\\u6df1A\", \"1\": \"\\u6caaA\", \"105\": \"\\u7f8e\\u80a1\", \"106\": " +
-                "\"\\u7f8e\\u80a1\", \"107\": \"\\u7f8e\\u80a1\", \"116\": \"\\u6e2f\\u80a1\", \"128\": \"\\u6e2f\\u80a1\", \"113\": \"\\u4e0a\\u671f\\u6240\", \"114\": \"\\u5927\\u5546\\u6240\", \"115\": \"\\u90d1\\u5546\\u6240\", \"8\": \"\\u4e2d\\u91d1\\u6240\", \"142\": \"\\u4e0a\\u6d77\\u80fd\\u6e90\\u671f\\u8d27\\u4ea4\\u6613\\u6240\", \"155\": \"\\u82f1\\u80a1\", \"90\": \"\\u677f\\u5757\"}\n";
-        Map<String, Object> temp = JSONUtil.parseObj(rawJsonFromPython);
-        for (String key : temp.keySet()) {
-            MARKET_NUMBER_DICT.put(key, temp.get(key).toString());
-        }
+        MARKET_NUMBER_DICT = Dict.create()
+                .set("0", "深A")
+                .set("1", "沪A")
+                .set("8", "中金所")
+                .set("90", "板块")
+                .set("105", "美股")
+                .set("106", "美股")
+                .set("107", "美股")
+                .set("113", "上期所")
+                .set("114", "大商所")
+                .set("115", "郑商所")
+                .set("116", "港股")
+                .set("128", "港股")
+                .set("142", "上海能源期货交易所")
+                .set("155", "英股")
+        ;
     }
 
 
     /**
      * 常态行情表头: getRealtimeQuotes 实时截面数据api的表头
-     * ['f12', 'f14', 'f3', 'f2', 'f15', 'f16', 'f17', 'f4', 'f8', 'f10', 'f9', 'f5', 'f6', 'f18', 'f20', 'f21', 'f13']
-     * {f10=量比, f21=流通市值, f20=总市值, f12=代码, f14=名称, f13=市场编号, f16=最低, f15=最高, f2=最新价, f18=昨日收盘, f3=涨跌幅, f17=今开, f4=涨跌额, f5=成交量, f6=成交额, f8=换手率, f9=动态市盈率}
-     * <p>
-     * # 股票、债券榜单表头
-     * EASTMONEY_QUOTE_FIELDS = {
-     * 'f12': '代码',
-     * 'f14': '名称',
-     * 'f3': '涨跌幅',
-     * 'f2': '最新价',
-     * 'f15': '最高',
-     * 'f16': '最低',
-     * 'f17': '今开',
-     * 'f4': '涨跌额',
-     * 'f8': '换手率',
-     * 'f10': '量比',
-     * 'f9': '动态市盈率',
-     * 'f5': '成交量',
-     * 'f6': '成交额',
-     * 'f18': '昨日收盘',
-     * 'f20': '总市值',
-     * 'f21': '流通市值',
-     * 'f13': '市场编号'
-     * }
      */
     private static void initEASTMONEYQUOTEFIELDS() {
-        String rawJsonFromPython = "{\"f12\": \"\\u4ee3\\u7801\", \"f14\": \"\\u540d\\u79f0\", \"f3\": " +
-                "\"\\u6da8\\u8dcc\\u5e45\", \"f2\": \"\\u6700\\u65b0\\u4ef7\", \"f15\": \"\\u6700\\u9ad8\", \"f16\": \"\\u6700\\u4f4e\", \"f17\": \"\\u4eca\\u5f00\", \"f4\": \"\\u6da8\\u8dcc\\u989d\", \"f8\": \"\\u6362\\u624b\\u7387\", \"f10\": \"\\u91cf\\u6bd4\", \"f9\": \"\\u52a8\\u6001\\u5e02\\u76c8\\u7387\", \"f5\": \"\\u6210\\u4ea4\\u91cf\", \"f6\": \"\\u6210\\u4ea4\\u989d\", \"f18\": \"\\u6628\\u65e5\\u6536\\u76d8\", \"f20\": \"\\u603b\\u5e02\\u503c\", \"f21\": \"\\u6d41\\u901a\\u5e02\\u503c\", \"f13\": \"\\u5e02\\u573a\\u7f16\\u53f7\"}\n";
-        Map<String, Object> temp = JSONUtil.parseObj(rawJsonFromPython);
-        for (String key : temp.keySet()) {
-            EASTMONEY_QUOTE_FIELDS.put(key, temp.get(key).toString());
-        }
+        Dict temp = Dict.create()
+                .set("f12", STR_SEC_CODE)
+                .set("f14", STR_SEC_NAME)
+                .set("f3", "涨跌幅")
+                .set("f2", "最新")
+                .set("f15", "最高")
+                .set("f16", "最低")
+                .set("f17", "今开")
+                .set("f4", "涨跌额")
+                .set("f8", "换手率")
+                .set("f10", "量比")
+                .set("f9", "动态市盈率")
+                .set("f5", "成交量")
+                .set("f6", "成交额")
+                .set("f18", "昨收")
+                .set("f20", "总市值")
+                .set("f21", "流通市值")
+                .set("f13", "市场编号");
+        EASTMONEY_QUOTE_FIELDS.putAll(temp);
     }
 
     /**
-     * python json.dumps() 复制而来, java处理为 ConcurrentHashMap
-     * 实时截面数据可以传递的市场参数有:
-     * 实际的市场参数可传递的列表是:
-     * ['bond', '可转债', 'stock', '沪深A股', '沪深京A股', '北证A股', '北A', 'futures', '期货', '上证A股', '沪A',
-     * '深证A股', '深A', '新股', '创业板', '科创板', '沪股通', '深股通', '风险警示板', '两网及退市',
-     * '地域板块', '行业板块', '概念板块', '上证系列指数', '深证系列指数', '沪深系列指数', 'ETF', 'LOF',
-     * '美股', '港股', '英股', '中概股', '中国概念股']
-     * <p>
-     * # ! Powerful
-     * FS_DICT = {
-     * # 可转债
-     * 'bond': 'b:MK0354',
-     * '可转债': 'b:MK0354',
-     * 'stock': 'm:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23,m:0 t:81 s:2048',
-     * # 沪深A股
-     * # 'stock': 'm:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23',
-     * '沪深A股': 'm:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23',
-     * '沪深京A股': 'm:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23,m:0 t:81 s:2048',
-     * '北证A股': 'm:0 t:81 s:2048',
-     * '北A': 'm:0 t:81 s:2048',
-     * # 期货
-     * 'futures': 'm:113,m:114,m:115,m:8,m:142',
-     * '期货': 'm:113,m:114,m:115,m:8,m:142',
-     * '上证A股': 'm:1 t:2,m:1 t:23',
-     * '沪A': 'm:1 t:2,m:1 t:23',
-     * '深证A股': 'm:0 t:6,m:0 t:80',
-     * '深A': 'm:0 t:6,m:0 t:80',
-     * # 沪深新股
-     * '新股': 'm:0 f:8,m:1 f:8',
-     * '创业板': 'm:0 t:80',
-     * '科创板': 'm:1 t:23',
-     * '沪股通': 'b:BK0707',
-     * '深股通': 'b:BK0804',
-     * '风险警示板': 'm:0 f:4,m:1 f:4',
-     * '两网及退市': 'm:0 s:3',
-     * # 板块
-     * '地域板块': 'm:90 t:1 f:!50',
-     * '行业板块': 'm:90 t:2 f:!50',
-     * '概念板块': 'm:90 t:3 f:!50',
-     * # 指数
-     * '上证系列指数': 'm:1 s:2',
-     * '深证系列指数': 'm:0 t:5',
-     * '沪深系列指数': 'm:1 s:2,m:0 t:5',
-     * # ETF 基金
-     * 'ETF': 'b:MK0021,b:MK0022,b:MK0023,b:MK0024',
-     * # LOF 基金
-     * 'LOF': 'b:MK0404,b:MK0405,b:MK0406,b:MK0407',
-     * '美股': 'm:105,m:106,m:107',
-     * '港股': 'm:128 t:3,m:128 t:4,m:128 t:1,m:128 t:2',
-     * '英股': 'm:155 t:1,m:155 t:2,m:155 t:3,m:156 t:1,m:156 t:2,m:156 t:5,m:156 t:6,m:156 t:7,m:156 t:8',
-     * '中概股': 'b:MK0201',
-     * '中国概念股': 'b:MK0201'
-     * <p>
-     * }
+     * 实时截面数据可以传递的市场参数 --> 已经优化修改!!
+     * 实际的市场参数可传递的列表是: 注意语义别重复了
+     * [可转债, 沪深京A股, 沪深A股, 上证A股, 深证A股, 北证A股, 上证主板, 深证主板, 创业板, 科创板, 沪股通, 深股通, 风险警示板, 两网及退市,
+     * 地域板块, 行业板块, 概念板块, 所有板块, 上证系列指数, 深证系列指数, 沪深系列指数, ETF, LOF, 美股, 港股, 英股, 中概股, 期货]
      */
     private static void initFSDICT() {
-        String rawJsonFromPython = "{\"bond\": \"b:MK0354\", \"\\u53ef\\u8f6c\\u503a\": \"b:MK0354\", \"stock\": " +
-                "\"m:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23,m:0 t:81 s:2048\", \"\\u6caa\\u6df1A\\u80a1\": \"m:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23\", \"\\u6caa\\u6df1\\u4eacA\\u80a1\": \"m:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23,m:0 t:81 s:2048\", \"\\u5317\\u8bc1A\\u80a1\": \"m:0 t:81 s:2048\", \"\\u5317A\": \"m:0 t:81 s:2048\", \"futures\": \"m:113,m:114,m:115,m:8,m:142\", \"\\u671f\\u8d27\": \"m:113,m:114,m:115,m:8,m:142\", \"\\u4e0a\\u8bc1A\\u80a1\": \"m:1 t:2,m:1 t:23\", \"\\u6caaA\": \"m:1 t:2,m:1 t:23\", \"\\u6df1\\u8bc1A\\u80a1\": \"m:0 t:6,m:0 t:80\", \"\\u6df1A\": \"m:0 t:6,m:0 t:80\", \"\\u65b0\\u80a1\": \"m:0 f:8,m:1 f:8\", \"\\u521b\\u4e1a\\u677f\": \"m:0 t:80\", \"\\u79d1\\u521b\\u677f\": \"m:1 t:23\", \"\\u6caa\\u80a1\\u901a\": \"b:BK0707\", \"\\u6df1\\u80a1\\u901a\": \"b:BK0804\", \"\\u98ce\\u9669\\u8b66\\u793a\\u677f\": \"m:0 f:4,m:1 f:4\", \"\\u4e24\\u7f51\\u53ca\\u9000\\u5e02\": \"m:0 s:3\", \"\\u5730\\u57df\\u677f\\u5757\": \"m:90 t:1 f:!50\", \"\\u884c\\u4e1a\\u677f\\u5757\": \"m:90 t:2 f:!50\", \"\\u6982\\u5ff5\\u677f\\u5757\": \"m:90 t:3 f:!50\", \"\\u4e0a\\u8bc1\\u7cfb\\u5217\\u6307\\u6570\": \"m:1 s:2\", \"\\u6df1\\u8bc1\\u7cfb\\u5217\\u6307\\u6570\": \"m:0 t:5\", \"\\u6caa\\u6df1\\u7cfb\\u5217\\u6307\\u6570\": \"m:1 s:2,m:0 t:5\", \"ETF\": \"b:MK0021,b:MK0022,b:MK0023,b:MK0024\", \"LOF\": \"b:MK0404,b:MK0405,b:MK0406,b:MK0407\", \"\\u7f8e\\u80a1\": \"m:105,m:106,m:107\", \"\\u6e2f\\u80a1\": \"m:128 t:3,m:128 t:4,m:128 t:1,m:128 t:2\", \"\\u82f1\\u80a1\": \"m:155 t:1,m:155 t:2,m:155 t:3,m:156 t:1,m:156 t:2,m:156 t:5,m:156 t:6,m:156 t:7,m:156 t:8\", \"\\u4e2d\\u6982\\u80a1\": \"b:MK0201\", \"\\u4e2d\\u56fd\\u6982\\u5ff5\\u80a1\": \"b:MK0201\"}\n";
-        Map<String, Object> temp = JSONUtil.parseObj(rawJsonFromPython);
-        for (String key : temp.keySet()) {
-            FS_DICT.put(key, temp.get(key).toString());
-        }
+        MARKETS_ARGS_DICT = Dict.create()
+                // 可转债
+                .set("可转债", "b:MK0354")
+
+                // 股票
+                .set("沪深京A股", "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048")
+                .set("沪深A股", "m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23") // 沪深A, 不含京
+                .set("上证A股", "m:1+t:2,m:1+t:23")
+                .set("深证A股", "m:0+t:6,m:0+t:80")
+                .set("北证A股", "m:0+t:81+s:2048")
+
+                .set("上证主板", "m:1+t:2")
+                .set("深证主板", "m:0+t:6")
+                .set("沪深主板", "m:1+t:2,m:0+t:6")
+                .set("创业板", "m:0+t:80")
+                .set("科创板", "m:1+t:23")
+
+                .set("沪股通", "b:BK0707")
+                .set("深股通", "b:BK0804")
+
+                .set("风险警示板", "m:0+f:4,m:1+f:4")
+                .set("两网及退市", "m:0+s:3")
+
+                // 板块
+                .set("地域板块", "m:90+t:1+f:!50")
+                .set("行业板块", "m:90+t:2+f:!50")
+                .set("概念板块", "m:90+t:3+f:!50")
+                .set("所有板块", "m:90+t:3+f:!50,m:90+t:2+f:!50,m:90+t:1+f:!50") // 三者相加
+
+                // 指数
+                .set("上证系列指数", "m:1+s:2")
+                .set("深证系列指数", "m:0+t:5")
+                .set("沪深系列指数", "m:1+s:2,m:0+t:5") // 相加
+
+                // 基金
+                .set("ETF", "b:MK0021,b:MK0022,b:MK0023,b:MK0024")
+                .set("LOF", "b:MK0404,b:MK0405,b:MK0406,b:MK0407")
+
+                // 美英港
+                .set("美股", "m:105,m:106,m:107")
+                .set("港股", "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2")
+                .set("英股", "m:155+t:1,m:155+t:2,m:155+t:3,m:156+t:1,m:156+t:2,m:156+t:5,m:156+t:6,m:156+t:7,m:156+t:8")
+                .set("中概股", "b:MK0201") // 期货, 组合5大期货
+
+                // 期货
+                .set("期货", "m:113,m:114,m:115,m:8,m:142") // 期货, 组合各大期货所?
+        ;
+
     }
 
 }
