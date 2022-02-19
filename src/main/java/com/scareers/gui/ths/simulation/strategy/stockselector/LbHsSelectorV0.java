@@ -116,14 +116,14 @@ public class LbHsSelectorV0 extends LbHsSelector {
                           int suitableSelectStockCount, // 期望的选股结果数量
                           boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
                           List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推. 影响选股结果保存表结果
-    ) throws Exception {
+    )  {
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
         this.preferenceMoreStock = preferenceMoreStock;
         this.keyInts = keyInts;
         this.stockSelectResultSaveTableName = StrUtil.format("stock_select_result_of_lbhs_trader_{}b{}s",
                 keyInts.get(0), keyInts.get(1)); // 立即初始化表明保存结果
-        selectStock(); // 构建器自动初始化股票池!
+        // selectStock(); // 构建器自动初始化股票池!
     }
 
     @Override
