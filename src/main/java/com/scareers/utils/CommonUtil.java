@@ -189,6 +189,16 @@ public class CommonUtil {
         return res;
     }
 
+    public static List<Double> cumSumOfListDouble(List<Double> doubles) {
+        ArrayList<Double> objects = new ArrayList<>();
+        double sum = 0.0;
+        for (Double aDouble : doubles) {
+            sum += aDouble;
+            objects.add(sum);
+        }
+        return objects;
+    }
+
     /**
      * 等待 某函数返回true
      *
