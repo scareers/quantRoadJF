@@ -19,7 +19,7 @@ public class OrderFactory {
      * 构造买卖order基本函数.  order使用 JSONObject 类型.
      *
      * @param type      订单类型: 买/卖
-     * @param stockCode 股票代码
+     * @param stockCode 资产代码
      * @param amounts   数量Number
      * @param price     价格
      * @return

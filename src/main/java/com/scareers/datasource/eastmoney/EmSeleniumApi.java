@@ -43,12 +43,12 @@ public class EmSeleniumApi {
     public static final Object driverLock = new Object();
     public static boolean headless = false; // dirver是否隐藏, 可更改
     public static final List<String> stockPopularityListColNames = Arrays.asList("当前排名", "排名较昨日变动", "历史趋势", "代码",
-            "股票名称", "相关",
+            "资产名称", "相关",
             "最新价", "涨跌额", "涨跌幅",
             "新晋粉丝", "铁杆粉丝"); // 个股人气榜表头.
     public static final List<String> stockPopularityRaisingListColNames = Arrays.asList("排名较昨日变动", "当前排名", "历史趋势",
             "代码",
-            "股票名称", "相关",
+            "资产名称", "相关",
             "最新价", "涨跌额", "涨跌幅",
             "新晋粉丝", "铁杆粉丝"); // 个股人气飙升榜 表头.
 
@@ -58,7 +58,7 @@ public class EmSeleniumApi {
 //        Console.log(dataFrame.col("当前排名"));
 //        Console.log(dataFrame.col("排名较昨日变动"));
 //        Console.log(dataFrame.col("历史趋势"));
-//        Console.log(dataFrame.col("股票名称"));
+//        Console.log(dataFrame.col("资产名称"));
 //        Console.log(dataFrame.col("涨跌额"));
 //        Console.log(dataFrame.col("新晋粉丝"));
 //        Console.log(dataFrame.col("铁杆粉丝"));

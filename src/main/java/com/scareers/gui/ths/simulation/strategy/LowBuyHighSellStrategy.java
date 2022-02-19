@@ -536,11 +536,11 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("stock select today: 执行今日选股主逻辑. keyInts: {}", keyInts);
         execSql(StrUtil.format(sqlCreateStockSelectResultSaveTableTemplate, stockSelectResultSaveTableName),
                 connOfStockSelectResult); // 不存在则建表
-        List<String> allHSAstock = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "股票代码");
-        List<String> pioneerMarket = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "股票代码");
+        List<String> allHSAstock = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("沪深A股")), "资产代码");
+        List<String> pioneerMarket = DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("创业板")), "资产代码");
         List<String> scientificCreationMarket =
                 DataFrameS.getColAsStringList(getRealtimeQuotes(Arrays.asList("科创板")),
-                        "股票代码");
+                        "资产代码");
         HashSet<String> mainboardStocks = subtractionOfList(new ArrayList<>(subtractionOfList(allHSAstock,
                 pioneerMarket)),
                 scientificCreationMarket); // 两次差集操作, 获取所有主板股票
@@ -601,13 +601,13 @@ public class LowBuyHighSellStrategy extends Strategy {
     private boolean[] calcReachPriceLimit(List<Object> todayKlineRow, List<Object> yesterdayKlineRow,
                                           DataFrame<Object> dfWindow) {
         /*
-          	trade_date	open	close	high	 low	   vol	      amount	   振幅	  涨跌幅	  涨跌额	 换手率	昨日收盘	  股票代码	股票名称
+          	trade_date	open	close	high	 low	   vol	      amount	   振幅	  涨跌幅	  涨跌额	 换手率	昨日收盘	  资产代码	资产名称
             0	2021-12-17	4.54	4.46 	4.54	4.45	182884	81887987.00 	2.00 	-0.89	-0.04	1.15	0   	000976	华铁股份
          */
 
         Double todayClose = getPriceOfSingleKline(todayKlineRow, "close");
         Double yesterdayClose = getPriceOfSingleKline(yesterdayKlineRow, "close");
-        List<Object> colName = dfWindow.col("股票名称");
+        List<Object> colName = dfWindow.col("资产名称");
         String stockName = colName.get(5).toString();
         Double priceLimit = 0.1; // 全是主板
         if (stockName.contains("ST")) {

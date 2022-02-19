@@ -118,7 +118,7 @@ public class IndexBkHandicap extends Handicap {
     }
 
     String dateTime; // 由于该api没有时间字段. 自行在new时生成 yyyy-MM-dd HH:mm:ss 形式 DateUtil.now();
-    // 股票代码,名称
+    // 资产代码,名称
     String secCode; // "f57": "000001", 指数/板块代码 "BK1030"
     String stockName; // "f58": "浦发银行", 名称
 

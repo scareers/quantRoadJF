@@ -31,7 +31,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  *
  * @author admin
  * @noti 单例模式. 实例维护不需要gui展示的属性. 与gui相关字段全部设置静态属性
- * @noti 字段列表: 日期	            开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+ * @noti 字段列表: 日期	            开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
  * @noti 数据实例: 2022-01-25 09:31	17.08	17.02	17.08	17.02	11145	19006426.00	0.35	-1.05	-0.18	0.01	000001	平安银行
  * @noti 当某分钟开始后(即0秒以后, fs将更新到当分钟 + 1. 例如当前 13 : 21 : 10, 则将更新到 13 : 22
  * @noti 集合竞价结果将于 09:25:xx 更新, 作为第一条分时图字段. 且时间固定为 9:31, 当9:30:xx后, 价格将刷新, 但时间依旧9:31;
@@ -341,7 +341,7 @@ public class FsFetcher {
      */
 
     /**
-     * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * 列索引参考: 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	资产代码	资产名称
      *
      * @param bean
      * @return 单股票/指数今日完整分时图 df;
@@ -351,7 +351,7 @@ public class FsFetcher {
     }
 
     /**
-     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      *
      * @return 上证指数df;
      */
@@ -360,7 +360,7 @@ public class FsFetcher {
     }
 
     /**
-     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      *
      * @return 深证成指df;
      */
@@ -404,9 +404,9 @@ public class FsFetcher {
      *
      * @param stockOrIndex 股票/指数 SecurityBeanEm 对象
      * @param tickStr      时间tick, 要求格式: 2022-01-25 09:31, 或者 hutool.DateUtil 能够转换的其他形式, 可自动设定日期为今天
-     * @param colIndex     列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colIndex     列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @param reverseFind  正序或者反向遍历, 可根据情况提高性能
-     * @return 给定股票/指数, 时间戳字符串, 列索引序号, 查找对应的值 Object 返回; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @return 给定股票/指数, 时间戳字符串, 列索引序号, 查找对应的值 Object 返回; 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      */
     public static Object getValueByTimeTick(SecurityBeanEm stockOrIndex, String tickStr, int colIndex,
                                             boolean reverseFind) {
@@ -444,7 +444,7 @@ public class FsFetcher {
      * 给定股票bean和列名, 返回对应列.
      *
      * @param bean           SecurityBeanEm
-     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @return List<Object> 整列数据
      */
     public static List<Object> getColumnByColNameOrIndex(SecurityBeanEm bean,
@@ -460,7 +460,7 @@ public class FsFetcher {
      * 返回 List<String> 列.
      *
      * @param stockOrIndex
-     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @return
      */
     public static List<String> getColumnByColNameOrIndexAsString(SecurityBeanEm bean,
@@ -476,7 +476,7 @@ public class FsFetcher {
      * 返回 List<Long> 列.
      *
      * @param stockOrIndex
-     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @return
      */
     public static List<Long> getColumnByColNameOrIndexAsLong(SecurityBeanEm bean,
@@ -492,7 +492,7 @@ public class FsFetcher {
      * 返回 List<Integer> 列.
      *
      * @param stockOrIndex
-     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @return
      */
     public static List<Integer> getColumnByColNameOrIndexAsInteger(SecurityBeanEm bean,
@@ -508,7 +508,7 @@ public class FsFetcher {
      * 返回 List<Double> 列.
      *
      * @param stockOrIndex
-     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	股票代码	股票名称
+     * @param colNameOrIndex 列索引参考: 日期 开盘	收盘	最高	最低	成交量	成交额	    振幅	涨跌幅	涨跌额  换手率	资产代码	资产名称
      * @return
      */
     public static List<Double> getColumnByColNameOrIndexAsDouble(SecurityBeanEm bean,

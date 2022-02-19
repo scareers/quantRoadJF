@@ -55,6 +55,8 @@ public class EmQuoteApi {
             3600 * 1000); // 个股今日涨跌停
     public static Cache<String, List<Double>> stockPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股昨收和今开盘价
+    public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
+            3600 * 1000); // 某个日期的上n个交易日?
     public static ThreadPoolExecutor poolExecutor; // 可能的线程池
 
 
@@ -314,7 +316,7 @@ public class EmQuoteApi {
      * "f51": 9.56,  涨停
      * "f52": 7.82,  跌停
      * "f55": 1.415091382, 公司核心数据-收益(三)
-     * "f57": "600000", 股票代码
+     * "f57": "600000", 资产代码
      * "f58": "浦发银行", 名称
      * "f60": 8.69, 昨收
      * "f62": 3,
@@ -679,7 +681,7 @@ public class EmQuoteApi {
      * <p>
      * Quotes: 行情
      * 列:
-     * 股票代码	 股票名称	涨跌幅	最新价	最高 最低	 今开	 涨跌额	         换手率	          量比	          动态市盈率
+     * 资产代码	 资产名称	涨跌幅	最新价	最高 最低	 今开	 涨跌额	         换手率	          量比	          动态市盈率
      * 成交量	                 成交额	          昨日收盘	           总市值	          流通市值	市场编号	    行情id	市场类型
      * <p>
      * 数据刷新时间点:
@@ -733,7 +735,7 @@ public class EmQuoteApi {
 
     /**
      * 批量资产获取k线. 复刻 efinance   get_quote_history
-     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	  涨跌幅	  涨跌额	 换手率	  资产代码	资产名称
      *
      * @return
      * @throws ExecutionException
@@ -888,7 +890,7 @@ public class EmQuoteApi {
 
     /**
      * 1分钟分时数据, 本身使用 getQuoteHistorySingle().
-     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
      *
      * <p>
      * 数据刷新时刻:
@@ -923,7 +925,7 @@ public class EmQuoteApi {
 
     /**
      * 分时图将默认不使用cache,比较实时
-     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+     * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
      *
      * @param bean
      * @param retrySingle
@@ -943,9 +945,15 @@ public class EmQuoteApi {
      * 返回  yyyy-MM-dd 形式
      *
      * @param todayDate
-     * @return
+     * @return yyyy-MM-dd
      */
+    @TimeoutCache(timeout = "3600 * 1000")
     public static String getPreNTradeDateStrict(String todayDate, int n) {
+        String cacheKey = StrUtil.format("{}__{}", todayDate, n);
+        String res = preNTradeDateStrictCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
         // 查询结果将被缓存.
         DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, "19900101",
                 "21000101", "101", "1", 3,

@@ -104,8 +104,8 @@ public class StockHandicap extends Handicap{
 
     private static void initFieldsMap() {
         fieldsMap = new HashMap<>();
-        fieldsMap.put("f57", "股票代码");
-        fieldsMap.put("f58", "股票名称");
+        fieldsMap.put("f57", "资产代码");
+        fieldsMap.put("f58", "资产名称");
         fieldsMap.put("f191", "委比");
         fieldsMap.put("f192", "委差");
 
@@ -161,8 +161,8 @@ public class StockHandicap extends Handicap{
     }
 
     String dateTime; // 由于该api没有时间字段. 自行在new时生成 yyyy-MM-dd HH:mm:ss 形式 DateUtil.now();
-    // 股票代码,名称
-    String stockCodeSimple; // "f57": "600000", 股票代码
+    // 资产代码,名称
+    String stockCodeSimple; // "f57": "600000", 资产代码
     String stockName; // "f58": "浦发银行", 名称
 
     // 委比,委差
@@ -359,7 +359,7 @@ public class StockHandicap extends Handicap{
  * "f51": 9.56,  涨停
  * "f52": 7.82,  跌停
  * "f55": 1.415091382, 公司核心数据-收益(三)
- * "f57": "600000", 股票代码
+ * "f57": "600000", 资产代码
  * "f58": "浦发银行", 名称
  * "f60": 8.69, 昨收
  * "f62": 3,

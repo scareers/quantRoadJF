@@ -165,7 +165,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // 1. 读取昨日收盘价
             Double preClosePrice = 0.0;
             try {
-                //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+                //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                 preClosePrice =
                         Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock), preTradeDate,
                                 preTradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
@@ -296,7 +296,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                 // 1. 读取前日收盘价
                 Double pre2ClosePrice;
                 try {
-                    //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  股票代码	股票名称
+                    //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                     pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock),
                             pre2TradeDate,
                             pre2TradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());

@@ -1805,7 +1805,7 @@
                     gubatable: !0,
                     showstocklink: !1,
                     showblank: !1,
-                    placeholder: "请输入股票代码/名称/简拼",
+                    placeholder: "请输入资产代码/名称/简拼",
                     filter: {securitytype: "1,2,25,19,7,20", status: 1},
                     onConfirmStock: function (t) {
                         console.log(t);
@@ -1821,7 +1821,7 @@
                     } else t("#heat_search").attr("code", 0), t("#heat_search").attr("name", 0)
                 }), t("#search_btn").click(function () {
                     var e = t("#heat_search").attr("code");
-                    0 != e && e ? window.open("/rank/stock?code=" + e, "_blank") : alert("请输入正确的股票代码")
+                    0 != e && e ? window.open("/rank/stock?code=" + e, "_blank") : alert("请输入正确的资产代码")
                 })
             }, !0)
         }, e
@@ -2448,7 +2448,7 @@
                 inverse: e.program(3, o, 0, i, a),
                 data: o,
                 loc: {start: {line: 4, column: 12}, end: {line: 10, column: 19}}
-            })) ? s : "") + "            <td><div>历史趋势</div></td>\r\n            <td><div>代码</div></td>\r\n            <td><div>股票名称</div></td>\r\n            <td><div>相关</div></td>\r\n            <td><div>最新价</div></td>\r\n            <td><div>涨跌额</div></td>\r\n            <td><div>涨跌幅</div></td>\r\n" + (null != (s = l(n, "if").call(c, null != t ? l(t, "isStockHS") : t, {
+            })) ? s : "") + "            <td><div>历史趋势</div></td>\r\n            <td><div>代码</div></td>\r\n            <td><div>资产名称</div></td>\r\n            <td><div>相关</div></td>\r\n            <td><div>最新价</div></td>\r\n            <td><div>涨跌额</div></td>\r\n            <td><div>涨跌幅</div></td>\r\n" + (null != (s = l(n, "if").call(c, null != t ? l(t, "isStockHS") : t, {
                 name: "if",
                 hash: {},
                 fn: e.program(5, o, 0, i, a),

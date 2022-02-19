@@ -282,7 +282,7 @@ public class SecurityPool {
                                                                  SecurityBeanEm.SecType type)
             throws Exception {
         DataFrame<Object> tick = EmQuoteApi.getRealtimeQuotes(markets);
-        List<String> stockCode = DataFrameS.getColAsStringList(tick, "股票代码"); // 可能是指数/板块代码
+        List<String> stockCode = DataFrameS.getColAsStringList(tick, "资产代码"); // 可能是指数/板块代码
         List<String> stocks;
         if (random) {
             stocks = RandomUtil.randomEleList(stockCode, amount);

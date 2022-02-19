@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityId;
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsToBeanList;
@@ -25,7 +26,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  * <p>
  * 1.单个bean, 仅可转换一次, 转换为特定类型后不可变化
  * 2.且本类仅包含一种资产的各种属性, 原则上不包含 "数据(特指k线,分时图等)", 应当将本类实例组合进代表数据的类中
- * 3.东财所有相关api, 建议使用 SecurityBeanEm 作为参数, 而非简单使用股票代码等
+ * 3.东财所有相关api, 建议使用 SecurityBeanEm 作为参数, 而非简单使用资产代码等
  *
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
@@ -55,6 +56,10 @@ public class SecurityBeanEm {
 
         SecurityBeanEm stock2 = SecurityBeanEm.createIndex("000001");
         Console.log(stock2);
+
+        Console.log(SecurityBeanEm.createStockList(Arrays.asList("000001", "000007")));
+        Console.log(SecurityBeanEm.createBKList(Arrays.asList("bk1030", "bk1020")));
+        Console.log(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001")));
     }
 
 
@@ -98,12 +103,22 @@ public class SecurityBeanEm {
      * @throws Exception
      */
     public static List<SecurityBeanEm> createStockList(List<String> queryConditionList) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
+        List<String> withoutCache = queryConditionList.stream()
+                .filter(value -> !beanPool.containsKey(value + "__stock"))
+                .collect(Collectors.toList());
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(withoutCache); // 新增到cache
         for (SecurityBeanEm bean : beans) {
             bean.convertToStock();
             beanPool.put(bean.getSecCode() + "__stock", bean); // 放入缓存池
         }
-        return beans; // 列表不变
+        return queryConditionList.stream().map(value -> { // 从缓存池查询
+            try {
+                return SecurityBeanEm.createStock(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -114,12 +129,22 @@ public class SecurityBeanEm {
      * @throws Exception
      */
     public static List<SecurityBeanEm> createIndexList(List<String> queryConditionList) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
+        List<String> withoutCache = queryConditionList.stream()
+                .filter(value -> !beanPool.containsKey(value + "__index"))
+                .collect(Collectors.toList());
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(withoutCache); // 新增到cache
         for (SecurityBeanEm bean : beans) {
             bean.convertToIndex();
             beanPool.put(bean.getSecCode() + "__index", bean); // 放入缓存池
         }
-        return beans;
+        return queryConditionList.stream().map(value -> { // 从缓存池查询
+            try {
+                return SecurityBeanEm.createIndex(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -130,12 +155,22 @@ public class SecurityBeanEm {
      * @throws Exception
      */
     public static List<SecurityBeanEm> createBKList(List<String> queryConditionList) throws Exception {
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(queryConditionList);
+        List<String> withoutCache = queryConditionList.stream()
+                .filter(value -> !beanPool.containsKey(value + "__bk"))
+                .collect(Collectors.toList());
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(withoutCache); // 新增到cache
         for (SecurityBeanEm bean : beans) {
             bean.convertToBK();
             beanPool.put(bean.getSecCode() + "__bk", bean); // 放入缓存池
         }
-        return beans;
+        return queryConditionList.stream().map(value -> { // 从缓存池查询
+            try {
+                return SecurityBeanEm.createBK(value);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }).collect(Collectors.toList());
     }
 
     /**

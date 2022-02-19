@@ -35,7 +35,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author admin
  * @impl1: 该api来自于 dfcf 行情页面的 分时成交(个股) 或者 分笔(指数) 页面.
  * https://push2.eastmoney.com/api/qt/stock/details/get?fields1=f1,f2,f3,f4&fields2=f51,f52,f53,f54,f55&fltt=2&cb=jQuery35107646502669044317_1640077292479&pos=-5900&secid=0.600000&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1640077292670
- * 该url使用股票代码作为参数, secid=0.600000   0/1 分别代表 深市/ 上市
+ * 该url使用资产代码作为参数, secid=0.600000   0/1 分别代表 深市/ 上市
  * 科创板属于上市, 创业板属于深市. 目前 北交所前缀也为 0, 约等于深市.
  * @impl2: 该api为分页api. 实测可以更改单页数量到 5000. 同样需指定 market和code . 本质上两个api 返回值相同
  * https://push2ex.eastmoney.com/getStockFenShi?pagesize=5000&ut=7eea3edcaed734bea9cbfc24409ed989&dpt=wzfscj&cb=jQuery112405998333817754311_1640090463418&pageindex=0&id=3990011&sort=1&ft=1&code=399001&market=0&_=1640090463419

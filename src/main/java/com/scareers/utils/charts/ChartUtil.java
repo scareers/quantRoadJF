@@ -64,10 +64,10 @@ public class ChartUtil {
 //        dfAsLineChartSimple(df, true);
 
         DataFrame<Object> fs1MDf = EmQuoteApi.getFs1MToday(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 0, 2000);
-        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "股票代码").toString(), 2000, 2, true).get(0);
+        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "资产代码").toString(), 2000, 2, true).get(0);
         // 昨收
-        JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "股票代码").toString() + " [" + fs1MDf.get(0,
-                "股票名称").toString() + "]", KLineYType.PERCENT);
+        JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "资产代码").toString() + " [" + fs1MDf.get(0,
+                "资产名称").toString() + "]", KLineYType.PERCENT);
         showChartSimple(chart);
 
     }
@@ -312,7 +312,7 @@ public class ChartUtil {
 
     /**
      * 东方财富 1分钟分时图chart创建, api数据形式如下
-     * 日期	   开盘	   收盘	   最高	   最低	  成交量	        成交额	  振幅	  涨跌幅	  涨跌额	 换手率	  股票代码	股票名称
+     * 日期	   开盘	   收盘	   最高	   最低	  成交量	        成交额	  振幅	  涨跌幅	  涨跌额	 换手率	  资产代码	资产名称
      * 0	2022-02-11 09:31	17.03	17.13	17.19	17.03	53583	91625540.00	0.94	0.82 	0.14 	0.03	000001	平安银行
      * 1	2022-02-11 09:32	17.15	17.26	17.30	17.15	48710	83935378.00	0.88	0.76 	0.13 	0.03	000001	平安银行
      * 2	2022-02-11 09:33	17.26	17.21	17.26	17.21	18280	31506777.00	0.29	-0.29	-0.05	0.01	000001	平安银行
