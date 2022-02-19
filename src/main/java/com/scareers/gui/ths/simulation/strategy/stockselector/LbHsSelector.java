@@ -20,8 +20,8 @@ public abstract class LbHsSelector implements StockSelect {
     protected List<Double> weightsOfLowBuy; // 44数据
     protected List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
     protected List<Double> weightsOfHighSell; // 88数据
-    protected List<Double> cdfOfLowBuy; // cdf
-    protected List<Double> cdfOfHighSell; // cdf
+    protected List<Double> cdfOfLowBuy;
+    protected List<Double> cdfOfHighSell;
 
 
     public abstract List<Double> getTicksOfLowBuy();
