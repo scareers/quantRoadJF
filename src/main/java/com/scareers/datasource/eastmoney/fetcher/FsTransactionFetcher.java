@@ -10,7 +10,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtilS;
@@ -49,7 +49,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @warning 见静态属性 sleepNoFetchDateTimeRange(将在此期间暂停). 时间后建立"今日"数据表, 时间前保存到昨日数据表, 时间中sleep(1000)
  * @warning sleepNoFetchDateTimeRange 的两个时间, 均代表 "今天的某个时间区间", 不代表昨天的
  * @date 2021/12/21/021-15:26:04
- * @see StockApi.getFSTransaction()
+ * @see EmQuoteApi.getFSTransaction()
  * <p>
  * todo : 2个
  */
@@ -289,11 +289,11 @@ public class FsTransactionFetcher {
                 log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
                 logged = true;
             }
-            this.saveTableName = StockApi.getPreTradeDateStrict(today).replace("-", "");
+            this.saveTableName = EmQuoteApi.getPreTradeDateStrict(today).replace("-", "");
         }
 
         if (beforeLowLimit) {
-            this.saveTableName = StockApi.getPreTradeDateStrict(today).replace("-", "");
+            this.saveTableName = EmQuoteApi.getPreTradeDateStrict(today).replace("-", "");
         } else if (afterHighLimit) {
             this.saveTableName = today.replace("-", "");
         } else {
@@ -415,7 +415,7 @@ public class FsTransactionFetcher {
             // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
             int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + fetcher.getRedundancyRecords());
 
-            DataFrame<Object> dfNew = StockApi.getFSTransaction(suitableCounts, stock, 1, fetcher.timeout);
+            DataFrame<Object> dfNew = EmQuoteApi.getFSTransaction(suitableCounts, stock, 1, fetcher.timeout);
             if (dfNew == null) {
                 return false;
             }

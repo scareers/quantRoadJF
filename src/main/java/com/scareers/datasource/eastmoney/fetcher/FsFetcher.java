@@ -9,7 +9,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -42,7 +42,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
  * @warning 因1分分时图api十分方便, 且并不保存到数据库, 且全量更新, 因此不对启动时间做过多限制. 启动时间由调用方保证合理
  * @noti 各数据api获取失败返回 null!
  * @noti y
- * @see StockApi.getFs1MToday()
+ * @see EmQuoteApi.getFs1MToday()
  */
 @Data
 public class FsFetcher {
@@ -326,7 +326,7 @@ public class FsFetcher {
             // fsDatas.putIfAbsent(stock, new DataFrame<>());
             // 未抓取过数据将返回 null
             // 而抓取成功但没有数据, 将返回空
-            DataFrame<Object> dfNew = StockApi
+            DataFrame<Object> dfNew = EmQuoteApi
                     .getFs1MToday(stock, 0, fetcher.getTimeout());
             if (dfNew != null) { // 访问失败将返回null.
                 fsDatas.put(stock, dfNew);

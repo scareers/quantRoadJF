@@ -3,7 +3,7 @@ package com.scareers.datasource.eastmoney.quotecenter.bean;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.ToString;
@@ -19,7 +19,7 @@ import java.util.HashMap;
  *
  * @author: admin
  * @date: 2022/2/14/014-17:54:01
- * @see StockApi.getStockHandicap() 访问实时盘口
+ * @see EmQuoteApi.getStockHandicap() 访问实时盘口
  */
 @Getter // 仅可获取属性
 @ToString

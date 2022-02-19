@@ -11,7 +11,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.SecurityListAndTablePanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -233,10 +233,10 @@ public abstract class SecurityDfDisplayPanel extends SecurityDisplayPanel {
 
         Double preClose;
         if (!preBean.isIndex()) {
-            preClose = StockApi.getStockPreCloseAndTodayOpen(preBean.getSecCode(), 2000, 1, true).get(0);
+            preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(preBean.getSecCode(), 2000, 1, true).get(0);
             // 昨收
         } else {
-            preClose = StockApi.getPreCloseAndTodayOpenOfIndexOrBK(preBean, 2000, 3).get(0);// 昨收
+            preClose = EmQuoteApi.getPreCloseAndTodayOpenOfIndexOrBK(preBean, 2000, 3).get(0);// 昨收
         }
 
         JFreeChart chart = ChartUtil

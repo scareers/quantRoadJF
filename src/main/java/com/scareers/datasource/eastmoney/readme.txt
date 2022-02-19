@@ -1,0 +1,8 @@
+eastmoney包说明: 东方财富数据源!
+子包说明: 参考东方财富网页版布局
+quotecenter: 行情中心 相关api  // 偏向于量价等基本数据
+datacenter: 数据中心  // 偏向于财报公告等文字杂合信息
+
+子类:
+SecurityPool 单次程序运行使用的资产池
+SecurityBeanEm 代表东方财富单一资产. 查询接口某一条查询结果的封装

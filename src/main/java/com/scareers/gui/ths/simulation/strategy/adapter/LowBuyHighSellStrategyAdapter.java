@@ -13,7 +13,7 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.backtest.fs.loybuyhighsell.FSBacktestOfLowBuyNextHighSell;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
@@ -29,8 +29,8 @@ import lombok.SneakyThrows;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.scareers.datasource.eastmoney.quotecenter.StockApi.getPreNTradeDateStrict;
-import static com.scareers.datasource.eastmoney.quotecenter.StockApi.getQuoteHistorySingle;
+import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
+import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
 import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution.virtualCdfAsPositionForHighSell;
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.utils.CommonUtil.sendEmailSimple;
@@ -684,7 +684,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         DataFrame<Object> dfTemp;
         if (market == 0) { // 深证成指
             if (shenZhengChengZhiPreClose == null) { // 上证指数昨日收盘
-                DataFrame<Object> df0 = StockApi.getQuoteHistorySingle(true, SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI,
+                DataFrame<Object> df0 = EmQuoteApi.getQuoteHistorySingle(true, SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI,
                         preTradeDate, preTradeDate,
                         "101", "qfq",
                         3, 2000);
@@ -696,7 +696,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
         } else {
             if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
-                DataFrame df0 = StockApi.getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU,
+                DataFrame df0 = EmQuoteApi.getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU,
                         preTradeDate, preTradeDate,
                         "101", "qfq",
                         3, 2000);

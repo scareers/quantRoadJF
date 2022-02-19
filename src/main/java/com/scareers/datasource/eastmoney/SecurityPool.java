@@ -1,16 +1,14 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -283,7 +281,7 @@ public class SecurityPool {
     private static List<SecurityBeanEm> createSecurityPoolRandom(int amount, boolean random, List<String> markets,
                                                                  SecurityBeanEm.SecType type)
             throws Exception {
-        DataFrame<Object> tick = StockApi.getRealtimeQuotes(markets);
+        DataFrame<Object> tick = EmQuoteApi.getRealtimeQuotes(markets);
         List<String> stockCode = DataFrameS.getColAsStringList(tick, "股票代码"); // 可能是指数/板块代码
         List<String> stocks;
         if (random) {

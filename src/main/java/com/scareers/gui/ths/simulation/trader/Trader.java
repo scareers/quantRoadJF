@@ -4,7 +4,7 @@ package com.scareers.gui.ths.simulation.trader;
  * ths 自动交易程序子系统:(主要面向过程编程)
  * 1.数据获取系统:
  * FsTransactionFetcher 获取dc实时成交数据,3s tick
- * StockApi 以及eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块,
+ * EmQuoteApi 以及eastmoney包其他API, 访问dc API, 的其他数据项, 可参考 python efinance模块,
  * 2.订单生成系统: Order / OrderFactory
  * Order 作为基类, OrderFactory 作为快捷生产的工厂类
  * 3.订单发送与响应接收: 通过rabbitmq作为中间件, 与python交互. sendMessageToPython

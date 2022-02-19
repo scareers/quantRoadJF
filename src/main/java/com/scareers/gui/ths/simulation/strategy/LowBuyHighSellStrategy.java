@@ -11,7 +11,7 @@ import cn.hutool.json.JSONUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.quotecenter.StockApi;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import static com.scareers.datasource.eastmoney.quotecenter.StockApi.getRealtimeQuotes;
+import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getRealtimeQuotes;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.FSAnalyzeLowDistributionOfLowBuyNextHighSell.LowBuyParseTask.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfSingleKlineBasePercent.*;
 import static com.scareers.utils.CommonUtil.*;
@@ -157,7 +157,7 @@ public class LowBuyHighSellStrategy extends Strategy {
             if (bean.isStock()) { // 股票才有涨跌停
                 this.priceLimitMap
                         .put(bean.getSecCode(),
-                                Objects.requireNonNull(StockApi.getStockPriceLimitToday(bean.getSecCode(),
+                                Objects.requireNonNull(EmQuoteApi.getStockPriceLimitToday(bean.getSecCode(),
                                         2000, 3, false)));
             }
         }
@@ -545,12 +545,12 @@ public class LowBuyHighSellStrategy extends Strategy {
                 scientificCreationMarket); // 两次差集操作, 获取所有主板股票
         // 开始选股. 首先获取近 几日 window数据, 当然, 这里我们多获取1日, 截取最后 n个.  截取2个月
         String today = DateUtil.today(); // yyyy-MM-dd
-        String pre7TradeDate = StockApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.  // yyyy-MM-dd
-        String pre1TradeDate = StockApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
+        String pre7TradeDate = EmQuoteApi.getPreNTradeDateStrict(today, 7); // 6足够, 冗余1.  // yyyy-MM-dd
+        String pre1TradeDate = EmQuoteApi.getPreNTradeDateStrict(today, 1); // 6足够, 冗余1.  // yyyy-MM-dd , 已经缓存
         // 所有主板股票 3000+, 近2个月 日k线, 前复权.  key为stock, value为df
         log.warn("stock amounts: 已获取两市主板股票数量: {}", mainboardStocks.size());
         ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasMap0 =
-                StockApi.getQuoteHistoryBatch(
+                EmQuoteApi.getQuoteHistoryBatch(
                         SecurityBeanEm.createStockList(new ArrayList<>(mainboardStocks)
                                 .subList(0, Math.min(stockSelectedExecAmounts, mainboardStocks.size()))),
                         pre7TradeDate.replace("-", ""),
