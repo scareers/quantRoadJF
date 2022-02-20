@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor;
 
 import cn.hutool.log.Log;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.LbHsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
@@ -13,16 +13,16 @@ import java.util.List;
  * @author: admin
  * @date: 2022/2/20/020-18:19:40
  */
-public class LbHsFactorChain {
-    private List<LbHsFactor> factorList = new ArrayList<>(); // 单线程语义
-    private LbHsState initialState; // 初始状态
+public class HsFactorChain {
+    private List<HsFactor> factorList = new ArrayList<>(); // 单线程语义
+    private HsState initialState; // 初始状态
 
     /**
      * 添加因子
      *
      * @param factor
      */
-    public void addFactor(LbHsFactor factor) {
+    public void addFactor(HsFactor factor) {
         factorList.add(factor);
     }
 
@@ -31,7 +31,7 @@ public class LbHsFactorChain {
      *
      * @param initialState
      */
-    public LbHsFactorChain(LbHsState initialState) {
+    public HsFactorChain(HsState initialState) {
         this.initialState = initialState;
     }
 
@@ -41,15 +41,15 @@ public class LbHsFactorChain {
      *
      * @return
      */
-    public LbHsState applyFactorInfluence() {
+    public HsState applyFactorInfluence() {
         if (factorList.size() == 0) {
-            log.warn("LbHsFactorChain: 因子列表为空, 返回初始状态");
+            log.warn("HsFactorChain: 因子列表为空, 返回初始状态");
             return initialState;
         }
 
-        for (LbHsFactor lbHsFactor : factorList) {
-            lbHsFactor.setState(initialState); // 设置状态
-            initialState = lbHsFactor.influence(); // 影响状态并保存, 将作为下一个因子影响的初始状态
+        for (HsFactor hsFactor : factorList) {
+            hsFactor.setState(initialState); // 设置状态
+            initialState = hsFactor.influence(); // 影响状态并保存, 将作为下一个因子影响的初始状态
         }
         return initialState;
     }

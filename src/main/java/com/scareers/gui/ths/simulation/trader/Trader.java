@@ -22,7 +22,7 @@ import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
-import com.scareers.datasource.eastmoney.fs.FsTransactionFetcher;
+import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;

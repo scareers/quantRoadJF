@@ -23,18 +23,10 @@ public abstract class LbHsSelector implements StockSelect {
     protected List<Double> cdfOfLowBuy;
     protected List<Double> cdfOfHighSell;
 
-
     public abstract List<Double> getTicksOfLowBuy();
-
-
     public abstract List<Double> getTicksOfHighSell();
-
-
     public abstract List<Double> getWeightsOfLowBuy();
-
     public abstract List<Double> getWeightsOfHighSell();
-
     public abstract List<Double> getCdfOfLowBuy();
-
     public abstract List<Double> getCdfOfHighSell();
 }

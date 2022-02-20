@@ -3,7 +3,7 @@ package com.scareers.gui.ths.simulation.strategy.adapter.state;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.LbHsFactor;
+import com.scareers.gui.ths.simulation.strategy.adapter.factor.LbFactor;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Setter
-public class LbHsState {
+public class LbState {
     protected SecurityBeanEm bean; // 哪只股票的状态?
-    protected List<LbHsFactor> factorsInfluenced = new ArrayList<>(); // 被哪些因子影响过?
+    protected List<LbFactor> factorsInfluenced = new ArrayList<>(); // 被哪些因子影响过?
 
     /**
      * 低买分布tick, 与pdf,cdf
@@ -32,23 +32,8 @@ public class LbHsState {
     protected List<Double> ticksOfLowBuy;
     protected List<Double> weightsOfLowBuy; // 44数据
     protected List<Double> cdfOfLowBuy;
-    /**
-     * 高卖分布tick, 与pdf, cdf
-     */
-    protected List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
-    protected List<Double> weightsOfHighSell; // 88数据
-    protected List<Double> cdfOfHighSell;
 
-    private LbHsState() {
-    }
-
-    /**
-     * 因子若影响了自身, 添加到列表
-     *
-     * @param factor
-     */
-    public void addFactorWhofluenced(LbHsFactor factor) {
-        factorsInfluenced.add(factor);
+    LbState() {
     }
 
     /**
@@ -58,19 +43,20 @@ public class LbHsState {
      * @param selector
      * @return
      */
-    public static LbHsState createDefaultLbHsState(SecurityBeanEm bean, LbHsSelector selector) {
+    public static LbState createDefaultLbState(SecurityBeanEm bean, LbHsSelector selector) {
         Assert.isTrue(bean.isStock());
-        LbHsState state = new LbHsState();
+        LbState state = new LbState();
         state.setBean(bean); // 唯一, 无需深复制
 
         state.setTicksOfLowBuy(ObjectUtil.cloneByStream(selector.getTicksOfLowBuy()));
         state.setWeightsOfLowBuy(ObjectUtil.cloneByStream(selector.getWeightsOfLowBuy()));
         state.setCdfOfLowBuy(ObjectUtil.cloneByStream(selector.getCdfOfLowBuy()));
 
-        state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfLowBuy()));
-        state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
-        state.setCdfOfHighSell(ObjectUtil.cloneByStream(selector.getCdfOfHighSell()));
         return state;
+    }
+
+    public void addFactorWhofluenced(LbFactor factor) {
+        factorsInfluenced.add(factor);
     }
 
     /*
@@ -83,13 +69,8 @@ public class LbHsState {
      *
      * @param distance
      */
-    public void moveLowBuyPdf(Double distance) {
+    public void movePdf(Double distance) {
         ticksOfLowBuy = ticksOfLowBuy.stream().map(value -> value - distance).collect(Collectors.toList());
-    }
-
-
-    public void moveHighSellPdf(Double distance) {
-        ticksOfHighSell = ticksOfHighSell.stream().map(value -> value - distance).collect(Collectors.toList());
     }
 
 

@@ -127,12 +127,12 @@ public class LbHsSelectorV0 extends LbHsSelector {
     }
 
     @Override
-    public List<String> getSelectResults() throws Exception {
+    public List<String> getSelectResults() {
         return stockSelectedToday;
     }
 
     @Override
-    public void resetSelectResults() throws Exception {
+    public void resetSelectResults() {
         stockSelectedToday = null;
     }
 

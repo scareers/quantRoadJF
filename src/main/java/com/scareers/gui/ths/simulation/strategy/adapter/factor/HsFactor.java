@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor;
 
 import cn.hutool.log.Log;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.LbHsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,20 +15,22 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public abstract class LbHsFactor {
+public abstract class HsFactor {
     protected static final Log log = LogUtil.getLogger();
+    protected String name;
+    protected String nameCn;
+    protected String description;
 
-    LbHsState state;
-    String name;
-    String nameCn;
-    String description;
 
-    public abstract LbHsState influence(); // 返回更新过的状态对象. 往往需要获取到具体股票相关数据
+    protected HsState state;
 
-    protected LbHsFactor(LbHsState state, String factorName, String nameCn, String description) {
-        this.state = state;
-        this.name = factorName;
+    public HsFactor(String name, String nameCn, String description,
+                    HsState state) {
+        this.name = name;
         this.nameCn = nameCn;
         this.description = description;
+        this.state = state;
     }
+
+    public abstract HsState influence();
 }
