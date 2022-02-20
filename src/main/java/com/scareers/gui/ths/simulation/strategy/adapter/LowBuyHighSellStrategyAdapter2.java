@@ -120,135 +120,11 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
         }
     }
 
-    private void initTodayAlreadyBuyMap() { // todayStockHoldsAlreadyBuyMap
-        Map<String, Integer> map = trader.getAccountStates().getFrozenOfStocksMap();
-        todayStockHoldsAlreadyBuyMap.putAll(map);
-    }
 
     @Override
     public void buyDecision() throws Exception {
-        if (todayStockHoldsAlreadyBuyMap.size() == 0) {
-            initTodayAlreadyBuyMap();
-        }
-        for (String stock : strategy.getLbHsSelector().getSelectResults()) {
-            SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
 
-            // 1. 读取昨日收盘价
-            Double preClosePrice = 0.0;
-            try {
-                //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
-                preClosePrice =
-                        Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock), preTradeDate,
-                                preTradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
-            } catch (Exception e) {
-                log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
-                e.printStackTrace();
-                continue;
-            }
-
-            // 2.买单也互斥
-            if (hasMutualExclusionOfBuySellOrder(stock, "buy")) {
-                continue;
-            }
-            // 3.买点判定
-            if (!isBuyPoint(stock, preClosePrice, stockBean)) {
-                continue;
-            }
-
-            double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
-            // 4.此刻是买点, 计算以最新价格的 应当买入的仓位 (相对于原始持仓)
-            Double cdfCalcPrice =
-                    FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay.calcEquivalenceCdfUsePriceOfLowBuy(
-                            newPercent, indexPricePercentThatTime,
-                            indexBelongThatTimePriceEnhanceArgLowBuy);
-            Double cdfOfPoint = virtualCdfAsPositionForLowBuy(
-                    strategy.getLbHsSelector().getTicksOfLowBuy(),
-                    strategy.getLbHsSelector().getWeightsOfLowBuy(),
-                    cdfCalcPrice,
-                    tickGap);
-            // @key2: 新的总仓位, 按照全资产计算. 本身是自身cdf仓位 * 1/(选股数量)
-            Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getLbHsSelector()
-                    .getSelectResults().size();
-            epochTotalPosition = Math.min(epochTotalPosition, positionUpperLimit); // 强制设定的上限 1.4
-            // 总资产, 使用 AccountStates 实时获取最新!
-            Double totalAssets = trader.getAccountStates().getTotalAssets(); // 最新总资产
-            Double shouldMarketValue = totalAssets * epochTotalPosition; // 应当的最新市值.
-
-            Double newestPrice = FsTransactionFetcher.getNewestPrice(stockBean);
-            if (newestPrice == null) {
-                log.warn("股票最新成交价格 无数据: {}", stockBean.getName());
-                continue;
-            }
-            double shouldTotalAmount =
-                    shouldMarketValue / newestPrice;
-            Integer alreadyBuyAmount = todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0);
-
-            // 应当买入的数量, int形式, floor   100整数倍
-            int shouldBuyAmount = (int) Math.floor((shouldTotalAmount - alreadyBuyAmount) / 100) * 100;
-            if (shouldBuyAmount < 100) { // 不足 100无视
-                continue;
-            }
-
-            // 应当买入! 但是需要判定现金是否充足 ?!
-            Double availableCash = trader.getAccountStates().getAvailableCash();
-            int maxCanBuyAmount = (int) Math // 100整数倍
-                    .floor((availableCash / (newestPrice)) / 100) * 100;
-            if (shouldBuyAmount <= maxCanBuyAmount) { // 可正常全部买入
-                actualBuy(stock, shouldBuyAmount,
-                        todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, shouldBuyAmount);
-            } else { // 只可买入部分, 或者 0.
-                // @noti: 这里的重要决策是, 是否应当下单买入部分, 然后尝试资金调度.
-                // 或者不买入部分, 等待资金调度成功后,将被下次判定全部买入
-                // @key3: 这里采用的方法是: 买入部分,即maxCanBuyAmount, 然后调用资金调度函数,尝试回笼资金.
-                // 但本次买点执行完成. 悬挂的剩余部分, 应当由下次合理的买点进行分配, 本次买点不再关心!
-                // 简而言之: 当下现金最优. 并尝试调度资金(可能造成卖出后现金空闲一段时间).但不可避免
-
-                if (maxCanBuyAmount >= 100) {
-                    // 下单最大可买入, 并尝试调度资金. 资金调度优先级为高
-                    actualBuy(stock, shouldBuyAmount,
-                            todayStockHoldsAlreadyBuyMap.getOrDefault(stock, 0), maxCanBuyAmount, maxCanBuyAmount);
-                }
-                tryCashSchedule(stock,
-                        shouldBuyAmount * newestPrice - availableCash); //
-                // 均需要尝试调度现金, 因为现金已经不够了.
-            }
-        }
     }
-
-    /**
-     * @param forBuyStock 因买入该股票现金不足而尝试调度现金
-     * @param expectCash  期望回笼的资金量, 不保证全部被回笼.
-     * @key3 尝试现金调度(昨日持仓股票尚未出现卖点时, 强制卖出部分股票以回笼现金),
-     * 当买入决策应当买入某股票时, 现金不足, 而尝试卖出部分其他股票, 回笼现金.
-     * @impl 应当对股票池中(所有)股票实现 schedule priority 逻辑, 计算该股票 被尝试资金调度时的优先级.
-     * 仅当 forBuyStock 优先级更高时, 尝试卖出 优先级更低的昨日持仓股票(可能多只以补足);
-     */
-    private void tryCashSchedule(String forBuyStock, double expectCash) {
-        if (RandomUtil.randomInt(1000) == 0) {
-            log.error("尝试资金调度,暂未实现");
-        }
-    }
-
-
-    public void actualBuy(String stock, double shouldBuyAmount, Integer todayAlreadyBuy, int maxCanBuyAmount,
-                          int actualBuyAmount) throws Exception {
-        // 卖出
-        log.warn("buy decision: 买点出现, {} -> 理论[{}] 此前已买参考[{}] 最大可买参考[{}] 订单实际[{}]",
-                stock,
-                shouldBuyAmount,
-                todayAlreadyBuy,
-                maxCanBuyAmount,
-                actualBuyAmount
-        );
-
-        Order order = OrderFactory.generateBuyOrderQuick(stock, actualBuyAmount, null, Order.PRIORITY_HIGH);
-        trader.putOrderToWaitExecute(order);
-
-        // todo: 这里一旦生成买单, 将视为全部成交, 加入到已经买入的部分
-        // 若最终成交失败, 一段时间(可设定)后check将失败, 需要手动处理!
-        todayStockHoldsAlreadyBuyMap.put(stock, todayAlreadyBuy + actualBuyAmount);
-    }
-
 
     @Override
     public void sellDecision() throws Exception {
@@ -362,6 +238,11 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
         }
     }
 
+    @Override
+    public void checkBuyOrder(Order order, List<Response> responses, String orderType) {
+
+    }
+
     /**
      * 当执行队列存在某股票sell订单时, 或者
      * checking队列 存在执行成功的sell订单时(正在checking),
@@ -422,74 +303,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
         return false;
     }
 
-    private boolean isBuyPoint(String stock, Double preClosePrice, SecurityBeanEm stockBean) throws Exception {
-//        log.info("isbuypoint");
-        // 获取今日分时图
-        // 2022-01-20 11:30	17.24	17.22	17.24	17.21	10069	17340238.00 	0.17	-0.12	-0.02	0.01	000001	平安银行
-        DataFrame<Object> fsDf = FsFetcher.getFsData(stockBean);
-        final String nowStr = DateUtil.now().substring(0, DateUtil.now().length() - 3);
-        // 对 fsDf进行筛选, 筛选 不包含本分钟的. 因底层api会生成最新那一分钟的. 即 13:34:31, 分时图已包含 13:35, 我们需要 13:34及以前
-        if (fsDf.length() == 0) { // 不到 9:25
-            return false;
-        }
-        fsDf = dropAfter1Fs(fsDf, nowStr); // 将最后1行 fs记录去掉
-
-        // 计算连续下降数量
-        List<Double> closes = DataFrameS.getColAsDoubleList(fsDf, "收盘");
-        int continuousFall = 0;
-        for (int i = closes.size() - 1; i >= 1; i--) {
-            if (closes.get(i) <= closes.get(i - 1)) {
-                continuousFall++;
-            } else {
-                break;
-            }
-        }
-        if (DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN).compareTo("09:31:00") <= 0) {
-            continuousFall = Integer.MAX_VALUE; // 9:30:xx 只会有 9:31 的fs数据, 第一条fs图,此前视为连续上升.
-        }
-        if (continuousFall < continuousFallTickCountThreshold) { // 连续上升必须>=阈值
-            return false;
-        }
-
-        double lastFsClose = closes.get(closes.size() - 1); // 作为 计算最新一分钟 价格的基准, 计算涨跌
-        // 0	000010    	0          	09:15:09 	3.8  	177 	4
-        /*
-            stock_code,market,time_tick,price,vol,bs
-         */
-        DataFrame<Object> fsTransDf = FsTransactionFetcher.getFsTransData(SecurityBeanEm.createStock(stock));
-        // 最后的有记录的时间, 前推 60s
-        String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
-        String tickWithSecond0 =
-                DateUtil.parse(DateUtil.today() + " " + lastFsTransTick).offset(DateField.MINUTE, -1)
-                        .toString(DatePattern.NORM_TIME_PATTERN); // 有记录的最后的时间tick, 减去1分钟.
-        // 筛选最后一分钟记录
-        DataFrame<Object> fsLastMinute = getCurrentMinuteAll(fsTransDf, tickWithSecond0);
-
-
-        // 获取最新一分钟所有 成交记录. 价格列
-        if (fsLastMinute.size() == 0) { // 未能获取到最新一分钟数据,返回false
-            return false;
-        }
-        List<Double> pricesLastMinute = DataFrameS.getColAsDoubleList(fsLastMinute, 3);
-        if (pricesLastMinute.size() == 0) { // 没有数据再等等
-            return false;
-        }
-        newPercent = pricesLastMinute.get(pricesLastMinute.size() - 1) / preClosePrice - 1;
-        if (newPercent > execLowBuyThreshold) {
-            return false; // 价格必须足够低, 才可能买入
-        }
-        // 计算对比  lastFsClose, 多少上升, 多少下降?
-        int countOfHigher = 0; // 最新一分钟, 价格比上一分钟收盘更高 的数量
-        for (Double price : pricesLastMinute) {
-            if (price > lastFsClose) {
-                countOfHigher++;
-            }
-        }
-        if (((double) countOfHigher) / pricesLastMinute.size() > 0.5) { // 判定该分钟close有很大可能价格涨, 视为买点
-            return true;
-        }
-        return false;
-    }
 
 
     /**
@@ -675,55 +488,9 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
         return EmQuoteApi.getPreCloseOfIndexOrBK(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI, 2000, 3, true); // 本身就将尝试使用缓存
     }
 
-    @Override
-    public void checkBuyOrder(Order order, List<Response> responses, String orderType) {
-        checkOtherOrder(order, responses, orderType);
-    }
 
 
-    /*
-     *                     response = dict(state='success', description='卖出订单执行成功',
-     *                                     orderId=latest_order[headers.index("合同编号")],
-     *                                     stockCode=stockCode,
-     *                                     price=actual_price,
-     *                                     priceNote=priceNote,
-     *                                     amounts=amounts,
-     *                                     payload=confirm_info_dict,
-     *                                     notes="注意: 通过查询今日全部订单确定的订单成功id.",
-     *                                     rawOrder=order)
-     *
-     *           response = dict(state="fail", failReason=fail_reason.FAIL_ORDER_ARGS_ERROR,
-     *                         description='订单对象不合法[订单3参数设定错误]',
-     *                         payload=args_invalid_reason,  # list
-     *                         warning='请将订单修改为合法格式再行传递',
-     *                         rawOrder=order)
-     *
-     *           return dict(state="fail",
-     *                     failReason=fail_reason.FAIL_ORDER_AMOUNT_ZERO_MAYBE,
-     *                     description='数量被自动填充为0, 可能因可买卖数量不足1手',  # list
-     *                     warning='请检测可买卖数量是否不小于1手',
-     *                     rawOrder=order)
-     *
-     *                      response = dict(state='fail',
-     *                                 failReason=fail_reason.FAIL_ORDER_CONFIRM,
-     *                                 description=info_for_type_determine,  # list
-     *                                 rawOrder=order)  # 0.0
-     *              response = dict(state='success', description='卖出订单执行成功', orderId=orderId,
-     *                         stockCode=stockCode,
-     *                         price=actual_price,
-     *                         priceNote=priceNote,
-     *                         amounts=amounts,
-     *                         rawOrder=order)
-     *
-     *                     response = dict(state='fail',
-     *                         failReason=fail_reason.FAIL_ORDER_COMMIT,
-     *                         description=failReason,
-     *                         stockCode=stockCode,
-     *                         price=actual_price,
-     *                         priceNote=priceNote,
-     *                         amounts=amounts,
-     *                         rawOrder=order)
-     */
+
 
     /**
      * 对 sell order 的 check逻辑!
