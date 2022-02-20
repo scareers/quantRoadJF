@@ -104,8 +104,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         highSellBeforehandThresholdMap.put(60, 0.0); // 最后10s视为绝对符合条件. 10和60并未用到
     }
 
-    SecurityBeanEm shangZhengZhiShu = SecurityBeanEm.createIndex("000001");
-    Double shangZhengZhiShuPreClose = null; // 上证昨日收盘点数
+
     SecurityBeanEm shenZhengChengZhi = SecurityBeanEm.createIndex("399001");
     Double shenZhengChengZhiPreClose = null;
 
@@ -686,32 +685,24 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     private double getCurrentIndexChangePercent(int market) throws Exception {
         DataFrame<Object> dfTemp;
         if (market == 0) { // 深证成指
-            if (shenZhengChengZhiPreClose == null) { // 上证指数昨日收盘
-                DataFrame<Object> df0 = EmQuoteApi.getQuoteHistorySingle(true, SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI,
-                        preTradeDate, preTradeDate,
-                        "101", "qfq",
-                        3, 2000);
-                shenZhengChengZhiPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘
-            }
             // stock_code,market,time_tick,price,vol,bs
-            dfTemp =
-                    FsTransactionFetcher.getFsTransactionDatas().get(shenZhengChengZhi);
-            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
+            dfTemp = FsTransactionFetcher.getShenZhengChengZhiFs();
+            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / getSzczPreClose() - 1;
         } else {
-            if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
-                DataFrame df0 = EmQuoteApi.getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU,
-                        preTradeDate, preTradeDate,
-                        "101", "qfq",
-                        3, 2000);
-                shangZhengZhiShuPreClose = Double.valueOf(df0.get(0, 2).toString());// 收盘, 这是分时图
-            }
-
             dfTemp =
-                    FsTransactionFetcher.getFsTransactionDatas().get(shangZhengZhiShu);
-            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shangZhengZhiShuPreClose - 1;
+                    FsTransactionFetcher.getShangZhengZhiShuFs();
+            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / getSzzsPreClose() - 1;
         }
 //        Console.log(dfTemp);
         // 分时成交则是3
+    }
+
+    public static Double getSzzsPreClose() {
+        return EmQuoteApi.getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true); // 本身就将尝试使用缓存
+    }
+
+    public static Double getSzczPreClose() {
+        return EmQuoteApi.getPreCloseOfIndexOrBK(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI, 2000, 3, true); // 本身就将尝试使用缓存
     }
 
     @Override
@@ -782,7 +773,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * @param orderType
      * @key2 对应卖单的check逻辑, 当python执行成功后, 订单进入check队列. (执行器已去执行其他任务)
      */
-
 
     @SneakyThrows
     @Override

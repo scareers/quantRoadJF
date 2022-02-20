@@ -236,7 +236,7 @@ public abstract class SecurityDfDisplayPanel extends SecurityDisplayPanel {
             preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(preBean.getSecCode(), 2000, 1, true).get(0);
             // 昨收
         } else {
-            preClose = EmQuoteApi.getPreCloseAndTodayOpenOfIndexOrBK(preBean, 2000, 3).get(0);// 昨收
+            preClose = EmQuoteApi.getPreCloseOfIndexOrBK(preBean, 2000, 3,true);
         }
 
         JFreeChart chart = ChartUtil

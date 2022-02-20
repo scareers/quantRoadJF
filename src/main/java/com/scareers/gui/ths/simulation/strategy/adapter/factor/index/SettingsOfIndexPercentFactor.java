@@ -26,7 +26,7 @@ public class SettingsOfIndexPercentFactor {
             log.error("GlobalIndexPricePercentRealtimeFactor: 股票不属于沪深A股: {} - {}", bean.getSecCode(), bean.getName());
         }
         Double newPriceIndex = FsTransactionFetcher.getNewestPrice(indexBelong);
-        Double preCloseOfIndex = EmQuoteApi.getPreCloseAndTodayOpenOfIndexOrBK(indexBelong, 2000, 3).get(0);
+        Double preCloseOfIndex = EmQuoteApi.getPreCloseOfIndexOrBK(indexBelong, 2000, 3, true);
         if (newPriceIndex == null || preCloseOfIndex == -1.0) {
             log.warn("GlobalIndexPricePercentRealtimeFactor: 指数昨收或最新价格获取失败: 最新价: {}, 昨收价: {} ", newPriceIndex,
                     preCloseOfIndex);

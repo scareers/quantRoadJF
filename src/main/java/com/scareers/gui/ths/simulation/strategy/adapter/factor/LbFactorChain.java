@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * description:
+ * description: 低买因子链.  该链维护因子列表, 以及每一步状态变化的 状态列表! 可直接作为 bean, 以访问数据
  *
  * @author: admin
  * @date: 2022/2/20/020-18:19:40
@@ -49,7 +49,7 @@ public class LbFactorChain {
      *
      * @return
      */
-    public List<LbState> applyFactorInfluence() {
+    public void applyFactorInfluence() {
         if (factorList.size() == 0) {
             log.warn("HsFactorChain: 因子列表为空, 状态列表不变, 仅含初始状态");
         } else {
@@ -62,7 +62,6 @@ public class LbFactorChain {
                 lbStates.add(newState); // 添加结果
             }
         }
-        return lbStates;
     }
 
     private static final Log log = LogUtil.getLogger();

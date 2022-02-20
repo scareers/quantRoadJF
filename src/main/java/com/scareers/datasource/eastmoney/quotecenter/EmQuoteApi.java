@@ -24,6 +24,7 @@ import com.scareers.utils.Tqdm;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import org.checkerframework.checker.units.qual.C;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -59,6 +60,8 @@ public class EmQuoteApi {
             3600 * 1000); // 某个日期的上n个交易日?
     public static Cache<String, List<Double>> indexOrBkPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股昨收和今开盘价
+    public static Cache<String, Double> indexOrBkPreCloseCache = CacheUtil.newLRUCache(1024,
+            3600 * 1000); // 个股昨收和今开盘价
     public static ThreadPoolExecutor poolExecutor; // 可能的线程池
 
 
@@ -75,7 +78,7 @@ public class EmQuoteApi {
         Console.log(getStockHandicap("002432", 2000, 1));
 
         Console.log("指数/板块昨收今开");
-        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3));
+        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3, true));
         Console.log("指数/板块盘口数据:");
         Console.log(getIndexOrBKHandicap(SecurityBeanEm.createBK("bk1030"), 2000, 2));
 
@@ -236,6 +239,7 @@ public class EmQuoteApi {
      * @throws Exception
      */
     @TimeoutCache(timeout = "1 * 3600 * 1000")
+    @CanCache
     public static List<Double> getStockPreCloseAndTodayOpen(String stockCodeSimple, int timeout, int retry,
                                                             boolean useCache)
             throws Exception {
@@ -476,10 +480,12 @@ public class EmQuoteApi {
      * @throws Exception
      */
     @TimeoutCache(timeout = "3600 * 1000")
-    public static List<Double> getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm bean, int timeout, int retry) {
+    @CanCache
+    public static List<Double> getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm bean, int timeout, int retry,
+                                                                  boolean useCache) {
         String cacheKey = bean.getQuoteId();
         List<Double> res = indexOrBkPreCloseAndTodayOpenCache.get(cacheKey);
-        if (res != null) {
+        if (res != null && !res.contains(-1.0) && useCache) { // 注意可能并未刷新, 因此需要加上此限制条件
             return res;
         }
         res = new ArrayList<>();
@@ -500,6 +506,39 @@ public class EmQuoteApi {
         }
         indexOrBkPreCloseAndTodayOpenCache.put(cacheKey, res);
         return res;
+    }
+
+    /**
+     * 获取指数昨收
+     *
+     * @param bean
+     * @param timeout
+     * @param retry
+     * @param useCache
+     * @return 失败返回 -1.0
+     */
+    @CanCache
+    @TimeoutCache(timeout = "3600 * 1000")
+    public static Double getPreCloseOfIndexOrBK(SecurityBeanEm bean, int timeout, int retry,
+                                                boolean useCache) {
+        String cacheKey = bean.getQuoteId();
+        Double res = indexOrBkPreCloseCache.get(cacheKey);
+        if (useCache && res != null) { // 在 -1.0获取失败, 不放入缓存
+            return res;
+        }
+        JSONObject resp = getIndexOrBKHandicapCore(bean, "f60", timeout, retry); // 字段同个股. 昨收今开
+
+        try {
+            res = (Double.parseDouble(JSONUtilS.getByPath(resp, "data.f60").toString()) / 100); // 昨收 , 注意/100
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        if (res != null) {
+            indexOrBkPreCloseCache.put(cacheKey, res);
+            return res;
+        } else {
+            return -1.0;
+        }
     }
 
     /**
