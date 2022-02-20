@@ -30,24 +30,24 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
 
 /**
- * description: 对象查看器, 树形控件. 显示trader相关属性值状况
+ * description: 实时分析
  *
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
 @Getter
 @Setter
-public class ObjectTreeWindow extends FuncFrameS {
-    private static ObjectTreeWindow INSTANCE;
+public class AnalyzeRealtimeWindow extends FuncFrameS {
+    private static AnalyzeRealtimeWindow INSTANCE;
 
-    public static ObjectTreeWindow getInstance(Type type, String title, TraderGui mainWindow,
-                                               FuncButton belongBtn, boolean resizable, boolean closable,
-                                               boolean maximizable,
-                                               boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
-                                               double preferScale,
-                                               int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+    public static AnalyzeRealtimeWindow getInstance(Type type, String title, TraderGui mainWindow,
+                                                    FuncButton belongBtn, boolean resizable, boolean closable,
+                                                    boolean maximizable,
+                                                    boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                                                    double preferScale,
+                                                    int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         if (INSTANCE == null) {
-            INSTANCE = new ObjectTreeWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
+            INSTANCE = new AnalyzeRealtimeWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
                     halfWidthOrHeight, layer);
             INSTANCE.setIconifiable(false);
@@ -71,19 +71,19 @@ public class ObjectTreeWindow extends FuncFrameS {
         return INSTANCE;
     }
 
-    public static ObjectTreeWindow getInstance() {
+    public static AnalyzeRealtimeWindow getInstance() {
         return INSTANCE; // 可null
     }
 
-    private ObjectTreeWindow(Type type, String title, TraderGui mainWindow,
-                             FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
-                             boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
-                             double preferScale,
-                             int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+    private AnalyzeRealtimeWindow(Type type, String title, TraderGui mainWindow,
+                                  FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                                  boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                                  double preferScale,
+                                  int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
 
-        ObjectTreeWindow temp = this; // 添加监听器. 树形变化时, 刷新主展示窗口size
+        AnalyzeRealtimeWindow temp = this; // 添加监听器. 树形变化时, 刷新主展示窗口size
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
