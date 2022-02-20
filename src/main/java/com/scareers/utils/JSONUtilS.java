@@ -13,6 +13,15 @@ import com.alibaba.fastjson.JSON;
 import cn.hutool.json.JSONUtil;
 import com.scareers.utils.JSONUtilS;
 
+import cn.hutool.json.*;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.JSON;
+import com.scareers.utils.JSONUtilS;
+
+
+
+
  */
 
 
@@ -127,5 +136,12 @@ public class JSONUtilS {
         return JSON.parseArray(jsonStr);
     }
 
+    public static String toJsonStr(Object o) {
+        return JSON.toJSONString(o);
+    }
+
+    public static String toJsonPrettyStr(Object o) {
+        return JSON.toJSONString(o, true);
+    }
 
 }
