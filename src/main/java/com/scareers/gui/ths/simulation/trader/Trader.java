@@ -28,6 +28,8 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
+import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
+import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelectorV0;
 import com.scareers.utils.StrUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
@@ -117,12 +119,9 @@ public class Trader {
         accountStates.waitFirstInitFinish(); // 此时并未用到 strategy, 因此 check程序不会触发空指针异常
 
         // 直到此时才实例化策略对象, 绑定到 trader
-        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, LowBuyHighSellStrategy.class.getName(),
-                new ArrayList<>(), // 强制排除选股结果
-                10, // 期望选股数量
-                false, // 偏向更多选股结果
-                Arrays.asList(0, 1) // 核心, 哪天买哪天卖的算法?
-        ); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
+        LbHsSelector lbHsSelector = new LbHsSelectorV0(Arrays.asList(), 10, false, Arrays.asList(0, 1));
+        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, lbHsSelector,
+                LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
