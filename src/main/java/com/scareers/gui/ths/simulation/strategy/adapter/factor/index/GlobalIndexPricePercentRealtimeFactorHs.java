@@ -2,8 +2,12 @@ package com.scareers.gui.ths.simulation.strategy.adapter.factor.index;
 
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
+
+import static com.scareers.gui.ths.simulation.strategy.adapter.factor.index.SettingsOfIndexPercentFactor.enhanceRateForHsDefault;
 
 /**
  * description: 大盘指数影响
@@ -11,9 +15,11 @@ import java.util.Objects;
  * @author: admin
  * @date: 2022/2/20/020-17:27:23
  */
+@Setter
+@Getter
 public class GlobalIndexPricePercentRealtimeFactorHs extends HsFactor {
     // 大盘指数实时涨跌幅 影响倍率, 将乘以实时大盘涨跌幅. 可可人工修改?
-    private Double enhanceRate = 0.0;
+    private Double enhanceRate = enhanceRateForHsDefault;
 
     public GlobalIndexPricePercentRealtimeFactorHs() {
         super(SettingsOfIndexPercentFactor.factorName, SettingsOfIndexPercentFactor.nameCn,

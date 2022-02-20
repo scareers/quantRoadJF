@@ -2,8 +2,12 @@ package com.scareers.gui.ths.simulation.strategy.adapter.factor.index;
 
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.LbFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.LbState;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Objects;
+
+import static com.scareers.gui.ths.simulation.strategy.adapter.factor.index.SettingsOfIndexPercentFactor.enhanceRateForLbDefault;
 
 /**
  * description: 大盘指数影响
@@ -11,7 +15,10 @@ import java.util.Objects;
  * @author: admin
  * @date: 2022/2/20/020-17:27:23
  */
+@Setter
+@Getter
 public class GlobalIndexPricePercentRealtimeFactorLb extends LbFactor {
+    private Double enhanceRate = enhanceRateForLbDefault;
 
     public GlobalIndexPricePercentRealtimeFactorLb() {
         super(SettingsOfIndexPercentFactor.factorName, SettingsOfIndexPercentFactor.nameCn,

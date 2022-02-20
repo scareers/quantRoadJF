@@ -17,6 +17,8 @@ public class SettingsOfIndexPercentFactor {
     public static final String factorName = "GlobalIndexPricePercentRealtimeFactor";
     public static final String nameCn = "大盘指数实时涨跌幅因子";
     public static final String description = "读取个股所属大盘指数实时涨跌幅, 该涨跌幅, 主要对分布的平均值进行左右平移操作";
+    public static final Double enhanceRateForLbDefault = 1.0;
+    public static final Double enhanceRateForHsDefault = 1.0; // 高卖时 默认指数涨跌幅*倍率
 
     public static Double getIndexPercent(SecurityBeanEm bean) {
         SecurityBeanEm indexBelong = SecurityBeanEm.SHANG_ZHENG_ZHI_SHU;

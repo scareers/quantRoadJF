@@ -36,6 +36,10 @@ import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistrib
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.utils.CommonUtil.sendEmailSimple;
 
+/**
+ * 优化机制:
+ * 1.执行队列中, 单次仅可 唯一买卖订单! 相当于可以不使用订单, 弱化了优先级的效果. 但能使得生成订单实时状态不是过时的.
+ */
 
 public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     private long maxCheckSellOrderTime = 2 * 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
