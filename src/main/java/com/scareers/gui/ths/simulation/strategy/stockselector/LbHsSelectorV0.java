@@ -143,11 +143,11 @@ public class LbHsSelectorV0 extends LbHsSelector {
             return;
         }
 
-        log.warn("start init stockPool: 开始初始化股票池...");
         select(); // 选股for buy
 
         // 两大属性已经初始化(即使空): formSetDistributionWeightMapFinal ,stockSelectCountMapFinal
         log.warn("stock select result: 选股结果: \n------->\n{}\n", stockSelectCountMapFinal.keySet());
+        stockSelectedToday = new ArrayList<>(stockSelectCountMapFinal.keySet());
         log.warn("stock select result: 选股数量: {}", stockSelectCountMapFinal.size());
         log.warn("stock select result: 自适应选股参数: profitLimitOfFormSetIdFilter {}", profitLimitOfFormSetIdFilter);
 
@@ -155,7 +155,7 @@ public class LbHsSelectorV0 extends LbHsSelector {
         initFinalDistributionPdf(); // 计算等价分布,
         log.warn("finish calc distribution: 完成计算全局加权低买高卖双分布");
         // 最终单独保存选股结果列表
-        stockSelectedToday = new ArrayList<>(stockSelectCountMapFinal.keySet());
+
     }
 
     /**

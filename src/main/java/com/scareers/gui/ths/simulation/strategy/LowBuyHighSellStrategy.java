@@ -1,7 +1,9 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -61,11 +63,11 @@ public class LowBuyHighSellStrategy extends Strategy {
     public ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
     public LowBuyHighSellStrategy(Trader trader, LbHsSelector lbHsSelector, String strategyName
-                                   ) throws Exception {
+    ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
         this.lbHsSelector = lbHsSelector;
-//        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader); // 策略实际方法
+        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader); // 策略实际方法
         this.strategyName = strategyName; // 同super
         initStockPool(); // 构建器自动初始化股票池!
         initPriceLimitMap();
@@ -86,21 +88,21 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
-    protected List<SecurityBeanEm> initStockPool() throws Exception {
+    protected void initStockPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
         lbHsSelector.selectStock();
 
-        ArrayList<String> stocks = new ArrayList<>(lbHsSelector.getSelectResults());
         List<String> yesterdayH = initYesterdayHolds();
 
         // todo: 优化股票池添加逻辑
-        SecurityPool.addToTodaySelectedStocks(SecurityBeanEm.createStockList(stocks));// 今选
-        SecurityPool.addToYesterdayHoldStocks(SecurityBeanEm.createStockList(yesterdayH));// 昨持
+        SecurityPool.addToTodaySelectedStocks(SecurityBeanEm.createStockList(lbHsSelector.getSelectResults()));// 今选
+        Console.log(SecurityBeanEm.createStockList(yesterdayH));
+
+        SecurityPool.addToYesterdayHoldStocks(SecurityBeanEm.createStockList(yesterdayH)); // 昨持
         SecurityPool.addToKeyIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
 
         log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", SecurityPool.allSecuritySet.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
-        return null;
     }
 
     @Override
@@ -157,8 +159,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("recoed time: 昨日持仓与账户资金状况,获取时间为: {}", dfTemp.get(0, 3));
         yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtilS.parseArray(dfTemp.get(0, 1).toString()));
         Map<String, Object> tempMap = JSONUtilS.parseObj(dfTemp.get(0, 2).toString());
-        // todo: 这里可能存在 bug
-        yesterdayNineBaseFundsData = new ConcurrentHashMap<String, Double>();
+        yesterdayNineBaseFundsData = new ConcurrentHashMap<>();
         tempMap.keySet().stream()
                 .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));
         log.warn("init success: 昨日持仓与账户资金状况, 初始化完成");

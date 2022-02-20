@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.lowbuy.SettingsOfLowBuyFS.*;
 import static com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc.KeyFuncOfKlineCommons.simpleStatAnalyzeByValueListAsDF;
@@ -1175,7 +1176,9 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             for (int i = 0; i < dfFormSets.length(); i++) {
                 List<Object> row = dfFormSets.row(i);
                 Long key = Long.valueOf(row.get(0).toString());
-                List<String> value = JSONUtilS.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
+                List<String> value =
+                        JSONUtilS.parseArray(row.get(1).toString()).stream().map(ele -> ele.toString()).collect(
+                                Collectors.toList());
                 value.sort(Comparator.naturalOrder());
                 res.put(key, value);
             }

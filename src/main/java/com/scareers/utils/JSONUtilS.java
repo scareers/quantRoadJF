@@ -35,6 +35,8 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -146,6 +148,13 @@ public class JSONUtilS {
 
     public static String toJsonStr(Object o) {
         return JSON.toJSONString(o);
+    }
+
+    public static void main(String[] args) {
+        HashMap<String, Object> stringObjectHashMap = new HashMap<>();
+        stringObjectHashMap.put("x", Arrays.asList(1, 2, 3));
+        stringObjectHashMap.put("y", Arrays.asList(1, 2, 4));
+        Console.log(toJsonPrettyStr(stringObjectHashMap).charAt(2)=='\t');
     }
 
     public static String toJsonPrettyStr(Object o) {

@@ -208,7 +208,7 @@ public class EmQuoteApi {
         res = new ArrayList<>();
         JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout, retry);
         try {
-            res.add(Double.valueOf(resp.get("data.f51").toString())); // 涨停价
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f51").toString())); // 涨停价
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);

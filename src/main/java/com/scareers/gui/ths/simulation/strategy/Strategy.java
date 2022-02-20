@@ -79,7 +79,7 @@ public abstract class Strategy {
     /**
      * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), initYesterdayHolds(), + 两大指数
      */
-    protected abstract List<SecurityBeanEm> initStockPool() throws Exception;
+    protected abstract void initStockPool() throws Exception;
 
     /**
      * 选股方法. 通常需要加上各大指数, 最终更新到股票池.

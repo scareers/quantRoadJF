@@ -186,8 +186,8 @@ public class IndexBkHandicap extends Handicap {
     }
 
     private void parseAttrs() {
-        this.secCode = rawJson.getStr("f57");
-        this.stockName = rawJson.getStr("f58");
+        this.secCode = rawJson.getString("f57");
+        this.stockName = rawJson.getString("f58");
 
         newPrice = tryParseDoubleAndDivide100("f43");
         highPrice = tryParseDoubleAndDivide100("f44");

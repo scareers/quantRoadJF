@@ -240,8 +240,8 @@ public class StockHandicap extends Handicap{
     }
 
     private void parseAttrs() {
-        this.stockCodeSimple = rawJson.getStr("f57");
-        this.stockName = rawJson.getStr("f58");
+        this.stockCodeSimple = rawJson.getString("f57");
+        this.stockName = rawJson.getString("f58");
 
         this.consignRatio = rawJson.getDouble("f191");
         this.consignDifference = rawJson.getDouble("f192");

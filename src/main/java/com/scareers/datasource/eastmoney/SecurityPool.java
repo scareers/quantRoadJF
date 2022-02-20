@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;

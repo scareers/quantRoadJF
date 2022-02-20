@@ -76,7 +76,9 @@ public class GuiCommonUtil {
      */
     public static String jsonStrToHtmlFormat(String jsonPrettyStr) {
         jsonPrettyStr = "<html>" + StrUtil.replace(jsonPrettyStr, "\n", "<br/>") + "</html>";
-        jsonPrettyStr = StrUtil.replace(jsonPrettyStr, " ", "&ensp;");
+        // @noti: hutool 的pretty json以空格为格式, fastjson以 \t, 大约相当于4个空格
+        jsonPrettyStr = StrUtil.replace(jsonPrettyStr, "\t", "&ensp;&ensp;&ensp;&ensp;");
+        //        jsonPrettyStr = StrUtil.replace(jsonPrettyStr, " ", "&ensp;");
         return jsonPrettyStr;
     }
 

@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
@@ -14,14 +13,13 @@ import com.scareers.gui.ths.simulation.trader.Trader;
 import lombok.SneakyThrows;
 
 import javax.swing.*;
-import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
