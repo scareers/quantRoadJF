@@ -141,7 +141,7 @@ public class OrderExecutor {
                     trader.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
                     return;
                 }
-                String rawOrderIdOfResponse = rawOrderFromResponse.getStr("rawOrderId");
+                String rawOrderIdOfResponse = rawOrderFromResponse.getString("rawOrderId");
                 if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
                     log.warn("nack: 收到来自python的消息, 但 rawOrderId 不匹配: should: {}, receive: {}", rawOrderId,
                             rawOrderIdOfResponse);

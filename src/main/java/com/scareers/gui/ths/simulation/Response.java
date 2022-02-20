@@ -16,10 +16,10 @@ import java.util.Map;
 public class Response extends JSONObject {
     //public class JSONObject implements JSON, JSONGetter<String>, Map<String, Object>
     public static void main(String[] args) {
-        Map<String, String> x = new HashMap<>();
+        JSONObject x = new JSONObject();
         x.put("x", "y");
-        JSONObject y = new JSONObject(x);
-        Response response = new Response(y);
+
+        Response response = new Response(x);
 
         Console.log(response);
     }

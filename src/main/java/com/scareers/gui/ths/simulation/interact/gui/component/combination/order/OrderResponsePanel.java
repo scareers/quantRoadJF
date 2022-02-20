@@ -56,7 +56,7 @@ public class OrderResponsePanel extends JPanel {
         if (!newText.equals(preText)) {
             this.label.setText(newText);
             if (responses.size() > 0) {
-                String state = responses.get(responses.size() - 1).getStr("state");
+                String state = responses.get(responses.size() - 1).getString("state");
                 if (state.equals("success")) {
                     label.setForeground(Color.green);
                 } else if (state.equals("fail")) {

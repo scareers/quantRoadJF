@@ -137,6 +137,13 @@ public class JSONUtilS {
         return JSON.parseArray(jsonStr);
     }
 
+    public static JSONArray parseArray(List<? extends JSONObject> jsonObjects) {
+        JSONArray res = new JSONArray();
+        res.addAll(jsonObjects);
+        return res;
+    }
+
+
     public static String toJsonStr(Object o) {
         return JSON.toJSONString(o);
     }

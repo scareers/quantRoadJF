@@ -198,7 +198,7 @@ public class EastMoneyUtil {
         }
 
         JSONObject temp = JSONUtilS.parseObj(response);
-        Object resTemp = temp.getByPath("QuotationCodeTable.Data");
+        Object resTemp = JSONUtilS.getByPath(temp, "QuotationCodeTable.Data");
         if (JSONNull.NULL.equals(resTemp)) {
             return null;
         }

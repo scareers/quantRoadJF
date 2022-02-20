@@ -214,7 +214,7 @@ public class EmQuoteApi {
             res.add(-1.0);
         }
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f52").toString())); // 跌停价
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f52").toString())); // 跌停价
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
@@ -244,13 +244,13 @@ public class EmQuoteApi {
         JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout, retry);
         res = new ArrayList<>();
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f60").toString())); // 昨收
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f60").toString())); // 昨收
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
         }
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f46").toString())); // 今开
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f46").toString())); // 今开
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
@@ -477,13 +477,13 @@ public class EmQuoteApi {
         JSONObject resp = getIndexOrBKHandicapCore(bean, "f60,f46", timeout, retry); // 字段同个股. 昨收今开
         List<Double> res = new ArrayList<>();
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f60").toString()) / 100); // 昨收 , 注意/100
+            res.add(Double.parseDouble(JSONUtilS.getByPath(resp,"data.f60").toString()) / 100); // 昨收 , 注意/100
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
         }
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f46").toString()) / 100); // 今开
+            res.add(Double.parseDouble(JSONUtilS.getByPath(resp,"data.f46").toString()) / 100); // 今开
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);

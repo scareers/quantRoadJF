@@ -36,7 +36,7 @@ public class TraderUtil {
         Response resFinal = null;
         try {
             for (Response response : responses) {
-                if (!"retrying".equals(response.getByPath("state").toString())) {
+                if (!"retrying".equals(response.getString("state"))) {
                     resFinal = response;
                     break; // 找到非retrying 响应
                 }

@@ -259,9 +259,9 @@ public class Trader {
 
     public String buildHandshakeMsg() {
         JSONObject handshake = new JSONObject();
-        handshake.set("handshakeJavaSide", "java get ready");
-        handshake.set("handshakePythonSide", "and you?");
-        handshake.set("timestamp", System.currentTimeMillis());
+        handshake.put("handshakeJavaSide", "java get ready");
+        handshake.put("handshakePythonSide", "and you?");
+        handshake.put("timestamp", System.currentTimeMillis());
         return JSONUtilS.toJsonStr(handshake);
     }
 

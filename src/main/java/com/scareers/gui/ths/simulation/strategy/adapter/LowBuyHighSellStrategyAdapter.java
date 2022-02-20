@@ -795,10 +795,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
 
         Response response = responses.get(responses.size() - 1);
-        String state = response.getStr("state");
+        String state = response.getString("state");
         if ("success".equals(state)) {
             if (order.getLastLifePoint().getStatus() != Order.LifePointStatus.CHECKING) { // 第一次
-                String notes = response.getStr("notes");
+                String notes = response.getString("notes");
                 if (notes != null && notes.contains("通过查询今日全部订单确定的订单成功id")) {
                     log.warn("success noti: {}", notes);
                 } else {
@@ -862,7 +862,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
     // 成交时间	证券代码	证券名称	操作	成交数量	成交均价	成交金额	合同编号	成交编号
     public boolean orderAlreadyMatchAllBuyOrSell(Order order, Response response) {
-        String orderId = response.getStr("orderId");
+        String orderId = response.getString("orderId");
         DataFrame<Object> clinchsDf = trader.getAccountStates().getTodayClinchs();
         List<String> ids = DataFrameS.getColAsStringList(clinchsDf, "合同编号");
         List<Integer> amounts = DataFrameS.getColAsIntegerList(clinchsDf, "成交数量");
@@ -874,7 +874,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         }
         // 判定某 order , 当前是否已经全部成交. 买卖但逻辑相同, 均对合同编号筛选, 求和所有成交数量.
         // 缺陷在于 trader.getAccountStates().getTodayClinchs()刷新及时性
-        if (clinchAmount >= Integer.parseInt(response.getStr("amounts")) / 100 * 100) {
+        if (clinchAmount >= Integer.parseInt(response.getString("amounts")) / 100 * 100) {
             return true;
         }
         return false;
@@ -883,7 +883,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     @Override
     public void checkOtherOrder(Order order, List<Response> responses, String orderType) {
         JSONObject response = responses.get(responses.size() - 1);
-        if ("success".equals(response.getStr("state"))) {
+        if ("success".equals(response.getString("state"))) {
             log.info("执行成功: {}", order.getRawOrderId());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
         } else {

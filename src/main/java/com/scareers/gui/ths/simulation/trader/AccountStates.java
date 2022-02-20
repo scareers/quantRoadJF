@@ -260,9 +260,9 @@ public class AccountStates {
 
     public String buildHandshakeMsg() {
         JSONObject handshake = new JSONObject();
-        handshake.set("handshakeJavaSide", "java get ready");
-        handshake.set("handshakePythonSide", "and you?");
-        handshake.set("timestamp", System.currentTimeMillis());
+        handshake.put("handshakeJavaSide", "java get ready");
+        handshake.put("handshakePythonSide", "and you?");
+        handshake.put("timestamp", System.currentTimeMillis());
         return JSONUtilS.toJsonStr(handshake);
     }
 
@@ -475,7 +475,7 @@ public class AccountStates {
                         as.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
                         return;
                     }
-                    String rawOrderIdOfResponse = rawOrderFromResponse.getStr("rawOrderId");
+                    String rawOrderIdOfResponse = rawOrderFromResponse.getString("rawOrderId");
                     if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
                         log.warn("nack: 收到来自python的消息, 但 rawOrderId 不匹配: should: {}, receive: {}", rawOrderId,
                                 rawOrderIdOfResponse);
@@ -743,7 +743,7 @@ public class AccountStates {
         }
         // 响应正确, 该响应唯一情况:
         // response = dict(state="success", description='获取账号9项资金数据成功', payload=result, rawOrder=order)
-        if ("success".equals(resFinal.getStr("state"))) {
+        if ("success".equals(resFinal.getString("state"))) {
             Map<String, Object> results = resFinal.getJSONObject("payload");
             for (String key : results.keySet()) {
                 nineBaseFundsData.put(key, Double.valueOf(results.get(key).toString()));
@@ -773,7 +773,7 @@ public class AccountStates {
             raisePriority(order.getOrderType(), 1); // 将尝试提高同api优先级,若队列中无新
             return;
         }
-        if ("success".equals(resFinal.getStr("state"))) {
+        if ("success".equals(resFinal.getString("state"))) {
             DataFrame<Object> dfTemp = TraderUtil.payloadArrayToDf(resFinal);
             if (dfTemp == null) {
                 log.error("flush fail: AccountStates.{}: payload为null, 忽略本次刷新!!", fieldName);
