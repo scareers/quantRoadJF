@@ -104,14 +104,11 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         highSellBeforehandThresholdMap.put(60, 0.0); // 最后10s视为绝对符合条件. 10和60并未用到
     }
 
-
-    SecurityBeanEm shenZhengChengZhi = SecurityBeanEm.createIndex("399001");
-    Double shenZhengChengZhiPreClose = null;
-
     LowBuyHighSellStrategy strategy;
     Trader trader;
     String pre2TradeDate; // yyyy-MM-dd
     String preTradeDate; // yyyy-MM-dd
+
     // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义,
     private volatile double newPercent;
 
