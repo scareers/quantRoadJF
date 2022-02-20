@@ -12,6 +12,9 @@ import java.util.Objects;
  * @date: 2022/2/20/020-17:27:23
  */
 public class GlobalIndexPricePercentRealtimeFactorHs extends HsFactor {
+    // 大盘指数实时涨跌幅 影响倍率, 将乘以实时大盘涨跌幅. 可可人工修改?
+    private Double enhanceRate = 0.0;
+
     public GlobalIndexPricePercentRealtimeFactorHs() {
         super(SettingsOfIndexPercentFactor.factorName, SettingsOfIndexPercentFactor.nameCn,
                 SettingsOfIndexPercentFactor.description);

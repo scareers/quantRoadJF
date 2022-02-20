@@ -7,10 +7,8 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
-import com.scareers.gui.ths.simulation.trader.AccountStates;
-import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
@@ -21,8 +19,10 @@ import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
+import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
@@ -36,39 +36,10 @@ import static com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistrib
 import static com.scareers.keyfuncs.positiondecision.PositionOfLowBuyByDistribution.virtualCdfAsPositionForLowBuy;
 import static com.scareers.utils.CommonUtil.sendEmailSimple;
 
-/**
- * description:
- * /**
- * *         回测框架相关设定项
- * *         // cdf时tick距离. 千分之5
- * *         tickGap = 0.005;
- * *         // 常规低买参数
- * *         positionUpperLimit = 1.4;
- * *         positionCalcKeyArgsOfCdf = 1.6;
- * *         execLowBuyThreshold = +0.005;
- * *         continuousFallTickCountThreshold = 1;
- * *
- * *         // 指数当时tick加成
- * *         indexBelongThatTimePriceEnhanceArgLowBuy = -0.5;
- * *         indexBelongThatTimePriceEnhanceArgHighSell = -0.5;
- * *
- * *         // 开盘强卖参数
- * *         forceSellOpenWeakStock = false;
- * *         weakStockOpenPercentThatDayThreshold = -0.02;
- * *         weakStockOpenPercentTodayThreshold = -0.07;
- * *
- * *         // 常规高卖参数
- * *         positionCalcKeyArgsOfCdfHighSell = 1.2;
- * *         execHighSellThreshold = -0.02;
- * *         continuousRaiseTickCountThreshold = 1;
- *
- * @author admin
- */
 
-public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
+public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     private long maxCheckSellOrderTime = 2 * 60 * 1000; // 卖单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
     private long maxCheckBuyOrderTime = 2 * 60 * 1000; // 买单超过此check时间发送失败邮件, 直接进入失败队列, 需要手动确认
-
     public static double tickGap = 0.005;
 
     // 高卖参数
@@ -119,7 +90,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     // 使用"冻结数量"表示今日曾买过数量,初始化. 每当实际执行买单, 无视成交状况, 全部增加对应value
     Hashtable<String, Integer> todayStockHoldsAlreadyBuyMap = new Hashtable<>();
 
-    public LowBuyHighSellStrategyAdapter(LowBuyHighSellStrategy strategy, Trader trader) {
+    public LowBuyHighSellStrategyAdapter2(LowBuyHighSellStrategy strategy, Trader trader) {
         this.strategy = strategy;
         this.trader = trader;
         pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2);
