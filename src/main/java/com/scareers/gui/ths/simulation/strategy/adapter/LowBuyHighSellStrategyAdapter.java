@@ -8,6 +8,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -597,7 +598,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             stock_code,market,time_tick,price,vol,bs
          */
         DataFrame<Object> fsTransDf =
-                trader.getFsTransactionFetcher().getFsTransactionDatas()
+                FsTransactionFetcher.getFsTransactionDatas()
                         .get(SecurityBeanEm.createStock(stock));
         String tickWithSecond0 = nowTime.substring(0, 5) + ":00"; // 本分钟.开始时刻
         // 筛选fs图最近一分钟所有记录,
@@ -694,7 +695,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             }
             // stock_code,market,time_tick,price,vol,bs
             dfTemp =
-                    trader.getFsTransactionFetcher().getFsTransactionDatas().get(shenZhengChengZhi);
+                    FsTransactionFetcher.getFsTransactionDatas().get(shenZhengChengZhi);
             return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shenZhengChengZhiPreClose - 1;
         } else {
             if (shangZhengZhiShuPreClose == null) { // 上证指数昨日收盘
@@ -706,7 +707,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             }
 
             dfTemp =
-                    trader.getFsTransactionFetcher().getFsTransactionDatas().get(shangZhengZhiShu);
+                    FsTransactionFetcher.getFsTransactionDatas().get(shangZhengZhiShu);
             return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / shangZhengZhiShuPreClose - 1;
         }
 //        Console.log(dfTemp);
@@ -863,7 +864,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
     // 成交时间	证券代码	证券名称	操作	成交数量	成交均价	成交金额	合同编号	成交编号
     public boolean orderAlreadyMatchAllBuyOrSell(Order order, Response response) {
         String orderId = response.getString("orderId");
-        DataFrame<Object> clinchsDf = trader.getAccountStates().getTodayClinchs();
+        DataFrame<Object> clinchsDf = AccountStates.getTodayClinchs();
         List<String> ids = DataFrameS.getColAsStringList(clinchsDf, "合同编号");
         List<Integer> amounts = DataFrameS.getColAsIntegerList(clinchsDf, "成交数量");
         int clinchAmount = 0;
