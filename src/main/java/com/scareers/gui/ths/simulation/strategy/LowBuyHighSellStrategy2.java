@@ -50,14 +50,10 @@ import static com.scareers.utils.SqlUtil.execSql;
 public class LowBuyHighSellStrategy2 extends Strategy {
     private static LowBuyHighSellStrategy2 INSTANCE;
 
-    public static LowBuyHighSellStrategy2 getInstance(Trader trader, LbHsSelector lbHsSelector, String strategyName,
-                                                      List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
-                                                      int suitableSelectStockCount, // 期望的选股结果数量
-                                                      boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
-                                                      List<Integer> keyInts) throws Exception {
+    public static LowBuyHighSellStrategy2 getInstance(Trader trader, LbHsSelector lbHsSelector, String strategyName)
+            throws Exception {
         if (INSTANCE == null) {
-            INSTANCE = new LowBuyHighSellStrategy2(trader, lbHsSelector,strategyName, forceManualExcludeStocks,
-                    suitableSelectStockCount, preferenceMoreStock, keyInts);
+            INSTANCE = new LowBuyHighSellStrategy2(trader, lbHsSelector, strategyName);
         }
         return INSTANCE;
     }
@@ -76,12 +72,8 @@ public class LowBuyHighSellStrategy2 extends Strategy {
     LbHsSelector lbHsSelector;
     public ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
-    public LowBuyHighSellStrategy2(Trader trader, LbHsSelector lbHsSelector,String strategyName,
-                                   List<String> forceManualExcludeStocks, // 需要设置手动排除的股票.
-                                   int suitableSelectStockCount, // 期望的选股结果数量
-                                   boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
-                                   List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推
-    ) throws Exception {
+    public LowBuyHighSellStrategy2(Trader trader, LbHsSelector lbHsSelector, String strategyName,
+                                   ) throws Exception {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
         this.lbHsSelector = lbHsSelector;
@@ -122,7 +114,15 @@ public class LowBuyHighSellStrategy2 extends Strategy {
         log.warn("finish init stockPool: 完成初始化股票池...");
         return null;
     }
+
+    @Override
+    protected List<String> stockSelect() throws Exception {
+        return lbHsSelector.getSelectResults();
+    }
+
     public static Connection connOfYesterdayHoldsResult = ConnectionFactory.getConnLocalKlineForms();
+    public static String tableNameOfYesterdayStockHoldsAndAccountsInfoBefore = "stock_yesterday_holds_and_account_info";
+
     /**
      * @return
      * @throws Exception
@@ -139,13 +139,13 @@ public class LowBuyHighSellStrategy2 extends Strategy {
                         " INDEX trade_date_index (trade_date ASC)" +
                         ")\n" +
                         "    comment '保存昨日收盘后, 持仓, 以及资金状态, 作为今日初始状态';\n", tableNameOfYesterdayStockHoldsAndAccountsInfoBefore)
-                , connOfStockSelectResult);
+                , connOfYesterdayHoldsResult);
         String today = DateUtil.today();
         String sql = StrUtil
                 .format("select trade_date,yesterday_holds,yesterday_nine_account_fund_info,record_time from {} where " +
                                 "trade_date='{}' limit 1",
                         tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, today);
-        DataFrame<Object> dfTemp = DataFrame.readSql(connOfStockSelectResult, sql);
+        DataFrame<Object> dfTemp = DataFrame.readSql(connOfYesterdayHoldsResult, sql);
         if (dfTemp.length() == 0) {
             log.warn("no record: 无昨日收盘持仓信息和账户资金数据 原始记录. 需要此刻初始化");
             // 等待首次信息更新, 本处不调用实际逻辑, 调用方保证 初始化完成
@@ -161,10 +161,10 @@ public class LowBuyHighSellStrategy2 extends Strategy {
             dfSave.add("yesterday_nine_account_fund_info",
                     Arrays.asList(JSONUtil.toJsonStr(trader.getAccountStates().nineBaseFundsData)));
             dfSave.add("record_time", Arrays.asList(DateUtil.now()));
-            DataFrameS.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfStockSelectResult,
+            DataFrameS.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfYesterdayHoldsResult,
                     "append", null);
             log.warn("save success: 保存成功: 昨日收盘持仓信息和账户资金数据原始记录");
-            dfTemp = DataFrame.readSql(connOfStockSelectResult, sql); // 获取解析以便, 不使用直接赋值的方式
+            dfTemp = DataFrame.readSql(connOfYesterdayHoldsResult, sql); // 获取解析以便, 不使用直接赋值的方式
         }
         log.warn("recoed time: 昨日持仓与账户资金状况,获取时间为: {}", dfTemp.get(0, 3));
         yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtil.parseArray(dfTemp.get(0, 1)));
@@ -180,7 +180,6 @@ public class LowBuyHighSellStrategy2 extends Strategy {
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
         return stocksYesterdayHolds;
     }
-
 
 
     public void bindSelf() {
