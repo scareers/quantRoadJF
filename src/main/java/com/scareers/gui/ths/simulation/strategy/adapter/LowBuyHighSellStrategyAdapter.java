@@ -771,7 +771,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      * exception状态意味着无法处理. (通常直接进入最终失败队列)
      * retrying意味着正在尝试(一半不会以此结束, 都会得到 success 或者 fail)
      * success 以某种逻辑上的成功执行完成
-     * fail 以某种逻辑上的失败执行完成, 可尝试修改订单重试, 也可进入最终失败队列, 视情况而定
+     * fail 以某种逻辑上的失败执行完成, 可尝试修改订单重试, 也可进入最终失败队列, 视情况 而定
      * <p>
      * --------- 响应分类
      * dispatch 将可能发送 exception 状态响应(2种),重试的retrying 响应, 以及重试达到上限的 fail 响应
