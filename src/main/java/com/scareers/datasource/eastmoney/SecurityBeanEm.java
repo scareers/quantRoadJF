@@ -60,6 +60,9 @@ public class SecurityBeanEm {
         Console.log(SecurityBeanEm.createStockList(Arrays.asList("000001", "000007")));
         Console.log(SecurityBeanEm.createBKList(Arrays.asList("bk1030", "bk1020")));
         Console.log(SecurityBeanEm.createIndexList(Arrays.asList("000001", "399001")));
+
+        Console.log(SecurityBeanEm.createStock("688513").isHuA());
+        Console.log(SecurityBeanEm.createStock("688513").isKCB());
     }
 
 
@@ -201,7 +204,7 @@ public class SecurityBeanEm {
     // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
     private JSONArray queryResults; // 全部查询结果, 以下为结果字段
     // Code --> stockCodeSimple, MktNum--> market , QuoteID --> secId ,形如1.000001
-    private String secId;
+    private String quoteId;
 
     private String Name;
     private String PinYin;
@@ -338,7 +341,7 @@ public class SecurityBeanEm {
             if (typeConditions.contains(ele.get("SecurityTypeName").toString())) {
                 // 三项基本
                 try {
-                    secId = ele.get("QuoteID").toString();
+                    quoteId = ele.get("QuoteID").toString();
                     secCode = ele.get("Code").toString();
                     market = Integer.valueOf(ele.get("MktNum").toString());
                     Name = ele.get("Name").toString();
@@ -376,12 +379,12 @@ public class SecurityBeanEm {
         return this.secType == SecType.BK;
     }
 
-    public boolean isShenA() {
+    public boolean isShenA() { // 包含主板和创业板
         return this.getSecurityTypeName().equals("深A");
     }
 
-    public boolean isHuA() {
-        return this.getSecurityTypeName().equals("沪A");
+    public boolean isHuA() { // 需要添加科创板的逻辑
+        return this.getSecurityTypeName().equals("沪A") || isKCB();
     }
 
     public boolean isShenB() {
@@ -465,7 +468,7 @@ public class SecurityBeanEm {
      */
     @Override
     public int hashCode() {
-        return this.getSecCode().hashCode() | this.getMarket().hashCode() | this.getSecId().hashCode();
+        return this.getSecCode().hashCode() | this.getMarket().hashCode() | this.getQuoteId().hashCode();
     }
 
     /**
@@ -479,7 +482,7 @@ public class SecurityBeanEm {
         if (obj instanceof SecurityBeanEm) {
             SecurityBeanEm other = (SecurityBeanEm) obj;
             return other.getSecCode().equals(this.getSecCode()) &&
-                    other.getMarket().equals(this.getMarket()) && this.getSecId().equals(other.getSecId());
+                    other.getMarket().equals(this.getMarket()) && this.getQuoteId().equals(other.getQuoteId());
         }
         return false;
     }

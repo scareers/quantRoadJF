@@ -72,11 +72,17 @@ public class MainDisplayWindow extends FuncFrameS {
      *
      * @param centerPanel
      */
-//    @Override
-//    public void setCenterPanel(JPanel centerPanel) {
-//        this.centerPanel = centerPanel;
+    @Override
+    public void setCenterPanel(JPanel centerPanel) {
+        if (this.centerPanel != null) {
+            this.centerPanel.setVisible(false);
+        }
+        this.centerPanel = centerPanel;
+        this.centerPanel.setVisible(true);
+        this.setContentPane(centerPanel);
 //        this.add(centerPanel, BorderLayout.CENTER);
-//    }
+    }
+
     @Override
     protected List<FuncButton> getToolButtons1() {
         return super.defaultToolsButtonList1();

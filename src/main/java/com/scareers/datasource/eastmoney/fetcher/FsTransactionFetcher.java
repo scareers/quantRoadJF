@@ -1,4 +1,4 @@
-package com.scareers.datasource.eastmoney.fs;
+package com.scareers.datasource.eastmoney.fetcher;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;

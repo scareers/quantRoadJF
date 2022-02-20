@@ -57,6 +57,8 @@ public class EmQuoteApi {
             3600 * 1000); // 个股昨收和今开盘价
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 某个日期的上n个交易日?
+    public static Cache<String, List<Double>> indexOrBkPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
+            3600 * 1000); // 个股昨收和今开盘价
     public static ThreadPoolExecutor poolExecutor; // 可能的线程池
 
 
@@ -208,7 +210,7 @@ public class EmQuoteApi {
         res = new ArrayList<>();
         JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout, retry);
         try {
-            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f51").toString())); // 涨停价
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f51").toString())); // 涨停价
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
@@ -244,13 +246,13 @@ public class EmQuoteApi {
         JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout, retry);
         res = new ArrayList<>();
         try {
-            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f60").toString())); // 昨收
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f60").toString())); // 昨收
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
         }
         try {
-            res.add(Double.valueOf(JSONUtilS.getByPath(resp,"data.f46").toString())); // 今开
+            res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f46").toString())); // 今开
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
@@ -438,7 +440,7 @@ public class EmQuoteApi {
     private static JSONObject getStockHandicapCore(String stockSimpleCode, String fields, int timeout, int retry)
             throws Exception {
         SecurityBeanEm bean = SecurityBeanEm.createStock(stockSimpleCode);
-        String secId = bean.getSecId(); // 获取准确的secId
+        String secId = bean.getQuoteId(); // 获取准确的secId
 
         String url = "https://push2.eastmoney.com/api/qt/stock/get";
         Map<String, Object> params = new HashMap<>(); // 参数map
@@ -473,21 +475,30 @@ public class EmQuoteApi {
      * @return
      * @throws Exception
      */
+    @TimeoutCache(timeout = "3600 * 1000")
     public static List<Double> getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm bean, int timeout, int retry) {
+        String cacheKey = bean.getQuoteId();
+        List<Double> res = indexOrBkPreCloseAndTodayOpenCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new ArrayList<>();
+
         JSONObject resp = getIndexOrBKHandicapCore(bean, "f60,f46", timeout, retry); // 字段同个股. 昨收今开
-        List<Double> res = new ArrayList<>();
+
         try {
-            res.add(Double.parseDouble(JSONUtilS.getByPath(resp,"data.f60").toString()) / 100); // 昨收 , 注意/100
+            res.add(Double.parseDouble(JSONUtilS.getByPath(resp, "data.f60").toString()) / 100); // 昨收 , 注意/100
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
         }
         try {
-            res.add(Double.parseDouble(JSONUtilS.getByPath(resp,"data.f46").toString()) / 100); // 今开
+            res.add(Double.parseDouble(JSONUtilS.getByPath(resp, "data.f46").toString()) / 100); // 今开
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
         }
+        indexOrBkPreCloseAndTodayOpenCache.put(cacheKey, res);
         return res;
     }
 
@@ -504,12 +515,12 @@ public class EmQuoteApi {
         try {
             resp = getIndexOrBKHandicapCore(bean, IndexBkHandicap.fieldsStr, timeout, retry);
         } catch (Exception e) {
-            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getSecId());
+            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getQuoteId());
             return null;
         }
         JSONObject rawJson = (JSONObject) resp.get("data");
         if (rawJson == null) {
-            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getSecId());
+            log.error("get exception: 获取指数/板块实时盘口数据失败: index/bk: {}", bean.getQuoteId());
             return null;
         }
         return new IndexBkHandicap(rawJson);
@@ -589,7 +600,7 @@ public class EmQuoteApi {
      */
     private static JSONObject getIndexOrBKHandicapCore(SecurityBeanEm bean, String fields, int timeout, int retry) {
         Assert.isTrue(bean.isIndex() || bean.isBK()); // 需要是板块或者指数
-        String secId = bean.getSecId(); // 获取准确的secId
+        String secId = bean.getQuoteId(); // 获取准确的secId
         String url = "https://push2.eastmoney.com/api/qt/stock/get";
         Map<String, Object> params = new HashMap<>(); // 参数map
         params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
@@ -648,14 +659,14 @@ public class EmQuoteApi {
         params.put("fields1", "f1,f2,f3,f4");
         params.put("fields2", "f51,f52,f53,f54,f55");
         params.put("pos", StrUtil.format("-{}", lastRecordAmounts));
-        params.put("secid", bean.getSecId());
+        params.put("secid", bean.getQuoteId());
         params.put("cb", StrUtil.format("jQuery112409885675811656662_{}",
                 System.currentTimeMillis() - RandomUtil.randomInt(1000)));
         params.put("_", System.currentTimeMillis());
         try {
             response = getAsStrUseHutool(keyUrl, params, timeout, retry);
         } catch (Exception e) {
-            log.error("Fs成交 tick数据获取失败, 返回null: stock: {} -- {}", bean.getSecId(), bean.getName());
+            log.error("Fs成交 tick数据获取失败, 返回null: stock: {} -- {}", bean.getQuoteId(), bean.getName());
             return null;
         }
 
@@ -665,7 +676,7 @@ public class EmQuoteApi {
                     Arrays.asList("data", "details"), String.class, Arrays.asList(3),
                     Arrays.asList(bean.getSecCode(), bean.getMarket()));
         } catch (Exception e) {
-            log.warn("get exception: 获取数据错误. stock: {} -- {}", bean.getSecId(), bean.getName());
+            log.warn("get exception: 获取数据错误. stock: {} -- {}", bean.getQuoteId(), bean.getName());
             log.warn("raw data: 原始响应字符串: {}", response);
             throw e;
         }
@@ -834,7 +845,7 @@ public class EmQuoteApi {
 
         String fieldsStr = "f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"; // k线字段
         List<String> fields = StrUtil.split(fieldsStr, ",");
-        String quoteId = bean.getSecId();
+        String quoteId = bean.getQuoteId();
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");

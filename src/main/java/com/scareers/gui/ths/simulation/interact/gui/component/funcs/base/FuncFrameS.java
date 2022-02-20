@@ -84,7 +84,11 @@ public abstract class FuncFrameS extends JInternalFrame {
     protected abstract void initCenterPanel();
 
     public void setCenterPanel(JPanel centerPanel) {
+        if (this.centerPanel != null) {
+            this.centerPanel.setVisible(false);
+        }
         this.centerPanel = centerPanel;
+        this.centerPanel.setVisible(true);
         this.setContentPane(centerPanel);
 //        this.add(centerPanel, BorderLayout.CENTER);
     }
