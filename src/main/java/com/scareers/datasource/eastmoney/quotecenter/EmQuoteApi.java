@@ -11,8 +11,8 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.annotations.CanCache;
 import com.scareers.annotations.TimeoutCache;
@@ -208,7 +208,7 @@ public class EmQuoteApi {
         res = new ArrayList<>();
         JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout, retry);
         try {
-            res.add(Double.valueOf(resp.getByPath("data.f51").toString())); // 涨停价
+            res.add(Double.valueOf(resp.get("data.f51").toString())); // 涨停价
         } catch (Exception e) {
             e.printStackTrace();
             res.add(-1.0);
@@ -461,7 +461,7 @@ public class EmQuoteApi {
             return null;
         }
         response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
-        return JSONUtil.parseObj(response);
+        return JSONUtilS.parseObj(response);
     }
 
     /**
@@ -610,7 +610,7 @@ public class EmQuoteApi {
             return null;
         }
         response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
-        return JSONUtil.parseObj(response);
+        return JSONUtilS.parseObj(response);
     }
 
 

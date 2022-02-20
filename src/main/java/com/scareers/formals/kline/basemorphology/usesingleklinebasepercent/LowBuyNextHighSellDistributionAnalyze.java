@@ -7,7 +7,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
@@ -85,7 +85,7 @@ public class LowBuyNextHighSellDistributionAnalyze {
             correspondingFilterAlgos.get(1));// 哪天高卖?简单筛选后的表名称
     public static List<String> algorithmRawList = Arrays.asList("Open", "Close", "High", "Low");
     public static Connection connection = ConnectionFactory.getConnLocalKlineForms();
-    public static String validateDateRange = JSONUtil.toJsonStr(validateDateRangeList); ////同上,方便参数传递而已
+    public static String validateDateRange = JSONUtilS.toJsonStr(validateDateRangeList); ////同上,方便参数传递而已
 
     public static String sqlCreateSaveTable = getSqlCreateSaveTable();
     // 卖点当天 最低价限定
@@ -301,10 +301,10 @@ public class LowBuyNextHighSellDistributionAnalyze {
                         effectiveValusRanges.get(intTable), false);
                 Integer selectedFormCounts = selectedForms.size();
                 DataFrameS<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
-                        JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
-                        validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
-                        JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
-                        String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+                        JSONUtilS.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+                        validateDateRangeList, resultAlgorithm, null, JSONUtilS.toJsonStr(highArgs),
+                        JSONUtilS.toJsonStr(lowArgs), selectedFormCounts.toString(),
+                        String.valueOf(calcedForms.size()), JSONUtilS.toJsonStr(forceFilterFormArgs), null,
                         null);
                 // 单条记录保存了
                 DataFrameS.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);
@@ -348,10 +348,10 @@ public class LowBuyNextHighSellDistributionAnalyze {
 //                        effectiveValusRanges.get(intTable), false);
 //                Integer selectedFormCounts = selectedForms.size();
 //                DataFrameS<Object> dfSingle = prepareSaveDfForAnalyzeResult(resultSingle,
-//                        JSONUtil.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
-//                        validateDateRangeList, resultAlgorithm, null, JSONUtil.toJsonStr(highArgs),
-//                        JSONUtil.toJsonStr(lowArgs), selectedFormCounts.toString(),
-//                        String.valueOf(calcedForms.size()), JSONUtil.toJsonStr(forceFilterFormArgs), null,
+//                        JSONUtilS.toJsonStr(actualCalcedFormSet), // python字段放在form描述里面, java没有描述字段, 放在formname字段
+//                        validateDateRangeList, resultAlgorithm, null, JSONUtilS.toJsonStr(highArgs),
+//                        JSONUtilS.toJsonStr(lowArgs), selectedFormCounts.toString(),
+//                        String.valueOf(calcedForms.size()), JSONUtilS.toJsonStr(forceFilterFormArgs), null,
 //                        null);
 //                // 单条记录保存了
 //                DataFrameS.toSql(dfSingle, tablenameSaveAnalyze, connection, "append", null);

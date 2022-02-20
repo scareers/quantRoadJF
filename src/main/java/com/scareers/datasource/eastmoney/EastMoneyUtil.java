@@ -4,10 +4,10 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.http.Header;
 import cn.hutool.http.Method;
-import cn.hutool.json.JSONArray;
+import com.alibaba.fastjson.JSONArray;
 import cn.hutool.json.JSONNull;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.scareers.annotations.Cached;
@@ -197,7 +197,7 @@ public class EastMoneyUtil {
             return null;
         }
 
-        JSONObject temp = JSONUtil.parseObj(response);
+        JSONObject temp = JSONUtilS.parseObj(response);
         Object resTemp = temp.getByPath("QuotationCodeTable.Data");
         if (JSONNull.NULL.equals(resTemp)) {
             return null;

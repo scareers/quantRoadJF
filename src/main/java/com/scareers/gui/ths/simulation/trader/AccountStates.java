@@ -1,8 +1,8 @@
 package com.scareers.gui.ths.simulation.trader;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.gui.ths.simulation.OrderFactory;
@@ -219,7 +219,7 @@ public class AccountStates {
                 String msg = new String(body, StandardCharsets.UTF_8);
                 JSONObject message;
                 try {
-                    message = JSONUtil.parseObj(msg);
+                    message = JSONUtilS.parseObj(msg);
                 } catch (Exception e) {
                     e.printStackTrace();
                     log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);
@@ -263,7 +263,7 @@ public class AccountStates {
         handshake.set("handshakeJavaSide", "java get ready");
         handshake.set("handshakePythonSide", "and you?");
         handshake.set("timestamp", System.currentTimeMillis());
-        return JSONUtil.toJsonStr(handshake);
+        return JSONUtilS.toJsonStr(handshake);
     }
 
 
@@ -454,7 +454,7 @@ public class AccountStates {
                     String msg = new String(body, StandardCharsets.UTF_8);
                     JSONObject message;
                     try {
-                        message = JSONUtil.parseObj(msg);
+                        message = JSONUtilS.parseObj(msg);
                     } catch (Exception e) {
                         e.printStackTrace();
                         log.warn("nack: 收到来自python的消息, 但解析为 JSONObject 失败: {}", msg);

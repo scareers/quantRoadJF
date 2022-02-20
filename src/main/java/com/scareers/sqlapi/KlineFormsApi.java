@@ -5,7 +5,7 @@ import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.annotations.Cached;
@@ -87,7 +87,7 @@ public class KlineFormsApi {
         for (int i = 0; i < dfTemp.length(); i++) {
             List<Object> row = dfTemp.row(i);
             String stock = row.get(0).toString();
-            List<Object> formSetIdsRaw = JSONUtil.parseArray(row.get(1).toString());
+            List<Object> formSetIdsRaw = JSONUtilS.parseArray(row.get(1).toString());
             List<Long> formSetIds = new ArrayList<>();
             formSetIdsRaw.stream().mapToLong(value -> Long.valueOf(value.toString())).forEach(formSetIds::add);
 
@@ -191,23 +191,23 @@ public class KlineFormsApi {
         // Low1分布
         DataFrame<Object> dfTemp = dataFrame
                 .select(row -> row.get(0).toString().equals("Low1"));
-        List<Object> tempTicks = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+        List<Object> tempTicks = JSONUtilS.parseArray(dfTemp.get(0, 1).toString());
         List<Double> ticksOfLow1 = new ArrayList<>(); // 1.低买tick, 有利在后
         tempTicks.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(ticksOfLow1::add);
         Collections.reverse(ticksOfLow1); // Low 的tick需要反转过来, 越有利的在后面. 对应的 权重也应该反转
 
-        List<Object> weightsOfLow1Temp = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+        List<Object> weightsOfLow1Temp = JSONUtilS.parseArray(dfTemp.get(0, 2).toString());
         List<Double> weightsOfLow1 = new ArrayList<>(); // 2. 低买权重标准化, 有利在后
         weightsOfLow1Temp.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(weightsOfLow1::add);
         Collections.reverse(weightsOfLow1);
 
         // High1分布
         DataFrame<Object> dfHigh = dataFrame.select(row -> row.get(0).toString().equals("High1"));
-        List<Object> tempValues0 = JSONUtil.parseArray(dfHigh.get(0, 1).toString());
+        List<Object> tempValues0 = JSONUtilS.parseArray(dfHigh.get(0, 1).toString());
         List<Double> ticksOfHigh1 = new ArrayList<>();
         tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(ticksOfHigh1::add);
         //Collections.reverse(tempValues); // @noti: HighSell 不应该reverse
-        List<Object> tempWeights0 = JSONUtil.parseArray(dfHigh.get(0, 2).toString());
+        List<Object> tempWeights0 = JSONUtilS.parseArray(dfHigh.get(0, 2).toString());
         List<Double> weightsOfHigh1 = new ArrayList<>();
         tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(weightsOfHigh1::add);
         //Collections.reverse(tempWeights);

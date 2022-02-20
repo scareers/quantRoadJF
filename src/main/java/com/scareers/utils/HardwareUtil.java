@@ -3,7 +3,7 @@ package com.scareers.utils;
 import cn.hutool.core.date.LocalDateTimeUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.settings.SettingsCommon;
 import lombok.SneakyThrows;
 import oshi.SystemInfo;
@@ -26,9 +26,9 @@ public class HardwareUtil {
 //        getMemInfoAsString(true);
 
 //        SystemInfo systemInfo = new SystemInfo();
-//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getDiskStores()));
-//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getMemory()));
-//        System.out.println(JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getProcessor()));
+//        System.out.println(JSONUtilS.toJsonPrettyStr(systemInfo.getHardware().getDiskStores()));
+//        System.out.println(JSONUtilS.toJsonPrettyStr(systemInfo.getHardware().getMemory()));
+//        System.out.println(JSONUtilS.toJsonPrettyStr(systemInfo.getHardware().getProcessor()));
 
         Console.log(reportCpuMemoryDisk(false));
     }
@@ -73,7 +73,7 @@ public class HardwareUtil {
     public static String getDiskInfoAsJsonString(boolean showInStdout) {
         SystemInfo systemInfo = new SystemInfo();
         String res = "----------------磁盘信息---------------\n";
-        res += JSONUtil.toJsonPrettyStr(systemInfo.getHardware().getDiskStores());
+        res += JSONUtilS.toJsonPrettyStr(systemInfo.getHardware().getDiskStores());
         res += "\n--------------------------------------";
         if (showInStdout) {
             Console.log(res);

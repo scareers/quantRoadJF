@@ -1,6 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.order;
 
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
@@ -51,7 +51,7 @@ public class OrderResponsePanel extends JPanel {
 
     public void updateText(Order order) {
         List<Response> responses = Trader.getOrdersAllMap().get(order);
-        String newText = jsonStrToHtmlFormat(JSONUtil.toJsonPrettyStr(responses));
+        String newText = jsonStrToHtmlFormat(JSONUtilS.toJsonPrettyStr(responses));
 
         if (!newText.equals(preText)) {
             this.label.setText(newText);

@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.utils.StrUtilS;
 
 import java.util.HashMap;

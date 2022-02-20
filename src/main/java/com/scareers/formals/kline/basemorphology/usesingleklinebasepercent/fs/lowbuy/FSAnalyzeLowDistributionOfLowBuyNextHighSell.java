@@ -2,7 +2,7 @@ package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.fs.l
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
@@ -446,7 +446,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             DataFrame<Object> dfSave = new DataFrame<>(); // 单行
             dfSave.add("trade_date", Arrays.asList(todayTemp));
             dfSave.add("ts_code", Arrays.asList(stock));
-            dfSave.add("form_set_ids", Arrays.asList(JSONUtil.toJsonStr(belongToFormsetIds))); // String
+            dfSave.add("form_set_ids", Arrays.asList(JSONUtilS.toJsonStr(belongToFormsetIds))); // String
             DataFrameS.toSql(dfSave, saveTablenameStockSelectResult, connOfKlineForms, "append", null);
         }
 
@@ -1175,7 +1175,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             for (int i = 0; i < dfFormSets.length(); i++) {
                 List<Object> row = dfFormSets.row(i);
                 Long key = Long.valueOf(row.get(0).toString());
-                List<String> value = JSONUtil.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
+                List<String> value = JSONUtilS.parseArray(row.get(1).toString()).toList(String.class);// 转换为字符串
                 value.sort(Comparator.naturalOrder());
                 res.put(key, value);
             }
@@ -1308,7 +1308,7 @@ public class FSAnalyzeLowDistributionOfLowBuyNextHighSell {
             analyzeResultDf.add("stat_result_algorithm", Arrays.asList(statResultAlgorithm));
             analyzeResultDf.add("concrete_algorithm", Arrays.asList(concreteAlgorithm));
             // 此5列, 仅此列注意一下
-            analyzeResultDf.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(statDateRange)));
+            analyzeResultDf.add("stat_date_range", Arrays.asList(JSONUtilS.toJsonStr(statDateRange)));
             analyzeResultDf.add("stat_stock_counts", Arrays.asList(stockCount));
             return analyzeResultDf;
         }

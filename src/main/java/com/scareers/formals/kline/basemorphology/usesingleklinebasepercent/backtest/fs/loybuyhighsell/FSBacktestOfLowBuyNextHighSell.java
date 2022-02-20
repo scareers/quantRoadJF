@@ -4,7 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.extra.mail.MailUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -285,8 +285,8 @@ public class FSBacktestOfLowBuyNextHighSell {
             // 0.首先, 一些基本字段需要保存.
             dfLowBuyHighSell.add("form_set_id", Arrays.asList(formSetId));
             dfLowBuyHighSell.add("trade_date", Arrays.asList(tradeDate));
-            dfLowBuyHighSell.add("stocks_selected", Arrays.asList(JSONUtil.toJsonStr(stockSelected)));
-            dfLowBuyHighSell.add("stat_date_range", Arrays.asList(JSONUtil.toJsonStr(backtestDateRange)));
+            dfLowBuyHighSell.add("stocks_selected", Arrays.asList(JSONUtilS.toJsonStr(stockSelected)));
+            dfLowBuyHighSell.add("stat_date_range", Arrays.asList(JSONUtilS.toJsonStr(backtestDateRange)));
             dfLowBuyHighSell.add("stock_selected_count", Arrays.asList(totalAssets));
 
             // 低买开始 ********
@@ -302,7 +302,7 @@ public class FSBacktestOfLowBuyNextHighSell {
 
             try {
                 dfLowBuyHighSell.add("lb_position_price_map",
-                        Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
+                        Arrays.asList(JSONUtilS.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuy)));
             } catch (Exception e) {
                 log.warn("发生异常");
                 e.printStackTrace();
@@ -317,7 +317,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     );
                 }// 将 NaN 转换为null 然后再, 但是将会发生 空指针异常
                 dfLowBuyHighSell.add("lb_position_price_map",
-                        Arrays.asList(JSONUtil.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuyTemp)));
+                        Arrays.asList(JSONUtilS.toJsonStr(stockWithTotalPositionAndAdaptedPriceLowBuyTemp)));
 */
                 //return null;
             }
@@ -327,7 +327,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     .get(2); // 2.低买买点 lb_buypoints
             HashMap<String, List<List<Double>>> stockLowBuyPointsMapForSave =
                     convertBuyPointsToSaveMode(stockLowBuyPointsMap); // 转换一下.
-            dfLowBuyHighSell.add("lb_buypoints", Arrays.asList(JSONUtil.toJsonStr(stockLowBuyPointsMapForSave)));
+            dfLowBuyHighSell.add("lb_buypoints", Arrays.asList(JSONUtilS.toJsonStr(stockLowBuyPointsMapForSave)));
             Double weightedGlobalPrice = BacktestTaskOfPerDay  // 3.lb_weighted_buy_price  总加权平均成本百分比
                     .calcWeightedGlobalPrice(stockWithTotalPositionAndAdaptedPriceLowBuy);
             dfLowBuyHighSell.add("lb_weighted_buy_price", Arrays.asList(weightedGlobalPrice));
@@ -355,24 +355,24 @@ public class FSBacktestOfLowBuyNextHighSell {
             List<Object> highSellResult = highSellExecuteCore(stockWithTotalPositionAndAdaptedPriceLowBuy); // 高卖
             HashMap<String, Double> stockWithPositionLowBuy =
                     (HashMap<String, Double>) highSellResult.get(0); // 5.低买结论衍生: 原始持仓map:  lb_positions
-            dfLowBuyHighSell.add("lb_positions", Arrays.asList(JSONUtil.toJsonStr(stockWithPositionLowBuy)));
+            dfLowBuyHighSell.add("lb_positions", Arrays.asList(JSONUtilS.toJsonStr(stockWithPositionLowBuy)));
             HashMap<String, List<Double>> stockWithHighSellSuccessPositionAndAdaptedPrice =
                     (HashMap<String, List<Double>>) highSellResult.get(1); // 6.高卖成功部分仓位和价格 hs_success_position_price
             dfLowBuyHighSell.add("hs_success_position_price",
-                    Arrays.asList(JSONUtil.toJsonStr(stockWithHighSellSuccessPositionAndAdaptedPrice)));
+                    Arrays.asList(JSONUtilS.toJsonStr(stockWithHighSellSuccessPositionAndAdaptedPrice)));
             HashMap<String, List<Double>> openAndCloseOfHighSell =
                     (HashMap<String, List<Double>>) highSellResult.get(2); // 7.高卖日开盘和收盘  hs_open_close
-            dfLowBuyHighSell.add("hs_open_close", Arrays.asList(JSONUtil.toJsonStr(openAndCloseOfHighSell)));
+            dfLowBuyHighSell.add("hs_open_close", Arrays.asList(JSONUtilS.toJsonStr(openAndCloseOfHighSell)));
             HashMap<String, List<SellPoint>> stockHighSellPointsMap =
                     (HashMap<String, List<SellPoint>>) highSellResult.get(3);
             // 8.高卖日所有高卖点  hs_sellpoints   各股票理论卖出点, 不一定有该高卖操作, 仅仅是理论上最多存在这些高卖点
             HashMap<String, List<List<Double>>> stockLowSellPointsMapForSave =
                     convertSellPointsToSaveMode(stockHighSellPointsMap); // 转换一下.
-            dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtil.toJsonStr(stockLowSellPointsMapForSave)));
+            dfLowBuyHighSell.add("hs_sellpoints", Arrays.asList(JSONUtilS.toJsonStr(stockLowSellPointsMapForSave)));
             // @adding: 8.1: 开盘弱势股列表高卖当日
             List<String> weakStocks = (List<String>) highSellResult.get(4);
             dfLowBuyHighSell.add("hs_open_weak_stocks",
-                    Arrays.asList(JSONUtil.toJsonStr(weakStocks)));
+                    Arrays.asList(JSONUtilS.toJsonStr(weakStocks)));
             // 项返回值解析完 毕
 
             // 用原始仓位 - 高卖执行的总仓位
@@ -380,7 +380,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<String, Double> stockWithPositionRemaining = // 9.剩余仓位 未能成功卖出  hs_remain_positions
                     subRawPositionsWithHighSellExecPositions(stockWithPositionLowBuy,
                             stockWithHighSellSuccessPositionAndAdaptedPrice);
-            dfLowBuyHighSell.add("hs_remain_positions", Arrays.asList(JSONUtil.toJsonStr(stockWithPositionRemaining)));
+            dfLowBuyHighSell.add("hs_remain_positions", Arrays.asList(JSONUtilS.toJsonStr(stockWithPositionRemaining)));
             // 此为将未能卖出仓位, 折算进高卖成功仓位, 后的状态. 需要计算
             // 用 收盘价折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
             HashMap<String, List<Double>> stockWithHighSellPositionAndAdaptedPriceDiscountAll =
@@ -388,7 +388,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                             stockWithHighSellSuccessPositionAndAdaptedPrice,
                             openAndCloseOfHighSell); // 10.全折算卖出: hs_discount_all_position_price
             dfLowBuyHighSell.add("hs_discount_all_position_price",
-                    Arrays.asList(JSONUtil.toJsonStr(stockWithHighSellPositionAndAdaptedPriceDiscountAll)));
+                    Arrays.asList(JSONUtilS.toJsonStr(stockWithHighSellPositionAndAdaptedPriceDiscountAll)));
 
             Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
                     stockWithHighSellSuccessPositionAndAdaptedPrice); // 11. 高卖成功部分折算价格 hs_success_global_price
@@ -401,7 +401,7 @@ public class FSBacktestOfLowBuyNextHighSell {
             HashMap<String, List<Double>> successPartProfits = profitOfHighSell(
                     stockWithTotalPositionAndAdaptedPriceLowBuy,
                     stockWithHighSellSuccessPositionAndAdaptedPrice);// 13.只计算高卖成功部分, 仓位+盈利值 hs_success_position_profit
-            dfLowBuyHighSell.add("hs_success_position_profit", Arrays.asList(JSONUtil.toJsonStr(successPartProfits)));
+            dfLowBuyHighSell.add("hs_success_position_profit", Arrays.asList(JSONUtilS.toJsonStr(successPartProfits)));
 
             // 14.高卖成功部分, 整体的 加权盈利值!! hs_success_profit
             Double successPartProfitWeighted = calcWeightedGlobalPrice2(successPartProfits);
@@ -410,7 +410,7 @@ public class FSBacktestOfLowBuyNextHighSell {
                     profitOfHighSell(stockWithTotalPositionAndAdaptedPriceLowBuy,
                             stockWithHighSellPositionAndAdaptedPriceDiscountAll);
             dfLowBuyHighSell
-                    .add("hs_discount_all_position_profit", Arrays.asList(JSONUtil.toJsonStr(allProfitsDiscounted)));
+                    .add("hs_discount_all_position_profit", Arrays.asList(JSONUtilS.toJsonStr(allProfitsDiscounted)));
 
             // 16.全折算后, 整体的 加权盈利值!!   hs_discount_all_profit
             Double allProfitsDiscountedProfitWeighted = calcWeightedGlobalPrice2(allProfitsDiscounted);

@@ -2,7 +2,7 @@ package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
@@ -145,9 +145,9 @@ public class LowBuyHighSellStrategy extends Strategy {
             dfSave.add("trade_date", Arrays.asList(today));
             dfSave.add("yesterday_holds",
                     Arrays.asList(
-                            JSONUtil.toJsonStr(DataFrameS.to2DList(AccountStates.currentHolds, true))));
+                            JSONUtilS.toJsonStr(DataFrameS.to2DList(AccountStates.currentHolds, true))));
             dfSave.add("yesterday_nine_account_fund_info",
-                    Arrays.asList(JSONUtil.toJsonStr(AccountStates.nineBaseFundsData)));
+                    Arrays.asList(JSONUtilS.toJsonStr(AccountStates.nineBaseFundsData)));
             dfSave.add("record_time", Arrays.asList(DateUtil.now()));
             DataFrameS.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfYesterdayHoldsResult,
                     "append", null);
@@ -155,8 +155,8 @@ public class LowBuyHighSellStrategy extends Strategy {
             dfTemp = DataFrame.readSql(connOfYesterdayHoldsResult, sql); // 获取解析以便, 不使用直接赋值的方式
         }
         log.warn("recoed time: 昨日持仓与账户资金状况,获取时间为: {}", dfTemp.get(0, 3));
-        yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtil.parseArray(dfTemp.get(0, 1)));
-        Map<String, Object> tempMap = JSONUtil.parseObj(dfTemp.get(0, 2));
+        yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtilS.parseArray(dfTemp.get(0, 1)));
+        Map<String, Object> tempMap = JSONUtilS.parseObj(dfTemp.get(0, 2));
         yesterdayNineBaseFundsData = new ConcurrentHashMap<String, Double>();
         tempMap.keySet().stream()
                 .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));

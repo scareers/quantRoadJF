@@ -1,16 +1,16 @@
 package com.scareers.utils;
 
 /* 替换
-import cn.hutool.json.JSONArray;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONArray;
 
-import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.JSONObject;
 
-import cn.hutool.json.JSON;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSON;
 
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.JSONUtilS;
 
 import cn.hutool.json.*;
@@ -27,6 +27,7 @@ import com.scareers.utils.JSONUtilS;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * description: 对hutool JSONUtil相关再封装
+ * description: 对hutool JSONUtilS相关再封装
  *
  * @author: admin
  * @date: 2021/12/22/022-16:30:37
@@ -144,4 +145,31 @@ public class JSONUtilS {
         return JSON.toJSONString(o, true);
     }
 
+    private static final Log log = LogUtil.getLogger();
+
+    /**
+     * fastjson 的 JSONObject 适配 hutool 的 JSONObject.getByPath()
+     *
+     * @param pathSplitByPoint 形如 "a.b.c" 的路径
+     * @return
+     */
+    public static Object getByPath(JSONObject jsonObject, String pathSplitByPoint) {
+        try {
+            List<String> paths = StrUtil.split(pathSplitByPoint, ".");
+            if (paths.size() == 1) {
+                return jsonObject.get(paths.get(0)); // 单个路径, 获取"值"
+            }
+            // 否则, 多个路径, 最后一路径获取Object, 此前所有路径, 都获取 JSONObject, 持续获取
+
+            JSONObject temp = jsonObject;
+            for (int i = 0; i < paths.size() - 1; i++) {
+                temp = temp.getJSONObject(paths.get(i));
+            }
+            return temp.get(paths.get(paths.size() - 1));
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.warn("JSONUtilS getByPath: 返回null,可能路径参数错误: {}", pathSplitByPoint);
+        }
+        return null;
+    }
 }

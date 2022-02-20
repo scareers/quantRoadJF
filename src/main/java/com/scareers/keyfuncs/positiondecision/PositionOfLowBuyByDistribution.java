@@ -5,7 +5,7 @@ import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.lang.WeightRandom.WeightObj;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -111,7 +111,7 @@ public class PositionOfLowBuyByDistribution {
         List<Object> res = new ArrayList<>();
         res.add(stockWithPosition);
         if (showStockWithPosition) {
-            Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+            Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(stockWithPosition));
         }
         res.add(reachTotalLimitInLoop);
         res.add(epochRaw + 1);
@@ -155,7 +155,7 @@ public class PositionOfLowBuyByDistribution {
         List<Integer> stockIds = range(totalAssets.intValue());
         HashMap<Integer, List<Integer>> stockLowOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
-//        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
+//        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, Low1,2,3 出现顺序不确定. 且3可不出现
 
         List<Integer> stockPool = range(totalAssets.intValue()); // 初始保存全部股票, 等待配对完成, 移除放入下列表
         HashMap<Integer, Double> stockWithPosition = new HashMap<>(); // 股票和对应的position, 已有仓位, 初始0
@@ -239,7 +239,7 @@ public class PositionOfLowBuyByDistribution {
                     List<Object> res = new ArrayList<>();
                     res.add(stockWithPosition);
                     if (showStockWithPosition) {
-                        Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+                        Console.log(JSONUtilS.toJsonPrettyStr(stockWithPosition));
                     }
                     res.add(reachTotalLimitInLoop);
                     res.add(epoch + 1);
@@ -256,7 +256,7 @@ public class PositionOfLowBuyByDistribution {
         List<Object> res = new ArrayList<>();
         res.add(stockWithPosition);
         if (showStockWithPosition) {
-            Console.log(JSONUtil.toJsonPrettyStr(stockWithPosition));
+            Console.log(JSONUtilS.toJsonPrettyStr(stockWithPosition));
         }
         res.add(reachTotalLimitInLoop);
         res.add(epochRaw + 1);
@@ -302,12 +302,12 @@ public class PositionOfLowBuyByDistribution {
             DataFrame<Object> dfTemp = dataFrame
                     .select(row -> row.get(0).toString().equals(StrUtil.format("Low{}", finalI)));
 
-            List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Object> tempValues0 = JSONUtilS.parseArray(dfTemp.get(0, 1).toString());
             List<Double> tempValues = new ArrayList<>();
             tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
             Collections.reverse(tempValues);
             valuePercentOfLowxTemp.add(tempValues);
-            List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Object> tempWeights0 = JSONUtilS.parseArray(dfTemp.get(0, 2).toString());
             List<Double> tempWeights = new ArrayList<>();
             tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
             Collections.reverse(tempWeights);

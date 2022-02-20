@@ -30,7 +30,7 @@ public class App {
 //            long start = System.currentTimeMillis();
 ////            fibonacci(40);
 //            for (long i = 0; i < 1000000; i++) {
-//                JSONUtil.parseObj(
+//                JSONUtilS.parseObj(
 //                        "{\n" +
 //                                "            \"code\": 200,\n" +
 //                                "            \"success\": true,\n" +
@@ -73,7 +73,7 @@ public class App {
 //        Console.com.scareers.log(col1.get(0) instanceof String);
 //        HashMap<String, Double> temp = calc10ItemValusOfLowBuyDeprecated(3346000000.0, 19.43, "20210831",
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ");
-//        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(temp));
+//        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(temp));
 
 //        HashMap<String, Double> temp2 = calc5ItemValusOfHighSell(3346000000.0, 19.43, "20210901",
 //                ConnectionFactory.getConnLocalTushare1M(), "000002.SZ", 4);
@@ -143,8 +143,8 @@ public class App {
 //        Double nan = Double.NaN;
 //        Console.com.scareers.log(Double.compare(1, Double.NaN));
 //
-//        Console.com.scareers.log(JSONUtil.toJsonStr((Object) Arrays.asList(0.25)));
-//        Console.com.scareers.log(JSONUtil.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
+//        Console.com.scareers.log(JSONUtilS.toJsonStr((Object) Arrays.asList(0.25)));
+//        Console.com.scareers.log(JSONUtilS.toJsonStr(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4))));
 //        Console.com.scareers.log(Math.pow(2.1867241478865562, 5));
 //
 //        DataFrame<Double> df = new DataFrame<>();

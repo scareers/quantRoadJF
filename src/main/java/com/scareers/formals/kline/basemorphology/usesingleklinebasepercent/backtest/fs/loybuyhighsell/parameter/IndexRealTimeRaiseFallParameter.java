@@ -4,7 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.file.FileWriter;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.StrUtilS;
@@ -116,7 +116,7 @@ public class IndexRealTimeRaiseFallParameter {
 
         }
 
-        Console.log(JSONUtil.toJsonPrettyStr(res));
+        Console.log(JSONUtilS.toJsonPrettyStr(res));
         Console.log("开始写入json文件");
 
         File file = FileUtil.file("results/IndexRealTimeRaiseFallParameter/" +
@@ -124,7 +124,7 @@ public class IndexRealTimeRaiseFallParameter {
                 ".json");
         Console.log(file.getAbsolutePath());
         FileWriter writer = new FileWriter(file);
-        writer.write(JSONUtil.toJsonPrettyStr(res));
+        writer.write(JSONUtilS.toJsonPrettyStr(res));
         Console.log("finish");
 
 
@@ -158,10 +158,10 @@ public class IndexRealTimeRaiseFallParameter {
             res.put(table, singleRes);
         }
 
-        Console.log(JSONUtil.toJsonPrettyStr(res));
+        Console.log(JSONUtilS.toJsonPrettyStr(res));
         Console.log("开始写入json文件");
         FileWriter writer = new FileWriter("singleTableAllAvg.json");
-        writer.write(JSONUtil.toJsonPrettyStr(res));
+        writer.write(JSONUtilS.toJsonPrettyStr(res));
         Console.log("finish");
     }
 

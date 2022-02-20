@@ -9,9 +9,10 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.*;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.gui.ths.simulation.Response;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.*;
 
@@ -121,7 +122,7 @@ public class Order implements Comparable, Serializable {
             "resendTimes", "execResponses", "parentOrder"
     ); // params 的key不应包含这些key, 它们均表示Order本身属性
 
-    public JSON prepare() throws Exception {
+    public Map<String, Object> prepare() throws Exception {
         return prepare(false); // 将参数作为key放入order对象
     }
 
@@ -132,31 +133,33 @@ public class Order implements Comparable, Serializable {
      * @return
      * @throws Exception
      */
-    public JSON prepare(boolean forDisplay) throws Exception {
-        JSONObject order = new JSONObject();
-        order.set("rawOrderId", rawOrderId);
+    public Map<String, Object> prepare(boolean forDisplay) throws Exception {
+        //Map<String, Object> order = new JSONObject();
+        Map<String, Object> order = new HashMap<>();
+
+        order.put("rawOrderId", rawOrderId);
         if (orderType == null) {
             throw new Exception("订单对象尚未生成完成,不可prepare()");
         }
-        order.set("orderType", orderType);
-        order.set("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
-        order.set("priority", priority);
+        order.put("orderType", orderType);
+        order.put("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
+        order.put("priority", priority);
         checkParamsKeySet();
         if (forDisplay) {
-            order.set("params", params);
+            order.put("params", params);
         } else {
             order.putAll(params);
         }
-        ArrayList<JSON> lifePointsJSON = new ArrayList<>();
+        ArrayList<Map<String, Object>> lifePointsJSON = new ArrayList<>();
         for (LifePoint i : lifePoints) {
             lifePointsJSON.add(i.asJson());
         }
-        order.set("lifePoints", lifePointsJSON);
-        order.set("timer", timer);
-        order.set("otherRawMessages", otherRawMessages);
-        order.set("resendTimes", resendTimes);
-        order.set("execResponses", execResponses); // 初始空
-        order.set("parentOrder", parentOrder); // null
+        order.put("lifePoints", lifePointsJSON);
+        order.put("timer", timer);
+        order.put("otherRawMessages", otherRawMessages);
+        order.put("resendTimes", resendTimes);
+        order.put("execResponses", execResponses); // 初始空
+        order.put("parentOrder", parentOrder); // null
         return order;
     }
 
@@ -172,20 +175,20 @@ public class Order implements Comparable, Serializable {
     @SneakyThrows
     @Override
     public String toString() {
-        return JSONUtil.toJsonStr(prepare(true)); // 直观显示
+        return JSONUtilS.toJsonStr(prepare(true)); // 直观显示
     }
 
     @SneakyThrows
     public String toStringPretty() {
-        return JSONUtil.toJsonPrettyStr(prepare(true)); // 直观显示
+        return JSONUtilS.toJsonPrettyStr(prepare(true)); // 直观显示
     }
 
     public String toJsonStrForTrans() throws Exception { // 传递给python
-        return JSONUtil.toJsonStr(prepare());
+        return JSONUtilS.toJsonStr(prepare());
     }
 
     public String toJsonPrettyStrForTrans() throws Exception { // 传递给python
-        return JSONUtil.toJsonPrettyStr(prepare());
+        return JSONUtilS.toJsonPrettyStr(prepare());
     }
 
     @Override
@@ -303,13 +306,13 @@ public class Order implements Comparable, Serializable {
         }
 
 
-        public JSON asJson() {
-            JSONObject lifePoint = new JSONObject();
-            lifePoint.set("status", status.toString());
-            lifePoint.set("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
-            lifePoint.set("description", description);
-            lifePoint.set("payload", payload);
-            lifePoint.set("notes", notes);
+        public Map<String, Object> asJson() {
+            Map<String, Object> lifePoint = new HashMap<>();
+            lifePoint.put("status", status.toString());
+            lifePoint.put("generateTime", generateTime.toString(DatePattern.NORM_DATETIME_MS_PATTERN));
+            lifePoint.put("description", description);
+            lifePoint.put("payload", payload);
+            lifePoint.put("notes", notes);
             return lifePoint;
         }
     }
@@ -417,12 +420,12 @@ public class Order implements Comparable, Serializable {
 
         public String toToolTip() { // 提示文字, 显示
             JSONObject toolTip = new JSONObject();
-            toolTip.set("generateTime", generateTime.toString("HH:mm:ss.SSS"));
-            toolTip.set("orderType", orderType);
-            toolTip.set("rawOrderId", rawOrderId);
-            toolTip.set("params", params);
+            toolTip.put("generateTime", generateTime.toString("HH:mm:ss.SSS"));
+            toolTip.put("orderType", orderType);
+            toolTip.put("rawOrderId", rawOrderId);
+            toolTip.put("params", params);
 
-            return JSONUtil.toJsonPrettyStr(toolTip);
+            return JSONUtilS.toJsonPrettyStr(toolTip);
         }
 
         @SneakyThrows
@@ -445,7 +448,7 @@ public class Order implements Comparable, Serializable {
         if (execResponses.size() == 0) {
             return false; // 未执行过
         }
-        if (execResponses.get(execResponses.size() - 1).getStr("state").equals("success")) {
+        if (execResponses.get(execResponses.size() - 1).getString("state").equals("success")) {
             return true;
         }
         return false;

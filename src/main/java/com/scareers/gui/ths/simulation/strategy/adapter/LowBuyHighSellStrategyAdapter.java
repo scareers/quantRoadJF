@@ -7,8 +7,8 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
@@ -888,7 +888,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行成功");
         } else {
             log.error("执行失败: {}", order.getRawOrderId());
-            log.info(JSONUtil.parseArray(responses).toString());
+            log.info(JSONUtilS.parseArray(responses).toString());
             order.addLifePoint(Order.LifePointStatus.CHECKED, "执行失败");
         }
         trader.successFinishOrder(order, responses);

@@ -17,8 +17,8 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
@@ -262,7 +262,7 @@ public class Trader {
         handshake.set("handshakeJavaSide", "java get ready");
         handshake.set("handshakePythonSide", "and you?");
         handshake.set("timestamp", System.currentTimeMillis());
-        return JSONUtil.toJsonStr(handshake);
+        return JSONUtilS.toJsonStr(handshake);
     }
 
 
@@ -290,7 +290,7 @@ public class Trader {
                 String msg = new String(body, StandardCharsets.UTF_8);
                 JSONObject message;
                 try {
-                    message = JSONUtil.parseObj(msg);
+                    message = JSONUtilS.parseObj(msg);
                 } catch (Exception e) {
                     e.printStackTrace();
                     log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);

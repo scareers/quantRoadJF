@@ -2,8 +2,8 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 
 import java.util.HashMap;
 
@@ -21,7 +21,7 @@ public class FilterDefaultUiSettings {
 
     public static String filter(String filterStr) {
         String settings = ResourceUtil.readUtf8Str("default_ui/UIDefaults.json");
-        JSONObject json = JSONUtil.parseObj(settings);
+        JSONObject json = JSONUtilS.parseObj(settings);
 
         HashMap<String, Object> stringObjectHashMap = new HashMap<>();
         for (String key : json.keySet()) {
@@ -30,6 +30,6 @@ public class FilterDefaultUiSettings {
                 stringObjectHashMap.put(key, json.get(key));
             }
         }
-        return JSONUtil.toJsonPrettyStr(stringObjectHashMap);
+        return JSONUtilS.toJsonPrettyStr(stringObjectHashMap);
     }
 }

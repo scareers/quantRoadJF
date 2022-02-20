@@ -1,9 +1,9 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
@@ -581,7 +581,7 @@ public class SecurityBeanEm {
         }
 
         public String toToolTip() { // 提示文字, 显示
-            return JSONUtil.toJsonPrettyStr(bean.getConvertRawJsonObject());
+            return JSONUtilS.toJsonPrettyStr(bean.getConvertRawJsonObject());
         }
     }
 }

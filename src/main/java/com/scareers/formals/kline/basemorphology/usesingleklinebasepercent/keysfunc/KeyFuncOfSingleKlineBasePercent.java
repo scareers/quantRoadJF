@@ -1,7 +1,7 @@
 package com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.keysfunc;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.formals.kline.basemorphology.usesingleklinebasepercent.SettingsOfSingleKlineBasePercent;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
@@ -401,7 +401,7 @@ public class KeyFuncOfSingleKlineBasePercent {
             // Object 总体分为 ArrayList,List, List<List>, int, double 等.
             // 列表性结果, 则转换为 json, 字符串, int,double (包装类) 等不转换
             if (value instanceof List) {
-                row.add(JSONUtil.toJsonStr(value));
+                row.add(JSONUtilS.toJsonStr(value));
             } else {
                 // 此时 有可能为Double.NaN, 将sql错误, 修复一下
                 if (value instanceof Double) {
@@ -437,7 +437,7 @@ public class KeyFuncOfSingleKlineBasePercent {
 
         // 对应的 List<Object> 加入其他Object
         row.add(formNamePure);
-        row.add(JSONUtil.toJsonStr(statDateRange)); // L<S>
+        row.add(JSONUtilS.toJsonStr(statDateRange)); // L<S>
         row.add(statResultAlgorithm);
         row.add(selfNotes);
         row.add(formDescription);

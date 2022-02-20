@@ -7,8 +7,8 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SettingsOfEastMoney;
@@ -281,7 +281,7 @@ public class LbHsSelectorV0 extends LbHsSelector {
         String jsonStr = ResourceUtil.readUtf8Str("results/IndexRealTimeRaiseFallParameter/" +
                 "singleTableGroupByFormsetidAvg_scale1.41.61.2" +
                 ".json");
-        JSONObject datas = JSONUtil.parseObj(jsonStr);
+        JSONObject datas = JSONUtilS.parseObj(jsonStr);
         Map<String, Map<String, Double>> gatherMap = new HashMap<>(); // 汇总, key为  数据表$$form_set_id
         for (String tableName : datas.keySet()) {
             JSONObject argGroupData = datas.getJSONObject(tableName);

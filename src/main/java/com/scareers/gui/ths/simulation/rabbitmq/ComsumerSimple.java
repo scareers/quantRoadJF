@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.rabbitmq;
 
 import cn.hutool.core.lang.Console;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import com.rabbitmq.client.*;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ public class ComsumerSimple {
                 String msg = new String(body, StandardCharsets.UTF_8);
                 Map<String, Object> message = null;
                 try {
-                    message = JSONUtil.parseObj(msg);
+                    message = JSONUtilS.parseObj(msg);
                 } catch (Exception e) {
                     e.printStackTrace(); // 例如 response返回了None,
                 }

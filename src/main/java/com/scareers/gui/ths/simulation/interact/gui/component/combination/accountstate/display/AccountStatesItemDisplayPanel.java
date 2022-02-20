@@ -1,6 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.display;
 
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
@@ -174,7 +174,7 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
             }
         } else if (newData instanceof ConcurrentHashMap) { // 账户状态: 9项资金数据
             ConcurrentHashMap<String, Double> newMap = (ConcurrentHashMap) newData;
-            String content = jsonStrToHtmlFormat(JSONUtil.toJsonPrettyStr(newMap));
+            String content = jsonStrToHtmlFormat(JSONUtilS.toJsonPrettyStr(newMap));
             jLabel.setText(content);
             if (title.equals(CURRENT_HOLD_TITLE)) {
                 setJTableColorAccordingColValueCompareToZero(jTable, todayProfitColIndex); //首次设置

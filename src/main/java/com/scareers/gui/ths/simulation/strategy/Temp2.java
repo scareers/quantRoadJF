@@ -17,8 +17,8 @@ public class Temp2 {
 //import cn.hutool.core.lang.Dict;
 //import cn.hutool.core.util.NumberUtil;
 //import cn.hutool.core.util.StrUtil;
-//import cn.hutool.json.JSONObject;
-//import cn.hutool.json.JSONUtil;
+//import com.alibaba.fastjson.JSONObject;
+//import com.scareers.utils.JSONUtilS;
 //import cn.hutool.log.Log;
 //import com.scareers.datasource.eastmoney.SecurityBeanEm;
 //import com.scareers.datasource.eastmoney.SecurityPool;
@@ -241,9 +241,9 @@ public class Temp2 {
 //            dfSave.add("trade_date", Arrays.asList(today));
 //            dfSave.add("yesterday_holds",
 //                    Arrays.asList(
-//                            JSONUtil.toJsonStr(DataFrameS.to2DList(trader.getAccountStates().currentHolds, true))));
+//                            JSONUtilS.toJsonStr(DataFrameS.to2DList(trader.getAccountStates().currentHolds, true))));
 //            dfSave.add("yesterday_nine_account_fund_info",
-//                    Arrays.asList(JSONUtil.toJsonStr(trader.getAccountStates().nineBaseFundsData)));
+//                    Arrays.asList(JSONUtilS.toJsonStr(trader.getAccountStates().nineBaseFundsData)));
 //            dfSave.add("record_time", Arrays.asList(DateUtil.now()));
 //            DataFrameS.toSql(dfSave, tableNameOfYesterdayStockHoldsAndAccountsInfoBefore, connOfStockSelectResult,
 //                    "append", null);
@@ -251,8 +251,8 @@ public class Temp2 {
 //            dfTemp = DataFrame.readSql(connOfStockSelectResult, sql); // 获取解析以便, 不使用直接赋值的方式
 //        }
 //        log.warn("recoed time: 昨日持仓与账户资金状况,获取时间为: {}", dfTemp.get(0, 3));
-//        yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtil.parseArray(dfTemp.get(0, 1)));
-//        Map<String, Object> tempMap = JSONUtil.parseObj(dfTemp.get(0, 2));
+//        yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtilS.parseArray(dfTemp.get(0, 1)));
+//        Map<String, Object> tempMap = JSONUtilS.parseObj(dfTemp.get(0, 2));
 //        yesterdayNineBaseFundsData = new ConcurrentHashMap<String, Double>();
 //        tempMap.keySet().stream()
 //                .forEach(key -> yesterdayNineBaseFundsData.put(key, Double.valueOf(tempMap.get(key).toString())));
@@ -386,7 +386,7 @@ public class Temp2 {
 //        String jsonStr = ResourceUtil.readUtf8Str("results/IndexRealTimeRaiseFallParameter/" +
 //                "singleTableGroupByFormsetidAvg_scale1.41.61.2" +
 //                ".json");
-//        JSONObject datas = JSONUtil.parseObj(jsonStr);
+//        JSONObject datas = JSONUtilS.parseObj(jsonStr);
 //        Map<String, Map<String, Double>> gatherMap = new HashMap<>(); // 汇总, key为  数据表$$form_set_id
 //        for (String tableName : datas.keySet()) {
 //            JSONObject argGroupData = datas.getJSONObject(tableName);

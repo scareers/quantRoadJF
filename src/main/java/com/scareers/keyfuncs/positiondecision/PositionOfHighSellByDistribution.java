@@ -5,7 +5,7 @@ import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.WeightRandom;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -132,16 +132,16 @@ public class PositionOfHighSellByDistribution {
         Console.log("HighSell 耗时: {}s , 循环次数: {}", timer.intervalRestart() / 1000, loops);
         /*
             HighSellParser parser = new HighSellParser(highResult);
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPosition()));
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getStockWithPosition()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPosition()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getStockWithPositionRemaining()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getStockWithHighSellActualValueAndPositionDiscountAll()));
             //        Console.com.scareers.log(parser.getWeightedGlobalPriceHighSellSuccess()); // Double, 不能转换json字符串, 转换为空
             //        Console.com.scareers.log(parser.getWeightedGlobalPriceHighSellFinally());
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.successHighSellPartProfits()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getStockWithActualValueAndPosition()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.successHighSellPartProfits()));
             //        Console.com.scareers.log(parser.getSuccessPartProfitWeighted());
-            //        Console.com.scareers.log(JSONUtil.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
+            //        Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(parser.getAllProfitsDiscounted()));
             Console.com.scareers.log(parser.getAllProfitsDiscountedProfitWeighted());
          */
 
@@ -176,7 +176,7 @@ public class PositionOfHighSellByDistribution {
         List<Integer> stockIds = new ArrayList<>(stockWithPosition.keySet()); // 资产列表
         HashMap<Integer, List<Integer>> stockHighOccurrences = buildStockOccurrences2(stockIds, 3); // 构造单只股票,
         // 出现了哪些Low. 且顺序随机
-        // Console.com.scareers.log(JSONUtil.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, High1,2,3 出现顺序不确定. 且3可不出现
+        // Console.com.scareers.log(JSONUtilS.toJsonPrettyStr(stockLowOccurrences)); // 每只股票, High1,2,3 出现顺序不确定. 且3可不出现
         // 股票和对应的position, 已有仓位, 初始0
         // stock: [折算position, 折算value]
         // 专门保存卖出的仓位.以及折算
@@ -256,7 +256,7 @@ public class PositionOfHighSellByDistribution {
         res.add(stockWithPositionRemaining); // 2.剩余仓位 未能成功卖出
         res.add(stockWithHighSellActualValueAndPositionDiscountAll); // 3.用 0.0折算剩余仓位, 最终卖出仓位+价格. 此时仓位与原始同,全部卖出
         if (showStockWithPositionFinally) {
-            Console.log(JSONUtil.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
+            Console.log(JSONUtilS.toJsonPrettyStr(stockWithHighSellActualValueAndPositionDiscountAll));
         }
         Double weightedGlobalPriceHighSellSuccess = calcWeightedGlobalPrice2(
                 stockWithHighSellActualValueAndPosition); // 高卖成功部分折算价格
@@ -431,12 +431,12 @@ public class PositionOfHighSellByDistribution {
             DataFrame<Object> dfTemp = dataFrame
                     .select(row -> row.get(0).toString().equals(StrUtil.format("High{}", finalI)));
 
-            List<Object> tempValues0 = JSONUtil.parseArray(dfTemp.get(0, 1).toString());
+            List<Object> tempValues0 = JSONUtilS.parseArray(dfTemp.get(0, 1).toString());
             List<Double> tempValues = new ArrayList<>();
             tempValues0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempValues::add);
             //Collections.reverse(tempValues); // @noti: HighSell 不应该reverse
             valuePercentOfHighxTemp.add(tempValues);
-            List<Object> tempWeights0 = JSONUtil.parseArray(dfTemp.get(0, 2).toString());
+            List<Object> tempWeights0 = JSONUtilS.parseArray(dfTemp.get(0, 2).toString());
             List<Double> tempWeights = new ArrayList<>();
             tempWeights0.stream().mapToDouble(value -> Double.valueOf(value.toString())).forEach(tempWeights::add);
             //Collections.reverse(tempWeights);

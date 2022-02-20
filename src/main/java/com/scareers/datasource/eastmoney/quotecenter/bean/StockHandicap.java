@@ -1,7 +1,7 @@
 package com.scareers.datasource.eastmoney.quotecenter.bean;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import lombok.Getter;
 import lombok.ToString;

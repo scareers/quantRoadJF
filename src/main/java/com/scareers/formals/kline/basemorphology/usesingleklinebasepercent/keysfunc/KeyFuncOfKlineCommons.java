@@ -4,7 +4,7 @@ import cn.hutool.core.collection.ListUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
@@ -28,14 +28,14 @@ public class KeyFuncOfKlineCommons {
                 ListUtil.of(0.1, 0.3)
                 , 0.2, ListUtil.of(0.15, 0.25), true);
         Console.log();
-        Console.log(JSONUtil.toJsonPrettyStr(res.columns()));
+        Console.log(JSONUtilS.toJsonPrettyStr(res.columns()));
 
 
         Map<String, Object> resMap = simpleStatAnalyzeByValueList(
                 ListUtil.of(0.05, 0.1, 0.1, 0.15, 0.18, 0.2, 0.2, 0.25, 0.27, 0.3, 0.3), 2,
                 ListUtil.of(0.1, 0.3)
                 , 0.2, ListUtil.of(0.15, 0.25), true);
-        Console.log(JSONUtil.toJsonPrettyStr(resMap));
+        Console.log(JSONUtilS.toJsonPrettyStr(resMap));
 
     }
 
@@ -147,7 +147,7 @@ public class KeyFuncOfKlineCommons {
      * @param smallLargeThreshold     可以计算 较小值/较大值 分为三个区间后, 相应的 counts列表, 和percent列表(3个值) == 原来的bigChangeThreshold
      *                                // 例如涨跌幅 -0.05,+0.05算大值.  分时出现时间则  60.0 , 180.0 算小值,大值. 大小值均包含临界点
      * @param calcVirtualGeometryMean 是否计算 virtual_geometry_mean. 涨跌幅的几何平均值有意义, 分时图出现时间则没有意义
-     * @return Map<String, Object>  统计的项目名称 : 结果;  结果用Object, 可用 hutool.  JSONUtil.toJsonPrettyStr 显示字符串
+     * @return Map<String, Object>  统计的项目名称 : 结果;  结果用Object, 可用 hutool.  JSONUtilS.toJsonPrettyStr 显示字符串
      */
     public static Map<String, Object> simpleStatAnalyzeByCountsList(List<Long> countList,
                                                                     List<Double> tickList,
@@ -385,8 +385,8 @@ public class KeyFuncOfKlineCommons {
             // Object 总体分为 ArrayList,List, List<List>, int, double 等.
             // 列表性结果, 则转换为 json, 字符串, int,double (包装类) 等不转换
             if (value instanceof List) {
-//                row.add(JSONUtil.toJsonPrettyStr(value)); // 好看字符串
-                row.add(JSONUtil.toJsonStr(value)); // 好看字符串
+//                row.add(JSONUtilS.toJsonPrettyStr(value)); // 好看字符串
+                row.add(JSONUtilS.toJsonStr(value)); // 好看字符串
             } else {
                 // 此时 有可能为Double.NaN, 将sql错误, 修复一下
                 if (value instanceof Double) {
