@@ -7,7 +7,7 @@ import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.utils.log.LogUtil;
 
 /**
- * description:
+ * description: lb/hs 共同使用属性 , 方法等
  *
  * @author: admin
  * @date: 2022/2/20/020-21:26:40

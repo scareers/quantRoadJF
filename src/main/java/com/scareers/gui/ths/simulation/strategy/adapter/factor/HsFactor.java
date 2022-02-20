@@ -21,16 +21,17 @@ public abstract class HsFactor {
     protected String nameCn;
     protected String description;
 
-
-    protected HsState state;
-
-    public HsFactor(String name, String nameCn, String description,
-                    HsState state) {
+    public HsFactor(String name, String nameCn, String description) {
         this.name = name;
         this.nameCn = nameCn;
         this.description = description;
-        this.state = state;
     }
 
-    public abstract HsState influence();
+    /**
+     * 给定旧状态(往往从更旧状态copy而来), 对状态进行一些影响改变, 返回 刷新后的状态. (往往仅对旧状态左属性改变, 不深复制)
+     *
+     * @param state
+     * @return
+     */
+    public abstract HsState influence(HsState state);
 }

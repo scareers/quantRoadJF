@@ -8,7 +8,6 @@ import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 @Setter
 public class HsState {
     protected SecurityBeanEm bean; // 哪只股票的状态?
-    protected List<HsFactor> factorsInfluenced = new ArrayList<>(); // 被哪些因子影响过?
+    protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
 
     /**
      * 高卖分布tick, 与pdf, cdf
@@ -34,28 +33,6 @@ public class HsState {
     protected List<Double> cdfOfHighSell;
 
     private HsState() {
-    }
-
-    /**
-     * todo: 可考虑单股票仅维护单个状态对象, 创建对象池. 但是无法保证多线程之下 逻辑安全. 因此目前使用无脑深复制实现
-     *
-     * @param bean
-     * @param selector
-     * @return
-     */
-    public static HsState createDefaultHsState(SecurityBeanEm bean, LbHsSelector selector) {
-        Assert.isTrue(bean.isStock());
-        HsState state = new HsState();
-        state.setBean(bean); // 唯一, 无需深复制
-
-        state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfLowBuy()));
-        state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
-        state.setCdfOfHighSell(ObjectUtil.cloneByStream(selector.getCdfOfHighSell()));
-        return state;
-    }
-
-    public void addFactorWhofluenced(HsFactor factor) {
-        factorsInfluenced.add(factor);
     }
 
     /*
@@ -70,6 +47,38 @@ public class HsState {
      */
     public void movePdf(Double distance) {
         ticksOfHighSell = ticksOfHighSell.stream().map(value -> value - distance).collect(Collectors.toList());
+    }
+
+    /*
+    静态方法
+     */
+
+    /**
+     * todo: 可考虑单股票仅维护单个状态对象, 创建对象池. 但是无法保证多线程之下 逻辑安全. 因此目前使用无脑深复制实现
+     *
+     * @param bean
+     * @param selector
+     * @return
+     */
+    public static HsState createDefaultHsState(SecurityBeanEm bean, LbHsSelector selector) {
+        Assert.isTrue(bean.isStock());
+        HsState state = new HsState();
+        state.setBean(bean); // 唯一, 无需深复制
+        state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
+        state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
+        state.setCdfOfHighSell(ObjectUtil.cloneByStream(selector.getCdfOfHighSell()));
+        return state;
+    }
+
+    public static HsState copyFrom(HsState oldState) {
+        HsState state = new HsState();
+        state.setBean(oldState.getBean()); // bean 不变, 不需要深复制
+        state.setTicksOfHighSell(ObjectUtil.cloneByStream(oldState.getTicksOfHighSell()));
+        state.setWeightsOfHighSell(ObjectUtil.cloneByStream(oldState.getWeightsOfHighSell()));
+        state.setCdfOfHighSell(ObjectUtil.cloneByStream(oldState.getCdfOfHighSell()));
+        // 完全复制过来
+        // 当被因子影响后, 设置因子字段, 并以复制来的状态为基础更新.
+        return state;
     }
 
 }

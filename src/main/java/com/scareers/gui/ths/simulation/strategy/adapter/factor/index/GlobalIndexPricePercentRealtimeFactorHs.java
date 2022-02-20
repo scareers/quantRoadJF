@@ -12,13 +12,13 @@ import java.util.Objects;
  * @date: 2022/2/20/020-17:27:23
  */
 public class GlobalIndexPricePercentRealtimeFactorHs extends HsFactor {
-    public GlobalIndexPricePercentRealtimeFactorHs(HsState state) {
+    public GlobalIndexPricePercentRealtimeFactorHs() {
         super(SettingsOfIndexPercentFactor.factorName, SettingsOfIndexPercentFactor.nameCn,
-                SettingsOfIndexPercentFactor.description, state);
+                SettingsOfIndexPercentFactor.description);
     }
 
     @Override
-    public HsState influence() {
+    public HsState influence(HsState state) {
         Objects.requireNonNull(state, "初始状态不可为null, 设置后方可调用influence进行影响");
         Double changePercent = getIndexPercent(state); // 变化百分比
         if (changePercent == null) { // 数据缺失

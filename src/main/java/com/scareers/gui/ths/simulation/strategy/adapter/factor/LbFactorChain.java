@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class LbFactorChain {
     private List<LbFactor> factorList = new ArrayList<>(); // 单线程语义
-    private LbState initialState; // 初始状态
+    private List<LbState> lbStates = new ArrayList<>(); // 初始状态 + 每个因子按序影响后的状态  // 末尾即为最终状态
 
     /**
      * 添加因子
@@ -32,26 +32,37 @@ public class LbFactorChain {
      * @param initialState
      */
     public LbFactorChain(LbState initialState) {
-        this.initialState = initialState;
+        this.lbStates.add(initialState);
+    }
+
+    /**
+     * 获取当前最新的状态
+     *
+     * @return
+     */
+    public LbState getNewestState() {
+        return lbStates.get(lbStates.size() - 1);
     }
 
     /**
      * 核心方法, 对初始状态应用所有因子, 影响后, 得到新状态.
-     * 对状态的修该
      *
      * @return
      */
-    public LbState applyFactorInfluence() {
+    public List<LbState> applyFactorInfluence() {
         if (factorList.size() == 0) {
-            log.warn("HsFactorChain: 因子列表为空, 返回初始状态");
-            return initialState;
+            log.warn("HsFactorChain: 因子列表为空, 状态列表不变, 仅含初始状态");
+        } else {
+            for (LbFactor lbFactor : factorList) {
+                // 对旧状态, 调用因子影响, 获取新状态对象, 加入 状态列表. 注意各状态有深复制语义
+                LbState oldState = getNewestState(); // 获取最新的状态
+                LbState newState = LbState.copyFrom(oldState); // 新状态, 尚未影响, 但是新深复制对象
+                newState = lbFactor.influence(newState); // 执行影响, 真正刷新状态对象
+                newState.setFactorInfluenceMe(lbFactor); // 单纯属性设置
+                lbStates.add(newState); // 添加结果
+            }
         }
-
-        for (LbFactor lbFactor : factorList) {
-            lbFactor.setState(initialState); // 设置状态
-            initialState = lbFactor.influence(); // 影响状态并保存, 将作为下一个因子影响的初始状态
-        }
-        return initialState;
+        return lbStates;
     }
 
     private static final Log log = LogUtil.getLogger();

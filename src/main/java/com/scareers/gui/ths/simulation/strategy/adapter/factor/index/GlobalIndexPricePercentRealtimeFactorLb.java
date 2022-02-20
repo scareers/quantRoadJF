@@ -13,13 +13,13 @@ import java.util.Objects;
  */
 public class GlobalIndexPricePercentRealtimeFactorLb extends LbFactor {
 
-    public GlobalIndexPricePercentRealtimeFactorLb(LbState state) {
+    public GlobalIndexPricePercentRealtimeFactorLb() {
         super(SettingsOfIndexPercentFactor.factorName, SettingsOfIndexPercentFactor.nameCn,
-                SettingsOfIndexPercentFactor.description, state);
+                SettingsOfIndexPercentFactor.description);
     }
 
     @Override
-    public LbState influence() {
+    public LbState influence(LbState state) {
         Objects.requireNonNull(state, "初始状态不可为null, 设置后方可调用influence进行影响");
         Double changePercent = getIndexPercent(state); // 变化百分比
         if (changePercent == null) { // 数据缺失
@@ -29,7 +29,6 @@ public class GlobalIndexPricePercentRealtimeFactorLb extends LbFactor {
         state.movePdf(changePercent); // 高卖低卖, 均是平移pdf
         return state;
     }
-
 
     private Double getIndexPercent(LbState state) {
         return SettingsOfIndexPercentFactor.getIndexPercent(state.getBean());
