@@ -220,6 +220,8 @@ public class TraderGui extends JFrame {
                 });
 
                 FuncButton objectsBtn = ButtonFactory.getButton("对象查看", true);
+                // objectsBtn.setMnemonic(KeyEvent.VK_O);
+                objectsBtn.registerKeyboardAction(e1 -> objectsBtn.doClick(), OBJECT_TREE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
                 corePanel.registerFuncBtnWithoutFuncFrame(objectsBtn, FuncFrameS.Type.LEFT_TOP);
                 objectsBtn.addActionListener(new ActionListener() {
                     @Override
@@ -394,7 +396,6 @@ public class TraderGui extends JFrame {
         // 滚动条
         UIManager.put("ScrollBar.width", 12); // 滚动条宽度
         UIManager.put("ScrollBar.thumb", new javax.swing.plaf.ColorUIResource(Color.black)); // 滚动条上下按钮背景色
-
 
 
     }

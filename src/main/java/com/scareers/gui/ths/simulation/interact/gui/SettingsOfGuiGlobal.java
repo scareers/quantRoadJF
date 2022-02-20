@@ -2,7 +2,10 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 
 /**
  * description: gui 全局设定
@@ -20,8 +23,8 @@ public class SettingsOfGuiGlobal {
     public static Color COLOR_THEME_TITLE = new Color(59, 71, 84); // 主色3, 子组件标题栏颜色
     public static Color COLOR_GRAY_COMMON = new Color(187, 187, 187); // 常规灰,按钮字颜色
     public static Color COLOR_TREE_ITEM_SELECTED = new Color(75, 110, 175); // 树形菜单被选中
-    public static Color COLOR_SCROLL_BAR_THUMB = new Color(94,97,97); // 滚动条背景
-    public static Color COLOR_SPLIT_PANE_DIVIDER_BACK = new Color(49,51,53); // 分割面板分隔条主颜色
+    public static Color COLOR_SCROLL_BAR_THUMB = new Color(94, 97, 97); // 滚动条背景
+    public static Color COLOR_SPLIT_PANE_DIVIDER_BACK = new Color(49, 51, 53); // 分割面板分隔条主颜色
 
     public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
 
@@ -41,4 +44,23 @@ public class SettingsOfGuiGlobal {
     public static Integer layerOfDatabaseFuncWindow = 150;
     public static Integer layerOfMainDisplay = 100; // 低
     public static Integer layerOfObjectsTree = 100; // 低
+
+    // 4.全局快捷键设置
+    public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
+
+    /*
+                    objectsBtn.setMnemonic(KeyEvent.VK_O); // 默认ALT+XX
+                objectsBtn.registerKeyboardAction(new ActionListener() {
+                                                      @Override
+                                                      public void actionPerformed(ActionEvent e) {
+                                                          objectsBtn.doClick();
+                                                      }
+                                                  },
+                        KeyStroke.getKeyStroke(KeyEvent.VK_O,
+                        KeyEvent.CTRL_DOWN_MASK), // 可 CTRL+
+                        JComponent.WHEN_IN_FOCUSED_WINDOW); // 主界面focus
+
+                openJMenuItem.setAccelerator() 各种菜单项
+     */
+
 }
