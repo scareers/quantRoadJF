@@ -33,18 +33,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Order implements Comparable, Serializable {
     private static final long serialVersionUID = 123121545L;
     // 转换为jsonStr时配置
-    public static JSONConfig orderJsonStrConfig;
     public static long PRIORITY_LOWEST = 10000; // 5大优先级常量
     public static long PRIORITY_LOW = 9000;
     public static long PRIORITY_MEDIUM = 5000;
     public static long PRIORITY_HIGH = 1000;
     public static long PRIORITY_HIGHEST = 0;
 
-    static {
-        orderJsonStrConfig = JSONConfig.create();
-        orderJsonStrConfig.setOrder(true); // 使用链表map而已. 不保证转换字符串后有序
-        orderJsonStrConfig.setIgnoreNullValue(false); // 保留所有null值
-    }
+
 
     private String rawOrderId; //java全局唯一id, 决定了equals和hashcode
     private String orderType; // 核心订单类型, 对应python操作api
@@ -186,7 +181,7 @@ public class Order implements Comparable, Serializable {
     }
 
     public String toJsonStrForTrans() throws Exception { // 传递给python
-        return JSONUtil.toJsonStr(prepare(), orderJsonStrConfig);
+        return JSONUtil.toJsonStr(prepare());
     }
 
     public String toJsonPrettyStrForTrans() throws Exception { // 传递给python

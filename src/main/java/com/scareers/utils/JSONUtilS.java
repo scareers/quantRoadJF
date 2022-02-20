@@ -1,10 +1,26 @@
 package com.scareers.utils;
 
+/* 替换
+import cn.hutool.json.JSONArray;
+import com.alibaba.fastjson.JSONArray;
+
+import cn.hutool.json.JSONObject;
+import com.alibaba.fastjson.JSONObject;
+
+import cn.hutool.json.JSON;
+import com.alibaba.fastjson.JSON;
+
+import cn.hutool.json.JSONUtil;
+import com.scareers.utils.JSONUtilS;
+
+ */
+
+
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
@@ -49,7 +65,7 @@ public class JSONUtilS {
             end = jsonStr.lastIndexOf(endIntercept);
         }
         jsonStr = jsonStr.substring(start, end);
-        JSONObject json = JSONUtil.parseObj(jsonStr);
+        JSONObject json = JSON.parseObject(jsonStr);
 
 
         JSONArray datas = null;
@@ -104,11 +120,11 @@ public class JSONUtilS {
     }
 
     public static JSONObject parseObj(String jsonStr) {
-        return new JSONObject(jsonStr);
+        return JSON.parseObject(jsonStr);
     }
 
     public static JSONArray parseArray(String jsonStr) {
-        return new JSONArray(jsonStr);
+        return JSON.parseArray(jsonStr);
     }
 
 

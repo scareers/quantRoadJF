@@ -159,7 +159,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         if (todayStockHoldsAlreadyBuyMap.size() == 0) {
             initTodayAlreadyBuyMap();
         }
-        for (String stock : strategy.getStockSelectedToday()) {
+        for (String stock : strategy.getLbHsSelector().getSelectResults()) {
             SecurityBeanEm stockBean = SecurityBeanEm.createStock(stock);
 
             // 1. 读取昨日收盘价
@@ -191,12 +191,13 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                             newPercent, indexPricePercentThatTime,
                             indexBelongThatTimePriceEnhanceArgLowBuy);
             Double cdfOfPoint = virtualCdfAsPositionForLowBuy(
-                    strategy.getTicksOfLow1GlobalFinal(),
-                    strategy.getWeightsOfLow1GlobalFinal(),
+                    strategy.getLbHsSelector().getTicksOfLowBuy(),
+                    strategy.getLbHsSelector().getWeightsOfLowBuy(),
                     cdfCalcPrice,
                     tickGap);
             // @key2: 新的总仓位, 按照全资产计算. 本身是自身cdf仓位 * 1/(选股数量)
-            Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getStockSelectedToday().size();
+            Double epochTotalPosition = positionCalcKeyArgsOfCdf * cdfOfPoint / strategy.getLbHsSelector()
+                    .getSelectResults().size();
             epochTotalPosition = Math.min(epochTotalPosition, positionUpperLimit); // 强制设定的上限 1.4
             // 总资产, 使用 AccountStates 实时获取最新!
             Double totalAssets = trader.getAccountStates().getTotalAssets(); // 最新总资产
@@ -329,8 +330,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                                 .calcEquivalenceCdfUsePriceOfHighSell(newPercent, indexPricePercentThatTime,
                                         indexBelongThatTimePriceEnhanceArgHighSell);
                 // cdf使用 high 计算.  价格使用 sellPrice 计算
-                Double cdfOfPoint = virtualCdfAsPositionForHighSell(strategy.getTicksOfHigh1GlobalFinal(),
-                        strategy.getWeightsOfHigh1GlobalFinal(), cdfCalcPrice,
+                Double cdfOfPoint = virtualCdfAsPositionForHighSell(
+                        strategy.getLbHsSelector().getTicksOfHighSell(),
+                        strategy.getLbHsSelector().getWeightsOfHighSell(), cdfCalcPrice,
                         tickGap);
                 // @key3: 高卖仓位折算 * 倍率
                 Double epochTotalPosition = Math.min(1.0, positionCalcKeyArgsOfCdfHighSell * cdfOfPoint);
@@ -484,7 +486,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         /*
             stock_code,market,time_tick,price,vol,bs
          */
-        DataFrame<Object> fsTransDf =FsTransactionFetcher.getFsTransData(SecurityBeanEm.createStock(stock));
+        DataFrame<Object> fsTransDf = FsTransactionFetcher.getFsTransData(SecurityBeanEm.createStock(stock));
         // 最后的有记录的时间, 前推 60s
         String lastFsTransTick = fsTransDf.get(fsTransDf.length() - 1, 2).toString(); // 15:00:00
         String tickWithSecond0 =
