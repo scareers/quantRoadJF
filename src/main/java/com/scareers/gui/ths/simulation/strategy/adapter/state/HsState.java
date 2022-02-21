@@ -42,6 +42,8 @@ public class HsState {
     protected Double newPriceTrans; // 最新成交价格, 从分时成交获取
     protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
 
+    protected Double indexPricePercentThatTime = 0.0; // 对应大盘指数涨跌幅当前
+
 
     /**
      * 高卖分布tick, 与pdf, cdf
@@ -90,6 +92,7 @@ public class HsState {
         // fsTransData为null
         // newPriceTrans为null
         // newPricePercentToPre2Close为null
+        // indexPricePercentThatTime 默认0.0, 使得不至于报错失败. 可接受
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
@@ -108,6 +111,7 @@ public class HsState {
         state.setFsTransData(oldState.getFsTransData()); // 分时成交数据 df 不会改变. 不复制.
         state.setNewPriceTrans(ObjectUtil.cloneByStream(oldState.getNewPriceTrans()));
         state.setNewPricePercentToPre2Close(ObjectUtil.cloneByStream(oldState.getNewPricePercentToPre2Close()));
+        state.setIndexPricePercentThatTime(ObjectUtil.cloneByStream(oldState.getIndexPricePercentThatTime()));
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(oldState.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(oldState.getWeightsOfHighSell()));

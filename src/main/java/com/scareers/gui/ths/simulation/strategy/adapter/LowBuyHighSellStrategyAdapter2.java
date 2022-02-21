@@ -258,7 +258,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                 }
 
 
-
                 // 2. 判定当前是否是卖点?
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
                     // log.warn("当前股票非卖点 {}", stock);
@@ -268,6 +267,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
                 double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
 
+                // todo
                 // 3.此刻是卖点, 计算以最新价格的 应当卖出的仓位 (相对于原始持仓)
                 Double cdfCalcPrice =
                         FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay
@@ -347,7 +347,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     public void checkBuyOrder(Order order, List<Response> responses, String orderType) {
 
     }
-
 
 
     /**

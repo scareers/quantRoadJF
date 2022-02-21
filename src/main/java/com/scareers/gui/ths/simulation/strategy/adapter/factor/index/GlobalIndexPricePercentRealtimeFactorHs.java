@@ -32,9 +32,10 @@ public class GlobalIndexPricePercentRealtimeFactorHs extends HsFactor {
         Double changePercent = getIndexPercent(state); // 变化百分比
         if (changePercent == null) { // 数据缺失
             log.error("GlobalIndexPricePercentRealtimeFactor: 指数涨跌幅获取失败, 无法计算影响, 返回原始状态");
-            return state;
+            return state; // 相当于不移动
         }
-        state.movePdf(changePercent); // 高卖低卖, 均是平移pdf
+        state.setIndexPricePercentThatTime(changePercent);
+        state.movePdf(changePercent); // 高卖低卖, 均是平移pdf. 执行移动
         return state;
     }
 
