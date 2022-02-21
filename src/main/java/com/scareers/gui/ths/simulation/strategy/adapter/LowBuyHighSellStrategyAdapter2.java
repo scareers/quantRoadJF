@@ -267,7 +267,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
                 double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
 
-                // todo
+
                 // 3.此刻是卖点, 计算以最新价格的 应当卖出的仓位 (相对于原始持仓)
                 Double cdfCalcPrice =
                         FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay
@@ -275,7 +275,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                                 .calcEquivalenceCdfUsePriceOfHighSell(newPercent, indexPricePercentThatTime,
                                         indexBelongThatTimePriceEnhanceArgHighSell);
 
-
+                // todo
                 // cdf使用 high 计算.  价格使用 sellPrice 计算
                 Double cdfOfPoint = virtualCdfAsPositionForHighSell(
                         strategy.getLbHsSelector().getTicksOfHighSell(),
