@@ -9,6 +9,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
+import com.google.errorprone.annotations.Var;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
@@ -20,6 +21,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
+import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
@@ -29,6 +31,7 @@ import lombok.SneakyThrows;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
@@ -103,8 +106,12 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
 
     private void initYesterdayHoldMapForSell() {
-        for (int i = 0; i < strategy.getYesterdayStockHoldsBeSell().length(); i++) {
-            List<Object> line = strategy.getYesterdayStockHoldsBeSell().row(i);
+        DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
+        List<String> stockCol = DataFrameS
+                .getColAsStringList(yesterdayStockHoldsBeSell, SettingsOfTrader.STR_SEC_CODE);
+
+        for (int i = 0; i < yesterdayStockHoldsBeSell.length(); i++) {
+            List<Object> line = yesterdayStockHoldsBeSell.row(i);
             String stock = line.get(0).toString();
             int amountsTotal = Integer.parseInt(line.get(2).toString()); // 原始总持仓, 今日开卖
             yesterdayStockHoldsBeSellMap.put(stock, amountsTotal);
@@ -304,7 +311,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     }
 
 
-
     /**
      * 卖点判定机制.
      * 1.集合竞价 9:25 后才可能出现卖点
@@ -487,9 +493,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     public static Double getSzczPreClose() {
         return EmQuoteApi.getPreCloseOfIndexOrBK(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI, 2000, 3, true); // 本身就将尝试使用缓存
     }
-
-
-
 
 
     /**
