@@ -1,15 +1,13 @@
 package com.scareers.gui.ths.simulation.strategy.adapter;
 
-import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
-import com.google.errorprone.annotations.Var;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
@@ -23,6 +21,7 @@ import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
+import com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
@@ -31,7 +30,6 @@ import lombok.SneakyThrows;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
@@ -93,33 +91,53 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     // 记录高卖操作, 实际卖出的数量. 该 table, 将监控 成交记录, 以更新各自卖出数量
     Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
     Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
+    int hsPerSleep; // 高卖决策每轮显式sleep, 减少cpu消耗
 
     // 使用"冻结数量"表示今日曾买过数量,初始化. 每当实际执行买单, 无视成交状况, 全部增加对应value
     Hashtable<String, Integer> todayStockHoldsAlreadyBuyMap = new Hashtable<>();
 
-    public LowBuyHighSellStrategyAdapter2(LowBuyHighSellStrategy strategy, Trader trader) {
+
+    public LowBuyHighSellStrategyAdapter2(LowBuyHighSellStrategy strategy, Trader trader, int hsPerSleep) {
         this.strategy = strategy;
         this.trader = trader;
         pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2);
         preTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1);
+        this.hsPerSleep = hsPerSleep;
+        initForHsDecision();
     }
 
+    /**
+     * 高卖相关初始化
+     */
+    private void initForHsDecision() {
+        initYesterdayHoldMapForSell(); // 初始化昨日持仓map
+        initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
+    }
 
+    /**
+     * 初始化昨日收盘后股票持仓数量情况, 由 strategy 提供数据
+     */
     private void initYesterdayHoldMapForSell() {
         DataFrame<Object> yesterdayStockHoldsBeSell = strategy.getYesterdayStockHoldsBeSell();
         List<String> stockCol = DataFrameS
                 .getColAsStringList(yesterdayStockHoldsBeSell, SettingsOfTrader.STR_SEC_CODE);
+        List<Integer> balanceCol = DataFrameS
+                .getColAsIntegerList(yesterdayStockHoldsBeSell, SettingsOfTrader.STR_SEC_BALANCE);
+        Assert.isTrue(stockCol.size() == balanceCol.size());
 
-        for (int i = 0; i < yesterdayStockHoldsBeSell.length(); i++) {
-            List<Object> line = yesterdayStockHoldsBeSell.row(i);
-            String stock = line.get(0).toString();
-            int amountsTotal = Integer.parseInt(line.get(2).toString()); // 原始总持仓, 今日开卖
-            yesterdayStockHoldsBeSellMap.put(stock, amountsTotal);
+        for (int i = 0; i < stockCol.size(); i++) {
+            yesterdayStockHoldsBeSellMap.put(stockCol.get(i), balanceCol.get(i));
         }
     }
 
+    /**
+     * 初始化今日实际已经卖出过的股票数量,
+     * 对单只股票, 实际卖出过 == 昨日收盘持仓 - 此刻账户信息持仓中可用数量
+     *
+     * @noti 因T+1, 即使今日买入了某只股票, 也是不可用的, 所以此算法足够健壮
+     */
     private void initActualHighSelled() {
-        Map<String, Integer> map = trader.getAccountStates().getAvailablesOfStocksMap();
+        Map<String, Integer> map = trader.getAccountStates().getAvailableAmountOfStocksMap();
         for (String key : map.keySet()) {
             if (yesterdayStockHoldsBeSellMap.containsKey(key)) {
                 actualHighSelled.put(key, yesterdayStockHoldsBeSellMap.get(key) - map.get(key));
@@ -133,12 +151,25 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
     }
 
+    /**
+     * 1.注意: 执行队列订单唯一,(所有买单和卖单)
+     * 2.关于可卖数量的刷新机制: 数据更新不及时的问题不可绝对避免, 只能尽量避免.
+     * --> 1.初始化时, 可直接读取到初始的可卖数量, 并计算到等价今日已经卖出数量
+     * --> 2.单股票卖单唯一.
+     * --> 3.当卖单在执行时, 已卖出数量 = 原已卖出 + 卖单数量, 此时不会生成新的卖单, 可用数量更新为 原可用 - 卖单数量
+     * --> 4.当卖单执行成功在checking时(等待全部成交), 已卖出数量 = 原已卖出 + 卖单数量, 可用数量更新为 原可用 - 卖单数量
+     * --> 5.当卖单执行失败,或者其他状态已经"完成"时, 即已不在checking队列, 此时应当读取真实数据:
+     * --> 5.此时 可用数量 == 账户状态获取最新数据, 已卖出数量 = 昨收总 - 此时最新可用. // 即若卖单各种原因失败, 两项数据使用最新实际值.
+     * --> 当执行队列和正在执行队列和checking队列 无某股票卖单时, 每轮均按照 5 的方式更新为最新的数据. 因此人类手工干预卖出的, 能被正确识别
+     *
+     * @throws Exception
+     */
     @Override
     public void sellDecision() throws Exception {
-        Thread.sleep(1);
+        Thread.sleep(hsPerSleep);
         if (yesterdayStockHoldsBeSellMap.size() == 0) { // 开始决策后才会被正确初始化
-            initYesterdayHoldMapForSell(); // 初始化昨日持仓map
-            initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
+            log.error("show: 昨日无股票持仓, 因此无需执行卖出决策");
+            return;
         }
         flashActualHighSelledWhenNoSellOrderInQueue(); // 刷新实际已卖,分股票
 
@@ -264,16 +295,15 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
             }
         }
 
-        for (Order order : new ArrayList<>(
-                Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
+        for (Order order : new ArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
             if ("sell".equals(order.getOrderType())) {
-                if (order.execSuccess()) { //正在等待checking, 将不加入
+                if (order.execSuccess()) { // 正在等待checking, 将不加入
                     hasSellOrderInQueueStocks.add(order.getParams().get("stockCode").toString());
                 } // 执行成功的
             }
         }
 
-        Map<String, Integer> map = trader.getAccountStates().getAvailablesOfStocksMap();
+        Map<String, Integer> map = trader.getAccountStates().getAvailableAmountOfStocksMap();
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             if (!hasSellOrderInQueueStocks.contains(stock)) {
                 // 对于不存在卖单的, 刷新实际的已卖数量,而非使用 强制视为全部成交卖单机制 --> 实际刷新

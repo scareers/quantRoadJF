@@ -4,6 +4,7 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import lombok.*;
 
@@ -35,8 +36,20 @@ public abstract class Strategy {
      */
     protected void startCore() throws Exception {
         while (true) {
-            sellDecision();
-            buyDecision();
+            try {
+                sellDecision();
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("sellDecision: 卖出决策异常!");
+                Tts.playSound("卖出决策异常", true);
+            }
+            try {
+                buyDecision();
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("sellDecision: 买入决策异常!");
+                Tts.playSound("买入决策异常", true);
+            }
         }
     }
 

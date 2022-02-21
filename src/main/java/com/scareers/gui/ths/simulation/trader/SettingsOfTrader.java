@@ -48,7 +48,9 @@ public class SettingsOfTrader {
 
 
     private static void initThsSstSettings() {
-        STR_SEC_CODE = "证券代码"; // 获取代码列需要
+        STR_SEC_CODE = "证券代码"; // 持仓表头
+        STR_SEC_BALANCE = "股票余额"; // 持仓表头
+        STR_AVAILABLE_AMOUNT = "可用余额"; // 持仓表头
     }
 
 
@@ -66,6 +68,8 @@ public class SettingsOfTrader {
         STR : 表示某些常量字符串. 例如各种表头名称(因客户端不同而不同)
      */
     public static String STR_SEC_CODE; // "证券代码" 表头, 常见于
+    public static String STR_SEC_BALANCE; // "股票余额" 表头, 常见于
+    public static String STR_AVAILABLE_AMOUNT; // "可用余额" 表头, 常见于
 
 
 

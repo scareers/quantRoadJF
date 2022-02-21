@@ -864,10 +864,11 @@ public class AccountStates {
      *
      * @return
      */
-    public Map<String, Integer> getAvailablesOfStocksMap() {
+    public Map<String, Integer> getAvailableAmountOfStocksMap() {
         HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
-        List<Integer> availableRow = DataFrameS.getColAsIntegerList(currentHolds, "可用余额");
-        List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, "证券代码");
+        List<Integer> availableRow = DataFrameS
+                .getColAsIntegerList(currentHolds, SettingsOfTrader.STR_AVAILABLE_AMOUNT);
+        List<String> stockCodes = DataFrameS.getColAsStringList(currentHolds, SettingsOfTrader.STR_SEC_CODE);
         for (int i = 0; i < availableRow.size(); i++) {
             stringIntegerHashMap.put(stockCodes.get(i), availableRow.get(i));
         }
