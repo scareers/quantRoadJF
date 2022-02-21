@@ -89,7 +89,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     String preTradeDate; // yyyy-MM-dd
 
     /*
-    高卖相关实例属性 ***********
+    高卖相关属性 ***********
      */
 
     int hsPerSleep; // 高卖决策每轮显式sleep, 减少cpu消耗
@@ -100,12 +100,12 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     // 3.当股票卖单不论成功与否, check完毕时, 均读取最新数据为可用值, 两者为实际值(此时可能有新的卖单执行,数量基本不会误判), AS更新实际数据
     // 4.当股票不存在卖单在执行队列, 执行中, checking中, 均读取最新数据为可用值, 两者为实际值; AS更新实际数据
     // 昨日收盘持仓状况, 初始化后逻辑上不变
-    Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
+    public static Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
     // 记录高卖操作, 今日总已卖出的数量. 某些情况下是实际值, 某些情况下是推断值, 见 sellDecision() 文档说明
-    Hashtable<String, Integer> actualAmountHighSelledMap = new Hashtable<>();
+    public static Hashtable<String, Integer> actualAmountHighSelledMap = new Hashtable<>();
     // 等价的每一轮卖出决策之前, 各股票的剩余可用(可卖)数量; 同样某些情况是最新数据, 某些情况时推断值
     // @key3: 恒等式: yesterdayStockHoldsBeSellMap = actualAmountHighSelledMap + availableAmountForHsMap
-    Hashtable<String, Integer> availableAmountForHsMap = new Hashtable<>();
+    public static Hashtable<String, Integer> availableAmountForHsMap = new Hashtable<>();
 
 
     // 使用"冻结数量"表示今日曾买过数量,初始化. 每当实际执行买单, 无视成交状况, 全部增加对应value

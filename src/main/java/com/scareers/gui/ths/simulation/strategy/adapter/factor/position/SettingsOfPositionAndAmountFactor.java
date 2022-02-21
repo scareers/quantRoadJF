@@ -15,4 +15,5 @@ public class SettingsOfPositionAndAmountFactor {
     设置项
      */
     public static double tickGap = 0.005;
+    public static double cdfRateForPosition = 1.5; // 高卖cdf倍率
 }

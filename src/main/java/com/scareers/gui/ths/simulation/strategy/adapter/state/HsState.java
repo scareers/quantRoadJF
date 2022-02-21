@@ -43,7 +43,11 @@ public class HsState {
     protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
 
     protected Double indexPricePercentThatTime = 0.0; // 对应大盘指数涨跌幅当前
-    protected Double cdfProbabilityOfCurrentPricePercent; // 对应大盘指数涨跌幅当前
+    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位cdf
+
+    public Integer amountsTotalYc; // yesterday close; 总可卖出数量
+    public Integer actualAmountHighSelled; // 今日已经卖出总
+    public Integer availableAmountForHs; // 当前可用(可以卖出)的数量
 
 
     /**
@@ -53,6 +57,8 @@ public class HsState {
     protected List<Double> weightsOfHighSell; // 88数据
     protected List<Double> cdfOfHighSell;
     protected double tickGap = 0.005; // 分布tick, 暂时固定不变,
+    protected Double cdfRateForPosition; // cdf概率 * 的倍率.
+    protected Double totalPositionNormalized; // 理应的仓位总值, 标准化<=1.0
 
     private HsState() {
     }
@@ -95,6 +101,12 @@ public class HsState {
         // newPriceTrans为null
         // newPricePercentToPre2Close为null
         // indexPricePercentThatTime 默认0.0, 使得不至于报错失败. 可接受
+        // cdfProbabilityOfCurrentPricePercent null
+        // cdfRateForPosition null, 需要设置
+        // totalPositionNormalized null, 需要设置
+        // amountsTotalYc; // null
+        // actualAmountHighSelled; // null
+        // availableAmountForHs; // null
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
@@ -115,6 +127,13 @@ public class HsState {
         state.setNewPriceTrans(ObjectUtil.cloneByStream(oldState.getNewPriceTrans()));
         state.setNewPricePercentToPre2Close(ObjectUtil.cloneByStream(oldState.getNewPricePercentToPre2Close()));
         state.setIndexPricePercentThatTime(ObjectUtil.cloneByStream(oldState.getIndexPricePercentThatTime()));
+        state.setCdfProbabilityOfCurrentPricePercent(
+                ObjectUtil.cloneByStream(oldState.getCdfProbabilityOfCurrentPricePercent()));
+        state.setCdfRateForPosition(ObjectUtil.cloneByStream(oldState.getCdfRateForPosition()));
+        state.setTotalPositionNormalized(ObjectUtil.cloneByStream(oldState.getTotalPositionNormalized()));
+        state.setAmountsTotalYc(ObjectUtil.cloneByStream(oldState.getAmountsTotalYc()));
+        state.setActualAmountHighSelled(ObjectUtil.cloneByStream(oldState.getActualAmountHighSelled()));
+        state.setAvailableAmountForHs(ObjectUtil.cloneByStream(oldState.getAvailableAmountForHs()));
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(oldState.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(oldState.getWeightsOfHighSell()));
