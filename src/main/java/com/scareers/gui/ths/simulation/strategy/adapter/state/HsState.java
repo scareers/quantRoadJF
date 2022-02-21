@@ -43,6 +43,7 @@ public class HsState {
     protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
 
     protected Double indexPricePercentThatTime = 0.0; // 对应大盘指数涨跌幅当前
+    protected Double cdfProbabilityOfCurrentPricePercent; // 对应大盘指数涨跌幅当前
 
 
     /**
@@ -51,6 +52,7 @@ public class HsState {
     protected List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
     protected List<Double> weightsOfHighSell; // 88数据
     protected List<Double> cdfOfHighSell;
+    protected double tickGap = 0.005; // 分布tick, 暂时固定不变,
 
     private HsState() {
     }
@@ -97,6 +99,7 @@ public class HsState {
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
         state.setCdfOfHighSell(ObjectUtil.cloneByStream(selector.getCdfOfHighSell()));
+        // tickGap == 0.005 固定不变
         return state;
     }
 
