@@ -1,6 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor.base;
 
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
+import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 
@@ -23,6 +25,12 @@ public class BaseDataFactorHs extends HsFactor {
         state.setStockCode(state.getBean().getSecCode());
         state.setPre2ClosePrice(
                 SettingsOfBaseDataFactor.getPre2DayClosePriceQfq(state.getStockCode(), state.getPre2TradeDate()));
+        state.setFsData(FsFetcher.getFsData(state.getBean()));
+        state.setFsTransData(FsTransactionFetcher.getFsTransData(state.getBean()));
+        state.setNewPriceTrans(FsTransactionFetcher.getNewestPrice(state.getBean()));
+        if (state.getPre2ClosePrice() != null && state.getNewPriceTrans() != null) { // 需要前2收盘和当前最新成交两个价格不为null
+            state.setNewPricePercentToPre2Close(state.getNewPriceTrans() / state.getPre2ClosePrice() - 1);
+        }
 
         return state;
     }

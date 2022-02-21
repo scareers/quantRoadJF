@@ -226,6 +226,8 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
             log.error("show: 昨日无股票持仓, 因此无需执行卖出决策");
             return;
         }
+        // todo: 强制卖出 14:57
+
         // 第一步需要刷新本轮, 每只股票的 实际已卖出(等价或实际) 和 当前可用(推断或最新)
         flashActualHighSelledAndCurrentAvailableCertaintyOrInferential();
 
@@ -254,11 +256,10 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                     // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
                     continue;
                 }
-                // todo: 强制卖出 14:57
+
 
 
                 // 2. 判定当前是否是卖点?
-                // @noti: todo: 显然卖点判定 需要这3个状态属性
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
                     // log.warn("当前股票非卖点 {}", stock);
                     continue;

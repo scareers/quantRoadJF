@@ -6,6 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
+import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,6 +36,11 @@ public class HsState {
     protected String pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2); // 该属性不变
 
     protected Boolean sellPointCurrent; // 当前是否为卖点 ?? 默认false
+    protected DataFrame<Object> fsData; // 当前分时图, 显示时显示最后一行.
+    protected DataFrame<Object> fsTransData; // 当前分时成交数据
+
+    protected Double newPriceTrans; // 最新成交价格, 从分时成交获取
+    protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
 
 
     /**
@@ -80,6 +86,10 @@ public class HsState {
         // 前2日收盘价null
         // pre2TradeDate 自动设置.
         state.setSellPointCurrent(false);
+        // fsData为null
+        // fsTransData为null
+        // newPriceTrans为null
+        // newPricePercentToPre2Close为null
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
@@ -94,6 +104,10 @@ public class HsState {
         state.setPre2ClosePrice(ObjectUtil.cloneByStream(oldState.getPre2ClosePrice()));
         // pre2TradeDate 自动设置.
         state.setSellPointCurrent(ObjectUtil.cloneByStream(oldState.getSellPointCurrent()));
+        state.setFsData(oldState.getFsData()); // 分时1M数据 df 不会改变. 不复制.
+        state.setFsTransData(oldState.getFsTransData()); // 分时成交数据 df 不会改变. 不复制.
+        state.setNewPriceTrans(ObjectUtil.cloneByStream(oldState.getNewPriceTrans()));
+        state.setNewPricePercentToPre2Close(ObjectUtil.cloneByStream(oldState.getNewPricePercentToPre2Close()));
 
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(oldState.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(oldState.getWeightsOfHighSell()));
