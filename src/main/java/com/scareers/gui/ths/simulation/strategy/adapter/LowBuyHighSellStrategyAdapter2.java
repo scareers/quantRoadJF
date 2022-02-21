@@ -21,7 +21,6 @@ import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
-import com.scareers.keyfuncs.positiondecision.PositionOfHighSellByDistribution;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
@@ -30,6 +29,7 @@ import lombok.SneakyThrows;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
@@ -80,18 +80,33 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
         highSellBeforehandThresholdMap.put(60, 0.0); // 最后10s视为绝对符合条件. 10和60并未用到
     }
 
+    // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义,
+    private volatile double newPercent;
+
     LowBuyHighSellStrategy strategy;
     Trader trader;
     String pre2TradeDate; // yyyy-MM-dd
     String preTradeDate; // yyyy-MM-dd
 
-    // 暂时保存 某个stock, 当前价格相当于前2日(高卖时) 或前1日(低买时) 的价格变化百分比. 仅片刻意义,
-    private volatile double newPercent;
+    /*
+    高卖相关实例属性 ***********
+     */
 
-    // 记录高卖操作, 实际卖出的数量. 该 table, 将监控 成交记录, 以更新各自卖出数量
-    Hashtable<String, Integer> actualHighSelled = new Hashtable<>();
-    Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
     int hsPerSleep; // 高卖决策每轮显式sleep, 减少cpu消耗
+
+    // 高卖可用数量/已卖数量 机制简述:
+    // 1.当某股票有卖单在执行(或执行队列中)时, 不论是否运行生成同股票卖单, actualAmountHighSelledMap/availableAmountForHsMap为推断值,由生成卖单时更新
+    // 2.当股票卖单执行完毕, 在checking时, 允许新卖单出现. 此时 也为推断值, 由生成卖单时更新后不变
+    // 3.当股票卖单不论成功与否, check完毕时, 均读取最新数据为可用值, 两者为实际值(此时可能有新的卖单执行,数量基本不会误判), AS更新实际数据
+    // 4.当股票不存在卖单在执行队列, 执行中, checking中, 均读取最新数据为可用值, 两者为实际值; AS更新实际数据
+    // 昨日收盘持仓状况, 初始化后逻辑上不变
+    Hashtable<String, Integer> yesterdayStockHoldsBeSellMap = new Hashtable<>();
+    // 记录高卖操作, 今日总已卖出的数量. 某些情况下是实际值, 某些情况下是推断值, 见 sellDecision() 文档说明
+    Hashtable<String, Integer> actualAmountHighSelledMap = new Hashtable<>();
+    // 等价的每一轮卖出决策之前, 各股票的剩余可用(可卖)数量; 同样某些情况是最新数据, 某些情况时推断值
+    // @key3: 恒等式: yesterdayStockHoldsBeSellMap = actualAmountHighSelledMap + availableAmountForHsMap
+    Hashtable<String, Integer> availableAmountForHsMap = new Hashtable<>();
+
 
     // 使用"冻结数量"表示今日曾买过数量,初始化. 每当实际执行买单, 无视成交状况, 全部增加对应value
     Hashtable<String, Integer> todayStockHoldsAlreadyBuyMap = new Hashtable<>();
@@ -107,12 +122,13 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     }
 
     /**
-     * 高卖相关初始化
+     * 高卖相关初始化, 完全可靠
      */
     private void initForHsDecision() {
         initYesterdayHoldMapForSell(); // 初始化昨日持仓map
-        initActualHighSelled(); // 由此初始化今日已经实际卖出过的部分. 原本设定为0, 但可能程序重启, 导致该值应当用昨收-重启时最新的可用
+        flushActualAmountHighSelledAndAvailableAmountFromAS();
     }
+
 
     /**
      * 初始化昨日收盘后股票持仓数量情况, 由 strategy 提供数据
@@ -131,16 +147,19 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     }
 
     /**
-     * 初始化今日实际已经卖出过的股票数量,
+     * 使用 as 最新数据,
+     * 刷新今日实际已经卖出过的股票数量, 和当前最新可用数量 [实际]
      * 对单只股票, 实际卖出过 == 昨日收盘持仓 - 此刻账户信息持仓中可用数量
      *
      * @noti 因T+1, 即使今日买入了某只股票, 也是不可用的, 所以此算法足够健壮
      */
-    private void initActualHighSelled() {
+    private void flushActualAmountHighSelledAndAvailableAmountFromAS() {
         Map<String, Integer> map = trader.getAccountStates().getAvailableAmountOfStocksMap();
         for (String key : map.keySet()) {
             if (yesterdayStockHoldsBeSellMap.containsKey(key)) {
-                actualHighSelled.put(key, yesterdayStockHoldsBeSellMap.get(key) - map.get(key));
+                availableAmountForHsMap.put(key, map.get(key));
+                actualAmountHighSelledMap
+                        .put(key, yesterdayStockHoldsBeSellMap.get(key) - availableAmountForHsMap.get(key));
             }
         }
     }
@@ -152,6 +171,41 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
     }
 
     /**
+     * 方法名称: 刷新今日已卖出和当前可用Map; 确定性或者推断性质
+     * 今日已卖出Map和当前可用Map 的刷新逻辑
+     * 高卖可用数量/已卖数量 机制简述:
+     * 1.当某股票有卖单在执行(或执行队列中)时, 不论是否运行生成同股票卖单, actualAmountHighSelledMap/availableAmountForHsMap为推断值,由生成卖单时更新
+     * 2.当股票卖单执行完毕, 在checking时, 允许新卖单出现. 此时 也为推断值, 由生成卖单时更新后不变
+     * 3.当股票卖单不论成功与否, check完毕时, 均读取最新数据为可用值, 两者为实际值(此时可能有新的卖单执行,数量基本不会误判), AS更新实际数据
+     * 4.当股票不存在卖单在执行队列, 执行中, checking中, 均读取最新数据为可用值, 两者为实际值; AS更新实际数据
+     */
+    private void flashActualHighSelledAndCurrentAvailableCertaintyOrInferential() {
+        // actualAmountHighSelledMap 和 availableAmountForHsMap; init时保证有所有key
+
+        // 1. 某股票有卖出订单在执行队列
+        HashSet<String> hasSellOrderWaitExecute = trader.getOrderExecutor().hasSellOrderOfTheseStocksWaitExecute();
+        // 2. 某股票的卖出订单正在执行
+        String executingSellStock = trader.getOrderExecutor().getStockArgWhenExecutingSellOrder();
+        // 3. 某股票的卖出订单正在等待checking完成
+        HashSet<String> checkingStocks = Trader.hasSellOrderOfTheseStocksWaitChecking();
+
+        Map<String, Integer> availableAmountOfStocksMapNewest = // 最新可用数量数据
+                trader.getAccountStates().getAvailableAmountOfStocksMap();
+        for (String stockHs : actualAmountHighSelledMap.keySet()) { // 两Map有相同数量key, 且已被正确初始化, 固定不变
+            if (hasSellOrderWaitExecute.contains(stockHs) || stockHs.equals(executingSellStock) || checkingStocks
+                    .contains(stockHs)) {
+                // 当股票属于 3种状态之一, 不强制刷新最新数据;
+                // 此时的 实际卖出与可用, 应当由卖出决策函数修改为 "逻辑正确".
+                continue;
+            }
+            // 此时应当采用最新数据
+            availableAmountForHsMap.put(stockHs, availableAmountOfStocksMapNewest.get(stockHs));
+            actualAmountHighSelledMap
+                    .put(stockHs, yesterdayStockHoldsBeSellMap.get(stockHs) - availableAmountForHsMap.get(stockHs));
+        }
+    }
+
+    /**
      * 1.注意: 执行队列订单唯一,(所有买单和卖单)
      * 2.关于可卖数量的刷新机制: 数据更新不及时的问题不可绝对避免, 只能尽量避免.
      * --> 1.初始化时, 可直接读取到初始的可卖数量, 并计算到等价今日已经卖出数量
@@ -160,7 +214,8 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
      * --> 4.当卖单执行成功在checking时(等待全部成交), 已卖出数量 = 原已卖出 + 卖单数量, 可用数量更新为 原可用 - 卖单数量
      * --> 5.当卖单执行失败,或者其他状态已经"完成"时, 即已不在checking队列, 此时应当读取真实数据:
      * --> 5.此时 可用数量 == 账户状态获取最新数据, 已卖出数量 = 昨收总 - 此时最新可用. // 即若卖单各种原因失败, 两项数据使用最新实际值.
-     * --> 当执行队列和正在执行队列和checking队列 无某股票卖单时, 每轮均按照 5 的方式更新为最新的数据. 因此人类手工干预卖出的, 能被正确识别
+     * --> 6.当执行队列和正在执行队列和checking队列 无某股票卖单时, 每轮均按照 5 的方式更新为最新的数据. 因此人类手工干预卖出的, 能被正确识别
+     * --> 7.卖出决策最开始, 都应当刷新此2值: 等价实际已卖出, 当前可卖出.  // 可以是最新数据, 可以是推断数据. 视情况
      *
      * @throws Exception
      */
@@ -171,7 +226,8 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
             log.error("show: 昨日无股票持仓, 因此无需执行卖出决策");
             return;
         }
-        flashActualHighSelledWhenNoSellOrderInQueue(); // 刷新实际已卖,分股票
+        // 第一步需要刷新本轮, 每只股票的 实际已卖出(等价或实际) 和 当前可用(推断或最新)
+        flashActualHighSelledAndCurrentAvailableCertaintyOrInferential();
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             try { // 捕获异常
@@ -181,6 +237,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                 // 1. 读取前日收盘价
                 Double pre2ClosePrice;
                 try {
+                    // 已经缓存
                     //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                     pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(SecurityBeanEm.createStock(stock),
                             pre2TradeDate,
@@ -191,8 +248,9 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                     continue;
                 }
 
-                // 1.x: sell订单,单股票互斥: 在等待队列和check队列中查找所有sell订单, 判定其 stockCode参数是否为本stock,若存在则互斥跳过
-                if (hasMutualExclusionOfBuySellOrder(stock, "sell")) {
+                // 1.x: sell订单,单股票互斥: 在等待队列和正在执行查找所有sell订单, 判定其 stockCode参数是否为本stock,若存在则互斥跳过
+                if (trader.getOrderExecutor().executingSellOrderOf(stock) || trader.getOrderExecutor()
+                        .hasSellOrderWaitExecuteOf(stock)) {
                     // log.warn("Mutual Sell Order: 卖单互斥: {}", stock);
                     continue;
                 }
@@ -200,6 +258,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
 
                 // 2. 判定当前是否是卖点?
+                // @noti: todo: 显然卖点判定 需要这3个状态属性
                 if (!isSellPoint(stock, pre2ClosePrice, stockBean)) {
                     // log.warn("当前股票非卖点 {}", stock);
                     continue;
@@ -207,22 +266,28 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
 
                 double indexPricePercentThatTime = getCurrentIndexChangePercent(stockBean.getMarket());
+
                 // 3.此刻是卖点, 计算以最新价格的 应当卖出的仓位 (相对于原始持仓)
                 Double cdfCalcPrice =
                         FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay
                                 // stock_code,market,time_tick,price,vol,bs
                                 .calcEquivalenceCdfUsePriceOfHighSell(newPercent, indexPricePercentThatTime,
                                         indexBelongThatTimePriceEnhanceArgHighSell);
+
+
                 // cdf使用 high 计算.  价格使用 sellPrice 计算
                 Double cdfOfPoint = virtualCdfAsPositionForHighSell(
                         strategy.getLbHsSelector().getTicksOfHighSell(),
                         strategy.getLbHsSelector().getWeightsOfHighSell(), cdfCalcPrice,
                         tickGap);
+
                 // @key3: 高卖仓位折算 * 倍率
                 Double epochTotalPosition = Math.min(1.0, positionCalcKeyArgsOfCdfHighSell * cdfOfPoint);
 
+
                 double shouldSellAmountTotal = epochTotalPosition * amountsTotal;
-                int sellAlready = actualHighSelled.getOrDefault(stock, 0);
+                int sellAlready = actualAmountHighSelledMap.getOrDefault(stock, 0);
+
                 if (sellAlready < shouldSellAmountTotal) { // 四舍五入
                     // 三项数据: 此刻卖点应当总卖出 / 原总持仓  --  [早已经成功卖出]
                     int amount = (int) (NumberUtil
@@ -232,6 +297,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                     if (amount + sellAlready > amountsTotal) {
                         amount = (amountsTotal - sellAlready) / 100 * 100;
                     }
+
                     int available = trader.getAccountStates().getAvailableOfStock(stock);
                     amount = Math.min(amount, available);
                     if (amount < 100) {
@@ -259,12 +325,12 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                         }
                         Order order = OrderFactory.generateSellOrderQuick(stock, amount, price, Order.PRIORITY_HIGH);
                         if (flag) {
-                            order.setAfterAuctionFirst(); // 设置为竞价后订单
+                            order.setAfterAuctionFirst(); // 设置为竞价后首个订单
                         }
                         trader.putOrderToWaitExecute(order);
                         // todo: 这里一旦生成卖单, 将视为全部成交, 加入到已经卖出的部分
-                        // 若最终成交失败, 2分钟后check将失败, 需要手动处理!
-                        actualHighSelled.put(stock, amount + sellAlready);
+                        // 若最终成交失败, 2分钟后check将失败, 订单离开checking队列, 可用数量将采用AS最新数据及时更新.
+                        actualAmountHighSelledMap.put(stock, amount + sellAlready);
                     }
                 } else { //  新卖点,但没必要卖出更多.(多因为当前价格已经比上一次低, 导致仓位更低)
 //                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,
@@ -281,64 +347,6 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
 
     }
 
-    /**
-     * 当执行队列存在某股票sell订单时, 或者
-     * checking队列 存在执行成功的sell订单时(正在checking),
-     * 视为有该股票 sell 订单, 不刷新   ActualHighSelled 更新实际已经卖出.
-     * 其余的均刷新, 逻辑是 用 昨日收盘数量 - 当前可用
-     */
-    private void flashActualHighSelledWhenNoSellOrderInQueue() {
-        Set<String> hasSellOrderInQueueStocks = new HashSet<>();
-        for (Order order : Trader.getOrdersWaitForExecution()) { // 无需保证, 线程安全且迭代器安全
-            if ("sell".equals(order.getOrderType())) {
-                hasSellOrderInQueueStocks.add(order.getParams().get("stockCode").toString());
-            }
-        }
-
-        for (Order order : new ArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
-            if ("sell".equals(order.getOrderType())) {
-                if (order.execSuccess()) { // 正在等待checking, 将不加入
-                    hasSellOrderInQueueStocks.add(order.getParams().get("stockCode").toString());
-                } // 执行成功的
-            }
-        }
-
-        Map<String, Integer> map = trader.getAccountStates().getAvailableAmountOfStocksMap();
-        for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
-            if (!hasSellOrderInQueueStocks.contains(stock)) {
-                // 对于不存在卖单的, 刷新实际的已卖数量,而非使用 强制视为全部成交卖单机制 --> 实际刷新
-                try {
-
-                    actualHighSelled.put(stock, yesterdayStockHoldsBeSellMap.get(stock) - map.get(stock));
-                } catch (Exception e) {
-
-                }
-            }
-        }
-    }
-
-
-    /**
-     * 卖单互斥. 即在等待队列和check队列, 不能存在其他 相同stock的卖单!
-     *
-     * @param stock
-     * @return
-     */
-    private boolean hasMutualExclusionOfBuySellOrder(String stock, String buyOrsell) {
-        for (Order order : Trader.getOrdersWaitForExecution()) { // 无需保证, 线程安全且迭代器安全
-            if (buyOrsell.equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
-                return true;
-            }
-        }
-        for (Order order : new ArrayList<>(
-                Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) { // 无需保证, 线程安全且迭代器安全
-            if (buyOrsell.equals(order.getOrderType()) && order.getParams().get("stockCode").equals(stock)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
 
 
     /**

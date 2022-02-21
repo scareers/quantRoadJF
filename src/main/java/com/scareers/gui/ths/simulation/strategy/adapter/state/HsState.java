@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -11,9 +12,12 @@ import lombok.Setter;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
+
 /**
  * description: 表示个股欲低买高卖时, 所有影响仓位的 参数集;
  *
+ * @noti 当添加任意属性, 应当同时完成 首次初始化 和 copyFrom 两大方法对应字段的 设置/复制
  * @key3 注意当所有属性传递而来, 应当均 使用 "深复制" 语义. 否则将修改原始默认分布, 严重bug;
  * @key3 只可以使用工厂方法 创建默认状态.
  * @author: admin
@@ -22,8 +26,16 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 public class HsState {
-    protected SecurityBeanEm bean; // 哪只股票的状态?
     protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
+
+    protected SecurityBeanEm bean; // 哪只股票的状态?
+    //    stock, pre2ClosePrice, stockBean
+    protected String stockCode; // 简单代码
+    protected Double pre2ClosePrice; // 前2天收盘价.
+    protected String pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2); // 该属性不变
+
+    protected Boolean sellPointCurrent; // 当前是否为卖点 ?? 默认false
+
 
     /**
      * 高卖分布tick, 与pdf, cdf
@@ -64,6 +76,11 @@ public class HsState {
         Assert.isTrue(bean.isStock());
         HsState state = new HsState();
         state.setBean(bean); // 唯一, 无需深复制
+        // 股票代码null
+        // 前2日收盘价null
+        // pre2TradeDate 自动设置.
+        state.setSellPointCurrent(false);
+
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(selector.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(selector.getWeightsOfHighSell()));
         state.setCdfOfHighSell(ObjectUtil.cloneByStream(selector.getCdfOfHighSell()));
@@ -73,6 +90,11 @@ public class HsState {
     public static HsState copyFrom(HsState oldState) {
         HsState state = new HsState();
         state.setBean(oldState.getBean()); // bean 不变, 不需要深复制
+        state.setStockCode(oldState.getStockCode()); // 股票代码不变
+        state.setPre2ClosePrice(ObjectUtil.cloneByStream(oldState.getPre2ClosePrice()));
+        // pre2TradeDate 自动设置.
+        state.setSellPointCurrent(ObjectUtil.cloneByStream(oldState.getSellPointCurrent()));
+
         state.setTicksOfHighSell(ObjectUtil.cloneByStream(oldState.getTicksOfHighSell()));
         state.setWeightsOfHighSell(ObjectUtil.cloneByStream(oldState.getWeightsOfHighSell()));
         state.setCdfOfHighSell(ObjectUtil.cloneByStream(oldState.getCdfOfHighSell()));

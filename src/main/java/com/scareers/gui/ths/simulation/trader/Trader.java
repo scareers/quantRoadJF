@@ -516,5 +516,39 @@ public class Trader {
             Hashtable<Order, List<Response>> ordersFailedFinallyNeedManualHandle) {
         Trader.ordersFailedFinallyNeedManualHandle = ordersFailedFinallyNeedManualHandle;
     }
+
+    /*
+    API
+     */
+
+    /**
+     * checking队列中, 有哪些卖单, 返回这些卖单的 股票代码参数 集合
+     *
+     * @return
+     */
+    public static HashSet<String> hasSellOrderOfTheseStocksWaitChecking() {
+        HashSet<String> res = new HashSet<>();
+        for (Order order : new ArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
+            if ("sell".equals(order.getOrderType())) { // 这里无视了执行成功与失败. 理论上失败应当立即check完成, 进入失败完成队列
+                res.add(order.getParams().get("stockCode").toString());
+            }
+        }
+        return res;
+    }
+
+    /**
+     * checking队列中, 有哪些买单, 返回这些卖单的 股票代码参数 集合
+     *
+     * @return
+     */
+    public static HashSet<String> hasBuyOrderOfTheseStocksWaitChecking() {
+        HashSet<String> res = new HashSet<>();
+        for (Order order : new ArrayList<>(Trader.getOrdersWaitForCheckTransactionStatusMap().keySet())) {
+            if ("buy".equals(order.getOrderType())) { // 这里无视了执行成功与失败. 理论上失败应当立即check完成, 进入失败完成队列
+                res.add(order.getParams().get("stockCode").toString());
+            }
+        }
+        return res;
+    }
 }
 

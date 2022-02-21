@@ -13,8 +13,10 @@ import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
@@ -58,8 +60,8 @@ public class OrderExecutor {
             public void run() {
                 while (true) {
                     Order order = Trader.getOrdersWaitForExecution().take(); // 最高优先级订单, 将可能被阻塞
-                    executedOrder.add(order); // 添加入已执行订单队列, 无视执行结果
                     executingOrder = order;
+                    executedOrder.add(order); // 添加入已执行订单队列, 无视执行结果
                     log.warn("order start execute: {} [{}] --> {}:{}", order.getOrderType(),
                             order.getPriority(), order.getRawOrderId(), order.getParams());
                     order.addLifePoint(Order.LifePointStatus.EXECUTING, "executing: 开始执行订单");
@@ -176,5 +178,117 @@ public class OrderExecutor {
         return responses;
     }
 
+    /**
+     * 是否正在执行 某只股票的卖单??
+     *
+     * @param stock
+     * @return
+     */
+    public boolean executingSellOrderOf(String stock) {
+        if (executingOrder == null) {
+            return false;
+        }
+        return "sell".equals(executingOrder.getOrderType()) && executingOrder.getParams().get("stockCode").toString()
+                .equals(stock);
+
+    }
+
+    /**
+     * 是否正在执行 某只股票的买单??
+     *
+     * @param stock
+     * @return
+     */
+    public boolean executingBuyOrderOf(String stock) {
+        if (executingOrder == null) {
+            return false;
+        }
+        return "buy".equals(executingOrder.getOrderType()) && executingOrder.getParams().get("stockCode").toString()
+                .equals(stock);
+
+    }
+
+    /**
+     * 当正在执行卖单时, 返回卖单的 股票代码参数, 否则返回null
+     *
+     * @param stock
+     * @return
+     */
+    public String getStockArgWhenExecutingSellOrder() {
+        Order orderTemp = executingOrder; // 暂时保存, 多线程尽量安全
+        if (!"sell".equals(orderTemp.getOrderType())) {
+            return null;
+        }
+        return orderTemp.getParams().get("stockCode").toString();
+    }
+
+    /**
+     * 当正在执行买单时, 返回买单的 股票代码参数, 否则返回null
+     *
+     * @param stock
+     * @return
+     */
+    public String getStockArgWhenExecutingBuyOrder() {
+        Order orderTemp = executingOrder; // 暂时保存, 多线程尽量安全
+        if (!"buy".equals(orderTemp.getOrderType())) {
+            return null;
+        }
+        return orderTemp.getParams().get("stockCode").toString();
+    }
+
+    /**
+     * 等待执行队列中存在这些股票的卖单.
+     */
+    public HashSet<String> hasSellOrderOfTheseStocksWaitExecute() {
+        HashSet<String> res = new HashSet<>();
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType())) {
+                res.add(order.getParams().get("stockCode").toString());
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 等待执行队列中存在这些股票的买单.
+     */
+    public HashSet<String> hasBuyOrderOfTheseStocksWaitExecute() {
+        HashSet<String> res = new HashSet<>();
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 线程安全且迭代器安全
+            if ("buy".equals(order.getOrderType())) {
+                res.add(order.getParams().get("stockCode").toString());
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 等待执行队列中存在这只股票的卖单.
+     */
+    public boolean hasSellOrderWaitExecuteOf(String stock) {
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 线程安全且迭代器安全
+            if ("sell".equals(order.getOrderType())) {
+                if (stock.equals(order.getParams().get("stockCode").toString())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * 等待执行队列中存在这只股票的买单.
+     */
+    public boolean hasBuyOrderWaitExecuteOf(String stock) {
+        for (Order order : Trader.getOrdersWaitForExecution()) { // 线程安全且迭代器安全
+            if ("buy".equals(order.getOrderType())) {
+                if (stock.equals(order.getParams().get("stockCode").toString())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
 

@@ -1,5 +1,7 @@
 package com.scareers;
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
 
@@ -20,7 +22,7 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-
+        Console.log(ObjectUtil.cloneByStream(Double.valueOf(1.00)));
 //        System.out.println(String.format("%.2f", 1.234));
 //        System.out.println("abc".getClass());
 ////        String[] fontNames= GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
