@@ -45,8 +45,9 @@ public class SettingsOfGuiGlobal {
     public static Integer layerOfMainDisplay = 100; // 低
     public static Integer layerOfObjectsTree = 100; // 低
 
-    // 4.全局快捷键设置
+    // 4.全局快捷键设置  ks: key shortcut
     public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
+    public static final KeyStroke REALTIME_ANALYZE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK);
 
     /*
                     objectsBtn.setMnemonic(KeyEvent.VK_O); // 默认ALT+XX

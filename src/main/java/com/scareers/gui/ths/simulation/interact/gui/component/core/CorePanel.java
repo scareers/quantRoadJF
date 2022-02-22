@@ -195,7 +195,10 @@ public class CorePanel extends JDesktopPane {
                                                        FuncFrameS.Type defaultType) {
         // defaultType 非null时, 代表首次, FuncFrameS==null尚不存在, 需要指定 FuncButton 默认位置
         synchronized (funcChangeLock) {
-            removeFuncFromSixList(funcButton);
+            if (alreadyRegistered(funcButton)) {
+                return;
+            }
+            // removeFuncFromSixList(funcButton);
             if (funcFrameS != null) {
                 funcPool.put(funcButton, funcFrameS); // 添加/更新到功能池
             }
@@ -247,6 +250,16 @@ public class CorePanel extends JDesktopPane {
         rightBottomButtonList.remove(funcButton);
         bottomLeftButtonList.remove(funcButton);
         bottomRightButtonList.remove(funcButton);
+    }
+
+    private boolean alreadyRegistered(FuncButton funcButton) {
+        return leftTopButtonList.contains(funcButton)
+                || leftBottomButtonList.contains(funcButton)
+                || rightTopButtonList.contains(funcButton)
+                || rightBottomButtonList.contains(funcButton)
+                || bottomLeftButtonList.contains(funcButton)
+                || bottomRightButtonList.contains(funcButton)
+                ;
     }
 
 

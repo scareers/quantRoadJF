@@ -68,12 +68,14 @@ public class ObjectTreeWindow extends FuncFrameS {
 //        selectedTextColor = UIManager.getColor("InternalFrame.activeTitleForeground");
 //        notSelectedTitleColor = UIManager.getColor("InternalFrame.inactiveTitleBackground");
 //        notSelectedTextColor = UIManager.getColor("InternalFrame.inactiveTitleForeground");
+        INSTANCE.flushBounds();
+        INSTANCE.getMainDisplayWindow().flushBounds();
         return INSTANCE;
     }
 
-    public static ObjectTreeWindow getInstance() {
-        return INSTANCE; // 可null
-    }
+//    public static ObjectTreeWindow getInstance() {
+//        return INSTANCE; // 可null
+//    }
 
     private ObjectTreeWindow(Type type, String title, TraderGui mainWindow,
                              FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,

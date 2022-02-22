@@ -305,4 +305,17 @@ public class CommonUtil {
             }
         }
     }
+
+    /**
+     * 返回某对象 字符串形式, 若为null , 则返回 "null".    常用于gui显示空对象
+     *
+     * @param o
+     * @return
+     */
+    public static String toStringCheckNull(Object o) {
+        if (o == null) {
+            return "null";
+        }
+        return o.toString();
+    }
 }

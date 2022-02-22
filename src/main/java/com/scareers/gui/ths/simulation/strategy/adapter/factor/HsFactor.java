@@ -28,10 +28,27 @@ public abstract class HsFactor {
     }
 
     /**
+     * 虚拟因子. 为了减少大量的 if(factor==null)..., 使用 Optional api
+     */
+    public static HsFactor DUMMY_HS_FACTOR = new DummyFactor("null", "null", "null");
+
+
+    /**
      * 给定旧状态(往往从更旧状态copy而来), 对状态进行一些影响改变, 返回 刷新后的状态. (往往仅对旧状态左属性改变, 不深复制)
      *
      * @param state
      * @return
      */
     public abstract HsState influence(HsState state);
+
+    private static class DummyFactor extends HsFactor {
+        private DummyFactor(String name, String nameCn, String description) {
+            super(name, nameCn, description);
+        }
+
+        @Override
+        public HsState influence(HsState state) {
+            return null;
+        }
+    }
 }

@@ -12,7 +12,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.Displa
  * @date: 2022/2/18/018-14:32:20
  */
 public abstract class SecurityDisplayPanel extends DisplayPanel {
-    SecurityBeanEm newBean; // 最新bean
+    protected SecurityBeanEm newBean; // 最新bean
 
     public void update(SecurityBeanEm currentBean) {
         this.newBean = currentBean;

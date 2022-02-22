@@ -191,7 +191,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
         Map<String, Integer> availableAmountOfStocksMapNewest = // 最新可用数量数据
                 trader.getAccountStates().getAvailableAmountOfStocksMap();
-        for (String stockHs : actualAmountHighSelledMap.keySet()) { // 两Map有相同数量key, 且已被正确初始化, 固定不变
+        for (String stockHs : availableAmountOfStocksMapNewest.keySet()) { // 两Map有相同数量key, 且已被正确初始化, 固定不变
             if (hasSellOrderWaitExecute.contains(stockHs) || stockHs.equals(executingSellStock) || checkingStocks
                     .contains(stockHs)) {
                 // 当股票属于 3种状态之一, 不强制刷新最新数据;
@@ -201,7 +201,10 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             // 此时应当采用最新数据
             availableAmountForHsMap.put(stockHs, availableAmountOfStocksMapNewest.get(stockHs));
             actualAmountHighSelledMap
-                    .put(stockHs, yesterdayStockHoldsBeSellMap.get(stockHs) - availableAmountForHsMap.get(stockHs));
+                    .put(stockHs,
+                            yesterdayStockHoldsBeSellMap.getOrDefault(stockHs, 0) - availableAmountForHsMap
+                                    .getOrDefault(stockHs, 0));
+            // todo : bugfix null
         }
     }
 
@@ -249,9 +252,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             factorChain.applyFactorInfluence();
 
             stockWithStatesInfByFactorsHs.put(stock, factorChain.getHsStates());
-        }
-        if (RandomUtil.randomInt(100) == 0) {
-            Console.log(stockWithStatesInfByFactorsHs);
         }
 
     }

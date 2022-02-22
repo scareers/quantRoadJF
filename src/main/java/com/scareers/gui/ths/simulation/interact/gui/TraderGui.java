@@ -4,10 +4,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.DatabaseFuncWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.LogFuncWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
-import com.scareers.gui.ths.simulation.interact.gui.component.funcs.ObjectTreeWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -133,6 +130,7 @@ public class TraderGui extends JFrame {
     }
 
     ObjectTreeWindow objectTreeWindow;
+    AnalyzeRealtimeWindow analyzeRealtimeWindow;
     static volatile Trader trader;
 
     private void addListeners() {
@@ -226,6 +224,12 @@ public class TraderGui extends JFrame {
                 objectsBtn.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
+                        try {
+                            analyzeRealtimeWindow.hide();
+                        } catch (Exception e1) {
+
+                        }
+
                         objectTreeWindow = ObjectTreeWindow
                                 .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
                                         mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.15, 30,
@@ -241,6 +245,36 @@ public class TraderGui extends JFrame {
                         }
                     }
                 });
+
+                FuncButton analyzeBtn = ButtonFactory.getButton("实时分析", true);
+                analyzeBtn.registerKeyboardAction(e1 -> analyzeBtn.doClick(), REALTIME_ANALYZE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
+                corePanel.registerFuncBtnWithoutFuncFrame(analyzeBtn, FuncFrameS.Type.LEFT_TOP);
+                analyzeBtn.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            objectTreeWindow.hide();
+                        } catch (Exception e1) {
+
+                        }
+                        analyzeRealtimeWindow = AnalyzeRealtimeWindow
+                                .getInstance(FuncFrameS.Type.LEFT_TOP, "实时分析",
+                                        mainWindow, analyzeBtn, true, false, false, true, 
+                                        1000, 100, 0.145, 30,
+                                        false,
+                                        layerOfObjectsTree + 2); // 一定不为null, 单例
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(analyzeBtn, analyzeRealtimeWindow);
+                        if (analyzeRealtimeWindow.isVisible()) {
+                            analyzeRealtimeWindow.flushBounds();
+                            analyzeRealtimeWindow.hide();
+                        } else {
+                            analyzeRealtimeWindow.flushBounds(true);
+                            analyzeRealtimeWindow.show();
+                        }
+                    }
+                });
+                
+                
 
                 ThreadUtil.execAsync(() -> {
                     try {

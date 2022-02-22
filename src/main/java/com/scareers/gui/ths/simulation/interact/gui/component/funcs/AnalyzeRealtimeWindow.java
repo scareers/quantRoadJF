@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.accoun
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
@@ -25,6 +26,7 @@ import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
+import java.util.Objects;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
@@ -43,9 +45,11 @@ public class AnalyzeRealtimeWindow extends FuncFrameS {
     public static AnalyzeRealtimeWindow getInstance(Type type, String title, TraderGui mainWindow,
                                                     FuncButton belongBtn, boolean resizable, boolean closable,
                                                     boolean maximizable,
-                                                    boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                                                    boolean iconifiable, int autoMaxWidthOrHeight,
+                                                    int autoMinWidthOrHeight,
                                                     double preferScale,
-                                                    int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+                                                    int funcToolsWidthOrHeight, boolean halfWidthOrHeight,
+                                                    Integer layer) {
         if (INSTANCE == null) {
             INSTANCE = new AnalyzeRealtimeWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
@@ -61,19 +65,15 @@ public class AnalyzeRealtimeWindow extends FuncFrameS {
             ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
         }
         INSTANCE.getFuncTools().setVisible(false);
-//        BasicInternalFrameUI ui = (BasicInternalFrameUI) INSTANCE.getUI();
-//        BasicInternalFrameTitlePane titlePane = (BasicInternalFrameTitlePane)ui.getNorthPane();
-//        titlePane.selectedTitleColor
-//        selectedTitleColor = UIManager.getColor("InternalFrame.activeTitleBackground");
-//        selectedTextColor = UIManager.getColor("InternalFrame.activeTitleForeground");
-//        notSelectedTitleColor = UIManager.getColor("InternalFrame.inactiveTitleBackground");
-//        notSelectedTextColor = UIManager.getColor("InternalFrame.inactiveTitleForeground");
+        INSTANCE.flushBounds();
+        INSTANCE.getMainDisplayWindow().flushBounds();
         return INSTANCE;
     }
 
-    public static AnalyzeRealtimeWindow getInstance() {
-        return INSTANCE; // 可null
-    }
+//    public static AnalyzeRealtimeWindow getInstance() {
+//        Objects.requireNonNull(INSTANCE);
+//        return INSTANCE; // 可null
+//    }
 
     private AnalyzeRealtimeWindow(Type type, String title, TraderGui mainWindow,
                                   FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
@@ -129,45 +129,17 @@ public class AnalyzeRealtimeWindow extends FuncFrameS {
     }
 
     private JTree buildTree() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("对象查看");
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("实时分析");
 
-        DefaultMutableTreeNode traderNode = new DefaultMutableTreeNode("Trader");
+        DefaultMutableTreeNode traderNode = new DefaultMutableTreeNode("股票");
 
-
-        // 5大子对象,可扩展
-        DefaultMutableTreeNode orderExecutorNode = new DefaultMutableTreeNode("OrderExecutor");
-        DefaultMutableTreeNode checkerNode = new DefaultMutableTreeNode("Checker");
-        DefaultMutableTreeNode accountStatesNode = new DefaultMutableTreeNode("AccountStates");
-        DefaultMutableTreeNode fsTransactionFetcherNode = new DefaultMutableTreeNode("FsTransactionFetcher");
-        DefaultMutableTreeNode fsFetcherNode = new DefaultMutableTreeNode("FsFetcher");
-        DefaultMutableTreeNode strategyNode = new DefaultMutableTreeNode("Strategy");
-
-        // 4大队列/map
-        DefaultMutableTreeNode queues = new DefaultMutableTreeNode("Queues!"); // 父包含
-        DefaultMutableTreeNode ordersWaitForExecution = new DefaultMutableTreeNode("ordersWaitForExecution");
-        DefaultMutableTreeNode ordersWaitForCheckTransactionStatusMap = new DefaultMutableTreeNode(
-                "ordersWaitForCheckTransactionStatusMap");
-        DefaultMutableTreeNode ordersSuccessFinished = new DefaultMutableTreeNode("ordersSuccessFinished");
-        DefaultMutableTreeNode ordersResendFinished = new DefaultMutableTreeNode("ordersResendFinished");
-        DefaultMutableTreeNode ordersFailedFinished = new DefaultMutableTreeNode("ordersFailedFinallyNeedManualHandle");
-        DefaultMutableTreeNode ordersAllMap = new DefaultMutableTreeNode("ordersAllMap");
-        queues.add(ordersWaitForExecution);
-        queues.add(ordersWaitForCheckTransactionStatusMap);
-        queues.add(ordersSuccessFinished);
-        queues.add(ordersResendFinished);
-        queues.add(ordersFailedFinished);
-        queues.add(ordersAllMap);
-
-        traderNode.add(queues);
-        traderNode.add(orderExecutorNode);
-        traderNode.add(checkerNode);
-        traderNode.add(accountStatesNode);
-        traderNode.add(fsTransactionFetcherNode);
-        traderNode.add(fsFetcherNode);
-        traderNode.add(strategyNode);
+        // 买入卖出队列
+        DefaultMutableTreeNode sellNode = new DefaultMutableTreeNode("卖出队列");
+        DefaultMutableTreeNode buyNode = new DefaultMutableTreeNode("买入队列");
+        traderNode.add(sellNode);
+        traderNode.add(buyNode);
 
         root.add(traderNode);
-
         final JTree tree = new JTree(root);
         // 添加选择事件
 
@@ -193,101 +165,39 @@ public class AnalyzeRealtimeWindow extends FuncFrameS {
                 dispatch(e.getNewLeadSelectionPath().toString());
             }
         });
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDERS_WAIT_FOR_EXECUTION);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
         return tree;
     }
 
 
     public void dispatch(String treePath) {
         // 1. 5类队列
-        if (TreePathConstants.ORDERS_WAIT_FOR_EXECUTION.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_WAIT_FOR_EXECUTION);
-        } else if (TreePathConstants.ORDER_ALL_MAP.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDER_ALL_MAP);
-        } else if (TreePathConstants.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP);
-        } else if (TreePathConstants.ORDERS_SUCCESS_FINISHED.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_SUCCESS_FINISHED);
-        } else if (TreePathConstants.ORDERS_FAILED_FINISHED.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_FAILED_FINISHED);
-        } else if (TreePathConstants.ORDERS_RESEND_FINISHED.equals(treePath)) {
-            changeToDisplayOrderList(OrderListAndDetailPanel.Type.ORDERS_RESEND_FINISHED);
-            // 2.1分钟分时图
-        } else if (TreePathConstants.FS_FETCHER.equals(treePath)) {
-            changeToDisplayFs1MData();
-            // 2.分时成交
-        } else if (TreePathConstants.FS_TRANSACTION_FETCHER.equals(treePath)) {
-            changeToDisplayFsTransData();
-            // 2.2.账户状态
-        } else if (TreePathConstants.ACCOUNT_STATES.equals(treePath)) {
-            changeToDisplayAccountStates();
-
-            // 2.2.账户状态
+        if (TreePathConstants.SELL_QUEUE.equals(treePath)) {
+            changeToSellQueue();
         } else {
             System.out.println(treePath);
         }
     }
 
-    private void changeToDisplayOrderList(OrderListAndDetailPanel.Type type) {
-        OrderListAndDetailPanel
-                .getInstance(this.getMainDisplayWindow())
-                .changeType(type)
+    private void changeToSellQueue() {
+        SellStockListAndHsStatePanel
+                .getInstance(this.getMainDisplayWindow(), 300)
                 .showInMainDisplayWindow();
-    }
-
-    private void changeToDisplayFs1MData() {
-        FsFetcherListAndDataPanel.getInstance(getMainDisplayWindow(), 300) // 此处决定资产列表的宽度
-                .showInMainDisplayWindow();
-    }
-
-    private void changeToDisplayFsTransData() {
-        FsTransFetcherListAndDataPanel.getInstance(getMainDisplayWindow(), 300) // 此处决定资产列表的宽度
-                .showInMainDisplayWindow();
-    }
-
-    private void changeToDisplayAccountStates() {
-        AccountStatesDisplayPanel.getInstance(getMainDisplayWindow()).showInMainDisplayWindow();
-        ; // 此处决定资产列表的宽度
     }
 
 
     public static class TreePathConstants { // 路径常量, 字符串配置
         /**
-         * [对象查看]
-         * [对象查看, Trader]
-         * [对象查看, Trader, Queues!]
-         * [对象查看, Trader, OrderExecutor]
-         * [对象查看, Trader, Checker]
-         * [对象查看, Trader, AccountStates]
-         * [对象查看, Trader, FsTransactionFetcher]
-         * [对象查看, Trader, FsFetcher]
-         * [对象查看, Trader, Strategy]
-         * [对象查看, Trader, Queues!, ordersWaitForExecution]
-         * [对象查看, Trader, Queues!, ordersAllMap]
-         * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
-         * [对象查看, Trader, Queues!, ordersSuccessFinished]
-         * [对象查看, Trader, Queues!, ordersResendFinished]
-         * [对象查看, Trader, Queues!, ordersFailedFinallyNeedManualHandle]
+         * [实时分析]
+         * [实时分析, 股票]
+         * [实时分析, 股票, 买入队列]
+         * [实时分析, 股票, 卖出队列]
          */
-        public static final String OBJECT_OBSERVER = "[对象查看]";
-        public static final String TRADER = "[对象查看, Trader]";
-        public static final String QUEUES = "[对象查看, Trader, Queues!]";
+        public static final String REALTIME_ANALYZE = "[实时分析]";
+        public static final String STOCK_NODE = "[实时分析, 股票]";
+        public static final String BUY_QUEUE = "[实时分析, 股票, 买入队列]";
+        public static final String SELL_QUEUE = "[实时分析, 股票, 卖出队列]";
 
-        public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
-        public static final String CHECKER = "[对象查看, Trader, Checker]";
-        public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
-        public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
-        public static final String FS_FETCHER = "[对象查看, Trader, FsFetcher]";
-        public static final String STRATEGY = "[对象查看, Trader, Strategy]";
-
-        public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
-        public static final String ORDER_ALL_MAP = "[对象查看, Trader, Queues!, ordersAllMap]";
-        public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
-                "ordersWaitForCheckTransactionStatusMap]";
-        public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
-        public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
-        public static final String ORDERS_FAILED_FINISHED = "[对象查看, Trader, Queues!, " +
-                "ordersFailedFinallyNeedManualHandle]";
 
     }
 }

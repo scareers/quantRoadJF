@@ -47,8 +47,8 @@ public class HsState {
     protected Double newPriceTrans; // 最新成交价格, 从分时成交获取
     protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
 
-    protected Double indexPricePercentThatTime = 0.0; // 对应大盘指数涨跌幅当前
-    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位cdf
+    protected Double indexPricePercentThatTime; // 对应大盘指数涨跌幅当前
+
 
     public Integer amountsTotalYc; // yesterday close; 总可卖出数量
     public Integer actualAmountHighSelled; // 今日已经卖出总
@@ -62,6 +62,8 @@ public class HsState {
     protected List<Double> weightsOfHighSell; // 88数据
     protected List<Double> cdfOfHighSell;
     protected Double tickGap = 0.005; // 分布tick, 暂时固定不变,
+
+    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位cdf
     protected Double cdfRateForPosition; // cdf概率 * 的倍率.
     protected Double totalPositionNormalized; // 理应的仓位总值, 标准化<=1.0
 
@@ -148,16 +150,16 @@ public class HsState {
         return state;
     }
 
-    /**
-     * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
-     *
-     * @param state
-     * @param preState
-     * @return
-
-     */
-    public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
-        return new HsStatePanel(state, preState);
-    }
+//    /**
+//     * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
+//     *
+//     * @param state
+//     * @param preState
+//     * @return
+//
+//     */
+//    public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
+//        return new HsStatePanel(state, preState);
+//    }
 
 }
