@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.RandomUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
@@ -65,7 +66,12 @@ public class ChartUtil {
 //        df.add("c", Arrays.asList(2, 7, 4, 5));
 //        dfAsLineChartSimple(df, true);
 
-        listOfDoubleAsLineChartSimple(Arrays.asList(1.0, 2.0, 3.0, 4.0), Arrays.asList(1.0, 2.0, 3.0, 4.0), true);
+        JFreeChart chart = listOfDoubleAsLineChartSimple(
+                CommonUtil.range(20).stream().map(value -> RandomUtil.randomDouble()).collect(
+                        Collectors.toList()),
+                CommonUtil.range(20),
+                false);
+        chart.getPlot().get
 
 //        DataFrame<Object> fs1MDf = EmQuoteApi.getFs1MToday(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 0, 2000);
 //        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "资产代码").toString(), 2000, 2, true).get(0);
@@ -136,7 +142,7 @@ public class ChartUtil {
     public static JFreeChart dfAsLineChartSimple(DataFrame<Object> df, String xUseCol, boolean show) {
         CategoryDataset dataset = createDefaultCategoryDataset(df, xUseCol);
         JFreeChart barChart = ChartFactory
-                .createLineChart(null, null, null, dataset, PlotOrientation.VERTICAL, true, true,
+                .createLineChart(null, null, null, dataset, PlotOrientation.VERTICAL, false, true,
                         false);
         if (show) {
             showChartSimple(barChart);

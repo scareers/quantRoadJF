@@ -130,18 +130,17 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.add(availabelAmountValueLabel);
 
 
-
-
         pdfChartPanel =
                 new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
                         this.state.getTicksOfHighSell(), false));
         pdfChartPanel.setDomainZoomable(false);
-
+        pdfChartPanel.setPreferredSize(new Dimension(500, 270));
 
         cdfChartPanel =
                 new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
                         this.state.getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
+        cdfChartPanel.setPreferredSize(new Dimension(500, 270));
 
         this.update(); // 设置基本数据
         this.add(baseInfoPanel); // 左浮动
