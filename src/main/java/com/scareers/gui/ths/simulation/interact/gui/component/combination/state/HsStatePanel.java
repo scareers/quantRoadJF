@@ -22,48 +22,36 @@ import static com.scareers.utils.CommonUtil.toStringCheckNull;
 public class HsStatePanel extends DisplayPanel {
     HsState state; // 首次展示的对象, 当调用update时, 更新该属性
     HsState preState;
-
     JPanel baseInfoPanel;
 
-    /*
-        protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
+    JLabel stockCodeLabel = new JLabel("股票代码");
+    JLabel stockCodeValueLabel = new JLabel();
+    JLabel stockNameLabel = new JLabel("股票名称");
+    JLabel stockNameValueLabel = new JLabel();
+    JLabel factorLabel = new JLabel("影响因子");
+    JLabel factorValueLabel = new JLabel();
+    JLabel pre2DateLabel = new JLabel("前2交易日");
+    JLabel pre2DateValueLabel = new JLabel();
+    JLabel pre2ClosePriceLabel = new JLabel("前2日收盘价");
+    JLabel pre2ClosePriceValueLabel = new JLabel();
+    JLabel isSellPointLabel = new JLabel("当前为卖点");
+    JLabel isSellPointValueLabel = new JLabel();
+    JLabel newPriceLabel = new JLabel("最新成交价格");
+    JLabel newPriceValueLabel = new JLabel();
+    JLabel chgPercentToPre2cLabel = new JLabel("最新价相对前2收盘涨跌幅");
+    JLabel chgPercentToPre2cValueLabel = new JLabel();
+    JLabel indexPercentLabel = new JLabel("对应大盘当前涨跌幅");
+    JLabel indexPercentValueLabel = new JLabel();
+    JLabel cdfProbabilityLabel = new JLabel("仓位cdf[原始]");
+    JLabel cdfProbabilityValueLabel = new JLabel();
+    JLabel cdfRateLabel = new JLabel("仓位卖出倍率");
+    JLabel cdfRateValueLabel = new JLabel();
 
-    protected SecurityBeanEm bean; // 哪只股票的状态?
-    //    stock, pre2ClosePrice, stockBean
-    protected String stockCode; // 简单代码
-    protected Double pre2ClosePrice; // 前2天收盘价.
-    protected String pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2); // 该属性不变
 
-    protected Boolean sellPointCurrent; // 当前是否为卖点 ?? 默认false
-    protected DataFrame<Object> fsData; // 当前分时图, 显示时显示最后一行.
-    protected DataFrame<Object> fsTransData; // 当前分时成交数据
-
-    protected Double newPriceTrans; // 最新成交价格, 从分时成交获取
-    protected Double newPricePercentToPre2Close; // 相对于前2收盘价的close
-
-    protected Double indexPricePercentThatTime = 0.0; // 对应大盘指数涨跌幅当前
-
-
-    public Integer amountsTotalYc; // yesterday close; 总可卖出数量
-    public Integer actualAmountHighSelled; // 今日已经卖出总
-    public Integer availableAmountForHs; // 当前可用(可以卖出)的数量
-
-
-
-    protected java.util.List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
-    protected java.util.List<Double> weightsOfHighSell; // 88数据
-    protected List<Double> cdfOfHighSell;
-    protected Double tickGap = 0.005; // 分布tick, 暂时固定不变,
-
-    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位cdf
-    protected Double cdfRateForPosition; // cdf概率 * 的倍率.
-    protected Double totalPositionNormalized; // 理应的仓位总值, 标准化<=1.0
-     */
     public HsStatePanel(HsState state, HsState preState) {
         this.state = state;
         this.preState = preState;
         this.setBackground(Color.white);
-
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
 
         baseInfoPanel = new JPanel();
@@ -71,33 +59,44 @@ public class HsStatePanel extends DisplayPanel {
 
         baseInfoPanel.setLayout(new GridLayout(15, 2, 1, 1));
 
-        baseInfoPanel.add(new JLabel("股票代码"));
-        baseInfoPanel.add(new JLabel(state.getStockCode()));
-        baseInfoPanel.add(new JLabel("股票名称"));
-        baseInfoPanel.add(new JLabel(state.getBean().getName()));
-        baseInfoPanel.add(new JLabel("影响因子"));
-        baseInfoPanel
-                .add(new JLabel(toStringCheckNull(state.getFactorInfluenceMe())));
-//        toStringCheckNull
-        baseInfoPanel.add(new JLabel("前2交易日"));
-        baseInfoPanel.add(new JLabel(state.getPre2TradeDate()));
-        baseInfoPanel.add(new JLabel("前2日收盘价"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getPre2ClosePrice())));
-        baseInfoPanel.add(new JLabel("当前为卖点"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getSellPointCurrent())));
-        // todo: 分时图和分时成交数据
-        //
-        baseInfoPanel.add(new JLabel("最新成交价格"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getNewPriceTrans())));
-        baseInfoPanel.add(new JLabel("最新价相对前2收盘涨跌幅"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getNewPricePercentToPre2Close())));
-        baseInfoPanel.add(new JLabel("对应大盘当前涨跌幅"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getIndexPricePercentThatTime())));
 
-        baseInfoPanel.add(new JLabel("仓位cdf[原始]"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getCdfProbabilityOfCurrentPricePercent())));
-        baseInfoPanel.add(new JLabel("仓位卖出倍率"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getCdfRateForPosition())));
+        baseInfoPanel.add(stockCodeLabel);
+        baseInfoPanel.add(stockCodeValueLabel);
+
+        baseInfoPanel.add(stockNameLabel);
+        baseInfoPanel.add(stockNameValueLabel);
+
+        baseInfoPanel.add(factorLabel);
+        baseInfoPanel.add(factorValueLabel);
+
+        baseInfoPanel.add(pre2DateLabel);
+        baseInfoPanel.add(pre2DateValueLabel);
+
+        baseInfoPanel.add(pre2ClosePriceLabel);
+        baseInfoPanel.add(pre2ClosePriceValueLabel);
+
+        baseInfoPanel.add(isSellPointLabel);
+        baseInfoPanel.add(isSellPointValueLabel);
+
+
+        baseInfoPanel.add(newPriceLabel);
+        baseInfoPanel.add(newPriceValueLabel);
+
+        baseInfoPanel.add(chgPercentToPre2cLabel);
+        baseInfoPanel.add(chgPercentToPre2cValueLabel);
+
+        baseInfoPanel.add(indexPercentLabel);
+        baseInfoPanel.add(indexPercentValueLabel);
+
+
+        baseInfoPanel.add(cdfProbabilityLabel);
+        baseInfoPanel.add(cdfProbabilityValueLabel);
+
+
+
+        baseInfoPanel.add(cdfRateLabel);
+        baseInfoPanel.add(cdfRateValueLabel);
+        baseInfoPanel.add(new JLabel());
         baseInfoPanel.add(new JLabel("理论标准化仓位值"));
         baseInfoPanel.add(new JLabel(toStringCheckNull(state.getTotalPositionNormalized())));
 
@@ -110,6 +109,18 @@ public class HsStatePanel extends DisplayPanel {
 
         this.add(baseInfoPanel); // 左浮动
         this.update();
+
+        stockCodeValueLabel.setText(state.getStockCode());
+        stockNameValueLabel.setText(state.getBean().getName());
+        factorValueLabel.setText(toStringCheckNull(state.getFactorInfluenceMe()));
+        pre2DateValueLabel.setText(state.getPre2TradeDate());
+        pre2ClosePriceValueLabel.setText(toStringCheckNull(state.getPre2ClosePrice()));
+        isSellPointValueLabel.setText(toStringCheckNull(state.getSellPointCurrent()));
+        newPriceValueLabel.setText(toStringCheckNull(state.getNewPriceTrans()));
+        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getNewPricePercentToPre2Close()));
+        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexPricePercentThatTime()));
+        cdfProbabilityValueLabel.setText(toStringCheckNull(state.getCdfProbabilityOfCurrentPricePercent()));
+        cdfRateValueLabel.setText(toStringCheckNull(state.getCdfRateForPosition()));
     }
 
     public void update(HsState state, HsState preState) {
