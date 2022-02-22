@@ -1,11 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
-import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,9 +18,17 @@ import java.util.List;
  */
 public class HsStateListPanel extends SecurityDisplayPanel {
     List<HsStatePanel> hsStatePanelList = new ArrayList<>(); // 复用控件
+    JPanel kernelPanel = new JPanel();
 
     public HsStateListPanel() {
-        this.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP)); // 自定义上下浮动的布局
+        kernelPanel.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1)); // 自定义上下浮动的布局
+
+        JScrollPane jScrollPane = new JScrollPane();
+        jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPane.setViewportView(kernelPanel);
+
+        this.setLayout(new BorderLayout());
+        this.add(kernelPanel, BorderLayout.CENTER);
     }
 
 
@@ -59,7 +68,7 @@ public class HsStateListPanel extends SecurityDisplayPanel {
                 panel = new HsStatePanel(newStates.get(i), newStates.get(i - 1));
             }
             panel.update(); // 首次
-            this.add(panel);
+            kernelPanel.add(panel);
             hsStatePanelList.add(panel);
         }
 

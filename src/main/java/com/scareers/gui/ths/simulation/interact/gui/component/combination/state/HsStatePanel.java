@@ -62,10 +62,13 @@ public class HsStatePanel extends DisplayPanel {
     public HsStatePanel(HsState state, HsState preState) {
         this.state = state;
         this.preState = preState;
+        this.setBackground(Color.white);
 
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
 
         baseInfoPanel = new JPanel();
+        baseInfoPanel.setBackground(Color.white);
+
         baseInfoPanel.setLayout(new GridLayout(15, 2, 1, 1));
 
         baseInfoPanel.add(new JLabel("股票代码"));
