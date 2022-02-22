@@ -332,7 +332,7 @@ public class Trader {
      * @param order
      * @throws Exception
      */
-    public void putOrderToWaitExecute(Order order) throws Exception {
+    public void putOrderToWaitExecute(Order order)  {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
         ordersAllMap.put(order, Arrays.asList()); // 暂无响应

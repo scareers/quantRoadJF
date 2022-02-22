@@ -27,7 +27,7 @@ public class OrderFactory {
     private static Order generateBuySellOrder(String type,
                                               String stockCode,
                                               Number amounts,
-                                              Double price) throws Exception {
+                                              Double price)  {
         Assert.isTrue(Arrays.asList("buy", "sell").contains(type));
         Map<String, Object> params = new HashMap<>();
         params.put("stockCode", stockCode);
@@ -72,13 +72,13 @@ public class OrderFactory {
      */
     public static Order generateSellOrderQuick(String stockCode,
                                                Number amounts,
-                                               Double price) throws Exception {
+                                               Double price)  {
         return generateBuySellOrder("sell", stockCode, amounts, price);
     }
 
     public static Order generateSellOrderQuick(String stockCode,
                                                Number amounts,
-                                               Double price, Long priority) throws Exception {
+                                               Double price, Long priority)  {
         Order res = generateSellOrderQuick(stockCode, amounts, price);
         res.setPriority(priority);
         return res;
@@ -87,7 +87,7 @@ public class OrderFactory {
 
     public static Order generateWaitOneBeFlushedOrder(String waitFlushOrderId,
                                                       int timeoutThreshold,
-                                                      boolean canCancelOnly) throws Exception {
+                                                      boolean canCancelOnly)  {
         Assert.isTrue(waitFlushOrderId != null);
         Map<String, Object> params = new HashMap<>();
         params.put("waitFlushOrderId", waitFlushOrderId);

@@ -60,7 +60,7 @@ public class LowBuyHighSellStrategy extends Strategy {
 
     private Trader trader;
     LbHsSelector lbHsSelector;
-    public ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
+//    public ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,默认retry3次.股票池完成后初始化
 
     public LowBuyHighSellStrategy(Trader trader, LbHsSelector lbHsSelector, String strategyName
     ) throws Exception {
@@ -70,22 +70,10 @@ public class LowBuyHighSellStrategy extends Strategy {
         this.adapter = new LowBuyHighSellStrategyAdapter(this, trader); // 策略实际方法
         this.strategyName = strategyName; // 同super
         initStockPool(); // 构建器自动初始化股票池!
-        initPriceLimitMap();
+
         bindSelf(); // trader绑定自身
     }
 
-
-    private void initPriceLimitMap() throws Exception {
-        log.info("init: 初始化涨跌停 map");
-        for (SecurityBeanEm bean : SecurityPool.allSecuritySetCopy()) {
-            if (bean.isStock()) { // 股票才有涨跌停
-                this.priceLimitMap
-                        .put(bean.getSecCode(),
-                                Objects.requireNonNull(EmQuoteApi.getStockPriceLimitToday(bean.getSecCode(),
-                                        2000, 3, false)));
-            }
-        }
-    }
 
     @Override
     protected void initStockPool() throws Exception {
@@ -99,6 +87,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         SecurityPool.addToYesterdayHoldStocks(SecurityBeanEm.createStockList(yesterdayH)); // 昨持
         SecurityPool.addToKeyIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
 
+        SecurityPool.flushPriceLimitMap();
         log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}", SecurityPool.allSecuritySet.size());
         log.warn("finish init stockPool: 完成初始化股票池...");
     }

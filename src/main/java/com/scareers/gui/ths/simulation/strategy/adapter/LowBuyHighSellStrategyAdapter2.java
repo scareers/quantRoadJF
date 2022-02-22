@@ -9,6 +9,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
@@ -322,7 +323,7 @@ public class LowBuyHighSellStrategyAdapter2 implements StrategyAdapter {
                         String nowStr = DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN);
                         boolean flag = nowStr.compareTo("09:25:00") > 0 && nowStr.compareTo("09:30:00") < 0;
                         if (flag) {
-                            price = strategy.getPriceLimitMap().get(stock).get(1); // 跌停价
+                            price = SecurityPool.getPriceLimitMap().get(stock).get(1); // 跌停价
                         }
                         Order order = OrderFactory.generateSellOrderQuick(stock, amount, price, Order.PRIORITY_HIGH);
                         if (flag) {

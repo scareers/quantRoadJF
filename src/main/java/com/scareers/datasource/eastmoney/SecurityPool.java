@@ -8,8 +8,10 @@ import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -57,6 +59,25 @@ public class SecurityPool {
      */
     public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyIndexes = new CopyOnWriteArraySet<>();
     public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
+
+    /**
+     * 个股涨跌停限制
+     */
+    public static ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,
+    // 默认retry3次.股票池完成后初始化
+
+    @SneakyThrows
+    public static void flushPriceLimitMap() {
+        log.info("init: 初始化涨跌停 map");
+        for (SecurityBeanEm bean : SecurityPool.allSecuritySetCopy()) {
+            if (bean.isStock()) { // 股票才有涨跌停
+                priceLimitMap
+                        .put(bean.getSecCode(),
+                                Objects.requireNonNull(EmQuoteApi.getStockPriceLimitToday(bean.getSecCode(),
+                                        2000, 3, false)));
+            }
+        }
+    }
 
     private static final Log log = LogUtil.getLogger();
 
@@ -366,5 +387,39 @@ public class SecurityPool {
         return SecurityBeanEm.createBKList(bkCodes);
     }
 
+    public static CopyOnWriteArraySet<SecurityBeanEm> getAllSecuritySet() {
+        return allSecuritySet;
+    }
 
+    public static CopyOnWriteArraySet<SecurityBeanEm> getTodaySelectedStocks() {
+        return todaySelectedStocks;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getYesterdayHoldStocks() {
+        return yesterdayHoldStocks;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareStocks() {
+        return otherCareStocks;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getKeyBKs() {
+        return keyBKs;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareBKs() {
+        return otherCareBKs;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getKeyIndexes() {
+        return keyIndexes;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareIndexes() {
+        return otherCareIndexes;
+    }
+
+    public static ConcurrentHashMap<String, List<Double>> getPriceLimitMap() {
+        return priceLimitMap;
+    }
 }

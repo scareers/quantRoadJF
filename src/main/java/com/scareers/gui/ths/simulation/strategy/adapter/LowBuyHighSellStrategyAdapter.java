@@ -8,6 +8,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
@@ -366,7 +367,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                         String nowStr = DateUtil.date().toString(DatePattern.NORM_TIME_PATTERN);
                         boolean flag = nowStr.compareTo("09:25:00") > 0 && nowStr.compareTo("09:30:00") < 0;
                         if (flag) {
-                            price = strategy.getPriceLimitMap().get(stock).get(1); // 跌停价
+                            price = SecurityPool.getPriceLimitMap().get(stock).get(1); // 跌停价
                         }
                         Order order = OrderFactory.generateSellOrderQuick(stock, amount, price, Order.PRIORITY_HIGH);
                         if (flag) {
