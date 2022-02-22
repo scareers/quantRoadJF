@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 
 import javax.swing.*;
@@ -13,10 +14,25 @@ import javax.swing.*;
  * @author: admin
  * @date: 2022/2/22/022-17:21:15
  */
-public class HsStatePanel extends JPanel {
+public class HsStatePanel extends DisplayPanel {
+    HsState state;
+    HsState preState;
+
     public HsStatePanel(HsState state, HsState preState) {
+        this.state = state; // 首次展示的对象
+        this.preState = preState;
+
 
     }
 
+    public void update(HsState state, HsState preState) {
+        this.state = state;
+        this.preState = preState;
+        this.update();
+    }
 
+    @Override
+    protected void update() {
+
+    }
 }
