@@ -46,6 +46,14 @@ public class HsStatePanel extends DisplayPanel {
     JLabel cdfProbabilityValueLabel = new JLabel();
     JLabel cdfRateLabel = new JLabel("仓位卖出倍率");
     JLabel cdfRateValueLabel = new JLabel();
+    JLabel totalPositionNormalizedLabel = new JLabel("理论标准化仓位值");
+    JLabel totalPositionNormalizedValueLabel = new JLabel();
+    JLabel totalAmountYcLabel = new JLabel("昨收总持仓数量");
+    JLabel totalAmountYcValueLabel = new JLabel();
+    JLabel actualAmountSelledLabel = new JLabel("今日已卖出数量");
+    JLabel actualAmountSelledValueLabel = new JLabel();
+    JLabel availabelAmountLabel = new JLabel("当前可卖数量");
+    JLabel availabelAmountValueLabel = new JLabel("当前可卖数量");
 
 
     public HsStatePanel(HsState state, HsState preState) {
@@ -53,6 +61,7 @@ public class HsStatePanel extends DisplayPanel {
         this.preState = preState;
         this.setBackground(Color.white);
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
+        this.setPreferredSize(new Dimension(500, 300));
 
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(Color.white);
@@ -92,24 +101,37 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.add(cdfProbabilityLabel);
         baseInfoPanel.add(cdfProbabilityValueLabel);
 
-
-
         baseInfoPanel.add(cdfRateLabel);
         baseInfoPanel.add(cdfRateValueLabel);
-        baseInfoPanel.add(new JLabel());
-        baseInfoPanel.add(new JLabel("理论标准化仓位值"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getTotalPositionNormalized())));
 
-        baseInfoPanel.add(new JLabel("昨收总持仓数量"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getAmountsTotalYc())));
-        baseInfoPanel.add(new JLabel("今日已卖出数量"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getActualAmountHighSelled())));
-        baseInfoPanel.add(new JLabel("当前可卖数量"));
-        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getAvailableAmountForHs())));
+
+        baseInfoPanel.add(totalPositionNormalizedLabel);
+        baseInfoPanel.add(totalPositionNormalizedValueLabel);
+
+
+        baseInfoPanel.add(totalAmountYcLabel);
+        baseInfoPanel.add(totalAmountYcValueLabel);
+
+
+        baseInfoPanel.add(actualAmountSelledLabel);
+        baseInfoPanel.add(actualAmountSelledValueLabel);
+
+        baseInfoPanel.add(availabelAmountLabel);
+        baseInfoPanel.add(availabelAmountValueLabel);
 
         this.add(baseInfoPanel); // 左浮动
         this.update();
 
+    }
+
+    public void update(HsState state, HsState preState) {
+        this.state = state;
+        this.preState = preState;
+        this.update();
+    }
+
+    @Override
+    protected void update() {
         stockCodeValueLabel.setText(state.getStockCode());
         stockNameValueLabel.setText(state.getBean().getName());
         factorValueLabel.setText(toStringCheckNull(state.getFactorInfluenceMe()));
@@ -121,16 +143,9 @@ public class HsStatePanel extends DisplayPanel {
         indexPercentValueLabel.setText(toStringCheckNull(state.getIndexPricePercentThatTime()));
         cdfProbabilityValueLabel.setText(toStringCheckNull(state.getCdfProbabilityOfCurrentPricePercent()));
         cdfRateValueLabel.setText(toStringCheckNull(state.getCdfRateForPosition()));
-    }
-
-    public void update(HsState state, HsState preState) {
-        this.state = state;
-        this.preState = preState;
-        this.update();
-    }
-
-    @Override
-    protected void update() {
-        System.out.println("HsStatePanel 内容已更新, 暂未实现");
+        totalPositionNormalizedValueLabel.setText(toStringCheckNull(state.getTotalPositionNormalized()));
+        totalAmountYcValueLabel.setText(toStringCheckNull(state.getAmountsTotalYc()));
+        actualAmountSelledValueLabel.setText(toStringCheckNull(state.getActualAmountHighSelled()));
+        availabelAmountValueLabel.setText(toStringCheckNull(state.getAvailableAmountForHs()));
     }
 }
