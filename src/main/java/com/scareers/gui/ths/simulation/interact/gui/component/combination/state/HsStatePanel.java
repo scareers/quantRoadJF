@@ -8,6 +8,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.Optional;
 
+import static com.scareers.utils.CommonUtil.toStringCheckNull;
+
 /**
  * description: 单个 HsState 展示面板
  *
@@ -72,35 +74,36 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.add(new JLabel(state.getBean().getName()));
         baseInfoPanel.add(new JLabel("影响因子"));
         baseInfoPanel
-                .add(new JLabel(Optional.of(state.getFactorInfluenceMe()).orElse(HsFactor.DUMMY_HS_FACTOR).getName()));
+                .add(new JLabel(toStringCheckNull(state.getFactorInfluenceMe())));
+//        toStringCheckNull
         baseInfoPanel.add(new JLabel("前2交易日"));
         baseInfoPanel.add(new JLabel(state.getPre2TradeDate()));
         baseInfoPanel.add(new JLabel("前2日收盘价"));
-        baseInfoPanel.add(new JLabel(state.getPre2ClosePrice().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getPre2ClosePrice())));
         baseInfoPanel.add(new JLabel("当前为卖点"));
-        baseInfoPanel.add(new JLabel(state.getSellPointCurrent().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getSellPointCurrent())));
         // todo: 分时图和分时成交数据
-        //  toStringCheckNull
+        //
         baseInfoPanel.add(new JLabel("最新成交价格"));
-        baseInfoPanel.add(new JLabel(state.getNewPriceTrans().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getNewPriceTrans())));
         baseInfoPanel.add(new JLabel("最新价相对前2收盘涨跌幅"));
-        baseInfoPanel.add(new JLabel(state.getNewPricePercentToPre2Close().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getNewPricePercentToPre2Close())));
         baseInfoPanel.add(new JLabel("对应大盘当前涨跌幅"));
-        baseInfoPanel.add(new JLabel(state.getIndexPricePercentThatTime().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getIndexPricePercentThatTime())));
 
         baseInfoPanel.add(new JLabel("仓位cdf[原始]"));
-        baseInfoPanel.add(new JLabel(state.getCdfProbabilityOfCurrentPricePercent().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getCdfProbabilityOfCurrentPricePercent())));
         baseInfoPanel.add(new JLabel("仓位卖出倍率"));
-        baseInfoPanel.add(new JLabel(state.getCdfRateForPosition().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getCdfRateForPosition())));
         baseInfoPanel.add(new JLabel("理论标准化仓位值"));
-        baseInfoPanel.add(new JLabel(state.getTotalPositionNormalized().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getTotalPositionNormalized())));
 
         baseInfoPanel.add(new JLabel("昨收总持仓数量"));
-        baseInfoPanel.add(new JLabel(state.getAmountsTotalYc().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getAmountsTotalYc())));
         baseInfoPanel.add(new JLabel("今日已卖出数量"));
-        baseInfoPanel.add(new JLabel(state.getActualAmountHighSelled().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getActualAmountHighSelled())));
         baseInfoPanel.add(new JLabel("当前可卖数量"));
-        baseInfoPanel.add(new JLabel(state.getAvailableAmountForHs().toString()));
+        baseInfoPanel.add(new JLabel(toStringCheckNull(state.getAvailableAmountForHs())));
 
         this.add(baseInfoPanel); // 左浮动
         this.update();

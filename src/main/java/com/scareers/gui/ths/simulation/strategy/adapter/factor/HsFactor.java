@@ -51,4 +51,9 @@ public abstract class HsFactor {
             return null;
         }
     }
+
+    @Override
+    public String toString() {
+        return this.nameCn;
+    }
 }
