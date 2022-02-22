@@ -1,10 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor.base;
 
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
-import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter2;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 
@@ -33,10 +31,10 @@ public class BaseDataFactorHs extends HsFactor {
         if (state.getPre2ClosePrice() != null && state.getNewPriceTrans() != null) { // 需要前2收盘和当前最新成交两个价格不为null
             state.setNewPricePercentToPre2Close(state.getNewPriceTrans() / state.getPre2ClosePrice() - 1);
         }
-        state.setAmountsTotalYc(LowBuyHighSellStrategyAdapter2.yesterdayStockHoldsBeSellMap.get(state.getStockCode()));
+        state.setAmountsTotalYc(LowBuyHighSellStrategyAdapter.yesterdayStockHoldsBeSellMap.get(state.getStockCode()));
         state.setActualAmountHighSelled(
-                LowBuyHighSellStrategyAdapter2.actualAmountHighSelledMap.get(state.getStockCode()));
-        state.setAvailableAmountForHs(LowBuyHighSellStrategyAdapter2.availableAmountForHsMap.get(state.getStockCode()));
+                LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap.get(state.getStockCode()));
+        state.setAvailableAmountForHs(LowBuyHighSellStrategyAdapter.availableAmountForHsMap.get(state.getStockCode()));
 
         return state;
     }

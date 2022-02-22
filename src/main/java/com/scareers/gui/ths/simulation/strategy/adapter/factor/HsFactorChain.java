@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.strategy.adapter.factor;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.log.LogUtil;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
  * @author: admin
  * @date: 2022/2/20/020-18:19:40
  */
+@Getter
 public class HsFactorChain {
     private List<HsFactor> factorList = new ArrayList<>(); // 单线程语义
     private List<HsState> hsStates = new ArrayList<>(); // 初始状态 + 每个因子按序影响后的状态  // 末尾即为最终状态

@@ -67,7 +67,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
         this.lbHsSelector = lbHsSelector;
-        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader); // 策略实际方法
+        this.adapter = new LowBuyHighSellStrategyAdapter(this, trader, 10); // 策略实际方法
         this.strategyName = strategyName; // 同super
         initStockPool(); // 构建器自动初始化股票池!
 
