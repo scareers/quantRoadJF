@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import joinery.DataFrame;
@@ -11,6 +12,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +61,7 @@ public class HsState {
     protected List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..
     protected List<Double> weightsOfHighSell; // 88数据
     protected List<Double> cdfOfHighSell;
-    protected double tickGap = 0.005; // 分布tick, 暂时固定不变,
+    protected Double tickGap = 0.005; // 分布tick, 暂时固定不变,
     protected Double cdfRateForPosition; // cdf概率 * 的倍率.
     protected Double totalPositionNormalized; // 理应的仓位总值, 标准化<=1.0
 
@@ -143,6 +146,20 @@ public class HsState {
         // 完全复制过来
         // 当被因子影响后, 设置因子字段, 并以复制来的状态为基础更新.
         return state;
+    }
+
+    /**
+     * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
+     *
+     * @param state
+     * @param preState
+     * @return
+     * @implement 为了更加方便精细控制, 对于最简单的信息展示, 使用 GridLayout + JLabel 简单展示.
+     * @implement 对于pdf与cdf, 使用图片显示
+     * @implement 对于分时数据, 分时成交, 仅显示最新两行数据. 或其他简单显示?
+     */
+    public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
+        return new HsStatePanel(state, preState);
     }
 
 }
