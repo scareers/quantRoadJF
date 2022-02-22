@@ -27,9 +27,7 @@ public class DefaultListModelS<T extends Comparable> extends DefaultListModel<T>
      *
      * @param newList
      */
-    public void flush(List<T> newList0) {
-        ArrayList<T> newList = new ArrayList<>(newList0);
-        Collections.sort(newList); // 不对原列表进行更新, 保证稳定性
+    public void flush(List<T> newList) {
         // 当元素发生变化, 才更新
         for (int i = 0; i < Math.min(newList.size(), this.getSize()); i++) {
             try {

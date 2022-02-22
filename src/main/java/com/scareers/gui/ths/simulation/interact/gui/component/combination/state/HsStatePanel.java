@@ -38,7 +38,7 @@ public class HsStatePanel extends DisplayPanel {
     JLabel isSellPointValueLabel = new JLabel();
     JLabel newPriceLabel = new JLabel("最新成交价格");
     JLabel newPriceValueLabel = new JLabel();
-    JLabel chgPercentToPre2cLabel = new JLabel("最新价相对前2收盘涨跌幅");
+    JLabel chgPercentToPre2cLabel = new JLabel("最新/前2收涨跌幅");
     JLabel chgPercentToPre2cValueLabel = new JLabel();
     JLabel indexPercentLabel = new JLabel("对应大盘当前涨跌幅");
     JLabel indexPercentValueLabel = new JLabel();
@@ -61,7 +61,7 @@ public class HsStatePanel extends DisplayPanel {
         this.preState = preState;
         this.setBackground(Color.white);
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
-        this.setPreferredSize(new Dimension(500, 300));
+        this.setPreferredSize(new Dimension(600, 270));
 
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(Color.white);

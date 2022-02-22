@@ -159,6 +159,7 @@ public abstract class SecurityListAndDisplayPanel extends JPanel {
                     return;
                 }
                 int index = jList.getSelectedIndex();
+
                 SecurityBeanEm.SecurityEmPo po = jList.getModel().getElementAt(index);
 
 

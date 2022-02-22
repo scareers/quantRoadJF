@@ -8,6 +8,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayW
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
+import java.util.Collections;
 import java.util.Vector;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ public class FsTransFetcherListAndDataPanel extends SecurityListAndTablePanel {
         if (INSTANCE == null) {
             INSTANCE = new FsTransFetcherListAndDataPanel(mainDisplayWindow, jListWidth);
         }
+        mainDisplayWindow.flushBounds();
         return INSTANCE;
     }
 
@@ -47,8 +49,10 @@ public class FsTransFetcherListAndDataPanel extends SecurityListAndTablePanel {
 //                .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
 
         while (true) {
-            securityEmPos = FsTransactionFetcher.getStockPool().stream()
+            Vector<SecurityBeanEm.SecurityEmPo> beans = FsTransactionFetcher.getStockPool().stream()
                     .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
+            Collections.sort(beans);
+            securityEmPos = beans; // 有序
             Thread.sleep(100);
         }
     }
