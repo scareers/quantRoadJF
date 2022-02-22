@@ -154,9 +154,7 @@ public class HsState {
      * @param state
      * @param preState
      * @return
-     * @implement 为了更加方便精细控制, 对于最简单的信息展示, 使用 GridLayout + JLabel 简单展示.
-     * @implement 对于pdf与cdf, 使用图片显示
-     * @implement 对于分时数据, 分时成交, 仅显示最新两行数据. 或其他简单显示?
+
      */
     public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
         return new HsStatePanel(state, preState);
