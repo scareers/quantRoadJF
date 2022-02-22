@@ -3,6 +3,8 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.state
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.utils.charts.ChartUtil;
+import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -55,16 +57,22 @@ public class HsStatePanel extends DisplayPanel {
     JLabel availabelAmountLabel = new JLabel("当前可卖数量");
     JLabel availabelAmountValueLabel = new JLabel("当前可卖数量");
 
+    ChartPanel pdfChartPanel;
+    ChartPanel cdfChartPanel;
+
 
     public HsStatePanel(HsState state, HsState preState) {
         this.state = state;
         this.preState = preState;
         this.setBackground(Color.white);
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
-        this.setPreferredSize(new Dimension(600, 270));
+
+        this.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(Color.white);
+        baseInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+        baseInfoPanel.setPreferredSize(new Dimension(350, 270));
 
         baseInfoPanel.setLayout(new GridLayout(15, 2, 1, 1));
 
@@ -77,6 +85,8 @@ public class HsStatePanel extends DisplayPanel {
 
         baseInfoPanel.add(factorLabel);
         baseInfoPanel.add(factorValueLabel);
+        factorValueLabel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
 
         baseInfoPanel.add(pre2DateLabel);
         baseInfoPanel.add(pre2DateValueLabel);
@@ -119,8 +129,25 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.add(availabelAmountLabel);
         baseInfoPanel.add(availabelAmountValueLabel);
 
+
+
+
+        pdfChartPanel =
+                new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
+                        this.state.getTicksOfHighSell(), false));
+        pdfChartPanel.setDomainZoomable(false);
+
+
+        cdfChartPanel =
+                new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
+                        this.state.getTicksOfHighSell(), false));
+        cdfChartPanel.setDomainZoomable(false);
+
+        this.update(); // 设置基本数据
         this.add(baseInfoPanel); // 左浮动
-        this.update();
+        this.add(pdfChartPanel); // 左浮动
+        this.add(cdfChartPanel); // 左浮动
+
 
     }
 
@@ -147,5 +174,10 @@ public class HsStatePanel extends DisplayPanel {
         totalAmountYcValueLabel.setText(toStringCheckNull(state.getAmountsTotalYc()));
         actualAmountSelledValueLabel.setText(toStringCheckNull(state.getActualAmountHighSelled()));
         availabelAmountValueLabel.setText(toStringCheckNull(state.getAvailableAmountForHs()));
+
+        pdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
+                this.state.getTicksOfHighSell(), false));
+        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
+                this.state.getTicksOfHighSell(), false));
     }
 }

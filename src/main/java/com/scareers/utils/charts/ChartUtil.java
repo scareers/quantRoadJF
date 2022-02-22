@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,18 +59,20 @@ public class ChartUtil {
     }
 
     public static void main(String[] args) throws Exception {
-//        DataFrame<Object> df = new DataFrame<>();
+        DataFrame<Object> df = new DataFrame<>();
 //        df.add("a", Arrays.asList(1, 2, 3, 4));
 //        df.add("b", Arrays.asList(2, 3, 4, 5));
 //        df.add("c", Arrays.asList(2, 7, 4, 5));
 //        dfAsLineChartSimple(df, true);
 
-        DataFrame<Object> fs1MDf = EmQuoteApi.getFs1MToday(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 0, 2000);
-        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "资产代码").toString(), 2000, 2, true).get(0);
-        // 昨收
-        JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "资产代码").toString() + " [" + fs1MDf.get(0,
-                "资产名称").toString() + "]", KLineYType.PERCENT);
-        showChartSimple(chart);
+        listOfDoubleAsLineChartSimple(Arrays.asList(1.0, 2.0, 3.0, 4.0), Arrays.asList(1.0, 2.0, 3.0, 4.0), true);
+
+//        DataFrame<Object> fs1MDf = EmQuoteApi.getFs1MToday(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 0, 2000);
+//        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "资产代码").toString(), 2000, 2, true).get(0);
+//         昨收
+//        JFreeChart chart = createFs1MKLineOfEm(fs1MDf, preClose, fs1MDf.get(0, "资产代码").toString() + " [" + fs1MDf.get(0,
+//                "资产名称").toString() + "]", KLineYType.PERCENT);
+//        showChartSimple(chart);
 
     }
 
@@ -116,8 +120,7 @@ public class ChartUtil {
      * @throws IOException
      */
     public static JFreeChart listOfDoubleAsLineChartSimple(List<Double> doubles0,
-                                                           List<Object> xUseColValues, boolean show)
-            throws IOException {
+                                                           List xUseColValues, boolean show) {
         ArrayList<Object> doubles = new ArrayList<>(doubles0);
         DataFrame<Object> dataFrame = new DataFrame<>();
         dataFrame.add("temp_col", doubles);
@@ -130,8 +133,7 @@ public class ChartUtil {
         return dfAsLineChartSimple(df, null, show);
     }
 
-    public static JFreeChart dfAsLineChartSimple(DataFrame<Object> df, String xUseCol, boolean show)
-            throws IOException {
+    public static JFreeChart dfAsLineChartSimple(DataFrame<Object> df, String xUseCol, boolean show) {
         CategoryDataset dataset = createDefaultCategoryDataset(df, xUseCol);
         JFreeChart barChart = ChartFactory
                 .createLineChart(null, null, null, dataset, PlotOrientation.VERTICAL, true, true,
@@ -377,6 +379,7 @@ public class ChartUtil {
             for (Object o : xsCol) {
                 xs.add(o.toString());
             }
+            df = df.drop(xUseCol); // 去掉x轴值
         }
 
         for (int i = 0; i < df.size(); i++) {

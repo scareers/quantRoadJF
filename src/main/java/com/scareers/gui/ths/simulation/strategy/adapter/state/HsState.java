@@ -7,10 +7,12 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
+import com.scareers.utils.charts.ChartUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.w3c.dom.ls.LSException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -99,10 +101,12 @@ public class HsState {
         Assert.isTrue(bean.isStock());
         HsState state = new HsState();
         state.setBean(bean); // 唯一, 无需深复制
+        state.setStockCode(bean.getSecCode()); // 唯一, 无需深复制
         // 股票代码null
         // 前2日收盘价null
         // pre2TradeDate 自动设置.
-        state.setSellPointCurrent(false);
+        // sellPointCurrent null
+        // state.setSellPointCurrent(false);
         // fsData为null
         // fsTransData为null
         // newPriceTrans为null
@@ -150,16 +154,17 @@ public class HsState {
         return state;
     }
 
-//    /**
-//     * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
-//     *
-//     * @param state
-//     * @param preState
-//     * @return
-//
-//     */
-//    public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
-//        return new HsStatePanel(state, preState);
-//    }
+    /**
+     * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
+     *
+     * @param state
+     * @param preState
+     * @return
+
+     */
+    public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
+//        ChartUtil.listOfDoubleAsLineChartSimple()
+        return new HsStatePanel(state, preState);
+    }
 
 }
