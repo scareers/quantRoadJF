@@ -216,6 +216,9 @@ public class OrderExecutor {
      */
     public String getStockArgWhenExecutingSellOrder() {
         Order orderTemp = executingOrder; // 暂时保存, 多线程尽量安全
+        if (orderTemp == null) {
+            return null;
+        }
         if (!"sell".equals(orderTemp.getOrderType())) {
             return null;
         }
@@ -230,6 +233,9 @@ public class OrderExecutor {
      */
     public String getStockArgWhenExecutingBuyOrder() {
         Order orderTemp = executingOrder; // 暂时保存, 多线程尽量安全
+        if (orderTemp == null) {
+            return null;
+        }
         if (!"buy".equals(orderTemp.getOrderType())) {
             return null;
         }

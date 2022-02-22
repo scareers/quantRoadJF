@@ -30,17 +30,21 @@ public class PositionAndAmountFactorHs extends HsFactor {
     public HsState influence(HsState state) {
         // 1. 此时高卖分布的tick, pdf, cdf已设置好, 被更前端的因子影响. 直接使用 currentPricePercent进行计算
         // 2. 设置cdf中的 具体概率
-        state.setCdfProbabilityOfCurrentPricePercent(virtualCdfAsPositionForHighSell(
-                state.getTicksOfHighSell(), state.getWeightsOfHighSell(),
-                state.getNewPricePercentToPre2Close(), // 当前涨跌幅,(相对于前2收)
-                state.getTickGap()));
+        state.setCdfProbabilityOfCurrentPricePercent(
+                virtualCdfAsPositionForHighSell(
+                        state.getTicksOfHighSell(), state.getWeightsOfHighSell(),
+                        state.getNewPricePercentToPre2Close(), // 当前涨跌幅,(相对于前2收)
+                        state.getTickGap()));
         state.setCdfRateForPosition(SettingsOfPositionAndAmountFactor.cdfRateForPosition);
         state.setTotalPositionNormalized(
                 Math.min(1.0, state.getCdfRateForPosition() * state.getCdfProbabilityOfCurrentPricePercent()));
 
+        if (!state.getSellPointCurrent()) {
+            return state; // 直接返回
+        }
         double shouldSellAmountTotal = state.getTotalPositionNormalized() * state.getAmountsTotalYc().doubleValue();
 
-        if(state.getActualAmountHighSelled()<shouldSellAmountTotal){
+        if (state.getActualAmountHighSelled() < shouldSellAmountTotal) {
 
             // 三项数据: 此刻卖点应当总卖出 / 原总持仓  --  [早已经成功卖出]
             int amount = (int) (NumberUtil
@@ -74,14 +78,16 @@ public class PositionAndAmountFactorHs extends HsFactor {
                 if (flag) {
                     price = SecurityPool.getPriceLimitMap().get(state.getStockCode()).get(1); // 跌停价
                 }
-                Order order = OrderFactory.generateSellOrderQuick(state.getStockCode(), amount, price, Order.PRIORITY_HIGH);
+                Order order = OrderFactory
+                        .generateSellOrderQuick(state.getStockCode(), amount, price, Order.PRIORITY_HIGH);
                 if (flag) {
                     order.setAfterAuctionFirst(); // 设置为竞价后首个订单
                 }
                 Trader.getInstance().putOrderToWaitExecute(order);
                 // todo: 这里一旦生成卖单, 将视为全部成交, 加入到已经卖出的部分
                 // 若最终成交失败, 2分钟后check将失败, 订单离开checking队列, 可用数量将采用AS最新数据及时更新.
-                LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap.put(state.getStockCode(), amount + state.getActualAmountHighSelled());
+                LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap
+                        .put(state.getStockCode(), amount + state.getActualAmountHighSelled());
             }
         } else { //  新卖点,但没必要卖出更多.(多因为当前价格已经比上一次低, 导致仓位更低)
 //                    log.warn("sell decision: 卖点出现,但早已卖出更多仓位,不执行卖出. {} -> {}/{} ; already [{}]", stock,

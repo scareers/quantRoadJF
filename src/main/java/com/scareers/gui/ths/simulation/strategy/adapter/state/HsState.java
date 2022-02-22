@@ -9,6 +9,7 @@ import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTr
  */
 @Getter
 @Setter
+@ToString
 public class HsState {
     protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
 

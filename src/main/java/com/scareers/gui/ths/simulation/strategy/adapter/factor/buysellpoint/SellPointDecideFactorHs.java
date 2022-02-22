@@ -26,8 +26,6 @@ public class SellPointDecideFactorHs extends HsFactor {
 
     @Override
     public HsState influence(HsState state) {
-
-
         state.setSellPointCurrent(isSellPoint(state));
         return state;
     }

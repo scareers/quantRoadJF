@@ -4,6 +4,8 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -117,7 +119,6 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2);
         preTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1);
         this.hsPerSleep = hsPerSleep;
-        initForHsDecision();
     }
 
     /**
@@ -218,8 +219,15 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
      *
      * @throws Exception
      */
+    private boolean flushed = false;
+
     @Override
     public void sellDecision() throws Exception {
+        if (!flushed) {
+            initForHsDecision();
+            flushed = true;
+        }
+
         Thread.sleep(hsPerSleep);
         if (yesterdayStockHoldsBeSellMap.size() == 0) { // 开始决策后才会被正确初始化
             log.error("show: 昨日无股票持仓, 因此无需执行卖出决策");
@@ -232,7 +240,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             HsState hsState = HsState
-                    .createDefaultHsState(SecurityBeanEm.createIndex(stock), strategy.getLbHsSelector());
+                    .createDefaultHsState(SecurityBeanEm.createStock(stock), strategy.getLbHsSelector());
             HsFactorChain factorChain = new HsFactorChain(hsState);
             factorChain.addFactor(new BaseDataFactorHs());
             factorChain.addFactor(new SellPointDecideFactorHs());
@@ -241,6 +249,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
             factorChain.applyFactorInfluence();
 
             stockWithStatesInfByFactorsHs.put(stock, factorChain.getHsStates());
+        }
+        if (RandomUtil.randomInt(100) == 0) {
+            Console.log(stockWithStatesInfByFactorsHs);
         }
 
     }
