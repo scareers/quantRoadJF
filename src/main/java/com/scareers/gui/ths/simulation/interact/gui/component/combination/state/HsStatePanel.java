@@ -4,7 +4,24 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.Displa
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.charts.ChartUtil;
+import org.jfree.chart.ChartMouseEvent;
+import org.jfree.chart.ChartMouseListener;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.entity.CategoryItemEntity;
+import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.XYItemEntity;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.data.Range;
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYIntervalSeriesCollection;
+import org.jfree.ui.LengthAdjustmentType;
+import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.TextAnchor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -142,6 +159,66 @@ public class HsStatePanel extends DisplayPanel {
         cdfChartPanel.setDomainZoomable(false);
         cdfChartPanel.setPreferredSize(new Dimension(500, 270));
 
+        pdfChartPanel.addChartMouseListener(new ChartMouseListener() {
+            @Override
+            public void chartMouseClicked(ChartMouseEvent event) {
+                // System.out.println("图中点击");
+            }
+
+            @Override
+            public void chartMouseMoved(ChartMouseEvent event) {
+
+
+//                JPanel src = (JPanel) event.getTrigger().getSource();
+//                src.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+//                JFreeChart chart = event.getChart();
+//
+//                if (chart == null) {
+//                    return;
+//                }
+                CategoryItemEntity categoryItemEntity = (CategoryItemEntity) event.getEntity();
+                if (categoryItemEntity == null) {
+                    return;
+                }
+                CategoryDataset my = categoryItemEntity.getDataset();
+//
+//                Comparable sindex = ce.getColumnKey();
+//                Comparable iindex = ce.getRowKey();
+//
+//
+//                System.out.println("sindex = " + sindex);
+//                System.out.println("iindex = " + iindex);
+//                System.out.println("x = " + my.getValue(iindex, sindex));
+
+                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
+                // src.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+                double cursorY = event.getTrigger().getY(); // 鼠标位置
+                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
+                double minY = chartPanel.getScreenDataArea().getMinY();
+                double percent = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
+                CategoryPlot plot = (CategoryPlot) event.getChart().getPlot();
+                ValueAxis rangeAxis = plot.getRangeAxis();
+                Range range = rangeAxis.getRange();
+                double markerY = range.getLowerBound() + range.getLength() * percent; // 同百分比取得marker位置
+
+
+//                double markerValue = my.getValue(iindex, sindex).doubleValue();
+                double markerValue = markerY;
+                ValueMarker valuemarker = new ValueMarker(markerValue); // 水平线的值, 昨日收盘
+                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+                valuemarker.setPaint(Color.red); //线条颜色
+                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
+                valuemarker.setLabel("测试"); //线条上显示的文本
+                valuemarker.setLabelFont(new Font("SansSerif", 0, 11)); //文本格式
+                valuemarker.setLabelPaint(Color.red);
+                valuemarker.setLabelAnchor(RectangleAnchor.TOP_LEFT);
+                valuemarker.setLabelTextAnchor(TextAnchor.BOTTOM_LEFT);
+                event.getChart().getCategoryPlot().addRangeMarker(valuemarker);
+
+            }
+        });
+
         this.update(); // 设置基本数据
         this.add(baseInfoPanel); // 左浮动
         this.add(pdfChartPanel); // 左浮动
@@ -176,7 +253,15 @@ public class HsStatePanel extends DisplayPanel {
 
         pdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
+
         cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
     }
+
+//    protected JFreeChart getChart() {
+//        JFreeChart chart = ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
+//                this.state.getTicksOfHighSell(), false);
+//
+//
+//    }
 }

@@ -53,7 +53,7 @@ public class AnalyzeRealtimeWindow extends FuncFrameS {
             INSTANCE.addComponentListener(new ComponentAdapter() {
                 @Override
                 public void componentHidden(ComponentEvent e) {
-                    INSTANCE.getCorePanel().getMainDisplayWindow().flushBounds(true); // 编辑界面就像第一次刷新
+                    INSTANCE.getCorePanel().getMainDisplayWindow().flushBounds(false); // 编辑界面就像第一次刷新
                 }
             });
             INSTANCE.setBorder(new LineBorder(COLOR_MAIN_DISPLAY_BORDER, 1));

@@ -10,9 +10,13 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
+import eu.verdelhan.ta4j.indicators.helpers.AmountIndicator;
 import joinery.DataFrame;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
+import org.jfree.chart.entity.CategoryItemEntity;
+import org.jfree.chart.entity.JFreeChartEntity;
+import org.jfree.chart.entity.PlotEntity;
 import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.*;
@@ -24,6 +28,7 @@ import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.urls.StandardCategoryURLGenerator;
 import org.jfree.chart.urls.StandardXYURLGenerator;
+import org.jfree.data.Range;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.Minute;
@@ -77,7 +82,9 @@ public class ChartUtil {
 //                CommonUtil.range(20),
 //                false);
 //
-//        CategoryPlot categoryPlot = chart.getCategoryPlot();
+//
+//
+//        CategoryPlot categoryPlot = chart0.getCategoryPlot();
 //        CategoryAxis domainAxis = categoryPlot.getDomainAxis();
 //
 //        domainAxis.setLowerMargin(0.2);
@@ -86,7 +93,7 @@ public class ChartUtil {
 //        domainAxis.setMaximumCategoryLabelWidthRatio(0.8f);
 ////        domainAxis.setCategoryMargin(0.9f);
 //        domainAxis.setMaximumCategoryLabelLines(1);
-//        domainAxis.setTickLabelFont(3,new Font("Consolas", Font.BOLD, 18));
+//        domainAxis.setTickLabelFont(3, new Font("Consolas", Font.BOLD, 18));
 //        domainAxis.setLabelAngle(0.2);
 //        domainAxis.setTickLabelPaint(ChartColor.red);
 //        domainAxis.setTickLabelsVisible(true);
@@ -103,17 +110,82 @@ public class ChartUtil {
 //        JFreeChart chart2 = new JFreeChart("title", JFreeChart.DEFAULT_TITLE_FONT,
 //                plot, false);
 //
-//        showChartSimple(chart2);
+//        ApplicationFrame frame = new ApplicationFrame("temp");
+//        ChartPanel chartPanel = new ChartPanel(chart2);
+//
+//        chartPanel.addChartMouseListener(new ChartMouseListener() {
+//            @Override
+//            public void chartMouseClicked(ChartMouseEvent event) {
+//                // System.out.println("图中点击");
+//            }
+//
+//            @Override
+//            public void chartMouseMoved(ChartMouseEvent event) {
+//                if (!(event.getEntity() instanceof PlotEntity)) {
+//                    return;
+//                }
+//                PlotEntity categoryItemEntity = (PlotEntity) event.getEntity();
+//                if (categoryItemEntity == null) {
+//                    return;
+//                }
+//
+//                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
+//                // src.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+//
+//                double cursorY = event.getTrigger().getY(); // 鼠标位置
+//                double cursorX = event.getTrigger().getX(); // 鼠标位置
+//                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
+//                double minY = chartPanel.getScreenDataArea().getMinY();
+//                double maxX = chartPanel.getScreenDataArea().getMaxX(); // 图最大最小y
+//                double minX = chartPanel.getScreenDataArea().getMinX();
+//                double percent = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
+//                double percentX = (maxX - cursorX) / (maxX - minX); // 从下到上部分百分比, 后面计算 value Range同百分比的x值即可
+//                CategoryPlot plot = (CategoryPlot) event.getChart().getPlot();
+//                ValueAxis rangeAxis = plot.getRangeAxis();
+//                Range range = rangeAxis.getRange();
+//                double markerY = range.getLowerBound() + range.getLength() * percent; // 同百分比取得marker位置
+//
+//                CategoryAxis domainAxis1 = plot.getDomainAxis();
+//
+//
+////                double markerValue = my.getValue(iindex, sindex).doubleValue();
+//                double markerValue = markerY;
+//                ValueMarker valuemarker = new ValueMarker(markerValue); // 水平线的值, 昨日收盘
+//                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+//                valuemarker.setPaint(Color.red); //线条颜色
+//                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
+//                valuemarker.setLabel("测试"); //线条上显示的文本
+//                valuemarker.setLabelFont(new Font("SansSerif", 0, 11)); //文本格式
+//                valuemarker.setLabelPaint(Color.red);
+//                valuemarker.setLabelAnchor(RectangleAnchor.TOP_LEFT);
+//                valuemarker.setLabelTextAnchor(TextAnchor.BOTTOM_LEFT);
+//                event.getChart().getCategoryPlot().clearRangeMarkers();
+//                event.getChart().getCategoryPlot().addRangeMarker(valuemarker);
+//
+//            }
+//        });
+//
+//        // 大小
+//        chartPanel.setPreferredSize(new java.awt.Dimension(1200, 1000));
+//
+//        frame.setContentPane(chartPanel);
+//        frame.pack(); // 显示.
+//        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+//        frame.setVisible(true);
 
 //        ChartFactory.createXYLineChart("", );
-        final XYSeries firefox = new XYSeries("Firefox");
-        firefox.add(1.0, 1.0);
-        firefox.add(2.0, 4.0);
-        firefox.add(3.0, 3.0);
+        final XYSeries datas = new XYSeries("Firefox");
+        int amount = 20; // 点个数
+        List<Double> ys = CommonUtil.range(amount).stream().map(value -> RandomUtil.randomDouble()).collect(
+                Collectors.toList());
+        List<Integer> xs = CommonUtil.range(amount);
 
+        for (int i = 0; i < amount; i++) {
+            datas.add(xs.get(i), ys.get(i));
+        }
 
         XYSeriesCollection dataset = new XYSeriesCollection();
-        dataset.addSeries(firefox);
+        dataset.addSeries(datas);
 
 
         NumberAxis xAxis = new NumberAxis("x");
@@ -122,14 +194,88 @@ public class ChartUtil {
         XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
 
         XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
-
         plot.setOrientation(PlotOrientation.VERTICAL);
         renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         renderer.setURLGenerator(new StandardXYURLGenerator());
 
         JFreeChart chart = new JFreeChart("title", JFreeChart.DEFAULT_TITLE_FONT,
                 plot, false);
-        showChartSimple(chart);
+
+        ApplicationFrame frame = new ApplicationFrame("temp");
+        ChartPanel chartPanel = new ChartPanel(chart);
+        // 大小
+        chartPanel.setPreferredSize(new java.awt.Dimension(1200, 1000));
+
+        chartPanel.addChartMouseListener(new ChartMouseListener() {
+            @Override
+            public void chartMouseClicked(ChartMouseEvent event) {
+                // System.out.println("图中点击");
+            }
+
+            @Override
+            public void chartMouseMoved(ChartMouseEvent event) {
+                if (!(event.getEntity() instanceof PlotEntity)) {
+                    return;
+                }
+                PlotEntity categoryItemEntity = (PlotEntity) event.getEntity();
+                if (categoryItemEntity == null) {
+                    return;
+                }
+
+                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
+                // src.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+                double cursorY = event.getTrigger().getY(); // 鼠标位置
+                double cursorX = event.getTrigger().getX(); // 鼠标位置
+                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
+                double minY = chartPanel.getScreenDataArea().getMinY();
+                double maxX = chartPanel.getScreenDataArea().getMaxX(); // 图最大最小y
+                double minX = chartPanel.getScreenDataArea().getMinX();
+                double percent = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
+                double percentX = (maxX - cursorX) / (maxX - minX); // 从下到上部分百分比, 后面计算 value Range同百分比的x值即可
+                XYPlot plot = (XYPlot) event.getChart().getPlot();
+                ValueAxis rangeAxis = plot.getRangeAxis();
+                Range range = rangeAxis.getRange();
+                double markerY = range.getLowerBound() + range.getLength() * percent; // 同百分比取得marker位置
+
+                ValueAxis domainAxis = plot.getDomainAxis();
+                Range rangeX = domainAxis.getRange();
+                double markerX = rangeX.getUpperBound() - rangeX.getLength() * percentX; // 同百分比取得marker位置
+
+
+                double markerValue = markerY;
+                ValueMarker valuemarker = new ValueMarker(markerValue); // 水平线的值, 昨日收盘
+                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+                valuemarker.setPaint(Color.red); //线条颜色
+                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
+                valuemarker.setLabel("测试"); //线条上显示的文本
+                valuemarker.setLabelFont(new Font("SansSerif", 0, 11)); //文本格式
+                valuemarker.setLabelPaint(Color.red);
+                valuemarker.setLabelAnchor(RectangleAnchor.TOP_LEFT);
+                valuemarker.setLabelTextAnchor(TextAnchor.BOTTOM_LEFT);
+                plot.clearRangeMarkers();
+                plot.addRangeMarker(valuemarker);
+
+                double markerValueX = markerX;
+                ValueMarker valuemarker2 = new ValueMarker(markerValueX); // 水平线的值, 昨日收盘
+                valuemarker2.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+                valuemarker2.setPaint(Color.red); //线条颜色
+                valuemarker2.setStroke(new BasicStroke(1.0F)); //粗细
+                valuemarker2.setLabel("测试"); //线条上显示的文本
+                valuemarker2.setLabelFont(new Font("SansSerif", 0, 11)); //文本格式
+                valuemarker2.setLabelPaint(Color.red);
+                valuemarker2.setLabelAnchor(RectangleAnchor.TOP_LEFT);
+                valuemarker2.setLabelTextAnchor(TextAnchor.BOTTOM_LEFT);
+                plot.clearDomainMarkers();
+                plot.addDomainMarker(valuemarker2);
+
+            }
+        });
+
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
 
 //        Console.log(categoryPlot);
 //        Console.log(domainAxis);
