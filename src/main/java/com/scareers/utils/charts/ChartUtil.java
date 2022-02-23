@@ -11,17 +11,19 @@ import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.ChartUtilities;
-import org.jfree.chart.JFreeChart;
+import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
-import org.jfree.chart.plot.CombinedDomainXYPlot;
-import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.ValueMarker;
-import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.plot.*;
+import org.jfree.chart.renderer.category.CategoryItemRenderer;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.urls.StandardCategoryURLGenerator;
+import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.Minute;
@@ -29,6 +31,9 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
+import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.LengthAdjustmentType;
 import org.jfree.ui.RectangleAnchor;
@@ -66,12 +71,74 @@ public class ChartUtil {
 //        df.add("c", Arrays.asList(2, 7, 4, 5));
 //        dfAsLineChartSimple(df, true);
 
-        JFreeChart chart = listOfDoubleAsLineChartSimple(
+        JFreeChart chart0 = listOfDoubleAsLineChartSimple(
                 CommonUtil.range(20).stream().map(value -> RandomUtil.randomDouble()).collect(
                         Collectors.toList()),
                 CommonUtil.range(20),
                 false);
-        chart.getPlot().get
+//
+//        CategoryPlot categoryPlot = chart.getCategoryPlot();
+//        CategoryAxis domainAxis = categoryPlot.getDomainAxis();
+//
+//        domainAxis.setLowerMargin(0.2);
+//        domainAxis.setUpperMargin(0.2);
+//        domainAxis.setLabel("testx");
+//        domainAxis.setMaximumCategoryLabelWidthRatio(0.8f);
+////        domainAxis.setCategoryMargin(0.9f);
+//        domainAxis.setMaximumCategoryLabelLines(1);
+//        domainAxis.setTickLabelFont(3,new Font("Consolas", Font.BOLD, 18));
+//        domainAxis.setLabelAngle(0.2);
+//        domainAxis.setTickLabelPaint(ChartColor.red);
+//        domainAxis.setTickLabelsVisible(true);
+//        domainAxis.setTickMarkInsideLength(3);
+//        domainAxis.setTickMarkPaint(Color.red);
+//
+//        ValueAxis rangeAxis = categoryPlot.getRangeAxis();
+//        CategoryDataset dataset = categoryPlot.getDataset();
+//        LineAndShapeRenderer renderer = (LineAndShapeRenderer) categoryPlot.getRenderer();
+//
+//
+//        CategoryPlot plot = new CategoryPlot(dataset, domainAxis, rangeAxis,
+//                renderer);
+//        JFreeChart chart2 = new JFreeChart("title", JFreeChart.DEFAULT_TITLE_FONT,
+//                plot, false);
+//
+//        showChartSimple(chart2);
+
+//        ChartFactory.createXYLineChart("", );
+        final XYSeries firefox = new XYSeries("Firefox");
+        firefox.add(1.0, 1.0);
+        firefox.add(2.0, 4.0);
+        firefox.add(3.0, 3.0);
+
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+        dataset.addSeries(firefox);
+
+
+        NumberAxis xAxis = new NumberAxis("x");
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis("y");
+        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
+
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+
+        plot.setOrientation(PlotOrientation.VERTICAL);
+        renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        renderer.setURLGenerator(new StandardXYURLGenerator());
+
+        JFreeChart chart = new JFreeChart("title", JFreeChart.DEFAULT_TITLE_FONT,
+                plot, false);
+        showChartSimple(chart);
+
+//        Console.log(categoryPlot);
+//        Console.log(domainAxis);
+//        Console.log(rangeAxis);
+//        Console.log(dataset);
+//        Console.log(renderer);
+
+//        ChartFactory.createLineChart("test", "xx", "yy", );
+
 
 //        DataFrame<Object> fs1MDf = EmQuoteApi.getFs1MToday(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 0, 2000);
 //        Double preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(fs1MDf.get(0, "资产代码").toString(), 2000, 2, true).get(0);
