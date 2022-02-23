@@ -65,17 +65,17 @@ public class ChartUtil {
     }
 
     public static void main(String[] args) throws Exception {
-        DataFrame<Object> df = new DataFrame<>();
+//        DataFrame<Object> df = new DataFrame<>();
 //        df.add("a", Arrays.asList(1, 2, 3, 4));
 //        df.add("b", Arrays.asList(2, 3, 4, 5));
 //        df.add("c", Arrays.asList(2, 7, 4, 5));
 //        dfAsLineChartSimple(df, true);
-
-        JFreeChart chart0 = listOfDoubleAsLineChartSimple(
-                CommonUtil.range(20).stream().map(value -> RandomUtil.randomDouble()).collect(
-                        Collectors.toList()),
-                CommonUtil.range(20),
-                false);
+//
+//        JFreeChart chart0 = listOfDoubleAsLineChartSimple(
+//                CommonUtil.range(20).stream().map(value -> RandomUtil.randomDouble()).collect(
+//                        Collectors.toList()),
+//                CommonUtil.range(20),
+//                false);
 //
 //        CategoryPlot categoryPlot = chart.getCategoryPlot();
 //        CategoryAxis domainAxis = categoryPlot.getDomainAxis();
@@ -339,7 +339,6 @@ public class ChartUtil {
             y1Axis.setRange(minValue * 0.99, highValue * 1.01); // 大约正中间
             y1Axis.setTickUnit(new NumberTickUnit(minValue * 0.05, new DecimalFormat("####0.00"))); // 设置刻度显示的密度
         }
-
         XYPlot plot1 = new XYPlot(seriesCollection, x1Axis, y1Axis, candlestickRender);//设置画图区域对象
 
         XYBarRenderer xyBarRender = new XYBarRenderer() {
