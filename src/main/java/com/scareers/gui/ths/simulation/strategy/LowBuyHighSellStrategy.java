@@ -144,6 +144,7 @@ public class LowBuyHighSellStrategy extends Strategy {
             dfTemp = DataFrame.readSql(connOfYesterdayHoldsResult, sql); // 获取解析以便, 不使用直接赋值的方式
         }
         log.warn("recoed time: 昨日持仓与账户资金状况,获取时间为: {}", dfTemp.get(0, 3));
+        Console.log(dfTemp);
         yesterdayStockHoldsBeSell = TraderUtil.payloadArrayToDf(JSONUtilS.parseArray(dfTemp.get(0, 1).toString()));
         Map<String, Object> tempMap = JSONUtilS.parseObj(dfTemp.get(0, 2).toString());
         yesterdayNineBaseFundsData = new ConcurrentHashMap<>();

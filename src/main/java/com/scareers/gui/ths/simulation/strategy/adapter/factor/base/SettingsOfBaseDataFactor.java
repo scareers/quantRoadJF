@@ -25,7 +25,7 @@ public class SettingsOfBaseDataFactor {
      * @param pre2TradeDate
      * @return
      */
-    public static Double getPre2DayClosePriceQfq(String stock, String pre2TradeDate) {
+    public static Double getPreNDayClosePriceQfq(String stock, String pre2TradeDate) {
         Double pre2ClosePrice = null;
         try {
             // 已经缓存

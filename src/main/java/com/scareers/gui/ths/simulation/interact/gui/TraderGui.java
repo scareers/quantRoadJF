@@ -130,7 +130,7 @@ public class TraderGui extends JFrame {
     }
 
     ObjectTreeWindow objectTreeWindow;
-    AnalyzeRealtimeWindow analyzeRealtimeWindow;
+     // AnalyzeRealtimeWindow analyzeRealtimeWindow;
     static volatile Trader trader;
 
     private void addListeners() {
@@ -224,11 +224,11 @@ public class TraderGui extends JFrame {
                 objectsBtn.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        try {
-                            analyzeRealtimeWindow.hide();
-                        } catch (Exception e1) {
-
-                        }
+//                        try {
+//                            analyzeRealtimeWindow.hide();
+//                        } catch (Exception e1) {
+//
+//                        }
 
                         objectTreeWindow = ObjectTreeWindow
                                 .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
@@ -246,33 +246,33 @@ public class TraderGui extends JFrame {
                     }
                 });
 
-                FuncButton analyzeBtn = ButtonFactory.getButton("实时分析", true);
-                analyzeBtn.registerKeyboardAction(e1 -> analyzeBtn.doClick(), REALTIME_ANALYZE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
-                corePanel.registerFuncBtnWithoutFuncFrame(analyzeBtn, FuncFrameS.Type.LEFT_TOP);
-                analyzeBtn.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        try {
-                            objectTreeWindow.hide();
-                        } catch (Exception e1) {
-
-                        }
-                        analyzeRealtimeWindow = AnalyzeRealtimeWindow
-                                .getInstance(FuncFrameS.Type.LEFT_TOP, "实时分析",
-                                        mainWindow, analyzeBtn, true, false, false, true, 
-                                        1000, 100, 0.145, 30,
-                                        false,
-                                        layerOfObjectsTree + 2); // 一定不为null, 单例
-                        corePanel.registerFuncBtnAndCorrespondFuncFrame(analyzeBtn, analyzeRealtimeWindow);
-                        if (analyzeRealtimeWindow.isVisible()) {
-                            analyzeRealtimeWindow.flushBounds();
-                            analyzeRealtimeWindow.hide();
-                        } else {
-                            analyzeRealtimeWindow.flushBounds(true);
-                            analyzeRealtimeWindow.show();
-                        }
-                    }
-                });
+//                FuncButton analyzeBtn = ButtonFactory.getButton("实时分析", true);
+//                analyzeBtn.registerKeyboardAction(e1 -> analyzeBtn.doClick(), REALTIME_ANALYZE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
+//                corePanel.registerFuncBtnWithoutFuncFrame(analyzeBtn, FuncFrameS.Type.LEFT_TOP);
+//                analyzeBtn.addActionListener(new ActionListener() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        try {
+//                            objectTreeWindow.hide();
+//                        } catch (Exception e1) {
+//
+//                        }
+//                        analyzeRealtimeWindow = AnalyzeRealtimeWindow
+//                                .getInstance(FuncFrameS.Type.LEFT_TOP, "实时分析",
+//                                        mainWindow, analyzeBtn, true, false, false, true,
+//                                        1000, 100, 0.145, 30,
+//                                        false,
+//                                        layerOfObjectsTree + 2); // 一定不为null, 单例
+//                        corePanel.registerFuncBtnAndCorrespondFuncFrame(analyzeBtn, analyzeRealtimeWindow);
+//                        if (analyzeRealtimeWindow.isVisible()) {
+//                            analyzeRealtimeWindow.flushBounds();
+//                            analyzeRealtimeWindow.hide();
+//                        } else {
+//                            analyzeRealtimeWindow.flushBounds(true);
+//                            analyzeRealtimeWindow.show();
+//                        }
+//                    }
+//                });
                 
                 
 

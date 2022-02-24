@@ -23,7 +23,9 @@ public class BaseDataFactorHs extends HsFactor {
     @Override
     public HsState influence(HsState state) {
         state.setPre2ClosePrice(
-                SettingsOfBaseDataFactor.getPre2DayClosePriceQfq(state.getStockCode(), state.getPre2TradeDate()));
+                SettingsOfBaseDataFactor.getPreNDayClosePriceQfq(state.getStockCode(), state.getPre2TradeDate()));
+        state.setPreClosePrice(
+                SettingsOfBaseDataFactor.getPreNDayClosePriceQfq(state.getStockCode(), state.getPreTradeDate()));
         state.setFsData(FsFetcher.getFsData(state.getBean()));
         state.setFsTransData(FsTransactionFetcher.getFsTransData(state.getBean()));
         state.setNewPriceTrans(FsTransactionFetcher.getNewestPrice(state.getBean()));

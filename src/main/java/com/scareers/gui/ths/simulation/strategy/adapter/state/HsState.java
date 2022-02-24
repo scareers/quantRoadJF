@@ -7,15 +7,12 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
-import com.scareers.utils.charts.ChartUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.w3c.dom.ls.LSException;
 
-import javax.swing.*;
-import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,7 +37,9 @@ public class HsState {
     //    stock, pre2ClosePrice, stockBean
     protected String stockCode; // 简单代码
     protected Double pre2ClosePrice; // 前2天收盘价.
+    protected Double preClosePrice; // 前日收盘价, 主要用于(对比前2收盘价后)折算分布到今日涨跌幅
     protected String pre2TradeDate = getPreNTradeDateStrict(DateUtil.today(), 2); // 该属性不变
+    protected String preTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1); // 该属性不变
 
     protected Boolean sellPointCurrent; // 当前是否为卖点 ?? 默认false
     protected DataFrame<Object> fsData; // 当前分时图, 显示时显示最后一行.
@@ -86,9 +85,34 @@ public class HsState {
         ticksOfHighSell = ticksOfHighSell.stream().map(value -> value - distance).collect(Collectors.toList());
     }
 
+    /**
+     * 将当前分布进行转换, 转换为 以今日涨跌幅为 tick; 本方法获取 以今日涨跌幅为标准的tick列表
+     * 因主板涨跌幅限制10%, 当前设置为 -11% - 11% 固定 47个tick, 0.005为距离
+     * 被 getStdPdfOfTodayChgP() 调用, 获取标准的pdf
+     *
+     * @return
+     * @see getStdPdfOfTodayChgP()
+     */
+    public List<Double> getStdTicksOfTodayChgP() {
+        ArrayList<Double> res = new ArrayList<>();
+        double start = -0.11;
+        for (int i = 0; i < 47; i++) {
+            res.add(start + i * 0.005);
+        }
+        return res;
+    }
+
+    /**
+     * @return
+     */
+    public List<Double> getStdPdfOfTodayChgP() {
+
+    }
+
     /*
     静态方法
      */
+
 
     /**
      * todo: 可考虑单股票仅维护单个状态对象, 创建对象池. 但是无法保证多线程之下 逻辑安全. 因此目前使用无脑深复制实现
@@ -105,6 +129,7 @@ public class HsState {
         // 股票代码null
         // 前2日收盘价null
         // pre2TradeDate 自动设置.
+        // preClosePrice null
         // sellPointCurrent null
         // state.setSellPointCurrent(false);
         // fsData为null
@@ -131,6 +156,7 @@ public class HsState {
         state.setBean(oldState.getBean()); // bean 不变, 不需要深复制
         state.setStockCode(oldState.getStockCode()); // 股票代码不变
         state.setPre2ClosePrice(ObjectUtil.cloneByStream(oldState.getPre2ClosePrice()));
+        state.setPreClosePrice(ObjectUtil.cloneByStream(oldState.getPreClosePrice()));
         // pre2TradeDate 自动设置.
         state.setSellPointCurrent(ObjectUtil.cloneByStream(oldState.getSellPointCurrent()));
         state.setFsData(oldState.getFsData()); // 分时1M数据 df 不会改变. 不复制.
@@ -154,13 +180,13 @@ public class HsState {
         return state;
     }
 
+
     /**
      * 给定state, 创建其展示 Panel. 可给定preState, 以对比数据变化,展示不同效果
      *
      * @param state
      * @param preState
      * @return
-
      */
     public static HsStatePanel createPanelForHsState(HsState state, HsState preState) {
 //        ChartUtil.listOfDoubleAsLineChartSimple()

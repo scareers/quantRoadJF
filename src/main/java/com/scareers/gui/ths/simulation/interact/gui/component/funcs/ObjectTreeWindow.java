@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.accoun
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
@@ -168,7 +169,19 @@ public class ObjectTreeWindow extends FuncFrameS {
         traderNode.add(fsFetcherNode);
         traderNode.add(strategyNode);
 
+
+        DefaultMutableTreeNode analyzeNode = new DefaultMutableTreeNode("实时分析");
+        DefaultMutableTreeNode stockNode = new DefaultMutableTreeNode("股票");
+        // 买入卖出队列
+        DefaultMutableTreeNode sellNode = new DefaultMutableTreeNode("卖出队列");
+        DefaultMutableTreeNode buyNode = new DefaultMutableTreeNode("买入队列");
+        stockNode.add(sellNode);
+        stockNode.add(buyNode);
+        analyzeNode.add(stockNode);
+
         root.add(traderNode);
+        root.add(analyzeNode);
+
 
         final JTree tree = new JTree(root);
         // 添加选择事件
@@ -225,6 +238,8 @@ public class ObjectTreeWindow extends FuncFrameS {
             changeToDisplayAccountStates();
 
             // 2.2.账户状态
+        } else if (TreePathConstants.SELL_QUEUE.equals(treePath)) {
+            changeToSellQueue();
         } else {
             System.out.println(treePath);
         }
@@ -250,6 +265,12 @@ public class ObjectTreeWindow extends FuncFrameS {
     private void changeToDisplayAccountStates() {
         AccountStatesDisplayPanel.getInstance(getMainDisplayWindow()).showInMainDisplayWindow();
         ; // 此处决定资产列表的宽度
+    }
+
+    private void changeToSellQueue() {
+        SellStockListAndHsStatePanel
+                .getInstance(this.getMainDisplayWindow(), 300)
+                .showInMainDisplayWindow();
     }
 
 
@@ -290,6 +311,17 @@ public class ObjectTreeWindow extends FuncFrameS {
         public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
         public static final String ORDERS_FAILED_FINISHED = "[对象查看, Trader, Queues!, " +
                 "ordersFailedFinallyNeedManualHandle]";
+
+        /**
+         * [实时分析]
+         * [实时分析, 股票]
+         * [实时分析, 股票, 买入队列]
+         * [实时分析, 股票, 卖出队列]
+         */
+        public static final String REALTIME_ANALYZE = "[对象查看, 实时分析]";
+        public static final String STOCK_NODE = "[对象查看, 实时分析, 股票]";
+        public static final String BUY_QUEUE = "[对象查看, 实时分析, 股票, 买入队列]";
+        public static final String SELL_QUEUE = "[对象查看, 实时分析, 股票, 卖出队列]";
 
     }
 }

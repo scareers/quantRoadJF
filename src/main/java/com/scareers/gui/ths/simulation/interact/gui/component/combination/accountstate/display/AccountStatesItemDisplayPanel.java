@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.display;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
@@ -11,8 +12,10 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil.jsonStrToHtmlFormat;
@@ -39,6 +42,7 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
     private JLabel jLabel;
 
     public void update(Object newData) {
+        // 对 newData 做深复制
         this.newData = newData;
         this.update();
     }
@@ -113,23 +117,13 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
         }
 
         if (newData instanceof DataFrame) { // 账户状态: 各种df数据
-            DataFrame<Object> newDf = (DataFrame) newData;
+            DataFrame<Object> newDf = (DataFrame<Object>) newData;
             if (title.equals(CURRENT_HOLD_TITLE)) {
+                List<Object> codes = newDf.col("证券代码").stream().map(value->String.valueOf(value.toString())).collect(
+                        Collectors.toList());
                 newDf.convert();
                 for (int i = 0; i < newDf.length(); i++) {
-                    try {
-                        String val = newDf.get(i, "证券代码").toString();
-                        if (val.length() < 6) {
-                            int diff = 6 - val.length();
-                            for (int j = 0; j < diff; j++) {
-                                val += "0";
-                            }
-                        }
-                        newDf.set(i, "证券代码", val);
-                    } catch (Exception e) {
-                        log.error("AccountStatesItemDisplayPanel: 今日持仓没有 {} 列", "\"证券代码\"");
-                        break;
-                    }
+                    newDf.set(i, "证券代码", codes.get(i));
                 }
             }
             if (jTable == null) { // 首次刷新

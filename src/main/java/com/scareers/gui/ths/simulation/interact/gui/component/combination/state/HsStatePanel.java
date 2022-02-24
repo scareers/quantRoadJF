@@ -1,31 +1,41 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.ChartUtil;
-import org.jfree.chart.ChartMouseEvent;
-import org.jfree.chart.ChartMouseListener;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
+import org.jfree.chart.*;
+import org.jfree.chart.axis.AxisLabelLocation;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.entity.CategoryItemEntity;
 import org.jfree.chart.entity.ChartEntity;
+import org.jfree.chart.entity.PlotEntity;
 import org.jfree.chart.entity.XYItemEntity;
-import org.jfree.chart.plot.CategoryPlot;
-import org.jfree.chart.plot.Plot;
-import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.plot.*;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.data.Range;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYIntervalSeriesCollection;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.LengthAdjustmentType;
 import org.jfree.ui.RectangleAnchor;
 import org.jfree.ui.TextAnchor;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.scareers.utils.CommonUtil.toStringCheckNull;
 
@@ -49,9 +59,13 @@ public class HsStatePanel extends DisplayPanel {
     JLabel stockNameValueLabel = new JLabel();
     JLabel factorLabel = new JLabel("影响因子");
     JLabel factorValueLabel = new JLabel();
+    JLabel preDateLabel = new JLabel("前1交易日");
+    JLabel preDateValueLabel = new JLabel();
     JLabel pre2DateLabel = new JLabel("前2交易日");
     JLabel pre2DateValueLabel = new JLabel();
     JLabel pre2ClosePriceLabel = new JLabel("前2日收盘价");
+    JLabel preClosePriceLabel = new JLabel("前1日收盘价");
+    JLabel preClosePriceValueLabel = new JLabel();
     JLabel pre2ClosePriceValueLabel = new JLabel();
     JLabel isSellPointLabel = new JLabel("当前为卖点");
     JLabel isSellPointValueLabel = new JLabel();
@@ -89,9 +103,9 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(Color.white);
         baseInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
-        baseInfoPanel.setPreferredSize(new Dimension(350, 270));
+        baseInfoPanel.setPreferredSize(new Dimension(350, 350));
 
-        baseInfoPanel.setLayout(new GridLayout(15, 2, 1, 1));
+        baseInfoPanel.setLayout(new GridLayout(17, 2, 1, 1));
 
 
         baseInfoPanel.add(stockCodeLabel);
@@ -105,9 +119,13 @@ public class HsStatePanel extends DisplayPanel {
         factorValueLabel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
 
+        baseInfoPanel.add(preDateLabel);
+        baseInfoPanel.add(preDateValueLabel);
         baseInfoPanel.add(pre2DateLabel);
         baseInfoPanel.add(pre2DateValueLabel);
 
+        baseInfoPanel.add(preClosePriceLabel);
+        baseInfoPanel.add(preClosePriceValueLabel);
         baseInfoPanel.add(pre2ClosePriceLabel);
         baseInfoPanel.add(pre2ClosePriceValueLabel);
 
@@ -147,84 +165,16 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.add(availabelAmountValueLabel);
 
 
-        pdfChartPanel =
-                new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
-                        this.state.getTicksOfHighSell(), false));
-        pdfChartPanel.setDomainZoomable(false);
-        pdfChartPanel.setPreferredSize(new Dimension(500, 270));
-
-        cdfChartPanel =
-                new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
-                        this.state.getTicksOfHighSell(), false));
+        initPdfChartPanel();
+        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
+                this.state.getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
         cdfChartPanel.setPreferredSize(new Dimension(500, 270));
-
-        pdfChartPanel.addChartMouseListener(new ChartMouseListener() {
-            @Override
-            public void chartMouseClicked(ChartMouseEvent event) {
-                // System.out.println("图中点击");
-            }
-
-            @Override
-            public void chartMouseMoved(ChartMouseEvent event) {
-
-
-//                JPanel src = (JPanel) event.getTrigger().getSource();
-//                src.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-//                JFreeChart chart = event.getChart();
-//
-//                if (chart == null) {
-//                    return;
-//                }
-                CategoryItemEntity categoryItemEntity = (CategoryItemEntity) event.getEntity();
-                if (categoryItemEntity == null) {
-                    return;
-                }
-                CategoryDataset my = categoryItemEntity.getDataset();
-//
-//                Comparable sindex = ce.getColumnKey();
-//                Comparable iindex = ce.getRowKey();
-//
-//
-//                System.out.println("sindex = " + sindex);
-//                System.out.println("iindex = " + iindex);
-//                System.out.println("x = " + my.getValue(iindex, sindex));
-
-                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
-                // src.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-
-                double cursorY = event.getTrigger().getY(); // 鼠标位置
-                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
-                double minY = chartPanel.getScreenDataArea().getMinY();
-                double percent = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
-                CategoryPlot plot = (CategoryPlot) event.getChart().getPlot();
-                ValueAxis rangeAxis = plot.getRangeAxis();
-                Range range = rangeAxis.getRange();
-                double markerY = range.getLowerBound() + range.getLength() * percent; // 同百分比取得marker位置
-
-
-//                double markerValue = my.getValue(iindex, sindex).doubleValue();
-                double markerValue = markerY;
-                ValueMarker valuemarker = new ValueMarker(markerValue); // 水平线的值, 昨日收盘
-                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-                valuemarker.setPaint(Color.red); //线条颜色
-                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
-                valuemarker.setLabel("测试"); //线条上显示的文本
-                valuemarker.setLabelFont(new Font("SansSerif", 0, 11)); //文本格式
-                valuemarker.setLabelPaint(Color.red);
-                valuemarker.setLabelAnchor(RectangleAnchor.TOP_LEFT);
-                valuemarker.setLabelTextAnchor(TextAnchor.BOTTOM_LEFT);
-                event.getChart().getCategoryPlot().addRangeMarker(valuemarker);
-
-            }
-        });
 
         this.update(); // 设置基本数据
         this.add(baseInfoPanel); // 左浮动
         this.add(pdfChartPanel); // 左浮动
         this.add(cdfChartPanel); // 左浮动
-
-
     }
 
     public void update(HsState state, HsState preState) {
@@ -238,7 +188,9 @@ public class HsStatePanel extends DisplayPanel {
         stockCodeValueLabel.setText(state.getStockCode());
         stockNameValueLabel.setText(state.getBean().getName());
         factorValueLabel.setText(toStringCheckNull(state.getFactorInfluenceMe()));
+        preDateValueLabel.setText(state.getPreTradeDate());
         pre2DateValueLabel.setText(state.getPre2TradeDate());
+        preClosePriceValueLabel.setText(toStringCheckNull(state.getPreClosePrice()));
         pre2ClosePriceValueLabel.setText(toStringCheckNull(state.getPre2ClosePrice()));
         isSellPointValueLabel.setText(toStringCheckNull(state.getSellPointCurrent()));
         newPriceValueLabel.setText(toStringCheckNull(state.getNewPriceTrans()));
@@ -251,17 +203,61 @@ public class HsStatePanel extends DisplayPanel {
         actualAmountSelledValueLabel.setText(toStringCheckNull(state.getActualAmountHighSelled()));
         availabelAmountValueLabel.setText(toStringCheckNull(state.getAvailableAmountForHs()));
 
-        pdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
-                this.state.getTicksOfHighSell(), false));
+        updatePdfChartPanel(); // 更新pdf图表. 并不重新实例化图表, 仅需要更新数据对象 XYSeries pdfXYSeries;
 
         cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
     }
 
-//    protected JFreeChart getChart() {
-//        JFreeChart chart = ChartUtil.listOfDoubleAsLineChartSimple(this.state.getWeightsOfHighSell(),
-//                this.state.getTicksOfHighSell(), false);
-//
-//
-//    }
+    private void updatePdfChartPanel() {
+        List<Double> xs = this.state.getTicksOfHighSell();
+        List<Double> ys = this.state.getWeightsOfHighSell();
+        pdfXYSeries.clear();
+        for (int i = 0; i < ys.size(); i++) {
+            pdfXYSeries.add(xs.get(i), ys.get(i));
+        }
+
+    }
+
+    XYSeries pdfXYSeries;
+    XYSeriesCollection pdfDataSet;
+    JFreeChart pdfChart;
+    XYPlot pdfXYPlot;
+
+
+    protected void initPdfChartPanel() {
+
+        List<Double> xs = this.state.getTicksOfHighSell();
+        List<Double> ys = this.state.getWeightsOfHighSell();
+
+        pdfXYSeries = new XYSeries("pdf");
+        for (int i = 0; i < ys.size(); i++) {
+            pdfXYSeries.add(xs.get(i), ys.get(i));
+        }
+        pdfDataSet = new XYSeriesCollection();
+        pdfDataSet.addSeries(pdfXYSeries);
+
+//        NumberAxis xAxis = new NumberAxis("涨跌幅");
+        NumberAxis xAxis = new NumberAxis();
+        xAxis.setLabelLocation(AxisLabelLocation.HIGH_END);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis("概率");
+        yAxis.setLabelLocation(AxisLabelLocation.HIGH_END);
+        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        pdfXYPlot = new XYPlot(pdfDataSet, xAxis, yAxis, renderer);
+        pdfXYPlot.setOrientation(PlotOrientation.VERTICAL);
+        renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        renderer.setURLGenerator(new StandardXYURLGenerator());
+        pdfChart = new JFreeChart(null, JFreeChart.DEFAULT_TITLE_FONT,
+                pdfXYPlot, false);
+        pdfChart.setBackgroundPaint(ChartColor.WHITE);
+        pdfChartPanel = new ChartPanel(pdfChart);
+        pdfChartPanel.addChartMouseListener(ChartUtil.getCrossLineListenerForSingleXYPlot());
+        pdfChartPanel.setDomainZoomable(false);
+        pdfChartPanel.setRangeZoomable(false);
+        pdfChartPanel.setMouseZoomable(false);
+        pdfChartPanel.setPreferredSize(new Dimension(500, 270));
+    }
+
+
 }
