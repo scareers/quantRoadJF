@@ -245,6 +245,24 @@ public class HsStatePanel extends DisplayPanel {
             changeColorWhenTextDiff(indexPercentLabel, indexPercentValueLabel, Color.red,
                     state.getIndexPricePercentThatTime(),
                     preState.getIndexPricePercentThatTime());
+            changeColorWhenTextDiff(cdfProbabilityLabel, cdfProbabilityValueLabel, Color.red,
+                    state.getCdfProbabilityOfCurrentPricePercent(),
+                    preState.getCdfProbabilityOfCurrentPricePercent());
+            changeColorWhenTextDiff(cdfRateLabel, cdfRateValueLabel, Color.red,
+                    state.getCdfRateForPosition(),
+                    preState.getCdfRateForPosition());
+            changeColorWhenTextDiff(totalPositionNormalizedLabel, totalPositionNormalizedValueLabel, Color.red,
+                    state.getTotalPositionNormalized(),
+                    preState.getTotalPositionNormalized());
+            changeColorWhenTextDiff(totalAmountYcLabel, totalAmountYcValueLabel, Color.red,
+                    state.getAmountsTotalYc(),
+                    preState.getAmountsTotalYc());
+            changeColorWhenTextDiff(actualAmountSelledLabel, actualAmountSelledValueLabel, Color.red,
+                    state.getActualAmountHighSelled(),
+                    preState.getActualAmountHighSelled());
+            changeColorWhenTextDiff(availabelAmountLabel, availabelAmountValueLabel, Color.red,
+                    state.getAvailableAmountForHs(),
+                    preState.getAvailableAmountForHs());
 
         }
 
