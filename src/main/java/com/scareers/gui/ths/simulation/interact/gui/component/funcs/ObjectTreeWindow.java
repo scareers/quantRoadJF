@@ -208,7 +208,8 @@ public class ObjectTreeWindow extends FuncFrameS {
                 dispatch(e.getNewLeadSelectionPath().toString());
             }
         });
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDERS_WAIT_FOR_EXECUTION);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
         return tree;
     }
 
