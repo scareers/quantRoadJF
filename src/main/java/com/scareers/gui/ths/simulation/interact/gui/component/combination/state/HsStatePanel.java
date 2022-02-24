@@ -206,11 +206,18 @@ public class HsStatePanel extends DisplayPanel {
      */
     protected void changeColorWhenTextDiff(JLabel titleLabel, JLabel contentLabel, Color newColor, Object preValue,
                                            Object newValue) {
-        if ((preValue == null && newValue != null) ||
-                !(preValue.equals(newValue))) { // 前值为null且今值不为null, 或者两值不相等
-            titleLabel.setForeground(newColor);
-            contentLabel.setForeground(newColor);
+        if (preValue == null) {
+            if (newValue != null) {
+                titleLabel.setForeground(newColor);
+                contentLabel.setForeground(newColor);
+            }
+        } else {
+            if (!preValue.equals(newValue)) {
+                titleLabel.setForeground(newColor);
+                contentLabel.setForeground(newColor);
+            }
         }
+
     }
 
     @Override
@@ -273,11 +280,21 @@ public class HsStatePanel extends DisplayPanel {
     }
 
     private void updatePdfChartPanel() {
+        // 1. 最新pdf分布线
         List<Double> xs = this.state.getStdTicksOfTodayChgP();
         List<Double> ys = this.state.getStdPdfOfTodayChgP(xs);
         pdfXYSeries.clear();
         for (int i = 0; i < ys.size(); i++) {
             pdfXYSeries.add(xs.get(i), ys.get(i));
+        }
+        // 2. 尝试前一状态分布线
+        if (this.preState != null) {
+            List<Double> xsPre = this.preState.getStdTicksOfTodayChgP();
+            List<Double> ysPre = this.preState.getStdPdfOfTodayChgP(xs);
+            pdfXYSeriesPre.clear();
+            for (int i = 0; i < xsPre.size(); i++) {
+                pdfXYSeriesPre.add(xsPre.get(i), ysPre.get(i));
+            }
         }
 
         if (this.state.getNewPriceTrans() != null && this.state.getPreClosePrice() != null) {
@@ -300,19 +317,22 @@ public class HsStatePanel extends DisplayPanel {
     }
 
     XYSeries pdfXYSeries;
+    XYSeries pdfXYSeriesPre; // 前1状态的线数据序列
     XYSeriesCollection pdfDataSet;
     JFreeChart pdfChart;
     XYPlot pdfXYPlot;
 
 
     protected void initPdfChartPanel() {
-        pdfXYSeries = new XYSeries("pdf");
-        initDomainMarkerForCurrentPrice();
+        initDomainMarkerForCurrentPrice(); // 当前价格的marker对象
 
+        pdfXYSeries = new XYSeries("pdf");
+        pdfXYSeriesPre = new XYSeries("pdfPre");
         updatePdfChartPanel();
 
         pdfDataSet = new XYSeriesCollection();
         pdfDataSet.addSeries(pdfXYSeries);
+        pdfDataSet.addSeries(pdfXYSeriesPre);
 
 //        NumberAxis xAxis = new NumberAxis("涨跌幅");
         NumberAxis xAxis = new NumberAxis();
@@ -321,13 +341,13 @@ public class HsStatePanel extends DisplayPanel {
         xAxis.setRange(new Range(-0.12, 0.12));
         xAxis.setTickUnit(new NumberTickUnit(0.02, ChartUtil.decimalFormatForPercent));
         xAxis.setAxisLinePaint(COLOR_CHART_AXIS_LINE_EM);
-        xAxis.setTickLabelPaint(Color.white);
+        xAxis.setTickLabelPaint(COLOR_TEXT_INACTIVATE_EM);
 
         NumberAxis yAxis = new NumberAxis("概率");
         yAxis.setLabelLocation(AxisLabelLocation.HIGH_END);
         yAxis.setTickUnit(new NumberTickUnit(0.005, ChartUtil.decimalFormatForPercent));
         yAxis.setAxisLinePaint(COLOR_CHART_AXIS_LINE_EM);
-        yAxis.setTickLabelPaint(Color.white);
+        yAxis.setTickLabelPaint(COLOR_TEXT_INACTIVATE_EM);
 
 
         XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
@@ -337,6 +357,7 @@ public class HsStatePanel extends DisplayPanel {
         renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         renderer.setURLGenerator(new StandardXYURLGenerator());
         renderer.setSeriesPaint(0, Color.yellow);
+        renderer.setSeriesPaint(1, Color.white); //
         pdfXYPlot.setDomainGridlinePaint(COLOR_CHART_GRID_LINE_EM);
         pdfXYPlot.setRangeGridlinePaint(COLOR_CHART_GRID_LINE_EM); // 网格颜色
         BasicStroke gridVertStroke = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 10.0f,

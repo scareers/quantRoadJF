@@ -79,11 +79,18 @@ public class HsState {
     /**
      * 左右移动pdf, 相当于右左移动 ticks // + 变为 -
      * 当 distance为 正数, 表示右移, 为负数, 则左移
+     * <p>
+     * // todo: 移动逻辑. 当distance为正,大盘向好, 应当右移减少仓位, 使得卖出仓位减少. 以求更高的价格卖出.
+     * // todo: @noti, pdf右移, 原 -0.1-> 0.03, 0-> 0.05, 0.1-> 0.03 右移则: 0->0.03, 0.1-> 0.05; 等价于 tick也右移!!!!!
+     * // todo: @noti: 因此 + distance; 大盘向好应当右移pdf分布, 等价于右移tick(而非相反)
      *
      * @param distance 00
      */
     public void movePdf(Double distance) {
-        ticksOfHighSell = ticksOfHighSell.stream().map(value -> value - distance).collect(Collectors.toList());
+        if (distance == null) {
+            return;
+        }
+        ticksOfHighSell = ticksOfHighSell.stream().map(value -> value + distance).collect(Collectors.toList());
     }
 
     /**

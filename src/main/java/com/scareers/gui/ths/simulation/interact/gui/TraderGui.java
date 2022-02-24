@@ -232,7 +232,7 @@ public class TraderGui extends JFrame {
 
                         objectTreeWindow = ObjectTreeWindow
                                 .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
-                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.15, 30,
+                                        mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.12, 30,
                                         false,
                                         layerOfObjectsTree + 1); // 一定不为null, 单例
                         corePanel.registerFuncBtnAndCorrespondFuncFrame(objectsBtn, objectTreeWindow);
@@ -280,6 +280,7 @@ public class TraderGui extends JFrame {
                     try {
                         mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
                         mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
+                        ThreadUtil.sleep(200);
                         mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
 //                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
                         mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
