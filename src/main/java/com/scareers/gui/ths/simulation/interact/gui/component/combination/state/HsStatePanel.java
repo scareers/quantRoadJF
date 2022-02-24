@@ -34,6 +34,9 @@ import static com.scareers.utils.CommonUtil.toStringCheckNull;
  * @date: 2022/2/22/022-17:21:15
  */
 public class HsStatePanel extends DisplayPanel {
+    public static int preferHeight = 350;
+
+
     HsState state; // 首次展示的对象, 当调用update时, 更新该属性
     JPanel baseInfoPanel;
 
@@ -86,7 +89,7 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(Color.white);
         baseInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
-        baseInfoPanel.setPreferredSize(new Dimension(350, 350));
+        baseInfoPanel.setPreferredSize(new Dimension(350, preferHeight));
 
         baseInfoPanel.setLayout(new GridLayout(17, 2, 1, 1));
 
@@ -152,7 +155,7 @@ public class HsStatePanel extends DisplayPanel {
         cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfListOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
-        cdfChartPanel.setPreferredSize(new Dimension(500, 270));
+        cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
 
         this.update(); // 设置基本数据
         this.add(baseInfoPanel); // 左浮动
@@ -259,33 +262,40 @@ public class HsStatePanel extends DisplayPanel {
         pdfChartPanel.setPreferredSize(new Dimension(500, 270));
     }
 
-    ValueMarkerS markerX;
-    ValueMarkerS markerY;
+    ValueMarkerS markerX; // 竖线
+    ValueMarkerS markerY; // 横线
 
     /**
      * 为当前价格创建 marker, 且marker应实时更新, 放入 updatePdfChartPanel()逻辑
      */
     protected void initDomainMarkerForCurrentPrice() {
+        BasicStroke basicStroke = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 10.0f,
+                new float[]{10, 5, 5, 5}, 0); // 虚线
+
         // 3.4: 同理, 创建y值 横向marker
         markerY = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerY.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER); // 标志类型
         markerY.setLabelOffsetType(LengthAdjustmentType.EXPAND);
         markerY.setPaint(Color.green); //线条颜色
-        markerY.setStroke(new BasicStroke(1.0F)); //粗细
-        markerY.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
+        markerY.setStroke(basicStroke); //粗细
+        markerY.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
         markerY.setLabelPaint(Color.red);
-        markerY.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
-        markerY.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+
 
         markerX = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerX.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
         markerX.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-        markerX.setPaint(Color.red); //线条颜色
-        markerX.setStroke(new BasicStroke(1.0F)); //粗细
-        markerX.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
-        markerX.setLabelPaint(Color.green);
-        markerX.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);
-        markerX.setLabelTextAnchor(TextAnchor.TOP_RIGHT);
+        markerX.setPaint(Color.green); //线条颜色
+        markerX.setStroke(basicStroke); //粗细
+        markerX.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
+        markerX.setLabelPaint(Color.red);
+
+
+        markerX.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+        markerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+
+        markerY.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+        markerY.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
 
     }
 
