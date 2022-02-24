@@ -1,7 +1,9 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor.index;
 
+import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,10 +37,26 @@ public class GlobalIndexPricePercentRealtimeFactorHs extends HsFactor {
             return state; // 相当于不移动
         }
         state.setIndexPricePercentThatTime(changePercent);
-        state.movePdf(changePercent); // 高卖低卖, 均是平移pdf. 执行移动
+
+        state.movePdf(decideMoveDistanceByIndexChangePercent(changePercent)); // 高卖低卖, 均是平移pdf. 执行移动
         return state;
     }
 
+    private Double decideMoveDistanceByIndexChangePercent(Double changePercent) {
+        if (changePercent == null) {
+            return 0.0;
+        }
+        double abs = Math.abs(changePercent);
+        if (abs > 0.05) {
+            return -0.11; // 无条件全仓止损
+        } else if (abs > 0.02) {
+            return changePercent * 3; // 3倍增幅
+        } else if (abs > 0.01) {
+            return changePercent * 2; // 2倍增幅
+        } else {
+            return changePercent;
+        }
+    }
 
     private Double getIndexPercent(HsState state) {
         // 所属大盘指数,默认上证指数, 若非沪A,深A, 将log错误, 但默认使用上证指数

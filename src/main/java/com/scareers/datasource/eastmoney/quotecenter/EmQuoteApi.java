@@ -1,5 +1,8 @@
 package com.scareers.datasource.eastmoney.quotecenter;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateTime;
@@ -11,6 +14,9 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.Header;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.Method;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
@@ -26,13 +32,14 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import org.checkerframework.checker.units.qual.C;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
-import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_CODE;
-import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_NAME;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.*;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.HEADER_VALUE_OF_ACCEPT_ENCODING;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
@@ -66,11 +73,13 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
-        Console.log(MARKETS_ARGS_DICT.keySet());
+        Console.log(getIndexFsWithLeadPrice());
+
+//        Console.log(MARKETS_ARGS_DICT.keySet());
 //
 //
-        Console.log(getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true));
-        Console.log(getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true));
+//        Console.log(getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true));
+//        Console.log(getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true));
 
 //        Console.log("个股今日涨跌停:");
 //        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
@@ -943,6 +952,85 @@ public class EmQuoteApi {
     }
 
     /**
+     * 指数1分钟分时图, 包含 "领先" 价格 -- 指数黄线, 等权
+     * 东方财富 并无 指数的黄线 的称呼, 借用同花顺的称呼为 "领先价格"
+     * 日期间隔为 1分钟
+     * http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0
+     * http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58
+     * &mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0
+     * 该api为实时推送 : 响应头Transfer-Encoding: chunked
+     */
+    public static DataFrame<Object> getIndexFsWithLeadPrice() throws IOException {
+//        HashMap<String, Object> params = new HashMap<>();
+//        params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
+//        params.put("fields2", "f51,f52,f53,f54,f55,f56,f57,f58");
+//        params.put("mpi", 1000);
+//        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+//        params.put("secid", "1.000001");
+//        params.put("ndays", "2");
+//        params.put("iscr", 0);
+//        params.put("iscca", 0);
+
+        String url0 = "http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0";
+//        String response;
+
+        URL url = new URL(url0);
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        // 这儿根据自己的情况选择get或post
+        urlConnection.setRequestMethod("GET");
+        urlConnection.setDoOutput(true);
+        urlConnection.setDoInput(true);
+        urlConnection.setUseCaches(false);
+        urlConnection.setRequestProperty("Connection", "Keep-Alive");
+        urlConnection.setRequestProperty("Charset", "UTF-8");
+        //读取过期时间（很重要，建议加上）
+        urlConnection.setReadTimeout(6 * 1000);
+        // text/plain模式
+        urlConnection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+        InputStream inputStream = urlConnection.getInputStream();
+        InputStream is = new BufferedInputStream(inputStream);
+
+
+
+//        String res = null;
+//        int i = 0;
+//        HttpRequest request =
+//                new HttpRequest(url)
+//                        .method(Method.GET)
+//                        .form(params)
+//                        .timeout(3000)
+//                        .setReadTimeout(5000)
+//                        .header(Header.ACCEPT, "text/event-stream")
+//                        .header(Header.ACCEPT_ENCODING, "gzip, deflate")
+//                        .header(Header.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9")
+//                        .header(Header.CACHE_CONTROL, "no-cache")
+//                        .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
+//                        .header(Header.HOST, "35.push2his.eastmoney.com")
+//                        .header(Header.ORIGIN, "http://quote.eastmoney.com")
+//                        .header(Header.REFERER, "http://quote.eastmoney.com")
+//                        .header(Header.USER_AGENT,
+//                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36");
+//        request.execute();
+//        InputStream inputStream = request.getConnection().getInputStream();
+//        InputStream is = new BufferedInputStream(inputStream);
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                // 处理数据接口
+                Console.log(line);
+            }
+            // 当服务器端主动关闭的时候，客户端无法获取到信号。现在还不清楚原因。所以无法执行的此处。
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new IOException("关闭数据流！");
+        }
+        return null;
+    }
+
+    /**
      * 1分钟分时数据, 本身使用 getQuoteHistorySingle().
      * 日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
      *
@@ -1026,6 +1114,7 @@ public class EmQuoteApi {
         }
         return null;
     }
+
 
     /**
      * 获取上一交易日

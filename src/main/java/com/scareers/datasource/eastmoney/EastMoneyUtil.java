@@ -102,6 +102,7 @@ public class EastMoneyUtil {
             i++;
             try {
                 res = request.execute().body();
+                Console.log(res);
             } catch (Exception e) {
                 if (i > retry) {
                     throw e;

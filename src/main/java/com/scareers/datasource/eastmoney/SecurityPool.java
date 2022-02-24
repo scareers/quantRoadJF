@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @date: 2022/2/14/014-17:05:04
  */
 public class SecurityPool {
+
     /**
      * 所有 SecurityBeanEm, 包括所有股票,指数,板块. 自身不直接all元素, 其他分类股票池添加时, 均会添加到此集合
      */
@@ -81,6 +82,14 @@ public class SecurityPool {
 
     private static final Log log = LogUtil.getLogger();
 
+    static {
+        try {
+            addToKeyBKs(SecurityBeanEm.createBK("bk0951"));
+            addToKeyBKs(SecurityBeanEm.createBK("bk1030"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     /*
     @key: 全局股票池. 例如供 FsFetcher 等爬虫遍历的股票池; 仅提高copy方法, 自行实现逻辑. 一般组合以上7种基本的股票池, 作为爬取对象

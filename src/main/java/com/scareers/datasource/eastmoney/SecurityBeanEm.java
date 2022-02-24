@@ -570,7 +570,7 @@ public class SecurityBeanEm {
                 builder.append("]</font>"); // 简单形式
             } else if (this.type == 3) {
                 builder.append(" <font color=\"purple\">["); // 紫色表示今日选股且昨日持仓
-                builder.append("昨日持仓");
+                builder.append("昨持今择");
                 builder.append("]</font>"); // 简单形式
             } else {
                 builder.append(" <font color=\"red\">[");
