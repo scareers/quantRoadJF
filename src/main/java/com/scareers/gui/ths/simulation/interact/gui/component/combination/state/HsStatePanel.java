@@ -1,32 +1,19 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.ChartUtil;
+import com.scareers.utils.charts.ValueMarkerS;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.AxisLabelLocation;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.ValueAxis;
-import org.jfree.chart.entity.CategoryItemEntity;
-import org.jfree.chart.entity.ChartEntity;
-import org.jfree.chart.entity.PlotEntity;
-import org.jfree.chart.entity.XYItemEntity;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.*;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.urls.StandardXYURLGenerator;
-import org.jfree.data.Range;
-import org.jfree.data.category.CategoryDataset;
-import org.jfree.data.xy.XYDataset;
-import org.jfree.data.xy.XYIntervalSeriesCollection;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.LengthAdjustmentType;
 import org.jfree.ui.RectangleAnchor;
 import org.jfree.ui.TextAnchor;
@@ -34,8 +21,6 @@ import org.jfree.ui.TextAnchor;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.scareers.utils.CommonUtil.toStringCheckNull;
 
@@ -50,7 +35,6 @@ import static com.scareers.utils.CommonUtil.toStringCheckNull;
  */
 public class HsStatePanel extends DisplayPanel {
     HsState state; // 首次展示的对象, 当调用update时, 更新该属性
-    HsState preState;
     JPanel baseInfoPanel;
 
     JLabel stockCodeLabel = new JLabel("股票代码");
@@ -92,9 +76,8 @@ public class HsStatePanel extends DisplayPanel {
     ChartPanel cdfChartPanel;
 
 
-    public HsStatePanel(HsState state, HsState preState) {
+    public HsStatePanel(HsState state) {
         this.state = state;
-        this.preState = preState;
         this.setBackground(Color.white);
         this.setLayout(new FlowLayout(FlowLayout.LEFT));
 
@@ -166,7 +149,7 @@ public class HsStatePanel extends DisplayPanel {
 
 
         initPdfChartPanel();
-        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
+        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfListOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
         cdfChartPanel.setPreferredSize(new Dimension(500, 270));
@@ -177,9 +160,8 @@ public class HsStatePanel extends DisplayPanel {
         this.add(cdfChartPanel); // 左浮动
     }
 
-    public void update(HsState state, HsState preState) {
+    public void update(HsState state) {
         this.state = state;
-        this.preState = preState;
         this.update();
     }
 
@@ -205,18 +187,35 @@ public class HsStatePanel extends DisplayPanel {
 
         updatePdfChartPanel(); // 更新pdf图表. 并不重新实例化图表, 仅需要更新数据对象 XYSeries pdfXYSeries;
 
-        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfOfHighSell(),
+        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfListOfHighSell(),
                 this.state.getTicksOfHighSell(), false));
     }
 
     private void updatePdfChartPanel() {
-        List<Double> xs = this.state.getTicksOfHighSell();
-        List<Double> ys = this.state.getWeightsOfHighSell();
+        List<Double> xs = this.state.getStdTicksOfTodayChgP();
+        List<Double> ys = this.state.getStdPdfOfTodayChgP(xs);
         pdfXYSeries.clear();
         for (int i = 0; i < ys.size(); i++) {
             pdfXYSeries.add(xs.get(i), ys.get(i));
         }
 
+        if (this.state.getNewPriceTrans() != null && this.state.getPreClosePrice() != null) {
+            // 改变marker值
+            double markerValueX = this.state.getNewPriceTrans() / this.state.getPreClosePrice() - 1; // 当前涨跌幅
+            markerX.setValue(markerValueX);
+            markerX.setLabel(ChartUtil.decimalFormatForPercent.format(markerValueX)); //线条上显示的文本
+
+            double rawTick = this.state.getPreClosePrice() * (1 + markerValueX) / this.state.getPre2ClosePrice() - 1;
+            Double markerValueY = HsState.pdfHs(this.state.getTicksOfHighSell(), this.state.getPdfListOfHighSell(),
+                    rawTick);
+            markerY.setValue(markerValueY);
+            markerY.setLabel(ChartUtil.decimalFormatForPercent.format(markerValueY));
+        } else {
+            if (pdfXYPlot != null) {
+                pdfXYPlot.removeDomainMarker(markerX); // 价格无效时删除
+                pdfXYPlot.removeRangeMarker(markerY); // 价格无效时删除
+            }
+        }
     }
 
     XYSeries pdfXYSeries;
@@ -226,14 +225,11 @@ public class HsStatePanel extends DisplayPanel {
 
 
     protected void initPdfChartPanel() {
-
-        List<Double> xs = this.state.getTicksOfHighSell();
-        List<Double> ys = this.state.getWeightsOfHighSell();
-
         pdfXYSeries = new XYSeries("pdf");
-        for (int i = 0; i < ys.size(); i++) {
-            pdfXYSeries.add(xs.get(i), ys.get(i));
-        }
+        initDomainMarkerForCurrentPrice();
+
+        updatePdfChartPanel();
+
         pdfDataSet = new XYSeriesCollection();
         pdfDataSet.addSeries(pdfXYSeries);
 
@@ -248,6 +244,10 @@ public class HsStatePanel extends DisplayPanel {
         pdfXYPlot.setOrientation(PlotOrientation.VERTICAL);
         renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
         renderer.setURLGenerator(new StandardXYURLGenerator());
+
+        pdfXYPlot.addDomainMarker(markerX); // 直接添加价格marker, 将会在价格无效时删除
+        pdfXYPlot.addRangeMarker(markerY); // 直接添加价格marker, 将会在价格无效时删除
+
         pdfChart = new JFreeChart(null, JFreeChart.DEFAULT_TITLE_FONT,
                 pdfXYPlot, false);
         pdfChart.setBackgroundPaint(ChartColor.WHITE);
@@ -257,6 +257,36 @@ public class HsStatePanel extends DisplayPanel {
         pdfChartPanel.setRangeZoomable(false);
         pdfChartPanel.setMouseZoomable(false);
         pdfChartPanel.setPreferredSize(new Dimension(500, 270));
+    }
+
+    ValueMarkerS markerX;
+    ValueMarkerS markerY;
+
+    /**
+     * 为当前价格创建 marker, 且marker应实时更新, 放入 updatePdfChartPanel()逻辑
+     */
+    protected void initDomainMarkerForCurrentPrice() {
+        // 3.4: 同理, 创建y值 横向marker
+        markerY = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
+        markerY.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER); // 标志类型
+        markerY.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+        markerY.setPaint(Color.green); //线条颜色
+        markerY.setStroke(new BasicStroke(1.0F)); //粗细
+        markerY.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
+        markerY.setLabelPaint(Color.red);
+        markerY.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+        markerY.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+
+        markerX = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
+        markerX.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
+        markerX.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+        markerX.setPaint(Color.red); //线条颜色
+        markerX.setStroke(new BasicStroke(1.0F)); //粗细
+        markerX.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
+        markerX.setLabelPaint(Color.green);
+        markerX.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);
+        markerX.setLabelTextAnchor(TextAnchor.TOP_RIGHT);
+
     }
 
 

@@ -4,30 +4,20 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
-import eu.verdelhan.ta4j.indicators.helpers.AmountIndicator;
 import joinery.DataFrame;
 import org.jfree.chart.*;
 import org.jfree.chart.axis.*;
-import org.jfree.chart.entity.CategoryItemEntity;
-import org.jfree.chart.entity.JFreeChartEntity;
 import org.jfree.chart.entity.PlotEntity;
-import org.jfree.chart.labels.StandardCategoryToolTipGenerator;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.plot.*;
-import org.jfree.chart.renderer.category.CategoryItemRenderer;
-import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.chart.urls.StandardCategoryURLGenerator;
 import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.data.Range;
 import org.jfree.data.category.CategoryDataset;
@@ -37,14 +27,9 @@ import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
-import org.jfree.data.xy.DefaultXYDataset;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.ApplicationFrame;
-import org.jfree.ui.LengthAdjustmentType;
-import org.jfree.ui.RectangleAnchor;
-import org.jfree.ui.TextAnchor;
+import org.jfree.ui.*;
 
 import java.awt.*;
 import java.io.File;
@@ -52,7 +37,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -461,82 +446,109 @@ public class ChartUtil {
         return dataset;
     }
 
+    public static DecimalFormat decimalFormatForPercent = new DecimalFormat();
+
+    static {
+        decimalFormatForPercent.applyPattern("####0.00%");
+    }
+
     /**
      * 针对 XYPlot 图表(单图), 鼠标移动时的十字线功能 监听器
      *
      * @return
      */
     public static ChartMouseListener getCrossLineListenerForSingleXYPlot() {
-        return new ChartMouseListener() {
-            @Override
-            public void chartMouseClicked(ChartMouseEvent event) {
-            }
-
-            @Override
-            public void chartMouseMoved(ChartMouseEvent event) {
-                // 1.只监听 XYPlot 上的鼠标移动, 其他类型无视; 获取 xyplot对象
-                if (event.getEntity() == null) {
-                    return;
-                }
-                if (!(event.getEntity() instanceof PlotEntity)) {
-                    return;
-                }
-                if (!(event.getChart().getPlot() instanceof XYPlot)) {
-                    return;
-                }
-                XYPlot plot = (XYPlot) event.getChart().getPlot();
-
-                // 2.ChartPanel 对象
-                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
-
-                // 3.事件发生的坐标, 对比屏幕中的数据区域, 所占百分比位置, 对应两个坐标轴值range百分比, 求出鼠标点对应的 x,y值
-                // 3.1: 求鼠标当前位置, 对应的x值
-                double cursorX = event.getTrigger().getX(); // 鼠标位置
-                double minX = chartPanel.getScreenDataArea().getMinX();
-                double maxX = chartPanel.getScreenDataArea().getMaxX(); // 图最大最小y
-                double percentX = (maxX - cursorX) / (maxX - minX); // 从下到上部分百分比, 后面计算 value Range同百分比的x值即可
-                ValueAxis domainAxis = plot.getDomainAxis();
-                Range rangeX = domainAxis.getRange();
-                Double markerValueX = rangeX.getUpperBound() - rangeX.getLength() * percentX; // 同百分比取得marker位置
-
-                DecimalFormat decimalFormat = new DecimalFormat();
-                decimalFormat.applyPattern("####0.00%");
-                // 3.2: 删除所有DomainMarkers, 新建对应x值得 Marker并设置. 可得到十字竖线
-                ValueMarker valuemarker2 = new ValueMarker(markerValueX); // 水平线的值, 昨日收盘
-                valuemarker2.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-                valuemarker2.setPaint(Color.red); //线条颜色
-                valuemarker2.setStroke(new BasicStroke(1.0F)); //粗细
-                valuemarker2.setLabel(decimalFormat.format(markerValueX)); //线条上显示的文本
-                valuemarker2.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
-                valuemarker2.setLabelPaint(Color.red);
-                valuemarker2.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
-                valuemarker2.setLabelTextAnchor(TextAnchor.TOP_LEFT);
-                plot.clearDomainMarkers();
-                plot.addDomainMarker(valuemarker2);
-
-                // 3.3: 同理, 求出鼠标对应y值
-                double cursorY = event.getTrigger().getY(); // 鼠标位置
-                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
-                double minY = chartPanel.getScreenDataArea().getMinY();
-                double percentY = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
-                ValueAxis rangeAxis = plot.getRangeAxis();
-                Range range = rangeAxis.getRange();
-                Double markerValueY = range.getLowerBound() + range.getLength() * percentY; // 同百分比取得marker位置
-                // 3.4: 同理, 创建y值 横向marker
-                ValueMarker valuemarker = new ValueMarker(markerValueY); // 水平线的值, 昨日收盘
-                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-                valuemarker.setPaint(Color.red); //线条颜色
-                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
-                valuemarker.setLabel(decimalFormat.format(markerValueY)); //线条上显示的文本
-                valuemarker.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
-                valuemarker.setLabelPaint(Color.red);
-                valuemarker.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);
-                valuemarker.setLabelTextAnchor(TextAnchor.TOP_RIGHT);
-                plot.clearRangeMarkers();
-                plot.addRangeMarker(valuemarker);
-
-
-            }
-        };
+        return new CrossLineListenerForSingleXYPlot();
+//        return new ChartMouseListener() {
+//
+//
+//            @Override
+//            public void chartMouseClicked(ChartMouseEvent event) {
+//            }
+//
+//
+//
+//            @Override
+//            public void chartMouseMoved(ChartMouseEvent event) {
+//                // 1.只监听 XYPlot 上的鼠标移动, 其他类型无视; 获取 xyplot对象
+//                if (event.getEntity() == null) {
+//                    return;
+//                }
+//                if (!(event.getEntity() instanceof PlotEntity)) {
+//                    return;
+//                }
+//                if (!(event.getChart().getPlot() instanceof XYPlot)) {
+//                    return;
+//                }
+//                XYPlot plot = (XYPlot) event.getChart().getPlot();
+//
+//                // 2.ChartPanel 对象
+//                ChartPanel chartPanel = (ChartPanel) event.getTrigger().getSource();
+//
+//                // 3.事件发生的坐标, 对比屏幕中的数据区域, 所占百分比位置, 对应两个坐标轴值range百分比, 求出鼠标点对应的 x,y值
+//                // 3.1: 求鼠标当前位置, 对应的x值
+//                double cursorX = event.getTrigger().getX(); // 鼠标位置
+//                double minX = chartPanel.getScreenDataArea().getMinX();
+//                double maxX = chartPanel.getScreenDataArea().getMaxX(); // 图最大最小y
+//                double percentX = (maxX - cursorX) / (maxX - minX); // 从下到上部分百分比, 后面计算 value Range同百分比的x值即可
+//                ValueAxis domainAxis = plot.getDomainAxis();
+//                Range rangeX = domainAxis.getRange();
+//                Double markerValueX = rangeX.getUpperBound() - rangeX.getLength() * percentX; // 同百分比取得marker位置
+//
+//                // 3.2: 删除所有DomainMarkers, 新建对应x值得 Marker并设置. 可得到十字竖线
+//                ValueMarkerS valuemarkerX = new ValueMarkerS(markerValueX); // 水平线的值, 昨日收盘
+//                valuemarkerX.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER); // 标志类型
+//                valuemarkerX.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+//                valuemarkerX.setPaint(Color.red); //线条颜色
+//                valuemarkerX.setStroke(new BasicStroke(1.0F)); //粗细
+//                valuemarkerX.setLabel(decimalFormatForPercent.format(markerValueX)); //线条上显示的文本
+//                valuemarkerX.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
+//                valuemarkerX.setLabelPaint(Color.red);
+//                valuemarkerX.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+//                valuemarkerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+//                Collection domainMarkers = plot.getDomainMarkers(Layer.FOREGROUND);
+//                for (Object domainMarker : domainMarkers) {
+//                    if (domainMarker instanceof ValueMarkerS) {
+//                        ValueMarkerS markerS = (ValueMarkerS) domainMarker;
+//                        if (markerS.getType() == ValueMarkerS.Type.MOUSE_CROSS_MARKER) {
+//                            plot.removeDomainMarker(markerS);
+//                        }
+//                    }
+//                }
+//                plot.addDomainMarker(valuemarkerX);
+//
+//                // 3.3: 同理, 求出鼠标对应y值
+//                double cursorY = event.getTrigger().getY(); // 鼠标位置
+//                double maxY = chartPanel.getScreenDataArea().getMaxY(); // 图最大最小y
+//                double minY = chartPanel.getScreenDataArea().getMinY();
+//                double percentY = (maxY - cursorY) / (maxY - minY); // 从下到上部分百分比, 后面计算 value Range同百分比的y值即可
+//                ValueAxis rangeAxis = plot.getRangeAxis();
+//                Range range = rangeAxis.getRange();
+//                Double markerValueY = range.getLowerBound() + range.getLength() * percentY; // 同百分比取得marker位置
+//                // 3.4: 同理, 创建y值 横向marker
+//                ValueMarkerS valuemarker = new ValueMarkerS(markerValueY); // 水平线的值, 昨日收盘
+//                valuemarker.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
+//                valuemarker.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+//                valuemarker.setPaint(Color.red); //线条颜色
+//                valuemarker.setStroke(new BasicStroke(1.0F)); //粗细
+//                valuemarker.setLabel(decimalFormatForPercent.format(markerValueY)); //线条上显示的文本
+//                valuemarker.setLabelFont(new Font("SansSerif", 0, 8)); //文本格式
+//                valuemarker.setLabelPaint(Color.red);
+//                valuemarker.setLabelAnchor(RectangleAnchor.BOTTOM_RIGHT);
+//                valuemarker.setLabelTextAnchor(TextAnchor.TOP_RIGHT);
+//                Collection rangeMarkers = plot.getRangeMarkers(Layer.FOREGROUND);
+//                for (Object rangeMarker : rangeMarkers) {
+//                    if (rangeMarker instanceof ValueMarkerS) {
+//                        ValueMarkerS markerS = (ValueMarkerS) rangeMarker;
+//                        if (markerS.getType() == ValueMarkerS.Type.MOUSE_CROSS_MARKER) {
+//                            plot.removeRangeMarker(markerS);
+//                        }
+//                    }
+//                }
+//                plot.addRangeMarker(valuemarker);
+//
+//
+//            }
+//        };
     }
 }

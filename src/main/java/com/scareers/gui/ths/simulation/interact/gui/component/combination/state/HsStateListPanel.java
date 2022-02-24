@@ -40,6 +40,7 @@ public class HsStateListPanel extends SecurityDisplayPanel {
         jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+        jScrollPane.getVerticalScrollBar().setUnitIncrement(30); // 增加滚动速度
         jScrollPane.setViewportView(kernelPanel);
 
         this.add(jScrollPane, BorderLayout.CENTER);
@@ -64,11 +65,7 @@ public class HsStateListPanel extends SecurityDisplayPanel {
         // 首先对相同数量进行修改, 此时 应当遍历原list, 依次调用update
         // 首次因为没有已存在控件, 因此循环次数为0
         for (int i = 0; i < Math.min(hsStatePanelList.size(), newStates.size()); i++) {
-            if (i == 0) {
-                hsStatePanelList.get(i).update(newStates.get(i), null); // 第一个状态对象, preState为null
-            } else {
-                hsStatePanelList.get(i).update(newStates.get(i), newStates.get(i - 1));
-            }
+            hsStatePanelList.get(i).update(newStates.get(i));
         }
 
         // 然后对新的更多数据, new HsStatePanel控件加入并显式
@@ -79,11 +76,7 @@ public class HsStateListPanel extends SecurityDisplayPanel {
         // 此时有更多的状态. (包括第一次情形)
         for (int i = hsStatePanelList.size(); i < newStates.size(); i++) {
             HsStatePanel panel;
-            if (i == 0) {
-                panel = new HsStatePanel(newStates.get(i), null);
-            } else {
-                panel = new HsStatePanel(newStates.get(i), newStates.get(i - 1));
-            }
+            panel = new HsStatePanel(newStates.get(i));
             panel.update(); // 首次
             kernelPanel.add(panel);
             hsStatePanelList.add(panel);

@@ -59,6 +59,7 @@ public class HsFactorChain {
                 // 对旧状态, 调用因子影响, 获取新状态对象, 加入 状态列表. 注意各状态有深复制语义
                 HsState oldState = getNewestState(); // 获取最新的状态
                 HsState newState = HsState.copyFrom(oldState); // 新状态, 尚未影响, 但是新深复制对象
+                newState.setPreState(oldState);
                 newState = hsFactor.influence(newState); // 执行影响, 真正刷新状态对象
                 newState.setFactorInfluenceMe(hsFactor); // 单纯属性设置
                 hsStates.add(newState); // 添加结果
