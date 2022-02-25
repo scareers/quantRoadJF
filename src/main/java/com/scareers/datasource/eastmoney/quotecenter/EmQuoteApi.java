@@ -82,7 +82,9 @@ public class EmQuoteApi {
 //            log.info(datas.toString());
 //        });
 
-        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
+        Console.log(getStockHandicap("002761", 3000, 3));
+
+//        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
 //        Console.log(getNdayFsAndRealTimePushWithLeadPriceNonSSE(SecurityBeanEm.createIndex("000001"), 30000, 3));
 //        Console.log(getBkMembersQuote(SecurityBeanEm.createBK("BK0917"), 3000, 3));
 
@@ -1146,7 +1148,6 @@ public class EmQuoteApi {
         } catch (Exception e) {
             return null;
         }
-        System.out.println(response);
 
         DataFrame<Object> dfTemp = jsonStrToDf(response, "(", ")",
                 fields,
@@ -1159,13 +1160,6 @@ public class EmQuoteApi {
         return dfTemp;
     }
 
-
-    /*
-
-    http://push2.eastmoney.com/api/qt/slist/get?ut=fa5fd1943c7b386f172d6893dbfba10b&spt=3&pi=0&pz=5&po=1&fields=f14,f3,f128,f12,f13,f100,f102,f103&secid=1.600396&cb=jQuery112409865801999174071_1645779558495&_=1645779558496
-
-
-     */
 
     /**
      * 给定个股, 返回所属板块列表相关.
@@ -1221,6 +1215,7 @@ public class EmQuoteApi {
         return dataFrame;
 
     }
+
 
     /**
      * 1分钟分时数据, 本身使用 getQuoteHistorySingle().

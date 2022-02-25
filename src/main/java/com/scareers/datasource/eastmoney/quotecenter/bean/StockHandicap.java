@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney.quotecenter.bean;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import lombok.Getter;
@@ -242,7 +243,7 @@ public class StockHandicap extends Handicap{
     private void parseAttrs() {
         this.stockCodeSimple = rawJson.getString("f57");
         this.stockName = rawJson.getString("f58");
-
+        Console.log(rawJson);
         this.consignRatio = rawJson.getDouble("f191");
         this.consignDifference = rawJson.getDouble("f192");
 
