@@ -3,13 +3,13 @@ package com.scareers.gui.ths.simulation.strategy.adapter.state;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import lombok.Data;
 
-import javax.naming.event.ObjectChangeListener;
 import java.io.Serializable;
 
 /**
@@ -22,34 +22,35 @@ import java.io.Serializable;
  * @date: 2022/2/20/020-16:57:17
  */
 @Data
-public class HsState2 implements Serializable {
+public class HsState implements Serializable {
     private static final long serialVersionUID = 105102100L;
 
     public static void main(String[] args) throws Exception {
         DefaultStatesPool.initManualSelector();
 
         StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
-        HsState2 state = new HsState2(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
+        HsState state = new HsState(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
                 new FundamentalStateHs());
         Console.log(state);
-        HsState2 state2 = copyFrom(state);
+        HsState state2 = copyFrom(state);
         Console.log(state2);
 
 
     }
 
-    //    protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
-    protected HsState2 preState; // 维护前一状态对象.
+    //
+    protected transient HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
+    protected HsState preState; // 维护前一状态对象.
 
     protected BkStateHs bkStateHs;
     protected StockStateHs stockStateHs;
     protected IndexStateHs indexStateHs;
     protected FundamentalStateHs fundamentalStateHs;
 
-    public HsState2(HsState2 preState, BkStateHs bkStateHs,
-                    StockStateHs stockStateHs,
-                    IndexStateHs indexStateHs,
-                    FundamentalStateHs fundamentalStateHs) {
+    public HsState(HsState preState, BkStateHs bkStateHs,
+                   StockStateHs stockStateHs,
+                   IndexStateHs indexStateHs,
+                   FundamentalStateHs fundamentalStateHs) {
         this.preState = preState;
         this.bkStateHs = bkStateHs;
         this.stockStateHs = stockStateHs;
@@ -66,9 +67,12 @@ public class HsState2 implements Serializable {
      * @param oldState
      * @return
      */
-    public static HsState2 copyFrom(HsState2 oldState) {
-        HsState2 hsState = ObjectUtil.cloneByStream(oldState);
+    public static HsState copyFrom(HsState oldState) {
+        HsState hsState = ObjectUtil.cloneByStream(oldState);
         hsState.getStockStateHs().setBean(oldState.getStockStateHs().getBean());
+        hsState.getStockStateHs().setStockCode(oldState.getStockStateHs().getStockCode());
+        hsState.getStockStateHs().setFsData(oldState.getStockStateHs().getFsData());
+        hsState.getStockStateHs().setFsTransData(oldState.getStockStateHs().getFsTransData());
         return oldState;
     }
 }

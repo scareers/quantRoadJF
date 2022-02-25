@@ -20,6 +20,10 @@ import com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint.Sell
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.index.GlobalIndexPricePercentRealtimeFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.position.PositionAndAmountFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -242,8 +246,9 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         flashActualHighSelledAndCurrentAvailableCertaintyOrInferential();
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
-            HsState hsState = HsState
-                    .createDefaultHsState(SecurityBeanEm.createStock(stock), strategy.getLbHsSelector());
+            StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
+            HsState hsState = new HsState(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
+                    new FundamentalStateHs());
             HsFactorChain factorChain = new HsFactorChain(hsState);
             factorChain.addFactor(new BaseDataFactorHs());
             factorChain.addFactor(new SellPointDecideFactorHs());

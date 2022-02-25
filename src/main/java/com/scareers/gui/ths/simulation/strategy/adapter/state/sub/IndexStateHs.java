@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state.sub;
 
+import lombok.Data;
+
 import java.io.Serializable;
 
 /**
@@ -8,6 +10,7 @@ import java.io.Serializable;
  * @author: admin
  * @date: 2022/2/25/025-18:43:15
  */
+@Data
 public class IndexStateHs implements Serializable {
     private static final long serialVersionUID = 7822512015L;
 

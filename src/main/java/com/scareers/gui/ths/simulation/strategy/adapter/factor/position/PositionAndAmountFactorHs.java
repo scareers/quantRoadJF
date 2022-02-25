@@ -9,6 +9,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
 
@@ -25,11 +26,12 @@ public class PositionAndAmountFactorHs extends HsFactor {
     }
 
     @Override
-    public HsState influence(HsState state) {
+    public HsState influence(HsState state0) {
+        StockStateHs state = state0.getStockStateHs();
         // 1. 此时高卖分布的tick, pdf, cdf已设置好, 被更前端的因子影响. 直接使用 currentPricePercent进行计算
         // 2. 设置cdf中的 具体概率
         state.setCdfProbabilityOfCurrentPricePercent(
-                HsState.cdfHs(
+                StockStateHs.cdfHs(
                         state.getTicksOfHighSell(), state.getPdfListOfHighSell(),
                         state.getNewPricePercentToPre2Close() // 当前涨跌幅,(相对于前2收)
                 ));
@@ -38,7 +40,7 @@ public class PositionAndAmountFactorHs extends HsFactor {
                 Math.min(1.0, state.getCdfRateForPosition() * state.getCdfProbabilityOfCurrentPricePercent()));
 
         if (!state.getSellPointCurrent()) {
-            return state; // 直接返回
+            return state0; // 直接返回
         }
         double shouldSellAmountTotal = state.getTotalPositionNormalized() * state.getAmountsTotalYc().doubleValue();
 
@@ -93,7 +95,7 @@ public class PositionAndAmountFactorHs extends HsFactor {
         }
 
 
-        return state;
+        return state0;
     }
 
 

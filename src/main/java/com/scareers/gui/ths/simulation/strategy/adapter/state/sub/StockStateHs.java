@@ -68,6 +68,8 @@ public class StockStateHs implements Serializable {
     public Integer actualAmountHighSelled; // 今日已经卖出总
     public Integer availableAmountForHs; // 当前可用(可以卖出)的数量
 
+    // 动态
+    protected Boolean sellPointCurrent; // 当前是否为卖点 ?? 默认false
     /**
      * 高卖分布tick, 与pdf, cdf
      */
@@ -87,7 +89,6 @@ public class StockStateHs implements Serializable {
         this.stockCode = bean.getSecCode(); // 不可变
         initTwoTradeDateAndClosePrice(); // 新对象
         initDistribution(); // 深复制
-
         initCdfRateForPosition();
     }
 

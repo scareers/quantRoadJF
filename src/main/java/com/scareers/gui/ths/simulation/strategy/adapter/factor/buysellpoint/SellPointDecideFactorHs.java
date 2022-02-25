@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint;
 import cn.hutool.core.date.DateUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
@@ -26,7 +27,7 @@ public class SellPointDecideFactorHs extends HsFactor {
 
     @Override
     public HsState influence(HsState state) {
-        state.setSellPointCurrent(isSellPoint(state));
+        state.getStockStateHs().setSellPointCurrent(isSellPoint(state));
         return state;
     }
 
@@ -48,7 +49,8 @@ public class SellPointDecideFactorHs extends HsFactor {
      * @return
      * @see SettingsOfFSBacktest
      */
-    public boolean isSellPoint(HsState state) {
+    public boolean isSellPoint(HsState state0) {
+        StockStateHs state = state0.getStockStateHs();
         // 1.x: sell订单,单股票互斥: 在等待队列和正在执行查找所有sell订单, 判定其 stockCode参数是否为本stock,若存在则互斥跳过
         if (Trader.getInstance().getOrderExecutor().executingSellOrderOf(state.getStockCode()) || Trader.getInstance()
                 .getOrderExecutor()

@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.state
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import com.scareers.utils.charts.ChartUtil;
 import com.scareers.utils.charts.ValueMarkerS;
 import org.jfree.chart.*;
@@ -184,8 +185,8 @@ public class HsStatePanel extends DisplayPanel {
 
 
         initPdfChartPanel();
-        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfListOfHighSell(),
-                this.state.getTicksOfHighSell(), false));
+        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
+                this.state.getStockStateHs().getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
         cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
 
@@ -223,88 +224,89 @@ public class HsStatePanel extends DisplayPanel {
     @Override
     protected void update() {
         // 初始化自动设置
-        stockCodeValueLabel.setText(state.getStockCode());
-        stockNameValueLabel.setText(state.getBean().getName());
+        stockCodeValueLabel.setText(state.getStockStateHs().getStockCode());
+        stockNameValueLabel.setText(state.getStockStateHs().getBean().getName());
         factorValueLabel.setText(toStringCheckNull(state.getFactorInfluenceMe()));
-        preDateValueLabel.setText(state.getPreTradeDate());
-        pre2DateValueLabel.setText(state.getPre2TradeDate());
-        preClosePriceValueLabel.setText(toStringCheckNull(state.getPreClosePrice()));
-        pre2ClosePriceValueLabel.setText(toStringCheckNull(state.getPre2ClosePrice()));
+        preDateValueLabel.setText(state.getStockStateHs().getPreTradeDate());
+        pre2DateValueLabel.setText(state.getStockStateHs().getPre2TradeDate());
+        preClosePriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getPreClosePrice()));
+        pre2ClosePriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getPre2ClosePrice()));
         // 动态设置, 可对比显示不同颜色
-        isSellPointValueLabel.setText(toStringCheckNull(state.getSellPointCurrent()));
-        newPriceValueLabel.setText(toStringCheckNull(state.getNewPriceTrans()));
-        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getNewPricePercentToPre2Close()));
-        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexPricePercentThatTime()));
-        cdfProbabilityValueLabel.setText(toStringCheckNull(state.getCdfProbabilityOfCurrentPricePercent()));
-        cdfRateValueLabel.setText(toStringCheckNull(state.getCdfRateForPosition()));
-        totalPositionNormalizedValueLabel.setText(toStringCheckNull(state.getTotalPositionNormalized()));
-        totalAmountYcValueLabel.setText(toStringCheckNull(state.getAmountsTotalYc()));
-        actualAmountSelledValueLabel.setText(toStringCheckNull(state.getActualAmountHighSelled()));
-        availabelAmountValueLabel.setText(toStringCheckNull(state.getAvailableAmountForHs()));
+        isSellPointValueLabel.setText(toStringCheckNull(state.getStockStateHs().getSellPointCurrent()));
+        newPriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPriceTrans()));
+        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPricePercentToPre2Close()));
+        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexStateHs().getIndexPricePercentThatTime()));
+        cdfProbabilityValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent()));
+        cdfRateValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfRateForPosition()));
+        totalPositionNormalizedValueLabel.setText(toStringCheckNull(state.getStockStateHs().getTotalPositionNormalized()));
+        totalAmountYcValueLabel.setText(toStringCheckNull(state.getStockStateHs().getAmountsTotalYc()));
+        actualAmountSelledValueLabel.setText(toStringCheckNull(state.getStockStateHs().getActualAmountHighSelled()));
+        availabelAmountValueLabel.setText(toStringCheckNull(state.getStockStateHs().getAvailableAmountForHs()));
         if (this.preState != null) {
-            changeColorWhenTextDiff(isSellPointLabel, isSellPointValueLabel, Color.red, state.getSellPointCurrent(),
-                    preState.getSellPointCurrent());
-            changeColorWhenTextDiff(newPriceLabel, newPriceValueLabel, Color.red, state.getNewPriceTrans(),
-                    preState.getNewPriceTrans());
+            changeColorWhenTextDiff(isSellPointLabel, isSellPointValueLabel, Color.red, state.getStockStateHs().getSellPointCurrent(),
+                    preState.getStockStateHs().getSellPointCurrent());
+            changeColorWhenTextDiff(newPriceLabel, newPriceValueLabel, Color.red, state.getStockStateHs().getNewPriceTrans(),
+                    preState.getStockStateHs().getNewPriceTrans());
             changeColorWhenTextDiff(chgPercentToPre2cLabel, chgPercentToPre2cValueLabel, Color.red,
-                    state.getNewPricePercentToPre2Close(),
-                    preState.getNewPricePercentToPre2Close());
+                    state.getStockStateHs().getNewPricePercentToPre2Close(),
+                    preState.getStockStateHs().getNewPricePercentToPre2Close());
             changeColorWhenTextDiff(indexPercentLabel, indexPercentValueLabel, Color.red,
-                    state.getIndexPricePercentThatTime(),
-                    preState.getIndexPricePercentThatTime());
+                    state.getIndexStateHs().getIndexPricePercentThatTime(),
+                    preState.getIndexStateHs().getIndexPricePercentThatTime());
             changeColorWhenTextDiff(cdfProbabilityLabel, cdfProbabilityValueLabel, Color.red,
-                    state.getCdfProbabilityOfCurrentPricePercent(),
-                    preState.getCdfProbabilityOfCurrentPricePercent());
+                    state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent(),
+                    preState.getStockStateHs().getCdfProbabilityOfCurrentPricePercent());
             changeColorWhenTextDiff(cdfRateLabel, cdfRateValueLabel, Color.red,
-                    state.getCdfRateForPosition(),
-                    preState.getCdfRateForPosition());
+                    state.getStockStateHs().getCdfRateForPosition(),
+                    preState.getStockStateHs().getCdfRateForPosition());
             changeColorWhenTextDiff(totalPositionNormalizedLabel, totalPositionNormalizedValueLabel, Color.red,
-                    state.getTotalPositionNormalized(),
-                    preState.getTotalPositionNormalized());
+                    state.getStockStateHs().getTotalPositionNormalized(),
+                    preState.getStockStateHs().getTotalPositionNormalized());
             changeColorWhenTextDiff(totalAmountYcLabel, totalAmountYcValueLabel, Color.red,
-                    state.getAmountsTotalYc(),
-                    preState.getAmountsTotalYc());
+                    state.getStockStateHs().getAmountsTotalYc(),
+                    preState.getStockStateHs().getAmountsTotalYc());
             changeColorWhenTextDiff(actualAmountSelledLabel, actualAmountSelledValueLabel, Color.red,
-                    state.getActualAmountHighSelled(),
-                    preState.getActualAmountHighSelled());
+                    state.getStockStateHs().getActualAmountHighSelled(),
+                    preState.getStockStateHs().getActualAmountHighSelled());
             changeColorWhenTextDiff(availabelAmountLabel, availabelAmountValueLabel, Color.red,
-                    state.getAvailableAmountForHs(),
-                    preState.getAvailableAmountForHs());
+                    state.getStockStateHs().getAvailableAmountForHs(),
+                    preState.getStockStateHs().getAvailableAmountForHs());
 
         }
 
         updatePdfChartPanel(); // 更新pdf图表. 并不重新实例化图表, 仅需要更新数据对象 XYSeries pdfXYSeries;
 
-        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getCdfListOfHighSell(),
-                this.state.getTicksOfHighSell(), false));
+        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
+                this.state.getStockStateHs().getTicksOfHighSell(), false));
     }
 
     private void updatePdfChartPanel() {
         // 1. 最新pdf分布线
-        List<Double> xs = this.state.getStdTicksOfTodayChgP();
-        List<Double> ys = this.state.getStdPdfOfTodayChgP(xs);
+        List<Double> xs = this.state.getStockStateHs().getStdTicksOfTodayChgP();
+        List<Double> ys = this.state.getStockStateHs().getStdPdfOfTodayChgP(xs);
         pdfXYSeries.clear();
         for (int i = 0; i < ys.size(); i++) {
             pdfXYSeries.add(xs.get(i), ys.get(i));
         }
         // 2. 尝试前一状态分布线
         if (this.preState != null) {
-            List<Double> xsPre = this.preState.getStdTicksOfTodayChgP();
-            List<Double> ysPre = this.preState.getStdPdfOfTodayChgP(xs);
+            List<Double> xsPre = this.preState.getStockStateHs().getStdTicksOfTodayChgP();
+            List<Double> ysPre = this.preState.getStockStateHs().getStdPdfOfTodayChgP(xs);
             pdfXYSeriesPre.clear();
             for (int i = 0; i < xsPre.size(); i++) {
                 pdfXYSeriesPre.add(xsPre.get(i), ysPre.get(i));
             }
         }
 
-        if (this.state.getNewPriceTrans() != null && this.state.getPreClosePrice() != null) {
+        if (this.state.getStockStateHs().getNewPriceTrans() != null && this.state.getStockStateHs().getPreClosePrice() != null) {
             // 改变marker值
-            double markerValueX = this.state.getNewPriceTrans() / this.state.getPreClosePrice() - 1; // 当前涨跌幅
+            double markerValueX = this.state.getStockStateHs().getNewPriceTrans() / this.state.getStockStateHs().getPreClosePrice() - 1; // 当前涨跌幅
             markerX.setValue(markerValueX);
             markerX.setLabel(ChartUtil.decimalFormatForPercent.format(markerValueX)); //线条上显示的文本
 
-            double rawTick = this.state.getPreClosePrice() * (1 + markerValueX) / this.state.getPre2ClosePrice() - 1;
-            Double markerValueY = HsState.pdfHs(this.state.getTicksOfHighSell(), this.state.getPdfListOfHighSell(),
+            double rawTick = this.state.getStockStateHs().getPreClosePrice() * (1 + markerValueX) / this.state.getStockStateHs().getPre2ClosePrice() - 1;
+            Double markerValueY = StockStateHs.pdfHs(this.state.getStockStateHs().getTicksOfHighSell(),
+                    this.state.getStockStateHs().getPdfListOfHighSell(),
                     rawTick);
             markerY.setValue(markerValueY);
             markerY.setLabel(ChartUtil.decimalFormatForPercent.format(markerValueY));

@@ -5,6 +5,7 @@ import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
 
@@ -21,8 +22,8 @@ public class BaseDataFactorHs extends HsFactor {
     }
 
     @Override
-    public HsState influence(HsState state) {
-
+    public HsState influence(HsState state0) {
+        StockStateHs state = state0.getStockStateHs();
         state.setFsData(FsFetcher.getFsData(state.getBean()));
         state.setFsTransData(FsTransactionFetcher.getFsTransData(state.getBean()));
         state.setNewPriceTrans(FsTransactionFetcher.getNewestPrice(state.getBean()));
@@ -34,7 +35,7 @@ public class BaseDataFactorHs extends HsFactor {
                 LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap.get(state.getStockCode()));
         state.setAvailableAmountForHs(LowBuyHighSellStrategyAdapter.availableAmountForHsMap.get(state.getStockCode()));
 
-        return state;
+        return state0;
     }
 
 
