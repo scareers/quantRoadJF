@@ -16,6 +16,8 @@ import java.util.List;
  * @date: 2022/2/19/019-18:53:16
  */
 public abstract class LbHsSelector implements StockSelect {
+
+
     protected List<Double> ticksOfLowBuy; // [0.11, 0.105, 0.1, 0.095, 0.09, 0.085, 0.08, 0.075, ...
     protected List<Double> weightsOfLowBuy; // 44数据
     protected List<Double> ticksOfHighSell; // [-0.215, -0.21, -0.205, -0.2, -0.195, -0.19, -0.185, ..

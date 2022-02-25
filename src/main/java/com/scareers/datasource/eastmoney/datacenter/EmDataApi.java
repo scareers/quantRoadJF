@@ -4,8 +4,10 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
 import java.util.Arrays;
@@ -77,6 +79,8 @@ public class EmDataApi {
         return dfTemp;
     }
 
+    private static final Log log = LogUtil.getLogger();
+
     /**
      * 仅获取停牌股票代码列表
      *
@@ -88,7 +92,8 @@ public class EmDataApi {
     public static List<String> getSuspensionStockCodes(String date, int timeout, int retry) {
         DataFrame<Object> suspensions = getSuspensions(date, timeout, retry);
         if (suspensions == null) {
-            return null;
+            log.error("getSuspensionStockCodes: 获取今日停牌数据失败, 返回空列表");
+            return Arrays.asList();
         } else {
             return DataFrameS.getColAsStringList(suspensions, "资产代码");
         }
