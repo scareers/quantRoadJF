@@ -1,8 +1,5 @@
 package com.scareers.datasource.eastmoney.quotecenter;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateTime;
@@ -14,32 +11,35 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.Header;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.Method;
-import com.alibaba.fastjson.JSONObject;
-import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.annotations.CanCache;
+import com.scareers.annotations.SseUsing;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.bean.IndexBkHandicap;
 import com.scareers.datasource.eastmoney.quotecenter.bean.StockHandicap;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
-import org.checkerframework.checker.units.qual.C;
+import lombok.SneakyThrows;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
-import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.*;
-import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.HEADER_VALUE_OF_ACCEPT_ENCODING;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_CODE;
+import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_NAME;
+import static com.scareers.utils.CommonUtil.countNonZeroValueOfMap;
+import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
 /**
@@ -54,6 +54,8 @@ public class EmQuoteApi {
     public static Map<Object, Object> EASTMONEY_QUOTE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> EASTMONEY_KLINE_FIELDS = new ConcurrentHashMap<>();
     public static Map<String, Object> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
+    public static Map<Object, Object> BK_MEMBER_FIELDS = new ConcurrentHashMap<>();
+    public static Map<Object, Object> BKS_STOCK_BELONG_TO_FIELDS = new ConcurrentHashMap<>();
     public static final List<String> fSTransactionCols = Arrays.asList("stock_code", "market", "time_tick", "price",
             "vol", "bs"); // 分时成交数据列名称
 
@@ -73,7 +75,16 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
-        Console.log(getIndexFsWithLeadPrice());
+
+
+//        getNdayFsAndRealTimePushWithLeadPriceSSEAsync(SecurityBeanEm.createIndex("000001"), (lineO) -> {
+//            DataFrame<Object> datas = (DataFrame<Object>) lineO;
+//            log.info(datas.toString());
+//        });
+
+        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
+//        Console.log(getNdayFsAndRealTimePushWithLeadPriceNonSSE(SecurityBeanEm.createIndex("000001"), 30000, 3));
+//        Console.log(getBkMembersQuote(SecurityBeanEm.createBK("BK0917"), 3000, 3));
 
 //        Console.log(MARKETS_ARGS_DICT.keySet());
 //
@@ -123,7 +134,7 @@ public class EmQuoteApi {
 //        Console.log(getPreTradeDateStrict(DateUtil.today()));
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 2));
 
-
+        waitForever();
     }
 
     static {
@@ -131,6 +142,8 @@ public class EmQuoteApi {
         initEASTMONEYQUOTEFIELDS();
         initMARKETNUMBERDICT();
         initEASTMONEYKLINEFIELDS();
+        initBK_MEMBER_FIELDS();
+        initBKS_STOCK_BELONG_TO_FIELDS();
 
         initFlushTimesMap(); // 刷新时间警告提示
         notifyFlushTimes();
@@ -952,82 +965,261 @@ public class EmQuoteApi {
     }
 
     /**
-     * 指数1分钟分时图, 包含 "领先" 价格 -- 指数黄线, 等权
+     * 获取最多最近5天 以及实时 3秒 推送行情. 指数包含领先价格, 板块和个股则为最新价格;
+     * 该api为东财行情页面的 1到5天 分时图访问的api -------------->
+     * 指数1分钟分时图, 包含 "领先" 价格
      * 东方财富 并无 指数的黄线 的称呼, 借用同花顺的称呼为 "领先价格"
-     * 日期间隔为 1分钟
      * http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0
-     * http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58
-     * &mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0
-     * 该api为实时推送 : 响应头Transfer-Encoding: chunked
+     * 该api为 sse (server send event)实时推送版本
+     * <p>
+     * http://push2his.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&ndays=2&iscr=0&secid=1.600936&cb=jQuery112402244901968973796_1645759444940&_=1645759444958
+     * 该api为一次get版本.
+     * <p>
+     * 对于历史数据, 时间间隔为1分钟. 对于实时数据, 将3s推送
+     * 建议仅用推送访问两大指数!
+     *
+     * @data 单条数据形如: [2022-02-25 13:21, 3452.48, 3452.48, 3452.48, 3452.48, 65750, 86294746.00, 3466.431]
+     * @fields 时间, 开盘, 收盘, 最高, 最低, 成交量, 成交额, 领先价
+     * @flush 指数和个股, 3s刷新一条, 板块为6s刷新一条
+     * @noti 默认新建线程异步访问, 需传递回调函数. 主线程自行保证不终止
      */
-    public static DataFrame<Object> getIndexFsWithLeadPrice() throws IOException {
-//        HashMap<String, Object> params = new HashMap<>();
-//        params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
-//        params.put("fields2", "f51,f52,f53,f54,f55,f56,f57,f58");
-//        params.put("mpi", 1000);
-//        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
-//        params.put("secid", "1.000001");
-//        params.put("ndays", "2");
-//        params.put("iscr", 0);
-//        params.put("iscca", 0);
+    @SseUsing(callbackType = " DataFrame<Object> ", description = "单行 df")
+    public static void getNdayFsAndRealTimePushWithLeadPriceSSEAsync(SecurityBeanEm bean,
+                                                                     SseCallback callback) {
+        String url0 = "http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9," +
+                "f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57," +
+                "f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=" + bean
+                .getQuoteId() + "&ndays=2&iscr=0&iscca=0";
 
-        String url0 = "http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=1.000001&ndays=2&iscr=0&iscca=0";
-//        String response;
+        ThreadUtil.execAsync(new Runnable() {
+            @SneakyThrows
+            @Override
+            public void run() {
+                try {
+                    URL url = new URL(url0);
+                    HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                    // 这儿根据自己的情况选择get或post
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.setDoOutput(true);
+                    urlConnection.setDoInput(true);
+                    urlConnection.setUseCaches(false);
+                    urlConnection.setRequestProperty("Connection", "Keep-Alive");
+                    urlConnection.setRequestProperty("Charset", "UTF-8");
+                    //读取过期时间（很重要）
+                    urlConnection.setReadTimeout(Integer.MAX_VALUE);
+                    urlConnection.setConnectTimeout(3000);
+                    // text/plain模式
+                    urlConnection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
+                    InputStream inputStream = urlConnection.getInputStream();
+                    InputStream is = new BufferedInputStream(inputStream);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                    String line = "";
+                    while ((line = reader.readLine()) != null) {
+                        if (line.length() <= 1) {
+                            continue;
+                        }
+                        String substring = line.substring(line.indexOf("{"), line.lastIndexOf("}") + 1);
+                        JSONObject jsonObject = JSONUtilS.parseObj(substring); // null 将被省略
+                        if (jsonObject.getString("data") == null) {
+                            continue;
+                        }
+                        JSONArray data = (JSONArray) JSONUtilS.getByPath(jsonObject, "data.trends");
+                        for (Object datum : data) {
+                            String s = datum.toString();
+                            List<String> split = StrUtil.split(s, ",");
 
-        URL url = new URL(url0);
-        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-        // 这儿根据自己的情况选择get或post
-        urlConnection.setRequestMethod("GET");
-        urlConnection.setDoOutput(true);
-        urlConnection.setDoInput(true);
-        urlConnection.setUseCaches(false);
-        urlConnection.setRequestProperty("Connection", "Keep-Alive");
-        urlConnection.setRequestProperty("Charset", "UTF-8");
-        //读取过期时间（很重要，建议加上）
-        urlConnection.setReadTimeout(6 * 1000);
-        // text/plain模式
-        urlConnection.setRequestProperty("Content-Type", "text/plain; charset=UTF-8");
-        InputStream inputStream = urlConnection.getInputStream();
-        InputStream is = new BufferedInputStream(inputStream);
-
-
-
-//        String res = null;
-//        int i = 0;
-//        HttpRequest request =
-//                new HttpRequest(url)
-//                        .method(Method.GET)
-//                        .form(params)
-//                        .timeout(3000)
-//                        .setReadTimeout(5000)
-//                        .header(Header.ACCEPT, "text/event-stream")
-//                        .header(Header.ACCEPT_ENCODING, "gzip, deflate")
-//                        .header(Header.ACCEPT_LANGUAGE, "zh-CN,zh;q=0.9")
-//                        .header(Header.CACHE_CONTROL, "no-cache")
-//                        .header(Header.CONNECTION, HEADER_VALUE_OF_CONNECTION)
-//                        .header(Header.HOST, "35.push2his.eastmoney.com")
-//                        .header(Header.ORIGIN, "http://quote.eastmoney.com")
-//                        .header(Header.REFERER, "http://quote.eastmoney.com")
-//                        .header(Header.USER_AGENT,
-//                                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36");
-//        request.execute();
-//        InputStream inputStream = request.getConnection().getInputStream();
-//        InputStream is = new BufferedInputStream(inputStream);
-
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                // 处理数据接口
-                Console.log(line);
+                            DataFrame<Object> dataFrame = new DataFrame<>(
+                                    Arrays.asList("日期", "开盘", "收盘", "最高", "最低", "成交量", "成交额"
+                                            , "领先"));
+                            dataFrame.append(split);
+                            callback.processLine(dataFrame);
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new Exception("sse 访问失败!");
+                }
             }
-            // 当服务器端主动关闭的时候，客户端无法获取到信号。现在还不清楚原因。所以无法执行的此处。
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new IOException("关闭数据流！");
+        }, true);
+    }
+
+    /**
+     * 类似上, 不使用sse, 使用单次get.
+     * 获取得到带有 leadPrice的 1分钟分时图. 最后一分钟的数据动态, 且超1,类似普通1分钟分时图
+     * "http://push2his.eastmoney.com/api/qt/stock/trends2/get?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58&ut=fa5fd1943c7b386f172d6893dbfba10b&ndays=2&iscr=0&secid=1.600936&cb=jQuery112402244901968973796_1645759444940&_=1645759444958";
+     * "http://push2his.eastmoney.com/api/qt/stock/trends2/get?
+     * fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57,f58
+     * &ut=fa5fd1943c7b386f172d6893dbfba10b&ndays=2&iscr=0&secid=1.600936&cb=jQuery112402244901968973796_1645759444940&_=1645759444958";
+     *
+     * @param bean
+     * @return
+     */
+    public static DataFrame<Object> getNdayFsAndRealTimePushWithLeadPriceNonSSE(SecurityBeanEm bean, int timeout,
+                                                                                int retry) {
+        // String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get"; 普通k线
+        String url = "http://push2his.eastmoney.com/api/qt/stock/trends2/get";
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
+        params.put("fields2", "f51,f52,f53,f54,f55,f56,f57,f58");
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("ndays", "1"); // 天数, 最多5
+        params.put("iscr", "0");
+        params.put("secid", bean.getQuoteId());
+        params.put("cb", "jQuery112402244901968973796_" + (System.currentTimeMillis() - 1));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
         }
-        return null;
+        System.out.println(response);
+
+        DataFrame<Object> dfTemp = jsonStrToDf(response, "(", ")",
+                Arrays.asList("日期", "开盘", "收盘", "最高", "最低", "成交量", "成交额", "领先"),
+                Arrays.asList("data", "trends"), String.class, Arrays.asList(),
+                Arrays.asList());
+
+        dfTemp = dfTemp.add(STR_SEC_CODE, values -> bean.getSecCode());
+        dfTemp = dfTemp.add(STR_SEC_NAME, values -> bean.getName());
+        return dfTemp;
+    }
+
+    /**
+     * 获取板块 所有成员股票的行情. 两个api可用
+     * 1.数据中心的api, 限制了单页数量, 不采用
+     * http://47.push2.eastmoney.com/api/qt/clist/get?cb=jQuery112406750128890784384_1645773481750&pn=2&pz=20&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=b:BK0917+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152,f45&_=1645773481759
+     * 2.单板块行情页面的成员列表, 默认每页8个, 数据字段很少, 实测每页数量可以很多, 且字段可以等同于上一api, 因此采用此api
+     * http://push2.eastmoney.com/api/qt/clist/get?np=1&fltt=1&invt=2&cb=jQuery35102238284077231354_1645773757678&fs=b%3ABK0917&fields=f14%2Cf12%2Cf13%2Cf1%2Cf2%2Cf4%2Cf3%2Cf152&fid=f3&pn=1&pz=10000&po=1&ut=fa5fd1943c7b386f172d6893dbfba10b&_=1645773757679
+     * <p>
+     * 全字段: "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152,f45"
+     * 已知字段:
+     * f2, 最新价 , 需要/100
+     * f3, 涨跌幅, 需要/100, 再加%
+     * f4, 涨跌额, 需要/100
+     * f5, 成交量
+     * f6, 成交额
+     * f7, 振幅, 需要/100, 再%
+     * f8, 换手率, 需要/100, 再%
+     * f9, 动态市盈率, 需要 /100
+     * f12, 股票代码
+     * f14, 股票名称
+     * f15, 最高
+     * f16, 最低
+     * f17, 今开
+     * f18, 昨收
+     * f20, 总市值
+     * f21, 流通市值
+     * f23, 市净率 需要/100
+     * // todo: 某些字段未能命名. 该api似乎不可仅访问部分字段
+     *
+     * @param bean
+     * @return
+     */
+    public static DataFrame<Object> getBkMembersQuote(SecurityBeanEm bean, int timeout,
+                                                      int retry) {
+        // String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get"; 普通k线
+        Assert.isTrue(bean.isBK());
+        String url = "http://push2.eastmoney.com/api/qt/clist/get";
+        List<String> fields = StrUtil
+                .split("f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62," +
+                        "f128,f136,f115,f152,f45", ",");
+
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("np", "1");
+        params.put("fltt", "1");
+        params.put("invt", "2");
+        params.put("cb", "jQuery35102238284077231354_" + (System.currentTimeMillis() - 1));
+        params.put("fs", "b:" + bean.getSecCode());
+        params.put("fields",
+                "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152,f45");
+        params.put("pn", "1");
+        params.put("pz", "100000");
+        params.put("po", "1");
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+        System.out.println(response);
+
+        DataFrame<Object> dfTemp = jsonStrToDf(response, "(", ")",
+                fields,
+                Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),
+                Arrays.asList());
+
+        dfTemp = dfTemp.rename(BK_MEMBER_FIELDS);
+        dfTemp = dfTemp.add("板块代码", values -> bean.getSecCode());
+        dfTemp = dfTemp.add("板块名称", values -> bean.getName());
+        return dfTemp;
+    }
+
+
+    /*
+
+    http://push2.eastmoney.com/api/qt/slist/get?ut=fa5fd1943c7b386f172d6893dbfba10b&spt=3&pi=0&pz=5&po=1&fields=f14,f3,f128,f12,f13,f100,f102,f103&secid=1.600396&cb=jQuery112409865801999174071_1645779558495&_=1645779558496
+
+
+     */
+
+    /**
+     * 给定个股, 返回所属板块列表相关.
+     * API -- 来自个股行情页面, 单页数量可10000
+     * http://push2.eastmoney.com/api/qt/slist/get?ut=fa5fd1943c7b386f172d6893dbfba10b&spt=3&pi=0&pz=5&po=1&fields=f14,f3,f128,f12,f13,f100,f102,f103&secid=1.600396&cb=jQuery112409865801999174071_1645779558495&_=1645779558496
+     * <p>
+     * http://push2.eastmoney.com/api/qt/slist/get
+     * ?ut=fa5fd1943c7b386f172d6893dbfba10b
+     * &spt=3
+     * &pi=0
+     * &pz=5
+     * &po=1
+     * &fields=f14,f3,f128,f12,f13,f100,f102,f103
+     * &secid=1.600396
+     * &cb=jQuery112409865801999174071_1645779558495&_=1645779558496
+     */
+    public static DataFrame<Object> getBksTheStockBelongTo(SecurityBeanEm bean, int timeout,
+                                                           int retry) {
+        Assert.isTrue(bean.isStock());
+        String url = "http://push2.eastmoney.com/api/qt/slist/get";
+        List<String> fields = StrUtil
+                .split("f14,f3,f128,f12,f13,f100,f102,f103", ",");
+
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("spt", "3");
+        params.put("pi", "0");
+        params.put("pz", "10000");
+        params.put("po", "1");
+        params.put("fields", "f14,f3,f128,f12,f13,f100,f102,f103");
+        params.put("secid", bean.getQuoteId());
+        params.put("cb", "jQuery112409865801999174071_" + (System.currentTimeMillis() - 1));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+
+        response = response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1);
+        JSONObject jsonObject = JSONUtilS.parseObj(response);
+        JSONObject content = (JSONObject) JSONUtilS.getByPath(jsonObject, "data.diff");
+
+        DataFrame<Object> dataFrame = new DataFrame<>(fields);
+        for (Object value : content.values()) {
+            JSONObject value1 = (JSONObject) value;
+            dataFrame.append(fields.stream().map(field -> value1.getString(field)).collect(Collectors.toList()));
+        }
+
+        dataFrame.rename(BKS_STOCK_BELONG_TO_FIELDS);
+        return dataFrame;
+
     }
 
     /**
@@ -1203,6 +1395,7 @@ public class EmQuoteApi {
         EASTMONEY_QUOTE_FIELDS.putAll(temp);
     }
 
+
     /**
      * 实时截面数据可以传递的市场参数 --> 已经优化修改!!
      * 实际的市场参数可传递的列表是: 注意语义别重复了
@@ -1251,7 +1444,8 @@ public class EmQuoteApi {
                 // 美英港
                 .set("美股", "m:105,m:106,m:107")
                 .set("港股", "m:128+t:3,m:128+t:4,m:128+t:1,m:128+t:2")
-                .set("英股", "m:155+t:1,m:155+t:2,m:155+t:3,m:156+t:1,m:156+t:2,m:156+t:5,m:156+t:6,m:156+t:7,m:156+t:8")
+                .set("英股",
+                        "m:155+t:1,m:155+t:2,m:155+t:3,m:156+t:1,m:156+t:2,m:156+t:5,m:156+t:6,m:156+t:7,m:156+t:8")
                 .set("中概股", "b:MK0201") // 期货, 组合5大期货
 
                 // 期货
@@ -1260,4 +1454,40 @@ public class EmQuoteApi {
 
     }
 
+    public static void initBK_MEMBER_FIELDS() {
+        Dict temp = Dict.create()
+                .set("f2", "最新")
+                .set("f3", "涨跌幅")
+                .set("f4", "涨跌额")
+                .set("f5", "成交量")
+                .set("f6", "成交额")
+                .set("f7", "振幅")
+                .set("f8", "换手率")
+                .set("f9", "动态市盈率")
+                .set("f12", "资产代码")
+                .set("f14", "资产名称")
+                .set("f15", "最高")
+                .set("f16", "最低")
+                .set("f17", "今开")
+                .set("f18", "昨收")
+                .set("f20", "总市值")
+                .set("f21", "流通市值")
+                .set("f23", "市净率");
+        BK_MEMBER_FIELDS.putAll(temp);
+
+
+    }
+
+
+    /*
+    "f14,f3,f128,f12,f13,f100,f102,f103"
+     */
+    public static void initBKS_STOCK_BELONG_TO_FIELDS() {
+        BKS_STOCK_BELONG_TO_FIELDS.putAll(Dict.create()
+                .set("f14", "板块名称")
+                .set("f3", "板块涨跌幅") // /100
+                .set("f128", "领涨股")
+                .set("f12", "板块代码")
+        );
+    }
 }

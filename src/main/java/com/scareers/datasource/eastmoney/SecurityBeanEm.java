@@ -51,6 +51,12 @@ public class SecurityBeanEm {
 
 
     public static void main(String[] args) throws Exception {
+        Console.log(SecurityBeanEm.createBK("充电桩").isConceptBK());
+        Console.log(SecurityBeanEm.createBK("北京板块").isAreaBK());
+        Console.log(SecurityBeanEm.createBK("重庆板块").isAreaBK());
+        Console.log(SecurityBeanEm.createBK("家电行业").isIndustryBK());
+
+
         SecurityBeanEm stock = SecurityBeanEm.createIndex("H30597");
         Console.log(stock);
 
@@ -377,6 +383,18 @@ public class SecurityBeanEm {
 
     public boolean isBK() {
         return this.secType == SecType.BK;
+    }
+
+    public boolean isAreaBK() { // 地域板块
+        return isBK() && this.getTypeUS().equals("1");
+    }
+
+    public boolean isIndustryBK() { // 行业板块
+        return isBK() && this.getTypeUS().equals("2");
+    }
+
+    public boolean isConceptBK() { // 概念板块
+        return isBK() && this.getTypeUS().equals("3");
     }
 
     public boolean isShenA() { // 包含主板和创业板

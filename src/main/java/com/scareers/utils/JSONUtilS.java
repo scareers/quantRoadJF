@@ -56,7 +56,7 @@ public class JSONUtilS {
      * @param endIntercept         可对原始字符串进行截取, 需要提供结束字符
      * @param paths                访问到核心字段的 属性列表
      * @param columns              df 列名称列表
-     * @param clazz                核心列表类型为 String.class(需要split), 或者 JSONArray(索引访问)
+     * @param clazz                核心列表, 单个元素的 类型为 String.class(需要split), 或者 JSONArray(索引访问),或JSONObject属性访问
      * @param dropIndexes          可不保留全部字段, 去掉相关字段的索引列表, 不能为null
      * @param constantColumnValues 可放多个固定值列, 于最前方, 因此必须保证 columns 最前方有相关的列名
      *                             // @noti: 相关参数不可null, 需传递空列表
@@ -154,7 +154,7 @@ public class JSONUtilS {
         HashMap<String, Object> stringObjectHashMap = new HashMap<>();
         stringObjectHashMap.put("x", Arrays.asList(1, 2, 3));
         stringObjectHashMap.put("y", Arrays.asList(1, 2, 4));
-        Console.log(toJsonPrettyStr(stringObjectHashMap).charAt(2)=='\t');
+        Console.log(toJsonPrettyStr(stringObjectHashMap).charAt(2) == '\t');
     }
 
     public static String toJsonPrettyStr(Object o) {
