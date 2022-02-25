@@ -246,7 +246,7 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         flashActualHighSelledAndCurrentAvailableCertaintyOrInferential();
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
-            StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
+            StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock(stock));
             HsState hsState = new HsState(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
                     new FundamentalStateHs());
             HsFactorChain factorChain = new HsFactorChain(hsState);

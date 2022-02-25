@@ -36,7 +36,6 @@ public class CustomizeStatePoolHs {
     private static final Log log = LogUtil.getLogger();
 
 
-
     public static void main(String[] args) {
         cdfRateForPositionHsMap.put("yy", 4.0);
         saveCdfRateForPositionHsConfig();
@@ -112,6 +111,10 @@ public class CustomizeStatePoolHs {
             log.info("保存新配置失败: {}", type);
             e.printStackTrace();
         }
+    }
+
+    public static void saveAllConfig() {
+        saveCdfRateForPositionHsConfig();
     }
 
     /**

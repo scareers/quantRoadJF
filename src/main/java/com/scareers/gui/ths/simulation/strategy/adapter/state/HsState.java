@@ -73,6 +73,6 @@ public class HsState implements Serializable {
         hsState.getStockStateHs().setStockCode(oldState.getStockStateHs().getStockCode());
         hsState.getStockStateHs().setFsData(oldState.getStockStateHs().getFsData());
         hsState.getStockStateHs().setFsTransData(oldState.getStockStateHs().getFsTransData());
-        return oldState;
+        return hsState;
     }
 }

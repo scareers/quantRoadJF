@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor.base;
 
+import cn.hutool.core.lang.Console;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;

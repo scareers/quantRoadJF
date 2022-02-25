@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.log.LogUtil;
