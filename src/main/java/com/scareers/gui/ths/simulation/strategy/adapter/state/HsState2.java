@@ -1,12 +1,16 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
 import lombok.Data;
+
+import javax.naming.event.ObjectChangeListener;
+import java.io.Serializable;
 
 /**
  * description: 表示个股欲低买高卖时, 所有影响仓位的 参数集;
@@ -18,15 +22,19 @@ import lombok.Data;
  * @date: 2022/2/20/020-16:57:17
  */
 @Data
-public class HsState2 {
+public class HsState2 implements Serializable {
+    private static final long serialVersionUID = 105102100L;
 
     public static void main(String[] args) throws Exception {
         DefaultStatesPool.initManualSelector();
 
         StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
-        HsState2 state = new HsState2();
-        state.setStockStateHs(stockStateHs);
-        Console.log(state.getStockStateHs().getCdfRateForPosition());
+        HsState2 state = new HsState2(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
+                new FundamentalStateHs());
+        Console.log(state);
+        HsState2 state2 = copyFrom(state);
+        Console.log(state2);
+
 
     }
 
@@ -38,4 +46,29 @@ public class HsState2 {
     protected IndexStateHs indexStateHs;
     protected FundamentalStateHs fundamentalStateHs;
 
+    public HsState2(HsState2 preState, BkStateHs bkStateHs,
+                    StockStateHs stockStateHs,
+                    IndexStateHs indexStateHs,
+                    FundamentalStateHs fundamentalStateHs) {
+        this.preState = preState;
+        this.bkStateHs = bkStateHs;
+        this.stockStateHs = stockStateHs;
+        this.indexStateHs = indexStateHs;
+        this.fundamentalStateHs = fundamentalStateHs;
+    }
+
+    /**
+     * copy 逻辑, 对于某些字段, 因为数据量大, 且类单例模式, transient 后, 深复制时将重置为null;
+     * 它将提高复制速度.
+     * 这些字段需要手动设置, 例如  SecurityBeanEm
+     * 当然, 深复制的属性, 仅仅 equals, 对于这些手动设置的属性, 则还会 ==. 同一对象的多个指针
+     *
+     * @param oldState
+     * @return
+     */
+    public static HsState2 copyFrom(HsState2 oldState) {
+        HsState2 hsState = ObjectUtil.cloneByStream(oldState);
+        hsState.getStockStateHs().setBean(oldState.getStockStateHs().getBean());
+        return oldState;
+    }
 }

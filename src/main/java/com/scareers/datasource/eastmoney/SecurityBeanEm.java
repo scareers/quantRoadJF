@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,7 +33,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  * @date: 2021/12/21/021-20:51:45
  */
 @Data
-public class SecurityBeanEm {
+public class SecurityBeanEm implements Serializable {
     private static final long serialVersionUID = 156415111L;
     // 缓存. key为 代码+类型
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
