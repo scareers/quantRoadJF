@@ -1,9 +1,12 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state;
 
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import cn.hutool.core.lang.Console;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
+import lombok.Data;
 
 /**
  * description: 表示个股欲低买高卖时, 所有影响仓位的 参数集;
@@ -14,18 +17,25 @@ import lombok.ToString;
  * @author: admin
  * @date: 2022/2/20/020-16:57:17
  */
-@Getter
-@Setter
-@ToString
+@Data
 public class HsState2 {
-//    protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
-    protected HsState2 preState; // 维护前一状态对象.
 
+    public static void main(String[] args) throws Exception {
+        DefaultStatesPool.initManualSelector();
+
+        StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
+        HsState2 state = new HsState2();
+        state.setStockStateHs(stockStateHs);
+        Console.log(state.getStockStateHs().getCdfRateForPosition());
+
+    }
+
+    //    protected HsFactor factorInfluenceMe; //  被哪个因子影响而刷新?
+    protected HsState2 preState; // 维护前一状态对象.
 
     protected BkStateHs bkStateHs;
     protected StockStateHs stockStateHs;
     protected IndexStateHs indexStateHs;
     protected FundamentalStateHs fundamentalStateHs;
-    protected CustomizeStatePoolHs customizeStatePoolHs;
 
 }

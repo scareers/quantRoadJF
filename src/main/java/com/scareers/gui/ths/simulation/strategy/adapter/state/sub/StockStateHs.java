@@ -156,17 +156,15 @@ public class StockStateHs {
     private static final Log log = LogUtil.getLogger();
 
     public static Double getPreNDayClosePriceQfq(String stock, String preNTradeDate) throws Exception {
-        Double pre2ClosePrice = null;
         try {
             // 已经缓存
             //日期	   开盘	   收盘	   最高	   最低	    成交量	          成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
-            pre2ClosePrice = Double.valueOf(getQuoteHistorySingle(true, SecurityBeanEm.createStock(stock),
+            return Double.valueOf(getQuoteHistorySingle(true, SecurityBeanEm.createStock(stock),
                     preNTradeDate,
                     preNTradeDate, "101", "qfq", 3, 2000).row(0).get(2).toString());
         } catch (Exception e) {
             log.error("skip: data get fail: 获取股票前日收盘价失败 {}", stock);
             throw e;
         }
-        return pre2ClosePrice;
     }
 }
