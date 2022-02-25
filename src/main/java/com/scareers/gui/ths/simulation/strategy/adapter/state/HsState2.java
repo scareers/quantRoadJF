@@ -1,23 +1,9 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Assert;
-import cn.hutool.core.util.ObjectUtil;
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.base.SettingsOfBaseDataFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.*;
-import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
-import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
 
 /**
  * description: 表示个股欲低买高卖时, 所有影响仓位的 参数集;
