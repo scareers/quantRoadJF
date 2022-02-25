@@ -7,7 +7,7 @@ import java.lang.annotation.*;
  * @author admin
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD,ElementType.TYPE})
 @Documented
 public @interface ExitMaybe {
 

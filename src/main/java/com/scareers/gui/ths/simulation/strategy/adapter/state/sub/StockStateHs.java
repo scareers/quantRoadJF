@@ -28,11 +28,12 @@ import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteH
  * @date: 2022/2/25/025-18:43:41
  */
 @Data
+@ExitMaybe
 public class StockStateHs {
     public static void main(String[] args) throws Exception {
         GlobalStatesPool.initManualSelector();
 
-        StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("002761"));
+        StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
         Console.log(stockStateHs.preTradeDate);
         Console.log(stockStateHs.pre2TradeDate);
         Console.log(stockStateHs.preClosePrice);
