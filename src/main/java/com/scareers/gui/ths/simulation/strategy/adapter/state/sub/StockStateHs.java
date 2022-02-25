@@ -6,6 +6,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.ExitMaybe;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizePoolHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.GlobalStatesPool;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelectorManual;
 import com.scareers.utils.log.LogUtil;
@@ -36,6 +37,7 @@ public class StockStateHs {
         Console.log(stockStateHs.pre2TradeDate);
         Console.log(stockStateHs.preClosePrice);
         Console.log(stockStateHs.pre2ClosePrice);
+        Console.log(stockStateHs.cdfRateForPosition);
     }
 
     // 传递
@@ -69,8 +71,10 @@ public class StockStateHs {
     protected List<Double> pdfListOfHighSell; // 88数据
     protected List<Double> cdfListOfHighSell;
 
-    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位 cdf
+    // cdf倍率可读取配置或默认
     protected Double cdfRateForPosition; // (cdf概率 * 的)倍率.
+    // 动态
+    protected Double cdfProbabilityOfCurrentPricePercent; // 仓位 cdf
     protected Double totalPositionNormalized; // 理应的仓位总值, 标准化<=1.0
 
     public StockStateHs(SecurityBeanEm bean) {
@@ -78,6 +82,14 @@ public class StockStateHs {
         this.stockCode = bean.getSecCode(); // 不可变
         initTwoTradeDateAndClosePrice(); // 新对象
         initDistribution(); // 深复制
+
+        initCdfRateForPosition();
+    }
+
+    // cdf倍率可读取配置或默认
+    private void initCdfRateForPosition() {
+        this.cdfRateForPosition = CustomizePoolHs.cdfRateForPositionHsMap.getOrDefault(this.stockCode,
+                CustomizePoolHs.cdfRateForPositionHs);
     }
 
     private void initDistribution() {
