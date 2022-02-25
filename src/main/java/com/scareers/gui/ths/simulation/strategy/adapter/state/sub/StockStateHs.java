@@ -6,19 +6,15 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.ExitMaybe;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizePoolHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.GlobalStatesPool;
-import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelectorManual;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizeStatePoolHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStatesPool;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTradeDateStrict;
 import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteHistorySingle;
 
 /**
@@ -31,7 +27,7 @@ import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getQuoteH
 @ExitMaybe
 public class StockStateHs {
     public static void main(String[] args) throws Exception {
-        GlobalStatesPool.initManualSelector();
+        DefaultStatesPool.initManualSelector();
 
         StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
         Console.log(stockStateHs.preTradeDate);
@@ -89,14 +85,14 @@ public class StockStateHs {
 
     // cdf倍率可读取配置或默认
     private void initCdfRateForPosition() {
-        this.cdfRateForPosition = CustomizePoolHs.cdfRateForPositionHsMap.getOrDefault(this.stockCode,
-                CustomizePoolHs.cdfRateForPositionHs);
+        this.cdfRateForPosition = CustomizeStatePoolHs.cdfRateForPositionHsMap.getOrDefault(this.stockCode,
+                DefaultStatesPool.cdfRateForPositionHs);
     }
 
     private void initDistribution() {
-        ticksOfHighSell = ObjectUtil.cloneByStream(GlobalStatesPool.ticksOfHighSell);
-        pdfListOfHighSell = ObjectUtil.cloneByStream(GlobalStatesPool.pdfListOfHighSell);
-        cdfListOfHighSell = ObjectUtil.cloneByStream(GlobalStatesPool.cdfListOfHighSell);
+        ticksOfHighSell = ObjectUtil.cloneByStream(DefaultStatesPool.ticksOfHighSell);
+        pdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStatesPool.pdfListOfHighSell);
+        cdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStatesPool.cdfListOfHighSell);
     }
 
     /**
@@ -107,8 +103,8 @@ public class StockStateHs {
      */
     @ExitMaybe
     private void initTwoTradeDateAndClosePrice() {
-        preTradeDate = GlobalStatesPool.stdPreTradeDate;
-        pre2TradeDate = GlobalStatesPool.stdPre2TradeDate;
+        preTradeDate = DefaultStatesPool.stdPreTradeDate;
+        pre2TradeDate = DefaultStatesPool.stdPre2TradeDate;
 
         try {
             // 有停牌/新股前2天, 将会失败, 概率不高. 这种情况下降获取所有历史k线, 读取今日前的两个交易日期

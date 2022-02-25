@@ -17,9 +17,14 @@ import static com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi.getPreNTr
  * @author: admin
  * @date: 2022/2/25/025-19:33:07
  */
-public class GlobalStatesPool {
-    private GlobalStatesPool() {
+public class DefaultStatesPool {
+    private DefaultStatesPool() {
     }
+
+    /*
+        参数默认值配置
+    */
+    public static Double cdfRateForPositionHs = 1.5; // 默认值
 
     public static CopyOnWriteArraySet<String> todaySuspendStocks; // 今日停牌股票集合
     public static String stdPreTradeDate = getPreNTradeDateStrict(DateUtil.today(), 1); // 标准的上一交易日, 个股需要check

@@ -29,16 +29,13 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2022/2/25/025-18:45:26
  */
-public class CustomizePoolHs {
+public class CustomizeStatePoolHs {
     public static Connection connOfCustomizeArgs = ConnectionFactory.getConnLocalKlineForms();
     public static String today = DateUtil.today();
     public static String tableNameOfArgsSave = "ths_trader_customize_args";
     private static final Log log = LogUtil.getLogger();
 
-    /*
-    参数默认值配置
-     */
-    public static Double cdfRateForPositionHs = 1.5; // 默认值
+
 
     public static void main(String[] args) {
         cdfRateForPositionHsMap.put("yy", 4.0);

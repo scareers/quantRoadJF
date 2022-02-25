@@ -26,6 +26,6 @@ public class HsState2 {
     protected StockStateHs stockStateHs;
     protected IndexStateHs indexStateHs;
     protected FundamentalStateHs fundamentalStateHs;
-    protected CustomizePoolHs customizePoolHs;
+    protected CustomizeStatePoolHs customizeStatePoolHs;
 
 }

@@ -4,12 +4,11 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.GlobalStatesPool;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStatesPool;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
@@ -68,7 +67,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         Objects.requireNonNull(trader, "trader 不可null");
         this.trader = trader;
         this.lbHsSelector = lbHsSelector;
-        GlobalStatesPool.initSelector(lbHsSelector); // @noti: 状态池设置
+        DefaultStatesPool.initSelector(lbHsSelector); // @noti: 状态池设置
 
 
         this.adapter = new LowBuyHighSellStrategyAdapter(this, trader, 10); // 策略实际方法
