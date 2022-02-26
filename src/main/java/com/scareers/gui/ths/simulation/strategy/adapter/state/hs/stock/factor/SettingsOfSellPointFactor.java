@@ -24,7 +24,7 @@ public class SettingsOfSellPointFactor {
     /*
     高卖相关参数
      */
-    public static ConcurrentHashMap<Integer, Double> highSellBeforehandThresholdMap; // 静态块实现
+    public static ConcurrentHashMap<Integer, Double> highSellBeforehandThresholdMap; // 判定本分钟为下降的阈值map
     public static int continuousRaiseTickCountThreshold = 1; // 连续上升n分钟,本分钟下降,才是卖点
     public static double execHighSellThreshold = -0.02; // 价格>=此值(百分比)才考虑卖出, 同样是相对于前2收盘价而言
 
