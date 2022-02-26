@@ -2,7 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.state
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.utils.charts.ChartUtil;
 import com.scareers.utils.charts.ValueMarkerS;
 import org.jfree.chart.*;

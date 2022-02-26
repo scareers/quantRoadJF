@@ -1,9 +1,6 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.state.index.factor;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.factor;
 
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.utils.log.LogUtil;
 
 /**

@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.factor.position;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor;
 
 /**
  * description:

@@ -1,9 +1,7 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.state.bk;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk;
 
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.io.Serializable;
 

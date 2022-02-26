@@ -13,15 +13,14 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactorChain;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint.SellPointDecideFactorHs;
-
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.position.PositionAndAmountFactorHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor.PositionAndAmountFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.bk.BkStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.index.factor.IndexPricePercentFactorHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.other.OtherStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk.BkStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.factor.IndexPricePercentFactorHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.other.OtherStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor.SellPointDecideFactorHs;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -250,8 +249,8 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
                     new OtherStateHs());
 
             HsFactorChain factorChain = new HsFactorChain(hsState);
-            factorChain.addFactor(new SellPointDecideFactorHs());
             factorChain.addFactor(new IndexPricePercentFactorHs());
+            factorChain.addFactor(new SellPointDecideFactorHs());
             factorChain.addFactor(new PositionAndAmountFactorHs());
             factorChain.applyFactorInfluence();
 

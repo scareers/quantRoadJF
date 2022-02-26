@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.state.index;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index;
 
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -30,6 +30,10 @@ public class IndexStateHs implements Serializable {
     protected Double indexPreClosePrice; // 指数昨收
     protected Double indexPriceChgPtCurrent; // 指数当前涨跌幅.  change percent --> ChgPt
 
+    // 因子设置
+    protected Double parallelMoveValue; // 实际平移量
+
+
     /**
      * 构造器传递bean,为初始化指数相关数据; 但不持有bean指针. 仅 StockStateHs 持有
      *
@@ -54,8 +58,8 @@ public class IndexStateHs implements Serializable {
         indexBean = SecurityBeanEm.SHANG_ZHENG_ZHI_SHU;
         if (beanEm.isShenA()) {
             indexBean = SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI;
-        } else if (!indexBean.isHuA()) {
-            log.error("股票不属于沪深A股,默认使用上证指数: {} - {}", indexBean.getSecCode(), indexBean.getName());
+        } else if (!beanEm.isHuA()) {
+            log.error("股票不属于沪深A股,默认使用上证指数: {} - {}", beanEm.getSecCode(), beanEm.getName());
         }
     }
 

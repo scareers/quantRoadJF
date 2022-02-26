@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor;
 
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author: admin
  * @date: 2022/2/21/021-19:25:16
  */
-public class SettingsOfBuySellPointFactor {
+public class SettingsOfSellPointFactor {
     private static final Log log = LogUtil.getLogger();
     public static final String factorNameHs = "SellPointDecideFactor";
     public static final String nameCnHs = "卖点判定因子";

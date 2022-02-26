@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.state.stock;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;

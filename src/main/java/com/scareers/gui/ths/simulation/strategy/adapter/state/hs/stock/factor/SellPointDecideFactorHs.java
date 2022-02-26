@@ -1,9 +1,9 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor;
 
 import cn.hutool.core.date.DateUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.pandasdummy.DataFrameS;
@@ -11,7 +11,8 @@ import joinery.DataFrame;
 
 import java.util.List;
 
-import static com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint.SettingsOfBuySellPointFactor.highSellBeforehandThresholdMap;
+import static com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor.SettingsOfSellPointFactor.highSellBeforehandThresholdMap;
+
 
 /**
  * description: 高卖时, 卖点判定的因子算法. 将读取各种状态, 判定是否卖点, 设置state的 sellPointCurrent 属性
@@ -21,8 +22,8 @@ import static com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoi
  */
 public class SellPointDecideFactorHs extends HsFactor {
     public SellPointDecideFactorHs() {
-        super(SettingsOfBuySellPointFactor.factorNameHs, SettingsOfBuySellPointFactor.nameCnHs,
-                SettingsOfBuySellPointFactor.descriptionHs);
+        super(SettingsOfSellPointFactor.factorNameHs, SettingsOfSellPointFactor.nameCnHs,
+                SettingsOfSellPointFactor.descriptionHs);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class SellPointDecideFactorHs extends HsFactor {
      * 判定本分钟价格必须 < 上一分钟分时close.
      * 取当前秒数, 若为0-9s, 返回false,不可能下单.
      * 10-20s, 需要 上升成交记录数 /(上升+下降) >= 1.0; 时间越长, 该百分比限制越不严格, 直到 50-59s, 直接返回true.
-     * 见 SettingsOfBuySellPointFactor.highSellBeforehandThresholdMap 静态属性, 作为设置项, 逻辑上final
+     * 见 SettingsOfSellPointFactor.highSellBeforehandThresholdMap 静态属性, 作为设置项, 逻辑上final
      *
      * @return
      * @see SettingsOfFSBacktest
@@ -98,7 +99,7 @@ public class SellPointDecideFactorHs extends HsFactor {
                 }
             }
         }
-        if (continuousRaise < SettingsOfBuySellPointFactor.continuousRaiseTickCountThreshold) { // 连续上升必须>=阈值
+        if (continuousRaise < SettingsOfSellPointFactor.continuousRaiseTickCountThreshold) { // 连续上升必须>=阈值
             return false;
         }
 
@@ -134,7 +135,7 @@ public class SellPointDecideFactorHs extends HsFactor {
         }
 
 
-        if (state.getNewPricePercentToPre2Close() < SettingsOfBuySellPointFactor.execHighSellThreshold) {
+        if (state.getNewPricePercentToPre2Close() < SettingsOfSellPointFactor.execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
         }
 

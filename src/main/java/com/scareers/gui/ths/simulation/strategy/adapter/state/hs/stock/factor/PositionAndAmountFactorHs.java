@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.factor.position;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.factor;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -9,7 +9,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
 
