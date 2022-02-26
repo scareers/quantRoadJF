@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.DefaultStateArgsPoolHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.other.OtherStateHs;
@@ -28,7 +29,7 @@ public class HsState implements Serializable {
     private static final long serialVersionUID = 105102100L;
 
     public static void main(String[] args) throws Exception {
-        DefaultStateArgsPool.initManualSelector();
+        DefaultStateArgsPoolHs.initManualSelector();
 
         SecurityBeanEm stock = SecurityBeanEm.createStock("000001");
         StockStateHs stockStateHs = new StockStateHs(stock);

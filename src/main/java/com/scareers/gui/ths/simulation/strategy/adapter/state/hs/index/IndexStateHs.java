@@ -4,7 +4,10 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.gui.ths.simulation.annotation.ManualModify;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.DefaultStateArgsPoolHs;
 import com.scareers.utils.log.LogUtil;
 import lombok.Data;
 
@@ -33,6 +36,9 @@ public class IndexStateHs implements Serializable {
     // 因子设置
     protected Double parallelMoveValue; // 实际平移量
 
+    // 默认值
+    @ManualModify
+    protected Boolean affectedByIndex; // 个股是否被index影响?
 
     /**
      * 构造器传递bean,为初始化指数相关数据; 但不持有bean指针. 仅 StockStateHs 持有
@@ -44,6 +50,9 @@ public class IndexStateHs implements Serializable {
         indexNewPrice = FsTransactionFetcher.getNewestPrice(indexBean); // 获取指数价格
         indexPreClosePrice = EmQuoteApi.getPreCloseOfIndexOrBK(indexBean, 3000, 3, true);
         initIndexChgPt();
+
+        affectedByIndex = CustomizeStateArgsPoolHs.affectedByIndexHsMap.getOrDefault(beanEm.getSecCode(),
+                DefaultStateArgsPoolHs.affectedByIndexDefault); // 决定个股是否被指数影响 ??
     }
 
     private void initIndexChgPt() {

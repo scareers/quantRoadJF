@@ -9,9 +9,10 @@ import com.scareers.annotations.ExitMaybe;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
+import com.scareers.gui.ths.simulation.annotation.ManualModify;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizeStatePoolHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStateArgsPool;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.DefaultStateArgsPoolHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -36,7 +37,7 @@ public class StockStateHs implements Serializable {
     private static final long serialVersionUID = 851171112125L;
 
     public static void main(String[] args) throws Exception {
-        DefaultStateArgsPool.initManualSelector();
+        DefaultStateArgsPoolHs.initManualSelector();
 
         StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
         Console.log(stockStateHs.preTradeDate);
@@ -80,7 +81,7 @@ public class StockStateHs implements Serializable {
      */
 
     /*
-    动态[初始化] -- 常在 DefaultStateArgsPool 设置默认值; 或在 CustomizeStatePoolHs 手动配置值.
+    动态[初始化] -- 常在 DefaultStateArgsPoolHs 设置默认值; 或在 CustomizeStateArgsPoolHs 手动配置值.
      */
 
     // 初始化设置; 后可由各种因子变更高卖分布
@@ -90,7 +91,10 @@ public class StockStateHs implements Serializable {
     protected List<Double> cdfListOfHighSell;
 
     // cdf倍率可 [读取配置]或默认, 可手动修改配置. 可因子改变
+    @ManualModify
     protected Double cdfRateForPosition; // (cdf概率 * 的)倍率.
+    @ManualModify
+    protected Double manualMoveDistanceFinally; // "手动平移高卖分布最终",可手动配置 最终再额外平移高卖分布 的量, 默认0.0
 
     /*
     动态[不初始化]
@@ -107,7 +111,11 @@ public class StockStateHs implements Serializable {
         this.stockCode = bean.getSecCode(); // 不可变
         initTwoTradeDateAndClosePrice(); // 新对象
         initDistribution(); // 深复制
-        initCdfRateForPosition();
+        this.cdfRateForPosition = CustomizeStateArgsPoolHs.cdfRateForPositionHsMap.getOrDefault(this.stockCode,
+                DefaultStateArgsPoolHs.cdfRateForPositionHs);
+        this.manualMoveDistanceFinally =
+                CustomizeStateArgsPoolHs.manualMoveDistanceFinallyMap.getOrDefault(this.stockCode,
+                        DefaultStateArgsPoolHs.manualMoveDistanceFinallyDefault);
 
         fsData = FsFetcher.getFsData(this.bean);
         fsTransData = FsTransactionFetcher.getFsTransData(this.bean);
@@ -122,16 +130,12 @@ public class StockStateHs implements Serializable {
 
     }
 
-    // cdf倍率可读取配置或默认
-    private void initCdfRateForPosition() {
-        this.cdfRateForPosition = CustomizeStatePoolHs.cdfRateForPositionHsMap.getOrDefault(this.stockCode,
-                DefaultStateArgsPool.cdfRateForPositionHs);
-    }
+
 
     private void initDistribution() {
-        ticksOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPool.ticksOfHighSell);
-        pdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPool.pdfListOfHighSell);
-        cdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPool.cdfListOfHighSell);
+        ticksOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPoolHs.ticksOfHighSell);
+        pdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPoolHs.pdfListOfHighSell);
+        cdfListOfHighSell = ObjectUtil.cloneByStream(DefaultStateArgsPoolHs.cdfListOfHighSell);
     }
 
     /**
@@ -142,8 +146,8 @@ public class StockStateHs implements Serializable {
      */
     @ExitMaybe
     private void initTwoTradeDateAndClosePrice() {
-        preTradeDate = DefaultStateArgsPool.stdPreTradeDate;
-        pre2TradeDate = DefaultStateArgsPool.stdPre2TradeDate;
+        preTradeDate = DefaultStateArgsPoolHs.stdPreTradeDate;
+        pre2TradeDate = DefaultStateArgsPoolHs.stdPre2TradeDate;
 
         try {
             // 有停牌/新股前2天, 将会失败, 概率不高. 这种情况下降获取所有历史k线, 读取今日前的两个交易日期

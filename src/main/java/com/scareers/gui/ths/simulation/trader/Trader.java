@@ -18,7 +18,7 @@ package com.scareers.gui.ths.simulation.trader;
  */
 
 import com.alibaba.fastjson.JSONObject;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizeStatePoolHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
@@ -455,7 +455,7 @@ public class Trader {
     public void stopTrade() throws IOException, TimeoutException {
         this.closeDualChannelAndConn(); // 关闭连接
 
-        CustomizeStatePoolHs.saveAllConfig(); // 高卖配置保存
+        CustomizeStateArgsPoolHs.saveAllConfig(); // 高卖配置保存
 
         this.getAccountStates().closeDualChannelAndConn();
         if (fsTransactionFetcher != null) {

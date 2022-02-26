@@ -31,8 +31,10 @@ public class IndexPricePercentFactorHs extends HsFactor {
         // 平移, 分布. pdf与cdf同时
         Double parallelMoveValue = decideMoveDistanceByIndexChangePercent(indexPricePercentThatTime);
         state0.getIndexStateHs().setParallelMoveValue(parallelMoveValue);
-        state0.getStockStateHs()
-                .parallelMoveDistribution(parallelMoveValue);
+        if (state0.getIndexStateHs().getAffectedByIndex()) { // 需要该flag为True, 才执行实际的平移操作
+            state0.getStockStateHs()
+                    .parallelMoveDistribution(parallelMoveValue);
+        }
         return state0;
     }
 
