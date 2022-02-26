@@ -8,7 +8,6 @@ import com.scareers.gui.ths.simulation.strategy.adapter.state.bk.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.other.OtherStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,10 +28,11 @@ public class HsState implements Serializable {
     private static final long serialVersionUID = 105102100L;
 
     public static void main(String[] args) throws Exception {
-        DefaultStatesPool.initManualSelector();
+        DefaultStateArgsPool.initManualSelector();
 
-        StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
-        HsState state = new HsState(null, new IndexStateHs(), new BkStateHs(), stockStateHs,
+        SecurityBeanEm stock = SecurityBeanEm.createStock("000001");
+        StockStateHs stockStateHs = new StockStateHs(stock);
+        HsState state = new HsState(null, new IndexStateHs(stock), new BkStateHs(), stockStateHs,
                 new OtherStateHs());
         Console.log(state);
         HsState state2 = copyFrom(state);
@@ -81,12 +81,17 @@ public class HsState implements Serializable {
         HsState hsState = ObjectUtil.cloneByStream(oldState);
         // 对所有 transient 字段, 进行手动设置. copy逻辑
 
+        // 个股 transient字段
         hsState.getStockStateHs().setBean(oldState.getStockStateHs().getBean());
         hsState.getStockStateHs().setStockCode(oldState.getStockStateHs().getStockCode());
         hsState.getStockStateHs().setFsData(oldState.getStockStateHs().getFsData());
         hsState.getStockStateHs().setFsTransData(oldState.getStockStateHs().getFsTransData());
 
-        // 因parent transient
+        // 指数transient字段
+        hsState.getIndexStateHs().setIndexBean(oldState.getIndexStateHs().getIndexBean());
+
+
+        // 全parent transient
         hsState.getIndexStateHs().setParent(hsState);
         hsState.getBkStateHs().setParent(hsState);
         hsState.getStockStateHs().setParent(hsState);

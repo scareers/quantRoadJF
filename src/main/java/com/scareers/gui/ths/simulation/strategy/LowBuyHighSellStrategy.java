@@ -4,7 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStatesPool;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStateArgsPool;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -73,7 +73,7 @@ public class LowBuyHighSellStrategy extends Strategy {
 
         bindSelf(); // trader绑定自身
 
-        DefaultStatesPool.initSelector(lbHsSelector); // @noti: 状态池设置. 到这里才执行了选股
+        DefaultStateArgsPool.initSelector(lbHsSelector); // @noti: 状态池设置. 到这里才执行了选股
 
         Console.log(lbHsSelector.getTicksOfHighSell());
         Console.log(lbHsSelector.getWeightsOfHighSell());

@@ -235,7 +235,7 @@ public class HsStatePanel extends DisplayPanel {
         isSellPointValueLabel.setText(toStringCheckNull(state.getStockStateHs().getSellPointCurrent()));
         newPriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPriceTrans()));
         chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPricePercentToPre2Close()));
-        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexStateHs().getIndexPricePercentThatTime()));
+        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexStateHs().getIndexPriceChgPtCurrent()));
         cdfProbabilityValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent()));
         cdfRateValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfRateForPosition()));
         totalPositionNormalizedValueLabel.setText(toStringCheckNull(state.getStockStateHs().getTotalPositionNormalized()));
@@ -251,8 +251,8 @@ public class HsStatePanel extends DisplayPanel {
                     state.getStockStateHs().getNewPricePercentToPre2Close(),
                     preState.getStockStateHs().getNewPricePercentToPre2Close());
             changeColorWhenTextDiff(indexPercentLabel, indexPercentValueLabel, Color.red,
-                    state.getIndexStateHs().getIndexPricePercentThatTime(),
-                    preState.getIndexStateHs().getIndexPricePercentThatTime());
+                    state.getIndexStateHs().getIndexPriceChgPtCurrent(),
+                    preState.getIndexStateHs().getIndexPriceChgPtCurrent());
             changeColorWhenTextDiff(cdfProbabilityLabel, cdfProbabilityValueLabel, Color.red,
                     state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent(),
                     preState.getStockStateHs().getCdfProbabilityOfCurrentPricePercent());

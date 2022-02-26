@@ -542,7 +542,7 @@ public class EmQuoteApi {
      * @param timeout
      * @param retry
      * @param useCache
-     * @return 失败返回 -1.0
+     * @return 失败返回 null
      */
     @CanCache
     @TimeoutCache(timeout = "3600 * 1000")
@@ -565,7 +565,7 @@ public class EmQuoteApi {
             indexOrBkPreCloseCache.put(cacheKey, res);
             return res;
         } else {
-            return -1.0;
+            return null;
         }
     }
 

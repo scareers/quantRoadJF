@@ -14,11 +14,12 @@ import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactorChain;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint.SellPointDecideFactorHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.index.GlobalIndexPricePercentRealtimeFactorHs;
+
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.position.PositionAndAmountFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.bk.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.index.factor.IndexPricePercentFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.other.OtherStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
@@ -243,14 +244,14 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
         flashActualHighSelledAndCurrentAvailableCertaintyOrInferential();
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
-            StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock(stock));
-            HsState hsState = new HsState(null, new IndexStateHs(), new BkStateHs(), stockStateHs,
+            SecurityBeanEm beanEm = SecurityBeanEm.createStock(stock);
+            StockStateHs stockStateHs = new StockStateHs(beanEm);
+            HsState hsState = new HsState(null, new IndexStateHs(beanEm), new BkStateHs(), stockStateHs,
                     new OtherStateHs());
 
             HsFactorChain factorChain = new HsFactorChain(hsState);
-            // factorChain.addFactor(new BaseDataFactorHs());
             factorChain.addFactor(new SellPointDecideFactorHs());
-            factorChain.addFactor(new GlobalIndexPricePercentRealtimeFactorHs());
+            factorChain.addFactor(new IndexPricePercentFactorHs());
             factorChain.addFactor(new PositionAndAmountFactorHs());
             factorChain.applyFactorInfluence();
 
