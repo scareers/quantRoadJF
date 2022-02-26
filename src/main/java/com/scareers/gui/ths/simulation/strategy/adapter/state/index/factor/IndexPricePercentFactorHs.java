@@ -29,8 +29,9 @@ public class IndexPricePercentFactorHs extends HsFactor {
             log.error("IndexPricePercentFactorHs: 指数涨跌幅获取失败, 无法计算影响, 返回原始状态");
             return state0; // 相当于不移动
         }
-        // 平移pdf
-        state0.getStockStateHs().movePdf(decideMoveDistanceByIndexChangePercent(indexPricePercentThatTime));
+        // 平移, 分布. pdf与cdf同时
+        state0.getStockStateHs()
+                .parallelMoveDistribution(decideMoveDistanceByIndexChangePercent(indexPricePercentThatTime));
         return state0;
     }
 

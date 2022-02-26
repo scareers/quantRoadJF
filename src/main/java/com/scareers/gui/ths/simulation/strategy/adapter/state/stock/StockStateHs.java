@@ -279,7 +279,7 @@ public class StockStateHs implements Serializable {
      */
 
     /**
-     * 左右移动pdf, 相当于右左移动 ticks // + 变为 -
+     * 左右移动分布, pdf与cdf同时移动, 相当于右左移动 ticks // + 变为 -
      * 当 distance为 正数, 表示右移, 为负数, 则左移
      * <p>
      * // todo: 移动逻辑. 当distance为正,大盘向好, 应当右移减少仓位, 使得卖出仓位减少. 以求更高的价格卖出.
@@ -288,7 +288,7 @@ public class StockStateHs implements Serializable {
      *
      * @param distance 00
      */
-    public void movePdf(Double distance) {
+    public void parallelMoveDistribution(Double distance) {
         if (distance == null) {
             return;
         }
