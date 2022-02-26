@@ -4,11 +4,13 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ObjectUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.bk.BkStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.other.OtherStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 
@@ -21,7 +23,8 @@ import java.io.Serializable;
  * @author: admin
  * @date: 2022/2/20/020-16:57:17
  */
-@Data
+@Getter
+@Setter
 public class HsState implements Serializable {
     private static final long serialVersionUID = 105102100L;
 
@@ -29,11 +32,12 @@ public class HsState implements Serializable {
         DefaultStatesPool.initManualSelector();
 
         StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock("000001"));
-        HsState state = new HsState(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
-                new FundamentalStateHs());
+        HsState state = new HsState(null, new IndexStateHs(), new BkStateHs(), stockStateHs,
+                new OtherStateHs());
         Console.log(state);
         HsState state2 = copyFrom(state);
         Console.log(state2);
+        Console.log(state2.getStockStateHs().getParent());
 
 
     }
@@ -45,17 +49,23 @@ public class HsState implements Serializable {
     protected BkStateHs bkStateHs;
     protected StockStateHs stockStateHs;
     protected IndexStateHs indexStateHs;
-    protected FundamentalStateHs fundamentalStateHs;
+    protected OtherStateHs otherStateHs;
 
-    public HsState(HsState preState, BkStateHs bkStateHs,
+    public HsState(HsState preState, IndexStateHs indexStateHs, BkStateHs bkStateHs,
                    StockStateHs stockStateHs,
-                   IndexStateHs indexStateHs,
-                   FundamentalStateHs fundamentalStateHs) {
-        this.preState = preState;
-        this.bkStateHs = bkStateHs;
-        this.stockStateHs = stockStateHs;
+                   OtherStateHs otherStateHs) {
+        this.preState = preState; // 可null
+
         this.indexStateHs = indexStateHs;
-        this.fundamentalStateHs = fundamentalStateHs;
+        this.bkStateHs = bkStateHs; // 均不可null
+        this.stockStateHs = stockStateHs;
+        this.otherStateHs = otherStateHs;
+
+        // 关联parent属性
+        this.indexStateHs.setParent(this);
+        this.bkStateHs.setParent(this);
+        this.stockStateHs.setParent(this);
+        this.otherStateHs.setParent(this);
     }
 
     /**
@@ -69,10 +79,18 @@ public class HsState implements Serializable {
      */
     public static HsState copyFrom(HsState oldState) {
         HsState hsState = ObjectUtil.cloneByStream(oldState);
+        // 对所有 transient 字段, 进行手动设置. copy逻辑
+
         hsState.getStockStateHs().setBean(oldState.getStockStateHs().getBean());
         hsState.getStockStateHs().setStockCode(oldState.getStockStateHs().getStockCode());
         hsState.getStockStateHs().setFsData(oldState.getStockStateHs().getFsData());
         hsState.getStockStateHs().setFsTransData(oldState.getStockStateHs().getFsTransData());
+
+        // 因parent transient
+        hsState.getIndexStateHs().setParent(hsState);
+        hsState.getBkStateHs().setParent(hsState);
+        hsState.getStockStateHs().setParent(hsState);
+        hsState.getOtherStateHs().setParent(hsState);
         return hsState;
     }
 }

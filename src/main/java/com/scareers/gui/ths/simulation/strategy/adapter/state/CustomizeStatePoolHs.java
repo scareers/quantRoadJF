@@ -9,13 +9,10 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
-import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.utils.SqlUtil.execSql;

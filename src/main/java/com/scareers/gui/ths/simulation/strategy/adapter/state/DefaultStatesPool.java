@@ -22,7 +22,7 @@ public class DefaultStatesPool {
     }
 
     /*
-        参数默认值配置
+       参数默认值配置
     */
     public static Double cdfRateForPositionHs = 1.5; // 默认值
 

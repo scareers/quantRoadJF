@@ -4,8 +4,6 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONObject;
@@ -15,15 +13,14 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactorChain;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.base.BaseDataFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.buysellpoint.SellPointDecideFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.index.GlobalIndexPricePercentRealtimeFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.position.PositionAndAmountFactorHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.BkStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.FundamentalStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.bk.BkStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.other.OtherStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.AccountStates;
 import com.scareers.gui.ths.simulation.trader.SettingsOfTrader;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -247,10 +244,11 @@ public class LowBuyHighSellStrategyAdapter implements StrategyAdapter {
 
         for (String stock : yesterdayStockHoldsBeSellMap.keySet()) {
             StockStateHs stockStateHs = new StockStateHs(SecurityBeanEm.createStock(stock));
-            HsState hsState = new HsState(null, new BkStateHs(), stockStateHs, new IndexStateHs(),
-                    new FundamentalStateHs());
+            HsState hsState = new HsState(null, new IndexStateHs(), new BkStateHs(), stockStateHs,
+                    new OtherStateHs());
+
             HsFactorChain factorChain = new HsFactorChain(hsState);
-            factorChain.addFactor(new BaseDataFactorHs());
+            // factorChain.addFactor(new BaseDataFactorHs());
             factorChain.addFactor(new SellPointDecideFactorHs());
             factorChain.addFactor(new GlobalIndexPricePercentRealtimeFactorHs());
             factorChain.addFactor(new PositionAndAmountFactorHs());

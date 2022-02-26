@@ -18,6 +18,7 @@ package com.scareers.gui.ths.simulation.trader;
  */
 
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizeStatePoolHs;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.rabbitmq.client.*;
@@ -332,7 +333,7 @@ public class Trader {
      * @param order
      * @throws Exception
      */
-    public void putOrderToWaitExecute(Order order)  {
+    public void putOrderToWaitExecute(Order order) {
         order.addLifePoint(LifePointStatus.WAIT_EXECUTE, "wait_execute: 放入执行队列,等待执行");
         ordersWaitForExecution.put(order);
         ordersAllMap.put(order, Arrays.asList()); // 暂无响应
@@ -453,6 +454,9 @@ public class Trader {
 
     public void stopTrade() throws IOException, TimeoutException {
         this.closeDualChannelAndConn(); // 关闭连接
+
+        CustomizeStatePoolHs.saveAllConfig(); // 高卖配置保存
+
         this.getAccountStates().closeDualChannelAndConn();
         if (fsTransactionFetcher != null) {
             fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
@@ -460,6 +464,8 @@ public class Trader {
         if (fsFetcher != null) {
             fsFetcher.stopFetch();
         }
+
+
     }
 
 

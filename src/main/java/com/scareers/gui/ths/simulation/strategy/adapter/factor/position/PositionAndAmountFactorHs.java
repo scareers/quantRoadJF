@@ -9,7 +9,7 @@ import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.stock.StockStateHs;
 import com.scareers.gui.ths.simulation.trader.Trader;
 
 

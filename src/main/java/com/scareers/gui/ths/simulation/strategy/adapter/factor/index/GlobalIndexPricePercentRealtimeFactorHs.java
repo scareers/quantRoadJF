@@ -1,11 +1,8 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.factor.index;
 
-import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.IndexStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.sub.StockStateHs;
-import com.scareers.utils.log.LogUtil;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.index.IndexStateHs;
 import lombok.Getter;
 import lombok.Setter;
 

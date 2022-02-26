@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.strategy.adapter.state.sub;
+package com.scareers.gui.ths.simulation.strategy.adapter.state.stock;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
@@ -7,14 +7,17 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.log.Log;
 import com.scareers.annotations.ExitMaybe;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.strategy.adapter.factor.base.SettingsOfBaseDataFactor;
+import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
+import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
+import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.CustomizeStatePoolHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.DefaultStatesPool;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -45,6 +48,7 @@ public class StockStateHs implements Serializable {
         Console.log(stockStateHs.cdfRateForPosition);
     }
 
+    private transient HsState parent; // 将在HsState构造器中关联. 或者在 copyFrom中关联
     // 传递
     protected transient SecurityBeanEm bean; // 股票bean
     // 自动
@@ -90,6 +94,18 @@ public class StockStateHs implements Serializable {
         initTwoTradeDateAndClosePrice(); // 新对象
         initDistribution(); // 深复制
         initCdfRateForPosition();
+
+        fsData = FsFetcher.getFsData(this.bean);
+        fsTransData = FsTransactionFetcher.getFsTransData(this.bean);
+        fsTransData = FsTransactionFetcher.getFsTransData(this.bean);
+        newPriceTrans = FsTransactionFetcher.getNewestPrice(this.bean);
+        if (pre2ClosePrice != null && newPriceTrans != null) { // 需要前2收盘和当前最新成交两个价格不为null
+            newPricePercentToPre2Close = newPriceTrans / pre2ClosePrice - 1;
+        }
+        amountsTotalYc = LowBuyHighSellStrategyAdapter.yesterdayStockHoldsBeSellMap.get(this.stockCode);
+        actualAmountHighSelled = LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap.get(this.stockCode);
+        availableAmountForHs = LowBuyHighSellStrategyAdapter.availableAmountForHsMap.get(this.stockCode);
+
     }
 
     // cdf倍率可读取配置或默认
