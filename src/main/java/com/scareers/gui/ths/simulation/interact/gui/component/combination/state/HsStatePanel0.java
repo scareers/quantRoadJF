@@ -1,14 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.BkStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.IndexStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.OtherStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.StockStateHsPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk.BkStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.other.OtherStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.utils.charts.ChartUtil;
 import com.scareers.utils.charts.ValueMarkerS;
@@ -35,6 +28,7 @@ import java.awt.*;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.utils.CommonUtil.toStringCheckNull;
 
 /**
  * description: 单个 HsState 展示面板
@@ -45,29 +39,49 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  * @author: admin
  * @date: 2022/2/22/022-17:21:15
  */
-public class HsStatePanel extends DisplayPanel {
+public class HsStatePanel0 extends DisplayPanel {
     public static int preferHeight = 350;
 
 
     HsState state; // 首次展示的对象, 当调用update时, 更新该属性
-    IndexStateHs indexStateHs; // 首次展示的对象, 当调用update时, 更新该属性
-    BkStateHs bkStateHs; // 首次展示的对象, 当调用update时, 更新该属性
-    StockStateHs stockStateHs;
-    OtherStateHs otherStateHs;
-
     HsState preState; // 首次展示的对象, 当调用update时, 更新该属性
-    IndexStateHs preIndexStateHs; // 首次展示的对象, 当调用update时, 更新该属性
-    BkStateHs preBkStateHs; // 首次展示的对象, 当调用update时, 更新该属性
-    StockStateHs preStockStateHs;
-    OtherStateHs preOtherStateHs;
+    JPanel baseInfoPanel;
 
+    JLabel stockCodeLabel = getDefaultJLabel("股票代码");
+    JLabel stockCodeValueLabel = getDefaultJLabel();
+    JLabel stockNameLabel = getDefaultJLabel("股票名称");
+    JLabel stockNameValueLabel = getDefaultJLabel();
+    JLabel factorLabel = getDefaultJLabel("影响因子", Color.yellow);
+    JLabel factorValueLabel = getDefaultJLabel(Color.yellow);
 
-    JPanel baseInfoPanel; // 基本数据的展示, 分为4大状态4大小组件, 如下4个Panel展示
-    IndexStateHsPanel indexStateHsPanel;
-    BkStateHsPanel bkStateHsPanel;
-    StockStateHsPanel stockStateHsPanel;
-    OtherStateHsPanel otherStateHsPanel; // 4 类状态展示组件, 放于 baseInfoPanel
-
+    JLabel preDateLabel = getDefaultJLabel("前1交易日");
+    JLabel preDateValueLabel = getDefaultJLabel();
+    JLabel pre2DateLabel = getDefaultJLabel("前2交易日");
+    JLabel pre2DateValueLabel = getDefaultJLabel();
+    JLabel pre2ClosePriceLabel = getDefaultJLabel("前2日收盘价");
+    JLabel preClosePriceLabel = getDefaultJLabel("前1日收盘价");
+    JLabel preClosePriceValueLabel = getDefaultJLabel();
+    JLabel pre2ClosePriceValueLabel = getDefaultJLabel();
+    JLabel isSellPointLabel = getDefaultJLabel("当前为卖点");
+    JLabel isSellPointValueLabel = getDefaultJLabel();
+    JLabel newPriceLabel = getDefaultJLabel("最新成交价格");
+    JLabel newPriceValueLabel = getDefaultJLabel();
+    JLabel chgPercentToPre2cLabel = getDefaultJLabel("最新/前2收涨跌幅");
+    JLabel chgPercentToPre2cValueLabel = getDefaultJLabel();
+    JLabel indexPercentLabel = getDefaultJLabel("对应大盘当前涨跌幅");
+    JLabel indexPercentValueLabel = getDefaultJLabel();
+    JLabel cdfProbabilityLabel = getDefaultJLabel("仓位cdf[原始]");
+    JLabel cdfProbabilityValueLabel = getDefaultJLabel();
+    JLabel cdfRateLabel = getDefaultJLabel("仓位卖出倍率");
+    JLabel cdfRateValueLabel = getDefaultJLabel();
+    JLabel totalPositionNormalizedLabel = getDefaultJLabel("理论标准化仓位值");
+    JLabel totalPositionNormalizedValueLabel = getDefaultJLabel();
+    JLabel totalAmountYcLabel = getDefaultJLabel("昨收总持仓数量");
+    JLabel totalAmountYcValueLabel = getDefaultJLabel();
+    JLabel actualAmountSelledLabel = getDefaultJLabel("今日已卖出数量");
+    JLabel actualAmountSelledValueLabel = getDefaultJLabel();
+    JLabel availabelAmountLabel = getDefaultJLabel("当前可卖数量");
+    JLabel availabelAmountValueLabel = getDefaultJLabel("当前可卖数量");
 
     ChartPanel pdfChartPanel;
     ChartPanel cdfChartPanel;
@@ -98,22 +112,9 @@ public class HsStatePanel extends DisplayPanel {
     }
 
 
-    public HsStatePanel(HsState state) {
+    public HsStatePanel0(HsState state) {
         this.state = state;
-        this.indexStateHs = this.state.getIndexStateHs();
-        this.bkStateHs = this.state.getBkStateHs();
-        this.stockStateHs = this.state.getStockStateHs();
-        this.otherStateHs = this.state.getOtherStateHs();
-
         this.preState = state.getPreState();
-        if (this.preState != null) {
-            this.preIndexStateHs = this.preState.getIndexStateHs();
-            this.preBkStateHs = this.preState.getBkStateHs();
-            this.preStockStateHs = this.preState.getStockStateHs();
-            this.preOtherStateHs = this.preState.getOtherStateHs();
-        }
-
-
         this.setBackground(COLOR_CHART_BG_EM);
 //        this.setLayout(new FlowLayout(FlowLayout.LEFT));
         this.setLayout(new GridLayout(1, 3, 5, 0));
@@ -124,23 +125,70 @@ public class HsStatePanel extends DisplayPanel {
         baseInfoPanel.setBackground(COLOR_CHART_BG_EM);
         baseInfoPanel.setBorder(BorderFactory.createLineBorder(COLOR_TEXT_INACTIVATE_EM, 1));
         baseInfoPanel.setPreferredSize(new Dimension(350, preferHeight));
-        baseInfoPanel.setLayout(new GridLayout(2, 2, 1, 1));
 
-        indexStateHsPanel = new IndexStateHsPanel(this.indexStateHs, this.preIndexStateHs);
-        bkStateHsPanel = new BkStateHsPanel();
-        stockStateHsPanel = new StockStateHsPanel(this.stockStateHs, this.preStockStateHs);
-        otherStateHsPanel = new OtherStateHsPanel();
+        baseInfoPanel.setLayout(new GridLayout(17, 2, 1, 1));
 
-        baseInfoPanel.add(indexStateHsPanel);
-        baseInfoPanel.add(bkStateHsPanel);
-        baseInfoPanel.add(stockStateHsPanel);
-        baseInfoPanel.add(otherStateHsPanel);
+
+        baseInfoPanel.add(stockCodeLabel);
+        baseInfoPanel.add(stockCodeValueLabel);
+
+        baseInfoPanel.add(stockNameLabel);
+        baseInfoPanel.add(stockNameValueLabel);
+
+        baseInfoPanel.add(factorLabel);
+        baseInfoPanel.add(factorValueLabel);
+        // factorValueLabel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+
+        baseInfoPanel.add(preDateLabel);
+        baseInfoPanel.add(preDateValueLabel);
+        baseInfoPanel.add(pre2DateLabel);
+        baseInfoPanel.add(pre2DateValueLabel);
+
+        baseInfoPanel.add(preClosePriceLabel);
+        baseInfoPanel.add(preClosePriceValueLabel);
+        baseInfoPanel.add(pre2ClosePriceLabel);
+        baseInfoPanel.add(pre2ClosePriceValueLabel);
+
+        baseInfoPanel.add(isSellPointLabel);
+        baseInfoPanel.add(isSellPointValueLabel);
+
+
+        baseInfoPanel.add(newPriceLabel);
+        baseInfoPanel.add(newPriceValueLabel);
+
+        baseInfoPanel.add(chgPercentToPre2cLabel);
+        baseInfoPanel.add(chgPercentToPre2cValueLabel);
+
+        baseInfoPanel.add(indexPercentLabel);
+        baseInfoPanel.add(indexPercentValueLabel);
+
+
+        baseInfoPanel.add(cdfProbabilityLabel);
+        baseInfoPanel.add(cdfProbabilityValueLabel);
+
+        baseInfoPanel.add(cdfRateLabel);
+        baseInfoPanel.add(cdfRateValueLabel);
+
+
+        baseInfoPanel.add(totalPositionNormalizedLabel);
+        baseInfoPanel.add(totalPositionNormalizedValueLabel);
+
+
+        baseInfoPanel.add(totalAmountYcLabel);
+        baseInfoPanel.add(totalAmountYcValueLabel);
+
+
+        baseInfoPanel.add(actualAmountSelledLabel);
+        baseInfoPanel.add(actualAmountSelledValueLabel);
+
+        baseInfoPanel.add(availabelAmountLabel);
+        baseInfoPanel.add(availabelAmountValueLabel);
 
 
         initPdfChartPanel();
-        cdfChartPanel = new ChartPanel(
-                ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
-                        this.state.getStockStateHs().getTicksOfHighSell(), false));
+        cdfChartPanel = new ChartPanel(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
+                this.state.getStockStateHs().getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
         cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
 
@@ -152,31 +200,15 @@ public class HsStatePanel extends DisplayPanel {
 
     public void update(HsState state) {
         this.state = state;
-        this.indexStateHs = this.state.getIndexStateHs();
-        this.bkStateHs = this.state.getBkStateHs();
-        this.stockStateHs = this.state.getStockStateHs();
-        this.otherStateHs = this.state.getOtherStateHs();
-
         this.preState = state.getPreState();
-        if (this.preState != null) {
-            this.preIndexStateHs = this.preState.getIndexStateHs();
-            this.preBkStateHs = this.preState.getBkStateHs();
-            this.preStockStateHs = this.preState.getStockStateHs();
-            this.preOtherStateHs = this.preState.getOtherStateHs();
-        }
-
-        this.indexStateHsPanel.update(this.indexStateHs, this.preIndexStateHs);
-        this.stockStateHsPanel.update(this.stockStateHs, this.preStockStateHs);
-
         this.update();
     }
 
     /**
      * 当本状态某属性, 与上一状态相同属性不同时, 切换内容显示label 和名称label的颜色
      */
-    protected static void changeColorWhenTextDiff(JLabel titleLabel, JLabel contentLabel, Color newColor,
-                                                  Object preValue,
-                                                  Object newValue) {
+    protected void changeColorWhenTextDiff(JLabel titleLabel, JLabel contentLabel, Color newColor, Object preValue,
+                                           Object newValue) {
         if (preValue == null) {
             if (newValue != null) {
                 titleLabel.setForeground(newColor);
@@ -194,11 +226,60 @@ public class HsStatePanel extends DisplayPanel {
     @Override
     protected void update() {
         // 初始化自动设置
+        stockCodeValueLabel.setText(state.getStockStateHs().getStockCode());
+        stockNameValueLabel.setText(state.getStockStateHs().getBean().getName());
+        factorValueLabel.setText(toStringCheckNull(state.getFactorInfluenceMe()));
+        preDateValueLabel.setText(state.getStockStateHs().getPreTradeDate());
+        pre2DateValueLabel.setText(state.getStockStateHs().getPre2TradeDate());
+        preClosePriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getPreClosePrice()));
+        pre2ClosePriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getPre2ClosePrice()));
+        // 动态设置, 可对比显示不同颜色
+        isSellPointValueLabel.setText(toStringCheckNull(state.getStockStateHs().getSellPointCurrent()));
+        newPriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPriceTrans()));
+        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPricePercentToPre2Close()));
+        indexPercentValueLabel.setText(toStringCheckNull(state.getIndexStateHs().getIndexPriceChgPtCurrent()));
+        cdfProbabilityValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent()));
+        cdfRateValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfRateForPosition()));
+        totalPositionNormalizedValueLabel.setText(toStringCheckNull(state.getStockStateHs().getTotalPositionNormalized()));
+        totalAmountYcValueLabel.setText(toStringCheckNull(state.getStockStateHs().getAmountsTotalYc()));
+        actualAmountSelledValueLabel.setText(toStringCheckNull(state.getStockStateHs().getActualAmountHighSelled()));
+        availabelAmountValueLabel.setText(toStringCheckNull(state.getStockStateHs().getAvailableAmountForHs()));
+        if (this.preState != null) {
+            changeColorWhenTextDiff(isSellPointLabel, isSellPointValueLabel, Color.red, state.getStockStateHs().getSellPointCurrent(),
+                    preState.getStockStateHs().getSellPointCurrent());
+            changeColorWhenTextDiff(newPriceLabel, newPriceValueLabel, Color.red, state.getStockStateHs().getNewPriceTrans(),
+                    preState.getStockStateHs().getNewPriceTrans());
+            changeColorWhenTextDiff(chgPercentToPre2cLabel, chgPercentToPre2cValueLabel, Color.red,
+                    state.getStockStateHs().getNewPricePercentToPre2Close(),
+                    preState.getStockStateHs().getNewPricePercentToPre2Close());
+            changeColorWhenTextDiff(indexPercentLabel, indexPercentValueLabel, Color.red,
+                    state.getIndexStateHs().getIndexPriceChgPtCurrent(),
+                    preState.getIndexStateHs().getIndexPriceChgPtCurrent());
+            changeColorWhenTextDiff(cdfProbabilityLabel, cdfProbabilityValueLabel, Color.red,
+                    state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent(),
+                    preState.getStockStateHs().getCdfProbabilityOfCurrentPricePercent());
+            changeColorWhenTextDiff(cdfRateLabel, cdfRateValueLabel, Color.red,
+                    state.getStockStateHs().getCdfRateForPosition(),
+                    preState.getStockStateHs().getCdfRateForPosition());
+            changeColorWhenTextDiff(totalPositionNormalizedLabel, totalPositionNormalizedValueLabel, Color.red,
+                    state.getStockStateHs().getTotalPositionNormalized(),
+                    preState.getStockStateHs().getTotalPositionNormalized());
+            changeColorWhenTextDiff(totalAmountYcLabel, totalAmountYcValueLabel, Color.red,
+                    state.getStockStateHs().getAmountsTotalYc(),
+                    preState.getStockStateHs().getAmountsTotalYc());
+            changeColorWhenTextDiff(actualAmountSelledLabel, actualAmountSelledValueLabel, Color.red,
+                    state.getStockStateHs().getActualAmountHighSelled(),
+                    preState.getStockStateHs().getActualAmountHighSelled());
+            changeColorWhenTextDiff(availabelAmountLabel, availabelAmountValueLabel, Color.red,
+                    state.getStockStateHs().getAvailableAmountForHs(),
+                    preState.getStockStateHs().getAvailableAmountForHs());
+
+        }
+
         updatePdfChartPanel(); // 更新pdf图表. 并不重新实例化图表, 仅需要更新数据对象 XYSeries pdfXYSeries;
 
-        cdfChartPanel
-                .setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
-                        this.state.getStockStateHs().getTicksOfHighSell(), false));
+        cdfChartPanel.setChart(ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
+                this.state.getStockStateHs().getTicksOfHighSell(), false));
     }
 
     private void updatePdfChartPanel() {
@@ -219,16 +300,13 @@ public class HsStatePanel extends DisplayPanel {
             }
         }
 
-        if (this.state.getStockStateHs().getNewPriceTrans() != null && this.state.getStockStateHs()
-                .getPreClosePrice() != null) {
+        if (this.state.getStockStateHs().getNewPriceTrans() != null && this.state.getStockStateHs().getPreClosePrice() != null) {
             // 改变marker值
-            double markerValueX = this.state.getStockStateHs().getNewPriceTrans() / this.state.getStockStateHs()
-                    .getPreClosePrice() - 1; // 当前涨跌幅
+            double markerValueX = this.state.getStockStateHs().getNewPriceTrans() / this.state.getStockStateHs().getPreClosePrice() - 1; // 当前涨跌幅
             markerX.setValue(markerValueX);
             markerX.setLabel(ChartUtil.decimalFormatForPercent.format(markerValueX)); //线条上显示的文本
 
-            double rawTick = this.state.getStockStateHs().getPreClosePrice() * (1 + markerValueX) / this.state
-                    .getStockStateHs().getPre2ClosePrice() - 1;
+            double rawTick = this.state.getStockStateHs().getPreClosePrice() * (1 + markerValueX) / this.state.getStockStateHs().getPre2ClosePrice() - 1;
             Double markerValueY = StockStateHs.pdfHs(this.state.getStockStateHs().getTicksOfHighSell(),
                     this.state.getStockStateHs().getPdfListOfHighSell(),
                     rawTick);

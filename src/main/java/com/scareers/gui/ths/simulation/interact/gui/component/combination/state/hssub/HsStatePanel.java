@@ -1,10 +1,6 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.BkStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.IndexStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.OtherStateHsPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.StockStateHsPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
