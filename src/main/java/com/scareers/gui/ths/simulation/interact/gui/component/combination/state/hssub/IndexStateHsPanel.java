@@ -26,6 +26,7 @@ public class IndexStateHsPanel extends DisplayPanel {
                              IndexStateHs preIndexStateHs) {
         this.indexStateHs = indexStateHs;
         this.preIndexStateHs = preIndexStateHs;
+        this.add(indexPercentLabel);
     }
 
     @Override

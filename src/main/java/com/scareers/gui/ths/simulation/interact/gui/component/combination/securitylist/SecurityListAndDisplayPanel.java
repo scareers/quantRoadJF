@@ -77,7 +77,11 @@ public abstract class SecurityListAndDisplayPanel extends JPanel {
             @Override
             public void componentResized(ComponentEvent e) {
                 jList.setBounds(0, 0, jListWidth, getHeight()); // 固定宽默认 300
-                securityDisplayPanel.setBounds(jListWidth, 0, getWidth() - jListWidth, getHeight()); // 其余占满
+                securityDisplayPanel.setBounds(jScrollPaneForList.getVerticalScrollBar().getWidth() + jListWidth, 0,
+                        getWidth() - jListWidth - jScrollPaneForList.getVerticalScrollBar().getWidth()
+                        , getHeight()); //
+                // 其余占满
+                securityDisplayPanel.repaint();
             }
         });
 
@@ -115,8 +119,10 @@ public abstract class SecurityListAndDisplayPanel extends JPanel {
 
     }
 
+    JScrollPane jScrollPaneForList;
+
     private JScrollPane jListWrappedWithJScrollPane() {
-        JScrollPane jScrollPaneForList = new JScrollPane();
+        jScrollPaneForList = new JScrollPane();
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setViewportView(jList);

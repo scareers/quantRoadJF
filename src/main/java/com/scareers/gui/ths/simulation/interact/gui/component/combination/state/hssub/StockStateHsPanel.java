@@ -72,10 +72,14 @@ public class StockStateHsPanel extends DisplayPanel {
         this.setLayout(new GridLayout(15, 2, 1, 1));
 
         this.add(stockCodeLabel);
+        stockCodeLabel.setBorder(BorderFactory.createLineBorder(Color.red));
         this.add(stockCodeValueLabel);
+        stockCodeValueLabel.setBorder(BorderFactory.createLineBorder(Color.red));
 
         this.add(stockNameLabel);
         this.add(stockNameValueLabel);
+        stockNameLabel.setBorder(BorderFactory.createLineBorder(Color.red));
+        stockNameValueLabel.setBorder(BorderFactory.createLineBorder(Color.red));
 
         this.add(preDateLabel);
         this.add(preDateValueLabel);

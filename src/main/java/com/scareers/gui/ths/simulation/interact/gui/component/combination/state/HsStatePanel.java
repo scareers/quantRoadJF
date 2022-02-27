@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.IndexStateHsPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.OtherStateHsPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.StockStateHsPanel;
+import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.bk.BkStateHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
@@ -46,7 +47,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  * @date: 2022/2/22/022-17:21:15
  */
 public class HsStatePanel extends DisplayPanel {
-    public static int preferHeight = 350;
+    public static int preferHeight = 300;
 
     // 十大状态属性
     HsState state; // 首次展示的对象, 当调用update时, 更新该属性
@@ -98,6 +99,7 @@ public class HsStatePanel extends DisplayPanel {
         setAllStates(state); // 10大状态设置
         this.setBackground(COLOR_CHART_BG_EM);
         this.setLayout(new GridLayout(1, 3, 5, 0)); // 网格布局
+        this.setPreferredSize(new Dimension(1024, preferHeight));
 
         initBaseInfoPanel(); // 基本信息展示
 
@@ -116,25 +118,32 @@ public class HsStatePanel extends DisplayPanel {
                 ChartUtil.listOfDoubleAsLineChartSimple(this.state.getStockStateHs().getCdfListOfHighSell(),
                         this.state.getStockStateHs().getTicksOfHighSell(), false));
         cdfChartPanel.setDomainZoomable(false);
-        cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
+        // cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
     }
 
     private void initBaseInfoPanel() {
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(COLOR_CHART_BG_EM);
         baseInfoPanel.setBorder(BorderFactory.createLineBorder(COLOR_TEXT_INACTIVATE_EM, 1));
-        baseInfoPanel.setPreferredSize(new Dimension(350, preferHeight));
-        baseInfoPanel.setLayout(new GridLayout(2, 2, 1, 1)); // 2*2网格
+        baseInfoPanel.setLayout(new GridLayout(1, 2, 1, 1)); // 2*2网格
 
         indexStateHsPanel = new IndexStateHsPanel(this.indexStateHs, this.preIndexStateHs);
-        bkStateHsPanel = new BkStateHsPanel();
+        bkStateHsPanel = new BkStateHsPanel(this.bkStateHs, this.preBkStateHs);
         stockStateHsPanel = new StockStateHsPanel(this.stockStateHs, this.preStockStateHs);
-        otherStateHsPanel = new OtherStateHsPanel();
+        otherStateHsPanel = new OtherStateHsPanel(this.otherStateHs, this.preOtherStateHs);
 
-        baseInfoPanel.add(indexStateHsPanel);
-        baseInfoPanel.add(bkStateHsPanel);
-        baseInfoPanel.add(stockStateHsPanel);
-        baseInfoPanel.add(otherStateHsPanel);
+        // 其余3种状态在右, grid
+
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP)); // 上浮动的3项状态
+        rightPanel.add(indexStateHsPanel);
+        rightPanel.add(bkStateHsPanel);
+        rightPanel.add(otherStateHsPanel);
+
+//        baseInfoPanel.add(new JScrollPane(stockStateHsPanel)); // 股票数据多, 在左.
+        baseInfoPanel.add(stockStateHsPanel); // 股票数据多, 在左.
+        baseInfoPanel.add(rightPanel);
+
     }
 
     /**
@@ -336,12 +345,15 @@ public class HsStatePanel extends DisplayPanel {
     public static JLabel getDefaultJLabel(String content) {
         JLabel label = new JLabel(content);
         label.setForeground(COLOR_TEXT_INACTIVATE_EM);
+
+
         return label;
     }
 
     public static JLabel getDefaultJLabel(String content, Color color) {
         JLabel label = new JLabel(content);
         label.setForeground(color);
+
         return label;
     }
 

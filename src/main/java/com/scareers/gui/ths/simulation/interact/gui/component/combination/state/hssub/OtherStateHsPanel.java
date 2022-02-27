@@ -3,6 +3,8 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.state
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.other.OtherStateHs;
 
+import javax.swing.*;
+
 /**
  * description: 高卖其他状态展示
  *
@@ -11,6 +13,14 @@ import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.other.OtherStat
  */
 public class OtherStateHsPanel extends DisplayPanel {
     OtherStateHs otherStateHs;
+    OtherStateHs preOtherStateHs;
+
+    public OtherStateHsPanel(OtherStateHs otherStateHs,
+                             OtherStateHs preOtherStateHs) {
+        this.otherStateHs = otherStateHs;
+        this.preOtherStateHs = preOtherStateHs;
+        this.add(new JLabel("其他状态"));
+    }
 
     @Override
     protected void update() {

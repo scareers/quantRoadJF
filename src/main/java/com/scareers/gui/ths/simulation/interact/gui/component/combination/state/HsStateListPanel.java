@@ -1,16 +1,14 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.state;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
+import org.jdesktop.swingx.JXPanel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,20 +22,25 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  */
 public class HsStateListPanel extends SecurityDisplayPanel {
     List<HsStatePanel> hsStatePanelList = new ArrayList<>(); // 复用控件
-    JPanel kernelPanel = new JPanel();
+    //    JPanel kernelPanel = new JPanel();
+    JXPanel kernelPanel = new JXPanel();
     JScrollPane jScrollPane;
 
     public HsStateListPanel() {
         this.setLayout(new BorderLayout());
         kernelPanel.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP, 1, 1)); // 自定义上下浮动的布局
+        kernelPanel.setScrollableTracksViewportHeight(false);
+        kernelPanel.setScrollableTracksViewportWidth(true);
 
         jScrollPane = new JScrollPane();
+
         jScrollPane.setBorder(null);
         JLabel label = new JLabel("数据获取中"); // 默认显示内容
         label.setForeground(Color.red);
         jScrollPane.setViewportView(label); // 占位
         jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
         jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
         jScrollPane.getVerticalScrollBar().setUnitIncrement(30); // 增加滚动速度

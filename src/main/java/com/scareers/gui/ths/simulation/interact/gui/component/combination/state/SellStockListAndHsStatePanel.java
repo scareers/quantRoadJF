@@ -8,6 +8,8 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.securi
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import lombok.SneakyThrows;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.Collections;
 import java.util.Vector;
 import java.util.concurrent.TimeoutException;
