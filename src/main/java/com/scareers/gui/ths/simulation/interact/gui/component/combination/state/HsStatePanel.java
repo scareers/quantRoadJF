@@ -64,7 +64,9 @@ public class HsStatePanel extends DisplayPanel {
 
     // 基本数据展示panel --> 显示四类基本数据状态
     JPanel baseInfoPanel; // 基本数据的展示, 分为4大状态4大小组件, 如下4个Panel展示
-    IndexStateHsPanel indexStateHsPanel;
+    JPanel factorPanel; // 展示因子,在上. 4大状态在下
+    JPanel stateBasePanel; // 展示因子,在上. 4大状态在下
+    IndexStateHsPanel indexStateHsPanel; // 股票状态在左, 其余3在右垂直flow
     BkStateHsPanel bkStateHsPanel;
     StockStateHsPanel stockStateHsPanel;
     OtherStateHsPanel otherStateHsPanel; // 4 类状态展示组件, 放于 baseInfoPanel
@@ -100,11 +102,10 @@ public class HsStatePanel extends DisplayPanel {
         this.setBackground(COLOR_CHART_BG_EM);
         this.setLayout(new GridLayout(1, 3, 5, 0)); // 网格布局
         this.setPreferredSize(new Dimension(1024, preferHeight));
+        this.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
 
         initBaseInfoPanel(); // 基本信息展示
-
         initPdfChartPanel(); // pdf图表
-
         initCdfChartPanel(); // cdf图表
 
         this.update(); // 首次更新, 仅包含两大图表数据
@@ -121,11 +122,37 @@ public class HsStatePanel extends DisplayPanel {
         // cdfChartPanel.setPreferredSize(new Dimension(500, preferHeight));
     }
 
+    /**
+     * 基本信息展示panel:
+     * 上下分: 上为 因子内容展示
+     * 下部分,又左右分: 左为股票状态,
+     * 右上下分三份, 竖直flow.
+     */
     private void initBaseInfoPanel() {
         baseInfoPanel = new JPanel();
         baseInfoPanel.setBackground(COLOR_CHART_BG_EM);
         baseInfoPanel.setBorder(BorderFactory.createLineBorder(COLOR_TEXT_INACTIVATE_EM, 1));
-        baseInfoPanel.setLayout(new GridLayout(1, 2, 1, 1)); // 2*2网格
+        baseInfoPanel.setLayout(new BorderLayout()); // 2*2网格
+
+        factorPanel = new JPanel();
+        factorPanel.setBackground(COLOR_CHART_BG_EM);
+        factorPanel.setLayout(new GridLayout(3, 1, 1, 1));
+        String content1 = "null";
+        String content2 = "null";
+        String content3 = "null";
+        if (state.getFactorInfluenceMe() != null) {
+            content1 = state.getFactorInfluenceMe().getName();
+            content2 = state.getFactorInfluenceMe().getNameCn();
+            content3 = state.getFactorInfluenceMe().getDescription();
+
+        }
+
+        factorPanel.add(getDefaultJLabel(content1,Color.red));
+        factorPanel.add(getDefaultJLabel(content2,Color.green));
+        factorPanel.add(getDefaultJLabel(content3,Color.green));
+
+        stateBasePanel = new JPanel();
+        stateBasePanel.setLayout(new GridLayout(1, 2, 1, 1)); // 2*2网格
 
         indexStateHsPanel = new IndexStateHsPanel(this.indexStateHs, this.preIndexStateHs);
         bkStateHsPanel = new BkStateHsPanel(this.bkStateHs, this.preBkStateHs);
@@ -141,9 +168,12 @@ public class HsStatePanel extends DisplayPanel {
         rightPanel.add(otherStateHsPanel);
 
 //        baseInfoPanel.add(new JScrollPane(stockStateHsPanel)); // 股票数据多, 在左.
-        baseInfoPanel.add(stockStateHsPanel); // 股票数据多, 在左.
-        baseInfoPanel.add(rightPanel);
+        stateBasePanel.add(stockStateHsPanel); // 股票数据多, 在左.
+        stateBasePanel.add(rightPanel);
 
+
+        baseInfoPanel.add(factorPanel, BorderLayout.NORTH);
+        baseInfoPanel.add(stateBasePanel, BorderLayout.CENTER);
     }
 
     /**

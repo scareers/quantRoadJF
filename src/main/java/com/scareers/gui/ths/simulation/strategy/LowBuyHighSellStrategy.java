@@ -92,8 +92,14 @@ public class LowBuyHighSellStrategy extends Strategy {
         List<String> yesterdayH = initYesterdayHolds();
 
         // 优化股票池添加逻辑
-        SecurityPool.addToTodaySelectedStocks(SecurityBeanEm.createStockList(lbHsSelector.getSelectResults()));// 今选
-        SecurityPool.addToYesterdayHoldStocks(SecurityBeanEm.createStockList(yesterdayH)); // 昨持
+        List<SecurityBeanEm> selectBeans = SecurityBeanEm.createStockList(lbHsSelector.getSelectResults());
+        SecurityPool.addToTodaySelectedStocks(selectBeans);// 今选
+        List<SecurityBeanEm> yesterdayHoldBeans = SecurityBeanEm.createStockList(yesterdayH);
+        SecurityPool.addToYesterdayHoldStocks(yesterdayHoldBeans); // 昨持
+
+        selectBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo())); // 将相关板块加入keyBks
+        yesterdayHoldBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo()));
+
         SecurityPool.addToKeyIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
 
         SecurityPool.flushPriceLimitMap();

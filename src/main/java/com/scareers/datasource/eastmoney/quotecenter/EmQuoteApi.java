@@ -82,9 +82,9 @@ public class EmQuoteApi {
 //            log.info(datas.toString());
 //        });
 
-        Console.log(getStockHandicap("002761", 3000, 3));
+//        Console.log(getStockHandicap("002761", 3000, 3));
 
-//        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
+        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
 //        Console.log(getNdayFsAndRealTimePushWithLeadPriceNonSSE(SecurityBeanEm.createIndex("000001"), 30000, 3));
 //        Console.log(getBkMembersQuote(SecurityBeanEm.createBK("BK0917"), 3000, 3));
 
@@ -967,7 +967,7 @@ public class EmQuoteApi {
     }
 
     /**
-     * 获取最多最近5天 以及实时 3秒 推送行情. 指数包含领先价格, 板块和个股则为最新价格;
+     * 获取最多最近5天 以及实时 3秒 推送行情. 指数包含领先价格, 板块和个股则为;
      * 该api为东财行情页面的 1到5天 分时图访问的api -------------->
      * 指数1分钟分时图, 包含 "领先" 价格
      * 东方财富 并无 指数的黄线 的称呼, 借用同花顺的称呼为 "领先价格"

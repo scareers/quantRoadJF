@@ -3,9 +3,12 @@ package com.scareers.datasource.eastmoney;
 import cn.hutool.core.lang.Console;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
+import joinery.DataFrame;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -226,7 +229,7 @@ public class SecurityBeanEm implements Serializable {
     private String InnerCode;
 
     private SecType secType = SecType.NULL;
-
+    private List<SecurityBeanEm> bkListBelongTo; // 个股该字段将被填充, 所属板块列表
 
     /**
      * 表示当前已转换类型! 保证仅转换一次!
@@ -297,6 +300,14 @@ public class SecurityBeanEm implements Serializable {
             secType = SecType.FAIL;
             Console.log(this.queryResults);
             throw new Exception("转换StockBean为股票Bean异常");
+        }
+
+        DataFrame<Object> bkDf = EmQuoteApi.getBksTheStockBelongTo(this, 3000, 4);
+        if (bkDf == null) {
+            secType = SecType.FAIL;
+            throw new Exception("转换StockBean为股票Bean异常: 获取所属板块列表失败");
+        } else {
+            this.bkListBelongTo = createBKList(DataFrameS.getColAsStringList(bkDf, "板块代码"));
         }
         return this;
     }
@@ -592,6 +603,9 @@ public class SecurityBeanEm implements Serializable {
                 builder.append("昨持今择");
                 builder.append("]</font>"); // 简单形式
             } else {
+
+
+
                 builder.append(" <font color=\"red\">[");
                 builder.append("未知类型");
                 builder.append("]</font>"); // 简单形式
