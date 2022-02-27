@@ -135,7 +135,7 @@ public class SellPointDecideFactorHs extends HsFactor {
         }
 
 
-        if (state.getNewPricePercentToPre2Close() < SettingsOfSellPointFactor.execHighSellThreshold) {
+        if (state.getChgPToPre2Close() < SettingsOfSellPointFactor.execHighSellThreshold) {
             return false; // 价格必须足够高, 才可能卖出
         }
 

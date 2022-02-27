@@ -5,7 +5,8 @@ import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStat
 
 import javax.swing.*;
 
-import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.HsStatePanel.getDefaultJLabel;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel.getDefaultJLabel;
+
 
 /**
  * description: 高卖指数状态展示

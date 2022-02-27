@@ -236,7 +236,7 @@ public class HsStatePanel0 extends DisplayPanel {
         // 动态设置, 可对比显示不同颜色
         isSellPointValueLabel.setText(toStringCheckNull(state.getStockStateHs().getSellPointCurrent()));
         newPriceValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPriceTrans()));
-        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getStockStateHs().getNewPricePercentToPre2Close()));
+        chgPercentToPre2cValueLabel.setText(toStringCheckNull(state.getStockStateHs().getChgPToPre2Close()));
         indexPercentValueLabel.setText(toStringCheckNull(state.getIndexStateHs().getIndexPriceChgPtCurrent()));
         cdfProbabilityValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfProbabilityOfCurrentPricePercent()));
         cdfRateValueLabel.setText(toStringCheckNull(state.getStockStateHs().getCdfRateForPosition()));
@@ -250,8 +250,8 @@ public class HsStatePanel0 extends DisplayPanel {
             changeColorWhenTextDiff(newPriceLabel, newPriceValueLabel, Color.red, state.getStockStateHs().getNewPriceTrans(),
                     preState.getStockStateHs().getNewPriceTrans());
             changeColorWhenTextDiff(chgPercentToPre2cLabel, chgPercentToPre2cValueLabel, Color.red,
-                    state.getStockStateHs().getNewPricePercentToPre2Close(),
-                    preState.getStockStateHs().getNewPricePercentToPre2Close());
+                    state.getStockStateHs().getChgPToPre2Close(),
+                    preState.getStockStateHs().getChgPToPre2Close());
             changeColorWhenTextDiff(indexPercentLabel, indexPercentValueLabel, Color.red,
                     state.getIndexStateHs().getIndexPriceChgPtCurrent(),
                     preState.getIndexStateHs().getIndexPriceChgPtCurrent());

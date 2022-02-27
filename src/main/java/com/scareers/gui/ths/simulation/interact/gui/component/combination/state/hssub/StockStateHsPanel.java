@@ -7,8 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_CHART_BG_EM;
-import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.HsStatePanel.changeColorWhenTextDiff;
-import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.hssub.HsStatePanel.getDefaultJLabel;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel.changeColorWhenTextDiff;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.state.HsStatePanel.getDefaultJLabel;
 import static com.scareers.utils.CommonUtil.toStringCheckNull;
 
 
@@ -21,11 +21,6 @@ import static com.scareers.utils.CommonUtil.toStringCheckNull;
 public class StockStateHsPanel extends DisplayPanel {
     StockStateHs stockStateHs;
     StockStateHs preStockStateHs;
-
-
-// 放到主baseInfo, 因为该属性在 HsState上面, 而非 StockStateHs上面
-//    JLabel factorLabel = getDefaultJLabel("影响因子", Color.yellow);
-//    JLabel factorValueLabel = getDefaultJLabel(Color.yellow);
 
 
     JLabel stockCodeLabel = getDefaultJLabel("股票代码");
@@ -136,7 +131,7 @@ public class StockStateHsPanel extends DisplayPanel {
         // 动态设置, 可对比显示不同颜色
         isSellPointValueLabel.setText(toStringCheckNull(this.stockStateHs.getSellPointCurrent()));
         newPriceValueLabel.setText(toStringCheckNull(this.stockStateHs.getNewPriceTrans()));
-        chgPercentToPre2cValueLabel.setText(toStringCheckNull(this.stockStateHs.getNewPricePercentToPre2Close()));
+        chgPercentToPre2cValueLabel.setText(toStringCheckNull(this.stockStateHs.getChgPToPre2Close()));
         cdfProbabilityValueLabel
                 .setText(toStringCheckNull(this.stockStateHs.getCdfProbabilityOfCurrentPricePercent()));
         cdfRateValueLabel.setText(toStringCheckNull(this.stockStateHs.getCdfRateForPosition()));
@@ -153,8 +148,8 @@ public class StockStateHsPanel extends DisplayPanel {
                     this.stockStateHs.getNewPriceTrans(),
                     this.preStockStateHs.getNewPriceTrans());
             changeColorWhenTextDiff(chgPercentToPre2cLabel, chgPercentToPre2cValueLabel, Color.red,
-                    this.stockStateHs.getNewPricePercentToPre2Close(),
-                    this.preStockStateHs.getNewPricePercentToPre2Close());
+                    this.stockStateHs.getChgPToPre2Close(),
+                    this.preStockStateHs.getChgPToPre2Close());
             changeColorWhenTextDiff(cdfProbabilityLabel, cdfProbabilityValueLabel, Color.red,
                     this.stockStateHs.getCdfProbabilityOfCurrentPricePercent(),
                     this.preStockStateHs.getCdfProbabilityOfCurrentPricePercent());

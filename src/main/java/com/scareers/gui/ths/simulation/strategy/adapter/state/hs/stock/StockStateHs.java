@@ -68,7 +68,8 @@ public class StockStateHs implements Serializable {
     protected transient DataFrame<Object> fsData; // 当前分时图
     protected transient DataFrame<Object> fsTransData; // 当前分时成交数据
     protected Double newPriceTrans; // 最新成交价格, 从分时成交获取
-    protected Double newPricePercentToPre2Close; // 相对于前2收盘价的涨跌幅
+    protected Double chgPToPre2Close; // 相对于前2收盘价的涨跌幅
+    protected Double chgPToday; // 相对于昨日收盘, 即 今日常规涨跌幅
 
     // 自动, 不变, 读取LowBuyHighSellStrategyAdapter 的实时账户状态
     public Integer amountsTotalYc; // yesterday close; 总可卖出数量
@@ -121,15 +122,20 @@ public class StockStateHs implements Serializable {
         fsTransData = FsTransactionFetcher.getFsTransData(this.bean);
         fsTransData = FsTransactionFetcher.getFsTransData(this.bean);
         newPriceTrans = FsTransactionFetcher.getNewestPrice(this.bean);
-        if (pre2ClosePrice != null && newPriceTrans != null) { // 需要前2收盘和当前最新成交两个价格不为null
-            newPricePercentToPre2Close = newPriceTrans / pre2ClosePrice - 1;
+        if (newPriceTrans != null) {
+            if (pre2ClosePrice != null) { // 需要前2收盘和当前最新成交两个价格不为null
+                chgPToPre2Close = newPriceTrans / pre2ClosePrice - 1;
+            }
+            if (preClosePrice != null) {
+                chgPToday = newPriceTrans / preClosePrice - 1;
+            }
         }
+
         amountsTotalYc = LowBuyHighSellStrategyAdapter.yesterdayStockHoldsBeSellMap.get(this.stockCode);
         actualAmountHighSelled = LowBuyHighSellStrategyAdapter.actualAmountHighSelledMap.get(this.stockCode);
         availableAmountForHs = LowBuyHighSellStrategyAdapter.availableAmountForHsMap.get(this.stockCode);
 
     }
-
 
 
     private void initDistribution() {
