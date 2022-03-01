@@ -114,7 +114,7 @@ public class SellPointDecideFactorHs extends HsFactor {
 
         // 0	000010    	0          	09:15:09 	3.8  	177 	4
         /*
-            stock_code,market,time_tick,price,vol,bs
+            sec_code,market,time_tick,price,vol,bs
          */
         DataFrame<Object> fsTransDf = state.getFsTransData();
 

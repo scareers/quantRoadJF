@@ -48,9 +48,9 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 public class FsFetcher {
     public static void main(String[] args) throws Exception {
         // 测试初始化股票池
-        SecurityPool.addToOtherCareBKs(SecurityPool.createBKPool(10, true, Arrays.asList("概念板块")));
-        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
-        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
+        SecurityPool.addToOtherCareBonds(SecurityPool.createBondPool(10, true, Arrays.asList("可转债")));
+//        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
+//        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
         SecurityPool.addToOtherCareIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());
 
         Console.log(FsFetcher.getStockPool());
@@ -356,7 +356,7 @@ public class FsFetcher {
      * @return 上证指数df;
      */
     public static DataFrame<Object> getShangZhengZhiShuFs() {
-        return getFsData(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
+        return getFsData(SecurityBeanEm.getShangZhengZhiShu());
     }
 
     /**
@@ -365,7 +365,7 @@ public class FsFetcher {
      * @return 深证成指df;
      */
     public static DataFrame<Object> getShenZhengChengZhiFs() {
-        return getFsData(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
+        return getFsData(SecurityBeanEm.getShenZhengChengZhi());
     }
 
     /**

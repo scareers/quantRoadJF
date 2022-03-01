@@ -2275,7 +2275,7 @@
                 hash: {},
                 data: o,
                 loc: {start: {line: 37, column: 95}, end: {line: 37, column: 103}}
-            }) : c) + '"></a></td>    \r\n                <td><div class="stocktd"><a class="stock_code quote_' + f(typeof (c = null != (c = p(n, "code") || (null != t ? p(t, "code") : t)) ? c : u) === d ? c.call(l, {
+            }) : c) + '"></a></td>    \r\n                <td><div class="stocktd"><a class="sec_code quote_' + f(typeof (c = null != (c = p(n, "code") || (null != t ? p(t, "code") : t)) ? c : u) === d ? c.call(l, {
                 name: "code",
                 hash: {},
                 data: o,

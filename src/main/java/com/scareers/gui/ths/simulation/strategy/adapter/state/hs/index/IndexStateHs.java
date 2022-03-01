@@ -64,9 +64,9 @@ public class IndexStateHs implements Serializable {
     }
 
     private void initIndexBean(SecurityBeanEm beanEm) {
-        indexBean = SecurityBeanEm.SHANG_ZHENG_ZHI_SHU;
+        indexBean = SecurityBeanEm.getShangZhengZhiShu();
         if (beanEm.isShenA()) {
-            indexBean = SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI;
+            indexBean = SecurityBeanEm.getShenZhengChengZhi();
         } else if (!beanEm.isHuA()) {
             log.error("股票不属于沪深A股,默认使用上证指数: {} - {}", beanEm.getSecCode(), beanEm.getName());
         }

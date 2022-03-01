@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSONObject;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.ToString;
@@ -171,14 +172,7 @@ public class IndexBkHandicap extends Handicap {
     private static final Log log = LogUtil.getLogger();
 
     private Double tryParseDoubleAndDivide100(String field) {
-        Double res = null;
-        try {
-            res = rawJson.getDouble(field);
-        } catch (Exception e) {
-            log.warn("IndexBkHandicap 字段解析为Double错误!");
-            e.printStackTrace();
-        }
-
+        Double res = tryGetDoubleFromRawJson(field);
         if (res != null) {
             return res / 100.0;
         }
@@ -193,19 +187,19 @@ public class IndexBkHandicap extends Handicap {
         highPrice = tryParseDoubleAndDivide100("f44");
         lowPrice = tryParseDoubleAndDivide100("f45");
         todayOpen = tryParseDoubleAndDivide100("f46");
-        totalVol = rawJson.getDouble("f47");
-        totalAmount = rawJson.getDouble("f48");
-        outerVol = rawJson.getDouble("f49");
-        innerVol = rawJson.getDouble("f161");
+        totalVol = tryGetDoubleFromRawJson("f47");
+        totalAmount = tryGetDoubleFromRawJson("f48");
+        outerVol = tryGetDoubleFromRawJson("f49");
+        innerVol = tryGetDoubleFromRawJson("f161");
         volRatio = tryParseDoubleAndDivide100("f50");
         preClose = tryParseDoubleAndDivide100("f60");
 
-        raisingStockCount = rawJson.getDouble("f113");
-        fallStockCount = rawJson.getDouble("f114");
-        flatStockCount = rawJson.getDouble("f115");
+        raisingStockCount = tryGetDoubleFromRawJson("f113");
+        fallStockCount = tryGetDoubleFromRawJson("f114");
+        flatStockCount = tryGetDoubleFromRawJson("f115");
 
-        totalMarketValue = rawJson.getDouble("f116");
-        flowMarketValue = rawJson.getDouble("f117");
+        totalMarketValue = tryGetDoubleFromRawJson("f116");
+        flowMarketValue = tryGetDoubleFromRawJson("f117");
 
         changePercentOf5Day = tryParseDoubleAndDivide100("f119");
         changePercentOf20Day = tryParseDoubleAndDivide100("f120");
@@ -216,6 +210,11 @@ public class IndexBkHandicap extends Handicap {
         changeValue = tryParseDoubleAndDivide100("f169");
         turnoverRate = tryParseDoubleAndDivide100("f168");
         amplitude = tryParseDoubleAndDivide100("f171");
+    }
+
+
+    private Double tryGetDoubleFromRawJson(String field) {
+        return JSONUtilS.tryParseDoubleOrNull(rawJson, field);
     }
 
 

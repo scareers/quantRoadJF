@@ -51,11 +51,14 @@ public class SecurityBeanEm implements Serializable {
     private static HashSet<String> bkSecurityTypeNames = new HashSet<>(Collections.singletonList("板块"));
     private static HashSet<String> indexSecurityTypeNames = new HashSet<>(Collections.singletonList("指数"));
     private static HashSet<String> bondSecurityTypeNames = new HashSet<>(Collections.singletonList("债券"));
-    public static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
-    public static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
-
+    private static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
+    private static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
 
     public static void main(String[] args) throws Exception {
+
+        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
+        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
+
 //        Console.log(SecurityBeanEm.createBK("充电桩").isConceptBK());
 //        Console.log(SecurityBeanEm.createBK("北京板块").isAreaBK());
 //        Console.log(SecurityBeanEm.createBK("重庆板块").isAreaBK());
@@ -70,11 +73,11 @@ public class SecurityBeanEm implements Serializable {
 //        Console.log(querySecurityId("20融创01"));
 //        Console.log(querySecurityId("17常德01"));
 
-        Console.log(SecurityBeanEm.createBond("广电转债").isBond());
-        Console.log(SecurityBeanEm.createBond("金农转债").isConvertibleBond());
-        Console.log(SecurityBeanEm.createBond("17常德01").isBond());
-        Console.log(SecurityBeanEm.createBond("22国债01").isConvertibleBond());
-        Console.log(SecurityBeanEm.createBondList(Arrays.asList("广电转债","金农转债")));
+//        Console.log(SecurityBeanEm.createBond("广电转债").isBond());
+//        Console.log(SecurityBeanEm.createBond("金农转债").isConvertibleBond());
+//        Console.log(SecurityBeanEm.createBond("17常德01").isBond());
+//        Console.log(SecurityBeanEm.createBond("22国债01").isConvertibleBond());
+//        Console.log(SecurityBeanEm.createBondList(Arrays.asList("广电转债", "金农转债")));
 
         /*
         [{"SecurityType":"21","Classify":"Bond","JYS":"4","QuoteID":"1.110044","TypeUS":"4","Code":"110044","MktNum":"1","Name":"广电转债","UnifiedCode":"110044","InnerCode":"14636945584533","SecurityTypeName":"债券","PinYin":"GDZZ","ID":"1100441","MarketType":"1"}]
@@ -566,6 +569,21 @@ public class SecurityBeanEm implements Serializable {
         res = new SecurityBeanEm(queryCondition).convertToBond();
         beanPool.put(cacheKey, res);
         return res;
+    }
+
+    public static SecurityBeanEm getShenZhengZhuanZhaiIndex() throws Exception {
+        return SecurityBeanEm.createIndex("深证转债");
+    }
+    public static SecurityBeanEm getShangZhengZhuanZhaiIndex() throws Exception {
+        return SecurityBeanEm.createIndex("上证转债");
+    }
+
+    public static SecurityBeanEm getShangZhengZhiShu() {
+        return SHANG_ZHENG_ZHI_SHU;
+    }
+
+    public static SecurityBeanEm getShenZhengChengZhi() {
+        return SHEN_ZHENG_CHENG_ZHI;
     }
 
     public static SecurityBeanEm createBeanWithType(String queryCondition, SecType type) throws Exception {

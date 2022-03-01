@@ -188,4 +188,29 @@ public class JSONUtilS {
         }
         return null;
     }
+
+    /**
+     * 尝试解析某字段为Double, 否则返回null. fastjson默认报错
+     *
+     * @param jsonObject
+     * @param key
+     * @return
+     */
+    public static Double tryParseDoubleOrNull(JSONObject jsonObject, String key) {
+        try {
+            return jsonObject.getDouble(key);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Long tryParseLongOrNull(JSONObject jsonObject, String key) {
+        try {
+            return jsonObject.getLong(key);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+
 }

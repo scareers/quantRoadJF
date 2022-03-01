@@ -322,7 +322,7 @@
 //                // 3.此刻是卖点, 计算以最新价格的 应当卖出的仓位 (相对于原始持仓)
 //                Double cdfCalcPrice =
 //                        FSBacktestOfLowBuyNextHighSell.BacktestTaskOfPerDay
-//                                // stock_code,market,time_tick,price,vol,bs
+//                                // sec_code,market,time_tick,price,vol,bs
 //                                .calcEquivalenceCdfUsePriceOfHighSell(newPercent, indexPricePercentThatTime,
 //                                        indexBelongThatTimePriceEnhanceArgHighSell);
 //                // cdf使用 high 计算.  价格使用 sellPrice 计算
@@ -480,7 +480,7 @@
 //        double lastFsClose = closes.get(closes.size() - 1); // 作为 计算最新一分钟 价格的基准, 计算涨跌
 //        // 0	000010    	0          	09:15:09 	3.8  	177 	4
 //        /*
-//            stock_code,market,time_tick,price,vol,bs
+//            sec_code,market,time_tick,price,vol,bs
 //         */
 //        DataFrame<Object> fsTransDf = FsTransactionFetcher.getFsTransData(SecurityBeanEm.createStock(stock));
 //        // 最后的有记录的时间, 前推 60s
@@ -590,7 +590,7 @@
 //
 //        // 0	000010    	0          	09:15:09 	3.8  	177 	4
 //        /*
-//            stock_code,market,time_tick,price,vol,bs
+//            sec_code,market,time_tick,price,vol,bs
 //         */
 //        DataFrame<Object> fsTransDf =
 //                FsTransactionFetcher.getFsTransactionDatas()
@@ -681,7 +681,7 @@
 //    private double getCurrentIndexChangePercent(int market) throws Exception {
 //        DataFrame<Object> dfTemp;
 //        if (market == 0) { // 深证成指
-//            // stock_code,market,time_tick,price,vol,bs
+//            // sec_code,market,time_tick,price,vol,bs
 //            dfTemp = FsTransactionFetcher.getShenZhengChengZhiFs();
 //            return Double.parseDouble(dfTemp.get(dfTemp.length() - 1, 3).toString()) / getSzczPreClose() - 1;
 //        } else {

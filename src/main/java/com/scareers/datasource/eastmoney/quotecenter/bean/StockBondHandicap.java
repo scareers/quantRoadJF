@@ -4,13 +4,14 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.utils.JSONUtilS;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.util.HashMap;
 
 /**
- * description: 表示个股实时盘口各项数据的对象. rawJson保存原始 json 对象.
+ * description: 表示 个股/转债 实时盘口各项数据的对象. rawJson保存原始 json 对象.
  * 全字段参考下文, 但只保存部分字段, 且顺序类似 东财行情页面
  * 1.5档盘口的金额由计算得到
  * 2.包含5档盘口和16项常用盘口数据+委差委比; 不包含对应可转债 以及 基本面数据;
@@ -22,7 +23,7 @@ import java.util.HashMap;
  */
 @Getter // 仅可获取属性
 @ToString
-public class StockHandicap extends Handicap{
+public class StockBondHandicap extends Handicap {
     public static HashMap<String, String> fieldsMap; // 当前使用的字段 及 对应描述.
     public static String fieldsStr; // 字段字符串. , 分割
 
@@ -32,73 +33,75 @@ public class StockHandicap extends Handicap{
     }
 
     /* toString()
-    StockHandicap(
-        dateTime=2022-02-14 19:19:36
+        StockBondHandicap(
+            dateTime=2022-03-01 20:26:47,
+            secCode=127007,
+            secName=湖广转债,
 
-        stockCodeSimple=000001,
-        stockName=平安银行,
-        consignRatio=11.02,
-        consignDifference=1426.0,
+            consignRatio=40.28,
+            consignDifference=1790.0,
 
-        sell5Price=16.63,
-        sell5Vol=839.0,
-        sell5Amount=1395257.0,
+            sell5Price=146.98,
+            sell5Vol=23.0,
+            sell5Amount=338054.0,
 
-        sell4Price=16.62,
-        sell4Vol=1158.0,
-        sell4Amount=1924596.0000000002,
+            sell4Price=146.9,
+            sell4Vol=1.0,
+            sell4Amount=14690.0,
 
-        sell3Price=16.61,
-        sell3Vol=947.0,
-        sell3Amount=1572967.0,
+            sell3Price=146.855,
+            sell3Vol=14.0,
+            sell3Amount=205596.99999999997,
 
-        sell2Price=16.6,
-        sell2Vol=1996.0,
-        sell2Amount=3313360.0000000005,
+            sell2Price=146.479,
+            sell2Vol=678.0,
+            sell2Amount=9931276.200000001,
 
-        sell1Price=16.59,
-        sell1Vol=821.0,
-        sell1Amount=1362039.0,
+            sell1Price=146.451,
+            sell1Vol=611.0,
+            sell1Amount=8948156.1,
 
-        buy1Price=16.58,
-        buy1Vol=390.0,
-        buy1Amount=646619.9999999999,
+            buy1Price=146.4,
+            buy1Vol=2609.0,
+            buy1Amount=3.819576E7,
 
-        buy2Price=16.57,
-        buy2Vol=2162.0,
-        buy2Amount=3582434.0000000005,
+            buy2Price=146.37,
+            buy2Vol=213.0,
+            buy2Amount=3117681.0,
 
-        buy3Price=16.56,
-        buy3Vol=729.0,
-        buy3Amount=1207224.0,
+            buy3Price=146.365,
+            buy3Vol=9.0,
+            buy3Amount=131728.5,
 
-        buy4Price=16.55,
-        buy4Vol=2905.0,
-        buy4Amount=4807775.0,
+            buy4Price=146.36,
+            buy4Vol=246.0,
+            buy4Amount=3600456.0000000005,
 
-        buy5Price=16.54,
-        buy5Vol=1001.0,
-        buy5Amount=1655654.0,
+            buy5Price=146.35,
+            buy5Vol=40.0,
+            buy5Amount=585400.0,
 
-        newPrice=16.58,
-        avgPrice=16.67,
-        changePercent=-3.04,
-        changeValue=-0.52,
-        totalVol=1150659.0,
-        totalAmount=1.917613424E9,
-        turnoverRate=0.59,
-        volRatio=0.93,
-        highPrice=17.15,
-        lowPrice=16.51,
-        todayOpen=17.1,
-        preClose=17.1,
-        highLimitPrice=18.81,
-        lowLimitPrice=15.39,
-        outerVol=447054.0,
-        innerVol=703604.0,
+            newPrice=146.4,
+            avgPrice=149.011,
+            changePercent=1.67,
+            changeValue=2.4,
+            totalVol=939722.0,
+            totalAmount=1.400290656E9,
+            turnoverRate=226.7,
+            volRatio=1.37,
+            highPrice=154.8,
+            lowPrice=142.98,
+            todayOpen=144.3,
+            preClose=144.0,
 
-        rawJson={"f50":0.93,"f60":17.1,"f71":16.67,"f169":-0.52,"f52":15.39,"f168":0.59,"f51":18.81,"f43":16.58,"f45":16.51,"f44":17.15,"f47":1150659,"f58":"平安银行","f46":17.1,"f57":"000001","f161":703604,"f49":447054,"f48":1917613424,"f170":-3.04,"f192":1426,"f191":11.02}
-        )
+            highLimitPrice=null, // 可转债无涨跌停
+            lowLimitPrice=null,
+
+            outerVol=472978.0,
+            innerVol=466744.0,
+
+            rawJson={"f137":11672290.0,"f258":"-","f136":302190868.0,"f257":0,"f135":313863158.0,"f256":"-","f255":0,"f254":"-","f253":"-","f252":"-","f12":40,"f251":"-","f11":146.35,"f250":"-","f14":246,"f13":146.36,"f16":9,"f15":146.365,"f18":213,"f17":146.37,"f19":146.4,"f139":37766485.0,"f138":41540966.0,"f20":2609,"f128":"-","f127":"-","f279":255,"f32":23,"f275":"-","f31":146.98,"f274":"-","f34":1,"f273":"-","f33":146.9,"f36":14,"f271":"-","f35":146.855,"f270":0,"f38":678,"f37":146.479,"f39":146.451,"f148":580814640.0,"f269":"-","f147":569333568.0,"f268":2.2,"f146":-191216.0,"f267":7.42,"f145":506911248.0,"f266":7.26,"f40":611,"f43":146.4,"f144":506720032.0,"f143":7897809.0,"f264":"湖北广电","f45":142.98,"f142":264424383.0,"f263":0,"f44":154.8,"f141":272322192.0,"f262":"000665","f47":939722,"f140":3774481.0,"f261":"-","f46":144.3,"f260":"-","f49":472978,"f48":1400290656.0,"f149":-11481072.0,"f50":1.37,"f52":"-","f51":"-","f177":1,"f55":"-","f295":"-","f58":"湖广转债","f173":"-","f294":"-","f57":"127007","f293":"-","f292":5,"f170":1.67,"f60":144.0,"f169":2.4,"f168":226.7,"f62":0,"f167":"-","f288":-1,"f287":"-","f286":0,"f164":"-","f285":"-","f163":"-","f284":0,"f162":"-","f161":466744,"f282":"-","f281":"-","f280":"-","f71":149.011,"f111":8,"f199":"-","f110":0,"f78":0,"f197":-0.82,"f196":-0.01,"f195":0.56,"f194":0.27,"f193":0.83,"f192":1790,"f191":40.28,"f190":"-","f117":606858597.6,"f80":"[{\"b\":202203010930,\"e\":202203011130},{\"b\":202203011300,\"e\":202203011500}]","f116":606858597.6,"f104":"-","f85":4145209.0,"f84":4145209.0,"f189":20180801,"f188":"-","f86":1646120043,"f187":"-","f186":"-","f185":"-","f184":"-","f183":"-","f181":0,"f107":0,"f92":"-","f105":"-"})
+
 
         + 时间,普通秒形式
      */
@@ -163,8 +166,8 @@ public class StockHandicap extends Handicap{
 
     String dateTime; // 由于该api没有时间字段. 自行在new时生成 yyyy-MM-dd HH:mm:ss 形式 DateUtil.now();
     // 资产代码,名称
-    String stockCodeSimple; // "f57": "600000", 资产代码
-    String stockName; // "f58": "浦发银行", 名称
+    String secCode; // "f57": "600000", 资产代码
+    String secName; // "f58": "浦发银行", 名称
 
     // 委比,委差
     Double consignRatio; // "f191": -41.62, 委比
@@ -232,20 +235,26 @@ public class StockHandicap extends Handicap{
 
     // {"f50":0.93,"f60":17.1,"f71":16.67,"f169":-0.52,"f52":15.39,"f168":0.59,"f51":18.81,"f43":16.58,"f45":16.51,"f44":17.15,"f47":1150659,"f58":"平安银行","f46":17.1,"f57":"000001","f161":703604,"f49":447054,"f48":1917613424,"f170":-3.04,"f192":1426,"f191":11.02}
     JSONObject rawJson;
+    Integer oneHandAmount = 100; // 每手数量, 股票100, 转债10. 构造器传递是否为转债. 在自动计算 10档盘口的 金额时, 乘法因子不同
 
-    public StockHandicap(JSONObject rawJson) {
+    public StockBondHandicap(JSONObject rawJson, boolean isBond) {
         this.rawJson = rawJson;
         this.dateTime = DateUtil.now();
-
+        if (isBond) {
+            this.oneHandAmount = 10; // 转债10, 将影响10档金额计算
+        }
         parseAttrs();
     }
 
+    public StockBondHandicap(JSONObject rawJson) {
+        this(rawJson, true);
+    }
+
     private void parseAttrs() {
-        this.stockCodeSimple = rawJson.getString("f57");
-        this.stockName = rawJson.getString("f58");
-        Console.log(rawJson);
-        this.consignRatio = rawJson.getDouble("f191");
-        this.consignDifference = rawJson.getDouble("f192");
+        this.secCode = rawJson.getString("f57");
+        this.secName = rawJson.getString("f58");
+        this.consignRatio = tryGetDoubleFromRawJson("f191");
+        this.consignDifference = tryGetDoubleFromRawJson("f192");
 
         initSells();
         initBuys();
@@ -256,87 +265,91 @@ public class StockHandicap extends Handicap{
      * 16项常用盘口
      */
     private void initCommonSixteen() {
-        newPrice = rawJson.getDouble("f43");
-        avgPrice = rawJson.getDouble("f71");
-        changePercent = rawJson.getDouble("f170");
-        changeValue = rawJson.getDouble("f169");
-        totalVol = rawJson.getDouble("f47");
-        totalAmount = rawJson.getDouble("f48");
-        turnoverRate = rawJson.getDouble("f168");
-        volRatio = rawJson.getDouble("f50");
-        highPrice = rawJson.getDouble("f44");
-        lowPrice = rawJson.getDouble("f45");
-        todayOpen = rawJson.getDouble("f46");
-        preClose = rawJson.getDouble("f60");
-        highLimitPrice = rawJson.getDouble("f51");
-        lowLimitPrice = rawJson.getDouble("f52");
-        outerVol = rawJson.getDouble("f49");
-        innerVol = rawJson.getDouble("f161");
+        newPrice = tryGetDoubleFromRawJson("f43");
+        avgPrice = tryGetDoubleFromRawJson("f71");
+        changePercent = tryGetDoubleFromRawJson("f170");
+        changeValue = tryGetDoubleFromRawJson("f169");
+        totalVol = tryGetDoubleFromRawJson("f47");
+        totalAmount = tryGetDoubleFromRawJson("f48");
+        turnoverRate = tryGetDoubleFromRawJson("f168");
+        volRatio = tryGetDoubleFromRawJson("f50");
+        highPrice = tryGetDoubleFromRawJson("f44");
+        lowPrice = tryGetDoubleFromRawJson("f45");
+        todayOpen = tryGetDoubleFromRawJson("f46");
+        preClose = tryGetDoubleFromRawJson("f60");
+        highLimitPrice = tryGetDoubleFromRawJson("f51");
+        lowLimitPrice = tryGetDoubleFromRawJson("f52");
+        outerVol = tryGetDoubleFromRawJson("f49");
+        innerVol = tryGetDoubleFromRawJson("f161");
+    }
+
+    private Double tryGetDoubleFromRawJson(String field) {
+        return JSONUtilS.tryParseDoubleOrNull(rawJson, field);
     }
 
     private void initSells() {
-        this.sell5Price = rawJson.getDouble("f31");
-        this.sell5Vol = rawJson.getDouble("f32");
+        this.sell5Price = tryGetDoubleFromRawJson("f31");
+        this.sell5Vol = tryGetDoubleFromRawJson("f32");
         if (this.sell5Price != null && this.sell5Vol != null) {
-            this.sell5Amount = sell5Price * sell5Vol * 100;
+            this.sell5Amount = sell5Price * sell5Vol * oneHandAmount;
         }
 
-        this.sell4Price = rawJson.getDouble("f33");
-        this.sell4Vol = rawJson.getDouble("f34");
+        this.sell4Price = tryGetDoubleFromRawJson("f33");
+        this.sell4Vol = tryGetDoubleFromRawJson("f34");
         if (this.sell4Price != null && this.sell4Vol != null) {
-            this.sell4Amount = sell4Price * sell4Vol * 100;
+            this.sell4Amount = sell4Price * sell4Vol * oneHandAmount;
         }
 
-        this.sell3Price = rawJson.getDouble("f35");
-        this.sell3Vol = rawJson.getDouble("f36");
+        this.sell3Price = tryGetDoubleFromRawJson("f35");
+        this.sell3Vol = tryGetDoubleFromRawJson("f36");
         if (this.sell3Price != null && this.sell3Vol != null) {
-            this.sell3Amount = sell3Price * sell3Vol * 100;
+            this.sell3Amount = sell3Price * sell3Vol * oneHandAmount;
         }
 
 
-        this.sell2Price = rawJson.getDouble("f37");
-        this.sell2Vol = rawJson.getDouble("f38");
+        this.sell2Price = tryGetDoubleFromRawJson("f37");
+        this.sell2Vol = tryGetDoubleFromRawJson("f38");
         if (this.sell2Price != null && this.sell2Vol != null) {
-            this.sell2Amount = sell2Price * sell2Vol * 100;
+            this.sell2Amount = sell2Price * sell2Vol * oneHandAmount;
         }
 
-        this.sell1Price = rawJson.getDouble("f39");
-        this.sell1Vol = rawJson.getDouble("f40");
+        this.sell1Price = tryGetDoubleFromRawJson("f39");
+        this.sell1Vol = tryGetDoubleFromRawJson("f40");
         if (this.sell1Price != null && this.sell1Vol != null) {
-            this.sell1Amount = sell1Price * sell1Vol * 100;
+            this.sell1Amount = sell1Price * sell1Vol * oneHandAmount;
         }
     }
 
     private void initBuys() {
-        this.buy5Price = rawJson.getDouble("f11");
-        this.buy5Vol = rawJson.getDouble("f12");
+        this.buy5Price = tryGetDoubleFromRawJson("f11");
+        this.buy5Vol = tryGetDoubleFromRawJson("f12");
         if (this.buy5Price != null && this.buy5Vol != null) {
-            this.buy5Amount = buy5Price * buy5Vol * 100;
+            this.buy5Amount = buy5Price * buy5Vol * oneHandAmount;
         }
 
-        this.buy4Price = rawJson.getDouble("f13");
-        this.buy4Vol = rawJson.getDouble("f14");
+        this.buy4Price = tryGetDoubleFromRawJson("f13");
+        this.buy4Vol = tryGetDoubleFromRawJson("f14");
         if (this.buy4Price != null && this.buy4Vol != null) {
-            this.buy4Amount = buy4Price * buy4Vol * 100;
+            this.buy4Amount = buy4Price * buy4Vol * oneHandAmount;
         }
 
-        this.buy3Price = rawJson.getDouble("f15");
-        this.buy3Vol = rawJson.getDouble("f16");
+        this.buy3Price = tryGetDoubleFromRawJson("f15");
+        this.buy3Vol = tryGetDoubleFromRawJson("f16");
         if (this.buy3Price != null && this.buy3Vol != null) {
-            this.buy3Amount = buy3Price * buy3Vol * 100;
+            this.buy3Amount = buy3Price * buy3Vol * oneHandAmount;
         }
 
 
-        this.buy2Price = rawJson.getDouble("f17");
-        this.buy2Vol = rawJson.getDouble("f18");
+        this.buy2Price = tryGetDoubleFromRawJson("f17");
+        this.buy2Vol = tryGetDoubleFromRawJson("f18");
         if (this.buy2Price != null && this.buy2Vol != null) {
-            this.buy2Amount = buy2Price * buy2Vol * 100;
+            this.buy2Amount = buy2Price * buy2Vol * oneHandAmount;
         }
 
-        this.buy1Price = rawJson.getDouble("f19");
-        this.buy1Vol = rawJson.getDouble("f20");
+        this.buy1Price = tryGetDoubleFromRawJson("f19");
+        this.buy1Vol = tryGetDoubleFromRawJson("f20");
         if (this.buy1Price != null && this.buy1Vol != null) {
-            this.buy1Amount = buy1Price * buy1Vol * 100;
+            this.buy1Amount = buy1Price * buy1Vol * oneHandAmount;
         }
     }
 }

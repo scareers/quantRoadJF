@@ -6,6 +6,11 @@ package com.scareers.datasource.eastmoney.quotecenter;
  * @author: admin
  * @date: 2022/2/25/025-11:49:48
  */
-interface SseCallback {
-    public abstract void processLine(Object line);
+public interface SseCallback<T> {
+    /**
+     * 东财sse 类型的api, 回调. 需要提供泛型
+     *
+     * @param perData
+     */
+    public abstract void process(T perData);
 }

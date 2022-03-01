@@ -80,7 +80,7 @@ public class SecurityPool {
             if (bean.isStock()) { // 股票才有涨跌停
                 priceLimitMap
                         .put(bean.getSecCode(),
-                                Objects.requireNonNull(EmQuoteApi.getStockPriceLimitToday(bean.getSecCode(),
+                                Objects.requireNonNull(EmQuoteApi.getStockPriceLimitToday(bean,
                                         2000, 3, false)));
             }
         }
@@ -417,7 +417,7 @@ public class SecurityPool {
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createBondsPool(int amount, boolean random, List<String> markets)
+    public static List<SecurityBeanEm> createBondPool(int amount, boolean random, List<String> markets)
             throws Exception {
         List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, markets,
                 SecurityBeanEm.SecType.BOND);

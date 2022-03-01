@@ -44,7 +44,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * 假设api数据于 每日 01:00:00 刷新为空, 将于9:25:02 刷新第一条今日数据! 则 01:00:00 前启动将保存到昨天数据库.
  * 因此在为 00:00 - 01:00:00 (刷新时刻) 之间, 不可运行抓取程序. 因此 -->
  * @noti 本类实现, 将在每一轮, 自动判定数据应当保存在 "昨日"还是"今日"数据库, 且切换时, 首先将所有数据设置为空df. 以免重复.
- * @noti 列参考:       stock_code	market	time_tick	price	 vol	bs
+ * @noti 列参考:       sec_code	market	time_tick	price	 vol	bs
  * @noti 列数据实例:     000002    	0     	09:15:00 	20.82	 6   	4
  * @warning 见静态属性 sleepNoFetchDateTimeRange(将在此期间暂停). 时间后建立"今日"数据表, 时间前保存到昨日数据表, 时间中sleep(1000)
  * @warning sleepNoFetchDateTimeRange 的两个时间, 均代表 "今天的某个时间区间", 不代表昨天的
@@ -56,10 +56,11 @@ import static com.scareers.utils.SqlUtil.execSql;
 @Data
 public class FsTransactionFetcher {
     public static void main(String[] args) throws Exception {
-        SecurityPool.addToOtherCareBKs(SecurityPool.createBKPool(10, true, Arrays.asList("概念板块")));
-        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
-        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
-        SecurityPool.addToOtherCareIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());
+        SecurityPool.addToOtherCareBonds(SecurityPool.createBondPool(10, true, Arrays.asList("可转债")));
+//        SecurityPool.addToOtherCareBKs(SecurityPool.createBKPool(10, true, Arrays.asList("概念板块")));
+//        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
+//        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
+//        SecurityPool.addToOtherCareIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());
 
         FsTransactionFetcher fsTransactionFetcher = getInstance
                 (
@@ -128,7 +129,7 @@ public class FsTransactionFetcher {
     private volatile AtomicBoolean firstTimeFinish; // 标志第一次抓取已经完成
     private volatile boolean stopFetch; // 可非强制停止抓取, 但并不释放资源
     private long redundancyRecords; // 冗余的请求记录数量. 例如完美情况只需要情况最新 x条数据, 此设定请求更多 +法
-    // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量
+    // tick获取时间上限, 本身只用于计算 当前应该抓取的tick数量`
     private DateTime limitTick;
     private int timeout; // 单个http访问超时毫秒
     private final int logFreq; // 分时图抓取多少次,log一次时间
@@ -317,13 +318,13 @@ public class FsTransactionFetcher {
         }
         String sql = StrUtilS.format("create table if not exists `{}`\n" +
                 "        (\n" +
-                "            stock_code varchar(128)   null,\n" +
+                "            sec_code varchar(128)   null,\n" +
                 "            market int null,\n" +
                 "            time_tick  varchar(128)   null,\n" +
                 "            price      double null,\n" +
                 "            vol        double null,\n" +
                 "            bs         varchar(8) null,\n" +
-                "            index stock_code_index (stock_code ASC),\n" +
+                "            index sec_code_index (sec_code ASC),\n" +
                 "            index market_index (market ASC),\n" +
                 "            index time_tick_index (time_tick ASC),\n" +
                 "            index bs_index (bs ASC),\n" +
@@ -479,28 +480,28 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其全部数据df
      *
      * @param stockOrIndex
-     * @return 股票数据df; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 股票数据df; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static DataFrame<Object> getFsTransData(SecurityBeanEm bean) {
         return fsTransactionDatas.get(bean);
     }
 
     /**
-     * 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * 列参考: sec_code	 market	time_tick	price	 vol	bs
      *
      * @return 上证指数df;
      */
     public static DataFrame<Object> getShangZhengZhiShuFs() {
-        return getFsTransData(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU);
+        return getFsTransData(SecurityBeanEm.getShangZhengZhiShu());
     }
 
     /**
-     * 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * 列参考: sec_code	 market	time_tick	price	 vol	bs
      *
      * @return 深证成指df;
      */
     public static DataFrame<Object> getShenZhengChengZhiFs() {
-        return getFsTransData(SecurityBeanEm.SHEN_ZHENG_CHENG_ZHI);
+        return getFsTransData(SecurityBeanEm.getShenZhengChengZhi());
     }
 
 
@@ -508,7 +509,7 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其df中 某列数据
      *
      * @param stockOrIndex
-     * @return 股票数据df某列; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 股票数据df某列; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static List<Object> getColAsObjectList(SecurityBeanEm bean, Object colNameOrIndex) {
         DataFrame<Object> fsTransData = getFsTransData(bean);
@@ -522,7 +523,7 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Double 类型
      *
      * @param stockOrIndex
-     * @return 某列List<Double>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 某列List<Double>; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static List<Double> getColByColNameOrIndexAsDouble(SecurityBeanEm bean,
                                                               Object colNameOrIndex) {
@@ -537,7 +538,7 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其df中 某列数据, 且元素转换为 String 类型
      *
      * @param stockOrIndex
-     * @return 某列List<String>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 某列List<String>; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static List<String> getColByColNameOrIndexAsString(SecurityBeanEm bean,
                                                               Object colNameOrIndex) {
@@ -552,7 +553,7 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Long 类型
      *
      * @param stockOrIndex
-     * @return 某列List<Long>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 某列List<Long>; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static List<Long> getColByColNameOrIndexAsLong(SecurityBeanEm bean,
                                                           Object colNameOrIndex) {
@@ -567,7 +568,7 @@ public class FsTransactionFetcher {
      * 给定股票/指数,获取其df中 某列数据, 且元素转换为 Integer 类型
      *
      * @param stockOrIndex
-     * @return 某列List<Integer>; 列参考: stock_code	 market	time_tick	price	 vol	bs
+     * @return 某列List<Integer>; 列参考: sec_code	 market	time_tick	price	 vol	bs
      */
     public static List<Integer> getColByColNameOrIndexAsInteger(SecurityBeanEm bean,
                                                                 Object colNameOrIndex) {
@@ -583,7 +584,7 @@ public class FsTransactionFetcher {
      * 指数则是最新指数点数
      *
      * @param stock
-     * @return 最后一条成交记录的新价格;; 列参考: stock_code	market	time_tick	price	 vol	bs
+     * @return 最后一条成交记录的新价格;; 列参考: sec_code	market	time_tick	price	 vol	bs
      */
     public static Double getNewestPrice(SecurityBeanEm bean) {
         List<Object> price = getColAsObjectList(bean, "price");

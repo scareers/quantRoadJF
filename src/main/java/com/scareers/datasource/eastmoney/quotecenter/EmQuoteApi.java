@@ -19,7 +19,7 @@ import com.scareers.annotations.SseUsing;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.bean.IndexBkHandicap;
-import com.scareers.datasource.eastmoney.quotecenter.bean.StockHandicap;
+import com.scareers.datasource.eastmoney.quotecenter.bean.StockBondHandicap;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.Tqdm;
@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_CODE;
 import static com.scareers.datasource.eastmoney.SettingsOfEastMoney.STR_SEC_NAME;
-import static com.scareers.utils.CommonUtil.countNonZeroValueOfMap;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
 
@@ -56,7 +55,7 @@ public class EmQuoteApi {
     public static Map<String, Object> MARKET_NUMBER_DICT = new ConcurrentHashMap<>();
     public static Map<Object, Object> BK_MEMBER_FIELDS = new ConcurrentHashMap<>();
     public static Map<Object, Object> BKS_STOCK_BELONG_TO_FIELDS = new ConcurrentHashMap<>();
-    public static final List<String> fSTransactionCols = Arrays.asList("stock_code", "market", "time_tick", "price",
+    public static final List<String> fSTransactionCols = Arrays.asList("sec_code", "market", "time_tick", "price",
             "vol", "bs"); // 分时成交数据列名称
 
     public static Cache<String, DataFrame<Object>> quoteHistorySingleCache = CacheUtil.newLRUCache(1024,
@@ -64,28 +63,31 @@ public class EmQuoteApi {
     public static Cache<String, List<Double>> stockPriceLimitCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股今日涨跌停
     public static Cache<String, List<Double>> stockPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
-            3600 * 1000); // 个股昨收和今开盘价
+            3600 * 1000); // 个股债券昨收和今开盘价
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 某个日期的上n个交易日?
     public static Cache<String, List<Double>> indexOrBkPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
-            3600 * 1000); // 个股昨收和今开盘价
+            3600 * 1000);
     public static Cache<String, Double> indexOrBkPreCloseCache = CacheUtil.newLRUCache(1024,
-            3600 * 1000); // 个股昨收和今开盘价
+            3600 * 1000);
     public static ThreadPoolExecutor poolExecutor; // 可能的线程池
 
 
     public static void main(String[] args) throws Exception {
+        SecurityBeanEm bean = SecurityBeanEm.createBond("湖广转债");
+//        SecurityBeanEm bean = SecurityBeanEm.createBK("风电");
+//        SecurityBeanEm bean = SecurityBeanEm.createIndex("000001");
+//        SecurityBeanEm bean = SecurityBeanEm.createStock("000001");
 
 
-//        getNdayFsAndRealTimePushWithLeadPriceSSEAsync(SecurityBeanEm.createIndex("000001"), (lineO) -> {
-//            DataFrame<Object> datas = (DataFrame<Object>) lineO;
-//            log.info(datas.toString());
-//        });
+        getNDayFsAndRealTimePushWithLeadPriceSSEAsync(bean, (dataFrame) -> {
+            log.info(dataFrame.toString());
+        });
 
-//        Console.log(getStockHandicap("002761", 3000, 3));
+//        Console.log(getStockOrBondHandicap(bean, 3000, 3));
 
-        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
-//        Console.log(getNdayFsAndRealTimePushWithLeadPriceNonSSE(SecurityBeanEm.createIndex("000001"), 30000, 3));
+//        Console.log(getBksTheStockBelongTo(SecurityBeanEm.createStock("600396"), 3000, 3));
+//        Console.log(getNdayFsAndRealTimePushWithLeadPriceNonSSE(bean, 30000, 3));
 //        Console.log(getBkMembersQuote(SecurityBeanEm.createBK("BK0917"), 3000, 3));
 
 //        Console.log(MARKETS_ARGS_DICT.keySet());
@@ -95,12 +97,13 @@ public class EmQuoteApi {
 //        Console.log(getPreCloseOfIndexOrBK(SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, 2000, 3, true));
 
 //        Console.log("个股今日涨跌停:");
-//        Console.log(getStockPriceLimitToday("000001", 2000, 1, true));
+//        Console.log(getStockPriceLimitToday(SecurityBeanEm.createStock("000001"), 2000, 1, true));
 //        Console.log("个股昨收今开:");
-//        Console.log(getStockPreCloseAndTodayOpen("000001", 2000, 1, true));
+//        Console.log(getStockBondPreCloseAndTodayOpen(SecurityBeanEm.createBond("湖广转债"), 2000, 1, true));
 //
-//        Console.log("个股盘口数据:");
-//        Console.log(getStockHandicap("002432", 2000, 1));
+//        Console.log("个股或转债盘口数据:");
+//        Console.log(getStockOrBondHandicap(SecurityBeanEm.createBond("湖广转债"), 2000, 1));
+//        Console.log(getStockOrBondHandicap(SecurityBeanEm.createStock("000001"), 2000, 1));
 //
 //        Console.log("指数/板块昨收今开");
 //        Console.log(getPreCloseAndTodayOpenOfIndexOrBK(SecurityBeanEm.createBK("bk1030"), 2000, 3, true));
@@ -230,15 +233,15 @@ public class EmQuoteApi {
      * @return
      */
     @TimeoutCache(timeout = "1 * 3600 * 1000")
-    public static List<Double> getStockPriceLimitToday(String stockCodeSimple, int timeout, int retry, boolean useCache)
+    public static List<Double> getStockPriceLimitToday(SecurityBeanEm beanEm, int timeout, int retry, boolean useCache)
             throws Exception {
         // String cacheKey = stockCodeSimple; // 缓存key为 个股代码
-        List<Double> res = stockPriceLimitCache.get(stockCodeSimple);
+        List<Double> res = stockPriceLimitCache.get(beanEm.getQuoteId());
         if (useCache && res != null && !res.contains(-1.0)) {
             return res;
         }
         res = new ArrayList<>();
-        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f51,f52", timeout, retry);
+        JSONObject resp = getStockOrBondHandicapCore(beanEm, "f51,f52", timeout, retry);
         try {
             res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f51").toString())); // 涨停价
         } catch (Exception e) {
@@ -251,7 +254,7 @@ public class EmQuoteApi {
             e.printStackTrace();
             res.add(-1.0);
         }
-        stockPriceLimitCache.put(stockCodeSimple, res);
+        stockPriceLimitCache.put(beanEm.getQuoteId(), res);
         return res;
     }
 
@@ -267,14 +270,13 @@ public class EmQuoteApi {
      */
     @TimeoutCache(timeout = "1 * 3600 * 1000")
     @CanCache
-    public static List<Double> getStockPreCloseAndTodayOpen(String stockCodeSimple, int timeout, int retry,
-                                                            boolean useCache)
-            throws Exception {
-        List<Double> res = stockPreCloseAndTodayOpenCache.get(stockCodeSimple);
+    public static List<Double> getStockBondPreCloseAndTodayOpen(SecurityBeanEm beanEm, int timeout, int retry,
+                                                                boolean useCache) {
+        List<Double> res = stockPreCloseAndTodayOpenCache.get(beanEm.getQuoteId());
         if (res != null && !res.contains(-1.0) && useCache) { // 注意可能并未刷新, 因此需要加上此限制条件
             return res;
         }
-        JSONObject resp = getStockHandicapCore(stockCodeSimple, "f60,f46", timeout, retry);
+        JSONObject resp = getStockOrBondHandicapCore(beanEm, "f60,f46", timeout, retry);
         res = new ArrayList<>();
         try {
             res.add(Double.valueOf(JSONUtilS.getByPath(resp, "data.f60").toString())); // 昨收
@@ -288,12 +290,12 @@ public class EmQuoteApi {
             e.printStackTrace();
             res.add(-1.0);
         }
-        stockPreCloseAndTodayOpenCache.put(stockCodeSimple, res);
+        stockPreCloseAndTodayOpenCache.put(beanEm.getQuoteId(), res);
         return res;
     }
 
     /**
-     * 个股实时盘口数据, 包含买卖盘, 常规行情项等.
+     * 个股/可转债实时盘口数据, 包含买卖盘, 常规行情项等.
      * StockHandicap 代表盘口数据截面.
      * 盘口数据常规刷新间隔为 3s;
      *
@@ -303,20 +305,20 @@ public class EmQuoteApi {
      * @return
      * @see getStockHandicapCore
      */
-    public static StockHandicap getStockHandicap(String stockCodeSimple, int timeout, int retry) {
+    public static StockBondHandicap getStockOrBondHandicap(SecurityBeanEm beanEm, int timeout, int retry) {
         JSONObject resp;
         try {
-            resp = getStockHandicapCore(stockCodeSimple, StockHandicap.fieldsStr, timeout, retry);
+            resp = getStockOrBondHandicapCore(beanEm, StockBondHandicap.fieldsStr, timeout, retry);
         } catch (Exception e) {
-            log.error("get exception: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            log.error("get exception: 获取个股实时盘口数据失败: stock: {}", beanEm.getSecCode());
             return null;
         }
         JSONObject rawJson = (JSONObject) resp.get("data");
         if (rawJson == null) {
-            log.error("data字段为null: 获取个股实时盘口数据失败: stock: {}", stockCodeSimple);
+            log.error("data字段为null: 获取个股实时盘口数据失败: stock: {}", beanEm.getSecCode());
             return null;
         }
-        return new StockHandicap(rawJson);
+        return new StockBondHandicap(rawJson, beanEm.isBond());
     }
 
 
@@ -468,9 +470,8 @@ public class EmQuoteApi {
      * @return 解析的json响应. 具体字段的访问由调用方决定. date.字段名: Double.valueOf(resp.getByPath("data.f51").toString())
      * @throws Exception
      */
-    private static JSONObject getStockHandicapCore(String stockSimpleCode, String fields, int timeout, int retry)
-            throws Exception {
-        SecurityBeanEm bean = SecurityBeanEm.createStock(stockSimpleCode);
+    private static JSONObject getStockOrBondHandicapCore(SecurityBeanEm bean, String fields, int timeout, int retry) {
+        Assert.isTrue(bean.isStock() || bean.isBond());
         String secId = bean.getQuoteId(); // 获取准确的secId
 
         String url = "https://push2.eastmoney.com/api/qt/stock/get";
@@ -899,7 +900,7 @@ public class EmQuoteApi {
         }
 
         String cacheKey = StrUtil
-                .format("{}__{}__{}__{}__{}__{}__{}", bean.getSecCode(), begDate, endDate, klType, fq,
+                .format("{}__{}__{}__{}__{}__{}__{}", bean.getQuoteId(), begDate, endDate, klType, fq,
                         bean.getSecType());
 
         DataFrame<Object> res = null;
@@ -984,10 +985,11 @@ public class EmQuoteApi {
      * @fields 时间, 开盘, 收盘, 最高, 最低, 成交量, 成交额, 领先价
      * @flush 指数和个股, 3s刷新一条, 板块为6s刷新一条
      * @noti 默认新建线程异步访问, 需传递回调函数. 主线程自行保证不终止
+     * @key3 实测bean 可以为股票,指数,板块,债券
      */
     @SseUsing(callbackType = " DataFrame<Object> ", description = "单行 df")
-    public static void getNdayFsAndRealTimePushWithLeadPriceSSEAsync(SecurityBeanEm bean,
-                                                                     SseCallback callback) {
+    public static void getNDayFsAndRealTimePushWithLeadPriceSSEAsync(SecurityBeanEm bean,
+                                                                     SseCallback<DataFrame<Object>> callback) {
         String url0 = "http://35.push2his.eastmoney.com/api/qt/stock/trends2/sse?fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9," +
                 "f10,f11,f12,f13&fields2=f51,f52,f53,f54,f55,f56,f57," +
                 "f58&mpi=1000&ut=fa5fd1943c7b386f172d6893dbfba10b&secid=" + bean
@@ -1034,7 +1036,7 @@ public class EmQuoteApi {
                                     Arrays.asList("日期", "开盘", "收盘", "最高", "最低", "成交量", "成交额"
                                             , "领先"));
                             dataFrame.append(split);
-                            callback.processLine(dataFrame);
+                            callback.process(dataFrame);
                         }
                     }
                 } catch (IOException e) {
@@ -1284,7 +1286,7 @@ public class EmQuoteApi {
             return res;
         }
         // 查询结果将被缓存.
-        DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.SHANG_ZHENG_ZHI_SHU, "19900101",
+        DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.getShangZhengZhiShu(), "19900101",
                 "21000101", "101", "1", 3,
                 3000); // 使用缓存
         List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");

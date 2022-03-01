@@ -233,7 +233,7 @@ public abstract class SecurityDfDisplayPanel extends SecurityDisplayPanel {
 
         Double preClose;
         if (!preBean.isIndex()) {
-            preClose = EmQuoteApi.getStockPreCloseAndTodayOpen(preBean.getSecCode(), 2000, 1, true).get(0);
+            preClose = EmQuoteApi.getStockBondPreCloseAndTodayOpen(preBean, 2000, 1, true).get(0);
             // 昨收
         } else {
             preClose = EmQuoteApi.getPreCloseOfIndexOrBK(preBean, 2000, 3,true);
