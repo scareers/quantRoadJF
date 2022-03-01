@@ -62,6 +62,12 @@ public class SecurityPool {
     public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareIndexes = new CopyOnWriteArraySet<>();
 
     /**
+     * 核心债券(常为可转债) 及 其他关心的债券,
+     */
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBonds = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareBonds = new CopyOnWriteArraySet<>();
+
+    /**
      * 个股涨跌停限制
      */
     public static ConcurrentHashMap<String, List<Double>> priceLimitMap = new ConcurrentHashMap<>(); // 股票池所有个股涨跌停,
@@ -83,12 +89,7 @@ public class SecurityPool {
     private static final Log log = LogUtil.getLogger();
 
     static {
-        try {
-            addToKeyBKs(SecurityBeanEm.createBK("bk0951"));
-            addToKeyBKs(SecurityBeanEm.createBK("bk1030"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
     }
 
     /*
@@ -158,6 +159,8 @@ public class SecurityPool {
             Assert.isTrue(beanEm.isIndex());
         } else if ("stock".equals(checkType)) {
             Assert.isTrue(beanEm.isStock());
+        } else if ("bond".equals(checkType)) {
+            Assert.isTrue(beanEm.isBond());
         } // 可不传递 checkType, 则 无视类型, 均添加到某池
     }
 
@@ -232,6 +235,27 @@ public class SecurityPool {
         addMultiBeanToSet(otherCareIndexes, beans, "index");
     }
 
+    /**
+     * 4个债券添加方法
+     *
+     * @param beanEm
+     */
+    public static void addToKeyBonds(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(keyBonds, beanEm, "bond");
+    }
+
+    public static void addToKeyBonds(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(keyBonds, beans, "bond");
+    }
+
+    public static void addToOtherCareBonds(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(otherCareBonds, beanEm, "bond");
+    }
+
+    public static void addToOtherCareBonds(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(otherCareBonds, beans, "bond");
+    }
+
     /*
      * 构造浅复制股票池以遍历! iterXxx
      */
@@ -245,7 +269,7 @@ public class SecurityPool {
     }
 
     /**
-     * 8个单池浅复制. 以遍历
+     * 10个单池浅复制. 以遍历
      *
      * @return
      */
@@ -277,12 +301,20 @@ public class SecurityPool {
         return iterSets(otherCareIndexes);
     }
 
+    public static ArrayList<SecurityBeanEm> keyBondsCopy() {
+        return iterSets(keyBonds);
+    }
+
+    public static ArrayList<SecurityBeanEm> otherCareBondsCopy() {
+        return iterSets(otherCareBonds);
+    }
+
     public static ArrayList<SecurityBeanEm> allSecuritySetCopy() {
         return iterSets(allSecuritySet);
     }
 
     /**
-     * 3个组合池复制, 以遍历
+     * 4个组合池复制, 以遍历
      */
     public static ArrayList<SecurityBeanEm> allStocksCopy() {
         return iterSets(todaySelectedStocks, yesterdayHoldStocks, otherCareStocks);
@@ -294,6 +326,10 @@ public class SecurityPool {
 
     public static ArrayList<SecurityBeanEm> allBKsCopy() {
         return iterSets(keyBKs, otherCareBKs);
+    }
+
+    public static ArrayList<SecurityBeanEm> allBondsCopy() {
+        return iterSets(keyBonds, otherCareBonds);
     }
 
     /*
@@ -324,6 +360,8 @@ public class SecurityPool {
             return SecurityBeanEm.createIndexList(stocks);
         } else if (type == SecurityBeanEm.SecType.BK) {
             return SecurityBeanEm.createBKList(stocks);
+        } else if (type == SecurityBeanEm.SecType.BOND) {
+            return SecurityBeanEm.createBondList(stocks);
         } else {
             return SecurityBeanEm.createStockList(stocks);
         }
@@ -373,6 +411,20 @@ public class SecurityPool {
     }
 
     /**
+     * @param amount
+     * @param random
+     * @param markets Arrays.asList("可转债")
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createBondsPool(int amount, boolean random, List<String> markets)
+            throws Exception {
+        List<SecurityBeanEm> results = createSecurityPoolRandom(amount, random, markets,
+                SecurityBeanEm.SecType.BOND);
+        return results;
+    }
+
+    /**
      * 个股池构造.
      *
      * @param stockCodes
@@ -394,6 +446,11 @@ public class SecurityPool {
     public static List<SecurityBeanEm> createBKPool(List<String> bkCodes)
             throws Exception {
         return SecurityBeanEm.createBKList(bkCodes);
+    }
+
+    public static List<SecurityBeanEm> createBondPool(List<String> bondCodes)
+            throws Exception {
+        return SecurityBeanEm.createBondList(bondCodes);
     }
 
     public static CopyOnWriteArraySet<SecurityBeanEm> getAllSecuritySet() {
@@ -426,6 +483,14 @@ public class SecurityPool {
 
     public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareIndexes() {
         return otherCareIndexes;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getKeyBonds() {
+        return keyBonds;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareBonds() {
+        return otherCareBonds;
     }
 
     public static ConcurrentHashMap<String, List<Double>> getPriceLimitMap() {
