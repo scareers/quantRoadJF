@@ -214,19 +214,18 @@ public class EastMoneyUtil {
      * <p>
      * 并未对结果进行解析, 使用需要调用
      *
-     * @param simpleCodes
+     * @param queryConditions
      * @return
      * @noti 仅构建列表, 并未转换
      * @see SecurityBeanEm.toStockList
      * @see SecurityBeanEm.toIndexList
      */
-    public static List<SecurityBeanEm> querySecurityIdsToBeanList(List<String> simpleCodes)
+    public static List<SecurityBeanEm> querySecurityIdsToBeanList(List<String> queryConditions, boolean logError)
             throws Exception {
-        simpleCodes = simpleCodes.stream().map(value -> value.substring(0, 6)).collect(Collectors.toList());
         List<SecurityBeanEm> beans = new CopyOnWriteArrayList<>();
         checkPoolExecutor();
         ConcurrentHashMap<String, Future<JSONArray>> futures = new ConcurrentHashMap<>();
-        for (String simpleCode : simpleCodes) {
+        for (String simpleCode : queryConditions) {
             Future<JSONArray> future = poolExecutor.submit(() -> {
                 JSONArray res = null;
                 try {
@@ -244,10 +243,17 @@ public class EastMoneyUtil {
             if (temp != null) {
                 beans.add(new SecurityBeanEm(temp, stockCodeSimple));
             } else {
-                log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}!", stockCodeSimple);
+                if (logError) {
+                    log.error("skip: em stockId query: 东方财富股票id查询失败[将跳过此股票]: {}", stockCodeSimple);
+                }
             }
         }
         return beans;
+    }
+
+    public static List<SecurityBeanEm> querySecurityIdsToBeanList(List<String> queryConditions)
+            throws Exception {
+        return querySecurityIdsToBeanList(queryConditions, true);
     }
 
     private static final Log log = LogUtil.getLogger();

@@ -361,7 +361,7 @@ public class SecurityPool {
         } else if (type == SecurityBeanEm.SecType.BK) {
             return SecurityBeanEm.createBKList(stocks);
         } else if (type == SecurityBeanEm.SecType.BOND) {
-            return SecurityBeanEm.createBondList(stocks);
+            return SecurityBeanEm.createBondList(stocks, true);
         } else {
             return SecurityBeanEm.createStockList(stocks);
         }
@@ -450,7 +450,7 @@ public class SecurityPool {
 
     public static List<SecurityBeanEm> createBondPool(List<String> bondCodes)
             throws Exception {
-        return SecurityBeanEm.createBondList(bondCodes);
+        return SecurityBeanEm.createBondList(bondCodes, true);
     }
 
     public static CopyOnWriteArraySet<SecurityBeanEm> getAllSecuritySet() {

@@ -88,7 +88,7 @@ public class JSONUtilS {
             }
             datas = json.getJSONArray(paths.get(paths.size() - 1));
         } catch (Exception e) {
-            Console.log(json); // 典型的json没有数据的情况下
+            // Console.log(json); // 典型的json没有数据的情况下
 //            throw e;
             return res;
         }

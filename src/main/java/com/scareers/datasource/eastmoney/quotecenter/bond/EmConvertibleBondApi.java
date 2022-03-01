@@ -5,6 +5,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
@@ -37,12 +38,12 @@ public class EmConvertibleBondApi {
     public static ConcurrentHashMap<Object, Object> comparePriceTableFields = new ConcurrentHashMap<>();// 比价表字段
     public static ConcurrentHashMap<Object, Object> allBondBaseDataFields = new ConcurrentHashMap<>();// 比价表字段
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 //        Console.log(EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债")));
 //        Console.log(getBondComparePriceTable(3000, 3));
 
         Console.log(getAllBondBaseData(3000, 3));
-
+//        Console.log(getBondBaseInfo(SecurityBeanEm.createBond("湖广转债"), 3000, 3));
     }
 
     static {
@@ -52,7 +53,7 @@ public class EmConvertibleBondApi {
 
 
     /**
-     * 单个可转债基本信息api
+     * 单个可转债基本信息api -- 建议使用BondInfoPool机制,  需要显式调用 BondBaseInfo.initBondInfoPool(), 可多次覆盖.再查询 Map
      * 可转债详细数据页: https://data.eastmoney.com/kzz/detail/110058.html
      * 有五大api; 1为k线获取, 其余4均为 可转债基本数据获取!
      * 1.大量基本信息
@@ -93,10 +94,10 @@ public class EmConvertibleBondApi {
             return null;
         }
 
-        response = response.substring(response.indexOf("("), response.lastIndexOf(")"));
+        response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
         JSONObject jsonObject = JSONUtilS.parseObj(response);
-        JSONObject byPath = (JSONObject) JSONUtilS.getByPath(jsonObject, "result.data.0");
-        return new BondBaseInfo(byPath);
+        JSONArray byPath = (JSONArray) JSONUtilS.getByPath(jsonObject, "result.data");
+        return new BondBaseInfo((JSONObject) byPath.get(0));
     }
 
 
@@ -422,6 +423,7 @@ public class EmConvertibleBondApi {
                 .set("TRANSFER_END_DATE", "转股结束日期")
                 .set("TRANSFER_START_DATE", "转股开始日期")
                 .set("RESALE_CLAUSE", "回售条款")
+                .set("REDEEM_CLAUSE", "强赎条款")
                 .set("PARTY_NAME", "资信公司")
                 .set("CONVERT_STOCK_PRICE", "正股价")
                 .set("TRANSFER_PRICE", "转股价")

@@ -220,11 +220,12 @@ public class SecurityBeanEm implements Serializable {
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createBondList(List<String> queryConditionList) throws Exception {
+    public static List<SecurityBeanEm> createBondList(List<String> queryConditionList, boolean logError)
+            throws Exception {
         List<String> withoutCache = queryConditionList.stream()
                 .filter(value -> !beanPool.containsKey(value + "__bond"))
                 .collect(Collectors.toList());
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(withoutCache); // 新增到cache
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(withoutCache, logError); // 新增到cache
         for (SecurityBeanEm bean : beans) {
             bean.convertToBond();
             beanPool.put(bean.getSecCode() + "__bond", bean); // 放入缓存池
@@ -244,6 +245,11 @@ public class SecurityBeanEm implements Serializable {
      * @throws Exception
      * @noti 仅构建列表, 并未转换,  转换需要调用 toStockList / toIndexList 方法
      */
+    private static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> queryConditionList, boolean logError)
+            throws Exception {
+        return querySecurityIdsToBeanList(queryConditionList, logError); // 使用线程池
+    }
+
     private static List<SecurityBeanEm> queryBatchStockWithoutConvert(List<String> queryConditionList)
             throws Exception {
         return querySecurityIdsToBeanList(queryConditionList); // 使用线程池
@@ -574,6 +580,7 @@ public class SecurityBeanEm implements Serializable {
     public static SecurityBeanEm getShenZhengZhuanZhaiIndex() throws Exception {
         return SecurityBeanEm.createIndex("深证转债");
     }
+
     public static SecurityBeanEm getShangZhengZhuanZhaiIndex() throws Exception {
         return SecurityBeanEm.createIndex("上证转债");
     }
