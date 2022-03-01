@@ -163,21 +163,21 @@ public class EastMoneyUtil {
      * // @noti: 异常调用方处理;  不直接调用. 使用线程池执行
      * // @noti: 将会重试三次
      *
-     * @param simpleCodeOrName 给定 股票/指数/板块等 的 代码/名称/中文名缩写 等, 查询前3资产结果.
+     * @param queryCondition 给定 股票/指数/板块等 的 代码/名称/中文名缩写 等, 查询前3资产结果.
      * @return
      */
     @Cached
-    public static JSONArray querySecurityId(String simpleCodeOrName) {
+    public static JSONArray querySecurityId(String queryCondition) {
         // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
         // https://searchapi.eastmoney.com/api/suggest/get?input=000001&type=14&token=D43BF722C8E33BDC906FB84D85E326E8&count=1
-        log.debug("em querySecurityId: {}", simpleCodeOrName);
-        JSONArray res = quoteCache.get(simpleCodeOrName);
+        log.debug("em querySecurityId: {}", queryCondition);
+        JSONArray res = quoteCache.get(queryCondition);
         if (res != null) {
             return res;
         }
         String url = "https://searchapi.eastmoney.com/api/suggest/get";
         Map<String, Object> params = new HashMap<>();
-        params.put("input", simpleCodeOrName);
+        params.put("input", queryCondition);
         params.put("type", 14);
         params.put("token", "D43BF722C8E33BDC906FB84D85E326E8");
         params.put("count", 10);
@@ -203,7 +203,7 @@ public class EastMoneyUtil {
             return null;
         }
         res = (JSONArray) resTemp;
-        quoteCache.put(simpleCodeOrName, res);
+        quoteCache.put(queryCondition, res);
         return res;
     }
 
