@@ -257,17 +257,7 @@ public class PythonSimulationClient {
         return responses;
     }
 
-    public Connection getConnection() {
-        return connection;
-    }
 
-    public Channel getChannelProducer() {
-        return channelProducer;
-    }
-
-    public Channel getChannelComsumer() {
-        return channelComsumer;
-    }
 
     /**
      * retrying则持续等待, 否则返回执行结果, 可能 success, fail(执行正确, 订单本身原因失败)
@@ -282,7 +272,7 @@ public class PythonSimulationClient {
         this.free = false;
         List<Response> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
         final boolean[] finish = {false};
-        Consumer consumer = new DefaultConsumer(this.getChannelComsumer()) {
+        Consumer consumer = new DefaultConsumer(channelComsumer) {
             @Override
             public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
                                        byte[] body) throws IOException {
@@ -293,7 +283,7 @@ public class PythonSimulationClient {
                 } catch (Exception e) {
                     e.printStackTrace();
                     log.warn("nack: 收到来自python的消息, 但解析为 JSONObject 失败: {}", msg);
-                    client.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
                     return;
                 }
                 JSONObject rawOrderFromResponse;
@@ -302,36 +292,36 @@ public class PythonSimulationClient {
                 } catch (Exception e) {
                     e.printStackTrace();
                     log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 失败: {}", message);
-                    client.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
                     return;
                 }
                 if (rawOrderFromResponse == null) {
                     log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 为null: {}", message);
-                    client.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
                     return;
                 }
                 String rawOrderIdOfResponse = rawOrderFromResponse.getString("rawOrderId");
                 if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
                     log.warn("nack: 收到来自python的消息, 但 rawOrderId 不匹配: should: {}, receive: {}", rawOrderId,
                             rawOrderIdOfResponse);
-                    client.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
+                    channelComsumer.basicNack(envelope.getDeliveryTag(), false, true); // nack.
                     return;
                 }
 
                 log.info("[as] java <-- python: {}", message);
-                client.getChannelComsumer().basicAck(envelope.getDeliveryTag(), false);
+                channelComsumer.basicAck(envelope.getDeliveryTag(), false);
                 responses.add(new Response(message)); // 可能null, 此时需要访问 responsesRaw
 
                 Object state = message.get("state");
                 if (!"retrying".equals(state.toString())) {
-                    client.getChannelComsumer().basicCancel(consumerTag);
+                    channelComsumer.basicCancel(consumerTag);
                     finish[0] = true;
                 }
             }
         };
 
         try {
-            client.getChannelComsumer().basicConsume(client.getP2jQueueName(), false, consumer);
+            channelComsumer.basicConsume(client.getP2jQueueName(), false, consumer);
             while (!finish[0]) {
                 Thread.sleep(1); // 阻塞直到 非!retrying状态
             }
