@@ -38,13 +38,16 @@ import static com.scareers.gui.ths.simulation.trader.SettingsOfTrader.totalClien
 public class PythonSimulationClient {
     private static final Log log = LogUtil.getLogger();
     public static Connection connection;
+    public static Channel channelProducer;
+    public static Channel channelComsumer;
+
 
     static {
         try {
             connection = RabbitmqUtil.connectToRbServer();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
+            channelProducer = connection.createChannel();
+            channelComsumer = connection.createChannel();
+        } catch (IOException | TimeoutException e) {
             e.printStackTrace();
         }
     }
@@ -78,11 +81,6 @@ public class PythonSimulationClient {
     }
 
     int id;
-    // @noti: 不使用单例连接, 使用单客户端 单对应连接
-//    Connection connection; // java与rabbitmq连接对象.  对于每个python客户端, java端均对应一个 connection对象.
-    Channel channelProducer; // java作为生产者时使用的通道
-    Channel channelComsumer; // 消费通道
-
     // 双通道6变量, 自动初始化
     String j2pExchangeName;
     String j2pQueueName;
@@ -109,23 +107,9 @@ public class PythonSimulationClient {
         this.p2jQueueName = SettingsOfRb.ths_trader_p2j_queue_prefix + id;
         this.p2jRoutingKey = SettingsOfRb.ths_trader_p2j_routing_key_prefix + id;
 
-        // 初始化连接对象和 双Channel对象
-//        try {
-//            connection = RabbitmqUtil.connectToRbServer();
-//        } catch (IOException | TimeoutException e) {
-//            e.printStackTrace();
-//        }
         Assert.isTrue(connection != null);
-        try {
-            this.channelProducer = connection.createChannel();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            this.channelComsumer = connection.createChannel();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Assert.isTrue(channelProducer != null);
+        Assert.isTrue(channelComsumer != null);
 
         this.initDualChannel(channelProducer); // 初始化通道配置.重复并不会耗时
         this.initDualChannel(channelComsumer);
@@ -273,6 +257,17 @@ public class PythonSimulationClient {
         return responses;
     }
 
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public Channel getChannelProducer() {
+        return channelProducer;
+    }
+
+    public Channel getChannelComsumer() {
+        return channelComsumer;
+    }
 
     /**
      * retrying则持续等待, 否则返回执行结果, 可能 success, fail(执行正确, 订单本身原因失败)
