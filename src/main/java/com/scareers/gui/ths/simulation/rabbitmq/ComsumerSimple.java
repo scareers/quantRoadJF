@@ -11,6 +11,7 @@ import java.util.Map;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
 import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannelForTrader;
 import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue;
+import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.ths_trader_p2j_queue_prefix;
 
 /**
  * description:
@@ -45,6 +46,6 @@ public class ComsumerSimple {
         };
 
         // 消费者, 消费 p2j 的队列..
-        channel.basicConsume(ths_trader_p2j_queue, false, consumer);
+        channel.basicConsume(ths_trader_p2j_queue_prefix + 1, false, consumer);
     }
 }

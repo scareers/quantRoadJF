@@ -35,7 +35,7 @@ public class RabbitmqUtil {
 
         // 建立连接
         Connection conn = factory.newConnection();
-        log.info("connecting: 连接到rabbitmq...");
+
         return conn;
     }
 
@@ -66,32 +66,65 @@ public class RabbitmqUtil {
         }
         return true;
     }
+//
+//    /**
+//     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道.  --> AccountStates
+//     *
+//     * @param channel
+//     * @return
+//     */
+//    public static boolean initDualChannelForAccountStates(Channel channel) {
+//        // java到python的队列
+//        try {
+//            channel.exchangeDeclare(ths_trader_j2p_exchange_as, "fanout", true);
+//            channel.queueDeclare(ths_trader_j2p_queue_as, true, false, false, null);
+//            channel.queueBind(ths_trader_j2p_queue_as, ths_trader_j2p_exchange_as, ths_trader_j2p_routing_key_as);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+//        // python到java 的队列
+//        try {
+//            channel.exchangeDeclare(ths_trader_p2j_exchange_as, "fanout", true);
+//            channel.queueDeclare(ths_trader_p2j_queue_as, true, false, false, null);
+//            channel.queueBind(ths_trader_p2j_queue_as, ths_trader_p2j_exchange_as, ths_trader_p2j_routing_key_as);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return false;
+//        }
+//        return true;
+//    }
 
     /**
-     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道.  --> AccountStates
+     * 初始化 j2p/p2j 两个(交换机-队列-路由键) 双通 道.
+     * 需给定 Channel对象, 以及 对应 clientId, 将自动使用prefix构建 交换机-队列-路由键名称!
      *
      * @param channel
      * @return
      */
-    public static boolean initDualChannelForAccountStates(Channel channel) {
+    public static boolean initDualChannel(Channel channel, int clientId) {
         // java到python的队列
         try {
-            channel.exchangeDeclare(ths_trader_j2p_exchange_as, "fanout", true);
-            channel.queueDeclare(ths_trader_j2p_queue_as, true, false, false, null);
-            channel.queueBind(ths_trader_j2p_queue_as, ths_trader_j2p_exchange_as, ths_trader_j2p_routing_key_as);
+            channel.exchangeDeclare(ths_trader_j2p_exchange_prefix + clientId, "fanout", true);
+            channel.queueDeclare(ths_trader_j2p_queue_prefix + clientId, true, false, false, null);
+            channel.queueBind(ths_trader_j2p_queue_prefix + clientId, ths_trader_j2p_exchange_prefix + clientId,
+                    ths_trader_j2p_routing_key_prefix + clientId);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
         // python到java 的队列
         try {
-            channel.exchangeDeclare(ths_trader_p2j_exchange_as, "fanout", true);
-            channel.queueDeclare(ths_trader_p2j_queue_as, true, false, false, null);
-            channel.queueBind(ths_trader_p2j_queue_as, ths_trader_p2j_exchange_as, ths_trader_p2j_routing_key_as);
+            channel.exchangeDeclare(ths_trader_p2j_exchange_prefix + clientId, "fanout", true);
+            channel.queueDeclare(ths_trader_p2j_queue_prefix + clientId, true, false, false, null);
+            channel.queueBind(ths_trader_p2j_queue_prefix + clientId, ths_trader_p2j_exchange_prefix + clientId,
+                    ths_trader_p2j_routing_key_prefix + clientId);
         } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
+
+
 }

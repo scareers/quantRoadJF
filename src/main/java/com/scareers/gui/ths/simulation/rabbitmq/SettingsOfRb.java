@@ -28,12 +28,25 @@ public class SettingsOfRb {
     public static String ths_trader_p2j_routing_key = "ths_trader_p2j_routing_key";
 
     // AccountStates 通道
+//
+//    public static String ths_trader_j2p_exchange_as = "ths_trader_j2p_exchange_2";
+//    public static String ths_trader_j2p_queue_as = "ths_trader_j2p_queue_2";
+//    public static String ths_trader_j2p_routing_key_as = "ths_trader_j2p_routing_key_2";
+//    // python 发送消息到 java 的单通道设定
+//    public static String ths_trader_p2j_exchange_as = "ths_trader_p2j_exchange_2";
+//    public static String ths_trader_p2j_queue_as = "ths_trader_p2j_queue_2";
+//    public static String ths_trader_p2j_routing_key_as = "ths_trader_p2j_routing_key_2";
 
-    public static String ths_trader_j2p_exchange_as = "ths_trader_j2p_exchange_2";
-    public static String ths_trader_j2p_queue_as = "ths_trader_j2p_queue_2";
-    public static String ths_trader_j2p_routing_key_as = "ths_trader_j2p_routing_key_2";
+
+    /**
+     * 前缀 + python客户端id, 双通道配置
+     */
+    public static String ths_trader_j2p_exchange_prefix = "ths_trader_j2p_exchange_";
+    public static String ths_trader_j2p_queue_prefix = "ths_trader_j2p_queue_";
+    public static String ths_trader_j2p_routing_key_prefix = "ths_trader_j2p_routing_key_";
     // python 发送消息到 java 的单通道设定
-    public static String ths_trader_p2j_exchange_as = "ths_trader_p2j_exchange_2";
-    public static String ths_trader_p2j_queue_as = "ths_trader_p2j_queue_2";
-    public static String ths_trader_p2j_routing_key_as = "ths_trader_p2j_routing_key_2";
+    public static String ths_trader_p2j_exchange_prefix = "ths_trader_p2j_exchange_";
+    public static String ths_trader_p2j_queue_prefix = "ths_trader_p2j_queue_";
+    public static String ths_trader_p2j_routing_key_prefix = "ths_trader_p2j_routing_key_";
+
 }

@@ -1,16 +1,18 @@
 package com.scareers.gui.ths.simulation.trader;
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
-import com.alibaba.fastjson.JSONObject;
-import com.scareers.utils.JSONUtilS;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
-import com.rabbitmq.client.*;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
+import com.scareers.gui.ths.simulation.rabbitmq.PythonSimulationClient;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -18,17 +20,10 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.*;
-import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 
@@ -51,6 +46,7 @@ import static com.scareers.utils.CommonUtil.waitUtil;
 public class AccountStates {
     private static final Log log = LogUtil.getLogger();
     private static AccountStates INSTANCE; // 单例实现
+    public static CopyOnWriteArrayList<PythonSimulationClient> clientPool;
 
     public static void main(String[] args) throws IOException, TimeoutException, InterruptedException {
         AccountStates accountStates = AccountStates.getInstance(null, 5000, 10000L,
@@ -74,6 +70,7 @@ public class AccountStates {
                                             long priorityRaise) throws IOException, TimeoutException {
         // noti: 最多提升10次优先级, 每次提高 priorityRaise
         if (INSTANCE == null) {
+            clientPool = PythonSimulationClient.createAccountStatesFlushClientPool(); // 将初始化连接池, 单例
             INSTANCE = new AccountStates(trader, flushInterval, commonApiPriority, priorityRaiseTimeThreshold,
                     priorityRaise, 10);
         }
@@ -109,6 +106,9 @@ public class AccountStates {
 
     public static final List<String> SHOULD_ORDER_TYPES =
             ORDER_TYPES.stream().filter(type -> !EXCLUDE_ORDER_TYPES.contains(type)).collect(Collectors.toList());
+
+    // 60s一次, 清除所有订单Map中,一分钟之前的,账户状态刷新api订单
+    public static final int clearOrdersInTraderAllMapInterval = 60 * 1000;
 
     /*
     @noti:
@@ -160,110 +160,17 @@ public class AccountStates {
         this.priorityRaise = priorityRaise;
         this.maxRaiseTimes = maxRaiseTimes;
 
-        initConnOfRabbitmqAndDualChannel();
     }
 
-    // 通道, 构造器初始化. 同 trader
-    public volatile Channel channelComsumer;
-    public volatile Channel channelProducer;
-    public volatile Connection connOfRabbitmq;
-
-    /*
-     * 通信初始化与关闭
-     */
-
-    public void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
-        connOfRabbitmq = connectToRbServer();
-        channelProducer = connOfRabbitmq.createChannel();
-        initDualChannelForAccountStates(channelProducer);
-        channelComsumer = connOfRabbitmq.createChannel();
-        initDualChannelForAccountStates(channelComsumer);
+    public void clearClose() {
+        PythonSimulationClient.closeClientPool(clientPool);
     }
-
-    public void closeDualChannelAndConn() throws IOException, TimeoutException {
-        channelProducer.close();
-        channelComsumer.close();
-        connOfRabbitmq.close();
-    }
-
-
-    public void handshake() throws IOException, InterruptedException {
-        log.warn("[as] handshake start: 开始尝试与python握手");
-        sendMessageToPython(buildHandshakeMsg());
-        waitUtilPythonReady(channelComsumer);
-        log.warn("[as] handshake success: java<->python 握手成功");
-    }
-
 
     /**
-     * java端握手消息代码
-     * handshake.set("handshakeJavaSide", "java get ready");
-     * handshake.set("handshakePythonSide", "and you?");
-     * handshake.set("timestamp", System.currentTimeMillis());
-     * python 回复消息:
-     * handshake_success_response = dict(
-     * handshakeJavaSide="java get ready",
-     * handshakePythonSide='python get ready',
-     * timestamp=int(time.time() * 1000)
-     * )
-     *
-     * @noti 历史遗留消息将被消费!正常ack 相当于 遗弃
+     * 握手, 将对每个client 握手. 且非异步.
      */
-    private void waitUtilPythonReady(Channel channelComsumer) throws IOException, InterruptedException {
-        final boolean[] handshakeSuccess = {false};
-        Consumer consumer = new DefaultConsumer(channelComsumer) {
-            @SneakyThrows
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                       byte[] body) {
-                String msg = new String(body, StandardCharsets.UTF_8);
-                JSONObject message;
-                try {
-                    message = JSONUtilS.parseObj(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);
-                    channelComsumer.basicAck(envelope.getDeliveryTag(), false);
-                    return;
-                }
-
-                if ("java get ready".equals(message.get("handshakeJavaSide"))) {
-                    if ("python get ready".equals(message.get("handshakePythonSide"))) {
-                        Long timeStamp = Long.valueOf(message.get("timestamp").toString());
-                        log.warn("handshaking: 收到来自python的握手成功回复, 时间戳: {}", timeStamp);
-                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-                        channelComsumer.basicCancel(consumerTag);
-                        handshakeSuccess[0] = true;
-                        return;
-                    } else {
-                        log.error("ack: 握手消息::python尚未准备好::自动消费清除: {}", message);
-                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-                        return;
-                    }
-                }
-                log.error("ack: 历史遗留::非握手消息::自动消费清除: {}", message);
-                channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-            }
-        };
-        channelComsumer.basicConsume(ths_trader_p2j_queue_as, false, consumer);
-        while (!handshakeSuccess[0]) {
-            Thread.sleep(1);
-        }
-    }
-
-    public synchronized void sendMessageToPython(String jsonMsg) throws IOException {
-        log.info("[as] java --> python: {}", jsonMsg);
-        channelProducer
-                .basicPublish(ths_trader_j2p_exchange_as, ths_trader_j2p_routing_key_as, MINIMAL_PERSISTENT_BASIC,
-                        jsonMsg.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String buildHandshakeMsg() {
-        JSONObject handshake = new JSONObject();
-        handshake.put("handshakeJavaSide", "java get ready");
-        handshake.put("handshakePythonSide", "and you?");
-        handshake.put("timestamp", System.currentTimeMillis());
-        return JSONUtilS.toJsonStr(handshake);
+    public void handshake() throws IOException, InterruptedException {
+        PythonSimulationClient.clientPoolHandshake(clientPool);
     }
 
 
@@ -358,7 +265,35 @@ public class AccountStates {
         accoutStatesFlushTask.setPriority(Thread.MAX_PRIORITY);
         accoutStatesFlushTask.setName("accoutStateFlush");
         accoutStatesFlushTask.start();
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                DateTime now = DateUtil.date();
+                ArrayList<Order> orders = new ArrayList<>(Trader.ordersAllMap.keySet());
+                for (Order order : orders) {
+                    if (ORDER_TYPES.contains(order.getOrderType())) {
+                        if (DateUtil.between(order.getGenerateTime(), now, DateUnit.MS,
+                                false) > clearOrdersInTraderAllMapInterval) {
+                            Trader.ordersAllMap.remove(order);
+                        }
+                    }
+                }
+                log.info("AccountStates: clear orders in TraderAllMap before {}s",
+                        clearOrdersInTraderAllMapInterval / 1000);
+                ThreadUtil.sleep(clearOrdersInTraderAllMapInterval);
+            }
+        }, true);
         log.warn("accoutStatesFlush start: 开始持续更新账户资金股票等状况");
+    }
+
+    /**
+     * 从客户端池, 获取当前空闲的客户端, 以备执行订单,
+     *
+     * @return
+     * @key3 若当前并没有客户端空闲, 则将阻塞线程 ! 由于 synchronized, 因此可多线程之下
+     */
+    public synchronized PythonSimulationClient getFreeClientFromPool() {
+        return PythonSimulationClient.getFreeClientFromPool(clientPool);
     }
 
     /**
@@ -366,7 +301,6 @@ public class AccountStates {
      */
     @Getter
     public static class Executor {
-        private static final Log log = LogUtil.getLogger();
         private static Executor INSTANCE;
 
         public static Executor getInstance(AccountStates as) {
@@ -377,11 +311,49 @@ public class AccountStates {
         }
 
         private AccountStates as;
-        private Order executingOrder; // 暂时保存正在执行的订单, 可随时查看正在执行的订单, 当订单一旦执行完成, 立即设置为null,直到下一订单开始
 
-        public Executor(AccountStates as) {
+        private Executor(AccountStates as) {
             this.as = as;
         }
+
+//        public void start() {
+//            Thread orderExecuteTask = new Thread(new Runnable() {
+//                @SneakyThrows
+//                @Override
+//                public void run() {
+//                    while (true) {
+//                        Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
+//                        executingOrder = order;
+//                        log.warn("[as] order start execute: {} [{}] --> {}:{}", order.getOrderType(),
+//                                order.getPriority(), order.getRawOrderId(), order.getParams());
+//                        order.addLifePoint(Order.LifePointStatus.EXECUTING, "executing: 开始执行订单");
+//
+//                        PythonSimulationClient client = as.getFreeClientFromPool(); // 将阻塞, 直到某个客户端可用
+//                        List<Response> responses = client.execOrderUtilSuccess(order);
+//
+//                        executingOrder = null;
+//
+//                        order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
+//
+//                        // 这里直接进行check, 而非在 Checker类中执行
+//                        // @key: 执行数据更新和警告. 不重发订单等. 数据的及时更新依赖于 自动优先级提高的机制
+//                        as.checkForAccountStates(order, responses, order.getOrderType());
+//
+//                        order.addLifePoint(Order.LifePointStatus.FINISH, "finish: [账户状态刷新订单]执行完成, 简单finish");
+//                        order.setExecResponses(responses); // 响应字段设置
+//                        ordersFinished.put(order, responses); //
+//                        Trader.ordersAllMap.put(order, responses); // 注意应当更新响应
+//                    }
+//                }
+//            });
+//            orderExecuteTask.setDaemon(true);
+//            orderExecuteTask.setPriority(Thread.MAX_PRIORITY);
+//            orderExecuteTask.setName("orderExecutor");
+//            orderExecuteTask.start();
+//            log.warn("start: orderExecutor 开始按优先级执行订单...");
+//        }
+
+        public static ExecutorService threadPoolExecutor = ThreadUtil.newExecutor(4, 8, Integer.MAX_VALUE);
 
         public void start() {
             Thread orderExecuteTask = new Thread(new Runnable() {
@@ -390,22 +362,31 @@ public class AccountStates {
                 public void run() {
                     while (true) {
                         Order order = ordersWaitForExecution.take(); // 最高优先级订单, 将可能被阻塞
-                        executingOrder = order;
+                        PythonSimulationClient client = as.getFreeClientFromPool(); // 将阻塞, 直到某个客户端可用, 耗时
                         log.warn("[as] order start execute: {} [{}] --> {}:{}", order.getOrderType(),
                                 order.getPriority(), order.getRawOrderId(), order.getParams());
                         order.addLifePoint(Order.LifePointStatus.EXECUTING, "executing: 开始执行订单");
-                        List<Response> responses = execOrderUtilSuccess(order);
-                        executingOrder = null;
-                        order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
 
-                        // 这里直接进行check, 而非在 Checker类中执行
-                        // @key: 执行数据更新和警告. 不重发订单等. 数据的及时更新依赖于 自动优先级提高的机制
-                        as.checkForAccountStates(order, responses, order.getOrderType());
+                        // 异步执行订单
+                        threadPoolExecutor.execute(new Runnable() {
+                            @SneakyThrows
+                            @Override
+                            public void run() {
+                                List<Response> responses = client.execOrderUtilSuccess(order);
+                                order.addLifePoint(Order.LifePointStatus.FINISH_EXECUTE, "finish_execute: 执行订单完成");
 
-                        order.addLifePoint(Order.LifePointStatus.FINISH, "finish: [账户状态刷新订单]执行完成, 简单finish");
-                        order.setExecResponses(responses); // 响应字段设置
-                        ordersFinished.put(order, responses); // 
-                        Trader.ordersAllMap.put(order, responses); // 注意应当更新响应
+                                // 这里直接进行check, 而非在 Checker类中执行
+                                // @key: 执行数据更新和警告. 不重发订单等. 数据的及时更新依赖于 自动优先级提高的机制
+                                as.checkForAccountStates(order, responses, order.getOrderType());
+
+                                order.addLifePoint(Order.LifePointStatus.FINISH, "finish: [账户状态刷新订单]执行完成, 简单finish");
+                                order.setExecResponses(responses); // 响应字段设置
+                                ordersFinished.put(order, responses); //
+                                Trader.ordersAllMap.put(order, responses); // 注意应当更新响应
+                            }
+                        });
+
+
                     }
                 }
             });
@@ -416,99 +397,6 @@ public class AccountStates {
             log.warn("start: orderExecutor 开始按优先级执行订单...");
         }
 
-        /**
-         * 执行订单, 执行器调用(执行器从待执行队列获取最高优先级订单后), 通常不手动调用.
-         *
-         * @param order
-         * @return
-         * @throws Exception
-         * @key3
-         * @warning
-         * @see OrderExecutor
-         */
-        public List<Response> execOrderUtilSuccess(Order order)
-                throws Exception {
-            String orderMsg = order.toJsonStrForTrans();
-            String rawOrderId = order.getRawOrderId();
-            as.sendMessageToPython(orderMsg);
-            return comsumeUntilNotRetryingState(rawOrderId);
-        }
-
-
-        /**
-         * retrying则持续等待, 否则返回执行结果, 可能 success, fail(执行正确, 订单本身原因失败)
-         *
-         * @param rawOrderId
-         * @return
-         * @throws IOException
-         * @throws InterruptedException
-         */
-        public List<Response> comsumeUntilNotRetryingState(String rawOrderId)
-                throws IOException, InterruptedException {
-            List<Response> responses = new CopyOnWriteArrayList<>(); // 保留响应解析成的JO
-            final boolean[] finish = {false};
-            Consumer consumer = new DefaultConsumer(as.getChannelComsumer()) {
-                @Override
-                public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                           byte[] body) throws IOException {
-                    String msg = new String(body, StandardCharsets.UTF_8);
-                    JSONObject message;
-                    try {
-                        message = JSONUtilS.parseObj(msg);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        log.warn("nack: 收到来自python的消息, 但解析为 JSONObject 失败: {}", msg);
-                        as.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                        return;
-                    }
-                    JSONObject rawOrderFromResponse;
-                    try {
-                        rawOrderFromResponse = ((JSONObject) message.get("rawOrder"));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 失败: {}", message);
-                        as.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                        return;
-                    }
-                    if (rawOrderFromResponse == null) {
-                        log.warn("nack: 收到来自python的消息, 但从响应获取 rawOrder 为null: {}", message);
-                        as.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                        return;
-                    }
-                    String rawOrderIdOfResponse = rawOrderFromResponse.getString("rawOrderId");
-                    if (!rawOrderId.equals(rawOrderIdOfResponse)) { // 需要是对应id
-                        log.warn("nack: 收到来自python的消息, 但 rawOrderId 不匹配: should: {}, receive: {}", rawOrderId,
-                                rawOrderIdOfResponse);
-                        as.getChannelComsumer().basicNack(envelope.getDeliveryTag(), false, true); // nack.
-                        return;
-                    }
-
-                    log.info("[as] java <-- python: {}", message);
-                    as.getChannelComsumer().basicAck(envelope.getDeliveryTag(), false);
-                    responses.add(new Response(message)); // 可能null, 此时需要访问 responsesRaw
-
-                    Object state = message.get("state");
-                    if (!"retrying".equals(state.toString())) {
-                        as.getChannelComsumer().basicCancel(consumerTag);
-                        finish[0] = true;
-                    }
-                }
-            };
-
-
-            try {
-                as.getChannelComsumer().basicConsume(ths_trader_p2j_queue_as, false, consumer);
-                while (!finish[0]) {
-                    Thread.sleep(1); // 阻塞直到 非!retrying状态
-                }
-            } catch (AlreadyClosedException e) {
-                e.printStackTrace();
-                CommonUtil.sendEmailSimple("AccountStates: rabbitmq通道关闭异常, 请尝试重启程序", e.getMessage(), false);
-                System.exit(1); // 通道错误将退出程序, 重启即可修复
-            }
-
-            return responses;
-        }
 
     }
 

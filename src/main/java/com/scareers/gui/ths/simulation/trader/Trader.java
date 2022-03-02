@@ -17,18 +17,23 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
-import com.alibaba.fastjson.JSONObject;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
-import com.scareers.utils.JSONUtilS;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
-import com.rabbitmq.client.*;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
+import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
+import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
+import com.scareers.gui.ths.simulation.rabbitmq.PythonSimulationClient;
 import com.scareers.gui.ths.simulation.strategy.LowBuyHighSellStrategy;
 import com.scareers.gui.ths.simulation.strategy.Strategy;
+import com.scareers.gui.ths.simulation.strategy.StrategyAdapter;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelector;
 import com.scareers.gui.ths.simulation.strategy.stockselector.LbHsSelectorV0;
 import com.scareers.utils.StrUtilS;
@@ -38,15 +43,11 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeoutException;
 
-import static com.rabbitmq.client.MessageProperties.MINIMAL_PERSISTENT_BASIC;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.connectToRbServer;
-import static com.scareers.gui.ths.simulation.rabbitmq.RabbitmqUtil.initDualChannelForTrader;
-import static com.scareers.gui.ths.simulation.rabbitmq.SettingsOfRb.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 import static java.lang.Thread.MAX_PRIORITY;
@@ -65,10 +66,108 @@ import static java.lang.Thread.MAX_PRIORITY;
 public class Trader {
     private static final Log log = LogUtil.getLogger();
     private static volatile Trader INSTANCE;
+    public static CopyOnWriteArrayList<PythonSimulationClient> clientPool;
+
+    public static boolean useDummyStrategy = true;// 使用测试策略
+
+    /**
+     * 主策略对象
+     *
+     * @return
+     */
+    public static Strategy getMainStrategy(Trader trader) throws Exception {
+        if (useDummyStrategy) {
+
+
+            Strategy mainStrategy = new Strategy("dummy Strategy") {
+                @Override
+                protected void initStockPool() throws Exception {
+                    log.warn("start init stockPool: 开始初始化股票池...");
+                    List<String> yesterdayH = initYesterdayHolds();
+
+                    // 优化股票池添加逻辑
+                    List<SecurityBeanEm> selectBeans = SecurityBeanEm.createStockList(stockSelect());
+                    SecurityPool.addToTodaySelectedStocks(selectBeans);// 今选
+                    List<SecurityBeanEm> yesterdayHoldBeans = SecurityBeanEm.createStockList(yesterdayH);
+                    SecurityPool.addToYesterdayHoldStocks(yesterdayHoldBeans); // 昨持
+
+                    selectBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo())); // 将相关板块加入keyBks
+                    yesterdayHoldBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo()));
+
+                    SecurityPool.addToKeyIndexes(SecurityBeanEm.getTwoGlobalMarketIndexList());// 2大指数
+
+                    SecurityPool.flushPriceLimitMap();
+                    log.warn("stockPool added: 已将昨日收盘后持有股票和两大指数加入股票池! 新的股票池总大小: {}",
+                            SecurityPool.allSecuritySet.size());
+                    log.warn("finish init stockPool: 完成初始化股票池...");
+                }
+
+                @Override
+                protected List<String> stockSelect() throws Exception {
+                    return Arrays.asList("000001", "000007","002197");
+                }
+
+                @Override
+                protected List<String> initYesterdayHolds() throws Exception {
+                    return Arrays.asList("002197");
+                }
+            };
+
+            StrategyAdapter strategyAdapter = new StrategyAdapter() {
+                List<String> stockPool = Arrays.asList("000001", "000007","002197");
+                List<String> stockSell = Arrays.asList("002197");
+
+                @Override
+                public void buyDecision() throws Exception {
+                    String stock = RandomUtil.randomEle(stockPool);
+                    Order order = OrderFactory.generateBuyOrderQuick(stock, 100, null);
+                    Trader.getInstance().putOrderToWaitExecute(order);
+
+                    ThreadUtil.sleep(2000);
+                }
+
+                @Override
+                public void sellDecision() throws Exception {
+
+
+
+                    String stock2 = RandomUtil.randomEle(stockSell);
+                    Order order2 = OrderFactory.generateSellOrderQuick(stock2, 100, null);
+                    Trader.getInstance().putOrderToWaitExecute(order2);
+                    ThreadUtil.sleep(5000);
+                }
+
+                @Override
+                public void checkBuyOrder(Order order, List<Response> responses, String orderType) {
+                    Trader.getInstance().successFinishOrder(order, responses);
+                }
+
+                @Override
+                public void checkSellOrder(Order order, List<Response> responses, String orderType) {
+                    Trader.getInstance().successFinishOrder(order, responses);
+                }
+
+                @Override
+                public void checkOtherOrder(Order order, List<Response> responses, String orderType) {
+                    Trader.getInstance().successFinishOrder(order, responses);
+                }
+            };
+
+            mainStrategy.setAdapter(strategyAdapter);
+            return mainStrategy;
+        } else {
+            LbHsSelector lbHsSelector = new LbHsSelectorV0(Arrays.asList(), 10, false, Arrays.asList(0, 1));
+            Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, lbHsSelector,
+                    LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
+            return mainStrategy;
+        }
+
+    }
 
     public static Trader getAndStartInstance() throws Exception {
         // todo: 待完成
         if (INSTANCE == null) {
+            clientPool = PythonSimulationClient.createTraderClientPool(); // 将初始化连接池, 单例
             Thread task = new Thread(new Runnable() {
                 @SneakyThrows
                 @Override
@@ -100,8 +199,8 @@ public class Trader {
     public static void main0() throws Exception {
         Trader trader = new Trader();
         // 将会关联 trader. 实例化账户状态刷新程序, 将使用与trader完全不同的通道, 与另一个python模拟操作客户端通信, 只死循环执行账号状态刷新程序
-        AccountStates accountStates = AccountStates.getInstance(trader, 5000, 10000L,
-                10000, 2);
+        AccountStates accountStates = AccountStates.getInstance(trader, 2000, 10000L,
+                3000, 2);
         INSTANCE = trader;
         accountStates.handshake(); // 同样握手. 逻辑同trader, 仅仅通道不一样
         // 启动账户资金获取程序
@@ -121,8 +220,11 @@ public class Trader {
 
         // 直到此时才实例化策略对象, 绑定到 trader
         LbHsSelector lbHsSelector = new LbHsSelectorV0(Arrays.asList(), 10, false, Arrays.asList(0, 1));
-        Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, lbHsSelector,
-                LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
+
+        // todo: 主策略对象
+        Strategy mainStrategy = getMainStrategy(trader);
+
+        trader.setStrategy(mainStrategy);
 
         // fs成交开始抓取, 股票池通常包含今日选股(for buy, 自动包含两大指数), 以及昨日持仓股票(for sell)
         FsTransactionFetcher fsTransactionFetcher =
@@ -138,6 +240,10 @@ public class Trader {
         fsTransactionFetcher.waitFirstEpochFinish();
         fsFetcher.waitFirstEpochFinish();
         mainStrategy.startDealWith();
+    }
+
+    private void handshake() throws IOException, InterruptedException {
+        PythonSimulationClient.clientPoolHandshake(clientPool);
     }
 
     // 属性: 4大队列, 将初始化为 空队列/map
@@ -187,10 +293,6 @@ public class Trader {
     public volatile FsTransactionFetcher fsTransactionFetcher; // 分时成交获取器, 需手动实例化后绑定
     public volatile FsFetcher fsFetcher; // 分时成交获取器, 需手动实例化后绑定
 
-    // 通道, 构造器初始化
-    public volatile Channel channelComsumer; // 自行初始化
-    public volatile Channel channelProducer;
-    public volatile Connection connOfRabbitmq;
 
     /**
      * 参数为子组件构建参数, 后缀ForXy 表明了用于构建哪个子控件
@@ -206,27 +308,9 @@ public class Trader {
     public Trader() throws IOException, TimeoutException {
         this.orderExecutor = OrderExecutor.getInstance(this);
         this.checker = Checker.getInstance(this);
-        this.initConnOfRabbitmqAndDualChannel(); // 初始化mq连接与双通道
         // this.strategy 将在 Strategy 的构造器中, 调用 this.trader.setStrategy(this), 达成互连
     }
 
-    /*
-     * 通信初始化与关闭
-     */
-
-    public void initConnOfRabbitmqAndDualChannel() throws IOException, TimeoutException {
-        connOfRabbitmq = connectToRbServer();
-        channelProducer = connOfRabbitmq.createChannel();
-        initDualChannelForTrader(channelProducer);
-        channelComsumer = connOfRabbitmq.createChannel();
-        initDualChannelForTrader(channelComsumer);
-    }
-
-    public void closeDualChannelAndConn() throws IOException, TimeoutException {
-        channelProducer.close();
-        channelComsumer.close();
-        connOfRabbitmq.close();
-    }
 
     /**
      * 命令行交互, 弃用
@@ -247,81 +331,6 @@ public class Trader {
         waitForever();
     }
 
-    /*
-     * 握手相关3方法
-     */
-
-    public void handshake() throws IOException, InterruptedException {
-        log.warn("[trader] handshake start: 开始尝试与python握手");
-        sendMessageToPython(buildHandshakeMsg());
-        waitUtilPythonReady(channelComsumer);
-        log.warn("[trader] handshake success: java<->python 握手成功");
-    }
-
-    public String buildHandshakeMsg() {
-        JSONObject handshake = new JSONObject();
-        handshake.put("handshakeJavaSide", "java get ready");
-        handshake.put("handshakePythonSide", "and you?");
-        handshake.put("timestamp", System.currentTimeMillis());
-        return JSONUtilS.toJsonStr(handshake);
-    }
-
-
-    /**
-     * java端握手消息代码
-     * handshake.set("handshakeJavaSide", "java get ready");
-     * handshake.set("handshakePythonSide", "and you?");
-     * handshake.set("timestamp", System.currentTimeMillis());
-     * python 回复消息:
-     * handshake_success_response = dict(
-     * handshakeJavaSide="java get ready",
-     * handshakePythonSide='python get ready',
-     * timestamp=int(time.time() * 1000)
-     * )
-     *
-     * @noti 历史遗留消息将被消费!正常ack 相当于 遗弃
-     */
-    private void waitUtilPythonReady(Channel channelComsumer) throws IOException, InterruptedException {
-        final boolean[] handshakeSuccess = {false};
-        Consumer consumer = new DefaultConsumer(channelComsumer) {
-            @SneakyThrows
-            @Override
-            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-                                       byte[] body) {
-                String msg = new String(body, StandardCharsets.UTF_8);
-                JSONObject message;
-                try {
-                    message = JSONUtilS.parseObj(msg);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    log.error("ack: 历史遗留::json解析失败::自动消费清除: {}", msg);
-                    channelComsumer.basicAck(envelope.getDeliveryTag(), false);
-                    return;
-                }
-
-                if ("java get ready".equals(message.get("handshakeJavaSide"))) {
-                    if ("python get ready".equals(message.get("handshakePythonSide"))) {
-                        Long timeStamp = Long.valueOf(message.get("timestamp").toString());
-                        log.warn("handshaking: 收到来自python的握手成功回复, 时间戳: {}", timeStamp);
-                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-                        channelComsumer.basicCancel(consumerTag);
-                        handshakeSuccess[0] = true;
-                        return;
-                    } else {
-                        log.error("ack: 握手消息::python尚未准备好::自动消费清除: {}", message);
-                        channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-                        return;
-                    }
-                }
-                log.error("ack: 历史遗留::非握手消息::自动消费清除: {}", message);
-                channelComsumer.basicAck(envelope.getDeliveryTag(), false); //
-            }
-        };
-        channelComsumer.basicConsume(ths_trader_p2j_queue, false, consumer);
-        while (!handshakeSuccess[0]) {
-            Thread.sleep(1);
-        }
-    }
 
     /*
      * 核心方法!!
@@ -341,18 +350,7 @@ public class Trader {
 //        log.info("order enqueued: {} ", ordersAllMap.size());
     }
 
-    /**
-     * 经由rabbitmq 发送任意消息到python, 常为订单,另有握手信息等
-     *
-     * @param channelProducer
-     * @param jsonMsg
-     * @throws IOException
-     */
-    public synchronized void sendMessageToPython(String jsonMsg) throws IOException {
-        log.info("[trader] java --> python: {}", jsonMsg);
-        channelProducer.basicPublish(ths_trader_j2p_exchange, ths_trader_j2p_routing_key, MINIMAL_PERSISTENT_BASIC,
-                jsonMsg.getBytes(StandardCharsets.UTF_8));
-    }
+
 
 
     /*
@@ -453,11 +451,11 @@ public class Trader {
     }
 
     public void stopTrade() throws IOException, TimeoutException {
-        this.closeDualChannelAndConn(); // 关闭连接
+        PythonSimulationClient.closeClientPool(clientPool);
 
         CustomizeStateArgsPoolHs.saveAllConfig(); // 高卖配置保存
 
-        this.getAccountStates().closeDualChannelAndConn();
+        this.getAccountStates().clearClose();
         if (fsTransactionFetcher != null) {
             fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
         }
@@ -466,6 +464,16 @@ public class Trader {
         }
 
 
+    }
+
+    /**
+     * 从客户端池, 获取当前空闲的客户端, 以备执行订单,
+     *
+     * @return
+     * @key3 若当前并没有客户端空闲, 则将阻塞线程 ! 由于 synchronized, 因此可多线程之下
+     */
+    public synchronized PythonSimulationClient getFreeClientFromPool() {
+        return PythonSimulationClient.getFreeClientFromPool(clientPool);
     }
 
 

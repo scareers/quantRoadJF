@@ -146,7 +146,7 @@ public class CustomizeStateArgsPoolHs {
                         type);
         try {
             execSql(sqlDelete, connOfCustomizeArgs);
-            log.info("删除原配置成功: {}", type);
+            // log.info("删除原配置成功: {}", type);
         } catch (Exception e) {
             log.info("删除原配置失败: {}", type);
             e.printStackTrace();

@@ -21,6 +21,7 @@ import java.awt.event.ComponentEvent;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitUtil;
@@ -98,22 +99,34 @@ public class OrderListAndDetailPanel extends JPanel {
                             simpleOrders.add(OrderPo.getDummyOrderSimple());
                         }
                         Collections.sort(simpleOrders); // 有序
+                        Vector<OrderPo> temp = new Vector<>();
+                        List<OrderPo> lastOrders;
                         if (simpleOrders.size() > remainDisplayCount) {
-                            Vector<OrderPo> temp = new Vector<>();
                             for (int i = 0; i < simpleOrders.size() - remainDisplayCount; i++) {
                                 if (AccountStates.ORDER_TYPES.contains(simpleOrders.get(i).getOrderType())) {
                                     continue;
                                 }
-                                temp.add(simpleOrders.get(i)); // 前面的非账户监控的所有
+                                temp.add(simpleOrders.get(i)); // 1.前面的非账户监控的所有
                             }
-                            temp.addAll(
-                                    simpleOrders
-                                            .subList(simpleOrders.size() - remainDisplayCount, simpleOrders.size()));
-                            currentOrderListShouldDisplay = temp;
+                            lastOrders = simpleOrders
+                                    .subList(simpleOrders.size() - remainDisplayCount, simpleOrders.size());
+
                         } else {
-                            currentOrderListShouldDisplay = simpleOrders;// 真实更新数据池
+                            lastOrders = simpleOrders;
                         }
-                        Thread.sleep(10);
+
+                        ArrayList<OrderPo> orderPos = new ArrayList<>(); // 非买卖
+                        for (OrderPo value : lastOrders) {
+                            if ("buy".equals(value.getOrderType()) || "sell"
+                                    .equals(value.getOrderType())) {
+                                temp.add(value);
+                            } else {
+                                orderPos.add(value);
+                            }
+                        }
+                        temp.addAll(orderPos); // 2.最后n个中, buy和sell
+                        currentOrderListShouldDisplay = temp;
+                        Thread.sleep(50);
                     }
                 }
             }, true);
@@ -306,7 +319,7 @@ public class OrderListAndDetailPanel extends JPanel {
             public void run() {
                 while (true) { // 每 100ms 刷新model
                     model.flush(currentOrderListShouldDisplay);
-                    Thread.sleep(10);
+                    Thread.sleep(100);
                 }
             }
         }, true);
