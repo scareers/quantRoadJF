@@ -39,6 +39,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
 @Data
 public class SecurityBeanEm implements Serializable {
     private static final long serialVersionUID = 156415111L;
+    private static final Log log = LogUtil.getLogger();
     // 缓存. key为 代码+类型
     public static ConcurrentHashMap<String, SecurityBeanEm> beanPool = new ConcurrentHashMap<>();
 
@@ -53,7 +54,9 @@ public class SecurityBeanEm implements Serializable {
     private static HashSet<String> indexSecurityTypeNames = new HashSet<>(Collections.singletonList("指数"));
     private static HashSet<String> bondSecurityTypeNames = new HashSet<>(Collections.singletonList("债券"));
     private static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
-    private static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 深证成指
+    private static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 上证指数, 死循环获取直到成功
+    private static final SecurityBeanEm ShangZhengZhuanZhaiIndex = initShBondIndex(); // 上证转债指数
+    private static final SecurityBeanEm ShenZhengZhuanZhaiIndex = initSzBondIndex(); // 深证转债指数
 
     public static void main(String[] args) throws Exception {
 
@@ -63,6 +66,8 @@ public class SecurityBeanEm implements Serializable {
 
         Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
         Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
+
+        SecurityBeanEm.getFourGlobalIndex().forEach(Console::log);
 
 //        Console.log(SecurityBeanEm.createBK("充电桩").isConceptBK());
 //        Console.log(SecurityBeanEm.createBK("北京板块").isAreaBK());
@@ -124,6 +129,22 @@ public class SecurityBeanEm implements Serializable {
         return res;
     }
 
+    private static SecurityBeanEm initShBondIndex() {
+        SecurityBeanEm res;
+        while (true) {
+            try {
+                res = createIndex("上证转债");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("SecurityBeanEm init: 初始化[上证转债指数]失败");
+                continue;
+            }
+            break;
+        }
+        return res;
+    }
+
+
     private static SecurityBeanEm initSzIndex() {
         SecurityBeanEm res;
         while (true) {
@@ -132,6 +153,21 @@ public class SecurityBeanEm implements Serializable {
             } catch (Exception e) {
                 e.printStackTrace();
                 log.error("SecurityBeanEm init: 初始化[深证成指]失败");
+                continue;
+            }
+            break;
+        }
+        return res;
+    }
+
+    private static SecurityBeanEm initSzBondIndex() {
+        SecurityBeanEm res;
+        while (true) {
+            try {
+                res = createIndex("深证转债");
+            } catch (Exception e) {
+                e.printStackTrace();
+                log.error("SecurityBeanEm init: 初始化[深证转债指数]失败");
                 continue;
             }
             break;
@@ -266,8 +302,10 @@ public class SecurityBeanEm implements Serializable {
      * @throws ExecutionException
      * @throws InterruptedException
      */
+    private static List<SecurityBeanEm> twoGlobalIndex = Arrays.asList(SHANG_ZHENG_ZHI_SHU, SHEN_ZHENG_CHENG_ZHI);
+
     public static List<SecurityBeanEm> getTwoGlobalMarketIndexList() {
-        return new CopyOnWriteArrayList<>(Arrays.asList(SHANG_ZHENG_ZHI_SHU, SHEN_ZHENG_CHENG_ZHI));
+        return twoGlobalIndex;
     }
 
     /**
@@ -275,15 +313,21 @@ public class SecurityBeanEm implements Serializable {
      *
      * @return
      */
+    private static List<SecurityBeanEm> twoGlobalBondIndex = Arrays
+            .asList(ShangZhengZhuanZhaiIndex, ShenZhengZhuanZhaiIndex);
+
     public static List<SecurityBeanEm> getTwoGlobalBondIndexList() {
-        return new CopyOnWriteArrayList<>(Arrays.asList(getShangZhengZhuanZhaiIndex(), getShenZhengZhuanZhaiIndex()));
+        return twoGlobalBondIndex;
     }
+
+    private static List<SecurityBeanEm> fourGlobalIndex = Arrays
+            .asList(SHANG_ZHENG_ZHI_SHU, SHEN_ZHENG_CHENG_ZHI, ShangZhengZhuanZhaiIndex, ShenZhengZhuanZhaiIndex);
 
     public static List<SecurityBeanEm> getFourGlobalIndex() {
-        getTwoGlobalMarketIndexList()
+        return fourGlobalIndex;
     }
 
-    private static final Log log = LogUtil.getLogger();
+
     private static final int retry = 4; // 查询时3次
 
     String secCode;
@@ -600,21 +644,11 @@ public class SecurityBeanEm implements Serializable {
     }
 
     public static SecurityBeanEm getShenZhengZhuanZhaiIndex() {
-        try {
-            return SecurityBeanEm.createIndex("深证转债");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        return ShenZhengZhuanZhaiIndex;
     }
 
     public static SecurityBeanEm getShangZhengZhuanZhaiIndex() {
-        try {
-            return SecurityBeanEm.createIndex("上证转债");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        return ShangZhengZhuanZhaiIndex;
     }
 
     public static SecurityBeanEm getShangZhengZhiShu() {
@@ -683,12 +717,29 @@ public class SecurityBeanEm implements Serializable {
     public static class SecurityEmPo implements Comparable {
         private static final long serialVersionUID = 78921546L;
 
+        /**
+         * 排序比较.  优先比较 beanType, 其次 focusType, 再次 subBeanType
+         *
+         * @param o
+         * @return
+         */
         @SneakyThrows
         @Override
         public int compareTo(Object o) {
             if (o instanceof SecurityEmPo) {
                 SecurityEmPo other = (SecurityEmPo) o;
-                return 1;
+                if (this.beanType == other.beanType) {
+                    if (this.focusType == other.focusType) {
+                        if (this.subBeanType == other.subBeanType) {
+                            return 0;
+                        }
+                        return this.subBeanType > other.subBeanType ? 1 : -1;
+                    } else {
+                        return this.focusType > other.focusType ? 1 : -1;
+                    }
+                } else {
+                    return this.beanType > other.beanType ? 1 : -1;
+                }
             } else {
                 throw new Exception("OrderPo cant not compareTo other types");
             }
@@ -700,7 +751,7 @@ public class SecurityBeanEm implements Serializable {
         String name;
         SecurityBeanEm bean;
 
-        int beanType = 100; // 资产所属种类 类型: 股票0, 债券1, 指数2, 板块3, 其他4
+        int beanType = 100; // 资产所属种类 类型: 股票0, 债券1, 板块2, 指数3, 其他4
         // 沪A主板0,深A主板1,科创板2,创业板3,沪可转债4,深可转债5, 概念板块6,行业板块7,地域板块8, 大指数9(上深,上深债), 普通指数10, 其他11
         int subBeanType = 100; // 资产所属子种类 类型: 例如股票分为 科创板,创业板,上证,深证等,板块分为 概念/行业/地域板块等
         int focusType = 100; // 关注度类型: 昨持今选0, 今选1, 昨持2, 关注3, 其他4
@@ -740,13 +791,22 @@ public class SecurityBeanEm implements Serializable {
                     subBeanType = 4;
                 }
             } else if (bean.isIndex()) {
-                beanType = 2;
+                beanType = 3;
 
-                if (bean.equals(SecurityBeanEm.getShenZhengZhuanZhaiIndex())) {
-
+                if (fourGlobalIndex.contains(bean)) {
+                    subBeanType = 9;
+                } else {
+                    subBeanType = 10;
                 }
             } else if (bean.isBK()) {
-                beanType = 3;
+                beanType = 2;
+                if (bean.isAreaBK()) {
+                    subBeanType = 8;
+                } else if (bean.isIndustryBK()) {
+                    subBeanType = 7;
+                } else if (bean.isConceptBK()) {
+                    subBeanType = 6;
+                }
             } else {
                 beanType = 4;
             }
@@ -776,8 +836,6 @@ public class SecurityBeanEm implements Serializable {
             builder.append(name); // 简单形式
             builder.append("]"); // 简单形式
 
-            builder.append(" "); // 类型分类
-
             addCommentAccordingBeanType(builder); // 添加类型附加说明
 
             builder.append("</html>");
@@ -785,24 +843,51 @@ public class SecurityBeanEm implements Serializable {
         }
 
         private void addCommentAccordingBeanType(StringBuilder builder) {
-            if (bean.isIndex()) {
-                addCommentCore(builder, "red", "指数");
-            } else if (bean.isStock()) {
-                if (SecurityPool.todaySelectedStocks.contains(bean)) {
-                    if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
-                        addCommentCore(builder, "purple", "昨持今择");
-                    } else {
-                        addCommentCore(builder, "yellow", "今日选股");
-                    }
-                } else if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
-                    addCommentCore(builder, "green", "昨日持股");
+            if (this.beanType == 0) {
+                addCommentCore(builder, "green", "股票");
+            } else if (this.beanType == 1) {
+                addCommentCore(builder, "yellow", "债券");
+            } else if (this.beanType == 2) {
+                if (this.subBeanType == 6) {
+                    addCommentCore(builder, "orange", "概念板块");
+                } else if (this.subBeanType == 7) {
+                    addCommentCore(builder, "orange", "行业板块");
+                } else if (this.subBeanType == 8) {
+                    addCommentCore(builder, "orange", "地域板块");
                 }
-            } else if (bean.isBK()) {
-                addCommentCore(builder, "black", "板块");
-            } else if (bean.isBond()) {
-                addCommentCore(builder, "blue", "债券");
-            } else {
-                addCommentCore(builder, "red", "未知类型");
+            } else if (this.beanType == 3) {
+                if (this.subBeanType == 9) {
+                    addCommentCore(builder, "red", "全局指数");
+                } else {
+                    addCommentCore(builder, "white", "指数");
+                }
+            }
+
+
+            if (this.focusType == 0) {
+                addCommentCore(builder, "red", "持选");
+            } else if (this.focusType == 1) {
+                addCommentCore(builder, "orange", "今选");
+            } else if (this.focusType == 2) {
+                addCommentCore(builder, "pink", "昨持");
+            } else if (this.focusType == 3) {
+                addCommentCore(builder, "yellow", "关注");
+            }
+
+
+            //// 沪A主板0,深A主板1,科创板2,创业板3,沪可转债4,深可转债5, 概念板块6,行业板块7,地域板块8, 大指数9(上深,上深债), 普通指数10, 其他11
+            if (this.subBeanType == 0) {
+                addCommentCore(builder, "white", "沪A主板");
+            } else if (this.subBeanType == 1) {
+                addCommentCore(builder, "gray", "深A主板");
+            } else if (this.subBeanType == 2) {
+                addCommentCore(builder, "yellow", "科创板");
+            } else if (this.subBeanType == 3) {
+                addCommentCore(builder, "yellow", "创业板");
+            } else if (this.subBeanType == 4) {
+                addCommentCore(builder, "white", "沪债");
+            } else if (this.subBeanType == 5) {
+                addCommentCore(builder, "gray", "深债");
             }
         }
 
