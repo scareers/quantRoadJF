@@ -69,7 +69,7 @@ public class LowBuyHighSellStrategy extends Strategy {
         this.lbHsSelector = lbHsSelector;
         this.adapter = new LowBuyHighSellStrategyAdapter(this, trader, 10); // 策略实际方法
         this.strategyName = strategyName; // 同super
-        initStockPool(); // 构建器自动初始化股票池!
+        initSecurityPool(); // 构建器自动初始化股票池!
 
         bindSelf(); // trader绑定自身
 
@@ -85,7 +85,7 @@ public class LowBuyHighSellStrategy extends Strategy {
 
 
     @Override
-    protected void initStockPool() throws Exception {
+    protected void initSecurityPool() throws Exception {
         log.warn("start init stockPool: 开始初始化股票池...");
         lbHsSelector.selectStock();
 
@@ -108,7 +108,7 @@ public class LowBuyHighSellStrategy extends Strategy {
     }
 
     @Override
-    protected List<String> stockSelect() throws Exception {
+    protected List<String> getSecurityTodaySelect() throws Exception {
         return lbHsSelector.getSelectResults();
     }
 

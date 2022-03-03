@@ -26,6 +26,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.scareers.datasource.selfdb.ConnectionFactory.getConnLocalFSTransactionFromEastmoney;
+import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.utils.CommonUtil.waitUtil;
 import static com.scareers.utils.SqlUtil.execSql;
 
@@ -56,7 +57,7 @@ import static com.scareers.utils.SqlUtil.execSql;
 @Data
 public class FsTransactionFetcher {
     public static void main(String[] args) throws Exception {
-        SecurityPool.addToOtherCareBonds(SecurityPool.createBondPool(10, true, Arrays.asList("可转债")));
+        SecurityPool.addToOtherCareBonds(SecurityPool.createBondPool(10, false, Arrays.asList("可转债")));
 //        SecurityPool.addToOtherCareBKs(SecurityPool.createBKPool(10, true, Arrays.asList("概念板块")));
 //        SecurityPool.addToOtherCareStocks(SecurityPool.createStockPool(10, true));
 //        SecurityPool.addToOtherCareIndexes(SecurityPool.createIndexPool(10, true, Arrays.asList("上证系列指数")));
@@ -82,11 +83,13 @@ public class FsTransactionFetcher {
         Console.log(FsTransactionFetcher.getColByColNameOrIndexAsDouble(stock, "price"));
         Console.log(FsTransactionFetcher.getNewestPrice(stock));
 
+        waitForever();
         fsTransactionFetcher.stopFetch();
     }
 
 
     private static FsTransactionFetcher INSTANCE;
+    public static final int dataFlushInterval = 2800; // 3s 刷新一个tick,控制一轮,某些股票不需要访问http,因为时间问题不可能刷新了
 
     public static FsTransactionFetcher getInstance() {
         Objects.requireNonNull(INSTANCE);
@@ -221,7 +224,11 @@ public class FsTransactionFetcher {
 
             epoch++;
             List<Future<Boolean>> futures = new ArrayList<>();
+            DateTime now = DateUtil.date();
             for (SecurityBeanEm stock : getStockPool()) {
+                if (impossibleHasNewTick(stock, now)) {
+                    continue;
+                }
                 Future<Boolean> f = threadPoolOfFetch
                         .submit(new FetchOneStockTask(stock, this));
                 futures.add(f);
@@ -240,7 +247,9 @@ public class FsTransactionFetcher {
             }
             if (epoch % logFreq == 0) {
                 epoch = 0;
-                log.info("finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
+                if (saveTableName.equals(DateUtil.today())) { // 当今天抓昨天的, 一次后每轮不需要什么时间, 导致一直log
+                    log.info("finish timing: 共{}轮抓取结束,耗时: {} s", logFreq, ((double) timer.intervalRestart()) / 1000);
+                }
             }
         }
         this.stopFetch = false;
@@ -248,6 +257,26 @@ public class FsTransactionFetcher {
         threadPoolOfFetch.shutdown();
         threadPoolOfSave.shutdown();
         this.running = false;
+    }
+
+    /**
+     * 判定 某资产, 是否没有可能有新的数据?
+     * <p>
+     * 例如某股票进度到了 09:40:01,  如果当前是 09:40:02, 显然只过了1s, 不可能有新数据. 需要等到 :04 才有
+     * 但为了更快, 实际差距不设定为 3s, 设定为 2.8s
+     *
+     * @param stock
+     * @return
+     */
+    private boolean impossibleHasNewTick(SecurityBeanEm stock, DateTime now) {
+        String lastTick = processes.getOrDefault(stock, "00:00:01");
+        DateTime lastTime = DateUtil.parse(DateUtil.today() + " " + lastTick);
+        // 当 此刻时间 - 某股票最后的记录 >= 3s (2.8s) 才可能有新数据
+        boolean res = DateUtil.between(lastTime, now, DateUnit.MS, false) < dataFlushInterval;
+//        if (!res) {
+//            fsTransactionDatas.get(stock);
+//        }
+        return res;
     }
 
     /**
@@ -263,7 +292,7 @@ public class FsTransactionFetcher {
                             .equals(stock.getMarket().toString()));
             datasOfOneStock = datasOfOneStock.sortBy("time_tick"); // 保证有序
             fsTransactionDatas.put(stock, datasOfOneStock); // 可空
-            processes.putIfAbsent(stock, "00:00:00"); // 默认值
+            processes.putIfAbsent(stock, "00:00:01"); // 默认值
             List<String> timeTicks = DataFrameS.getColAsStringList(datasOfOneStock, "time_tick");
             Optional<String> maxTick = timeTicks.stream().max(Comparator.naturalOrder());
             maxTick.ifPresent(s -> processes.put(stock, s)); // 修改.
@@ -443,16 +472,13 @@ public class FsTransactionFetcher {
                     }
                 });
             }
-
-            Optional<String> processNew = // 更新进度
-                    (DataFrameS.getColAsStringList(dfCurrentAll, "time_tick")).stream()
-                            .max(Comparator.naturalOrder());
-            if (processNew.isPresent()) {
-                fetcher.getProcesses().put(stock, processNew.get());
-            } else {
-                // 例如停牌则没有数据
-                fetcher.getProcesses().put(stock, "00:00:00");
+            String processNew;
+            try {
+                processNew = dfCurrentAll.get(dfCurrentAll.length() - 1, "time_tick").toString();
+            } catch (Exception e) {
+                processNew = "00:00:01";
             }
+            fetcher.getProcesses().put(stock, processNew);
             log.debug("updated: 已更新数据及进度: {} --> {} --> {} ", stock, dfCurrentAll.length(), processNew);
             return true;
         }

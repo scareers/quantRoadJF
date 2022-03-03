@@ -126,7 +126,7 @@ public class OrderListAndDetailPanel extends JPanel {
                         }
                         temp.addAll(orderPos); // 2.最后n个中, buy和sell
                         currentOrderListShouldDisplay = temp;
-                        Thread.sleep(50);
+                        Thread.sleep(100);
                     }
                 }
             }, true);

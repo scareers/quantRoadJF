@@ -187,25 +187,33 @@ public abstract class SecurityListAndDisplayPanel extends JPanel {
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {
         String url = null;
-        if (po.getBean().isBK()) {
-            url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", po.getBean().getQuoteId());
-        } else if (po.getBean().isIndex()) {
-            url = StrUtil.format("http://quote.eastmoney.com/zs{}.html", po.getBean().getSecCode());
-        } else if (po.getBean().isStock()) {
-            if (po.getBean().isHuA() || po.getBean().isHuB()) {
+        SecurityBeanEm bean = po.getBean();
+        if (bean.isBK()) {
+            url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", bean.getQuoteId());
+        } else if (bean.isIndex()) {
+            url = StrUtil.format("http://quote.eastmoney.com/zs{}.html", bean.getSecCode());
+        } else if (bean.isStock()) {
+            if (bean.isHuA() || bean.isHuB()) {
                 url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
-            } else if (po.getBean().isShenA() || po.getBean().isShenB()) {
+            } else if (bean.isShenA() || bean.isShenB()) {
                 url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
-            } else if (po.getBean().isJingA()) {
+            } else if (bean.isJingA()) {
                 url = StrUtil.format("http://quote.eastmoney.com/bj/{}.html", po.getSecCode());
-            } else if (po.getBean().isXSB()) {
+            } else if (bean.isXSB()) {
                 url = StrUtil.format("http://xinsanban.eastmoney.com/QuoteCenter/{}.html", po.getSecCode());
-            } else if (po.getBean().isKCB()) {
+            } else if (bean.isKCB()) {
                 url = StrUtil.format("http://quote.eastmoney.com/kcb/{}.html", po.getSecCode());
             }
+        } else if (bean.isBond()) {
+            if (bean.getMarket() == 0) {
+                url = StrUtil.format("http://quote.eastmoney.com/sz{}.html", po.getSecCode());
+            }else if(bean.getMarket()==1){
+                url = StrUtil.format("http://quote.eastmoney.com/sh{}.html", po.getSecCode());
+            }
         }
+
         if (url == null) {
-            log.warn("未知资产类别, 无法打开行情页面: {}", po.getBean().getName(), po.getBean().getSecurityTypeName());
+            log.warn("未知资产类别, 无法打开行情页面: {}", bean.getName(), bean.getSecurityTypeName());
             return;
         }
         CommonUtil.openUrlWithDefaultBrowser(url);

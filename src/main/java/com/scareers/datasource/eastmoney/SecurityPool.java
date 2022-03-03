@@ -13,6 +13,7 @@ import lombok.SneakyThrows;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * description: 维护全局唯一股票(资产)池! 以下功能均访问此唯一股票(指数/概念)池
@@ -64,7 +65,10 @@ public class SecurityPool {
     /**
      * 核心债券(常为可转债) 及 其他关心的债券,
      */
-    public static volatile CopyOnWriteArraySet<SecurityBeanEm> keyBonds = new CopyOnWriteArraySet<>();
+    // 今日选债, key
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> todaySelectedBonds = new CopyOnWriteArraySet<>();
+    // 昨日持债,卖出
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> yesterdayHoldBonds = new CopyOnWriteArraySet<>();
     public static volatile CopyOnWriteArraySet<SecurityBeanEm> otherCareBonds = new CopyOnWriteArraySet<>();
 
     /**
@@ -236,16 +240,24 @@ public class SecurityPool {
     }
 
     /**
-     * 4个债券添加方法
+     * 6个债券添加方法
      *
      * @param beanEm
      */
-    public static void addToKeyBonds(SecurityBeanEm beanEm) {
-        addSingleBeanToSet(keyBonds, beanEm, "bond");
+    public static void addToTodaySelectedBonds(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(todaySelectedBonds, beanEm, "bond");
     }
 
-    public static void addToKeyBonds(Collection<SecurityBeanEm> beans) {
-        addMultiBeanToSet(keyBonds, beans, "bond");
+    public static void addToTodaySelectedBonds(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(todaySelectedBonds, beans, "bond");
+    }
+
+    public static void addToYesterdayHoldBonds(SecurityBeanEm beanEm) {
+        addSingleBeanToSet(yesterdayHoldBonds, beanEm, "bond");
+    }
+
+    public static void addToYesterdayHoldBonds(Collection<SecurityBeanEm> beans) {
+        addMultiBeanToSet(yesterdayHoldBonds, beans, "bond");
     }
 
     public static void addToOtherCareBonds(SecurityBeanEm beanEm) {
@@ -301,8 +313,12 @@ public class SecurityPool {
         return iterSets(otherCareIndexes);
     }
 
-    public static ArrayList<SecurityBeanEm> keyBondsCopy() {
-        return iterSets(keyBonds);
+    public static ArrayList<SecurityBeanEm> yesterdayHoldBondsCopy() {
+        return iterSets(yesterdayHoldBonds);
+    }
+
+    public static ArrayList<SecurityBeanEm> todaySelectedBondsCopy() {
+        return iterSets(todaySelectedBonds);
     }
 
     public static ArrayList<SecurityBeanEm> otherCareBondsCopy() {
@@ -329,7 +345,7 @@ public class SecurityPool {
     }
 
     public static ArrayList<SecurityBeanEm> allBondsCopy() {
-        return iterSets(keyBonds, otherCareBonds);
+        return iterSets(yesterdayHoldBonds, todaySelectedBonds, otherCareBonds);
     }
 
     /*
@@ -453,6 +469,50 @@ public class SecurityPool {
         return SecurityBeanEm.createBondList(bondCodes, true);
     }
 
+
+    /*
+    util: 例如判定某bean是否为昨持今择
+     */
+
+    /**
+     * 昨持有股票 或者 债券
+     *
+     * @param beanEm
+     * @return
+     */
+    public static boolean isYesterdayHold(SecurityBeanEm beanEm) {
+        return yesterdayHoldStocks.contains(beanEm) || yesterdayHoldBonds.contains(beanEm);
+    }
+
+    public static boolean isTodaySelected(SecurityBeanEm beanEm) {
+        return todaySelectedStocks.contains(beanEm) || todaySelectedBonds.contains(beanEm);
+    }
+
+    /**
+     * 昨持今择
+     *
+     * @param beanEm
+     * @return
+     */
+    public static boolean isYhTs(SecurityBeanEm beanEm) {
+        return isTodaySelected(beanEm) && isYesterdayHold(beanEm);
+    }
+
+    /**
+     * 关注bean
+     *
+     * @param beanEm
+     * @return
+     */
+    public static boolean isOtherCare(SecurityBeanEm beanEm) {
+        return otherCareBonds.contains(beanEm) || otherCareStocks.contains(beanEm) || otherCareBKs.contains(beanEm)
+                || otherCareIndexes.contains(beanEm);
+    }
+
+
+    /*
+    getter方法
+     */
     public static CopyOnWriteArraySet<SecurityBeanEm> getAllSecuritySet() {
         return allSecuritySet;
     }
@@ -485,8 +545,12 @@ public class SecurityPool {
         return otherCareIndexes;
     }
 
-    public static CopyOnWriteArraySet<SecurityBeanEm> getKeyBonds() {
-        return keyBonds;
+    public static CopyOnWriteArraySet<SecurityBeanEm> getTodaySelectedBonds() {
+        return todaySelectedBonds;
+    }
+
+    public static CopyOnWriteArraySet<SecurityBeanEm> getYesterdayHoldBonds() {
+        return yesterdayHoldBonds;
     }
 
     public static CopyOnWriteArraySet<SecurityBeanEm> getOtherCareBonds() {

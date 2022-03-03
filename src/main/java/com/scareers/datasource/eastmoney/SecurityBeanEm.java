@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
@@ -56,8 +57,12 @@ public class SecurityBeanEm implements Serializable {
 
     public static void main(String[] args) throws Exception {
 
-        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
-        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
+//        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
+//        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
+
+
+        Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
 
 //        Console.log(SecurityBeanEm.createBK("充电桩").isConceptBK());
 //        Console.log(SecurityBeanEm.createBK("北京板块").isAreaBK());
@@ -263,6 +268,19 @@ public class SecurityBeanEm implements Serializable {
      */
     public static List<SecurityBeanEm> getTwoGlobalMarketIndexList() {
         return new CopyOnWriteArrayList<>(Arrays.asList(SHANG_ZHENG_ZHI_SHU, SHEN_ZHENG_CHENG_ZHI));
+    }
+
+    /**
+     * 两大转债指数
+     *
+     * @return
+     */
+    public static List<SecurityBeanEm> getTwoGlobalBondIndexList() {
+        return new CopyOnWriteArrayList<>(Arrays.asList(getShangZhengZhuanZhaiIndex(), getShenZhengZhuanZhaiIndex()));
+    }
+
+    public static List<SecurityBeanEm> getFourGlobalIndex() {
+        getTwoGlobalMarketIndexList()
     }
 
     private static final Log log = LogUtil.getLogger();
@@ -521,6 +539,10 @@ public class SecurityBeanEm implements Serializable {
         return this.getSecurityTypeName().equals("科创板");
     }
 
+    public boolean isCYB() { // 创业板为80, 普通主板为6
+        return this.isShenA() && "80".equals(this.getJYS());
+    }
+
     public boolean isXSB() {
         return this.getSecurityTypeName().equals("三板");
     }
@@ -577,12 +599,22 @@ public class SecurityBeanEm implements Serializable {
         return res;
     }
 
-    public static SecurityBeanEm getShenZhengZhuanZhaiIndex() throws Exception {
-        return SecurityBeanEm.createIndex("深证转债");
+    public static SecurityBeanEm getShenZhengZhuanZhaiIndex() {
+        try {
+            return SecurityBeanEm.createIndex("深证转债");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
-    public static SecurityBeanEm getShangZhengZhuanZhaiIndex() throws Exception {
-        return SecurityBeanEm.createIndex("上证转债");
+    public static SecurityBeanEm getShangZhengZhuanZhaiIndex() {
+        try {
+            return SecurityBeanEm.createIndex("上证转债");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static SecurityBeanEm getShangZhengZhiShu() {
@@ -629,6 +661,10 @@ public class SecurityBeanEm implements Serializable {
     public boolean equals(Object obj) {
         if (obj instanceof SecurityBeanEm) {
             SecurityBeanEm other = (SecurityBeanEm) obj;
+            if (this == obj) {
+                return true; // 单例经常
+            }
+
             return other.getSecCode().equals(this.getSecCode()) &&
                     other.getMarket().equals(this.getMarket()) && this.getQuoteId().equals(other.getQuoteId()) && this
                     .getSecurityType().equals(other.getSecurityType());
@@ -651,11 +687,8 @@ public class SecurityBeanEm implements Serializable {
         @Override
         public int compareTo(Object o) {
             if (o instanceof SecurityEmPo) {
-                if (this.type.equals(((SecurityEmPo) o).type)) {// 1.类型优先
-                    return this.secCode.compareTo(((SecurityEmPo) o).secCode); // 2.代码优先
-                } else {
-                    return this.type.compareTo(((SecurityEmPo) o).type);
-                }
+                SecurityEmPo other = (SecurityEmPo) o;
+                return 1;
             } else {
                 throw new Exception("OrderPo cant not compareTo other types");
             }
@@ -666,7 +699,11 @@ public class SecurityBeanEm implements Serializable {
         // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
         String name;
         SecurityBeanEm bean;
-        Integer type; // 类型: 0代表指数, 1代表今日选股(可买), 2代表昨日持仓(可卖), 3代表昨日有持仓且今日被选中, 4.未知
+
+        int beanType = 100; // 资产所属种类 类型: 股票0, 债券1, 指数2, 板块3, 其他4
+        // 沪A主板0,深A主板1,科创板2,创业板3,沪可转债4,深可转债5, 概念板块6,行业板块7,地域板块8, 大指数9(上深,上深债), 普通指数10, 其他11
+        int subBeanType = 100; // 资产所属子种类 类型: 例如股票分为 科创板,创业板,上证,深证等,板块分为 概念/行业/地域板块等
+        int focusType = 100; // 关注度类型: 昨持今选0, 今选1, 昨持2, 关注3, 其他4
 
         public SecurityEmPo(SecurityBeanEm securityBeanEm) {
             this.secCode = securityBeanEm.getSecCode();
@@ -674,23 +711,58 @@ public class SecurityBeanEm implements Serializable {
             this.name = securityBeanEm.getName();
             this.bean = securityBeanEm;
 
-            if (bean.isIndex()) {
-                this.type = 0;
-            } else {
-                if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
-                    if (SecurityPool.todaySelectedStocks.contains(bean)) {
-                        this.type = 3;
+            initThreeTypes(); // 设置3种类型
+        }
+
+        private void initThreeTypes() {
+            subBeanType = 11;
+            if (bean.isStock()) {
+                beanType = 0;
+
+                if (bean.isHuA()) {
+                    if (bean.isKCB()) {
+                        subBeanType = 2;
                     } else {
-                        this.type = 2;
+                        subBeanType = 0;
                     }
-                } else {
-                    if (SecurityPool.todaySelectedStocks.contains(bean)) {
-                        this.type = 1;
+                } else if (bean.isShenA()) {
+                    if (bean.isCYB()) {
+                        subBeanType = 3;
                     } else {
-                        this.type = 4;
+                        subBeanType = 1;
                     }
                 }
+            } else if (bean.isBond()) {
+                beanType = 1;
+                if (bean.getMarket() == 0) {
+                    subBeanType = 5;
+                } else if (bean.getMarket() == 1) {
+                    subBeanType = 4;
+                }
+            } else if (bean.isIndex()) {
+                beanType = 2;
+
+                if (bean.equals(SecurityBeanEm.getShenZhengZhuanZhaiIndex())) {
+
+                }
+            } else if (bean.isBK()) {
+                beanType = 3;
+            } else {
+                beanType = 4;
             }
+
+            if (SecurityPool.isYhTs(bean)) {
+                focusType = 0;
+            } else if (SecurityPool.isYesterdayHold(bean)) {
+                focusType = 2;
+            } else if (SecurityPool.isTodaySelected(bean)) {
+                focusType = 1;
+            } else if (SecurityPool.isOtherCare(bean)) {
+                focusType = 3;
+            } else {
+                focusType = 4;
+            }
+
         }
 
         @Override
@@ -705,32 +777,39 @@ public class SecurityBeanEm implements Serializable {
             builder.append("]"); // 简单形式
 
             builder.append(" "); // 类型分类
-            if (this.type == 0) {
-                builder.append(" <font color=\"red\">["); // 红色表示指数
-                builder.append("指数");
-                builder.append("]</font>"); // 简单形式
-            } else if (this.type == 1) {
-                builder.append(" <font color=\"yellow\">["); // 蓝色表示选股
-                builder.append("今日选股");
-                builder.append("]</font>"); // 简单形式
-            } else if (this.type == 2) {
-                builder.append(" <font color=\"green\">["); // 绿色表示昨日持仓
-                builder.append("昨日持仓");
-                builder.append("]</font>"); // 简单形式
-            } else if (this.type == 3) {
-                builder.append(" <font color=\"purple\">["); // 紫色表示今日选股且昨日持仓
-                builder.append("昨持今择");
-                builder.append("]</font>"); // 简单形式
-            } else {
 
-
-                builder.append(" <font color=\"red\">[");
-                builder.append("未知类型");
-                builder.append("]</font>"); // 简单形式
-            }
+            addCommentAccordingBeanType(builder); // 添加类型附加说明
 
             builder.append("</html>");
             return builder.toString();
+        }
+
+        private void addCommentAccordingBeanType(StringBuilder builder) {
+            if (bean.isIndex()) {
+                addCommentCore(builder, "red", "指数");
+            } else if (bean.isStock()) {
+                if (SecurityPool.todaySelectedStocks.contains(bean)) {
+                    if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
+                        addCommentCore(builder, "purple", "昨持今择");
+                    } else {
+                        addCommentCore(builder, "yellow", "今日选股");
+                    }
+                } else if (SecurityPool.yesterdayHoldStocks.contains(bean)) {
+                    addCommentCore(builder, "green", "昨日持股");
+                }
+            } else if (bean.isBK()) {
+                addCommentCore(builder, "black", "板块");
+            } else if (bean.isBond()) {
+                addCommentCore(builder, "blue", "债券");
+            } else {
+                addCommentCore(builder, "red", "未知类型");
+            }
+        }
+
+        private void addCommentCore(StringBuilder builder, String colorStr, String comment) {
+            builder.append(StrUtil.format(" <font color=\"{}\">[", colorStr)); // 紫色表示今日选股且昨日持仓
+            builder.append(comment);
+            builder.append("]</font>"); // 简单形式
         }
 
         public String toToolTip() { // 提示文字, 显示

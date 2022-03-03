@@ -234,8 +234,6 @@ public class JslBondApi {
                 "; kbzw__Session=" + sessionId;
         headers.put("cookie", cookieStr);
         headers.put("if-modified-since", "Wed, 02 Mar 2022 16:02:48 GMT");
-
-
         headers.put("Connection", "close");
 
         HttpRequest request = HttpUtil.createGet(url);

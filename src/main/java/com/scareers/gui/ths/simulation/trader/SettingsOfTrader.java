@@ -18,7 +18,7 @@ public class SettingsOfTrader {
      * 核心两项配置. 需要python端开启 M个客户端, 且id需要对应设置为 1-M; 其中 1-N个, 将作为账号状态刷新客户端.
      * M >= N+1
      */
-    public static int totalClientAmount = 3; // 总计python模拟操作客户端. id从i开始到  M
+    public static int totalClientAmount = 4; // 总计python模拟操作客户端. id从i开始到  M
     public static int accountStateFlushClientAmount = 2; // 前 N 个客户端用于账户状态刷新! N
 
     public enum ClientType { // python使用的券商客户端类型

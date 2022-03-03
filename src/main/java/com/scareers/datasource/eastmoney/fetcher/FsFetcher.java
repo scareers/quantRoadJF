@@ -328,10 +328,17 @@ public class FsFetcher {
             // 而抓取成功但没有数据, 将返回空
             DataFrame<Object> dfNew = EmQuoteApi
                     .getFs1MToday(stock, 0, fetcher.getTimeout());
+
+//            DataFrame<Object> dfNew = EmQuoteApi
+//                    .getQuoteHistorySingle(false, stock, "2022-03-02 09:36", null, "1", "qfq",
+//                            0, fetcher.getTimeout());
             if (dfNew != null) { // 访问失败将返回null.
                 fsDatas.put(stock, dfNew);
                 return true; // 成功更新为最新
             }
+
+//            ThreadUtil.sleep(3000);
+//            return true;
             return false; // http访问失败
         }
     }

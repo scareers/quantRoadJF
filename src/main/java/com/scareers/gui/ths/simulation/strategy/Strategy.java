@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.strategy;
 
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.Response;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.utils.ai.tts.Tts;
@@ -27,14 +26,14 @@ public abstract class Strategy {
 
     protected Strategy(String strategyName) throws Exception {
         this.strategyName = strategyName;
-        initStockPool(); // 构建器自动初始化股票池!
+        initSecurityPool(); // 初始化资产池 核心目的是将资产放入 SecurityPool 类的队列中
     }
 
     /**
      * 策略开始处理执行. 策略逻辑.  默认实现为 死循环调用 买卖决策方法
      * 默认先尝试卖, 回笼资金, 后买. 影响不大.
      */
-    protected void startCore() throws Exception {
+    protected void startCore() {
         while (true) {
             try {
                 sellDecision();
@@ -90,16 +89,16 @@ public abstract class Strategy {
 
 
     /**
-     * 每个策略, 需要首先获取自身股票池, 一般将调用 stockSelect(), initYesterdayHolds(), + 两大指数
+     * 每个策略, 需要首先获取自身股票池, 一般将调用 getSecurityTodaySelect(), initYesterdayHolds(), + 两大指数
      */
-    protected abstract void initStockPool() throws Exception;
+    protected abstract void initSecurityPool() throws Exception;
 
     /**
-     * 选股方法. 通常需要加上各大指数, 最终更新到股票池.
+     * 今日选股结果, 即将买入标的
      * 通常还需要等待获取昨日收盘后(今日盘前)持仓股票,进一步更新股票池  initYesterdayHolds(),
      * 但该方法通常需要等待第一次获取账户信息完成(数据库无数据时), 因此
      */
-    protected abstract List<String> stockSelect() throws Exception;
+    protected abstract List<String> getSecurityTodaySelect() throws Exception;
 
     /**
      * 获取今日开盘前已经持仓股票列表. 将账号初始状态和昨日已经持仓状态, 保存到数据库.

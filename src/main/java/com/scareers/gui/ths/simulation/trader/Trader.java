@@ -26,7 +26,6 @@ import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.gui.ths.simulation.OrderFactory;
 import com.scareers.gui.ths.simulation.Response;
-import com.scareers.gui.ths.simulation.TraderUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.order.Order.LifePointStatus;
 import com.scareers.gui.ths.simulation.rabbitmq.PythonSimulationClient;
@@ -81,12 +80,12 @@ public class Trader {
 
             Strategy mainStrategy = new Strategy("dummy Strategy") {
                 @Override
-                protected void initStockPool() throws Exception {
+                protected void initSecurityPool() throws Exception {
                     log.warn("start init stockPool: 开始初始化股票池...");
                     List<String> yesterdayH = initYesterdayHolds();
 
                     // 优化股票池添加逻辑
-                    List<SecurityBeanEm> selectBeans = SecurityBeanEm.createStockList(stockSelect());
+                    List<SecurityBeanEm> selectBeans = SecurityBeanEm.createStockList(getSecurityTodaySelect());
                     SecurityPool.addToTodaySelectedStocks(selectBeans);// 今选
                     List<SecurityBeanEm> yesterdayHoldBeans = SecurityBeanEm.createStockList(yesterdayH);
                     SecurityPool.addToYesterdayHoldStocks(yesterdayHoldBeans); // 昨持
@@ -103,7 +102,7 @@ public class Trader {
                 }
 
                 @Override
-                protected List<String> stockSelect() throws Exception {
+                protected List<String> getSecurityTodaySelect() throws Exception {
                     return Arrays.asList("000001", "000007","002197");
                 }
 
