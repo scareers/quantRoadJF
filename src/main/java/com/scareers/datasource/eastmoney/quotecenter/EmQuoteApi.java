@@ -1208,6 +1208,7 @@ public class EmQuoteApi {
         JSONObject content = (JSONObject) JSONUtilS.getByPath(jsonObject, "data.diff");
 
         DataFrame<Object> dataFrame = new DataFrame<>(fields);
+
         for (Object value : content.values()) {
             JSONObject value1 = (JSONObject) value;
             dataFrame.append(fields.stream().map(field -> value1.getString(field)).collect(Collectors.toList()));

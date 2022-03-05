@@ -90,7 +90,13 @@ public class ConnectionFactory {
         return connectToLocalMysqlMain("tushare_1m");
     }
     public static Connection getConnLocalFSTransactionFromEastmoney() {
-        return connectToLocalMysqlMain("fs_transaction_from_eastmoney");
+        return connectToLocalMysqlMain("eastmoney_fs_transaction");
+    }
+    public static Connection getConnLocalEastmoney() {
+        return connectToLocalMysqlMain("eastmoney");
+    }
+    public static Connection getConnLocalFS1MFromEastmoney() {
+        return connectToLocalMysqlMain("eastmoney_fs1m");
     }
 
     public static Connection getConnLocalFsFromEastmoney() {

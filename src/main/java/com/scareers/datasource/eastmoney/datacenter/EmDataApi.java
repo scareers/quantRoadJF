@@ -10,11 +10,9 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.EastMoneyUtil.getAsStrUseHutool;
 import static com.scareers.utils.JSONUtilS.jsonStrToDf;
@@ -26,20 +24,28 @@ import static com.scareers.utils.JSONUtilS.jsonStrToDf;
  * @date: 2022/2/25/025-19:12:51
  */
 public class EmDataApi {
-    public static Map<Object, Object> SuspensionFields = new ConcurrentHashMap<>(); // 停牌字段
+    public static Map<Object, Object> SuspensionFieldsMap = new ConcurrentHashMap<>(); // 停牌字段Map
+    public static List<String> SuspensionFields; // 停牌字段
+    public static Map<Object, Object> FutureMarketCloseDatesFieldsMap = new ConcurrentHashMap<>(); // 休市字段
+    public static List<String> FutureMarketCloseDatesFields; // 休市字段
 
     static {
         initSuspensionFields();
+        initFutureMarketCloseDatesFields();
     }
 
 
     public static void main(String[] args) {
         Console.log("获取停牌股票代码列表");
         Console.log(getSuspensionStockCodes(DateUtil.today(), 2000, 3));
+        Console.log(getSuspensions(DateUtil.today(), 2000, 3));
+
+        Console.log("获取近期未来休市安排");
+        Console.log(getFutureMarketCloseDates(3000, 3));
     }
 
     /**
-     * 今日停牌 股票列表 --> 来自数据中心 -- 停复牌
+     * 今日停牌 股票列表 --> 数据中心 -- 停复牌
      * https://datacenter-web.eastmoney.com/api/data/v1/get?callback=jQuery112309079454213619864_1645787131827&sortColumns=SUSPEND_START_DATE&sortTypes=-1&pageSize=500&pageNumber=1&reportName=RPT_CUSTOM_SUSPEND_DATA_INTERFACE&columns=ALL&source=WEB&client=WEB&filter=(MARKET%3D%22%E5%85%A8%E9%83%A8%22)(DATETIME%3D%272022-02-25%27)
      *
      * @param date 必须 yyyy-MM-dd 形式
@@ -68,14 +74,46 @@ public class EmDataApi {
             return null;
         }
 
-        List<String> fields = Arrays.asList("SECURITY_CODE", "SECURITY_NAME_ABBR", "SUSPEND_START_TIME",
-                "SUSPEND_END_TIME", "SUSPEND_EXPIRE", "SUSPEND_REASON", "TRADE_MARKET", "SUSPEND_START_DATE",
-                "PREDICT_RESUME_DATE", "TRADE_MARKET_CODE", "SECURITY_TYPE_CODE");
         DataFrame<Object> dfTemp = jsonStrToDf(response, "(", ")",
-                fields,
+                SuspensionFields,
                 Arrays.asList("result", "data"), JSONObject.class, Arrays.asList(),
                 Arrays.asList());
-        dfTemp = dfTemp.rename(SuspensionFields);
+        dfTemp = dfTemp.rename(SuspensionFieldsMap);
+        return dfTemp;
+    }
+
+    /**
+     * 获取近期未来 休市安排 -- 数据中心/财经日历/休市安排
+     * https://datacenter-web.eastmoney.com/api/data/get?type=RPTA_WEB_ZGXSRL&sty=ALL&ps=200&st=sdate&sr=-1&callback=jQuery11230209712528561385_1646443457043&_=1646443457044
+     *
+     * @return 失败null
+     * @cols [结束日期, 节日描述, 休市市场, 开始日期, 未知]
+     */
+    public static DataFrame<Object> getFutureMarketCloseDates(int timeout, int retry) {
+        String url = "https://datacenter-web.eastmoney.com/api/data/get";
+
+        HashMap<String, Object> params = new HashMap<>();
+
+        params.put("type", "RPTA_WEB_ZGXSRL");
+        params.put("sty", "ALL");
+        params.put("ps", "200");
+        params.put("st", "sdate");
+        params.put("sr", "-1");
+        params.put("callback", "jQuery11230209712528561385_" + (System.currentTimeMillis() - 1));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+
+        DataFrame<Object> dfTemp = jsonStrToDf(response, "(", ")",
+                FutureMarketCloseDatesFields,
+                Arrays.asList("result", "data"), JSONObject.class, Arrays.asList(),
+                Arrays.asList());
+        dfTemp = dfTemp.rename(FutureMarketCloseDatesFieldsMap);
         return dfTemp;
     }
 
@@ -100,7 +138,7 @@ public class EmDataApi {
     }
 
     private static void initSuspensionFields() {
-        SuspensionFields.putAll(Dict.create()
+        SuspensionFieldsMap.putAll(Dict.create()
                 .set("SECURITY_CODE", "资产代码")
                 .set("SECURITY_NAME_ABBR", "资产名称")
                 .set("SUSPEND_START_TIME", "停牌开始时间")
@@ -113,5 +151,22 @@ public class EmDataApi {
                 .set("TRADE_MARKET_CODE", "交易市场代码")
                 .set("SECURITY_TYPE_CODE", "资产类型代码")
         );
+        SuspensionFields = Arrays.asList(
+                "SECURITY_CODE", "SECURITY_NAME_ABBR", "SUSPEND_START_TIME", "SUSPEND_END_TIME",
+                "SUSPEND_EXPIRE", "SUSPEND_REASON", "TRADE_MARKET",
+                "SUSPEND_START_DATE", "PREDICT_RESUME_DATE", "TRADE_MARKET_CODE", "SECURITY_TYPE_CODE"
+        );
+    }
+
+    private static void initFutureMarketCloseDatesFields() {
+        FutureMarketCloseDatesFieldsMap.putAll(Dict.create()
+                .set("edate", "结束日期") // 包括
+                .set("holiday", "节日描述") //
+                .set("mkt", "休市市场")
+                .set("sdate", "开始日期") // 包括
+                .set("xs", "未知") // 未知字段, 常为空
+        );
+        FutureMarketCloseDatesFields = Arrays.asList("edate", "holiday", "mkt", "sdate", "xs");
+
     }
 }

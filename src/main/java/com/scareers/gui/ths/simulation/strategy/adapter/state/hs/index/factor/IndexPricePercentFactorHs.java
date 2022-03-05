@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.factor;
 
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.factor.HsFactor;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.HsState;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index.IndexStateHs;
@@ -25,7 +27,11 @@ public class IndexPricePercentFactorHs extends HsFactor {
     public HsState influence(HsState state0) {
         Double indexPricePercentThatTime = state0.getIndexStateHs().getIndexPriceChgPtCurrent();
         if (indexPricePercentThatTime == null) { // 数据缺失
-            log.error("IndexPricePercentFactorHs: 指数涨跌幅获取失败, 无法计算影响, 返回原始状态");
+            if (DateUtil.between(DateUtil.parse(DateUtil.today() + " 09:25:30"), DateUtil.date(), DateUnit.MS,
+                    false) > 0) {
+                log.error("IndexPricePercentFactorHs: 指数涨跌幅获取失败, 无法计算影响, 返回原始状态");
+                // 大盘涨跌幅 9:25:x 刷新第一次. 那之前不打印log
+            }
             return state0; // 相当于不移动
         }
         // 平移, 分布. pdf与cdf同时

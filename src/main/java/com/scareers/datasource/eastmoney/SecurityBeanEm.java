@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.io.Serializable;
 import java.util.*;
@@ -184,14 +185,15 @@ public class SecurityBeanEm implements Serializable {
      * @return
      * @throws Exception
      */
-    public static List<SecurityBeanEm> createStockList(List<String> queryConditionList) throws Exception {
+    public static List<SecurityBeanEm> createStockList(List<String> queryConditionList, boolean lazyInitBkInfo)
+            throws Exception {
         Set<String> withoutCache = queryConditionList.stream()
                 .filter(value -> !beanPool.containsKey(value + "__stock"))
                 .collect(Collectors.toSet());
 
         List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(new ArrayList<>(withoutCache)); // 新增到cache
         for (SecurityBeanEm bean : beans) {
-            bean.convertToStock();
+            bean.convertToStock(lazyInitBkInfo);
             beanPool.put(bean.getSecCode() + "__stock", bean); // 放入缓存池
         }
 
@@ -203,6 +205,11 @@ public class SecurityBeanEm implements Serializable {
         }
         return res;
     }
+
+    public static List<SecurityBeanEm> createStockList(List<String> queryConditionList) throws Exception {
+        return createStockList(queryConditionList, false);
+    }
+
 
     /**
      * 给定股票简单代码列表, 获取 已转换为 指数 的 SecurityBeanEm
@@ -412,7 +419,7 @@ public class SecurityBeanEm implements Serializable {
      * @return Arrays.asList(" AStock ", " 23 ", " NEEQ ")
      * @noti: 不新建对象
      */
-    private SecurityBeanEm convertToStock() throws Exception {
+    private SecurityBeanEm convertToStock(boolean lazyInitBkInfo) throws Exception {
         if (secType != SecType.NULL) {
             throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
         }
@@ -424,14 +431,41 @@ public class SecurityBeanEm implements Serializable {
             throw new Exception("转换StockBean为股票Bean异常");
         }
 
-        DataFrame<Object> bkDf = EmQuoteApi.getBksTheStockBelongTo(this, 3000, 4);
-        if (bkDf == null) {
-            secType = SecType.FAIL;
-            throw new Exception("转换StockBean为股票Bean异常: 获取所属板块列表失败");
-        } else {
-            this.bkListBelongTo = createBKList(DataFrameS.getColAsStringList(bkDf, "板块代码"));
+        if (!lazyInitBkInfo) {
+            try { // 获取板块可能失败, 例如退市股票
+                DataFrame<Object> bkDf = EmQuoteApi.getBksTheStockBelongTo(this, 3000, 4);
+                if (bkDf == null) {
+                    secType = SecType.FAIL;
+                    throw new Exception("转换StockBean为股票Bean异常: 获取所属板块列表失败");
+                } else {
+                    this.bkListBelongTo = createBKList(DataFrameS.getColAsStringList(bkDf, "板块代码"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
         return this;
+    }
+
+    /**
+     * 因个股初始化时, 可不加载所属板块数据. 本方法为懒加载情况下, 的主动再加载bk数据
+     *
+     * @param beanEm
+     */
+    public static void initBksTheStockBelongTo(SecurityBeanEm beanEm) {
+        if (beanEm.bkListBelongTo == null) {
+            try { // 获取板块可能失败, 例如退市股票
+                DataFrame<Object> bkDf = EmQuoteApi.getBksTheStockBelongTo(beanEm, 3000, 4);
+                beanEm.bkListBelongTo = createBKList(DataFrameS.getColAsStringList(bkDf, "板块代码"));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private SecurityBeanEm convertToStock() throws Exception {
+        return convertToStock(false);
     }
 
     /**
@@ -751,7 +785,7 @@ public class SecurityBeanEm implements Serializable {
         String name;
         SecurityBeanEm bean;
 
-        int beanType = 100; // 资产所属种类 类型: 股票0, 债券1, 板块2, 指数3, 其他4
+        int beanType = 100; // 资产所属种类 类型: 股票0, 债券1, 指数2, 板块3, , 其他4
         // 沪A主板0,深A主板1,科创板2,创业板3,沪可转债4,深可转债5, 概念板块6,行业板块7,地域板块8, 大指数9(上深,上深债), 普通指数10, 其他11
         int subBeanType = 100; // 资产所属子种类 类型: 例如股票分为 科创板,创业板,上证,深证等,板块分为 概念/行业/地域板块等
         int focusType = 100; // 关注度类型: 昨持今选0, 今选1, 昨持2, 关注3, 其他4
@@ -791,7 +825,7 @@ public class SecurityBeanEm implements Serializable {
                     subBeanType = 4;
                 }
             } else if (bean.isIndex()) {
-                beanType = 3;
+                beanType = 2;
 
                 if (fourGlobalIndex.contains(bean)) {
                     subBeanType = 9;
@@ -799,7 +833,7 @@ public class SecurityBeanEm implements Serializable {
                     subBeanType = 10;
                 }
             } else if (bean.isBK()) {
-                beanType = 2;
+                beanType = 3;
                 if (bean.isAreaBK()) {
                     subBeanType = 8;
                 } else if (bean.isIndustryBK()) {
@@ -847,15 +881,15 @@ public class SecurityBeanEm implements Serializable {
                 addCommentCore(builder, "green", "股票");
             } else if (this.beanType == 1) {
                 addCommentCore(builder, "yellow", "债券");
-            } else if (this.beanType == 2) {
+            } else if (this.beanType == 3) {
                 if (this.subBeanType == 6) {
                     addCommentCore(builder, "orange", "概念板块");
                 } else if (this.subBeanType == 7) {
-                    addCommentCore(builder, "orange", "行业板块");
+                    addCommentCore(builder, "yellow", "行业板块");
                 } else if (this.subBeanType == 8) {
                     addCommentCore(builder, "orange", "地域板块");
                 }
-            } else if (this.beanType == 3) {
+            } else if (this.beanType == 2) {
                 if (this.subBeanType == 9) {
                     addCommentCore(builder, "red", "全局指数");
                 } else {
@@ -869,7 +903,7 @@ public class SecurityBeanEm implements Serializable {
             } else if (this.focusType == 1) {
                 addCommentCore(builder, "orange", "今选");
             } else if (this.focusType == 2) {
-                addCommentCore(builder, "pink", "昨持");
+                addCommentCore(builder, "green", "昨持");
             } else if (this.focusType == 3) {
                 addCommentCore(builder, "yellow", "关注");
             }

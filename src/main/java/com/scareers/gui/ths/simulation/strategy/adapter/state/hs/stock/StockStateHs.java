@@ -215,11 +215,17 @@ public class StockStateHs implements Serializable {
      * @param value
      * @param tickGap
      * @return
+     * @noti: 当 chgValue为null时, 可理解的 妥协方案, 视为 0.0
      */
     public static Double cdfHs(List<Double> tickList, List<Double> cdfList,
                                Double chgValue) {
         Assert.isTrue(tickList.size() == cdfList.size());
         double pointCdf = 0.0;
+        if (chgValue == null) {
+            chgValue = 0.0;
+
+        }
+
         if (chgValue < tickList.get(0)) {
             return pointCdf; // 当给定值< 首个tick 返回0
         }
@@ -257,12 +263,17 @@ public class StockStateHs implements Serializable {
      * @param value
      * @param tickGap
      * @return
+     * @noti: 当 chgValue为null时, 可理解的 妥协方案, 视为 0.0
      */
     public static Double pdfHs(List<Double> tickList, List<Double> pdfList,
                                Double chgValue) {
         Assert.isTrue(tickList.size() == pdfList.size());
-
         double pointPdf = 0.0;
+        if (chgValue == null) {
+            chgValue = 0.0;
+
+        }
+
         if (chgValue < tickList.get(0) || chgValue > tickList.get(tickList.size() - 1)) {
             return pointPdf; // 当给定值< 首个tick 或者大于最后tick, 均返回0.0.
         }

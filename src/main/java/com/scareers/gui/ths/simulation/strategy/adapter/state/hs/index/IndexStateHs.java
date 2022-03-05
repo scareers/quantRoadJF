@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.strategy.adapter.state.hs.index;
 
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
@@ -57,7 +59,11 @@ public class IndexStateHs implements Serializable {
 
     private void initIndexChgPt() {
         if (indexNewPrice == null || indexPreClosePrice == null) {
-            log.warn("指数昨收或最新价格获取失败,无法计算涨跌幅: 最新价: {}, 昨收价: {} ", indexNewPrice, indexPreClosePrice);
+            if (DateUtil.between(DateUtil.parse(DateUtil.today() + " 09:25:30"), DateUtil.date(), DateUnit.MS,
+                    false) > 0) {
+                // 大盘涨跌幅 9:25:x 刷新第一次. 那之前不打印log
+                log.warn("指数昨收或最新价格获取失败,无法计算涨跌幅: 最新价: {}, 昨收价: {} ", indexNewPrice, indexPreClosePrice);
+            }
         } else {
             indexPriceChgPtCurrent = indexNewPrice / indexPreClosePrice - 1;
         }

@@ -97,6 +97,9 @@ public class LowBuyHighSellStrategy extends Strategy {
         List<SecurityBeanEm> yesterdayHoldBeans = SecurityBeanEm.createStockList(yesterdayH);
         SecurityPool.addToYesterdayHoldStocks(yesterdayHoldBeans); // 昨持
 
+        selectBeans.forEach(SecurityBeanEm::initBksTheStockBelongTo); // 因此前懒加载, 此时需要主动加载板块信息
+        yesterdayHoldBeans.forEach(SecurityBeanEm::initBksTheStockBelongTo);
+
         selectBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo())); // 将相关板块加入keyBks
         yesterdayHoldBeans.forEach(value -> SecurityPool.addToKeyBKs(value.getBkListBelongTo()));
 

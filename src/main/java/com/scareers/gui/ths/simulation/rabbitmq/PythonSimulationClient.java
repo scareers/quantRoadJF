@@ -38,15 +38,12 @@ import static com.scareers.gui.ths.simulation.trader.SettingsOfTrader.totalClien
 public class PythonSimulationClient {
     private static final Log log = LogUtil.getLogger();
     public static Connection connection;
-    public static Channel channelProducer;
-    public static Channel channelComsumer;
 
 
     static {
         try {
             connection = RabbitmqUtil.connectToRbServer();
-            channelProducer = connection.createChannel();
-            channelComsumer = connection.createChannel();
+
         } catch (IOException | TimeoutException e) {
             e.printStackTrace();
         }
@@ -89,6 +86,8 @@ public class PythonSimulationClient {
     String p2jExchangeName;
     String p2jQueueName;
     String p2jRoutingKey;
+    Channel channelProducer;
+    Channel channelComsumer;
 
     // 标志自身是否空闲! 只有空闲状态, 才能被调度执行订单
     // @key: 只有在 初始化完成, 以及 执行某个订单完成后, free为true!
@@ -107,6 +106,13 @@ public class PythonSimulationClient {
         this.p2jQueueName = SettingsOfRb.ths_trader_p2j_queue_prefix + id;
         this.p2jRoutingKey = SettingsOfRb.ths_trader_p2j_routing_key_prefix + id;
 
+        try {
+            channelProducer = connection.createChannel();
+            channelComsumer = connection.createChannel();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         Assert.isTrue(connection != null);
         Assert.isTrue(channelProducer != null);
         Assert.isTrue(channelComsumer != null);
@@ -118,12 +124,26 @@ public class PythonSimulationClient {
     }
 
     public void close() {
-        if (connection.isOpen()) {
+        if (channelComsumer.isOpen()) {
+            try {
+                channelComsumer.close();
+            } catch (IOException | TimeoutException e) {
+                e.printStackTrace();
+            }
+
+        }
+        if (channelProducer.isOpen()) {
             try {
                 channelProducer.close();
-                channelComsumer.close();
-                connection.close();
             } catch (IOException | TimeoutException e) {
+                e.printStackTrace();
+            }
+        }
+        if (connection.isOpen()) {
+            try {
+
+                connection.close();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -256,7 +276,6 @@ public class PythonSimulationClient {
         this.free = true;
         return responses;
     }
-
 
 
     /**

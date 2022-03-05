@@ -116,7 +116,7 @@ public class LbHsSelectorV0 extends LbHsSelector {
                           int suitableSelectStockCount, // 期望的选股结果数量
                           boolean preferenceMoreStock, // 更喜欢更多的股票选择结果
                           List<Integer> keyInts// 核心设定, 0,1表示次日买后日卖, 以此类推. 影响选股结果保存表结果
-    )  {
+    ) {
         this.forceManualExcludeStocks = forceManualExcludeStocks;
         this.suitableSelectStockCount = suitableSelectStockCount;
         this.preferenceMoreStock = preferenceMoreStock;
@@ -456,7 +456,7 @@ public class LbHsSelectorV0 extends LbHsSelector {
         ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> datasMap0 =
                 EmQuoteApi.getQuoteHistoryBatch(
                         SecurityBeanEm.createStockList(new ArrayList<>(allStocks)
-                                .subList(0, Math.min(stockSelectedExecAmounts, allStocks.size()))),
+                                .subList(0, Math.min(stockSelectedExecAmounts, allStocks.size())), true),
                         pre7TradeDate,
                         pre1TradeDate, // @noti: 若使用today, 则盘中选股将出现今日日期结果
                         "101", "1", 3, 2000, false);
@@ -469,8 +469,13 @@ public class LbHsSelectorV0 extends LbHsSelector {
         for (String stock : datasMap.keySet()) {
             DataFrame<Object> dfRaw = datasMap.get(stock); // dfRaw的日期默认为 yyyy-MM-dd, 虽然起止参数是 yyyyMMdd 形式
             dfRaw = dfRaw.rename(new HashMap<>(fieldsRenameDict));
+
             if (dfRaw.length() < 6) { // 两个月至少需要 6天数据, 有7天数据, 1天冗余. 即7天内不能停牌1天以上
                 continue; // 未选中.
+            }
+
+            if (stock.equals("000979")) {
+                Console.log(dfRaw);
             }
             if (!(dfRaw.get(dfRaw.length() - 1, 0).toString().equals(pre1TradeDate))) {
                 continue; // 该股票上一交易日, 并非上一个开盘日, 例如停牌的无视

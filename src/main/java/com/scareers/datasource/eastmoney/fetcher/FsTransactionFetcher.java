@@ -12,6 +12,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.TushareApi;
 import com.scareers.utils.StrUtilS;
 import com.scareers.utils.log.LogUtil;
@@ -116,7 +117,7 @@ public class FsTransactionFetcher {
 
     // 静态属性 设置项
     // todo: 需要正确更新这个 隔天交替时间!
-    public static final List<String> sleepNoFetchDateTimeRange = Arrays.asList("08:00:00", "09:00:00");
+    public static final List<String> sleepNoFetchDateTimeRange = Arrays.asList("08:50:00", "08:55:00");
     public static final Connection connSave = getConnLocalFSTransactionFromEastmoney();
     public static ThreadPoolExecutor threadPoolOfFetch;
     public static ThreadPoolExecutor threadPoolOfSave;
@@ -314,7 +315,7 @@ public class FsTransactionFetcher {
         boolean afterHighLimit = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false) <= 0;  // 比上限大
 
         //todo: 合理应当判定今日是否交易日, 依赖tushare. 等有其他更好方式再替换.
-        if (!TushareApi.isTradeDate(DateUtil.format(now, "yyyyMMdd"))) {
+        if (!EastMoneyDbApi.isTradeDate(today)) {
             if (!logged) {
                 log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");
                 logged = true;

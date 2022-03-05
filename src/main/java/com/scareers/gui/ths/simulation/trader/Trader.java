@@ -67,7 +67,7 @@ public class Trader {
     private static volatile Trader INSTANCE;
     public static CopyOnWriteArrayList<PythonSimulationClient> clientPool;
 
-    public static boolean useDummyStrategy = true;// 使用测试策略
+    public static boolean useDummyStrategy = false;// 使用测试策略
 
     /**
      * 主策略对象
@@ -155,7 +155,7 @@ public class Trader {
             mainStrategy.setAdapter(strategyAdapter);
             return mainStrategy;
         } else {
-            LbHsSelector lbHsSelector = new LbHsSelectorV0(Arrays.asList(), 10, false, Arrays.asList(0, 1));
+            LbHsSelector lbHsSelector = new LbHsSelectorV0(Arrays.asList(), 5, false, Arrays.asList(0, 1));
             Strategy mainStrategy = LowBuyHighSellStrategy.getInstance(trader, lbHsSelector,
                     LowBuyHighSellStrategy.class.getName()); // 核心策略对象, 达成与trader绑定 mainStrategy.bindSelf() ,无需显式调用
             return mainStrategy;

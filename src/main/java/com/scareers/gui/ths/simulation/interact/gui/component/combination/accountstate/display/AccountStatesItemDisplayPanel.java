@@ -119,7 +119,7 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
         if (newData instanceof DataFrame) { // 账户状态: 各种df数据
             DataFrame<Object> newDf = (DataFrame<Object>) newData;
             if (title.equals(CURRENT_HOLD_TITLE)) {
-                List<Object> codes = newDf.col("证券代码").stream().map(value->String.valueOf(value.toString())).collect(
+                List<Object> codes = newDf.col("证券代码").stream().map(value -> String.valueOf(value.toString())).collect(
                         Collectors.toList());
                 newDf.convert();
                 for (int i = 0; i < newDf.length(); i++) {
@@ -154,6 +154,7 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
                 jTable = new JTable();
                 jTable.setGridColor(Color.black);
                 jTable.setBackground(COLOR_THEME_MINOR);
+                jTable.setForeground(Color.white);
                 jTable.setModel(model);
                 jTable.setRowSorter(new TableRowSorter<DefaultTableModel>(model));
 

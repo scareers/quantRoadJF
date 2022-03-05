@@ -32,7 +32,7 @@ public class PositionAndAmountFactorHs extends HsFactor {
         // 2. 设置cdf中的 具体概率
         state.setCdfProbabilityOfCurrentPricePercent(
                 StockStateHs.cdfHs(
-                        state.getTicksOfHighSell(), state.getPdfListOfHighSell(),
+                        state.getTicksOfHighSell(), state.getCdfListOfHighSell(),
                         state.getChgPToPre2Close() // 当前涨跌幅,(相对于前2收)
                 ));
         state.setCdfRateForPosition(SettingsOfPositionAndAmountFactor.cdfRateForPosition);
