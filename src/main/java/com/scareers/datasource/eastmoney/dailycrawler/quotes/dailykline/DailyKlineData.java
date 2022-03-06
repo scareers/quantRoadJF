@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain.waitPoolFinish;
 import static com.scareers.utils.SqlUtil.execSql;
@@ -159,6 +160,8 @@ public abstract class DailyKlineData extends Crawler {
         }
 
         success = true;
+
+        AtomicInteger process = new AtomicInteger(1);
         for (SecurityBeanEm beanEm : stockBeans) {
             String finalBegDate = begDate;
             String finalEndDate = endDate;
@@ -200,7 +203,9 @@ public abstract class DailyKlineData extends Crawler {
                         success = false;
                         return;
                     }
-                    log.info("success: {} -- {}", beanEm.getSecCode(), beanEm.getName());
+                    log.info("success: {} -- {} -- {}/{}", beanEm.getSecCode(), beanEm.getName(), process,
+                            stockBeans.size());
+                    process.incrementAndGet();
                 }
             });
         }
