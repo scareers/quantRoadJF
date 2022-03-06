@@ -58,10 +58,14 @@ public class SecurityBeanEm implements Serializable {
     private static final SecurityBeanEm ShenZhengZhuanZhaiIndex = initSzBondIndex(); // 深证转债指数
 
     public static void main(String[] args) throws Exception {
-        Console.log(SecurityBeanEm.createStock("002070",true).getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createStock("000001",true).getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createStock("600798",true).getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createStock("002070",true).getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createStock("000001",true).getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createStock("600798",true).getConvertRawJsonObject());
 
+        Console.log(SecurityBeanEm.createIndex("000978").getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createIndex("399990").getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createIndex("930707").getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createIndex("H11030").getConvertRawJsonObject());
 
 //        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
 //        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
@@ -565,6 +569,19 @@ public class SecurityBeanEm implements Serializable {
         return this.secType == SecType.INDEX;
     }
 
+    public boolean isHuIndex() {
+        return this.isIndex() && this.getMarket() == 1;
+    }
+
+    public boolean isShenIndex() {
+        return this.isIndex() && this.getMarket() == 0;
+    }
+
+    public boolean isZhongIndex() { // 中证系列指数
+        return this.isIndex() && this.getMarket() == 2;
+    }
+
+
     public boolean isStock() {
         return this.secType == SecType.STOCK;
     }
@@ -638,7 +655,7 @@ public class SecurityBeanEm implements Serializable {
         return createStock(queryCondition, false);
     }
 
-    public static SecurityBeanEm createStock(String queryCondition,boolean lazyInitBkInfo) throws Exception {
+    public static SecurityBeanEm createStock(String queryCondition, boolean lazyInitBkInfo) throws Exception {
         String cacheKey = queryCondition + "__stock";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {

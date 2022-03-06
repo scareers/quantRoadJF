@@ -8,48 +8,44 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.utils.JSONUtilS;
-import com.scareers.utils.Tqdm;
-import com.sun.jna.platform.win32.WinNT;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain.waitPoolFinish;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
- * 采用全量更新
+ * description: 个股,指数,板块   全部单日的 1分钟分时数据.
  *
+ * @noti : 对于单日数据, 均全量更新!
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public class DailyKlineData extends Crawler {
+public class Fs1MData extends Crawler {
+
+
     public static void main(String[] args) {
-        new DailyKlineData("qfq", true).run();
+        new Fs1MData().run();
     }
 
-    String fq;
-    boolean fullMode;
     ThreadPoolExecutor poolExecutor;
     Map<Object, Object> fieldsMap = new HashMap<>();
 
     /**
      * 可直接指定是否增量更新
      *
-     * @param fq
+     * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public DailyKlineData(String fq, boolean fullMode) {
-        super(StrUtil.format("stock_kline_daily_{}", fq));
-
-        this.fq = fq;
-        this.fullMode = fullMode;
+    public Fs1MData() {
+        super(DateUtil.today());
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("EM.EmQuoteApi-", null, true));
+                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("Fs1MData-", null, true));
 
         fieldsMap.putAll(Dict.create()
                 // // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
@@ -69,19 +65,9 @@ public class DailyKlineData extends Crawler {
         );
     }
 
-    public DailyKlineData(String fq) {
-        this(fq, true);
-        if (DateUtil.date().isWeekend()) {
-            this.fullMode = true;
-        } else {
-            this.fullMode = false;
-        }
-    }
-
-
     @Override
     public void setDb() {
-        this.setSaveToMainDb();
+        this.setSaveToFs1MDb();
     }
 
     @Override
@@ -103,83 +89,77 @@ public class DailyKlineData extends Crawler {
                         + "turnover double  null,"
                         + "secCode varchar(32)  null,"
                         + "secName varchar(32)  null,"
+                        + "quoteId varchar(32)  null," // 比日k线增加! 将作为唯一资产标志
 
-                        + "self_record_time varchar(32) not null"
+                        + "self_record_time varchar(32) not null,"
+
+                        + "INDEX date_index (date ASC),\n"
+                        + "INDEX open_index (open ASC),\n"
+                        + "INDEX close_index (close ASC),\n"
+                        + "INDEX high_index (high ASC),\n"
+                        + "INDEX low_index (low ASC),\n"
+                        + "INDEX amplitude_index (amplitude ASC),\n"
+                        + "INDEX chgPct_index (chgPct ASC),\n"
+                        + "INDEX turnover_index (turnover ASC),\n"
+                        + "INDEX secCode_index (secCode ASC),\n"
+                        + "INDEX secName_index (secName ASC),\n"
+                        + "INDEX quoteId_index (quoteId ASC)\n"
                         + "\n)"
                 , tableName);
     }
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "[" + fq + "]";
+        return this.getClass().getSimpleName();
     }
 
     @Override
     protected void runCore() {
-        /**
-         * 全量更新模式: 将删除原表
-         */
-        String begDate = null; // 全量更新模式, 两个均为null
-        String endDate = null;
-        if (fullMode) {
-            log.warn("日k线数据: 全量更新");
-            try { // 全量更新模式, 将删除原表
-                execSql(StrUtil.format("drop table if exists `{}`", tableName), conn);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else { // 增量更新模式, 将保留原表, 但日期为今日
-            log.warn("日k线数据: 增量更新");
-            begDate = DateUtil.today();
-            endDate = DateUtil.today();
+        try { // 全量更新模式, 将删除原表
+            execSql(StrUtil.format("drop table if exists `{}`", tableName), conn);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        try {
+        try { // 创建新表
             execSql(sqlCreateTable, conn);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-
-        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深京A股"));
-        List<String> stockCodes = DataFrameS.getColAsStringList(stockListDf, "资产代码");
-        List<SecurityBeanEm> stockBeans;
-        try {
-            stockBeans = SecurityBeanEm.createStockList(stockCodes.subList(0, 20), true);
-        } catch (Exception e) {
-            e.printStackTrace();
-            logApiError("SecurityBeanEm.createStockList");
-            success = true;
+        List<SecurityBeanEm> stockBeans = getBeanList();
+        if (stockBeans == null) {
             return;
         }
 
         success = true;
         for (SecurityBeanEm beanEm : stockBeans) {
-            String finalBegDate = begDate;
-            String finalEndDate = endDate;
-
             poolExecutor.execute(new Runnable() {
                 @Override
                 public void run() {
                     // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                     DataFrame<Object> dfTemp = EmQuoteApi
-                            .getQuoteHistorySingle(false, beanEm, finalBegDate, finalEndDate, "101", fq, 3, 4000);
+                            .getQuoteHistorySingle(false, beanEm, null, null, "101", "0", 3, 4000);
                     if (dfTemp == null) {
-                        log.error("获取日k线数据失败: {}", beanEm.getSecCode());
+                        log.error("获取 fs1m 数据失败: {} -- {}", beanEm.getSecCode(), beanEm.getName());
                         success = false;
                         return;
                     }
-
                     if (dfTemp.length() == 0) {
-
-                        log.warn("当日无日k线数据", beanEm.getSecCode());
+                        log.warn("当日无fs1m数据: {} -- {}", beanEm.getSecCode(), beanEm.getName());
                     }
 
+                    List<Object> quoteIds = new ArrayList<>();
+                    for (int i = 0; i < dfTemp.length(); i++) {
+                        quoteIds.add(beanEm.getQuoteId());
+                    }
+                    dfTemp.add("quoteId", quoteIds);
                     List<Object> recordTimes = new ArrayList<>();
                     for (int i = 0; i < dfTemp.length(); i++) {
                         recordTimes.add(getRecordTime());
                     }
                     dfTemp.add("self_record_time", recordTimes);
+
                     dfTemp = dfTemp.rename(fieldsMap);
                     try {
                         DataFrameS.toSql(dfTemp, tableName, conn, "append", sqlCreateTable);
@@ -189,18 +169,30 @@ public class DailyKlineData extends Crawler {
                         success = false;
                         return;
                     }
-                    log.info("success: {}", beanEm.getSecCode());
+                    log.info("success: {} -- {}", beanEm.getSecCode(), beanEm.getName());
                 }
             });
         }
 
         waitPoolFinish(poolExecutor);
         logSuccess();
+        poolExecutor.shutdownNow();
     }
 
+    protected List<SecurityBeanEm> getBeanList() {
+        List<SecurityBeanEm> allBkList = getAllBkList();
+        List<SecurityBeanEm> allIndexList = getAllIndexList();
+        List<SecurityBeanEm> allStockList = getAllStockList();
 
-//    public static String sqlTableCreateTemplate = "create table if not exists {}";
+        if (allBkList == null || allIndexList == null || allStockList == null) {
+            return null;
+        }
 
+        allStockList.addAll(allIndexList);
+        allStockList.addAll(allBkList);
+
+        return allStockList;
+    }
 
 }
 

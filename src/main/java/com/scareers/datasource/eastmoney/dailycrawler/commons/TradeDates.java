@@ -51,7 +51,10 @@ public class TradeDates extends Crawler {
                         + "sdate varchar(32) null,"
                         + "market varchar(256) null,"
                         + "edate varchar(32) null,"
-                        + "self_record_time varchar(32) null"
+                        + "self_record_time varchar(32) null,"
+
+                        + "INDEX date_index (date ASC),\n"
+                        + "INDEX is_open_index (is_open ASC)\n"
                         + "\n)"
                 , tableName);
     }

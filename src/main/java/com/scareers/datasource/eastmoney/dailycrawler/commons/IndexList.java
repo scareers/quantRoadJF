@@ -23,13 +23,13 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/5/005-09:22:50
  */
-public class StockList extends Crawler {
-    public StockList() {
-        super("stock_list");
+public class IndexList extends Crawler {
+    public IndexList() {
+        super("index_list");
     }
 
     public static void main(String[] args) {
-        new StockList().run();
+        new IndexList().run();
     }
 
     @Override
@@ -59,15 +59,11 @@ public class StockList extends Crawler {
                         + "securityTypeName varchar(64) not null,"
                         + "convertRawJsonObject text not null,"
 
-                        + "isShenA boolean not null,"
-                        + "isHuA boolean not null,"
-                        + "isKCB boolean not null,"
-                        + "isCYB boolean not null,"
-                        + "isShenB boolean not null,"
-                        + "isHuB boolean not null,"
-                        + "isJingA int not null,"
-                        + "isXSB boolean not null,"
+                        + "isHuIndex boolean not null,"
+                        + "isShenIndex boolean not null,"
+                        + "isZhongIndex boolean not null,"
                         + "self_record_time varchar(32) null,"
+
 
                         + "INDEX secCode_index (secCode ASC),\n"
                         + "INDEX name_index (name ASC)\n"
@@ -77,14 +73,19 @@ public class StockList extends Crawler {
 
     @Override
     protected void runCore() {
-        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深京A股"));
-        List<String> stockCodes = DataFrameS.getColAsStringList(stockListDf, "资产代码");
-        List<SecurityBeanEm> stockListBeans;
+        DataFrame<Object> indexListDF = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
+        DataFrame<Object> indexListDF2 = EmQuoteApi.getRealtimeQuotes(Arrays.asList("中证系列指数"));
+        indexListDF = indexListDF.concat(indexListDF2);
+
+
+        List<String> bkCodes = DataFrameS.getColAsStringList(indexListDF, "资产代码");
+
+        List<SecurityBeanEm> bkListBeans;
         try {
-            stockListBeans = SecurityBeanEm.createStockList(stockCodes, true);
+            bkListBeans = SecurityBeanEm.createIndexList(bkCodes);
         } catch (Exception e) {
             e.printStackTrace();
-            logApiError("SecurityBeanEm.createStockList");
+            logApiError("SecurityBeanEm.createBKList");
             success = false;
             return;
         }
@@ -95,13 +96,13 @@ public class StockList extends Crawler {
                 "classify", "market", "marketType", "typeUs",
                 "securityType", "securityTypeName",
                 "convertRawJsonObject",
-                "isShenA", "isHuA", "isKCB", "isCYB", "isShenB", "isHuB", "isJingA", "isXSB",
+                "isHuIndex", "isShenIndex", "isZhongIndex",
 
                 "self_record_time"
         );
         DataFrame<Object> res = new DataFrame<>(cols);
 
-        for (SecurityBeanEm bean : stockListBeans) {
+        for (SecurityBeanEm bean : bkListBeans) {
             List<Object> row = new ArrayList<>();
 
             // 股票基本信息类
@@ -130,14 +131,10 @@ public class StockList extends Crawler {
             row.add(JSONUtilS.toJsonStr(bean.getConvertRawJsonObject()));
 
             // 所属板块标志
-            row.add(bean.isShenA());
-            row.add(bean.isHuA());
-            row.add(bean.isKCB());
-            row.add(bean.isCYB());
-            row.add(bean.isShenB());
-            row.add(bean.isHuB());
-            row.add(bean.isJingA());
-            row.add(bean.isXSB());
+            row.add(bean.isHuIndex());
+            row.add(bean.isShenIndex());
+            row.add(bean.isZhongIndex());
+
 
             row.add(getRecordTime());
             res.append(row);

@@ -3,12 +3,18 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.log.LogUtil;
+import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.sql.Connection;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * description: 爬虫基类
@@ -116,5 +122,72 @@ public abstract class Crawler {
     protected String getRecordTime() {
         return DateUtil.now();
     }
+
+    /**
+     * 获取所有股票bean; 可传递slice, 截取部分, 以debug. 常态应 Integer.max_value
+     *
+     * @param amount
+     * @return
+     */
+    protected List<SecurityBeanEm> getBkBeanList(int amount) {
+        DataFrame<Object> bkListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("所有板块"));
+        List<String> bkCodes = DataFrameS.getColAsStringList(bkListDf, "资产代码");
+        List<SecurityBeanEm> bkListBeans;
+        try {
+            bkListBeans = SecurityBeanEm.createBKList(bkCodes.subList(0, Math.min(amount, bkCodes.size())));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logApiError("SecurityBeanEm.createBKList");
+            success = false;
+            return null;
+        }
+        return bkListBeans;
+    }
+
+    protected List<SecurityBeanEm> getAllBkList() {
+        return getBkBeanList(Integer.MAX_VALUE);
+    }
+
+    protected List<SecurityBeanEm> getStockBeanList(int amount) {
+        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深京A股"));
+        List<String> stockCodes = DataFrameS.getColAsStringList(stockListDf, "资产代码");
+        List<SecurityBeanEm> stockBeans;
+        try {
+            stockBeans = SecurityBeanEm.createStockList(stockCodes.subList(0, Math.min(amount, stockCodes.size())),
+                    true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logApiError("SecurityBeanEm.createStockList");
+            success = false;
+            return null;
+        }
+        return stockBeans;
+    }
+    protected List<SecurityBeanEm> getAllStockList() {
+        return getStockBeanList(Integer.MAX_VALUE);
+    }
+
+    protected List<SecurityBeanEm> getIndexBeanList(int amount) {
+        DataFrame<Object> indexListDF = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
+        DataFrame<Object> indexListDF2 = EmQuoteApi.getRealtimeQuotes(Arrays.asList("中证系列指数"));
+        indexListDF = indexListDF.concat(indexListDF2);
+        List<String> indexCodes = DataFrameS.getColAsStringList(indexListDF, "资产代码");
+
+        List<SecurityBeanEm> indexBeans;
+        try {
+            indexBeans = SecurityBeanEm.createIndexList(indexCodes.subList(0, Math.min(amount, indexCodes.size())));
+        } catch (Exception e) {
+            e.printStackTrace();
+            logApiError("SecurityBeanEm.createBKList");
+            success = false;
+            return null;
+        }
+        return indexBeans;
+    }
+    protected List<SecurityBeanEm> getAllIndexList() {
+        return getIndexBeanList(Integer.MAX_VALUE);
+    }
+
+
 
 }

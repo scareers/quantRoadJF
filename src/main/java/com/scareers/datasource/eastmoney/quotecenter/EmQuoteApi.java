@@ -74,6 +74,9 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
+        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
+        Console.log(stockListDf.length());
+
         SecurityBeanEm bean = SecurityBeanEm.createBond("湖广转债");
 //        SecurityBeanEm bean = SecurityBeanEm.createBK("风电");
 //        SecurityBeanEm bean = SecurityBeanEm.createIndex("000001");
@@ -758,7 +761,7 @@ public class EmQuoteApi {
      * efinance get_realtime_quotes 重载实现.  给定市场列表, 返回, 这些市场所有股票列表 截面数据
      * 可传递市场:
      * [可转债, 沪深京A股, 沪深A股, 上证A股, 深证A股, 北证A股, 上证主板, 深证主板, 创业板, 科创板, 沪股通, 深股通, 风险警示板, 两网及退市,
-     * 地域板块, 行业板块, 概念板块, 所有板块, 上证系列指数, 深证系列指数, 沪深系列指数, ETF, LOF, 美股, 港股, 英股, 中概股, 期货]
+     * 地域板块, 行业板块, 概念板块, 所有板块, 上证系列指数, 深证系列指数,中证系列指数, 沪深系列指数, ETF, LOF, 美股, 港股, 英股, 中概股, 期货]
      * <p>
      * Quotes: 行情
      * 列:
@@ -1435,7 +1438,9 @@ public class EmQuoteApi {
                 // 指数
                 .set("上证系列指数", "m:1+s:2")
                 .set("深证系列指数", "m:0+t:5")
+                .set("中证系列指数", "m:2")
                 .set("沪深系列指数", "m:1+s:2,m:0+t:5") // 相加
+                // .set("所有指数", "m:1+s:2,m:0+t:5;m:2") // 相加 @noti: 实测不行. 只能 中证 + 沪深
 
                 // 基金
                 .set("ETF", "b:MK0021,b:MK0022,b:MK0023,b:MK0024")

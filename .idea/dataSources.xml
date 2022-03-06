@@ -72,12 +72,12 @@
         <property name="yearIsDateType" value="false" />
       </driver-properties>
     </data-source>
-    <data-source source="LOCAL" name="eastmoney_fs_transaction" uuid="36871d0a-122e-4c01-a3d5-2b78ff1d3430">
+    <data-source source="LOCAL" name="eastmoney_fs1m" uuid="7fce49e3-c382-448e-9922-6d40bce882b4">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
-      <remarks>东财分时成交</remarks>
+      <remarks>东财数据库</remarks>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/eastmoney?serverTimezone=Asia/Shanghai</jdbc-url>
+      <jdbc-url>jdbc:mysql://localhost:3306/eastmoney_fs1m?serverTimezone=Asia/Shanghai</jdbc-url>
       <driver-properties>
         <property name="autoReconnect" value="true" />
         <property name="zeroDateTimeBehavior" value="CONVERT_TO_NULL" />
@@ -87,12 +87,12 @@
         <property name="yearIsDateType" value="false" />
       </driver-properties>
     </data-source>
-    <data-source source="LOCAL" name="eastmoney_fs1m" uuid="9bf0d849-5adb-421f-8c4c-b8e8a891839a">
+    <data-source source="LOCAL" name="eastmoney_fs_transaction" uuid="2fe615b9-fd9b-4080-a92c-5ea1e76a99f2">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
-      <remarks>东财1分钟分时</remarks>
+      <remarks>东财数据库</remarks>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/eastmoney?serverTimezone=Asia/Shanghai</jdbc-url>
+      <jdbc-url>jdbc:mysql://localhost:3306/eastmoney_fs_transaction?serverTimezone=Asia/Shanghai</jdbc-url>
       <driver-properties>
         <property name="autoReconnect" value="true" />
         <property name="zeroDateTimeBehavior" value="CONVERT_TO_NULL" />

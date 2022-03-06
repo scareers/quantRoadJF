@@ -3,7 +3,15 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronTimer;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.BkList;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.StockList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDates;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MData;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransData;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfBk;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfIndex;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfStock;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
@@ -19,8 +27,24 @@ import java.util.concurrent.*;
  */
 public class CrawlerChain {
     public static void main(String[] args) {
+        boolean fullMode = true;
+
         CrawlerChain crawlerChain = new CrawlerChain(1, 1);
-        crawlerChain.addFrontCrawlers(new TradeDates());
+        crawlerChain.addSynCrawler(new StockList());
+        crawlerChain.addSynCrawler(new IndexList());
+        crawlerChain.addSynCrawler(new BkList());
+        crawlerChain.addSynCrawler(new TradeDates());
+
+        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("nofq", fullMode));
+        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("hfq", fullMode));
+        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("qfq", fullMode));
+        crawlerChain.addFrontCrawlers(new DailyKlineDataOfBk(fullMode));
+        crawlerChain.addFrontCrawlers(new DailyKlineDataOfIndex(fullMode));
+
+        crawlerChain.addFrontCrawlers(new Fs1MData());
+        crawlerChain.addFrontCrawlers(new FsTransData());
+
+
         crawlerChain.run();
 
     }
