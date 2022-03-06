@@ -104,4 +104,17 @@ public abstract class Crawler {
         log.warn("{}: time consume: {} s ", this.toString(), time / 1000.0);
     }
 
+    /*
+     * 其他常用方法
+     */
+
+    /**
+     * 大多数表 均添加  self_record_time 字段, 表示记录的时间
+     *
+     * @return
+     */
+    protected String getRecordTime() {
+        return DateUtil.now();
+    }
+
 }

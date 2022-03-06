@@ -278,7 +278,7 @@ public class HsStatePanel extends DisplayPanel {
 
         // chartPanel对象
         pdfChartPanel = new ChartPanel(pdfChart);
-        pdfChartPanel.addChartMouseListener(ChartUtil.getCrossLineListenerForSingleXYPlot()); // 鼠标十字线 ****
+        pdfChartPanel.addChartMouseListener(ChartUtil.getCrossLineListenerForSingleNumberXYPlot()); // 鼠标十字线 ****
         pdfChartPanel.setDomainZoomable(false);
         pdfChartPanel.setRangeZoomable(false);
         pdfChartPanel.setMouseZoomable(false); // 不可放大缩小

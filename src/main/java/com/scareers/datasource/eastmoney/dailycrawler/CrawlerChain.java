@@ -113,7 +113,7 @@ public class CrawlerChain {
 
     }
 
-    public void waitPoolFinish(ExecutorService pool) {
+    public static void waitPoolFinish(ExecutorService pool) {
         pool.shutdown();
         try {
             if (!pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS)) {

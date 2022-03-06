@@ -379,7 +379,7 @@ public class HsStatePanel0 extends DisplayPanel {
                 pdfXYPlot, false);
         pdfChart.setBackgroundPaint(COLOR_CHART_BG_EM);
         pdfChartPanel = new ChartPanel(pdfChart);
-        pdfChartPanel.addChartMouseListener(ChartUtil.getCrossLineListenerForSingleXYPlot());
+        pdfChartPanel.addChartMouseListener(ChartUtil.getCrossLineListenerForSingleNumberXYPlot());
         pdfChartPanel.setDomainZoomable(false);
         pdfChartPanel.setRangeZoomable(false);
         pdfChartPanel.setMouseZoomable(false);

@@ -151,7 +151,7 @@ public class EmQuoteApi {
         initBKS_STOCK_BELONG_TO_FIELDS();
 
         initFlushTimesMap(); // 刷新时间警告提示
-        notifyFlushTimes();
+//        notifyFlushTimes();
     }
 
     /**
@@ -710,11 +710,13 @@ public class EmQuoteApi {
      * -->          持续到收盘 15:00:00 有1-2条收盘集合竞价数据; ************* 尾盘集合竞价
      * --> 15:00:x 正常df, 最后大约1-2条 15:00:00 tick
      * --> 周六同周五收盘后, 数据不变
+     * //
      *
      * @param lastRecordAmounts 单页数量, 最新多少条数据?
      * @param bean              资产对象
      * @return 出错则抛出异常.
      * @noti: 8:55  details字段已经重置为 [] 空列表
+     * @cols "sec_code", "market", "time_tick", "price", "vol", "bs"
      */
     public static DataFrame<Object> getFSTransaction(Integer lastRecordAmounts,
                                                      SecurityBeanEm bean,

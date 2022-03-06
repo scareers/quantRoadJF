@@ -19,25 +19,22 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
 import static com.scareers.utils.charts.ChartUtil.decimalFormatForPercent;
 
 /**
- * description:
+ * description: 十字交叉监听器. 常规要求 x/y 轴为数字. 十字线x/y均取百分比
  *
  * @author: admin
  * @date: 2022/2/24/024-17:39:46
  */
 @Setter
 @Getter
-public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
+public class CrossLineListenerForSingleNumberXYPlot implements ChartMouseListener {
     @Override
     public void chartMouseClicked(ChartMouseEvent event) {
     }
 
-    ValueMarkerS markerX;
-    ValueMarkerS markerY;
+    protected ValueMarkerS markerX;
+    protected ValueMarkerS markerY;
 
-    public CrossLineListenerForSingleXYPlot() {
-//        BasicStroke basicStroke = new BasicStroke(1, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 10.0f,
-//                new float[]{10, 5, 5, 5}, 0); // 虚线
-
+    public CrossLineListenerForSingleNumberXYPlot() {
         BasicStroke basicStroke = new BasicStroke(1);
 
         markerX = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
@@ -47,8 +44,8 @@ public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
         markerX.setStroke(basicStroke); //粗细
         markerX.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
         markerX.setLabelPaint(Color.red);
-        markerX.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
-        markerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+        setMarkerXLabelPosition(markerX);
+
 
         markerY = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerY.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
@@ -62,6 +59,11 @@ public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
         markerY.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
         markerY.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
 
+    }
+
+    protected void setMarkerXLabelPosition(ValueMarkerS markerX) {
+        markerX.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+        markerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
     }
 
     @Override
@@ -81,7 +83,7 @@ public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
         XYPlot plot = (XYPlot) event.getChart().getPlot();
 
         // 去掉了==, 范围更小, 更灵敏一点
-        if (!(minX < cursorX && cursorX < maxX) || !(minY < cursorY && cursorY < maxY)) {
+        if (!(minX <= cursorX && cursorX <= maxX) || !(minY <= cursorY && cursorY <= maxY)) {
             plot.removeDomainMarker(markerX);
             plot.removeRangeMarker(markerY);
             return; // 超过范围则移除十字星
@@ -107,7 +109,7 @@ public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
         // 3.2: 删除所有DomainMarkers, 新建对应x值得 Marker并设置. 可得到十字竖线
         plot.removeDomainMarker(markerX);
         markerX.setValue(markerValueX);
-        markerX.setLabel(decimalFormatForPercent.format(markerValueX));
+        markerX.setLabel(getMarkerXLabel(markerValueX));
         plot.addDomainMarker(markerX);
 
         // 3.3: 同理, 求出鼠标对应y值
@@ -118,9 +120,17 @@ public class CrossLineListenerForSingleXYPlot implements ChartMouseListener {
         // 3.4: 同理, 创建y值 横向marker
         plot.removeRangeMarker(markerY);
         markerY.setValue(markerValueY);
-        markerY.setLabel(decimalFormatForPercent.format(markerValueX));
+        markerY.setLabel(getMarkerYLabel(markerValueY));
         plot.addRangeMarker(markerY);
 
 
+    }
+
+    String getMarkerYLabel(Double markerValueY) {
+        return decimalFormatForPercent.format(markerValueY);
+    }
+
+    protected String getMarkerXLabel(Double markerValueX) {
+        return decimalFormatForPercent.format(markerValueX);
     }
 }

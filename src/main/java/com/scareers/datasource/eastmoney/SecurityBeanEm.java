@@ -2,24 +2,22 @@ package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
-import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -60,15 +58,19 @@ public class SecurityBeanEm implements Serializable {
     private static final SecurityBeanEm ShenZhengZhuanZhaiIndex = initSzBondIndex(); // 深证转债指数
 
     public static void main(String[] args) throws Exception {
+        Console.log(SecurityBeanEm.createStock("002070",true).getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createStock("000001",true).getConvertRawJsonObject());
+        Console.log(SecurityBeanEm.createStock("600798",true).getConvertRawJsonObject());
+
 
 //        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
 //        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
 
 
-        Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
-
-        SecurityBeanEm.getFourGlobalIndex().forEach(Console::log);
+//        Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
+//
+//        SecurityBeanEm.getFourGlobalIndex().forEach(Console::log);
 
 //        Console.log(SecurityBeanEm.createBK("充电桩").isConceptBK());
 //        Console.log(SecurityBeanEm.createBK("北京板块").isAreaBK());
@@ -633,12 +635,16 @@ public class SecurityBeanEm implements Serializable {
      * @throws Exception
      */
     public static SecurityBeanEm createStock(String queryCondition) throws Exception {
+        return createStock(queryCondition, false);
+    }
+
+    public static SecurityBeanEm createStock(String queryCondition,boolean lazyInitBkInfo) throws Exception {
         String cacheKey = queryCondition + "__stock";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new SecurityBeanEm(queryCondition).convertToStock();
+        res = new SecurityBeanEm(queryCondition).convertToStock(lazyInitBkInfo);
         beanPool.put(cacheKey, res);
         return res;
     }

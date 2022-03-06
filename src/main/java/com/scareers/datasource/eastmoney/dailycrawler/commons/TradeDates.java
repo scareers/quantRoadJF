@@ -50,7 +50,8 @@ public class TradeDates extends Crawler {
                         + "holiday varchar(256) null,"
                         + "sdate varchar(32) null,"
                         + "market varchar(256) null,"
-                        + "edate varchar(32) null"
+                        + "edate varchar(32) null,"
+                        + "self_record_time varchar(32) null"
                         + "\n)"
                 , tableName);
     }
@@ -97,13 +98,15 @@ public class TradeDates extends Crawler {
         }
 
         // 3.结果df构造
-        List<String> colsActual = Arrays.asList("date", "is_open", "is_weekend", "holiday", "sdate", "market", "edate");
+        List<String> colsActual = Arrays
+                .asList("date", "is_open", "is_weekend", "holiday", "sdate", "market", "edate", "self_record_time");
         DataFrame<Object> result = new DataFrame<>(colsActual);
 
         // 4.全部日期, 遍历填充 结果df
         DateTime startDate = DateUtil.parse(pastDates.get(0)); // 上证指数首次交易
         DateTime endDate = DateUtil.parse(futureDatesDf.get(0, "开始日期").toString()); // 休市api最新日期的开始日期
         DateRange dates = DateUtil.range(startDate, endDate, DateField.DAY_OF_YEAR);
+
         for (DateTime date : dates) {
             List<Object> row = new ArrayList<>();
             row.add(DateUtil.format(date, DatePattern.NORM_DATE_PATTERN)); // 日期均添加
@@ -164,12 +167,14 @@ public class TradeDates extends Crawler {
                 row.add(null);
             }
 
+            row.add(getRecordTime());
             result.append(row);
         }
 
         try {
             DataFrameS.toSql(result, tableName, this.conn, "replace", sqlCreateTable);
         } catch (SQLException e) {
+            e.printStackTrace();
             logSaveError();
             success = false;
             return;

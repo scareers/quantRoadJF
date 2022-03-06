@@ -4,41 +4,56 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import org.jfree.chart.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
-import org.jfree.chart.entity.PlotEntity;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
-import org.jfree.chart.plot.*;
+import org.jfree.chart.labels.XYToolTipGenerator;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.urls.StandardXYURLGenerator;
-import org.jfree.data.Range;
+import org.jfree.chart.urls.XYURLGenerator;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.Minute;
+import org.jfree.data.time.Second;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.*;
+import org.jfree.ui.ApplicationFrame;
+import org.jfree.ui.LengthAdjustmentType;
+import org.jfree.ui.RectangleAnchor;
+import org.jfree.ui.TextAnchor;
 
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
-import java.security.spec.PSSParameterSpec;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,7 +73,8 @@ public class ChartUtil {
     }
 
     public static void main(String[] args) throws Exception {
-        demoOfXYPlotAndShiZiAndDynamicData();
+//        demoOfXYPlotAndShiZiAndDynamicData();
+        demo2();
 
 //        String stock = "000001";
 //        DataFrame<Object> fs1MToday = EmQuoteApi.getFs1MToday(SecurityBeanEm.createStock(stock), 3, 3000);
@@ -67,6 +83,227 @@ public class ChartUtil {
 //        showChartSimple(chart);
 
 
+    }
+
+    public static void demo2() throws Exception {
+
+        int initAmount = 500;
+        String stock = "600798";
+        String date = EmQuoteApi.getPreNTradeDateStrict(DateUtil.today(), 2);
+        Double preClose = StockStateHs.getPreNDayClosePriceQfq(stock, date);
+        // "sec_code", "market", "time_tick", "price", "vol", "bs"
+        DataFrame<Object> fsDf = EmQuoteApi
+                .getFSTransaction(6000, SecurityBeanEm.createStock(stock), 3, 3000);
+        Console.log(fsDf.toString(5000));
+
+        List<Double> prices = DataFrameS.getColAsDoubleList(fsDf, "price").stream().map(value -> value / preClose - 1)
+                .collect(
+                        Collectors.toList());
+        List<Double> initPrices = prices.subList(0, initAmount);
+
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(fsDf, "time_tick");
+        List<DateTime> xsInit = timeTicks.subList(0, initAmount);
+
+        final TimeSeries datas = new TimeSeries("price");
+        for (int i = 0; i < initAmount; i++) {
+            datas.add(new Second(xsInit.get(i)), initPrices.get(i));
+        }
+
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        dataset.addSeries(datas);
+
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                int i = 0;
+//                while (true) {
+//                    Integer index = initAmount + i;
+//                    if (index >= prices.size()) {
+//                        Console.log("数据结束");
+//                        break;
+//                    }
+//                    datas.addOrUpdate(new Second(timeTicks.get(index)), prices.get(index));
+//                    ThreadUtil.sleep(100);
+//                    System.out.println("数据刷新");
+//                    i++;
+//                }
+//            }
+//        }, false);
+
+
+        DateAxis timeAxis = new DateAxis(null);
+        timeAxis.setLowerMargin(0.02);  // reduce the default margins
+        timeAxis.setUpperMargin(0.02);
+
+        timeAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));
+        timeAxis.setTickUnit(new DateTickUnit(DateTickUnitType.SECOND, 3));//设置时间刻度的间隔，一般以周为单位
+        // 1秒
+        SegmentedTimeline timeline = new SegmentedTimeline(1000, 5000, 0);
+        timeline.setStartTime(xsInit.get(0).millisecond());
+
+        DateRange dateRangeAll = DateUtil.range(timeTicks.get(0),
+                timeTicks.get(timeTicks.size() - 1),
+                DateField.SECOND); // 所有每s钟的时间tick,
+        List<DateTime> excludes = new ArrayList<>();
+        for (DateTime dateTime : dateRangeAll) {
+            if (!timeTicks.contains(dateTime)) {
+                excludes.add(dateTime);
+            }
+        }
+        timeline.addExceptions(excludes);
+
+        timeAxis.setTimeline(timeline);
+
+        NumberAxis valueAxis = new NumberAxis(null);
+        valueAxis.setAutoRangeIncludesZero(false);  // override default
+        timeAxis.setVisible(false);
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
+        XYToolTipGenerator toolTipGenerator = null;
+        XYURLGenerator urlGenerator = null;
+
+
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true,
+                false);
+        renderer.setBaseToolTipGenerator(toolTipGenerator);
+        renderer.setURLGenerator(urlGenerator);
+        plot.setRenderer(renderer);
+
+        plot.setRangeZeroBaselineVisible(false);
+        plot.setDomainGridlinesVisible(false);
+        plot.setRangeGridlinesVisible(false);
+
+        JFreeChart chart = new JFreeChart(null, JFreeChart.DEFAULT_TITLE_FONT,
+                plot, false);
+
+
+        ApplicationFrame frame = new ApplicationFrame("temp");
+
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        // 大小
+        chartPanel.setPreferredSize(new java.awt.Dimension(1800, 1000));
+
+        chartPanel.addChartMouseListener(new CrossLineListenerForTimeSeriesXYPlot());
+
+
+
+
+        chartPanel.setDisplayToolTips(true);
+        chartPanel.setToolTipText("提示信息");
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
+    }
+
+    public static void demoOfFsTransData() throws Exception {
+        int initAmount = 200;
+        String stock = "000001";
+
+        String date = EmQuoteApi.getPreNTradeDateStrict(DateUtil.today(), 2);
+        Double preClose = StockStateHs.getPreNDayClosePriceQfq(stock, date);
+        // "sec_code", "market", "time_tick", "price", "vol", "bs"
+        DataFrame<Object> fsDf = EmQuoteApi
+                .getFSTransaction(6000, SecurityBeanEm.createStock("000001"), 3, 3000);
+
+
+        List<Double> prices = DataFrameS.getColAsDoubleList(fsDf, "price").stream().map(value -> value / preClose - 1)
+                .collect(
+                        Collectors.toList());
+        List<Double> initPrices = prices.subList(0, initAmount);
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(fsDf, "time_tick");
+
+        List<DateTime> xsInit = timeTicks.subList(0, initAmount);
+
+
+        final TimeSeries datas = new TimeSeries("price");
+        for (int i = 0; i < initAmount; i++) {
+            datas.add(new Second(xsInit.get(i)), initPrices.get(i));
+        }
+
+        TimeSeriesCollection dataset = new TimeSeriesCollection();
+        dataset.addSeries(datas);
+
+
+        DateAxis x1Axis = new DateAxis(); //设置x轴，也就是时间轴
+        x1Axis.setAutoRange(false); //设置是否采用自动设置时间范围
+
+        try {
+            x1Axis.setRange(timeTicks.get(0),
+                    timeTicks.get(timeTicks.size() - 1)); // 设置时间范围，注意时间的最大值要比已有的时间最大值要多一天
+        } catch (Exception e) {
+            x1Axis.setAutoRange(true);
+            e.printStackTrace();
+        }
+
+        SegmentedTimeline timeline = SegmentedTimeline.newFifteenMinuteTimeline();
+        // 排除掉不存在的tick
+        DateRange dateRangeAll = DateUtil.range(timeTicks.get(0),
+                timeTicks.get(timeTicks.size() - 1),
+                DateField.SECOND); // 所有每s钟的时间tick,
+        List<DateTime> excludes = new ArrayList<>();
+        for (DateTime dateTime : dateRangeAll) {
+            if (!timeTicks.contains(dateTime)) {
+                excludes.add(dateTime);
+            }
+        }
+        timeline.addExceptions(excludes);
+        x1Axis.setTimeline(timeline);//设置时间线显示的规则，用这个方法就摒除掉了周六和周日这些没有交易的日期(很多人都不知道有此方法)，使图形看上去连续
+
+        x1Axis.setAutoTickUnitSelection(false);//设置不采用自动选择刻度值
+        x1Axis.setTickMarkPosition(DateTickMarkPosition.MIDDLE);//设置标记的位置
+//        x1Axis.setStandardTickUnits(DateAxis.createStandardDateTickUnits());//设置标准的时间刻度单位
+//        x1Axis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 1));//设置时间刻度的间隔，一般以周为单位
+        x1Axis.setDateFormatOverride(new SimpleDateFormat("HH:mm:ss"));//设置显示时间的格式
+
+
+//        NumberAxis xAxis = new NumberAxis("x");
+//        xAxis.setRange(0, 5000);
+//        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis("y");
+        yAxis.setAutoRangeIncludesZero(false);
+        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        XYPlot plot = new XYPlot(dataset, x1Axis, yAxis, renderer);
+
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                int i = 0;
+                while (true) {
+                    Integer index = initAmount + i;
+                    if (index >= prices.size()) {
+                        Console.log("数据结束");
+                        break;
+                    }
+                    datas.addOrUpdate(new Second(timeTicks.get(index)), prices.get(index));
+                    ThreadUtil.sleep(200);
+                    System.out.println("数据刷新");
+                    i++;
+                }
+            }
+        }, false);
+
+        plot.setOrientation(PlotOrientation.VERTICAL);
+        renderer.setBaseToolTipGenerator(new StandardXYToolTipGenerator());
+        renderer.getBaseToolTipGenerator().generateToolTip(dataset, 0, 3);
+
+        renderer.setURLGenerator(new StandardXYURLGenerator());
+
+        JFreeChart chart = new JFreeChart("title", JFreeChart.DEFAULT_TITLE_FONT,
+                plot, false);
+
+        ApplicationFrame frame = new ApplicationFrame("temp");
+        ChartPanel chartPanel = new ChartPanel(chart);
+        // 大小
+        chartPanel.setPreferredSize(new java.awt.Dimension(1200, 1000));
+
+        chartPanel.addChartMouseListener(getCrossLineListenerForSingleNumberXYPlot());
+        chartPanel.setDisplayToolTips(true);
+        chartPanel.setToolTipText("提示信息");
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
     }
 
 
@@ -121,7 +358,7 @@ public class ChartUtil {
         // 大小
         chartPanel.setPreferredSize(new java.awt.Dimension(1200, 1000));
 
-        chartPanel.addChartMouseListener(getCrossLineListenerForSingleXYPlot());
+        chartPanel.addChartMouseListener(getCrossLineListenerForSingleNumberXYPlot());
         chartPanel.setDisplayToolTips(true);
         chartPanel.setToolTipText("提示信息");
         frame.setContentPane(chartPanel);
@@ -458,9 +695,9 @@ public class ChartUtil {
      *
      * @return
      */
-    public static CrossLineListenerForSingleXYPlot getCrossLineListenerForSingleXYPlot() {
+    public static CrossLineListenerForSingleNumberXYPlot getCrossLineListenerForSingleNumberXYPlot() {
         // 默认y marker 文字在横线右侧之上
-        return new CrossLineListenerForSingleXYPlot();
+        return new CrossLineListenerForSingleNumberXYPlot();
     }
 
     public static void changeMarkerYTextRightBottom(ValueMarkerS markerY) {
