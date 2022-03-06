@@ -1,7 +1,6 @@
 package com.scareers.datasource.eastmoney.dailycrawler;
 
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.cron.CronTimer;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.BkList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
@@ -15,9 +14,10 @@ import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKli
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * description: 爬取逻辑主流程类
