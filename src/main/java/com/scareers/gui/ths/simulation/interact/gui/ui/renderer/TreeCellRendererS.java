@@ -6,7 +6,7 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import java.awt.*;
 
 /**
- * description: 对象查看器 树形控件渲染
+ * description: 功能树器 树形控件渲染
  *
  * @author: admin
  * @date: 2022/1/18/018-11:18:40

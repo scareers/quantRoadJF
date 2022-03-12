@@ -4,7 +4,6 @@ import cn.hutool.core.io.resource.ResourceUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
 /**
@@ -17,6 +16,9 @@ import java.awt.event.KeyEvent;
  * @see ClassLoader.getSystemResource(iconPath)
  */
 public class SettingsOfGuiGlobal {
+    // 0.重要常用设定
+    public static boolean autoStartTrader = false; // 设置是否自动启动Trader, 可否
+
     // 1.颜色相关设定
     public static Color COLOR_THEME_MAIN = new Color(43, 43, 43); // 主色,常见内容框背景色
     public static Color COLOR_THEME_MINOR = new Color(60, 63, 65); // 主色2,次要颜色菜单栏,树形菜单等内容主色,主界面标题栏
@@ -53,21 +55,6 @@ public class SettingsOfGuiGlobal {
 
     // 4.全局快捷键设置  ks: key shortcut
     public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
-    public static final KeyStroke REALTIME_ANALYZE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK);
 
-    /*
-                    objectsBtn.setMnemonic(KeyEvent.VK_O); // 默认ALT+XX
-                objectsBtn.registerKeyboardAction(new ActionListener() {
-                                                      @Override
-                                                      public void actionPerformed(ActionEvent e) {
-                                                          objectsBtn.doClick();
-                                                      }
-                                                  },
-                        KeyStroke.getKeyStroke(KeyEvent.VK_O,
-                        KeyEvent.CTRL_DOWN_MASK), // 可 CTRL+
-                        JComponent.WHEN_IN_FOCUSED_WINDOW); // 主界面focus
-
-                openJMenuItem.setAccelerator() 各种菜单项
-     */
 
 }

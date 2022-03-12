@@ -17,6 +17,7 @@ package com.scareers.gui.ths.simulation.trader;
  * 某订单成功执行后进入成交状态监控队列, 将根据系统5的信息, 确定订单成交状况
  */
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
@@ -103,17 +104,22 @@ public class Trader {
 
                 @Override
                 protected List<String> getSecurityTodaySelect() throws Exception {
-                    return Arrays.asList("000001", "000007","002197");
+                    return Arrays.asList("000001", "000007", "002197");
                 }
 
                 @Override
                 protected List<String> initYesterdayHolds() throws Exception {
                     return Arrays.asList("002197");
                 }
+
+                @Override
+                public void saveAllConfig() {
+                    log.error("保存配置成功");
+                }
             };
 
             StrategyAdapter strategyAdapter = new StrategyAdapter() {
-                List<String> stockPool = Arrays.asList("000001", "000007","002197");
+                List<String> stockPool = Arrays.asList("000001", "000007", "002197");
                 List<String> stockSell = Arrays.asList("002197");
 
                 @Override
@@ -127,7 +133,6 @@ public class Trader {
 
                 @Override
                 public void sellDecision() throws Exception {
-
 
 
                     String stock2 = RandomUtil.randomEle(stockSell);
@@ -184,7 +189,6 @@ public class Trader {
     }
 
     public static Trader getInstance() {
-        Objects.requireNonNull(INSTANCE);
         return INSTANCE;
     }
 
@@ -450,18 +454,21 @@ public class Trader {
     }
 
     public void stopTrade() throws IOException, TimeoutException {
+        // 1.关闭通信
         PythonSimulationClient.closeClientPool(clientPool);
-
-        CustomizeStateArgsPoolHs.saveAllConfig(); // 高卖配置保存
-
+        // 2.账户信息获取
         this.getAccountStates().clearClose();
+        // 3.关闭所有Fetcher
         if (fsTransactionFetcher != null) {
             fsTransactionFetcher.stopFetch(); // 停止fs数据抓取, 非立即, 软关闭
         }
         if (fsFetcher != null) {
             fsFetcher.stopFetch();
         }
-
+        // 4.保存配置
+        if (this.strategy != null) {
+            this.getStrategy().saveAllConfig();
+        }
 
     }
 

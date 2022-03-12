@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.strategy.adapter.LowBuyHighSellStrategyAdapter;
+import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.CustomizeStateArgsPoolHs;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.DefaultStateArgsPoolHs;
 import com.scareers.utils.JSONUtilS;
 import cn.hutool.log.Log;
@@ -174,6 +175,11 @@ public class LowBuyHighSellStrategy extends Strategy {
         log.warn("after yesterday close: 昨日收盘后账户9项基本资金数据:\n{}", yesterdayNineBaseFundsData);
         log.warn("after yesterday close: 昨日收盘后持有股票状态:\n{}", yesterdayStockHoldsBeSell);
         return stocksYesterdayHolds;
+    }
+
+    @Override
+    public void saveAllConfig() {
+        CustomizeStateArgsPoolHs.saveAllConfig(); // 高卖配置保存
     }
 
 

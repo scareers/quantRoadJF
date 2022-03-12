@@ -146,6 +146,12 @@ public abstract class Strategy {
         log.error("show: start: {} 开始执行策略生成订单...", strategyName);
     }
 
+    /**
+     * 保存本策略相关所有配置项
+     */
+    public abstract void saveAllConfig();
+
+
     public String getStrategyName() {
         return strategyName;
     }

@@ -74,18 +74,24 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
-        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
-        Console.log(stockListDf.length());
+        DataFrame<Object> bkMembers = getBkMembersQuote(SecurityBeanEm.createBK("医药商业"), 3000, 3);
+        bkMembers = bkMembers.sortBy("-涨跌幅");
+        Console.log(bkMembers);
+        Console.log(DataFrameS.getColAsStringList(bkMembers, "资产名称"));
 
-        SecurityBeanEm bean = SecurityBeanEm.createBond("湖广转债");
+
+        //        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
+//        Console.log(stockListDf.length());
+//
+//        SecurityBeanEm bean = SecurityBeanEm.createBond("湖广转债");
 //        SecurityBeanEm bean = SecurityBeanEm.createBK("风电");
 //        SecurityBeanEm bean = SecurityBeanEm.createIndex("000001");
 //        SecurityBeanEm bean = SecurityBeanEm.createStock("000001");
 
 
-        getNDayFsAndRealTimePushWithLeadPriceSSEAsync(bean, (dataFrame) -> {
-            log.info(dataFrame.toString());
-        });
+//        getNDayFsAndRealTimePushWithLeadPriceSSEAsync(bean, (dataFrame) -> {
+//            log.info(dataFrame.toString());
+//        });
 
 //        Console.log(getStockOrBondHandicap(bean, 3000, 3));
 

@@ -186,7 +186,7 @@ public abstract class DailyKlineData extends Crawler {
 
                     if (dfTemp.length() == 0) {
 
-                        log.warn("当日无日k线数据", beanEm.getSecCode());
+                        log.warn("当日无日k线数据: {}", beanEm.getSecCode());
                     }
 
                     List<Object> recordTimes = new ArrayList<>();

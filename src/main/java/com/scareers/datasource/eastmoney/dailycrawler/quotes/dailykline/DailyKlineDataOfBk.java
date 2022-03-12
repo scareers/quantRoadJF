@@ -1,10 +1,14 @@
 package com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline;
 
+import cn.hutool.core.lang.Console;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.MysqlApi;
 import joinery.DataFrame;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,8 +27,14 @@ public class DailyKlineDataOfBk extends DailyKlineData {
         super("bk_kline_daily", "", fullMode); // 会使用 nofq 默认
     }
 
-    public static void main(String[] args) {
-        new DailyKlineDataOfBk(true).run();
+    public static void main(String[] args) throws SQLException {
+//        new DailyKlineDataOfBk(true).run();
+        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs_transaction",
+                ConnectionFactory.getConnLocalFSTransactionFromEastmoney()));
+        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs1m",
+                ConnectionFactory.getConnLocalFS1MFromEastmoney()));
+        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney",
+                ConnectionFactory.getConnLocalEastmoney()));
     }
 
 

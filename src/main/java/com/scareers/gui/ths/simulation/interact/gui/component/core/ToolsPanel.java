@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @key2 3侧功能栏的按钮列表对象由CorePane维护, 子功能框的按钮列表由 FuncFrameS0 维护
  * @author: admin
  * @date: 2022/1/13/013-02:51:06
- * @see ButtonFactory 注意, 传递的button, 应当与本对象 横向纵向相匹配 , ButtonFactory.getButton("对象查看", true) 第二参数
+ * @see ButtonFactory 注意, 传递的button, 应当与本对象 横向纵向相匹配 , ButtonFactory.getButton("功能树", true) 第二参数
  */
 @Getter
 @Setter

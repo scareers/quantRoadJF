@@ -10,8 +10,6 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
-import com.sun.jna.platform.win32.Guid;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
@@ -41,7 +39,6 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * @see CorePanel
  */
 @Setter
-@Getter
 public class TraderGui extends JFrame {
     public static TraderGui INSTANCE;
 
@@ -67,13 +64,6 @@ public class TraderGui extends JFrame {
         INSTANCE = gui;
         gui.setVisible(true);
         gui.showSystemTray();
-//        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-//            @SneakyThrows
-//            @Override
-//            public void run() {
-//                Trader.getInstance().stopTrade();
-//            }
-//        }));
         waitForever();
     }
 
@@ -110,11 +100,6 @@ public class TraderGui extends JFrame {
 
         addListeners(); // 添加监听器
 
-        pathLabel = new JLabel("paths: ");
-        pathLabel.setFont(new Font("宋体", Font.BOLD, 15));
-        pathLabel.setForeground(Color.RED);
-        pathLabel.setPreferredSize(new Dimension(100, 20));
-        pathLabel.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
 
         statusBar = new JLabel("Running");
         statusBar.setFont(new Font("宋体", Font.BOLD, 15));
@@ -123,14 +108,64 @@ public class TraderGui extends JFrame {
 
         corePanel = buildCorePanel();
         this.mainPane = corePanel.getMainPane();
-        this.add(pathLabel, BorderLayout.NORTH);
+//
         this.add(corePanel, BorderLayout.CENTER);
         this.add(statusBar, BorderLayout.SOUTH);
+
+        // initPathLabel(); // paths 显示栏,
+        initMenuBar(); // 菜单栏
+
         this.pack();
     }
 
-    ObjectTreeWindow objectTreeWindow;
-     // AnalyzeRealtimeWindow analyzeRealtimeWindow;
+    public void initPathLabel() {
+        pathLabel = new JLabel("paths: ");
+        pathLabel.setFont(new Font("宋体", Font.BOLD, 15));
+        pathLabel.setForeground(Color.RED);
+        pathLabel.setPreferredSize(new Dimension(100, 20));
+        pathLabel.setBorder(BorderFactory.createLineBorder(Color.black, 1, false));
+        this.add(pathLabel, BorderLayout.NORTH);
+    }
+
+
+    /*
+    菜单栏相关
+     */
+    JMenuBar menuBar;
+    JMenu startMenu;
+
+    public void initMenuBar() {
+        // 菜单栏
+        menuBar = new JMenuBar();
+        menuBar.setBackground(COLOR_THEME_MINOR);
+        menuBar.setBorder(BorderFactory.createEmptyBorder());
+        // 菜单
+        startMenu = new JMenu("开始");
+        startMenu.setForeground(COLOR_GRAY_COMMON);
+        // 菜单项
+        startMenu.add(new JMenuItem("启动Trader"));
+        startMenu.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                try {
+                    Trader.getAndStartInstance();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        // 分隔符
+        startMenu.addSeparator();
+        startMenu.add(new JMenuItem("备用项"));
+        // 把菜单加入到菜单栏
+        menuBar.add(startMenu);
+        // 把菜单栏加入到frame，这里用的是set而非add
+        this.setJMenuBar(menuBar);
+    }
+
+
+    FuncTreeWindow funcTreeWindow;
+    // AnalyzeRealtimeWindow analyzeRealtimeWindow;
     static volatile Trader trader;
 
     private void addListeners() {
@@ -145,26 +180,7 @@ public class TraderGui extends JFrame {
                         4096, 100, 1.0, 0, layerOfMainDisplay
                 );
                 mainWindow.getCorePanel().setMainDisplayWindow(mainDisplayWindow); // 必须手动设定
-                // 尺寸改变回调, 调节左侧功能栏
-//                mainDisplayWindow.addComponentListener(new ComponentAdapter() {
-//                    @SneakyThrows
-//                    @Override
-//                    public void componentResized(ComponentEvent e) {
-//                        CorePanel corePanel = mainWindow.getCorePanel();
-//                        for (FuncButton btn : corePanel.getLeftTopButtonList()) { // 左侧功能窗口,刷新 左上 + 左下
-//                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
-//                            if (temp != null) {
-//                                temp.flushBounds();
-//                            }
-//                        }
-//                        for (FuncButton btn : corePanel.getLeftBottomButtonList()) {
-//                            FuncFrameS temp = corePanel.getFuncPool().get(btn);
-//                            if (temp != null) {
-//                                temp.flushBounds();
-//                            }
-//                        }
-//                    }
-//                });
+
                 corePanel.getFuncPool().put(ButtonFactory.getButton("mainDisplay"), mainDisplayWindow); // 仅加入池,
                 // 无对应button
                 mainDisplayWindow.flushBounds(true);
@@ -217,64 +233,30 @@ public class TraderGui extends JFrame {
                     }
                 });
 
-                FuncButton objectsBtn = ButtonFactory.getButton("对象查看", true);
+                FuncButton objectsBtn = ButtonFactory.getButton("功能树", true);
                 // objectsBtn.setMnemonic(KeyEvent.VK_O);
-                objectsBtn.registerKeyboardAction(e1 -> objectsBtn.doClick(), OBJECT_TREE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
+                objectsBtn.registerKeyboardAction(e1 -> objectsBtn.doClick(), OBJECT_TREE_KS,
+                        JComponent.WHEN_IN_FOCUSED_WINDOW);
                 corePanel.registerFuncBtnWithoutFuncFrame(objectsBtn, FuncFrameS.Type.LEFT_TOP);
                 objectsBtn.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-//                        try {
-//                            analyzeRealtimeWindow.hide();
-//                        } catch (Exception e1) {
-//
-//                        }
-
-                        objectTreeWindow = ObjectTreeWindow
-                                .getInstance(FuncFrameS.Type.LEFT_TOP, "对象查看",
+                        funcTreeWindow = FuncTreeWindow
+                                .getInstance(FuncFrameS.Type.LEFT_TOP, "功能树",
                                         mainWindow, objectsBtn, true, false, false, true, 1000, 100, 0.12, 30,
                                         false,
                                         layerOfObjectsTree + 1); // 一定不为null, 单例
-                        corePanel.registerFuncBtnAndCorrespondFuncFrame(objectsBtn, objectTreeWindow);
-                        if (objectTreeWindow.isVisible()) {
-                            objectTreeWindow.flushBounds();
-                            objectTreeWindow.hide();
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(objectsBtn, funcTreeWindow);
+                        if (funcTreeWindow.isVisible()) {
+                            funcTreeWindow.flushBounds();
+                            funcTreeWindow.hide();
                         } else {
-                            objectTreeWindow.flushBounds(true);
-                            objectTreeWindow.show();
+                            funcTreeWindow.flushBounds(true);
+                            funcTreeWindow.show();
                         }
                     }
                 });
 
-//                FuncButton analyzeBtn = ButtonFactory.getButton("实时分析", true);
-//                analyzeBtn.registerKeyboardAction(e1 -> analyzeBtn.doClick(), REALTIME_ANALYZE_KS, JComponent.WHEN_IN_FOCUSED_WINDOW);
-//                corePanel.registerFuncBtnWithoutFuncFrame(analyzeBtn, FuncFrameS.Type.LEFT_TOP);
-//                analyzeBtn.addActionListener(new ActionListener() {
-//                    @Override
-//                    public void actionPerformed(ActionEvent e) {
-//                        try {
-//                            objectTreeWindow.hide();
-//                        } catch (Exception e1) {
-//
-//                        }
-//                        analyzeRealtimeWindow = AnalyzeRealtimeWindow
-//                                .getInstance(FuncFrameS.Type.LEFT_TOP, "实时分析",
-//                                        mainWindow, analyzeBtn, true, false, false, true,
-//                                        1000, 100, 0.145, 30,
-//                                        false,
-//                                        layerOfObjectsTree + 2); // 一定不为null, 单例
-//                        corePanel.registerFuncBtnAndCorrespondFuncFrame(analyzeBtn, analyzeRealtimeWindow);
-//                        if (analyzeRealtimeWindow.isVisible()) {
-//                            analyzeRealtimeWindow.flushBounds();
-//                            analyzeRealtimeWindow.hide();
-//                        } else {
-//                            analyzeRealtimeWindow.flushBounds(true);
-//                            analyzeRealtimeWindow.show();
-//                        }
-//                    }
-//                });
-                
-                
 
                 ThreadUtil.execAsync(() -> {
                     try {
@@ -285,7 +267,9 @@ public class TraderGui extends JFrame {
 //                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
                         mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
 
-                        Trader.getAndStartInstance();
+                        if (autoStartTrader) {
+                            Trader.getAndStartInstance();
+                        }
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
@@ -299,7 +283,9 @@ public class TraderGui extends JFrame {
                 int res = JOptionPane.showConfirmDialog(mainWindow, "确定关闭?", "是否关闭程序", JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
-                    Trader.getInstance().stopTrade();
+                    if (Trader.getInstance() != null) {
+                        Trader.getInstance().stopTrade();
+                    }
                     System.exit(0);
                 }
             }
@@ -445,5 +431,38 @@ public class TraderGui extends JFrame {
 
         screenW = screenSize.width - insets.left - insets.right;
         screenH = screenSize.height - insets.top - insets.bottom;
+    }
+
+
+    public JLabel getPathLabel() {
+        return pathLabel;
+    }
+
+    public JLabel getStatusBar() {
+        return statusBar;
+    }
+
+    public CorePanel getCorePanel() {
+        return corePanel;
+    }
+
+    public JDesktopPane getMainPane() {
+        return mainPane;
+    }
+
+    public ImageIcon getImageIcon() {
+        return imageIcon;
+    }
+
+    public TrayIcon getTrayIcon() {
+        return trayIcon;
+    }
+
+    public JMenu getStartMenu() {
+        return startMenu;
+    }
+
+    public FuncTreeWindow getFuncTreeWindow() {
+        return funcTreeWindow;
     }
 }

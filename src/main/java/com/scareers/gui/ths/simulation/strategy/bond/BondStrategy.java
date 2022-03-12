@@ -26,4 +26,9 @@ public class BondStrategy extends Strategy {
     protected List<String> initYesterdayHolds() throws Exception {
         return null;
     }
+
+    @Override
+    public void saveAllConfig() {
+
+    }
 }

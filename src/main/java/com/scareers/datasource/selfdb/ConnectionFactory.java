@@ -99,9 +99,6 @@ public class ConnectionFactory {
         return connectToLocalMysqlMain("eastmoney_fs1m");
     }
 
-    public static Connection getConnLocalFsFromEastmoney() {
-        return connectToLocalMysqlMain("fs_from_eastmoney");
-    }
 
 //    public static Connection getConnLocalTushare1MFromPool() throws SQLException {
 //        if (localTushare1MConnPool == null) {

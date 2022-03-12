@@ -31,24 +31,24 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
 import static com.scareers.gui.ths.simulation.interact.gui.util.ImageScaler.zoomBySize;
 
 /**
- * description: 对象查看器, 树形控件. 显示trader相关属性值状况
+ * description: 功能树器, 树形控件. 显示trader相关属性值状况
  *
  * @author: admin
  * @date: 2022/1/14/014-07:16:15
  */
 @Getter
 @Setter
-public class ObjectTreeWindow extends FuncFrameS {
-    private static ObjectTreeWindow INSTANCE;
+public class FuncTreeWindow extends FuncFrameS {
+    private static FuncTreeWindow INSTANCE;
 
-    public static ObjectTreeWindow getInstance(Type type, String title, TraderGui mainWindow,
-                                               FuncButton belongBtn, boolean resizable, boolean closable,
-                                               boolean maximizable,
-                                               boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
-                                               double preferScale,
-                                               int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+    public static FuncTreeWindow getInstance(Type type, String title, TraderGui mainWindow,
+                                             FuncButton belongBtn, boolean resizable, boolean closable,
+                                             boolean maximizable,
+                                             boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                                             double preferScale,
+                                             int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         if (INSTANCE == null) {
-            INSTANCE = new ObjectTreeWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
+            INSTANCE = new FuncTreeWindow(type, title, mainWindow, belongBtn, resizable, closable, maximizable,
                     iconifiable, autoMaxWidthOrHeight, autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight,
                     halfWidthOrHeight, layer);
             INSTANCE.setIconifiable(false);
@@ -74,19 +74,19 @@ public class ObjectTreeWindow extends FuncFrameS {
         return INSTANCE;
     }
 
-//    public static ObjectTreeWindow getInstance() {
+//    public static FuncTreeWindow getInstance() {
 //        return INSTANCE; // 可null
 //    }
 
-    private ObjectTreeWindow(Type type, String title, TraderGui mainWindow,
-                             FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
-                             boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
-                             double preferScale,
-                             int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
+    private FuncTreeWindow(Type type, String title, TraderGui mainWindow,
+                           FuncButton belongBtn, boolean resizable, boolean closable, boolean maximizable,
+                           boolean iconifiable, int autoMaxWidthOrHeight, int autoMinWidthOrHeight,
+                           double preferScale,
+                           int funcToolsWidthOrHeight, boolean halfWidthOrHeight, Integer layer) {
         super(type, title, mainWindow, belongBtn, resizable, closable, maximizable, iconifiable, autoMaxWidthOrHeight,
                 autoMinWidthOrHeight, preferScale, funcToolsWidthOrHeight, halfWidthOrHeight, layer);
 
-        ObjectTreeWindow temp = this; // 添加监听器. 树形变化时, 刷新主展示窗口size
+        FuncTreeWindow temp = this; // 添加监听器. 树形变化时, 刷新主展示窗口size
         this.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -132,11 +132,12 @@ public class ObjectTreeWindow extends FuncFrameS {
     }
 
     private JTree buildTree() {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("对象查看");
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode("功能树");
 
+        /*
+        1.trader 相关
+         */
         DefaultMutableTreeNode traderNode = new DefaultMutableTreeNode("Trader");
-
-
         // 5大子对象,可扩展
         DefaultMutableTreeNode orderExecutorNode = new DefaultMutableTreeNode("OrderExecutor");
         DefaultMutableTreeNode checkerNode = new DefaultMutableTreeNode("Checker");
@@ -170,6 +171,10 @@ public class ObjectTreeWindow extends FuncFrameS {
         traderNode.add(strategyNode);
 
 
+        /*
+        2.买入卖出等股票列表
+         */
+
         DefaultMutableTreeNode analyzeNode = new DefaultMutableTreeNode("实时分析");
         DefaultMutableTreeNode stockNode = new DefaultMutableTreeNode("股票");
         // 买入卖出队列
@@ -179,8 +184,22 @@ public class ObjectTreeWindow extends FuncFrameS {
         stockNode.add(buyNode);
         analyzeNode.add(stockNode);
 
+        /*
+        3.复盘报告,与操盘计划
+         */
+        DefaultMutableTreeNode reviewAndPlanNode = new DefaultMutableTreeNode("复盘操盘");
+        DefaultMutableTreeNode reviewNode = new DefaultMutableTreeNode("复盘报告");
+        DefaultMutableTreeNode tradePlanNode = new DefaultMutableTreeNode("操盘计划");
+        // 盘前要闻
+        DefaultMutableTreeNode importantNewsNode = new DefaultMutableTreeNode("盘前要闻");
+        reviewNode.add(importantNewsNode);
+        reviewAndPlanNode.add(reviewNode);
+        reviewAndPlanNode.add(tradePlanNode);
+
+
         root.add(traderNode);
         root.add(analyzeNode);
+        root.add(reviewAndPlanNode);
 
 
         final JTree tree = new JTree(root);
@@ -210,6 +229,7 @@ public class ObjectTreeWindow extends FuncFrameS {
         });
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.REVIEW_IMPORTANT_NEWS);
         return tree;
     }
 
@@ -277,40 +297,40 @@ public class ObjectTreeWindow extends FuncFrameS {
 
     public static class TreePathConstants { // 路径常量, 字符串配置
         /**
-         * [对象查看]
-         * [对象查看, Trader]
-         * [对象查看, Trader, Queues!]
-         * [对象查看, Trader, OrderExecutor]
-         * [对象查看, Trader, Checker]
-         * [对象查看, Trader, AccountStates]
-         * [对象查看, Trader, FsTransactionFetcher]
-         * [对象查看, Trader, FsFetcher]
-         * [对象查看, Trader, Strategy]
-         * [对象查看, Trader, Queues!, ordersWaitForExecution]
-         * [对象查看, Trader, Queues!, ordersAllMap]
-         * [对象查看, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
-         * [对象查看, Trader, Queues!, ordersSuccessFinished]
-         * [对象查看, Trader, Queues!, ordersResendFinished]
-         * [对象查看, Trader, Queues!, ordersFailedFinallyNeedManualHandle]
+         * [功能树]
+         * [功能树, Trader]
+         * [功能树, Trader, Queues!]
+         * [功能树, Trader, OrderExecutor]
+         * [功能树, Trader, Checker]
+         * [功能树, Trader, AccountStates]
+         * [功能树, Trader, FsTransactionFetcher]
+         * [功能树, Trader, FsFetcher]
+         * [功能树, Trader, Strategy]
+         * [功能树, Trader, Queues!, ordersWaitForExecution]
+         * [功能树, Trader, Queues!, ordersAllMap]
+         * [功能树, Trader, Queues!, ordersWaitForCheckTransactionStatusMap]
+         * [功能树, Trader, Queues!, ordersSuccessFinished]
+         * [功能树, Trader, Queues!, ordersResendFinished]
+         * [功能树, Trader, Queues!, ordersFailedFinallyNeedManualHandle]
          */
-        public static final String OBJECT_OBSERVER = "[对象查看]";
-        public static final String TRADER = "[对象查看, Trader]";
-        public static final String QUEUES = "[对象查看, Trader, Queues!]";
+        public static final String OBJECT_OBSERVER = "[功能树]";
+        public static final String TRADER = "[功能树, Trader]";
+        public static final String QUEUES = "[功能树, Trader, Queues!]";
 
-        public static final String ORDER_EXECUTOR = "[对象查看, Trader, OrderExecutor]";
-        public static final String CHECKER = "[对象查看, Trader, Checker]";
-        public static final String ACCOUNT_STATES = "[对象查看, Trader, AccountStates]";
-        public static final String FS_TRANSACTION_FETCHER = "[对象查看, Trader, FsTransactionFetcher]";
-        public static final String FS_FETCHER = "[对象查看, Trader, FsFetcher]";
-        public static final String STRATEGY = "[对象查看, Trader, Strategy]";
+        public static final String ORDER_EXECUTOR = "[功能树, Trader, OrderExecutor]";
+        public static final String CHECKER = "[功能树, Trader, Checker]";
+        public static final String ACCOUNT_STATES = "[功能树, Trader, AccountStates]";
+        public static final String FS_TRANSACTION_FETCHER = "[功能树, Trader, FsTransactionFetcher]";
+        public static final String FS_FETCHER = "[功能树, Trader, FsFetcher]";
+        public static final String STRATEGY = "[功能树, Trader, Strategy]";
 
-        public static final String ORDERS_WAIT_FOR_EXECUTION = "[对象查看, Trader, Queues!, ordersWaitForExecution]";
-        public static final String ORDER_ALL_MAP = "[对象查看, Trader, Queues!, ordersAllMap]";
-        public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[对象查看, Trader, Queues!, " +
+        public static final String ORDERS_WAIT_FOR_EXECUTION = "[功能树, Trader, Queues!, ordersWaitForExecution]";
+        public static final String ORDER_ALL_MAP = "[功能树, Trader, Queues!, ordersAllMap]";
+        public static final String ORDERS_WAIT_FOR_CHECK_TRANSACTION_STATUS_MAP = "[功能树, Trader, Queues!, " +
                 "ordersWaitForCheckTransactionStatusMap]";
-        public static final String ORDERS_SUCCESS_FINISHED = "[对象查看, Trader, Queues!, ordersSuccessFinished]";
-        public static final String ORDERS_RESEND_FINISHED = "[对象查看, Trader, Queues!, ordersResendFinished]";
-        public static final String ORDERS_FAILED_FINISHED = "[对象查看, Trader, Queues!, " +
+        public static final String ORDERS_SUCCESS_FINISHED = "[功能树, Trader, Queues!, ordersSuccessFinished]";
+        public static final String ORDERS_RESEND_FINISHED = "[功能树, Trader, Queues!, ordersResendFinished]";
+        public static final String ORDERS_FAILED_FINISHED = "[功能树, Trader, Queues!, " +
                 "ordersFailedFinallyNeedManualHandle]";
 
         /**
@@ -319,10 +339,23 @@ public class ObjectTreeWindow extends FuncFrameS {
          * [实时分析, 股票, 买入队列]
          * [实时分析, 股票, 卖出队列]
          */
-        public static final String REALTIME_ANALYZE = "[对象查看, 实时分析]";
-        public static final String STOCK_NODE = "[对象查看, 实时分析, 股票]";
-        public static final String BUY_QUEUE = "[对象查看, 实时分析, 股票, 买入队列]";
-        public static final String SELL_QUEUE = "[对象查看, 实时分析, 股票, 卖出队列]";
+        public static final String REALTIME_ANALYZE = "[功能树, 实时分析]";
+        public static final String STOCK_NODE = "[功能树, 实时分析, 股票]";
+        public static final String BUY_QUEUE = "[功能树, 实时分析, 股票, 买入队列]";
+        public static final String SELL_QUEUE = "[功能树, 实时分析, 股票, 卖出队列]";
+
+        /**
+         * [功能树, 复盘操盘]
+         * [功能树, 复盘操盘, 复盘报告]
+         * [功能树, 复盘操盘, 复盘报告, 盘前要闻]
+         * [功能树, 复盘操盘, 操盘计划]
+         */
+
+        public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
+        public static final String REVIEW_REPORT = "[功能树, 复盘操盘, 复盘报告]";
+        public static final String REVIEW_IMPORTANT_NEWS = "[功能树, 复盘操盘, 复盘报告, 盘前要闻]";
+
+        public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";
 
     }
 }

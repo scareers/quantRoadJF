@@ -30,10 +30,10 @@ public class CrawlerChain {
         boolean fullMode = true;
 
         CrawlerChain crawlerChain = new CrawlerChain(1, 1);
-        crawlerChain.addSynCrawler(new StockList());
-        crawlerChain.addSynCrawler(new IndexList());
-        crawlerChain.addSynCrawler(new BkList());
-        crawlerChain.addSynCrawler(new TradeDates());
+//        crawlerChain.addSynCrawler(new StockList());
+//        crawlerChain.addSynCrawler(new IndexList());
+//        crawlerChain.addSynCrawler(new BkList());
+//        crawlerChain.addSynCrawler(new TradeDates());
 
         crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("nofq", fullMode));
         crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("hfq", fullMode));
