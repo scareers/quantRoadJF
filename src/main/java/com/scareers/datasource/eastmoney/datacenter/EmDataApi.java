@@ -273,7 +273,7 @@ public class EmDataApi {
             return res;
         }
         parseEmZiXunListCommon(res, asStrUseHutool);
-        res.stream().forEach(bean -> bean.setType(1));
+        res.forEach(bean -> bean.setType(1));
         caiJingDaoDuNewsPerPageCache.put(page, res);
         return res;
     }

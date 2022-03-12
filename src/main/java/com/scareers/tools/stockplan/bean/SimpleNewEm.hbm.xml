@@ -23,8 +23,11 @@
         <property name="detailTitle">
             <column name="detailTitle" sql-type="text" not-null="false"/>
         </property>
+        <property name="saveTime">
+            <column name="saveTime" sql-type="datetime"/>
+        </property>
         <property name="type">
-            <column name="type" sql-type="int" not-null="false"/>
+            <column name="type" sql-type="int" not-null="true"/>
         </property>
         <property name="urlRawHtml">
             <column name="urlRawHtml" sql-type="longtext" not-null="false"/>

@@ -16,6 +16,8 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.scareers.utils.SqlUtil.execSql;
+
 /**
  * description: 爬虫基类
  *
@@ -46,6 +48,11 @@ public abstract class Crawler {
         TimeInterval timer = DateUtil.timer();
         timer.start();
         logStart();
+        try {
+            execSql(sqlCreateTable, conn);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         runCore();
         if (success) {
             logSuccess();
@@ -163,6 +170,7 @@ public abstract class Crawler {
         }
         return stockBeans;
     }
+
     protected List<SecurityBeanEm> getAllStockList() {
         return getStockBeanList(Integer.MAX_VALUE);
     }
@@ -184,10 +192,10 @@ public abstract class Crawler {
         }
         return indexBeans;
     }
+
     protected List<SecurityBeanEm> getAllIndexList() {
         return getIndexBeanList(Integer.MAX_VALUE);
     }
-
 
 
 }

@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.scareers.datasource.eastmoney.dailycrawler.datas.ZiXunJingHuaCrawler.saveToDbBatch;
 import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 
 /**
@@ -35,7 +34,7 @@ import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 @ToString
 public class SimpleNewEm {
     public static List<String> dfCols = Arrays
-            .asList("dateTime", "title", "url", "detailTitle", "type", "urlRawHtml",
+            .asList("dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
                     "briefly", "relatedObject", "trend", "remark", "lastModified"
             );
 
@@ -51,6 +50,7 @@ public class SimpleNewEm {
     String title; // 东财提取的简单标题
     String url; // 新闻具体url
     String detailTitle; // 原文章具体标题
+    Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
     // 必须设定
     //     * 1.新闻类型
     Integer type; // 整数表示类型; 0.资讯精华  1.财经导读 待增加
@@ -83,11 +83,6 @@ public class SimpleNewEm {
 
     }
 
-    public static void main(String[] args) {
-        List<SimpleNewEm> beans = getCaiJingDaoDuNewsPerPage(1);
-        List<SimpleNewEm> beans2 = getZiXunJingHuaPerPage(1);
-        saveToDbBatch(beans);
-    }
 
 
     /**
@@ -211,10 +206,10 @@ public class SimpleNewEm {
      * HibernateUtil.closeSession(session); // 关闭Session
      * }
      *
-     * @param newEms
-     * @return
+     * @param newEms 一般要求id未设定
+     * @return 本方法 并未设置 saveTime; 本方法常态由爬虫调用, 爬虫遍历设置 saveTime字段; 保证该字段含义
      */
-    public static DataFrame<Object> buildDfOfBeanList(List<SimpleNewEm> news) {
+    public static DataFrame<Object> buildDfFromBeanListWithoutIdAndSaveTime(List<SimpleNewEm> news) {
         DataFrame<Object> res = new DataFrame<>(dfCols);
         for (SimpleNewEm bean : news) {
             List<Object> row = new ArrayList<>();
@@ -222,14 +217,44 @@ public class SimpleNewEm {
             row.add(bean.getTitle());
             row.add(bean.getUrl());
             row.add(bean.getDetailTitle());
+            row.add(bean.getSaveTime());
             row.add(bean.getType());
             row.add(bean.getUrlRawHtml());
             row.add(bean.getBriefly());
             row.add(bean.getRelatedObject());
             row.add(bean.getTrend());
             row.add(bean.getRemark());
-            row.add(bean.getDateTime());
+            row.add(bean.getLastModified());
             res.append(row);
+        }
+        return res;
+    }
+
+    /**
+     * 将 df列表, 转换 为bean列表, 逻辑与上相反;
+     *
+     * @param rawDf 从simple_new 表, 获取的全字段df , 存在自动id自动
+     * @return
+     */
+    public static List<SimpleNewEm> buildBeanListFromDfWithId(DataFrame<Object> rawDf) {
+        /*
+                    .asList("dateTime", "title", "url", "detailTitle","saveTime", "type", "urlRawHtml",
+                    "briefly", "relatedObject", "trend", "remark", "lastModified"
+            );  +  id
+         */
+        List<SimpleNewEm> res = new ArrayList<>();
+        if (rawDf == null) {
+            return res;
+        }
+
+        for (int i = 0; i < rawDf.length(); i++) {
+            SimpleNewEm bean = new SimpleNewEm();
+            bean.setId(Long.parseLong(rawDf.get(i, "id").toString()));
+            bean.setDateTime(Timestamp.valueOf(rawDf.get(i, "dateTime").toString()));
+            bean.setTitle(rawDf.get(i, "title").toString());
+            bean.setUrl(rawDf.get(i, "url").toString());
+
+            res.add(bean);
         }
         return res;
     }
