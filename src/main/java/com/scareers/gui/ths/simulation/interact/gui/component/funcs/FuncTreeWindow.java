@@ -224,7 +224,9 @@ public class FuncTreeWindow extends FuncFrameS {
             @SneakyThrows
             @Override
             public void valueChanged(TreeSelectionEvent e) {
-                dispatch(e.getNewLeadSelectionPath().toString());
+                if (e.getNewLeadSelectionPath() != null) {
+                    dispatch(e.getNewLeadSelectionPath().toString());
+                }
             }
         });
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
@@ -232,7 +234,6 @@ public class FuncTreeWindow extends FuncFrameS {
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.REVIEW_IMPORTANT_NEWS);
         return tree;
     }
-
 
     public void dispatch(String treePath) {
         // 1. 5类队列
@@ -285,7 +286,6 @@ public class FuncTreeWindow extends FuncFrameS {
 
     private void changeToDisplayAccountStates() {
         AccountStatesDisplayPanel.getInstance(getMainDisplayWindow()).showInMainDisplayWindow();
-        ; // 此处决定资产列表的宽度
     }
 
     private void changeToSellQueue() {

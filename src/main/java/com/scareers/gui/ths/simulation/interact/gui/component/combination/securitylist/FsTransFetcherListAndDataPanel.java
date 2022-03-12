@@ -45,8 +45,6 @@ public class FsTransFetcherListAndDataPanel extends SecurityListAndTablePanel {
             e.printStackTrace();
         }
         mainDisplayWindow.flushBounds();
-//        securityEmPos = FsFetcher.getStockPool().stream()
-//                .map(SecurityBeanEm.SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
 
         while (true) {
             Vector<SecurityBeanEm.SecurityEmPo> beans = FsTransactionFetcher.getStockPool().stream()
