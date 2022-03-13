@@ -59,6 +59,7 @@ public class SettingsOfGuiGlobal {
     // 主内容在 JDesktopPane 的默认层级. 其余子功能对话框 应 > 此值, 才可显示在上
     // 另外横向功能栏默认层级应当 > 纵向, 同idea效果. 但都 > 此值.
     public static Integer layerOfLogFuncWindow = 200;
+    public static Integer layerOfManiLogFuncWindow = 201;
     public static Integer layerOfDatabaseFuncWindow = 150;
     public static Integer layerOfMainDisplay = 100; // 低
     public static Integer layerOfObjectsTree = 100; // 低

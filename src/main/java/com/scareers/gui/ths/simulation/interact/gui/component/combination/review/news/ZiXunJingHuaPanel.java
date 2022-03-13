@@ -2,7 +2,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
-import joinery.DataFrame;
 
 import java.sql.SQLException;
 import java.util.List;

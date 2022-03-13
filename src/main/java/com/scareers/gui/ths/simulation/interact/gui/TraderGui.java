@@ -178,6 +178,7 @@ public class TraderGui extends JFrame {
                 this.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
                 ThreadUtil.sleep(200);
                 this.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+                this.getCorePanel().getBottomLeftButtonList().get(1).doClick(); // 操作日志框显示
 //                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
                 this.getCorePanel().getLeftTopButtonList().get(0).doClick();
 
@@ -246,6 +247,32 @@ public class TraderGui extends JFrame {
                         } else {
                             logFuncWindow.flushBounds();
                             logFuncWindow.show();
+                        }
+                    }
+                });
+                
+                // ManipulateLogWindow
+
+                FuncButton maniLogFunc = ButtonFactory.getButton("操作日志");
+                corePanel.registerFuncBtnWithoutFuncFrame(maniLogFunc, FuncFrameS.Type.BOTTOM_LEFT);
+                maniLogFunc.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ManipulateLogWindow manipulateLogWindow =  // 窗口启动时已经初始化, 单例模式可调用无参方法
+                                ManipulateLogWindow
+                                        .getInstance(FuncFrameS.Type.BOTTOM_LEFT, "manis", mainWindow, maniLogFunc,
+                                                true,
+                                                true,
+                                                false,
+                                                true,
+                                                1200, 100, 0.35, 30, true, layerOfManiLogFuncWindow);
+                        corePanel.registerFuncBtnAndCorrespondFuncFrame(maniLogFunc, manipulateLogWindow);
+                        if (manipulateLogWindow.isVisible()) {
+                            manipulateLogWindow.flushBounds();
+                            manipulateLogWindow.hide();
+                        } else {
+                            manipulateLogWindow.flushBounds();
+                            manipulateLogWindow.show();
                         }
                     }
                 });

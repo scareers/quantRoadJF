@@ -1,15 +1,14 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
-import org.apache.maven.model.Parent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,15 +25,6 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
  * @date: 2022/3/13/013-10:37:30
  */
 public class NewEditorPanel extends DisplayPanel {
-    private static NewEditorPanel INSTANCE;
-
-    public static NewEditorPanel getInstance(SimpleNewListPanel parent) {
-        if (INSTANCE == null) {
-            INSTANCE = new NewEditorPanel(parent);
-        }
-        return INSTANCE;
-    }
-
     SimpleNewEm bean;
 
     // 子控件, 对应bean 各种属性, 以及部分操作按钮
@@ -62,19 +52,19 @@ public class NewEditorPanel extends DisplayPanel {
 
     // 编辑
     JLabel brieflyLabel = getCommonLabel("briefly", Color.pink);
-    JTextField brieflyValueLabel = getCommonEditor();
+    JTextField brieflyValueLabel = getCommonEditor(this);
     JLabel relatedObjectLabel = getCommonLabel("relatedObject", Color.pink);
-    JTextField relatedObjectValueLabel = getCommonEditor();
+    JTextField relatedObjectValueLabel = getCommonEditor(this);
     JLabel trendLabel = getCommonLabel("trend", Color.pink);
-    JTextField trendValueLabel = getCommonEditor();
+    JTextField trendValueLabel = getCommonEditor(this);
     JLabel markedLabel = getCommonLabel("marked", Color.pink);
     JCheckBox markedValueLabel = getCommonCheckBox();
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
-    JTextField remarkValueLabel = getCommonEditor();
+    JTextField remarkValueLabel = getCommonEditor(this);
 
     SimpleNewListPanel parent; // 以便调用持有者方法
 
-    private NewEditorPanel(SimpleNewListPanel parent) {
+    public NewEditorPanel(SimpleNewListPanel parent) {
         this.parent = parent;
         this.setLayout(new GridLayout(14, 2, 1, 1)); // 简易网格布局
         this.setPreferredSize(new Dimension(350, 500));
@@ -106,6 +96,10 @@ public class NewEditorPanel extends DisplayPanel {
         this.add(urlRawHtmlLabel);
         this.add(urlRawHtmlValueLabel);
 
+
+        this.add(markedLabel);
+        this.add(markedValueLabel);
+
         this.add(brieflyLabel);
         this.add(brieflyValueLabel);
 
@@ -119,8 +113,6 @@ public class NewEditorPanel extends DisplayPanel {
         this.add(remarkLabel);
         this.add(remarkValueLabel);
 
-        this.add(markedLabel);
-        this.add(markedValueLabel);
     }
 
     /**
@@ -133,41 +125,47 @@ public class NewEditorPanel extends DisplayPanel {
         this.update();
     }
 
-    public static SimpleNewEm getEditedBean() {
-        if (INSTANCE == null) {
-            return null;
-        }
-        SimpleNewEm bean = INSTANCE.bean;
-        if (bean == null) {
+    public SimpleNewEm getEditedBean() {
+        if (this.bean == null) {
             return null;
         }
         bean.setLastModified(Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
-        bean.setBriefly(INSTANCE.brieflyValueLabel.getText());
-        bean.setRelatedObject(INSTANCE.relatedObjectValueLabel.getText());
+        bean.setBriefly(this.brieflyValueLabel.getText());
+        bean.setRelatedObject(this.relatedObjectValueLabel.getText());
         try {
-            bean.setTrend(Double.parseDouble(INSTANCE.trendValueLabel.getText()));
+            bean.setTrend(Double.parseDouble(this.trendValueLabel.getText()));
         } catch (NumberFormatException e) {
             // e.printStackTrace();
             log.warn("SimpleNewEm.trend: 解析为double失败, 请正确设置");
         }
-        bean.setMarked(INSTANCE.markedValueLabel.isSelected());
-        bean.setRemark(INSTANCE.remarkValueLabel.getText());
+        bean.setMarked(this.markedValueLabel.isSelected());
+        bean.setRemark(this.remarkValueLabel.getText());
         return bean;
     }
 
     private static final Log log = LogUtil.getLogger();
 
-    private static KeyAdapter buildKeyAdapterForEdit() {
+    private static KeyAdapter buildKeyAdapterForEdit(NewEditorPanel panel) {
         return new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    SimpleNewEm editedBean = getEditedBean();
-                    SimpleNewEmDao.updateBean(editedBean);
-                    INSTANCE.update(editedBean); // 将更新显示自动设置字段
+                    SimpleNewEm editedBean = panel.getEditedBean();
+                    if (editedBean == null) {
+                        return;
+                    }
+                    try {
+                        SimpleNewEmDao.updateBean(editedBean);
+                        panel.update(editedBean); // 将更新显示自动设置字段
 //                    INSTANCE.parent.update();  // 该方式无法更新,
-                    ((SimpleNewListPanel) NewsTabPanel.INSTANCE.getTabbedPane().getSelectedComponent()).update();
-                    // 需要使用此方式进行更新
+                        ((SimpleNewListPanel) NewsTabPanel.INSTANCE.getTabbedPane().getSelectedComponent()).update();
+                        // 需要使用此方式进行更新
+                        ManiLog.put(StrUtil.format("复盘/盘前要闻: 更新新闻bean成功: {}.{} --> {}", editedBean.getType(),
+                                editedBean.getId(),
+                                editedBean.getTitle()));
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }
         };
@@ -222,11 +220,12 @@ public class NewEditorPanel extends DisplayPanel {
         return label;
     }
 
-    public static JTextField getCommonEditor() {
+    public static JTextField getCommonEditor(
+            NewEditorPanel panel) {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
-        jTextField.addKeyListener(buildKeyAdapterForEdit());
+        jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
         return jTextField;
     }
 

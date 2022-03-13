@@ -1,14 +1,10 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
 
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
-import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -17,12 +13,14 @@ import lombok.Getter;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.*;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.List;
+import java.util.Enumeration;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -76,7 +74,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         this.add(buttonContainer, BorderLayout.NORTH);
         this.add(jScrollPane, BorderLayout.CENTER);
 
-        editorPanel = NewEditorPanel.getInstance(this);
+        editorPanel = new NewEditorPanel(this);
         JPanel panel = new JPanel();
         panel.add(editorPanel);
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
@@ -183,6 +181,9 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         DefaultTableCellRenderer cellRendererOfTitle = new DefaultTableCellRenderer();
         cellRendererOfTitle.setForeground(COLOR_LIST_RAISE_EM);
         jTable.getColumn("title").setCellRenderer(cellRendererOfTitle);
+
+        jTable.setRowHeight(30);
+        jTable.setFont(new Font("微软雅黑", Font.PLAIN, 18));
     }
 
     private void removeEnterKeyDefaultAction() {
@@ -233,6 +234,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
 
         Enumeration columns = myTable.getColumnModel().getColumns();
 
+        int dummyIndex = 0;
 
         while (columns.hasMoreElements()) {
 //        if (columns.hasMoreElements()) {
@@ -252,6 +254,12 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             actualWidth = Math.min(360, actualWidth); // 单列最大宽度
             column.setWidth(actualWidth); // 多5
 //            break; // 仅第一列日期. 其他的平均
+
+            if(dummyIndex==3){
+                column.setWidth(20); // 多5
+            }
+
+            dummyIndex++;
         }
     }
 }
