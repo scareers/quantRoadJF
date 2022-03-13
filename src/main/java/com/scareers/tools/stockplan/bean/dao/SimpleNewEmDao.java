@@ -23,7 +23,7 @@ public class SimpleNewEmDao {
 
     static {
         Configuration configuration = new Configuration().configure("hibernate.cfg.xml");
-        SessionFactory sessionFactory = configuration.buildSessionFactory();
+        sessionFactory = configuration.buildSessionFactory();
     }
 
     public static void main(String[] args) {

@@ -35,7 +35,7 @@ import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 public class SimpleNewEm {
     public static List<String> dfCols = Arrays
             .asList("dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
-                    "briefly", "relatedObject", "trend", "remark", "lastModified"
+                    "briefly", "relatedObject", "trend", "remark", "lastModified","marked"
             );
 
     /*
@@ -54,14 +54,17 @@ public class SimpleNewEm {
     // 必须设定
     //     * 1.新闻类型
     Integer type; // 整数表示类型; 0.资讯精华  1.财经导读 待增加
+
     // 需要调用方法访问 url
     String urlRawHtml; // 访问url, 得到的原始html内容. 大多数为纯文字不带样式, 勉强能看;
+
     // 需要手动设定, 等价于自身对此新闻评价等
     String briefly; // 简述
     String relatedObject; // 相关 "对象", 例如大盘报道, 行业新闻, 个股新闻等等
     Double trend; // 偏向: 利空或者利好, -1.0 - 1.0;  0.0 代表绝对无偏向
     String remark; // 备注
     Timestamp lastModified; // 手动修改最后时间;
+    Boolean marked = false; // 重要标记
 
 
     /**
@@ -82,7 +85,6 @@ public class SimpleNewEm {
     public SimpleNewEm() {
 
     }
-
 
 
     /**
@@ -225,6 +227,7 @@ public class SimpleNewEm {
             row.add(bean.getTrend());
             row.add(bean.getRemark());
             row.add(bean.getLastModified());
+            row.add(bean.getMarked());
             res.append(row);
         }
         return res;

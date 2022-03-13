@@ -5,6 +5,7 @@ import javax.swing.plaf.metal.MetalTabbedPaneUI;
 import java.awt.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MAIN;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
 /**
  * description: TabbedPaneUI 重写, 主要重写了tab绘制
@@ -19,9 +20,9 @@ public class TabbedPaneUIS extends MetalTabbedPaneUI {
     private boolean tabsOverlapBorder = UIManager.getBoolean("TabbedPane.tabsOverlapBorder");
 
     // 边框和背景的颜色
-//    private Color SELECT_COLOR = new Color(57, 181, 215); // 原实现, 蓝色
-    private Color mainColor = COLOR_THEME_MAIN; // 应当是主题色
-    private Color commonColor = new Color(60, 63, 65); // 非主内容页颜色,比黑色淡一些
+//    private Color mainColor = new Color(57, 181, 215); // 选中色
+    private Color mainColor = COLOR_THEME_MAIN; // 选中色
+    private Color commonColor = COLOR_THEME_MINOR; // 常规色
 
     /*// 绘制整个选项卡区域
     @Override
@@ -35,7 +36,7 @@ public class TabbedPaneUIS extends MetalTabbedPaneUI {
     protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex, int x, int y, int w, int h,
                                   boolean isSelected) {
         // 测试了一下，发现没有边框更好看一点儿
-        /*g.setColor(SELECT_COLOR);
+        g.setColor(Color.black);
         switch (tabPlacement) {
             case LEFT:
                 g.drawLine(x, y, x, y + h - 1);
@@ -57,7 +58,7 @@ public class TabbedPaneUIS extends MetalTabbedPaneUI {
                 g.drawLine(x, y, x, y + h - 1);
                 g.drawLine(x, y, x + w - 1, y);
                 g.drawLine(x + w - 1, y, x + w - 1, y + h - 1);
-        }*/
+        }
     }
 
     // 绘制选中的选项卡背景色

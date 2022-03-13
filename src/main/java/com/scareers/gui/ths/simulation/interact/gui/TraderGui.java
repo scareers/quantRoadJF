@@ -1,8 +1,13 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.cron.CronUtil;
+import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -163,6 +168,40 @@ public class TraderGui extends JFrame {
         this.setJMenuBar(menuBar);
     }
 
+    /**
+     * 主窗口打开回调, 非子控件相关的其他部分
+     */
+    private void whenWindowOpened() {
+        ThreadUtil.execAsync(() -> {
+            try {
+                this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
+                this.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
+                ThreadUtil.sleep(200);
+                this.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
+                this.getCorePanel().getLeftTopButtonList().get(0).doClick();
+
+                if (autoStartTrader) {
+                    Trader.getAndStartInstance();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }, true);
+
+        CronUtil.schedule("*/20 * * * * *", new Task() {
+            @Override
+            public void execute() {
+                new CaiJingDaoDuCrawler().run(); // 财经导读抓取
+                new ZiXunJingHuaCrawler().run(); // 资讯精华抓取
+            }
+        });
+        CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分
+        CronUtil.start();
+
+
+    }
+
 
     FuncTreeWindow funcTreeWindow;
     // AnalyzeRealtimeWindow analyzeRealtimeWindow;
@@ -257,23 +296,9 @@ public class TraderGui extends JFrame {
                     }
                 });
 
+                mainWindow.whenWindowOpened();
 
-                ThreadUtil.execAsync(() -> {
-                    try {
-                        mainWindow.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
-                        mainWindow.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
-                        ThreadUtil.sleep(200);
-                        mainWindow.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
-                        mainWindow.getCorePanel().getLeftTopButtonList().get(0).doClick();
 
-                        if (autoStartTrader) {
-                            Trader.getAndStartInstance();
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }, true);
             }
 
             //捕获窗口关闭事件

@@ -6,6 +6,8 @@ import com.scareers.datasource.eastmoney.dailycrawler.commons.BkList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.StockList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDates;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MData;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransData;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfBk;
@@ -43,6 +45,10 @@ public class CrawlerChain {
 
         crawlerChain.addFrontCrawlers(new Fs1MData());
         crawlerChain.addFrontCrawlers(new FsTransData());
+
+        // 资讯
+        crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawler());
+        crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawler());
 
 
         crawlerChain.run();

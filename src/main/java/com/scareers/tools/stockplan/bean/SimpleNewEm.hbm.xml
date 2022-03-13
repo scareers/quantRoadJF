@@ -47,5 +47,8 @@
         <property name="lastModified">
             <column name="lastModified" sql-type="datetime" not-null="false"/>
         </property>
+        <property name="marked">
+            <column name="marked" sql-type="boolean" not-null="false"/>
+        </property>
     </class>
 </hibernate-mapping>

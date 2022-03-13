@@ -4,6 +4,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news.NewsTabPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -262,7 +263,9 @@ public class FuncTreeWindow extends FuncFrameS {
             // 2.2.账户状态
         } else if (TreePathConstants.SELL_QUEUE.equals(treePath)) {
             changeToSellQueue();
-        } else {
+        }else if (TreePathConstants.REVIEW_IMPORTANT_NEWS.equals(treePath)) {
+            changeToImportantNews();
+        }  else {
             System.out.println(treePath);
         }
     }
@@ -291,6 +294,12 @@ public class FuncTreeWindow extends FuncFrameS {
     private void changeToSellQueue() {
         SellStockListAndHsStatePanel
                 .getInstance(this.getMainDisplayWindow(), 300)
+                .showInMainDisplayWindow();
+    }
+
+    private void changeToImportantNews() {
+        NewsTabPanel
+                .getInstance(this.getMainDisplayWindow())
                 .showInMainDisplayWindow();
     }
 

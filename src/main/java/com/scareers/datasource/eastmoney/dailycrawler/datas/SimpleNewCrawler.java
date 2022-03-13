@@ -125,6 +125,7 @@ public abstract class SimpleNewCrawler extends Crawler {
                         + "trend double  null," // 振幅
                         + "remark longtext  null,"
                         + "lastModified datetime  null,"
+                        + "marked boolean  null,"
 
                         + "INDEX dateTime_index (dateTime ASC)\n"
 
