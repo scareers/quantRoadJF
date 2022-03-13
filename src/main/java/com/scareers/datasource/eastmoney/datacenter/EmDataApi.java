@@ -237,7 +237,7 @@ public class EmDataApi {
             return res;
         }
         parseEmZiXunListCommon(res, asStrUseHutool);
-        res.forEach(bean -> bean.setType(0));
+        res.forEach(bean -> bean.setType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE));
         ziXunJingHuaPerPageCache.put(page, res);
         return res;
     }
@@ -273,7 +273,7 @@ public class EmDataApi {
             return res;
         }
         parseEmZiXunListCommon(res, asStrUseHutool);
-        res.forEach(bean -> bean.setType(1));
+        res.forEach(bean -> bean.setType(SimpleNewEm.CAI_JING_DAO_DU_TYPE));
         caiJingDaoDuNewsPerPageCache.put(page, res);
         return res;
     }

@@ -314,7 +314,6 @@ public class FsTransactionFetcher {
         boolean beforeLowLimit = DateUtil.between(now, thresholdBefore, DateUnit.SECOND, false) >= 0; // 比下限小
         boolean afterHighLimit = DateUtil.between(now, thresholdAfter, DateUnit.SECOND, false) <= 0;  // 比上限大
 
-        //todo: 合理应当判定今日是否交易日, 依赖tushare. 等有其他更好方式再替换.
         if (!EastMoneyDbApi.isTradeDate(today)) {
             if (!logged) {
                 log.warn("date decide: 今日非交易日,应当抓取上一交易日数据");

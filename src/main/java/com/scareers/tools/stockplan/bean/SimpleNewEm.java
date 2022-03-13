@@ -35,8 +35,10 @@ import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 public class SimpleNewEm {
     public static List<String> dfCols = Arrays
             .asList("dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
-                    "briefly", "relatedObject", "trend", "remark", "lastModified","marked"
+                    "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
             );
+    public static int CAI_JING_DAO_DU_TYPE = 1; // 财经导读 类型
+    public static int ZI_XUN_JINH_HUA_TYPE = 0; // 资讯精华
 
     /*
     静态方法
@@ -182,8 +184,12 @@ public class SimpleNewEm {
     }
 
     /**
-     * 将新闻列表转换为 df, 以便保存; 该方法跳过了 hibernate框架!, 速度更快!
-     * 单个bean操作自行使用 hibernate api;
+     * 将新闻列表转换为 df, 以便保存; 该方法作为爬虫调用,跳过了 hibernate 框架!, 速度更快!
+     *
+     * @param newEms 一般要求id未设定
+     * @return 本方法 并未设置 saveTime; 本方法常态由爬虫调用, 爬虫遍历设置 saveTime字段; 保证该字段含义
+     * @key DAO 有类似方法, 但是将数据库查询结果转换为df! 将设置所有字段!
+     * @noti 单个bean操作自行使用 hibernate api;
      * <p>
      * 使用hibernate 批量保存使用事务批量提交而非自动提交
      * try {
@@ -207,9 +213,6 @@ public class SimpleNewEm {
      * } finally {
      * HibernateUtil.closeSession(session); // 关闭Session
      * }
-     *
-     * @param newEms 一般要求id未设定
-     * @return 本方法 并未设置 saveTime; 本方法常态由爬虫调用, 爬虫遍历设置 saveTime字段; 保证该字段含义
      */
     public static DataFrame<Object> buildDfFromBeanListWithoutIdAndSaveTime(List<SimpleNewEm> news) {
         DataFrame<Object> res = new DataFrame<>(dfCols);

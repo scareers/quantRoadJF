@@ -21,6 +21,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.bean.IndexBkHandicap;
 import com.scareers.datasource.eastmoney.quotecenter.bean.StockBondHandicap;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.Tqdm;
 import com.scareers.utils.ai.tts.Tts;
@@ -31,6 +32,7 @@ import lombok.SneakyThrows;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -64,8 +66,6 @@ public class EmQuoteApi {
             3600 * 1000); // 个股今日涨跌停
     public static Cache<String, List<Double>> stockPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股债券昨收和今开盘价
-    public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
-            3600 * 1000); // 某个日期的上n个交易日?
     public static Cache<String, List<Double>> indexOrBkPreCloseAndTodayOpenCache = CacheUtil.newLRUCache(1024,
             3600 * 1000);
     public static Cache<String, Double> indexOrBkPreCloseCache = CacheUtil.newLRUCache(1024,
@@ -1292,28 +1292,12 @@ public class EmQuoteApi {
      */
     @TimeoutCache(timeout = "3600 * 1000")
     public static String getPreNTradeDateStrict(String todayDate, int n) {
-        String cacheKey = StrUtil.format("{}__{}", todayDate, n);
-        String res = preNTradeDateStrictCache.get(cacheKey);
-        if (res != null) {
-            return res;
+        try {
+            return EastMoneyDbApi.getPreNTradeDateStrict(todayDate, n);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
         }
-        // 查询结果将被缓存.
-        DataFrame<Object> dfTemp = getQuoteHistorySingle(true, SecurityBeanEm.getShangZhengZhiShu(), "19900101",
-                "21000101", "101", "1", 3,
-                3000); // 使用缓存
-        List<String> dates = DataFrameS.getColAsStringList(dfTemp, "日期");
-        for (int i = dates.size() - 1; i >= 0; i--) {
-            if (dates.get(i).compareTo(todayDate) < 0) { // 倒序, 第一个小于 给定日期的, 即为 严格意义的上一个交易日
-                // 此时i为  上 1 交易日. 因此..
-                try {
-                    return dates.get(i + 1 - n);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return null; // 索引越界
-                }
-            }
-        }
-        return null;
     }
 
 

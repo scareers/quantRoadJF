@@ -313,8 +313,12 @@ public class CommonUtil {
      * @return
      */
     public static String toStringCheckNull(Object o) {
+        return toStringCheckNull(o, "null");
+    }
+
+    public static String toStringCheckNull(Object o, String defaultStr) {
         if (o == null) {
-            return "null";
+            return defaultStr;
         }
         return o.toString();
     }

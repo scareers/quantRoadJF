@@ -26,7 +26,7 @@ public class ZiXunJingHuaCrawler extends SimpleNewCrawler {
 
     @Override
     protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
-        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(0, 500));
+        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE, 520));
     }
 
     @Override

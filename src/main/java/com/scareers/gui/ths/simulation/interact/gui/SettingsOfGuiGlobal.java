@@ -27,12 +27,22 @@ public class SettingsOfGuiGlobal {
     public static Color COLOR_TREE_ITEM_SELECTED = new Color(75, 110, 175); // 树形菜单被选中
     public static Color COLOR_SCROLL_BAR_THUMB = new Color(94, 97, 97); // 滚动条背景
     public static Color COLOR_SPLIT_PANE_DIVIDER_BACK = new Color(49, 51, 53); // 分割面板分隔条主颜色
+
+    // 1.1.东财k线图
     public static Color COLOR_CHART_BG_EM = new Color(7, 7, 7); // 东方财富图标主背景色
     public static Color COLOR_CHART_AXIS_LINE_EM = new Color(38, 38, 38); // 东方财富图表两轴颜色
     public static Color COLOR_CHART_GRID_LINE_EM = new Color(38, 38, 38); // 东方财富图表网格颜色
     public static Color COLOR_CHART_CROSS_LINE_EM = new Color(120, 120, 120); // 东方财富图表十字线颜色
     public static Color COLOR_TEXT_INACTIVATE_EM = new Color(140, 140, 140); // 东方财富未激活的文字颜色, 偏灰,激活白
     public static Color COLOR_CURRENT_PRICE_MARKER = new Color(255, 198, 109); // 表示当前价格的marker,偏棕黄色
+    // 1.2.东财列表
+    public static Color COLOR_LIST_FLAT_EM = new Color(200, 200, 200); // 表示数据持平, 例如涨幅 0%时
+    public static Color COLOR_LIST_RAISE_EM = new Color(255, 92, 92); // 表示上涨, 红色
+    public static Color COLOR_LIST_FALL_EM = new Color(57, 207, 101); // 表示下跌, 绿色
+    public static Color COLOR_LIST_STOCK_NAME_EM = new Color(245 , 253, 166); // 名称默认金黄色
+    public static Color COLOR_LIST_BK_EM = new Color(7 , 7, 7); // 列表背景色
+    public static Color COLOR_LIST_HEADER_FORE_EM = new Color(93 , 93, 93); // 表头字颜色. 背景色同 BK
+
 
     public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
 

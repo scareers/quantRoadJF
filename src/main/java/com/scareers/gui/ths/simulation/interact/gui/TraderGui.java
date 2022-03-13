@@ -444,6 +444,8 @@ public class TraderGui extends JFrame {
         UIManager.put("ScrollBar.thumb", new javax.swing.plaf.ColorUIResource(Color.black)); // 滚动条上下按钮背景色
 
 
+
+
     }
 
     /**

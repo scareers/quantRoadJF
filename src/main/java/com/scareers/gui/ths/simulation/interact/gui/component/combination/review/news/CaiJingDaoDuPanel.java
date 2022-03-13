@@ -1,7 +1,11 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
 
-import cn.hutool.core.lang.Console;
-import org.jdesktop.swingx.JXHyperlink;
+import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
+
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * description:
@@ -18,16 +22,20 @@ public class CaiJingDaoDuPanel extends SimpleNewListPanel {
         }
         return INSTANCE;
     }
-    JXHyperlink hyperlink;
-
-    public CaiJingDaoDuPanel() {
-
-
-
-    }
 
     @Override
-    protected void update() {
-        Console.log("财经导读被电击");
+    public void flushBeanMapAndShowDf() {
+        List<SimpleNewEm> newsForReviseByType;
+        try {
+            newsForReviseByType = SimpleNewEmDao.getNewsForReviseByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            // 此时使用老数据
+            return;
+        }
+        ConcurrentHashMap<Long, SimpleNewEm> tempMap = new ConcurrentHashMap<>();
+        newsForReviseByType.forEach(value -> tempMap.put(value.getId(), value));
+        this.beanMap = tempMap;
+        this.newDf = SimpleNewEmDao.buildDfFromBeanList(newsForReviseByType);
     }
 }

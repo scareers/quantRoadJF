@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
+import lombok.Getter;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -17,8 +18,9 @@ import java.awt.*;
  * @author: admin
  * @date: 2022/3/13/013-08:42:25
  */
+@Getter
 public class NewsTabPanel extends DisplayPanel {
-    private static NewsTabPanel INSTANCE;
+    public static NewsTabPanel INSTANCE;
 
     public static NewsTabPanel getInstance(MainDisplayWindow mainDisplayWindow) {
         if (INSTANCE == null) {
@@ -47,7 +49,7 @@ public class NewsTabPanel extends DisplayPanel {
             @Override
             public void stateChanged(ChangeEvent e) {
 
-                ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).updateNewList();
+                ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
             }
         });
 
@@ -56,7 +58,7 @@ public class NewsTabPanel extends DisplayPanel {
             @Override
             public void run() {
                 while (true) {
-                    ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).updateNewList();
+                    ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
                     ThreadUtil.sleep(60000);
                 }
             }

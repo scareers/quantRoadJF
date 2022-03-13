@@ -70,9 +70,14 @@ public abstract class SimpleNewCrawler extends Crawler {
                     repeatCount++;
                 }
             }
+            if (repeatCount >= repeatCountThreshold) { // 超出阈值, 判定为后面页数都曾经访问过了
+                success = true;
+                return;
+            }
+
             try {
-                if (beansPerPage.size() > 0) {
-                    saveToDbBatch(beansPerPage); // 必然保存
+                if (shouldSave.size() > 0) {
+                    saveToDbBatch(shouldSave); // 必然保存
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -80,10 +85,6 @@ public abstract class SimpleNewCrawler extends Crawler {
                 success = false;
             }
 
-            if (repeatCount >= repeatCountThreshold) { // 超出阈值, 判定为后面页数都曾经访问过了
-                success = true;
-                return;
-            }
         }
         success = true;
     }
