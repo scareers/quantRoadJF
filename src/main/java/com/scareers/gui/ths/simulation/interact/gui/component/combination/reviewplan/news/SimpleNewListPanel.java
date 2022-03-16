@@ -27,15 +27,16 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 
 /**
- * description: 简单的新闻列表显示 Panel; 简单继承 update()方法
+ * description: 东财简单的新闻列表显示 Panel; 简单继承 update()方法
  * 左边为编辑区, 右边表格显示 !
+ *
  *
  * @author: admin
  * @date: 2022/3/13/013-08:50:46
  */
 @Getter
 public abstract class SimpleNewListPanel extends DisplayPanel {
-    protected NewEditorPanel editorPanel;
+    protected SimpleNewEditorPanel editorPanel; // 编辑面
     protected SimpleNewEm currentBean;
 
     protected JTable jTable;
@@ -77,7 +78,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         this.add(buttonContainer, BorderLayout.NORTH);
         this.add(jScrollPane, BorderLayout.CENTER);
 
-        editorPanel = new NewEditorPanel(this);
+        editorPanel = new SimpleNewEditorPanel(this);
         JPanel panel = new JPanel();
         panel.add(editorPanel);
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
@@ -97,8 +98,6 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
 
     @Override
     public void update() {
-
-
         flushBeanMapAndShowDf(); // 刷新 beanMap和newDf
         if (newDf == null) {
             return;

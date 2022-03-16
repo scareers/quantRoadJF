@@ -169,7 +169,7 @@ public class SimpleNewEmDao {
 
         DateTime now = DateUtil.date();
         String preTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1); // 上一交易日
-        String nextTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 下一交易日
+        // String nextTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 下一交易日
 
         if (tradeDate) {
             if (DateUtil.hour(now, true) >= 15) { // 今日15:00到now

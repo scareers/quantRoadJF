@@ -4,7 +4,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.review
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 
 /**
- * description: 分别单例
+ * description: 分别单例;  复盘 tab 主类
  *
  * @author: admin
  * @date: 2022/3/16/016-18:04:03

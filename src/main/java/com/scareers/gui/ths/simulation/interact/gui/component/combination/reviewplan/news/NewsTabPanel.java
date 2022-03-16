@@ -2,8 +2,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.CaiJingDaoDuPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.ZiXunJingHuaPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
 import lombok.Getter;
@@ -14,8 +12,11 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 
 /**
- * description:
+ * description: 多新闻 tab 显示页; 每个tab子空间应当为 DisplayPanel 子类, 实现 update() 方法
+ * 常见新闻tab类:
+ * SimpleNewListPanel : 显示常规东财新闻列表并可编辑
  *
+ * @noti : 本类有2个实例, 复盘一个, 操盘计划一个. 几乎一一对应; addTabs()抽象方法 可能添加不同的tab
  * @author: admin
  * @date: 2022/3/13/013-08:42:25
  */
@@ -65,7 +66,6 @@ public abstract class NewsTabPanel extends DisplayPanel {
     }
 
     protected abstract void addTabs();
-
 
     public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身

@@ -21,12 +21,12 @@ import java.sql.Timestamp;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
 /**
- * description: 展示东财新闻bean 并可编辑保存!
+ * description: 展示 常规东财新闻bean 并可编辑保存!
  *
  * @author: admin
  * @date: 2022/3/13/013-10:37:30
  */
-public class NewEditorPanel extends DisplayPanel {
+public class SimpleNewEditorPanel extends DisplayPanel {
     SimpleNewEm bean;
 
     JLabel newAmountLabel = getCommonLabel("新闻总数量", Color.red);  // id
@@ -69,7 +69,7 @@ public class NewEditorPanel extends DisplayPanel {
 
     SimpleNewListPanel parent; // 以便调用持有者方法
 
-    public NewEditorPanel(SimpleNewListPanel parent) {
+    public SimpleNewEditorPanel(SimpleNewListPanel parent) {
         this.parent = parent;
         this.setLayout(new GridLayout(15, 2, 1, 1)); // 简易网格布局
         this.setPreferredSize(new Dimension(350, 500));
@@ -157,7 +157,7 @@ public class NewEditorPanel extends DisplayPanel {
 
     private static final Log log = LogUtil.getLogger();
 
-    private static KeyAdapter buildKeyAdapterForEdit(NewEditorPanel panel) {
+    private static KeyAdapter buildKeyAdapterForEdit(SimpleNewEditorPanel panel) {
         return new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
@@ -174,7 +174,7 @@ public class NewEditorPanel extends DisplayPanel {
      * @param panel
      * @return
      */
-    private static FocusListener buildJTextFieldBlurForEdit(NewEditorPanel panel) {
+    private static FocusListener buildJTextFieldBlurForEdit(SimpleNewEditorPanel panel) {
         return new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -188,7 +188,7 @@ public class NewEditorPanel extends DisplayPanel {
         };
     }
 
-    private static void tryAutoSaveEditedBean(NewEditorPanel panel, String logPrefix) {
+    private static void tryAutoSaveEditedBean(SimpleNewEditorPanel panel, String logPrefix) {
         SimpleNewEm editedBean = panel.getEditedBean();
         if (editedBean == null) {
             return;
@@ -258,7 +258,7 @@ public class NewEditorPanel extends DisplayPanel {
     }
 
     public static JTextField getCommonEditor(
-            NewEditorPanel panel) {
+            SimpleNewEditorPanel panel) {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);

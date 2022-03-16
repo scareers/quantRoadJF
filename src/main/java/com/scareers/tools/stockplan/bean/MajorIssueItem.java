@@ -31,6 +31,31 @@ import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNew
  */
 @Data
 public class MajorIssueItem {
+    public static List<String> dfSimpleCols = Arrays // 没有id 和 saveTime
+            .asList("name", "quoteUrl", "title", "content", "dateStr", "type",
+                    "briefly", "trend", "remark", "lastModified", "marked"
+            );
+    public static List<String> dfAllCols = Arrays
+            .asList("id", "name", "quoteUrl", "title", "content", "dateStr", "type", "saveTime",
+                    "briefly", "trend", "remark", "lastModified", "marked"
+            );
+    // 解析设置
+    String name;
+    String quoteUrl;
+    String title;
+    String content;
+    String dateStr; // 纯日期无时间, 字符串
+    String type; // 重大事项类型, 解析而来
+    // 保存到数据库时设置
+    Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
+    // 可自定义设置! // 类似 SimpleNewEm, 没有了 相关对象
+    String briefly; // 简述
+    Double trend; // 偏向: 利空或者利好, -1.0 - 1.0;  0.0 代表绝对无偏向
+    String remark; // 备注
+    Timestamp lastModified; // 手动修改最后时间;
+    Boolean marked = false; // 是否重要?标记
+    private long id;  // 数据库自动生成的id
+
     public static void main(String[] args) {
         Console.log(parseCompanyMajorIssuesNew(getCompanyMajorIssuesOf("3月14日")));
     }
@@ -48,64 +73,6 @@ public class MajorIssueItem {
     public static SimpleNewEm getCompanyMajorIssuesOf(DateTime date) {
         return getCompanyMajorIssuesOf(buildDateStr(date));
     }
-
-    /**
-     * name/title/dateStr 相等含义
-     *
-     * @return
-     */
-    @Override
-    public int hashCode() {
-        return this.name.hashCode() | this.title.hashCode() | this.dateStr.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof MajorIssueItem) {
-            MajorIssueItem o1 = (MajorIssueItem) o;
-            if (this.name.equals(o1.name) && this.title.equals(o1.title) && this.dateStr.equals(o1.dateStr)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private long id;  // 数据库自动生成的id
-
-    // 解析设置
-    String name;
-    String quoteUrl;
-    String title;
-    String content;
-    String dateStr; // 纯日期无时间, 字符串
-    String type; // 重大事项类型, 解析而来
-
-    // 保存到数据库时设置
-    Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
-
-    // 可自定义设置! // 类似 SimpleNewEm, 没有了 相关对象
-    String briefly; // 简述
-    Double trend; // 偏向: 利空或者利好, -1.0 - 1.0;  0.0 代表绝对无偏向
-    String remark; // 备注
-    Timestamp lastModified; // 手动修改最后时间;
-    Boolean marked = false; // 是否重要?标记
-
-
-    /**
-     * 某一类的集合, 不使用Map, 使得有序
-     */
-    @Data
-    @AllArgsConstructor
-    public static class MajorIssueBatch {
-        List<MajorIssueItem> items;
-        String type; //
-    }
-
-
-    public static List<String> dfSimpleCols = Arrays // 没有id 和 saveTime
-            .asList("name", "quoteUrl", "title", "content", "dateStr", "type",
-                    "briefly", "trend", "remark", "lastModified", "marked"
-            );
 
     /**
      * df 与bean list 的相互转换
@@ -132,11 +99,6 @@ public class MajorIssueItem {
         }
         return res;
     }
-
-    public static List<String> dfAllCols = Arrays
-            .asList("id", "name", "quoteUrl", "title", "content", "dateStr", "type", "saveTime",
-                    "briefly", "trend", "remark", "lastModified", "marked"
-            );
 
     /**
      * list bean 转换为全字段完整df
@@ -166,7 +128,6 @@ public class MajorIssueItem {
         return res;
     }
 
-
     /**
      * 新闻 -- 重大事项解析逻辑
      * 主容器 id 为 ContentBody
@@ -179,7 +140,7 @@ public class MajorIssueItem {
      * @param bean
      * @return 访问http失败将返回null
      */
-    public static List<MajorIssueItem.MajorIssueBatch> parseCompanyMajorIssuesNew(SimpleNewEm companyMajorIssuesBean) {
+    public static List<MajorIssueBatch> parseCompanyMajorIssuesNew(SimpleNewEm companyMajorIssuesBean) {
         Assert.isTrue(companyMajorIssuesBean.isCompanyMajorIssues());
         String url = companyMajorIssuesBean.getUrl();
         if (url.startsWith("http://")) {
@@ -254,5 +215,133 @@ public class MajorIssueItem {
         }
 
         return res;
+    }
+
+    /**
+     * name/title/dateStr 相等含义
+     *
+     * @return
+     */
+    @Override
+    public int hashCode() {
+        return this.name.hashCode() | this.title.hashCode() | this.dateStr.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof MajorIssueItem) {
+            MajorIssueItem o1 = (MajorIssueItem) o;
+            if (this.name.equals(o1.name) && this.title.equals(o1.title) && this.dateStr.equals(o1.dateStr)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getQuoteUrl() {
+        return quoteUrl;
+    }
+
+    public void setQuoteUrl(String quoteUrl) {
+        this.quoteUrl = quoteUrl;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getDateStr() {
+        return dateStr;
+    }
+
+    public void setDateStr(String dateStr) {
+        this.dateStr = dateStr;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Timestamp getSaveTime() {
+        return saveTime;
+    }
+
+    public void setSaveTime(Timestamp saveTime) {
+        this.saveTime = saveTime;
+    }
+
+    public String getBriefly() {
+        return briefly;
+    }
+
+    public void setBriefly(String briefly) {
+        this.briefly = briefly;
+    }
+
+    public Double getTrend() {
+        return trend;
+    }
+
+    public void setTrend(Double trend) {
+        this.trend = trend;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
+    public Timestamp getLastModified() {
+        return lastModified;
+    }
+
+    public void setLastModified(Timestamp lastModified) {
+        this.lastModified = lastModified;
+    }
+
+
+    /**
+     * 某一类的集合, 不使用Map, 使得有序
+     */
+    @Data
+    @AllArgsConstructor
+    public static class MajorIssueBatch {
+        List<MajorIssueItem> items;
+        String type; //
     }
 }
