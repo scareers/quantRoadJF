@@ -191,7 +191,7 @@ public class MajorIssueEditorPanel extends DisplayPanel {
             MajorIssueDao.updateBean(editedBean);
             panel.update(editedBean); // 将更新显示自动设置字段
 //                    INSTANCE.parent.update();  // 该方式无法更新,
-            ((SimpleNewListPanel) panel.parent.getParentS().getTabbedPane().getSelectedComponent())
+            ((MajorIssueListPanel) panel.parent.getParentS().getTabbedPane().getSelectedComponent())
                     .update();
             // 需要使用此方式进行更新
             ManiLog.put(StrUtil.format("{}: 更新新闻bean成功: {}.{} --> {} / {}", logPrefix, editedBean.getType(),

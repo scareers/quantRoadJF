@@ -15,17 +15,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author: admin
  * @date: 2022/3/17/017-00:42:25
  */
-public class MajorIssueListPanelForRevise extends MajorIssueListPanel {
-    private static MajorIssueListPanelForRevise INSTANCE;
+public class MajorIssueListPanelForReview extends MajorIssueListPanel {
+    private static MajorIssueListPanelForReview INSTANCE;
 
-    public static MajorIssueListPanelForRevise getInstance(NewsTabPanel parentS) {
+    public static MajorIssueListPanelForReview getInstance(NewsTabPanel parentS) {
         if (INSTANCE == null) {
-            INSTANCE = new MajorIssueListPanelForRevise(parentS);
+            INSTANCE = new MajorIssueListPanelForReview(parentS);
         }
         return INSTANCE;
     }
 
-    public MajorIssueListPanelForRevise(
+    public MajorIssueListPanelForReview(
             NewsTabPanel parentS) {
         super(parentS);
     }
@@ -34,7 +34,7 @@ public class MajorIssueListPanelForRevise extends MajorIssueListPanel {
     public void flushBeanMapAndShowDf() {
         List<MajorIssue> newsForReviseByType;
         try {
-            newsForReviseByType = MajorIssueDao.getNewsForTradePlanForRevise();
+            newsForReviseByType = MajorIssueDao.getNewsForTradePlanForReview();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

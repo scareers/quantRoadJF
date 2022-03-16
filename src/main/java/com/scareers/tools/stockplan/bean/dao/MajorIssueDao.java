@@ -144,7 +144,7 @@ public class MajorIssueDao {
      * @param dateStr
      * @return
      */
-    public static List<MajorIssue> getNewsForTradePlanForRevise() throws SQLException {
+    public static List<MajorIssue> getNewsForTradePlanForReview() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));

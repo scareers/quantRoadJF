@@ -259,12 +259,12 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
             column.setWidth(actualWidth); // 多5
 //            break; // 仅第一列日期. 其他的平均
 
-//            if (dummyIndex == 3) {
-//                column.setWidth(20); // 多5
-//            }
-//            if (dummyIndex == 4) {
-//                column.setWidth(20); // 多5
-//            }
+            if (dummyIndex == 2) {
+                column.setWidth(20); // 多5
+            }
+            if (dummyIndex == 4) {
+                column.setWidth(20); // 多5
+            }
 
             dummyIndex++;
         }

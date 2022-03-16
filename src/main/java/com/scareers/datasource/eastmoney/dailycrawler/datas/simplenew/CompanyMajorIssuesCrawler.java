@@ -4,6 +4,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.tools.stockplan.bean.MajorIssue;
@@ -11,12 +12,14 @@ import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.bean.MajorIssue.buildDfFromBeanList;
 import static com.scareers.tools.stockplan.bean.MajorIssue.parseCompanyMajorIssuesNew;
+import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildDfFromBeanListWithoutIdAndSaveTime;
 
 /**
  * description: 交易日, 公司重大事项归纳; 来自于财经导读;
@@ -89,7 +92,13 @@ public class CompanyMajorIssuesCrawler extends Crawler {
             shouldSave.addAll(majorIssueBatch.getItems());
         }
         // 保存逻辑
-        DataFrame<Object> dataFrame1 = buildDfFromBeanList(shouldSave);
+        DataFrame<Object> dataFrame1 = MajorIssue.buildDfFromBeanListWithoutIdAndSaveTime(shouldSave);
+        dataFrame1.add("saveTime");
+        // saveTime 初始化
+        for (int i = 0; i < dataFrame1.length(); i++) {
+            dataFrame1.set(i, "saveTime", Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
+        }
+
         DataFrameS.toSql(dataFrame1, tableName, conn, "append",
                 sqlCreateTable);
     }

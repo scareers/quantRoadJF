@@ -4,9 +4,8 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan.NewsTabPanelForPlan;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.NewsTabPanelForRevise;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.NewsTabPanelForReview;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -306,7 +305,7 @@ public class FuncTreeWindow extends FuncFrameS {
     }
 
     private void changeToReviseImportantNews() {
-        NewsTabPanelForRevise
+        NewsTabPanelForReview
                 .getInstance(this.getMainDisplayWindow())
                 .showInMainDisplayWindow();
     }

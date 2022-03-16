@@ -7,6 +7,7 @@ import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyMajorIssuesCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
@@ -190,11 +191,12 @@ public class TraderGui extends JFrame {
             }
         }, true);
 
-        CronUtil.schedule("*/20 * * * * *", new Task() {
+        CronUtil.schedule("*/30 * * * * *", new Task() {
             @Override
             public void execute() {
                 new CaiJingDaoDuCrawler().run(); // 财经导读抓取
                 new ZiXunJingHuaCrawler().run(); // 资讯精华抓取
+                new CompanyMajorIssuesCrawler().run(); // 重大事件抓取
             }
         });
         CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分

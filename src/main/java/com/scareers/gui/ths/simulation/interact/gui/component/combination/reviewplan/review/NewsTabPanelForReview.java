@@ -9,17 +9,17 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayW
  * @author: admin
  * @date: 2022/3/16/016-18:04:03
  */
-public class NewsTabPanelForRevise extends NewsTabPanel {
-    public static NewsTabPanelForRevise INSTANCE;
+public class NewsTabPanelForReview extends NewsTabPanel {
+    public static NewsTabPanelForReview INSTANCE;
 
-    public static NewsTabPanelForRevise getInstance(MainDisplayWindow mainDisplayWindow) {
+    public static NewsTabPanelForReview getInstance(MainDisplayWindow mainDisplayWindow) {
         if (INSTANCE == null) {
-            INSTANCE = new NewsTabPanelForRevise(mainDisplayWindow);
+            INSTANCE = new NewsTabPanelForReview(mainDisplayWindow);
         }
         return INSTANCE;
     }
 
-    public NewsTabPanelForRevise(
+    public NewsTabPanelForReview(
             MainDisplayWindow mainDisplayWindow) {
         super(mainDisplayWindow);
     }
@@ -28,5 +28,6 @@ public class NewsTabPanelForRevise extends NewsTabPanel {
     protected void addTabs() {
         tabbedPane.addTab("资讯精华", ZiXunJingHuaPanel.getInstance(this));
         tabbedPane.addTab("财经导读", CaiJingDaoDuPanel.getInstance(this));
+        tabbedPane.addTab("重大事项", MajorIssueListPanelForReview.getInstance(this));
     }
 }
