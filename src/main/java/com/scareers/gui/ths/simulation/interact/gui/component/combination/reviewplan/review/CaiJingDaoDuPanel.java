@@ -43,6 +43,6 @@ public class CaiJingDaoDuPanel extends SimpleNewListPanel {
         ConcurrentHashMap<Long, SimpleNewEm> tempMap = new ConcurrentHashMap<>();
         newsForReviseByType.forEach(value -> tempMap.put(value.getId(), value));
         this.beanMap = tempMap;
-        this.newDf = SimpleNewEmDao.buildDfFromBeanList(newsForReviseByType);
+        this.newDf = SimpleNewEm.buildDfFromBeanList(newsForReviseByType);
     }
 }

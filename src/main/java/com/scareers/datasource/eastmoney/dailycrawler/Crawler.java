@@ -58,8 +58,15 @@ public abstract class Crawler {
             logSuccess();
         }
         logTimeConsume(timer.interval());
+
+        clear();
     }
 
+    /**
+     * 可重写clear方法
+     */
+    protected void clear() {
+    }
 
     protected abstract void runCore();
 

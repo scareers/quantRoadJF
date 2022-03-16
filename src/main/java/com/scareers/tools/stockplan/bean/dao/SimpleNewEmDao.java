@@ -1,10 +1,17 @@
 package com.scareers.tools.stockplan.bean.dao;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.tools.stockplan.bean.MajorIssueItem;
+import com.scareers.tools.stockplan.bean.MajorIssueItem.MajorIssueBatch;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -12,11 +19,16 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -28,10 +40,7 @@ import java.util.List;
 public class SimpleNewEmDao {
     private static final Log log = LogUtil.getLogger();
     public static SessionFactory sessionFactory;
-    public static List<String> allCol = Arrays
-            .asList("id", "dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
-                    "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
-            ); // 多了id列
+
 
     static {
         Configuration configuration = new Configuration().configure("hibernate.cfg.xml");
@@ -47,8 +56,16 @@ public class SimpleNewEmDao {
 //            Console.log(simpleNewEm.getTitle());
 //        }
 
-        Console.log(getBeanById(10));
+//        Console.log(getBeanById(10));
+
+//        Console.log(getCompanyGoodNewsOf("3月15日"));
+//        Console.log(getCompanyMajorIssuesOf("3月14日"));
+//        Console.log(getNewsFeedsOf("3月15日"));
+//        Console.log(getFourPaperNewsOf("3月16日"));
+
+
     }
+
 
 
     /**
@@ -197,33 +214,85 @@ public class SimpleNewEmDao {
         session.close();
     }
 
+
+    /*
+    四大类特殊新闻对象
+     */
+
     /**
-     * list bean 转换为全字段完整df
+     * 财经导读中, 获取4类特殊新闻对象
      *
-     * @param news
+     * @param dateStr 形如 "x月y日", 不需要标准2位
+     * @param prefix  标题前缀即可
      * @return
      */
-    public static DataFrame<Object> buildDfFromBeanList(List<SimpleNewEm> news) {
-        DataFrame<Object> res = new DataFrame<>(allCol);
-        for (SimpleNewEm bean : news) {
-            List<Object> row = new ArrayList<>();
-            row.add(bean.getId());
-            row.add(bean.getDateTime());
-            row.add(bean.getTitle());
-            row.add(bean.getUrl());
-            row.add(bean.getDetailTitle());
-            row.add(bean.getSaveTime());
-            row.add(bean.getType());
-            row.add(bean.getUrlRawHtml());
-            row.add(bean.getBriefly());
-            row.add(bean.getRelatedObject());
-            row.add(bean.getTrend());
-            row.add(bean.getRemark());
-            row.add(bean.getLastModified());
-            row.add(bean.getMarked());
-            res.append(row);
+    public static SimpleNewEm getSpecialNewFromCaiJingDaoDu(String dateStr, String prefix) {
+        Session session = sessionFactory.openSession();
+        String hql = "FROM SimpleNewEm E WHERE E.type = :type and E.title like :title"; // 访问发布时间在区间内的新闻列表,
+        // 类型==1, 即财经导读
+        Query query = session.createQuery(hql);
+        query.setParameter("type", SimpleNewEm.CAI_JING_DAO_DU_TYPE); // 注意类型
+        query.setParameter("title", StrUtil.format("{}{}%", dateStr, prefix));
+        List beans = query.list();
+        SimpleNewEm res = null;
+        if (beans.size() > 0) {
+            res = (SimpleNewEm) beans.get(0); // 理论上有且仅有1个
         }
+        session.close();
         return res;
     }
 
+    /**
+     * 给定日期字符串, 获取 该日晚间上市公司利好消息一览
+     *
+     * @param dateStr
+     * @return
+     */
+    public static SimpleNewEm getCompanyGoodNewsOf(String dateStr) {
+        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间上市公司利好消息一览");
+    }
+
+
+
+    /**
+     * 给定日期字符串, 获取 晚间央视新闻联播财经内容集锦
+     *
+     * @param dateStr
+     * @return
+     */
+    public static SimpleNewEm getNewsFeedsOf(String dateStr) {
+        // 3月15日晚间央视新闻联播财经内容集锦
+        // 3月15日晚间央视新闻联播财经内容集锦%
+        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间央视新闻联播财经内容集锦");
+    }
+
+    /**
+     * 给定日期字符串, 获取 国内四大证券报纸、重要财经媒体头版头条内容精华摘要
+     *
+     * @param dateStr
+     * @return
+     */
+    public static SimpleNewEm getFourPaperNewsOf(String dateStr) {
+        return getSpecialNewFromCaiJingDaoDu(dateStr, "国内四大证券报纸、重要财经媒体头版头条内容精华摘要");
+    }
+
+    public static String buildDateStr(DateTime date) { // 构造日期字符串, 作为新闻标题判定
+        return StrUtil.format("{}月{}日", date.getField(DateField.MONTH),
+                date.getField(DateField.DAY_OF_MONTH));
+    }
+
+    // 对应4个传递 DateTime作为参数
+    public static SimpleNewEm getCompanyGoodNewsOf(DateTime date) {
+        return getCompanyGoodNewsOf(buildDateStr(date));
+    }
+
+
+
+    public static SimpleNewEm getNewsFeedsOf(DateTime date) {
+        return getNewsFeedsOf(buildDateStr(date));
+    }
+
+    public static SimpleNewEm getFourPaperNewsOf(DateTime date) {
+        return getFourPaperNewsOf(buildDateStr(date));
+    }
 }

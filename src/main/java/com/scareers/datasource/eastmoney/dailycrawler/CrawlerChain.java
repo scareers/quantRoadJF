@@ -7,6 +7,7 @@ import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.StockList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDates;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyMajorIssuesCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MData;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransData;
@@ -37,18 +38,19 @@ public class CrawlerChain {
 //        crawlerChain.addSynCrawler(new BkList());
 //        crawlerChain.addSynCrawler(new TradeDates());
 
-        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("nofq", fullMode));
-        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("hfq", fullMode));
-        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("qfq", fullMode));
-        crawlerChain.addFrontCrawlers(new DailyKlineDataOfBk(fullMode));
-        crawlerChain.addFrontCrawlers(new DailyKlineDataOfIndex(fullMode));
-
-        crawlerChain.addFrontCrawlers(new Fs1MData());
-        crawlerChain.addFrontCrawlers(new FsTransData());
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("nofq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("hfq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("qfq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfBk(fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfIndex(fullMode));
+//
+//        crawlerChain.addFrontCrawlers(new Fs1MData());
+//        crawlerChain.addFrontCrawlers(new FsTransData());
 
         // 资讯
         crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawler());
         crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawler());
+        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司重大事件
 
 
         crawlerChain.run();

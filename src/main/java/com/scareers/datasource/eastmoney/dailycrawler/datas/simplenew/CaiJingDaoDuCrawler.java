@@ -16,9 +16,8 @@ import java.util.List;
  * @date: 2022/3/12/012-20:07:26
  */
 public class CaiJingDaoDuCrawler extends SimpleNewCrawler {
-
     public static void main(String[] args) {
-        SimpleNewCrawler simpleNewCrawler = new CaiJingDaoDuCrawler();
+        CaiJingDaoDuCrawler simpleNewCrawler = new CaiJingDaoDuCrawler();
         Console.log(simpleNewCrawler.isSuccess());
         simpleNewCrawler.run();
         Console.log(simpleNewCrawler.isSuccess());

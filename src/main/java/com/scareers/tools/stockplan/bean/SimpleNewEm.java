@@ -1,11 +1,10 @@
 package com.scareers.tools.stockplan.bean;
 
-import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
-import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -16,8 +15,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 
 /**
  * 东方财富 -- 财经频道 -- 财经导读 -- 新闻列表
@@ -33,7 +30,7 @@ import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.*;
 @Setter
 @ToString
 public class SimpleNewEm {
-    public static List<String> dfCols = Arrays
+    public static List<String> dfSimpleCols = Arrays
             .asList("dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
                     "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
             );
@@ -90,100 +87,6 @@ public class SimpleNewEm {
 
 
     /**
-     * 给定日期字符串, 获取 该日晚间上市公司利好消息一览
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getCompanyGoodNewsOf(String dateStr) {
-        for (int i = 1; i <= maxPageOfCaiJingDaoDu; i++) {
-            List<SimpleNewEm> news = EmDataApi.getCaiJingDaoDuNewsPerPage(i);
-            for (SimpleNewEm simpleNewEm : news) {
-                if (simpleNewEm.isCompanyGoodNews() && simpleNewEm.titleContain(dateStr)) {
-                    return simpleNewEm;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 给定日期字符串, 获取 晚间沪深上市公司重大事项公告最新快递
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getCompanyMajorIssuesOf(String dateStr) {
-        for (int i = 1; i <= maxPageOfCaiJingDaoDu; i++) {
-            List<SimpleNewEm> news = EmDataApi.getCaiJingDaoDuNewsPerPage(i);
-            for (SimpleNewEm simpleNewEm : news) {
-                if (simpleNewEm.isCompanyMajorIssues() && simpleNewEm.titleContain(dateStr)) {
-                    return simpleNewEm;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 给定日期字符串, 获取 晚间央视新闻联播财经内容集锦
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getNewsFeedsOf(String dateStr) {
-        for (int i = 1; i <= maxPageOfCaiJingDaoDu; i++) {
-            List<SimpleNewEm> news = EmDataApi.getCaiJingDaoDuNewsPerPage(i);
-            for (SimpleNewEm simpleNewEm : news) {
-                if (simpleNewEm.isNewsFeeds() && simpleNewEm.titleContain(dateStr)) {
-                    return simpleNewEm;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 给定日期字符串, 获取 国内四大证券报纸、重要财经媒体头版头条内容精华摘要
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getFourPaperNewsOf(String dateStr) {
-        for (int i = 1; i <= maxPageOfCaiJingDaoDu; i++) {
-            List<SimpleNewEm> news = EmDataApi.getCaiJingDaoDuNewsPerPage(i);
-            for (SimpleNewEm simpleNewEm : news) {
-                if (simpleNewEm.isFourPaperNews() && simpleNewEm.titleContain(dateStr)) {
-                    return simpleNewEm;
-                }
-            }
-        }
-        return null;
-    }
-
-    private static String buildDateStr(DateTime date) { // 构造日期字符串, 作为新闻标题判定
-        return StrUtil.format("{}月{}日", date.getField(DateField.MONTH),
-                date.getField(DateField.DAY_OF_MONTH));
-    }
-
-    // 对应4个传递 DateTime作为参数
-    public static SimpleNewEm getCompanyGoodNewsOf(DateTime date) {
-        return getCompanyGoodNewsOf(buildDateStr(date));
-    }
-
-    public static SimpleNewEm getCompanyMajorIssuesOf(DateTime date) {
-        return getCompanyMajorIssuesOf(buildDateStr(date));
-    }
-
-    public static SimpleNewEm getNewsFeedsOf(DateTime date) {
-        return getNewsFeedsOf(buildDateStr(date));
-    }
-
-    public static SimpleNewEm getFourPaperNewsOf(DateTime date) {
-        return getFourPaperNewsOf(buildDateStr(date));
-    }
-
-    /**
      * 将新闻列表转换为 df, 以便保存; 该方法作为爬虫调用,跳过了 hibernate 框架!, 速度更快!
      *
      * @param newEms 一般要求id未设定
@@ -215,7 +118,7 @@ public class SimpleNewEm {
      * }
      */
     public static DataFrame<Object> buildDfFromBeanListWithoutIdAndSaveTime(List<SimpleNewEm> news) {
-        DataFrame<Object> res = new DataFrame<>(dfCols);
+        DataFrame<Object> res = new DataFrame<>(dfSimpleCols);
         for (SimpleNewEm bean : news) {
             List<Object> row = new ArrayList<>();
             row.add(bean.getDateTime());
@@ -243,24 +146,72 @@ public class SimpleNewEm {
      * @return
      */
     public static List<SimpleNewEm> buildBeanListFromDfWithId(DataFrame<Object> rawDf) {
-        /*
-                    .asList("dateTime", "title", "url", "detailTitle","saveTime", "type", "urlRawHtml",
-                    "briefly", "relatedObject", "trend", "remark", "lastModified"
-            );  +  id
-         */
         List<SimpleNewEm> res = new ArrayList<>();
         if (rawDf == null) {
             return res;
         }
-
         for (int i = 0; i < rawDf.length(); i++) {
             SimpleNewEm bean = new SimpleNewEm();
             bean.setId(Long.parseLong(rawDf.get(i, "id").toString()));
             bean.setDateTime(Timestamp.valueOf(rawDf.get(i, "dateTime").toString()));
             bean.setTitle(rawDf.get(i, "title").toString());
             bean.setUrl(rawDf.get(i, "url").toString());
-
+            bean.setDetailTitle(CommonUtil.toStringOrNull(rawDf.get(i, "detailTitle")));
+            bean.setSaveTime(Timestamp.valueOf(rawDf.get(i, "saveTime").toString()));
+            bean.setType(Integer.valueOf(rawDf.get(i, "type").toString()));
+            bean.setUrlRawHtml(CommonUtil.toStringOrNull(rawDf.get(i, "urlRawHtml")));
+            bean.setBriefly(CommonUtil.toStringOrNull(rawDf.get(i, "briefly")));
+            bean.setRelatedObject(CommonUtil.toStringOrNull(rawDf.get(i, "relatedObject")));
+            Object trend = rawDf.get(i, "trend");
+            if (trend != null) {
+                bean.setTrend(Double.valueOf(rawDf.get(i, "trend").toString()));
+            }
+            bean.setRemark(CommonUtil.toStringOrNull(rawDf.get(i, "remark")));
+            Object lastModified = rawDf.get(i, "lastModified");
+            if (lastModified != null) {
+                bean.setLastModified(Timestamp.valueOf(rawDf.get(i, "lastModified").toString()));
+            }
+            String marked = rawDf.get(i, "marked").toString(); // 默认false, 对应0
+            if ("0".equals(marked)) {
+                bean.setMarked(false);
+            } else {
+                bean.setMarked(true);
+            }
             res.add(bean);
+        }
+        return res;
+    }
+
+    public static List<String> allCol = Arrays
+            .asList("id", "dateTime", "title", "url", "detailTitle", "saveTime", "type", "urlRawHtml",
+                    "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
+            ); // 多了id列
+
+    /**
+     * list bean 转换为全字段完整df
+     *
+     * @param news
+     * @return
+     */
+    public static DataFrame<Object> buildDfFromBeanList(List<SimpleNewEm> news) {
+        DataFrame<Object> res = new DataFrame<>(allCol);
+        for (SimpleNewEm bean : news) {
+            List<Object> row = new ArrayList<>();
+            row.add(bean.getId());
+            row.add(bean.getDateTime());
+            row.add(bean.getTitle());
+            row.add(bean.getUrl());
+            row.add(bean.getDetailTitle());
+            row.add(bean.getSaveTime());
+            row.add(bean.getType());
+            row.add(bean.getUrlRawHtml());
+            row.add(bean.getBriefly());
+            row.add(bean.getRelatedObject());
+            row.add(bean.getTrend());
+            row.add(bean.getRemark());
+            row.add(bean.getLastModified());
+            row.add(bean.getMarked());
+            res.append(row);
         }
         return res;
     }

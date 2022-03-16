@@ -36,7 +36,11 @@ public class EastMoneyDbApi {
     public static void main(String[] args) throws SQLException {
 //        Console.log(isTradeDate("20220304"));
 
-//        Console.log(getLatestSaveBeanByType(1, 10));
+        Console.log(getLatestSaveBeanByType(1, 10));
+        List<SimpleNewEm> latestSaveBeanByType = getLatestSaveBeanByType(1, 10);
+        for (SimpleNewEm simpleNewEm : latestSaveBeanByType) {
+            Console.log(simpleNewEm);
+        }
 
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
         Console.log(getPreNTradeDateStrict("20220318", -2));

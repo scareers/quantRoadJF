@@ -43,6 +43,10 @@ public abstract class SimpleNewCrawler extends Crawler {
         super(tableName);
     }
 
+    // 每次爬取时持有, 完成后清除. clear()方法
+    protected List<SimpleNewEm> saveBeans = new ArrayList<>(); // 持有所有可能保存过的bean;
+
+
     @Override
     protected void runCore() {
         HashSet<SimpleNewEm> last500News;
@@ -78,6 +82,7 @@ public abstract class SimpleNewCrawler extends Crawler {
 
             try {
                 if (shouldSave.size() > 0) {
+                    this.saveBeans.addAll(shouldSave);
                     saveToDbBatch(shouldSave); // 必然保存
                 }
             } catch (SQLException e) {
@@ -88,6 +93,11 @@ public abstract class SimpleNewCrawler extends Crawler {
 
         }
         success = true;
+    }
+
+    @Override
+    protected void clear() {
+        saveBeans.clear();
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.scareers.tools.stockplan.bean;
 
+import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
 import lombok.Data;
 
 /**
@@ -38,10 +39,10 @@ public class FourKeyNew {
         this.fourPaperNewsDateStr = fourPaperNewsDateStr;
 
         // 自动构建; 因为底层http api带有2分钟过期缓存, 不会太过缓慢
-        this.companyGoodNews = SimpleNewEm.getCompanyGoodNewsOf(companyGoodNewsDateStr);
-        this.companyMajorIssues = SimpleNewEm.getCompanyMajorIssuesOf(companyMajorIssuesDateStr);
-        this.newsFeeds = SimpleNewEm.getNewsFeedsOf(newsFeedsDateStr);
-        this.fourPaperNews = SimpleNewEm.getFourPaperNewsOf(fourPaperNewsDateStr);
+        this.companyGoodNews = SimpleNewEmDao.getCompanyGoodNewsOf(companyGoodNewsDateStr);
+//        this.companyMajorIssues = SimpleNewEm.getCompanyMajorIssuesOf(companyMajorIssuesDateStr);
+        this.newsFeeds = SimpleNewEmDao.getNewsFeedsOf(newsFeedsDateStr);
+        this.fourPaperNews = SimpleNewEmDao.getFourPaperNewsOf(fourPaperNewsDateStr);
     }
 
     public static FourKeyNew newInstance(String companyGoodNewsDateStr,
@@ -55,4 +56,6 @@ public class FourKeyNew {
     public static FourKeyNew newInstance(String oneDay) {
         return new FourKeyNew(oneDay, oneDay, oneDay, oneDay);
     }
+
+
 }
