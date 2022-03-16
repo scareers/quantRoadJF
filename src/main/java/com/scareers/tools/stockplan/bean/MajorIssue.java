@@ -30,7 +30,7 @@ import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNew
  * @author admin
  */
 @Data
-public class MajorIssueItem {
+public class MajorIssue {
     public static List<String> dfSimpleCols = Arrays // 没有id 和 saveTime
             .asList("name", "quoteUrl", "title", "content", "dateStr", "type",
                     "briefly", "trend", "remark", "lastModified", "marked"
@@ -80,9 +80,9 @@ public class MajorIssueItem {
      * @param news
      * @return
      */
-    public static DataFrame<Object> buildDfFromBeanListWithoutIdAndSaveTime(List<MajorIssueItem> items) {
+    public static DataFrame<Object> buildDfFromBeanListWithoutIdAndSaveTime(List<MajorIssue> items) {
         DataFrame<Object> res = new DataFrame<>(dfSimpleCols);
-        for (MajorIssueItem bean : items) {
+        for (MajorIssue bean : items) {
             List<Object> row = new ArrayList<>();
             row.add(bean.getName());
             row.add(bean.getQuoteUrl());
@@ -106,9 +106,9 @@ public class MajorIssueItem {
      * @param news
      * @return
      */
-    public static DataFrame<Object> buildDfFromBeanList(List<MajorIssueItem> items) {
+    public static DataFrame<Object> buildDfFromBeanList(List<MajorIssue> items) {
         DataFrame<Object> res = new DataFrame<>(dfAllCols);
-        for (MajorIssueItem bean : items) {
+        for (MajorIssue bean : items) {
             List<Object> row = new ArrayList<>();
             row.add(bean.getId());
             row.add(bean.getName());
@@ -173,7 +173,7 @@ public class MajorIssueItem {
             String typeText = StrUtil.trim(children.get(h3Indexes.get(i)).text());
             int startIndex = h3Indexes.get(i) + 1; // 包含
             int endIndex = h3Indexes.get(i + 1) - 1; // 包含
-            List<MajorIssueItem> items = new ArrayList<>();
+            List<MajorIssue> items = new ArrayList<>();
             for (int j = startIndex; j <= endIndex; j += 2) {
                 Element p2 = children.get(j + 1);
                 if (p2.text().contains("文章来源")) {
@@ -186,7 +186,7 @@ public class MajorIssueItem {
                     // 某些股票不使用a标签, 直接span标签;例如赣锋锂业
                     a1 = p1.getElementsByTag("span");
                 }
-                MajorIssueItem item = new MajorIssueItem();
+                MajorIssue item = new MajorIssue();
 
                 if (a1.size() == 0) {
                     // 某些时候 p> strong 里面直接包裹, 且不会有 url;
@@ -229,8 +229,8 @@ public class MajorIssueItem {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof MajorIssueItem) {
-            MajorIssueItem o1 = (MajorIssueItem) o;
+        if (o instanceof MajorIssue) {
+            MajorIssue o1 = (MajorIssue) o;
             if (this.name.equals(o1.name) && this.title.equals(o1.title) && this.dateStr.equals(o1.dateStr)) {
                 return true;
             }
@@ -341,7 +341,7 @@ public class MajorIssueItem {
     @Data
     @AllArgsConstructor
     public static class MajorIssueBatch {
-        List<MajorIssueItem> items;
+        List<MajorIssue> items;
         String type; //
     }
 }

@@ -6,7 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.MajorIssueItem;
+import com.scareers.tools.stockplan.bean.MajorIssue;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import joinery.DataFrame;
 
@@ -15,8 +15,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static com.scareers.tools.stockplan.bean.MajorIssueItem.buildDfFromBeanList;
-import static com.scareers.tools.stockplan.bean.MajorIssueItem.parseCompanyMajorIssuesNew;
+import static com.scareers.tools.stockplan.bean.MajorIssue.buildDfFromBeanList;
+import static com.scareers.tools.stockplan.bean.MajorIssue.parseCompanyMajorIssuesNew;
 
 /**
  * description: 交易日, 公司重大事项归纳; 来自于财经导读;
@@ -80,12 +80,12 @@ public class CompanyMajorIssuesCrawler extends Crawler {
     }
 
     private void actualSaveCompanyMajorIssues(SimpleNewEm saveBean) throws SQLException {
-        List<MajorIssueItem.MajorIssueBatch> majorIssueBatches = parseCompanyMajorIssuesNew(saveBean);
+        List<MajorIssue.MajorIssueBatch> majorIssueBatches = parseCompanyMajorIssuesNew(saveBean);
         if (majorIssueBatches == null) {
             return;
         }
-        List<MajorIssueItem> shouldSave = new ArrayList<>();
-        for (MajorIssueItem.MajorIssueBatch majorIssueBatch : majorIssueBatches) {
+        List<MajorIssue> shouldSave = new ArrayList<>();
+        for (MajorIssue.MajorIssueBatch majorIssueBatch : majorIssueBatches) {
             shouldSave.addAll(majorIssueBatch.getItems());
         }
         // 保存逻辑

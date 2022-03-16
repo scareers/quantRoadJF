@@ -4,7 +4,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.bean.MajorIssue;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -27,16 +27,15 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
 
 /**
- * description: 东财简单的新闻列表显示 Panel; 简单继承 update()方法
- * 左边为编辑区, 右边表格显示 !
+ * description:
  *
  * @author: admin
- * @date: 2022/3/13/013-08:50:46
+ * @date: 2022/3/17/017-00:11:16
  */
 @Getter
-public abstract class SimpleNewListPanel extends DisplayPanel {
-    protected SimpleNewEditorPanel editorPanel; // 编辑面
-    protected SimpleNewEm currentBean;
+public abstract class MajorIssueListPanel extends DisplayPanel {
+    protected MajorIssueEditorPanel editorPanel; // 编辑面
+    protected MajorIssue currentBean;
 
     protected JTable jTable;
     protected JScrollPane jScrollPane;
@@ -46,7 +45,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
 
     protected NewsTabPanel parentS; // 维护所属 newstab
 
-    public SimpleNewListPanel(NewsTabPanel parentS) {
+    public MajorIssueListPanel(NewsTabPanel parentS) {
         this.parentS = parentS;
         this.setBorder(null);
         this.setLayout(new BorderLayout());
@@ -62,11 +61,11 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         jScrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS); // 一般都需要
         buttonFlushAll = ButtonFactory.getButton("全量刷新");
         buttonFlushAll.setMaximumSize(new Dimension(60, 16));
-        SimpleNewListPanel simpleNewListPanel = this;
+        MajorIssueListPanel majorIssueListPanel = this;
         buttonFlushAll.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                simpleNewListPanel.update(); // 点击后 表格全量更新 df数据,
+                majorIssueListPanel.update(); // 点击后 表格全量更新 df数据,
             }
         });
 
@@ -82,11 +81,10 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         panelTemp.add(jScrollPane, BorderLayout.CENTER);
         this.add(panelTemp, BorderLayout.CENTER);
 
-        editorPanel = new SimpleNewEditorPanel(this);
+        editorPanel = new MajorIssueEditorPanel(this);
         JPanel panel = new JPanel();
         panel.add(editorPanel);
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
-
     }
 
     /**
@@ -97,7 +95,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
      */
     public abstract void flushBeanMapAndShowDf();
 
-    protected ConcurrentHashMap<Long, SimpleNewEm> beanMap;
+    protected ConcurrentHashMap<Long, MajorIssue> beanMap;
     protected DataFrame<Object> newDf; // 持有原始df数据
 
     @Override
@@ -106,22 +104,18 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         if (newDf == null) {
             return;
         }
-
         if (jTable == null) { // 首次刷新
-
             Vector<Vector<Object>> datas = new Vector<>();
             for (int i = 0; i < newDf.length(); i++) {
                 datas.add(new Vector<>(newDf.row(i)));
             }
             Vector<Object> cols = new Vector<>(newDf.columns());
-
             DefaultTableModel model = new DefaultTableModel(datas, cols) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
                     return false; // 不可编辑!
                 }
             };
-
             jTable = new JTable();
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
@@ -141,7 +135,9 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
                     currentBean = beanMap.get(Long.parseLong(model.getValueAt(row, 0).toString()));
                     editorPanel.update(currentBean);
                     if (e.getClickCount() == 2) {
-                        CommonUtil.openUrlWithDefaultBrowser(currentBean.getUrl());
+                        if (currentBean.getQuoteUrl().length() > 5) { // 少数情况下, url为空, 不做操作
+                            CommonUtil.openUrlWithDefaultBrowser(currentBean.getQuoteUrl());
+                        }
                     }
                 }
             });
@@ -152,7 +148,9 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
                         currentBean = beanMap
                                 .get(Long.parseLong(model.getValueAt(jTable.getSelectedRow(), 0).toString()));
                         editorPanel.update(currentBean);
-                        CommonUtil.openUrlWithDefaultBrowser(currentBean.getUrl());
+                        if (currentBean.getQuoteUrl().length() > 5) {
+                            CommonUtil.openUrlWithDefaultBrowser(currentBean.getQuoteUrl());
+                        }
                     }
                 }
             });
@@ -261,12 +259,12 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             column.setWidth(actualWidth); // 多5
 //            break; // 仅第一列日期. 其他的平均
 
-            if (dummyIndex == 3) {
-                column.setWidth(20); // 多5
-            }
-            if (dummyIndex == 4) {
-                column.setWidth(20); // 多5
-            }
+//            if (dummyIndex == 3) {
+//                column.setWidth(20); // 多5
+//            }
+//            if (dummyIndex == 4) {
+//                column.setWidth(20); // 多5
+//            }
 
             dummyIndex++;
         }

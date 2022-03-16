@@ -13,7 +13,7 @@ import java.awt.*;
 
 /**
  * description: 多新闻 tab 显示页; 每个tab子空间应当为 DisplayPanel 子类, 实现 update() 方法
- * 常见新闻tab类:
+ * 所有新闻tab类:
  * SimpleNewListPanel : 显示常规东财新闻列表并可编辑
  *
  * @noti : 本类有2个实例, 复盘一个, 操盘计划一个. 几乎一一对应; addTabs()抽象方法 可能添加不同的tab
@@ -42,7 +42,6 @@ public abstract class NewsTabPanel extends DisplayPanel {
         tabbedPane.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                // ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
                 ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
             }
         });
@@ -52,7 +51,6 @@ public abstract class NewsTabPanel extends DisplayPanel {
             @Override
             public void run() {
                 while (true) {
-                    // ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
                     ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
                     ThreadUtil.sleep(60000);
                 }

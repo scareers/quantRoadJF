@@ -4,7 +4,7 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
 
-    <class name="com.scareers.tools.stockplan.bean.MajorIssueItem" table="company_major_issue" schema="eastmoney">
+    <class name="com.scareers.tools.stockplan.bean.MajorIssue" table="company_major_issue" schema="eastmoney">
         <id name="id">
             <column name="id" sql-type="bigint"/>
             <generator class="identity"/>

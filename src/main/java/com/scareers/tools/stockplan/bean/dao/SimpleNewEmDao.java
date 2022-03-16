@@ -1,34 +1,21 @@
 package com.scareers.tools.stockplan.bean.dao;
 
 import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Assert;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.MajorIssueItem;
-import com.scareers.tools.stockplan.bean.MajorIssueItem.MajorIssueBatch;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
-import joinery.DataFrame;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
