@@ -53,7 +53,7 @@ public class HsStateListPanel extends SecurityDisplayPanel {
     boolean firstUpdate = true; // 控制第一次替换占位label显式列表
 
     @Override
-    protected void update() {
+    public void update() {
 
         List<HsState> newStates = LowBuyHighSellStrategyAdapter.stockWithStatesInfByFactorsHs
                 .get(this.newBean.getSecCode());

@@ -213,7 +213,7 @@ public class HsStatePanel extends DisplayPanel {
 
 
     @Override
-    protected void update() {
+    public void update() {
         // 更新两大pdf图表数据
         updatePdfChartPanel(); // 更新pdf图表. 并不重新实例化图表, 仅需要更新数据对象 XYSeries pdfXYSeries;
         cdfChartPanel

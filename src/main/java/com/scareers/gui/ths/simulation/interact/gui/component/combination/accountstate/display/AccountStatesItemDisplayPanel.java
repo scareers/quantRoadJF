@@ -111,7 +111,7 @@ public class AccountStatesItemDisplayPanel extends DisplayPanel {
 
 
     @Override
-    protected void update() {
+    public void update() {
         if (newData == null) {
             return;
         }

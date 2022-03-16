@@ -4,7 +4,9 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news.NewsTabPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan.NewsTabPanelForPlan;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.NewsTabPanelForRevise;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -194,6 +196,9 @@ public class FuncTreeWindow extends FuncFrameS {
         // 盘前要闻
         DefaultMutableTreeNode importantNewsNode = new DefaultMutableTreeNode("盘前要闻");
         reviewNode.add(importantNewsNode);
+        DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("盘前要闻");
+        tradePlanNode.add(importantNewsNode2);
+
         reviewAndPlanNode.add(reviewNode);
         reviewAndPlanNode.add(tradePlanNode);
 
@@ -233,6 +238,7 @@ public class FuncTreeWindow extends FuncFrameS {
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.REVIEW_IMPORTANT_NEWS);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
         return tree;
     }
 
@@ -263,9 +269,11 @@ public class FuncTreeWindow extends FuncFrameS {
             // 2.2.账户状态
         } else if (TreePathConstants.SELL_QUEUE.equals(treePath)) {
             changeToSellQueue();
-        }else if (TreePathConstants.REVIEW_IMPORTANT_NEWS.equals(treePath)) {
-            changeToImportantNews();
-        }  else {
+        } else if (TreePathConstants.REVIEW_IMPORTANT_NEWS.equals(treePath)) {
+            changeToReviseImportantNews();
+        } else if (TreePathConstants.PLAN_IMPORTANT_NEWS.equals(treePath)) {
+            changeToPlanImportantNews();
+        } else {
             System.out.println(treePath);
         }
     }
@@ -297,8 +305,14 @@ public class FuncTreeWindow extends FuncFrameS {
                 .showInMainDisplayWindow();
     }
 
-    private void changeToImportantNews() {
-        NewsTabPanel
+    private void changeToReviseImportantNews() {
+        NewsTabPanelForRevise
+                .getInstance(this.getMainDisplayWindow())
+                .showInMainDisplayWindow();
+    }
+
+    private void changeToPlanImportantNews() {
+        NewsTabPanelForPlan
                 .getInstance(this.getMainDisplayWindow())
                 .showInMainDisplayWindow();
     }
@@ -358,11 +372,13 @@ public class FuncTreeWindow extends FuncFrameS {
          * [功能树, 复盘操盘, 复盘报告]
          * [功能树, 复盘操盘, 复盘报告, 盘前要闻]
          * [功能树, 复盘操盘, 操盘计划]
+         * [功能树, 复盘操盘, 操盘计划, 盘前要闻]
          */
 
         public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
         public static final String REVIEW_REPORT = "[功能树, 复盘操盘, 复盘报告]";
         public static final String REVIEW_IMPORTANT_NEWS = "[功能树, 复盘操盘, 复盘报告, 盘前要闻]";
+        public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 盘前要闻]";
 
         public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";
 

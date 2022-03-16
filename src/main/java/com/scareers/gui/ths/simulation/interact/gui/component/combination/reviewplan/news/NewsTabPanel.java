@@ -1,8 +1,9 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.CaiJingDaoDuPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.ZiXunJingHuaPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
 import lombok.Getter;
@@ -19,27 +20,19 @@ import java.awt.*;
  * @date: 2022/3/13/013-08:42:25
  */
 @Getter
-public class NewsTabPanel extends DisplayPanel {
-    public static NewsTabPanel INSTANCE;
+public abstract class NewsTabPanel extends DisplayPanel {
 
-    public static NewsTabPanel getInstance(MainDisplayWindow mainDisplayWindow) {
-        if (INSTANCE == null) {
-            INSTANCE = new NewsTabPanel(mainDisplayWindow);
-        }
-        return INSTANCE;
-    }
+    protected JTabbedPane tabbedPane;
+    protected MainDisplayWindow mainDisplayWindow;
 
-    JTabbedPane tabbedPane;
-    MainDisplayWindow mainDisplayWindow;
-
-    private NewsTabPanel(MainDisplayWindow mainDisplayWindow) {
+    protected NewsTabPanel(MainDisplayWindow mainDisplayWindow) {
         this.mainDisplayWindow = mainDisplayWindow;
         this.setLayout(new BorderLayout());
 
         tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("资讯精华", ZiXunJingHuaPanel.getInstance());
-        tabbedPane.addTab("财经导读", CaiJingDaoDuPanel.getInstance());
-        tabbedPane.setSelectedIndex(1);
+        this.addTabs();
+
+        tabbedPane.setSelectedIndex(0);
         tabbedPane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         TabbedPaneUIS ui = new TabbedPaneUIS();
         tabbedPane.setUI(ui);
@@ -48,8 +41,8 @@ public class NewsTabPanel extends DisplayPanel {
         tabbedPane.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-
-                ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
+                // ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
+                ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
             }
         });
 
@@ -58,7 +51,8 @@ public class NewsTabPanel extends DisplayPanel {
             @Override
             public void run() {
                 while (true) {
-                    ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
+                    // ((SimpleNewListPanel) tabbedPane.getSelectedComponent()).update();
+                    ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
                     ThreadUtil.sleep(60000);
                 }
             }
@@ -66,9 +60,12 @@ public class NewsTabPanel extends DisplayPanel {
     }
 
     @Override
-    protected void update() {
+    public void update() {
 
     }
+
+    protected abstract void addTabs();
+
 
     public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身

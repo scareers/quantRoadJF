@@ -38,8 +38,8 @@ public class EastMoneyDbApi {
 
 //        Console.log(getLatestSaveBeanByType(1, 10));
 
-        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
-        Console.log(getPreNTradeDateStrict("20220311", 3));
+//        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
+        Console.log(getPreNTradeDateStrict("20220318", -2));
     }
 
     /**
@@ -97,24 +97,48 @@ public class EastMoneyDbApi {
             return res;
         }
 
-        String sql = StrUtil.format("select date from trade_dates where is_open=1 and date<='{}' order by date desc " +
-                "limit {}", todayDate, n + 2); // +1即可
-        DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
-        List<String> dates = DataFrameS.getColAsStringList(dataFrame, "date");
+        if (n == 0) { // 为0返回自身
+            return todayDate;
+        } else if (n > 0) { // >0表示前n个交易日! 以往逻辑.
+            String sql = StrUtil
+                    .format("select date from trade_dates where is_open=1 and date<='{}' order by date desc " +
+                            "limit {}", todayDate, n + 2); // +1即可
+            DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
+            List<String> dates = DataFrameS.getColAsStringList(dataFrame, "date");
 
-        Console.log(dates);
+            int index = n - 1;
+            if (dates.get(0).equals(todayDate)) {
+                // 给定日期是交易日, 则索引需要 + 1
+                index += 1;
+            }
+            try {
+                return dates.get(index); // 本身就是倒序的, 且必然是交易日, 因此返回索引
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null; // 索引越界
+            }
+        } else { // n 为负数, 未来交易日!
+            String sql = StrUtil
+                    .format("select date from trade_dates where is_open=1 and date>='{}' order by date " +
+                            "limit {}", todayDate, Math.abs(n) + 2); // +1即可
+            DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
+            List<String> dates = DataFrameS.getColAsStringList(dataFrame, "date");
+            Console.log(dates);
 
-        int index = n - 1;
-        if (dates.get(0).equals(todayDate)) {
-            // 给定日期是交易日, 则索引需要 + 1
-            index += 1;
+            int index = Math.abs(n) - 1;
+            if (dates.get(0).equals(todayDate)) {
+                // 给定日期是交易日, 则索引需要 + 1
+                index += 1;
+            }
+            try {
+                return dates.get(index); // 本身就是倒序的, 且必然是交易日, 因此返回索引
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null; // 索引越界
+            }
         }
-        try {
-            return dates.get(index); // 本身就是倒序的, 且必然是交易日, 因此返回索引
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null; // 索引越界
-        }
+
+
     }
 
 

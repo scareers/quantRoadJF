@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
@@ -12,6 +12,8 @@ import com.scareers.utils.log.LogUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.sql.Timestamp;
@@ -26,6 +28,9 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
  */
 public class NewEditorPanel extends DisplayPanel {
     SimpleNewEm bean;
+
+    JLabel newAmountLabel = getCommonLabel("新闻总数量", Color.red);  // id
+    JLabel newAmountValueLabel = getCommonLabel("", Color.red);
 
     // 子控件, 对应bean 各种属性, 以及部分操作按钮
     JLabel idLabel = getCommonLabel("id");  // id
@@ -66,8 +71,11 @@ public class NewEditorPanel extends DisplayPanel {
 
     public NewEditorPanel(SimpleNewListPanel parent) {
         this.parent = parent;
-        this.setLayout(new GridLayout(14, 2, 1, 1)); // 简易网格布局
+        this.setLayout(new GridLayout(15, 2, 1, 1)); // 简易网格布局
         this.setPreferredSize(new Dimension(350, 500));
+
+        this.add(newAmountLabel);
+        this.add(newAmountValueLabel);
 
         this.add(idLabel);
         this.add(idValueLabel);
@@ -122,6 +130,8 @@ public class NewEditorPanel extends DisplayPanel {
      */
     public void update(SimpleNewEm bean) {
         this.bean = bean;
+
+        newAmountValueLabel.setText(String.valueOf(this.parent.getBeanMap().size())); // 显示总数量
         this.update();
     }
 
@@ -129,6 +139,8 @@ public class NewEditorPanel extends DisplayPanel {
         if (this.bean == null) {
             return null;
         }
+
+
         bean.setLastModified(Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
         bean.setBriefly(this.brieflyValueLabel.getText());
         bean.setRelatedObject(this.relatedObjectValueLabel.getText());
@@ -150,29 +162,54 @@ public class NewEditorPanel extends DisplayPanel {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    SimpleNewEm editedBean = panel.getEditedBean();
-                    if (editedBean == null) {
-                        return;
-                    }
-                    try {
-                        SimpleNewEmDao.updateBean(editedBean);
-                        panel.update(editedBean); // 将更新显示自动设置字段
-//                    INSTANCE.parent.update();  // 该方式无法更新,
-                        ((SimpleNewListPanel) NewsTabPanel.INSTANCE.getTabbedPane().getSelectedComponent()).update();
-                        // 需要使用此方式进行更新
-                        ManiLog.put(StrUtil.format("复盘/盘前要闻: 更新新闻bean成功: {}.{} --> {}", editedBean.getType(),
-                                editedBean.getId(),
-                                editedBean.getTitle()));
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
+                    tryAutoSaveEditedBean(panel, "要闻");
                 }
             }
         };
     }
 
+    /**
+     * 失去焦点执行相同保存逻辑
+     *
+     * @param panel
+     * @return
+     */
+    private static FocusListener buildJTextFieldBlurForEdit(NewEditorPanel panel) {
+        return new FocusListener() {
+            @Override
+            public void focusGained(FocusEvent e) {
+
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                tryAutoSaveEditedBean(panel, "要闻");
+            }
+        };
+    }
+
+    private static void tryAutoSaveEditedBean(NewEditorPanel panel, String logPrefix) {
+        SimpleNewEm editedBean = panel.getEditedBean();
+        if (editedBean == null) {
+            return;
+        }
+        try {
+            SimpleNewEmDao.updateBean(editedBean);
+            panel.update(editedBean); // 将更新显示自动设置字段
+//                    INSTANCE.parent.update();  // 该方式无法更新,
+            ((SimpleNewListPanel) panel.parent.getParentS().getTabbedPane().getSelectedComponent())
+                    .update();
+            // 需要使用此方式进行更新
+            ManiLog.put(StrUtil.format("{}: 更新新闻bean成功: {}.{} --> {}", logPrefix, editedBean.getType(),
+                    editedBean.getId(),
+                    editedBean.getTitle()));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     @Override
-    protected void update() {
+    public void update() {
         if (this.bean == null) {
             return;
         }
@@ -226,6 +263,7 @@ public class NewEditorPanel extends DisplayPanel {
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
         jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
+        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
         return jTextField;
     }
 

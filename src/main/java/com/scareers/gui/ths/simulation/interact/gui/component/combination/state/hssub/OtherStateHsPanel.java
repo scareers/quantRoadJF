@@ -23,7 +23,7 @@ public class OtherStateHsPanel extends DisplayPanel {
     }
 
     @Override
-    protected void update() {
+    public void update() {
 
     }
 

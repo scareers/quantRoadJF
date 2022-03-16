@@ -16,7 +16,7 @@ public class BkStateHsPanel extends DisplayPanel {
     BkStateHs preBkStateHs;
 
     @Override
-    protected void update() {
+    public void update() {
 
     }
 

@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
@@ -44,7 +44,10 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
 
-    public SimpleNewListPanel() {
+    protected NewsTabPanel parentS; // 维护所属 newstab
+
+    public SimpleNewListPanel(NewsTabPanel parentS) {
+        this.parentS = parentS;
         this.setBorder(null);
         this.setLayout(new BorderLayout());
 
@@ -89,8 +92,8 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
      */
     public abstract void flushBeanMapAndShowDf();
 
-    ConcurrentHashMap<Long, SimpleNewEm> beanMap;
-    DataFrame<Object> newDf; // 持有原始df数据
+    protected ConcurrentHashMap<Long, SimpleNewEm> beanMap;
+    protected DataFrame<Object> newDf; // 持有原始df数据
 
     @Override
     public void update() {
@@ -251,11 +254,14 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             header.setResizingColumn(column); // 此行很重要
 
             int actualWidth = width + myTable.getIntercellSpacing().width + 2;
-            actualWidth = Math.min(360, actualWidth); // 单列最大宽度
+            actualWidth = Math.min(700, actualWidth); // 单列最大宽度
             column.setWidth(actualWidth); // 多5
 //            break; // 仅第一列日期. 其他的平均
 
-            if(dummyIndex==3){
+            if (dummyIndex == 3) {
+                column.setWidth(20); // 多5
+            }
+            if (dummyIndex == 4) {
                 column.setWidth(20); // 多5
             }
 

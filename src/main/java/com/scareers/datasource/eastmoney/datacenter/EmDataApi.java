@@ -66,8 +66,10 @@ public class EmDataApi {
 //        Console.log(getFutureMarketCloseDates(3000, 3));
 
 
-        Console.log("获取日期区间 财经日历");
-        Console.log(getEconomicCalendarByDateRange("2022-03-08", "2022-03-11", 3000, 3));
+//        Console.log("获取日期区间 财经日历");
+//        Console.log(getEconomicCalendarByDateRange("2022-03-08", "2022-03-11", 3000, 3));
+
+        Console.log(getCaiJingDaoDuNewsPerPage(1));
 
     }
 

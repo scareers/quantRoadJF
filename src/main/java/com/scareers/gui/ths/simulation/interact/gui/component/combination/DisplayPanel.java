@@ -9,5 +9,5 @@ import javax.swing.*;
  * @date: 2022/2/18/018-16:48:28
  */
 public abstract class DisplayPanel extends JPanel {
-    protected abstract void update();
+    public abstract void update();
 }

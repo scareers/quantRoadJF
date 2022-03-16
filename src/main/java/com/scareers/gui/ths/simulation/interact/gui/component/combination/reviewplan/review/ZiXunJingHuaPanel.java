@@ -1,5 +1,7 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.review.news;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.SimpleNewListPanel;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
 
@@ -16,9 +18,14 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ZiXunJingHuaPanel extends SimpleNewListPanel {
     public static ZiXunJingHuaPanel INSTANCE;
 
-    public static ZiXunJingHuaPanel getInstance() {
+    public ZiXunJingHuaPanel(
+            NewsTabPanel parentS) {
+        super(parentS);
+    }
+
+    public static ZiXunJingHuaPanel getInstance(NewsTabPanel parentS) {
         if (INSTANCE == null) {
-            INSTANCE = new ZiXunJingHuaPanel();
+            INSTANCE = new ZiXunJingHuaPanel(parentS);
         }
         return INSTANCE;
     }

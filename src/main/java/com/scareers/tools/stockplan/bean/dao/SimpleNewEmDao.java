@@ -52,7 +52,7 @@ public class SimpleNewEmDao {
 
 
     /**
-     * 复盘时, 获取 合理的 财经导读 新闻列表
+     * 复盘时, 获取 合理的 时间区间的 新闻列表; 需要给定类型
      * 逻辑: 判定当前时间
      * 1. 判定今日是否交易日?
      * 1.1: 今日是交易日, 时间区间: 上一确定交易日15:00, 到 Min(15:00, now) // 15:00后的新闻应当视为 计划, 而非复盘!!
@@ -81,6 +81,40 @@ public class SimpleNewEmDao {
     }
 
     /**
+     * 操盘计划时, 获取 合理的时间区间的 新闻列表: 同样需要给定类型
+     * 逻辑: 判定当前时间
+     * 1. 判定今日是否交易日?
+     * 1.1: 今日是交易日:
+     * --> 若当前时间 <=15:00, 计划应当视为今日计划;  新闻区间为 : 上一个交易日 15:00 - now !!!!!
+     * --> 若当前时间 >=15:00, 应当视为开始下一个交易日计划; 新闻区间为: 今日15:00 到 now
+     * 1.2: 今日非交易日:
+     * -->所有时间, 视为为 下一交易日做准备, 新闻区间为: 上一交易日15:00 - now
+     */
+    public static List<SimpleNewEm> getNewsForTradePlanByType(int type) throws SQLException {
+        // 合理计算 复盘时 应当抓取的 新闻发布 时间区间!
+        List<DateTime> dateTimeRange = decideDateTimeRangeForTradePlan();
+        DateTime startDateTime = dateTimeRange.get(0);
+        DateTime endDateTime = dateTimeRange.get(1);
+        // hibernate API, 访问数据库
+        Session session = sessionFactory.openSession();
+        String hql = "FROM SimpleNewEm E WHERE E.type = :type and E.dateTime>=:startDateTime " +
+                "and E.dateTime<=:endDateTime " +
+                "ORDER BY E.dateTime DESC"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
+        Query query = session.createQuery(hql);
+        query.setParameter("type", type); // 注意类型
+        query.setParameter("startDateTime", Timestamp.valueOf(startDateTime.toLocalDateTime())); // 注意类型
+        query.setParameter("endDateTime", Timestamp.valueOf(endDateTime.toLocalDateTime())); // 注意类型
+        List beans = query.list();
+        List<SimpleNewEm> res = new ArrayList<>();
+        for (Object bean : beans) {
+            res.add((SimpleNewEm) bean);
+        }
+        session.close();
+        return res;
+    }
+
+
+    /**
      * 决定复盘时, 查看新闻的日期区间 开始
      *
      * @return
@@ -103,6 +137,36 @@ public class SimpleNewEmDao {
             }
         }
         return endDateTime;
+    }
+
+    /**
+     * 决定操盘计划时, 查看新闻的日期区间 开始
+     *
+     * @return
+     * @throws SQLException
+     */
+    public static List<DateTime> decideDateTimeRangeForTradePlan() throws SQLException {
+        List<DateTime> res = new ArrayList<>();
+        String today = DateUtil.today();
+        Boolean tradeDate = EastMoneyDbApi.isTradeDate(today);
+
+        DateTime now = DateUtil.date();
+        String preTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1); // 上一交易日
+        String nextTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 下一交易日
+
+        if (tradeDate) {
+            if (DateUtil.hour(now, true) >= 15) { // 今日15:00到now
+                res.add(DateUtil.parse(today + " 15:00:00"));
+                res.add(now);
+            } else { // 上一个交易日 15:00 - now !!!!!
+                res.add(DateUtil.parse(preTradeDate + " 15:00:00"));
+                res.add(now);
+            }
+        } else { // 上一交易日15:00 - now
+            res.add(DateUtil.parse(preTradeDate + " 15:00:00"));
+            res.add(now);
+        }
+        return res;
     }
 
     /**

@@ -36,7 +36,8 @@ import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildDfFromBeanListW
  */
 public abstract class SimpleNewCrawler extends Crawler {
     public static String tableName = "simple_new";
-    public static int repeatCountThreshold = 21; // 按页访问过程中, 如果重复的新闻数量超过 20, 则不再访问后面的页, 结束本次爬取;
+    // 按页访问过程中, 如果重复的新闻数量超过 20, 则不再访问后面的页, 结束本次爬取; 实测因为东财机制, 该值不能太少,因为新闻顺序不固定
+    public static int repeatCountThreshold = 500;
 
     public SimpleNewCrawler() {
         super(tableName);

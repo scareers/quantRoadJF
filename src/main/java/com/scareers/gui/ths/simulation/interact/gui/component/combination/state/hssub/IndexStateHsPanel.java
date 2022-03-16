@@ -30,7 +30,7 @@ public class IndexStateHsPanel extends DisplayPanel {
     }
 
     @Override
-    protected void update() {
+    public void update() {
 
     }
 

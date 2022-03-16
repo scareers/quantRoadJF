@@ -224,7 +224,7 @@ public class HsStatePanel0 extends DisplayPanel {
     }
 
     @Override
-    protected void update() {
+    public void update() {
         // 初始化自动设置
         stockCodeValueLabel.setText(state.getStockStateHs().getStockCode());
         stockNameValueLabel.setText(state.getStockStateHs().getBean().getName());
