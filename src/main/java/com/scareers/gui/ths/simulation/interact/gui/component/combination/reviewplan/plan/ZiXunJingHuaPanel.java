@@ -46,3 +46,5 @@ public class ZiXunJingHuaPanel extends SimpleNewListPanel {
         this.newDf = SimpleNewEm.buildDfFromBeanList(newsForReviseByType);
     }
 }
+
+
