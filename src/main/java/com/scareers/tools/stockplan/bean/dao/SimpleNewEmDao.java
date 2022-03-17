@@ -54,7 +54,6 @@ public class SimpleNewEmDao {
     }
 
 
-
     /**
      * 复盘时, 获取 合理的 时间区间的 新闻列表; 需要给定类型
      * 逻辑: 判定当前时间
@@ -231,28 +230,9 @@ public class SimpleNewEmDao {
 
 
 
-
-
-
-    /**
-     * 给定日期字符串, 获取 国内四大证券报纸、重要财经媒体头版头条内容精华摘要
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getFourPaperNewsOf(String dateStr) {
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "国内四大证券报纸、重要财经媒体头版头条内容精华摘要");
-    }
-
     public static String buildDateStr(DateTime date) { // 构造日期字符串, 作为新闻标题判定
         return StrUtil.format("{}月{}日", date.getField(DateField.MONTH),
                 date.getField(DateField.DAY_OF_MONTH));
     }
 
-
-
-
-    public static SimpleNewEm getFourPaperNewsOf(DateTime date) {
-        return getFourPaperNewsOf(buildDateStr(date));
-    }
 }

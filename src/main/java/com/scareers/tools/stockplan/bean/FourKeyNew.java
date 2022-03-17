@@ -42,7 +42,7 @@ public class FourKeyNew {
 //        this.companyGoodNews = SimpleNewEmDao.getCompanyGoodNewsOf(companyGoodNewsDateStr);
 //        this.companyMajorIssues = SimpleNewEm.getCompanyMajorIssuesOf(companyMajorIssuesDateStr);
 //        this.newsFeeds = SimpleNewEmDao.getNewsFeedsOf(newsFeedsDateStr);
-        this.fourPaperNews = SimpleNewEmDao.getFourPaperNewsOf(fourPaperNewsDateStr);
+//        this.fourPaperNews = SimpleNewEmDao.getFourPaperNewsOf(fourPaperNewsDateStr);
     }
 
     public static FourKeyNew newInstance(String companyGoodNewsDateStr,
