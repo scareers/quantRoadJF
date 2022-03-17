@@ -232,17 +232,7 @@ public class SimpleNewEmDao {
 
 
 
-    /**
-     * 给定日期字符串, 获取 晚间央视新闻联播财经内容集锦
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getNewsFeedsOf(String dateStr) {
-        // 3月15日晚间央视新闻联播财经内容集锦
-        // 3月15日晚间央视新闻联播财经内容集锦%
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间央视新闻联播财经内容集锦");
-    }
+
 
     /**
      * 给定日期字符串, 获取 国内四大证券报纸、重要财经媒体头版头条内容精华摘要
@@ -261,9 +251,6 @@ public class SimpleNewEmDao {
 
 
 
-    public static SimpleNewEm getNewsFeedsOf(DateTime date) {
-        return getNewsFeedsOf(buildDateStr(date));
-    }
 
     public static SimpleNewEm getFourPaperNewsOf(DateTime date) {
         return getFourPaperNewsOf(buildDateStr(date));

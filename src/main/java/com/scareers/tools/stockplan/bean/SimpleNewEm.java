@@ -247,7 +247,7 @@ public class SimpleNewEm {
      *
      * @return
      */
-    public boolean isNewsFeeds() {
+    public boolean isNewsFeed() {
         return title.contains("晚间央视新闻联播财经内容集锦");
     }
 

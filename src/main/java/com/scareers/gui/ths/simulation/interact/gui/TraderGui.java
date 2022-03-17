@@ -6,10 +6,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyGoodNewsCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyMajorIssuesCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -199,6 +196,7 @@ public class TraderGui extends JFrame {
                 new ZiXunJingHuaCrawler().run(); // 资讯精华抓取
                 new CompanyMajorIssuesCrawler().run(); // 重大事件抓取
                 new CompanyGoodNewsCrawler().run(); // 利好抓取
+                new NewsFeedsCrawler().run(); // 新闻联播集锦
             }
         });
         CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分

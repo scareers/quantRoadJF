@@ -1,0 +1,127 @@
+package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
+
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
+import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.tools.stockplan.bean.NewsFeed;
+import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import joinery.DataFrame;
+
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.HashSet;
+import java.util.List;
+
+/**
+ * description: 新闻联播集锦
+ *
+ * @noti :机制: 读取近500条 最近财经导读数据, 从数据获取, 查找里面的该类新闻, 访问url解析
+ * @author: admin
+ * @date: 2022/3/16/016-21:43:13
+ */
+public class NewsFeedsCrawler extends Crawler {
+    public static void main(String[] args) {
+        new NewsFeedsCrawler().run();
+    }
+
+
+    public NewsFeedsCrawler(String tableName) {
+        super(tableName);
+    }
+
+    public NewsFeedsCrawler() {
+        this("news_feed");
+    }
+
+    @Override
+    protected void runCore() {
+        try {
+            for (SimpleNewEm saveBean : this.initLastTimeFetchSaveBeansExpect500()) {
+                if (!saveBean.isNewsFeed()) {
+                    continue;
+                }
+                // 尝试访问数据库, 该日是否被解析过? 得到该日的解析结果数量.
+                // 依据保存逻辑, 日期字段需要对应
+                String dateStr = DateUtil.format(saveBean.getDateTime(), DatePattern.NORM_DATE_PATTERN);
+                String sql = StrUtil.format("select count(*) from {} where dateStr='{}'",
+                        tableName,
+                        dateStr);
+                DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+                int count = Integer.parseInt(dataFrame.get(0, 0).toString());
+                if (count == 0) {
+                    // 首次解析保存
+                    // 调用解析 api
+                    actualSaveNewsFeeds(saveBean);
+                    // 其他情况均不保存. 以免覆盖自定义字段!!!
+                }
+            }
+            success = true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            success = false;
+        }
+    }
+
+    @Override
+    protected void setDb() {
+        this.setSaveToMainDb();
+    }
+
+    @Override
+    protected void initSqlCreateTable() {
+        sqlCreateTable = getSqlCreateNewsFeedsTable();
+    }
+
+    private void actualSaveNewsFeeds(SimpleNewEm saveBean) throws SQLException {
+        List<NewsFeed> news = NewsFeed.parseNewsFeeds(saveBean);
+        if (news == null) {
+            return;
+        }
+
+        // 保存逻辑
+        DataFrame<Object> dataFrame1 = NewsFeed.buildDfFromBeanListWithoutIdAndSaveTime(news);
+        dataFrame1.add("saveTime");
+        // saveTime 初始化
+        for (int i = 0; i < dataFrame1.length(); i++) {
+            dataFrame1.set(i, "saveTime", Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
+        }
+        DataFrameS.toSql(dataFrame1, tableName, conn, "append",
+                sqlCreateTable);
+    }
+
+
+    public String getSqlCreateNewsFeedsTable() {
+        return StrUtil.format(
+                "create table if not exists `{}`(\n"
+                        + "id bigint primary key auto_increment,"
+                        + "title text  null,"
+                        + "content longtext  null,"
+                        + "dateStr varchar(32)  null,"
+                        + "saveTime datetime  null,"
+
+                        + "briefly varchar(2048)  null,"
+                        + "trend double  null," // 振幅
+                        + "remark longtext  null,"
+                        + "lastModified datetime  null,"
+                        + "marked boolean  null,"
+
+                        + "INDEX dateStr_index (dateStr ASC)\n"
+
+                        + "\n)"
+                , tableName);
+    }
+
+
+    /**
+     * 查找 财经导读 最新520条记录, 尝试抓取里面的 公司重大事项.
+     *
+     * @return
+     * @throws Exception
+     */
+    protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
+        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+    }
+}
