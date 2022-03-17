@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan.CompanyGoodNewListPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 
 /**
@@ -27,9 +26,10 @@ public class NewsTabPanelForReview extends NewsTabPanel {
 
     @Override
     protected void addTabs() {
-        tabbedPane.addTab("资讯精华", ZiXunJingHuaPanel.getInstance(this));
-        tabbedPane.addTab("财经导读", CaiJingDaoDuPanel.getInstance(this));
+        tabbedPane.addTab("资讯精华", ZiXunJingHuaPanelForReview.getInstance(this));
+        tabbedPane.addTab("财经导读", CaiJingDaoDuPanelForReview.getInstance(this));
         tabbedPane.addTab("重大事项", MajorIssueListPanelForReview.getInstance(this));
         tabbedPane.addTab("利好消息", CompanyGoodNewListPanelForReview.getInstance(this));
+        tabbedPane.addTab("新闻联播", NewsFeedListPanelForReview.getInstance(this));
     }
 }

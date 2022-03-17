@@ -67,7 +67,7 @@ public class NewsFeedDao {
      * @param id
      * @return
      */
-    public static void updateBean(CompanyGoodNew bean) {
+    public static void updateBean(NewsFeed bean) {
         Session session = SimpleNewEmDao.sessionFactory.openSession();
         session.beginTransaction();
         session.update(bean);
