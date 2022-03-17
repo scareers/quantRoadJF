@@ -31,5 +31,6 @@ public class NewsTabPanelForReview extends NewsTabPanel {
         tabbedPane.addTab("重大事项", MajorIssueListPanelForReview.getInstance(this));
         tabbedPane.addTab("利好消息", CompanyGoodNewListPanelForReview.getInstance(this));
         tabbedPane.addTab("新闻联播", NewsFeedListPanelForReview.getInstance(this));
+        tabbedPane.addTab("四大报媒", FourPaperNewListPanelForReview.getInstance(this));
     }
 }

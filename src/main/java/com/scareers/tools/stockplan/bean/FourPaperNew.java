@@ -29,6 +29,7 @@ import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNew
  *
  * @author admin
  * @noti : 比MajorIssue, 删除name字段, quoteUrl字段改为url字段, (因为单条是新闻, 而非股票行情); type保留,但含义为报纸类型, 增加 relatedObject属性, 因为它是新闻,
+ * @key3 : 四大报媒为早上发布, 与 重大事项/利好消息/新闻联播 晚上 发布时间不同!
  * 有针对对象; 类似 SimpleNewEm
  */
 @Data
@@ -42,7 +43,7 @@ public class FourPaperNew {
                     "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
             );
     // 解析设置
-    String url;
+    String url="";
     String title;
     String content;
     String dateStr; // 纯日期无时间, 字符串
@@ -66,7 +67,7 @@ public class FourPaperNew {
         Console.log(DateUtil.month(now));
         Console.log(DateUtil.dayOfMonth(now));
         Console.log(DateUtil.dayOfWeek(now));
-        Console.log(DateUtil.hour(now,true));
+        Console.log(DateUtil.hour(now, true));
         Console.log(DateUtil.minute(now));
         Console.log(DateUtil.second(now));
     }
@@ -216,6 +217,7 @@ public class FourPaperNew {
         return res;
     }
 
+
     /**
      * name/title/dateStr 相等含义
      *
@@ -245,20 +247,20 @@ public class FourPaperNew {
         this.id = id;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public void setRelatedObject(String relatedObject) {
-        this.relatedObject = relatedObject;
-    }
-
     public String getUrl() {
         return url;
     }
 
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
     public String getRelatedObject() {
         return relatedObject;
+    }
+
+    public void setRelatedObject(String relatedObject) {
+        this.relatedObject = relatedObject;
     }
 
     public String getTitle() {
