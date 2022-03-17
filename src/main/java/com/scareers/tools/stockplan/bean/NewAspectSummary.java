@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * description: 资讯面个人总结 bean
  *
- * @word: view 观点看法...
+ * @word: view 此处特指自定义观点看法...
  * @author: admin
  * @date: 2022/3/17/017-19:12:42
  */
