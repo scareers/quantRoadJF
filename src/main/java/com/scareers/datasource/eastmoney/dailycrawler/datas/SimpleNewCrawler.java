@@ -132,6 +132,7 @@ public abstract class SimpleNewCrawler extends Crawler {
                         + "saveTime datetime  null,"
                         + "type int  null,"
                         + "urlRawHtml longtext  null,"
+
                         + "briefly varchar(2048)  null,"
                         + "relatedObject varchar(2048)  null,"
                         + "trend double  null," // 振幅

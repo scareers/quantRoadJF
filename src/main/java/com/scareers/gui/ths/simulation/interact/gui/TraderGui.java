@@ -197,6 +197,7 @@ public class TraderGui extends JFrame {
                 new CompanyMajorIssuesCrawler().run(); // 重大事件抓取
                 new CompanyGoodNewsCrawler().run(); // 利好抓取
                 new NewsFeedsCrawler().run(); // 新闻联播集锦
+                new FourPaperNewsCrawler().run(); // 四大报媒精华
             }
         });
         CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分

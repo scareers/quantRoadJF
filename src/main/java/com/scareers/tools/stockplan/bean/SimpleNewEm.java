@@ -256,7 +256,7 @@ public class SimpleNewEm {
      *
      * @return
      */
-    public boolean isFourPaperNews() {
+    public boolean isFourPaperNew() {
         return title.contains("国内四大证券报纸、重要财经媒体头版头条内容精华摘要");
     }
 

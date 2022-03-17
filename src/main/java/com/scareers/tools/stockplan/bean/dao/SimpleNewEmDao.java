@@ -229,9 +229,8 @@ public class SimpleNewEmDao {
     }
 
 
-
     public static String buildDateStr(DateTime date) { // 构造日期字符串, 作为新闻标题判定
-        return StrUtil.format("{}月{}日", date.getField(DateField.MONTH),
+        return StrUtil.format("{}月{}日", date.getField(DateField.MONTH) + 1,
                 date.getField(DateField.DAY_OF_MONTH));
     }
 

@@ -6,10 +6,7 @@ import com.scareers.datasource.eastmoney.dailycrawler.commons.BkList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.StockList;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDates;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyMajorIssuesCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.NewsFeedsCrawler;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MData;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransData;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfBk;
@@ -54,6 +51,7 @@ public class CrawlerChain {
         crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司重大事件
         crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司利好消息
         crawlerChain.addFrontCrawlers(new NewsFeedsCrawler()); // 新闻联播集锦
+        crawlerChain.addFrontCrawlers(new FourPaperNewsCrawler()); // 四大报媒精华
 
 
         crawlerChain.run();

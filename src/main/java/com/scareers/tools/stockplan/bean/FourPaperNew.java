@@ -59,7 +59,16 @@ public class FourPaperNew {
     private long id;  // 数据库自动生成的id
 
     public static void main(String[] args) {
-        Console.log(parseFourPaperNews(getFourPaperNewsOf("3月15日")));
+        Console.log(parseFourPaperNews(getFourPaperNewsOf(DateUtil.date())));
+
+        DateTime now = DateUtil.date();
+        Console.log(DateUtil.year(now));
+        Console.log(DateUtil.month(now));
+        Console.log(DateUtil.dayOfMonth(now));
+        Console.log(DateUtil.dayOfWeek(now));
+        Console.log(DateUtil.hour(now,true));
+        Console.log(DateUtil.minute(now));
+        Console.log(DateUtil.second(now));
     }
 
     /**
@@ -73,7 +82,7 @@ public class FourPaperNew {
     }
 
     public static SimpleNewEm getFourPaperNewsOf(DateTime date) {
-
+        Console.log(buildDateStr(date));
         return getFourPaperNewsOf(buildDateStr(date));
     }
 
@@ -145,7 +154,7 @@ public class FourPaperNew {
      * @return 访问http失败将返回null
      */
     public static List<FourPaperNewBatch> parseFourPaperNews(SimpleNewEm fourPaperNewBean) {
-        Assert.isTrue(fourPaperNewBean.isFourPaperNews());
+        Assert.isTrue(fourPaperNewBean.isFourPaperNew());
         String url = fourPaperNewBean.getUrl();
         if (url.startsWith("http://")) {
             url = url.replace("http://", "https://");
