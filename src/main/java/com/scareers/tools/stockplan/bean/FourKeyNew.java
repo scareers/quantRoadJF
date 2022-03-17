@@ -39,7 +39,7 @@ public class FourKeyNew {
         this.fourPaperNewsDateStr = fourPaperNewsDateStr;
 
         // 自动构建; 因为底层http api带有2分钟过期缓存, 不会太过缓慢
-        this.companyGoodNews = SimpleNewEmDao.getCompanyGoodNewsOf(companyGoodNewsDateStr);
+//        this.companyGoodNews = SimpleNewEmDao.getCompanyGoodNewsOf(companyGoodNewsDateStr);
 //        this.companyMajorIssues = SimpleNewEm.getCompanyMajorIssuesOf(companyMajorIssuesDateStr);
         this.newsFeeds = SimpleNewEmDao.getNewsFeedsOf(newsFeedsDateStr);
         this.fourPaperNews = SimpleNewEmDao.getFourPaperNewsOf(fourPaperNewsDateStr);

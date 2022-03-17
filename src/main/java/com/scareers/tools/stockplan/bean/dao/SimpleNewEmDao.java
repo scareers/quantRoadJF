@@ -229,15 +229,6 @@ public class SimpleNewEmDao {
         return res;
     }
 
-    /**
-     * 给定日期字符串, 获取 该日晚间上市公司利好消息一览
-     *
-     * @param dateStr
-     * @return
-     */
-    public static SimpleNewEm getCompanyGoodNewsOf(String dateStr) {
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间上市公司利好消息一览");
-    }
 
 
 
@@ -266,11 +257,6 @@ public class SimpleNewEmDao {
     public static String buildDateStr(DateTime date) { // 构造日期字符串, 作为新闻标题判定
         return StrUtil.format("{}月{}日", date.getField(DateField.MONTH),
                 date.getField(DateField.DAY_OF_MONTH));
-    }
-
-    // 对应4个传递 DateTime作为参数
-    public static SimpleNewEm getCompanyGoodNewsOf(DateTime date) {
-        return getCompanyGoodNewsOf(buildDateStr(date));
     }
 
 

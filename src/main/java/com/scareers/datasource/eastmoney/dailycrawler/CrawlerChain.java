@@ -51,6 +51,7 @@ public class CrawlerChain {
         crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawler());
         crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawler());
         crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司重大事件
+        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司利好消息
 
 
         crawlerChain.run();

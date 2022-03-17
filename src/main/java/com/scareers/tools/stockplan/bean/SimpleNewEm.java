@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * 东方财富 -- 财经频道 -- 财经导读 -- 新闻列表
+ * 东方财富 -- 财经频道 -- 所有的基本新闻类型
  * 简单新闻对象;
  * 东财 其他新闻列表, 格式相同
  * https://finance.eastmoney.com/a/ccjdd_1.html
@@ -229,7 +229,7 @@ public class SimpleNewEm {
      *
      * @return
      */
-    public boolean isCompanyGoodNews() {
+    public boolean isCompanyGoodNew() {
         return title.contains("晚间上市公司利好消息一览"); // 省略附名单
     }
 

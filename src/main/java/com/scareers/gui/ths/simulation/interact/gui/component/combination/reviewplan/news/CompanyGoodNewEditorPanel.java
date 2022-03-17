@@ -5,7 +5,9 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.tools.stockplan.bean.CompanyGoodNew;
 import com.scareers.tools.stockplan.bean.MajorIssue;
+import com.scareers.tools.stockplan.bean.dao.CompanyGoodNewDao;
 import com.scareers.tools.stockplan.bean.dao.MajorIssueDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
@@ -22,16 +24,17 @@ import java.sql.Timestamp;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
 /**
- * description: 展示 重大事项新闻bean 并可编辑保存!
+ * description: 展示 公司利好消息bean 并可编辑保存! 相对于 MajorIssueEditorPanel, 仅仅少一个 type展示. 其余完全相同.
+ * 为方便修改, 并不使用继承.
  *
  * @author: admin
  * @date: 2022/3/13/013-10:37:30
  */
 @Getter
-public class MajorIssueEditorPanel extends DisplayPanel {
-    MajorIssue bean;
+public class CompanyGoodNewEditorPanel extends DisplayPanel {
+    CompanyGoodNew bean;
 
-    JLabel totalAmountLabel = getCommonLabel("重大事件总数量", Color.red);  // id
+    JLabel totalAmountLabel = getCommonLabel("利好消息总数量", Color.red);  // id
     JLabel totalAmountValueLabel = getCommonLabel("", Color.red);
 
     // 子控件, 对应bean 各种属性, 以及部分操作按钮
@@ -54,8 +57,6 @@ public class MajorIssueEditorPanel extends DisplayPanel {
     JLabel titleValueLabel = getCommonLabel();
     JLabel contentLabel = getCommonLabel("content");
     JLabel contentValueLabel = getCommonLabel();
-    JLabel typeLabel = getCommonLabel("type");
-    JLabel typeValueLabel = getCommonLabel();
 
     // 编辑
     JLabel markedLabel = getCommonLabel("marked", Color.pink);
@@ -67,9 +68,9 @@ public class MajorIssueEditorPanel extends DisplayPanel {
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
     JTextField remarkValueLabel = getCommonEditor(this);
 
-    MajorIssueListPanel parent; // 以便调用持有者方法
+    CompanyGoodNewListPanel parent; // 以便调用持有者方法
 
-    public MajorIssueEditorPanel(MajorIssueListPanel parent) {
+    public CompanyGoodNewEditorPanel(CompanyGoodNewListPanel parent) {
         this.parent = parent;
         this.setLayout(new GridLayout(15, 2, 1, 1)); // 简易网格布局
         this.setPreferredSize(new Dimension(350, 500));
@@ -98,9 +99,6 @@ public class MajorIssueEditorPanel extends DisplayPanel {
         this.add(contentLabel);
         this.add(contentValueLabel);
 
-        this.add(typeLabel);
-        this.add(typeValueLabel);
-
 
         this.add(nameLabel);
         this.add(nameValueLabel);
@@ -126,13 +124,13 @@ public class MajorIssueEditorPanel extends DisplayPanel {
      *
      * @param bean
      */
-    public void update(MajorIssue bean) {
+    public void update(CompanyGoodNew bean) {
         this.bean = bean;
         totalAmountValueLabel.setText(String.valueOf(this.parent.getBeanMap().size())); // 显示总数量
         this.update();
     }
 
-    public MajorIssue getEditedBean() {
+    public CompanyGoodNew getEditedBean() {
         if (this.bean == null) {
             return null;
         }
@@ -151,12 +149,12 @@ public class MajorIssueEditorPanel extends DisplayPanel {
 
     private static final Log log = LogUtil.getLogger();
 
-    private static KeyAdapter buildKeyAdapterForEdit(MajorIssueEditorPanel panel) {
+    private static KeyAdapter buildKeyAdapterForEdit(CompanyGoodNewEditorPanel panel) {
         return new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    tryAutoSaveEditedBean(panel, "重大事件");
+                    tryAutoSaveEditedBean(panel, "利好消息");
                 }
             }
         };
@@ -168,7 +166,7 @@ public class MajorIssueEditorPanel extends DisplayPanel {
      * @param panel
      * @return
      */
-    private static FocusListener buildJTextFieldBlurForEdit(MajorIssueEditorPanel panel) {
+    private static FocusListener buildJTextFieldBlurForEdit(CompanyGoodNewEditorPanel panel) {
         return new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
@@ -177,24 +175,24 @@ public class MajorIssueEditorPanel extends DisplayPanel {
 
             @Override
             public void focusLost(FocusEvent e) {
-                tryAutoSaveEditedBean(panel, "重大事件");
+                tryAutoSaveEditedBean(panel, "利好消息");
             }
         };
     }
 
-    private static void tryAutoSaveEditedBean(MajorIssueEditorPanel panel, String logPrefix) {
-        MajorIssue editedBean = panel.getEditedBean();
+    private static void tryAutoSaveEditedBean(CompanyGoodNewEditorPanel panel, String logPrefix) {
+        CompanyGoodNew editedBean = panel.getEditedBean();
         if (editedBean == null) {
             return;
         }
         try {
-            MajorIssueDao.updateBean(editedBean);
+            CompanyGoodNewDao.updateBean(editedBean);
             panel.update(editedBean); // 将更新显示自动设置字段
 //                    INSTANCE.parent.update();  // 该方式无法更新,
-            ((MajorIssueListPanel) panel.parent.getParentS().getTabbedPane().getSelectedComponent())
+            ((CompanyGoodNewListPanel) panel.parent.getParentS().getTabbedPane().getSelectedComponent())
                     .update();
             // 需要使用此方式进行更新
-            ManiLog.put(StrUtil.format("{}: 更新新闻bean成功: {}.{} --> {} / {}", logPrefix, editedBean.getType(),
+            ManiLog.put(StrUtil.format("{}: 更新新闻bean成功: {} --> {} / {}", logPrefix,
                     editedBean.getId(),
                     editedBean.getTitle(), editedBean.getTitle()));
         } catch (Exception ex) {
@@ -217,7 +215,6 @@ public class MajorIssueEditorPanel extends DisplayPanel {
         titleValueLabel.setText(String.valueOf(bean.getTitle()));
         quoteUrlValueLabel.setText(String.valueOf(bean.getQuoteUrl()));
         contentValueLabel.setText(String.valueOf(bean.getContent()));
-        typeValueLabel.setText(String.valueOf(bean.getType()));
 
         brieflyValueLabel.setText(CommonUtil.toStringCheckNull(bean.getBriefly(), ""));
         trendValueLabel.setText(CommonUtil.toStringCheckNull(bean.getTrend(), ""));
@@ -251,7 +248,7 @@ public class MajorIssueEditorPanel extends DisplayPanel {
     }
 
     public static JTextField getCommonEditor(
-            MajorIssueEditorPanel panel) {
+            CompanyGoodNewEditorPanel panel) {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);

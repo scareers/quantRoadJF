@@ -7,6 +7,7 @@ import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CaiJingDaoDuCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyGoodNewsCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.CompanyMajorIssuesCrawler;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.ZiXunJingHuaCrawler;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
@@ -197,6 +198,7 @@ public class TraderGui extends JFrame {
                 new CaiJingDaoDuCrawler().run(); // 财经导读抓取
                 new ZiXunJingHuaCrawler().run(); // 资讯精华抓取
                 new CompanyMajorIssuesCrawler().run(); // 重大事件抓取
+                new CompanyGoodNewsCrawler().run(); // 利好抓取
             }
         });
         CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分
@@ -252,7 +254,7 @@ public class TraderGui extends JFrame {
                         }
                     }
                 });
-                
+
                 // ManipulateLogWindow
 
                 FuncButton maniLogFunc = ButtonFactory.getButton("操作日志");
@@ -471,8 +473,6 @@ public class TraderGui extends JFrame {
         // 滚动条
         UIManager.put("ScrollBar.width", 12); // 滚动条宽度
         UIManager.put("ScrollBar.thumb", new javax.swing.plaf.ColorUIResource(Color.black)); // 滚动条上下按钮背景色
-
-
 
 
     }

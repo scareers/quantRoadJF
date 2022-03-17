@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+    "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+
+    <class name="com.scareers.tools.stockplan.bean.CompanyGoodNew" table="company_good_new" schema="eastmoney">
+        <id name="id">
+            <column name="id" sql-type="bigint"/>
+            <generator class="identity"/>
+        </id>
+        <property name="name">
+            <column name="name" sql-type="text" not-null="false"/>
+        </property>
+        <property name="quoteUrl">
+            <column name="quoteUrl" sql-type="text" not-null="false"/>
+        </property>
+        <property name="title">
+            <column name="title" sql-type="text" not-null="false"/>
+        </property>
+        <property name="content">
+            <column name="content" sql-type="longtext" not-null="false"/>
+        </property>
+        <property name="dateStr">
+            <column name="dateStr" sql-type="varchar(32)" length="32" not-null="false"/>
+        </property>
+        <property name="saveTime">
+            <column name="saveTime" sql-type="datetime" not-null="false"/>
+        </property>
+        <property name="briefly">
+            <column name="briefly" sql-type="varchar(2048)" length="2048" not-null="false"/>
+        </property>
+        <property name="trend">
+            <column name="trend" sql-type="double" precision="-1" not-null="false"/>
+        </property>
+        <property name="remark">
+            <column name="remark" sql-type="longtext" not-null="false"/>
+        </property>
+        <property name="lastModified">
+            <column name="lastModified" sql-type="datetime" not-null="false"/>
+        </property>
+        <property name="marked">
+            <column name="marked" sql-type="tinyint(1)" not-null="false"/>
+        </property>
+    </class>
+</hibernate-mapping>

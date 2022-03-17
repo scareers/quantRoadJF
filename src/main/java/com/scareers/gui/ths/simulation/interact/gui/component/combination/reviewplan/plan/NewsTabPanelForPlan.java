@@ -30,5 +30,6 @@ public class NewsTabPanelForPlan extends NewsTabPanel {
         tabbedPane.addTab("资讯精华", ZiXunJingHuaPanel.getInstance(this));
         tabbedPane.addTab("财经导读", CaiJingDaoDuPanel.getInstance(this));
         tabbedPane.addTab("重大事项", MajorIssueListPanelForPlan.getInstance(this));
+        tabbedPane.addTab("利好消息", CompanyGoodNewListPanelForPlan.getInstance(this));
     }
 }
