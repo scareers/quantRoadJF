@@ -34,6 +34,7 @@ import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNew
  */
 @Data
 public class NewsFeed {
+    private static final Log log = LogUtil.getLogger();
     public static List<String> dfSimpleCols = Arrays // 没有id 和 saveTime
             .asList("title", "content", "dateStr",
                     "briefly", "trend", "remark", "lastModified", "marked"
@@ -46,7 +47,6 @@ public class NewsFeed {
     String title;
     String content;
     String dateStr; // 纯日期无时间, 字符串
-
     // 保存到数据库时设置
     Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
     // 可自定义设置! // 类似 SimpleNewEm, 没有了 相关对象
@@ -308,7 +308,6 @@ public class NewsFeed {
         this.lastModified = lastModified;
     }
 
-
     public long getId() {
         return id;
     }
@@ -337,6 +336,4 @@ public class NewsFeed {
         }
         return false;
     }
-
-    private static final Log log = LogUtil.getLogger();
 }
