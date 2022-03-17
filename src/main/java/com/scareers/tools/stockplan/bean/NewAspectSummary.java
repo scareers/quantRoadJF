@@ -26,7 +26,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "new_aspect_summary")
+@Table(name = "new_aspect_summary",
+        indexes = {@Index(name = "dateStr_Index", columnList = "dateStr"),
+                @Index(name = "type_Index", columnList = "type")})
 public class NewAspectSummary {
 
     public static void main(String[] args) {
@@ -42,10 +44,15 @@ public class NewAspectSummary {
         session.save(bean);
         transaction.commit();
 
-        NewAspectSummary newAspectSummary = session.get(NewAspectSummary.class, 2L);
+        NewAspectSummary newAspectSummary = session.get(NewAspectSummary.class, 4L);
         Console.log(newAspectSummary.bearishViewsJsonStr);
+    }
 
+    public static NewAspectSummary newInstance() {
+        NewAspectSummary bean = new NewAspectSummary();
+        bean.setGeneratedTime(DateUtil.date()); // now
 
+        return null;
     }
 
     @Id
@@ -60,7 +67,7 @@ public class NewAspectSummary {
     Date lastModified; // 手动修改最后时间;
 
     @Column(name = "dateStr", length = 32)
-    String dateStr; // 简单日期字符串
+    String dateStr; // 简单日期字符串, 特指对某一天的观点.  一般将以此字段读取
     @Column(name = "trend")
     Double trend; // -1.0 - 1.0 利空利好偏向自定义
     @Column(name = "remark", columnDefinition = "longtext")
@@ -86,6 +93,8 @@ public class NewAspectSummary {
     String neutralViewsJsonStr = "[]";
     @Column(name = "otherViews", columnDefinition = "longtext")
     String otherViewsJsonStr = "[]";
+
+    String futureOf
 
     /*
     4大添加 观点方法, 一般调用这4个api, 而非直接访问!
