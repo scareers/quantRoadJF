@@ -1,9 +1,10 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.MajorIssueListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.tools.stockplan.bean.MajorIssue;
 import com.scareers.tools.stockplan.bean.dao.MajorIssueDao;
