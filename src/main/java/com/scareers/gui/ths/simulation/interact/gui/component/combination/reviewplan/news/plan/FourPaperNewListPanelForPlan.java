@@ -34,7 +34,7 @@ public class FourPaperNewListPanelForPlan extends FourPaperNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<FourPaperNew> newsForReviseByType;
         try {
-            newsForReviseByType = FourPaperNewDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = FourPaperNewDao.getNewsForPlan();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

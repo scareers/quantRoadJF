@@ -34,7 +34,7 @@ public class CompanyGoodNewListPanelForPlan extends CompanyGoodNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<CompanyGoodNew> newsForReviseByType;
         try {
-            newsForReviseByType = CompanyGoodNewDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = CompanyGoodNewDao.getNewsForPlan();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

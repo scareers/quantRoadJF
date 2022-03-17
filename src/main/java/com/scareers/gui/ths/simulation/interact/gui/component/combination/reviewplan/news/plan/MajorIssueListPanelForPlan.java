@@ -34,7 +34,7 @@ public class MajorIssueListPanelForPlan extends MajorIssueListPanel {
     public void flushBeanMapAndShowDf() {
         List<MajorIssue> newsForReviseByType;
         try {
-            newsForReviseByType = MajorIssueDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = MajorIssueDao.getNewsForPlan();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

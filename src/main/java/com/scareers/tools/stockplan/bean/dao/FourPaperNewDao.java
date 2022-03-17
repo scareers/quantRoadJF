@@ -122,7 +122,7 @@ public class FourPaperNewDao {
      * @param dateStr
      * @return
      */
-    public static List<FourPaperNew> getNewsForTradePlanForPlan() throws SQLException {
+    public static List<FourPaperNew> getNewsForPlan() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(DateUtil.date(), true) >= 15) { // 超过下午3点
@@ -147,7 +147,7 @@ public class FourPaperNewDao {
      * @param dateStr
      * @return
      */
-    public static List<FourPaperNew> getNewsForTradePlanForReview() throws SQLException {
+    public static List<FourPaperNew> getNewsForReview() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(today);

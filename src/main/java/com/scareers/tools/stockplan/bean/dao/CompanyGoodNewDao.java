@@ -87,7 +87,7 @@ public class CompanyGoodNewDao {
      * @param dateStr
      * @return
      */
-    public static List<CompanyGoodNew> getNewsForTradePlanForPlan() throws SQLException {
+    public static List<CompanyGoodNew> getNewsForPlan() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(DateUtil.date(), true) >= 15) { // 超过下午3点
@@ -110,7 +110,7 @@ public class CompanyGoodNewDao {
      * @param dateStr
      * @return
      */
-    public static List<CompanyGoodNew> getNewsForTradePlanForReview() throws SQLException {
+    public static List<CompanyGoodNew> getNewsForReview() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));

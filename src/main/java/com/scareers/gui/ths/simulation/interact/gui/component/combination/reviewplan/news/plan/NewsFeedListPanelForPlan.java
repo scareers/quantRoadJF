@@ -34,7 +34,7 @@ public class NewsFeedListPanelForPlan extends NewsFeedListPanel {
     public void flushBeanMapAndShowDf() {
         List<NewsFeed> newsForReviseByType;
         try {
-            newsForReviseByType = NewsFeedDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = NewsFeedDao.getNewsForPlan();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

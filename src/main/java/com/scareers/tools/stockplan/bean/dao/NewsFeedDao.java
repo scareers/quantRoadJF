@@ -88,7 +88,7 @@ public class NewsFeedDao {
      * @param dateStr
      * @return
      */
-    public static List<NewsFeed> getNewsForTradePlanForPlan() throws SQLException {
+    public static List<NewsFeed> getNewsForPlan() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(DateUtil.date(), true) >= 15) { // 超过下午3点
@@ -111,7 +111,7 @@ public class NewsFeedDao {
      * @param dateStr
      * @return
      */
-    public static List<NewsFeed> getNewsForTradePlanForReview() throws SQLException {
+    public static List<NewsFeed> getNewsForReview() throws SQLException {
         String today = DateUtil.today();
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));
