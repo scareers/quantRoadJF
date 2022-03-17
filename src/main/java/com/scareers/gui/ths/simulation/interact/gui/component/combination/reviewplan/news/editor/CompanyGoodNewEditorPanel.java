@@ -19,6 +19,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.sql.Timestamp;
+import java.util.Date;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
@@ -221,7 +222,7 @@ public class CompanyGoodNewEditorPanel extends DisplayPanel {
         remarkValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRemark(), ""));
     }
 
-    public void setDateTimeOrNull(Timestamp timestamp, JLabel label) {
+    public void setDateTimeOrNull(Date timestamp, JLabel label) {
         if (timestamp == null) {
             label.setText("");
         } else {

@@ -1,7 +1,6 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.FourPaperNewListPanelForReview;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 
 /**

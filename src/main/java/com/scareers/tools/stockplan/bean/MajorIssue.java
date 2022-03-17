@@ -15,9 +15,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.buildDateStr;
@@ -47,12 +47,12 @@ public class MajorIssue {
     String dateStr; // 纯日期无时间, 字符串
     String type; // 重大事项类型, 解析而来
     // 保存到数据库时设置
-    Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
+    Date saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
     // 可自定义设置! // 类似 SimpleNewEm, 没有了 相关对象
     String briefly; // 简述
     Double trend; // 偏向: 利空或者利好, -1.0 - 1.0;  0.0 代表绝对无偏向
     String remark; // 备注
-    Timestamp lastModified; // 手动修改最后时间;
+    Date lastModified; // 手动修改最后时间;
     Boolean marked = false; // 是否重要?标记
     private long id;  // 数据库自动生成的id
 
@@ -294,13 +294,6 @@ public class MajorIssue {
         this.type = type;
     }
 
-    public Timestamp getSaveTime() {
-        return saveTime;
-    }
-
-    public void setSaveTime(Timestamp saveTime) {
-        this.saveTime = saveTime;
-    }
 
     public String getBriefly() {
         return briefly;
@@ -326,13 +319,6 @@ public class MajorIssue {
         this.remark = remark;
     }
 
-    public Timestamp getLastModified() {
-        return lastModified;
-    }
-
-    public void setLastModified(Timestamp lastModified) {
-        this.lastModified = lastModified;
-    }
 
 
     /**

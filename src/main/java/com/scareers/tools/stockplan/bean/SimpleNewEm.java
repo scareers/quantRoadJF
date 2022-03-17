@@ -14,6 +14,7 @@ import lombok.ToString;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -45,11 +46,11 @@ public class SimpleNewEm {
     private long id;  // 数据库自动生成的id
 
     // 自动
-    Timestamp dateTime; // 时间, 精确到分钟, 数据库不使用datetime字段, 使用字符串
+    Date dateTime; // 时间, 精确到分钟, 数据库不使用datetime字段, 使用字符串
     String title; // 东财提取的简单标题
     String url; // 新闻具体url
     String detailTitle; // 原文章具体标题
-    Timestamp saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
+    Date saveTime; // 保存到数据库时间, 约等于 爬虫运行时刻; 该字段主要用于获取 最后500条爬取的 新闻.
     // 必须设定
     //     * 1.新闻类型
     Integer type; // 整数表示类型; 0.资讯精华  1.财经导读 待增加
@@ -62,7 +63,7 @@ public class SimpleNewEm {
     String relatedObject; // 相关 "对象", 例如大盘报道, 行业新闻, 个股新闻等等
     Double trend; // 偏向: 利空或者利好, -1.0 - 1.0;  0.0 代表绝对无偏向
     String remark; // 备注
-    Timestamp lastModified; // 手动修改最后时间;
+    Date lastModified; // 手动修改最后时间;
     Boolean marked = false; // 重要标记
 
 
@@ -75,7 +76,7 @@ public class SimpleNewEm {
      * @param detailTitle
      */
     public SimpleNewEm(DateTime dateTime, String title, String url, String detailTitle) {
-        this.dateTime = Timestamp.valueOf(dateTime.toLocalDateTime());
+        this.dateTime = dateTime;
         this.title = title;
         this.url = url;
         this.detailTitle = detailTitle;

@@ -4,8 +4,8 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan.NewsTabPanelForPlan;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.review.NewsTabPanelForReview;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan.NewsTabPanelForPlan;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.review.NewsTabPanelForReview;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -192,10 +192,10 @@ public class FuncTreeWindow extends FuncFrameS {
         DefaultMutableTreeNode reviewAndPlanNode = new DefaultMutableTreeNode("复盘操盘");
         DefaultMutableTreeNode reviewNode = new DefaultMutableTreeNode("复盘报告");
         DefaultMutableTreeNode tradePlanNode = new DefaultMutableTreeNode("操盘计划");
-        // 盘前要闻
-        DefaultMutableTreeNode importantNewsNode = new DefaultMutableTreeNode("盘前要闻");
+        // 资讯面
+        DefaultMutableTreeNode importantNewsNode = new DefaultMutableTreeNode("资讯面");
         reviewNode.add(importantNewsNode);
-        DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("盘前要闻");
+        DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("资讯面");
         tradePlanNode.add(importantNewsNode2);
 
         reviewAndPlanNode.add(reviewNode);
@@ -369,15 +369,15 @@ public class FuncTreeWindow extends FuncFrameS {
         /**
          * [功能树, 复盘操盘]
          * [功能树, 复盘操盘, 复盘报告]
-         * [功能树, 复盘操盘, 复盘报告, 盘前要闻]
+         * [功能树, 复盘操盘, 复盘报告, 资讯面]
          * [功能树, 复盘操盘, 操盘计划]
-         * [功能树, 复盘操盘, 操盘计划, 盘前要闻]
+         * [功能树, 复盘操盘, 操盘计划, 资讯面]
          */
 
         public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
         public static final String REVIEW_REPORT = "[功能树, 复盘操盘, 复盘报告]";
-        public static final String REVIEW_IMPORTANT_NEWS = "[功能树, 复盘操盘, 复盘报告, 盘前要闻]";
-        public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 盘前要闻]";
+        public static final String REVIEW_IMPORTANT_NEWS = "[功能树, 复盘操盘, 复盘报告, 资讯面]";
+        public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 资讯面]";
 
         public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";
 

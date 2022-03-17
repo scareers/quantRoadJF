@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.review;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.CompanyGoodNewListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
@@ -15,17 +15,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author: admin
  * @date: 2022/3/17/017-13:19:12
  */
-public class CompanyGoodNewListPanelForPlan extends CompanyGoodNewListPanel {
-    private static CompanyGoodNewListPanelForPlan INSTANCE;
+public class CompanyGoodNewListPanelForReview extends CompanyGoodNewListPanel {
+    private static CompanyGoodNewListPanelForReview INSTANCE;
 
-    public static CompanyGoodNewListPanelForPlan getInstance(NewsTabPanel parentS) {
+    public static CompanyGoodNewListPanelForReview getInstance(NewsTabPanel parentS) {
         if (INSTANCE == null) {
-            INSTANCE = new CompanyGoodNewListPanelForPlan(parentS);
+            INSTANCE = new CompanyGoodNewListPanelForReview(parentS);
         }
         return INSTANCE;
     }
 
-    public CompanyGoodNewListPanelForPlan(
+    public CompanyGoodNewListPanelForReview(
             NewsTabPanel parentS) {
         super(parentS);
     }
@@ -34,7 +34,7 @@ public class CompanyGoodNewListPanelForPlan extends CompanyGoodNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<CompanyGoodNew> newsForReviseByType;
         try {
-            newsForReviseByType = CompanyGoodNewDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = CompanyGoodNewDao.getNewsForTradePlanForReview();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

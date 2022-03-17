@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.plan;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.review;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.MajorIssueListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
@@ -10,22 +10,22 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * description: 重大事件显示panel; 操盘计划
+ * description: 重大事件显示panel; 复盘
  *
  * @author: admin
  * @date: 2022/3/17/017-00:42:25
  */
-public class MajorIssueListPanelForPlan extends MajorIssueListPanel {
-    private static MajorIssueListPanelForPlan INSTANCE;
+public class MajorIssueListPanelForReview extends MajorIssueListPanel {
+    private static MajorIssueListPanelForReview INSTANCE;
 
-    public static MajorIssueListPanelForPlan getInstance(NewsTabPanel parentS) {
+    public static MajorIssueListPanelForReview getInstance(NewsTabPanel parentS) {
         if (INSTANCE == null) {
-            INSTANCE = new MajorIssueListPanelForPlan(parentS);
+            INSTANCE = new MajorIssueListPanelForReview(parentS);
         }
         return INSTANCE;
     }
 
-    public MajorIssueListPanelForPlan(
+    public MajorIssueListPanelForReview(
             NewsTabPanel parentS) {
         super(parentS);
     }
@@ -34,7 +34,7 @@ public class MajorIssueListPanelForPlan extends MajorIssueListPanel {
     public void flushBeanMapAndShowDf() {
         List<MajorIssue> newsForReviseByType;
         try {
-            newsForReviseByType = MajorIssueDao.getNewsForTradePlanForPlan();
+            newsForReviseByType = MajorIssueDao.getNewsForTradePlanForReview();
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

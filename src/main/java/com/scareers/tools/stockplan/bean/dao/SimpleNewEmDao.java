@@ -5,12 +5,12 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 import org.hibernate.query.Query;
 
 import java.sql.SQLException;
@@ -26,13 +26,8 @@ import java.util.List;
  */
 public class SimpleNewEmDao {
     private static final Log log = LogUtil.getLogger();
-    public static SessionFactory sessionFactory;
+    public static SessionFactory sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
 
-
-    static {
-        Configuration configuration = new Configuration().configure("hibernate.cfg.xml");
-        sessionFactory = configuration.buildSessionFactory();
-    }
 
     public static void main(String[] args) throws SQLException {
 //        List<SimpleNewEm> caiJingDaoDuNewsForRevise = getNewsForReviseByType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE);
