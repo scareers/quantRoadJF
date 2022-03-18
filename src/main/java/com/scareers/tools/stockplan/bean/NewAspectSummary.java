@@ -38,6 +38,21 @@ public class NewAspectSummary {
 
     }
 
+    // 类型列表
+    public static String PLAN_TYPE = "plan";
+    public static String REVIEW_TYPE = "review";
+
+    /*
+    最常用的初始化工厂方法
+     */
+    public static NewAspectSummary newInstance(String dateStr,String type) {
+        NewAspectSummary bean = new NewAspectSummary();
+        bean.setType(type);
+        bean.setGeneratedTime(DateUtil.date());
+        bean.setDateStr(dateStr); // 仅仅需要3个字段!
+        return bean;
+    }
+
     /*
     基本字段
      */
@@ -46,7 +61,7 @@ public class NewAspectSummary {
     @Column(name = "id", unique = true)
     Long id;
     @Column(name = "type", length = 64)
-    String type; // 操盘 plan? 复盘 review?
+    String type; // 操盘 plan? 复盘 review? 见类型列表
     @Column(name = "generatedTime", columnDefinition = "datetime")
     Date generatedTime; // 首次初始化 (new) 时间
     @Column(name = "lastModified", columnDefinition = "datetime")

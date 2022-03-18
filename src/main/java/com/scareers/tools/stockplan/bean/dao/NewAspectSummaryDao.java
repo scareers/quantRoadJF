@@ -4,13 +4,20 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.tools.stockplan.bean.NewAspectSummary;
+import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * description: NewAspectSummary 资讯面个人总结 bean dao
  *
+ * @key3 : 所有直接从数据库读取bean的方法, 均需要调用 initTransientAttrsWhenBeanFromDb, 初始化8大 transient 字段
  * @author: admin
  * @date: 2022/3/17/017-23:25:09
  */
@@ -18,16 +25,8 @@ public class NewAspectSummaryDao {
     private static SessionFactory sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
 
     public static void main(String[] args) {
-        NewAspectSummary bean = new NewAspectSummary();
-        bean.setRemark("测试bean");
-        bean.setGeneratedTime(DateUtil.date());
-        bean.addBadPoint("测试观点1");
-
-        saveOrUpdateBean(bean);
-
-        NewAspectSummary newAspectSummary = getBeanById(3L);
-        Console.log(newAspectSummary.getBadPoints());
-        Console.log(newAspectSummary.getBadPointsJsonStr());
+        NewAspectSummary bean = getOrInitBeanForPlan();
+        Console.log(bean);
     }
 
     /**
@@ -64,7 +63,24 @@ public class NewAspectSummaryDao {
      * 为操盘计划, 从数据库获取 bean, 或者实例化并, 并首次保存到数据库! 返回bean
      */
     public static NewAspectSummary getOrInitBeanForPlan() {
-
+        String dateStr = DateUtil.today();
+        Session session = sessionFactory.openSession();
+        String hql = "FROM NewAspectSummary E WHERE E.type = :type and E.dateStr = :dateStr";
+        Query query = session.createQuery(hql);
+        query.setParameter("type", NewAspectSummary.PLAN_TYPE);
+        query.setParameter("dateStr", dateStr); // 注意类型
+        List beans = query.list();
+        if (beans.size() == 0) {
+            // 需要实例化并保存
+            NewAspectSummary bean = NewAspectSummary.newInstance(dateStr, NewAspectSummary.PLAN_TYPE);
+            saveOrUpdateBean(bean);
+            return bean;
+        } else {
+            // 读取第一个(一般且唯一)bean结果
+            NewAspectSummary bean = (NewAspectSummary) beans.get(0);
+            bean.initTransientAttrsWhenBeanFromDb();
+            return bean;
+        }
     }
 
 
