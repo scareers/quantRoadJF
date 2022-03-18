@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.CompanyGoodNewListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
 import com.scareers.tools.stockplan.bean.CompanyGoodNew;
@@ -34,7 +35,7 @@ public class CompanyGoodNewListPanelForPlan extends CompanyGoodNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<CompanyGoodNew> newsForReviseByType;
         try {
-            newsForReviseByType = CompanyGoodNewDao.getNewsForPlan();
+            newsForReviseByType = CompanyGoodNewDao.getNewsForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据
