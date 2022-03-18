@@ -60,5 +60,12 @@ public class NewAspectSummaryDao {
         session.close();
     }
 
+    /**
+     * 为操盘计划, 从数据库获取 bean, 或者实例化并, 并首次保存到数据库! 返回bean
+     */
+    public static NewAspectSummary getOrInitBeanForPlan() {
+
+    }
+
 
 }
