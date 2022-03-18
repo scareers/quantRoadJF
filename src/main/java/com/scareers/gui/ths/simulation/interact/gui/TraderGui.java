@@ -367,7 +367,6 @@ public class TraderGui extends JFrame {
 
         // 尺寸改变
         this.addComponentListener(new ComponentAdapter() {
-            @SneakyThrows
             @Override
             public void componentResized(ComponentEvent e) {
                 // 应当刷新bounds, 将自动重绘

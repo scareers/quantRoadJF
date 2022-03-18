@@ -33,12 +33,19 @@
             <version>1.9.5.4</version>
         </dependency>
 
+        <!--        jdk17 以上需要此依赖, 11不需要, 自带,弃用报告-->
+        <dependency>
+            <groupId>org.openjdk.nashorn</groupId>
+            <artifactId>nashorn-core</artifactId>
+            <version>15.2</version>
+        </dependency>
+
         <!-- https://mvnrepository.com/artifact/org.swinglabs/swingx -->
-<!--        <dependency>-->
-<!--            <groupId>org.swinglabs</groupId>-->
-<!--            <artifactId>swingx</artifactId>-->
-<!--            <version>1.6</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.swinglabs</groupId>-->
+        <!--            <artifactId>swingx</artifactId>-->
+        <!--            <version>1.6</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.swinglabs.swingx</groupId>
             <artifactId>swingx-all</artifactId>
