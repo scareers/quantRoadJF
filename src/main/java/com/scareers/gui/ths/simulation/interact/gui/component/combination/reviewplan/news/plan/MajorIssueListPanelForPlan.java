@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.MajorIssueListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
 import com.scareers.tools.stockplan.bean.MajorIssue;
@@ -34,7 +35,7 @@ public class MajorIssueListPanelForPlan extends MajorIssueListPanel {
     public void flushBeanMapAndShowDf() {
         List<MajorIssue> newsForReviseByType;
         try {
-            newsForReviseByType = MajorIssueDao.getNewsForPlan();
+            newsForReviseByType = MajorIssueDao.getNewsForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

@@ -1,5 +1,6 @@
 package com.scareers.tools.stockplan.bean.dao;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
@@ -11,6 +12,7 @@ import org.hibernate.query.Query;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -121,10 +123,10 @@ public class MajorIssueDao {
      * @param dateStr
      * @return
      */
-    public static List<MajorIssue> getNewsForPlan() throws SQLException {
-        String today = DateUtil.today();
+    public static List<MajorIssue> getNewsForPlan(Date equivalenceNow) throws SQLException {
+        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
-            if (DateUtil.hour(DateUtil.date(), true) >= 15) { // 超过下午3点
+            if (DateUtil.hour(equivalenceNow, true) >= 15) { // 超过下午3点
                 return getNewsForTradePlanByDate(today);
             }
         }
@@ -144,8 +146,8 @@ public class MajorIssueDao {
      * @param dateStr
      * @return
      */
-    public static List<MajorIssue> getNewsForReview() throws SQLException {
-        String today = DateUtil.today();
+    public static List<MajorIssue> getNewsForReview(Date equivalenceNow) throws SQLException {
+        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));
         } else {
