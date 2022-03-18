@@ -284,24 +284,65 @@ public class NewAspectSummary {
     /*
     预判及打分 修改api, 需要给定 index 以及 view
      */
-    public void updatePreJudgmentView(int index, String view) {
+
+    /**
+     * 修改时唯一public api, 需要给定 4字段.
+     *
+     * @param index
+     * @param view
+     * @param futureState
+     * @param score
+     * @param reason
+     */
+    public void updatePreJudgmentView(int index, String view, String futureState, Double score, String reason) {
         preJudgmentViews.set(index, view);
         preJudgmentViewsJsonStr = JSONUtilS.toJsonStr(preJudgmentViews);
+        updateFuture(index, futureState);
+        updateScoreOfPreJudgment(index, score);
+        updateScoreReason(index, reason);
     }
 
-    private void addFuture(int index, String futureState) {
+    private void updateFuture(int index, String futureState) {
         futures.set(index, futureState);
         futuresJsonStr = JSONUtilS.toJsonStr(futures);
     }
 
-    private void addScoreOfPreJudgment(int index, Double score) {
+    private void updateScoreOfPreJudgment(int index, Double score) {
         scoresOfPreJudgment.set(index, score);
         scoresOfPreJudgmentJsonStr = JSONUtilS.toJsonStr(scoresOfPreJudgment);
     }
 
-    private void addScoreReason(int index, String reason) {
+    private void updateScoreReason(int index, String reason) {
         scoreReasons.set(index, reason);
         scoreReasonsJsonStr = JSONUtilS.toJsonStr(scoreReasons);
     }
+
+    /**
+     * 删除api, 只需要index, 将全部删除4字段
+     * @param index
+     */
+    public void removePreJudgmentView(int index) {
+        preJudgmentViews.remove(index);
+        preJudgmentViewsJsonStr = JSONUtilS.toJsonStr(preJudgmentViews);
+        removeFuture(index);
+        removeScoreOfPreJudgment(index);
+        removeScoreReason(index);
+    }
+
+    private void removeFuture(int index) {
+        futures.remove(index);
+        futuresJsonStr = JSONUtilS.toJsonStr(futures);
+    }
+
+    private void removeScoreOfPreJudgment(int index) {
+        scoresOfPreJudgment.remove(index);
+        scoresOfPreJudgmentJsonStr = JSONUtilS.toJsonStr(scoresOfPreJudgment);
+    }
+
+    private void removeScoreReason(int index) {
+        scoreReasons.remove(index);
+        scoreReasonsJsonStr = JSONUtilS.toJsonStr(scoreReasons);
+    }
+
 
 }

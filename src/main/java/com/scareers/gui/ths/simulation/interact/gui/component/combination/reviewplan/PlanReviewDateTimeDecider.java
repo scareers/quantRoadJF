@@ -110,7 +110,7 @@ public class PlanReviewDateTimeDecider extends JPanel {
             }
         });
         this.add(jCheckBox);
-        jCheckBox.setSelected(true);
+//        jCheckBox.setSelected(true); // 默认选中
         this.add(showDate);
     }
 

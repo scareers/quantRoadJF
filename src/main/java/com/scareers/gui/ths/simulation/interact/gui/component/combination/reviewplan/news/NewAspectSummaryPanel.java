@@ -160,7 +160,12 @@ public class NewAspectSummaryPanel extends DisplayPanel {
     }
 
     private void fillPreJudgementPanel() {
-        preJudgementPanel
+        preJudgementPanel.setLayout(new BorderLayout()); // 3
+        TitledBorder border = new TitledBorder("资讯预判");
+        border.setTitleColor(Color.red);
+        preJudgementPanel.setBorder(border);
+
+        preJudgementPanel.add(new PreJudgementListTOfNewPanel(this.bean), BorderLayout.CENTER);
     }
 
     public void initBean() {
