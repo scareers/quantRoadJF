@@ -10,6 +10,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
+import org.jdesktop.swingx.JXCollapsiblePane;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -36,6 +37,7 @@ import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS;
  */
 @Getter
 public abstract class SimpleNewListPanel extends DisplayPanel {
+
     protected SimpleNewEditorPanel editorPanel; // 编辑面
     protected SimpleNewEm currentBean;
 
@@ -45,7 +47,11 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
 
+
+
     protected NewsTabPanel parentS; // 维护所属 newstab
+
+
 
     public SimpleNewListPanel(NewsTabPanel parentS) {
         this.parentS = parentS;
@@ -81,7 +87,10 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
         panelTemp.setLayout(new BorderLayout());
         panelTemp.add(buttonContainer, BorderLayout.NORTH);
         panelTemp.add(jScrollPane, BorderLayout.CENTER);
+
+
         this.add(panelTemp, BorderLayout.CENTER);
+
 
         editorPanel = new SimpleNewEditorPanel(this);
         JPanel panel = new JPanel();
@@ -104,6 +113,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
     @Override
     public void update() {
         flushBeanMapAndShowDf(); // 刷新 beanMap和newDf
+
         if (newDf == null) {
             return;
         }

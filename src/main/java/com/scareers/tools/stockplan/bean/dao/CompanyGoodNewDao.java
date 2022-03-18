@@ -99,6 +99,7 @@ public class CompanyGoodNewDao {
         return getNewsForTradePlanByDate(preDate);
     }
 
+
     /**
      * 为复盘, 获取适当日期的 利好公告 --> 相同于 公司重大事件
      * 逻辑:
