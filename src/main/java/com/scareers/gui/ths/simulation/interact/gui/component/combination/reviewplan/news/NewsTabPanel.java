@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
@@ -92,14 +93,27 @@ public abstract class NewsTabPanel extends DisplayPanel {
     }
 
     protected void initButtonContainer() {
+        // 全局功能按钮容器
         buttonContainer = new JPanel();
         buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
+
+        // 可展开资讯面总结 按钮
         buttonNewAspect = ButtonFactory.getButton("");
         buttonNewAspect.setAction(collapsiblePane.getActionMap().get(JXCollapsiblePane.TOGGLE_ACTION));
         buttonNewAspect.setText("资讯面总结");
         buttonNewAspect.setForeground(Color.red);
         buttonContainer.add(buttonNewAspect);
+
+        // 全局等价日期时间 选择按钮, 他将决定 复盘/操盘计划, 等价的 "当前时间"
+        // 当勾选复选框时, 在决定操盘/复盘 等价时间时, 将读取 本 DatePicker 对应的时间,
+        // 若复选框不勾选, 将 默认每次使用 now 当前时间决定复盘操盘时间
+        // @key: 总之, 本机制可以对 "过去"的 操盘复盘 进行查看/修改/操作等
+
+        PlanReviewDateTimeDecider planReviewDateTimeDecider = PlanReviewDateTimeDecider.newInstance();
+        buttonContainer.add(planReviewDateTimeDecider);
+        planReviewDateTimeDecider.setVisible(true);
     }
+
 
     @Override
     public void update() {
