@@ -42,8 +42,19 @@ public class PlanReviewDateTimeDecider extends JPanel {
 
     private static Date uniqueDatetime = DateUtil.date();
 
-    public static Date getUniqueDatetime() { // 全局核心字段. 当复选框选中, 并选择事件, 默认
-        return uniqueDatetime;
+    /**
+     * 全局核心方法. 获取 操盘复盘等价时间;  当复选框选中, 并选择事件, 默认
+     *
+     * @return
+     */
+    public static Date getUniqueDatetime() {
+        if (instanceList.size() > 0) {
+            PlanReviewDateTimeDecider decider = instanceList.get(0); // 理论上每个实例均被同步
+            if (decider.getJCheckBox().isSelected()) { // 被选中时, 返回 被设置的 uniqueDatetime
+                return uniqueDatetime;
+            }
+        }
+        return DateUtil.date(); // 否则now
     }
 
     JCheckBox jCheckBox; // 复选框启用本机制, 否则统一返回真实的now

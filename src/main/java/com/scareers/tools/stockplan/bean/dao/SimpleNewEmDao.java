@@ -1,6 +1,7 @@
 package com.scareers.tools.stockplan.bean.dao;
 
 import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
@@ -16,6 +17,7 @@ import org.hibernate.query.Query;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -56,10 +58,10 @@ public class SimpleNewEmDao {
      * 1.1: 今日是交易日, 时间区间: 上一确定交易日15:00, 到 Min(15:00, now) // 15:00后的新闻应当视为 计划, 而非复盘!!
      * 1.2: 今日非交易日: 上一确定交易日15:00, 到 now
      */
-    public static List<SimpleNewEm> getNewsForReviseByType(int type) throws SQLException {
+    public static List<SimpleNewEm> getNewsForReviseByType(int type, Date equivalenceNow) throws SQLException {
         // 合理计算 复盘时 应当抓取的 新闻发布 时间区间!
-        DateTime startDateTime = decideStartDateTimeForRevise();
-        DateTime endDateTime = decideEndDateTimeForRevise();
+        DateTime startDateTime = decideStartDateTimeForRevise(equivalenceNow);
+        DateTime endDateTime = decideEndDateTimeForRevise(equivalenceNow);
         // hibernate API, 访问数据库
         Session session = sessionFactory.openSession();
         String hql = "FROM SimpleNewEm E WHERE E.type = :type and E.dateTime>=:startDateTime " +
@@ -88,9 +90,9 @@ public class SimpleNewEmDao {
      * 1.2: 今日非交易日:
      * -->所有时间, 视为为 下一交易日做准备, 新闻区间为: 上一交易日15:00 - now
      */
-    public static List<SimpleNewEm> getNewsForTradePlanByType(int type) throws SQLException {
+    public static List<SimpleNewEm> getNewsForTradePlanByType(int type, Date equivalenceNow) throws SQLException {
         // 合理计算 复盘时 应当抓取的 新闻发布 时间区间!
-        List<DateTime> dateTimeRange = decideDateTimeRangeForTradePlan();
+        List<DateTime> dateTimeRange = decideDateTimeRangeForTradePlan(equivalenceNow);
         DateTime startDateTime = dateTimeRange.get(0);
         DateTime endDateTime = dateTimeRange.get(1);
         // hibernate API, 访问数据库
@@ -118,23 +120,23 @@ public class SimpleNewEmDao {
      * @return
      * @throws SQLException
      */
-    public static DateTime decideStartDateTimeForRevise() throws SQLException {
-        String today = DateUtil.today();
+    public static DateTime decideStartDateTimeForRevise(Date equivalenceNow) throws SQLException {
+        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         String preTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
         return DateUtil.parse(preTradeDate + " 15:00:00"); // 上一交易日收盘开始
     }
 
     // 决定复盘时, 查看新闻的日期区间 结束
-    public static DateTime decideEndDateTimeForRevise() throws SQLException {
-        String today = DateUtil.today();
-        DateTime now = DateUtil.date();
-        DateTime endDateTime = now;
+    public static DateTime decideEndDateTimeForRevise(Date equivalenceNow) throws SQLException {
+        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
+        Date now = equivalenceNow;
+        Date endDateTime = now;
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(now, true) >= 15) { // 此时超过15点, 依旧以15点为上限
                 endDateTime = DateUtil.parse(today + " 15:00:00");
             }
         }
-        return endDateTime;
+        return DateUtil.date(endDateTime);
     }
 
     /**
@@ -143,12 +145,12 @@ public class SimpleNewEmDao {
      * @return
      * @throws SQLException
      */
-    public static List<DateTime> decideDateTimeRangeForTradePlan() throws SQLException {
+    public static List<DateTime> decideDateTimeRangeForTradePlan( Date equivalenceNow) throws SQLException {
         List<DateTime> res = new ArrayList<>();
-        String today = DateUtil.today();
+        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         Boolean tradeDate = EastMoneyDbApi.isTradeDate(today);
 
-        DateTime now = DateUtil.date();
+        DateTime now = DateUtil.date(equivalenceNow);
         String preTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1); // 上一交易日
         // String nextTradeDate = EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 下一交易日
 

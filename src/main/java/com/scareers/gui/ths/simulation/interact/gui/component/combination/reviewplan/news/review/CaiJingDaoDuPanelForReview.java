@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.review;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.SimpleNewListPanel;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
@@ -34,7 +35,8 @@ public class CaiJingDaoDuPanelForReview extends SimpleNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<SimpleNewEm> newsForReviseByType;
         try {
-            newsForReviseByType = SimpleNewEmDao.getNewsForReviseByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE);
+            newsForReviseByType = SimpleNewEmDao.getNewsForReviseByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE,
+                    PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据
