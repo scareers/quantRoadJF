@@ -88,11 +88,25 @@ public class PlanReviewDateTimeDecider extends JPanel {
         jCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (jCheckBox.isSelected()) {
+                    uniqueDatetime = DateUtil.parse(dateTimePicker.getSelect());
+                }
+
                 for (PlanReviewDateTimeDecider planReviewDateTimeDecider : new ArrayList<>(instanceList)) {
+                    // 同步选中状态
                     if (planReviewDateTimeDecider != decider) { // 同步所有选中状态
                         planReviewDateTimeDecider.getJCheckBox().setSelected(jCheckBox.isSelected());
                     }
+                    // 当切换到被选中状态, 应当刷新为 当前这个DateTimePicker 时间
+                    if (jCheckBox.isSelected()) {
+                        DateTimePicker dateTimePicker = planReviewDateTimeDecider.getDateTimePicker();
+                        dateTimePicker.setSelect(uniqueDatetime);
+                        dateTimePicker.refresh();
+                        planReviewDateTimeDecider.getShowDate().setText(dateTimePicker.getSelect());
+                    }
                 }
+
+
             }
         });
         this.add(jCheckBox);

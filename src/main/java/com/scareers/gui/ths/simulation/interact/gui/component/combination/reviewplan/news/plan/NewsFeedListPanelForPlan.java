@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan;
 
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsFeedListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
 import com.scareers.tools.stockplan.bean.NewsFeed;
@@ -34,7 +35,7 @@ public class NewsFeedListPanelForPlan extends NewsFeedListPanel {
     public void flushBeanMapAndShowDf() {
         List<NewsFeed> newsForReviseByType;
         try {
-            newsForReviseByType = NewsFeedDao.getNewsForPlan();
+            newsForReviseByType = NewsFeedDao.getNewsForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据
