@@ -38,14 +38,20 @@ public class NewAspectSummary {
 
     }
 
-    // 类型列表
+    // bean类型列表
     public static String PLAN_TYPE = "plan";
     public static String REVIEW_TYPE = "review";
+
+    // 消息类型列表
+    public static String POINT_TYPE_GOOD = "利好";
+    public static String POINT_TYPE_BAD = "利空";
+    public static String POINT_TYPE_NEUTRAL = "中性";
+    public static String POINT_TYPE_OTHER = "其他";
 
     /*
     最常用的初始化工厂方法
      */
-    public static NewAspectSummary newInstance(String dateStr,String type) {
+    public static NewAspectSummary newInstance(String dateStr, String type) {
         NewAspectSummary bean = new NewAspectSummary();
         bean.setType(type);
         bean.setGeneratedTime(DateUtil.date());
@@ -211,6 +217,26 @@ public class NewAspectSummary {
 
     public void updateOtherPoint(int index, String view) {
         otherPoints.set(index, view);
+        otherPointsJsonStr = JSONUtilS.toJsonStr(otherPoints);
+    }
+
+    public void removeGoodPoint(int index) {
+        goodPoints.remove(index);
+        goodPointsJsonStr = JSONUtilS.toJsonStr(goodPoints);
+    }
+
+    public void removeBadPoint(int index) {
+        badPoints.remove(index);
+        badPointsJsonStr = JSONUtilS.toJsonStr(badPoints);
+    }
+
+    public void removeNeutralPoint(int index) {
+        neutralPoints.remove(index);
+        neutralPointsJsonStr = JSONUtilS.toJsonStr(neutralPoints);
+    }
+
+    public void removeOtherPoint(int index) {
+        otherPoints.remove(index);
         otherPointsJsonStr = JSONUtilS.toJsonStr(otherPoints);
     }
 

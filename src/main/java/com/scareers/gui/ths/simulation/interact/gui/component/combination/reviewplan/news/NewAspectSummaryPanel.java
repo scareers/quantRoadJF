@@ -2,9 +2,10 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.date.DateUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.FourPaperNewEditorPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
-import org.jdesktop.swingx.JXList;
+import com.scareers.tools.stockplan.bean.NewAspectSummary;
+import com.scareers.tools.stockplan.bean.dao.NewAspectSummaryDao;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -13,13 +14,12 @@ import javax.persistence.Transient;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.*;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.colorTest;
-import static javax.swing.SwingConstants.LEADING;
-import static javax.swing.border.TitledBorder.DEFAULT_POSITION;
 
 /**
  * description: 新闻资讯面 个人总结!
@@ -32,7 +32,6 @@ import static javax.swing.border.TitledBorder.DEFAULT_POSITION;
  * @date: 2022/3/17/017-19:09:17
  */
 public class NewAspectSummaryPanel extends DisplayPanel {
-
     @Id
     @GeneratedValue // 默认就是auto
     @Column(name = "id", unique = true)
@@ -105,6 +104,8 @@ public class NewAspectSummaryPanel extends DisplayPanel {
     @Column(name = "scoreReasons", columnDefinition = "longtext")
     String scoreReasonsJsonStr = "[]"; // 未来情景描述, json字符串
 
+    NewAspectSummary bean;
+
     JPanel baseInfoPanel; // 基本字段
     JPanel pointsPanel; // 利好利空中性其他 消息总结
     JPanel preJudgementPanel; // 预判相关
@@ -149,9 +150,25 @@ public class NewAspectSummaryPanel extends DisplayPanel {
 
 
     public NewAspectSummaryPanel() {
+        this.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+        initBean(); // todo: 将被抽象方法,
         initThreeContainerPanel();
         fillBaseInfoPanel(); // 将8字段相关控件, 放置于 baseInfoPanel
         fillPointsPanel(); // 资讯总结4类,
+
+        fillPreJudgementPanel();
+    }
+
+    private void fillPreJudgementPanel() {
+        preJudgementPanel
+    }
+
+    public void initBean() {
+        try {
+            this.bean = NewAspectSummaryDao.getOrInitBeanForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void fillPointsPanel() {
@@ -160,10 +177,10 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         border.setTitleColor(Color.red);
         pointsPanel.setBorder(border);
 
-        pointsPanel.add(new JLabel("利好"));
-        pointsPanel.add(new JLabel("利空"));
-        pointsPanel.add(new JLabel("中性"));
-        pointsPanel.add(new JLabel("其他"));
+        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_GOOD, bean));
+        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_BAD, bean));
+        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_NEUTRAL, bean));
+        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_OTHER, bean));
     }
 
     private void fillBaseInfoPanel() {
@@ -202,13 +219,14 @@ public class NewAspectSummaryPanel extends DisplayPanel {
     private void initThreeContainerPanel() {
         this.setLayout(new BorderLayout());
         baseInfoPanel = new JPanel();
-        baseInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
         pointsPanel = new JPanel();
-        pointsPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
         preJudgementPanel = new JPanel();
-        preJudgementPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
-        this.add(baseInfoPanel, BorderLayout.WEST);
+        JPanel panelTemp = new JPanel();
+        panelTemp.setLayout(new BorderLayout());
+        panelTemp.add(baseInfoPanel, BorderLayout.NORTH); // 包装一下, 形状不变
+        panelTemp.add(new JPanel(), BorderLayout.CENTER); // 必须占位
+        this.add(panelTemp, BorderLayout.WEST);
 
         JPanel jPanelCenter = new JPanel();
         jPanelCenter.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP));
