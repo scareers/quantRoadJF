@@ -12,6 +12,8 @@ import joinery.DataFrame;
 import java.sql.SQLException;
 import java.util.*;
 
+import static com.scareers.utils.SqlUtil.execSql;
+
 /**
  * description: 行业指数 -- 行业列表 -- 包含所有二级和三级行业. 一级行业不考虑
  * // [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数@同花顺行业指数, 指数@所属同花顺行业级别, 指数简称, market_code, 指数代码]
@@ -22,16 +24,32 @@ import java.util.*;
  */
 public class BkListThs extends CrawlerThs {
     public static void main(String[] args) {
-        new BkListThs().run();
+        new BkListThs(false).run();
 
     }
 
-    public BkListThs() {
+    boolean forceUpdate; // 是否强制更新, 将尝试删除 dateStr==今日, 再行保存
+
+    public BkListThs(boolean forceUpdate) {
         super("industry_list");
+        this.forceUpdate = forceUpdate;
     }
 
     @Override
     protected void runCore() {
+        String dateStr = DateUtil.today(); // 记录日期列
+        if (!forceUpdate) {
+            String sql = StrUtil.format("select count(*) from {} where dateStr='{}'", tableName, dateStr);
+            try {
+                DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+                if (dataFrame.size() > 0) {
+                    success = true;
+                    return; // 当不强制更新, 判定是否已运行过, 运行过则直接返回
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("同花顺行业指数;");
         if (dataFrame == null) {
             logApiError("wenCaiQuery(\"同花顺行业指数;\")");
@@ -41,18 +59,17 @@ public class BkListThs extends CrawlerThs {
 
         //
         dataFrame = dataFrame.rename(getRenameMap(dataFrame.columns()));
-        String dateStr = DateUtil.today(); // 记录日期列
         List<Object> dateStrList = new ArrayList<>();
         for (int i = 0; i < dataFrame.length(); i++) {
             dateStrList.add(dateStr);
         }
         dataFrame = dataFrame.add("dateStr", dateStrList);
 
-        // todo: 删除逻辑;
-
         try {
+            String sqlDelete = StrUtil.format("delete from {} where dateStr='{}'", tableName, dateStr);
+            execSql(sqlDelete, conn);
             DataFrameS.toSql(dataFrame, tableName, this.conn, "append", sqlCreateTable);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             logSaveError();
             success = false;
