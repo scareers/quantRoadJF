@@ -3,10 +3,10 @@ package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.NewsFeed;
+import com.scareers.tools.stockplan.bean.CompanyGoodNew;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import joinery.DataFrame;
 
@@ -16,31 +16,31 @@ import java.util.HashSet;
 import java.util.List;
 
 /**
- * description: 新闻联播集锦
+ * description: 交易日, 公司重大事项归纳; 来自于财经导读;
  *
  * @noti :机制: 读取近500条 最近财经导读数据, 从数据获取, 查找里面的该类新闻, 访问url解析
  * @author: admin
  * @date: 2022/3/16/016-21:43:13
  */
-public class NewsFeedsCrawler extends Crawler {
+public class CompanyGoodNewsCrawlerEm extends CrawlerEm {
     public static void main(String[] args) {
-        new NewsFeedsCrawler().run();
+        new CompanyGoodNewsCrawlerEm().run();
     }
 
 
-    public NewsFeedsCrawler(String tableName) {
+    public CompanyGoodNewsCrawlerEm(String tableName) {
         super(tableName);
     }
 
-    public NewsFeedsCrawler() {
-        this("news_feed");
+    public CompanyGoodNewsCrawlerEm() {
+        this("company_good_new");
     }
 
     @Override
     protected void runCore() {
         try {
             for (SimpleNewEm saveBean : this.initLastTimeFetchSaveBeansExpect500()) {
-                if (!saveBean.isNewsFeed()) {
+                if (!saveBean.isCompanyGoodNew()) { // 是重大事项
                     continue;
                 }
                 // 尝试访问数据库, 该日是否被解析过? 得到该日的解析结果数量.
@@ -54,7 +54,7 @@ public class NewsFeedsCrawler extends Crawler {
                 if (count == 0) {
                     // 首次解析保存
                     // 调用解析 api
-                    actualSaveNewsFeeds(saveBean);
+                    actualSaveCompanyGoodNews(saveBean);
                     // 其他情况均不保存. 以免覆盖自定义字段!!!
                 }
             }
@@ -72,17 +72,17 @@ public class NewsFeedsCrawler extends Crawler {
 
     @Override
     protected void initSqlCreateTable() {
-        sqlCreateTable = getSqlCreateNewsFeedsTable();
+        sqlCreateTable = getSqlCreateCompanyGoodNewsTable();
     }
 
-    private void actualSaveNewsFeeds(SimpleNewEm saveBean) throws SQLException {
-        List<NewsFeed> news = NewsFeed.parseNewsFeeds(saveBean);
-        if (news == null) {
+    private void actualSaveCompanyGoodNews(SimpleNewEm saveBean) throws SQLException {
+        List<CompanyGoodNew> companyGoodNews = CompanyGoodNew.parseCompanyGoodNews(saveBean);
+        if (companyGoodNews == null) {
             return;
         }
 
         // 保存逻辑
-        DataFrame<Object> dataFrame1 = NewsFeed.buildDfFromBeanListWithoutIdAndSaveTime(news);
+        DataFrame<Object> dataFrame1 = CompanyGoodNew.buildDfFromBeanListWithoutIdAndSaveTime(companyGoodNews);
         dataFrame1.add("saveTime");
         // saveTime 初始化
         for (int i = 0; i < dataFrame1.length(); i++) {
@@ -93,10 +93,12 @@ public class NewsFeedsCrawler extends Crawler {
     }
 
 
-    public String getSqlCreateNewsFeedsTable() {
+    public String getSqlCreateCompanyGoodNewsTable() {
         return StrUtil.format(
                 "create table if not exists `{}`(\n"
                         + "id bigint primary key auto_increment,"
+                        + "name text  null,"
+                        + "quoteUrl text  null,"
                         + "title text  null,"
                         + "content longtext  null,"
                         + "dateStr varchar(32)  null,"

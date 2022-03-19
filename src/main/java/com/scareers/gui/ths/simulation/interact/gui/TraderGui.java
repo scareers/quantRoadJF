@@ -1,13 +1,11 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
-import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -198,12 +196,12 @@ public class TraderGui extends JFrame {
                     @Override
                     public void execute() {
                         ThreadUtil.sleep(5000);
-                        new CaiJingDaoDuCrawler().run(); // 财经导读抓取
-                        new ZiXunJingHuaCrawler().run(); // 资讯精华抓取
-                        new CompanyMajorIssuesCrawler().run(); // 重大事件抓取
-                        new CompanyGoodNewsCrawler().run(); // 利好抓取
-                        new NewsFeedsCrawler().run(); // 新闻联播集锦
-                        new FourPaperNewsCrawler().run(); // 四大报媒精华
+                        new CaiJingDaoDuCrawlerEm().run(); // 财经导读抓取
+                        new ZiXunJingHuaCrawlerEm().run(); // 资讯精华抓取
+                        new CompanyMajorIssuesCrawlerEm().run(); // 重大事件抓取
+                        new CompanyGoodNewsCrawlerEm().run(); // 利好抓取
+                        new NewsFeedsCrawlerEm().run(); // 新闻联播集锦
+                        new FourPaperNewsCrawlerEm().run(); // 四大报媒精华
                     }
                 });
                 CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分

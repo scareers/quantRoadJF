@@ -2,7 +2,7 @@ package com.scareers.datasource.eastmoney.dailycrawler.commons;
 
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
@@ -22,13 +22,13 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/5/005-09:22:50
  */
-public class BkList extends Crawler {
-    public BkList() {
-        super("bk_list");
+public class IndexListEm extends CrawlerEm {
+    public IndexListEm() {
+        super("index_list");
     }
 
     public static void main(String[] args) {
-        new BkList().run();
+        new IndexListEm().run();
     }
 
     @Override
@@ -58,9 +58,9 @@ public class BkList extends Crawler {
                         + "securityTypeName varchar(64) not null,"
                         + "convertRawJsonObject text not null,"
 
-                        + "isConceptBK boolean not null,"
-                        + "isIndustryBK boolean not null,"
-                        + "isAreaBK boolean not null,"
+                        + "isHuIndex boolean not null,"
+                        + "isShenIndex boolean not null,"
+                        + "isZhongIndex boolean not null,"
                         + "self_record_time varchar(32) null,"
 
 
@@ -72,11 +72,16 @@ public class BkList extends Crawler {
 
     @Override
     protected void runCore() {
-        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("所有板块"));
-        List<String> bkCodes = DataFrameS.getColAsStringList(stockListDf, "资产代码");
+        DataFrame<Object> indexListDF = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
+        DataFrame<Object> indexListDF2 = EmQuoteApi.getRealtimeQuotes(Arrays.asList("中证系列指数"));
+        indexListDF = indexListDF.concat(indexListDF2);
+
+
+        List<String> bkCodes = DataFrameS.getColAsStringList(indexListDF, "资产代码");
+
         List<SecurityBeanEm> bkListBeans;
         try {
-            bkListBeans = SecurityBeanEm.createBKList(bkCodes);
+            bkListBeans = SecurityBeanEm.createIndexList(bkCodes);
         } catch (Exception e) {
             e.printStackTrace();
             logApiError("SecurityBeanEm.createBKList");
@@ -90,7 +95,7 @@ public class BkList extends Crawler {
                 "classify", "market", "marketType", "typeUs",
                 "securityType", "securityTypeName",
                 "convertRawJsonObject",
-                "isConceptBK", "isIndustryBK", "isAreaBK",
+                "isHuIndex", "isShenIndex", "isZhongIndex",
 
                 "self_record_time"
         );
@@ -125,9 +130,9 @@ public class BkList extends Crawler {
             row.add(JSONUtilS.toJsonStr(bean.getConvertRawJsonObject()));
 
             // 所属板块标志
-            row.add(bean.isConceptBK());
-            row.add(bean.isIndustryBK());
-            row.add(bean.isAreaBK());
+            row.add(bean.isHuIndex());
+            row.add(bean.isShenIndex());
+            row.add(bean.isZhongIndex());
 
 
             row.add(getRecordTime());

@@ -2,16 +2,7 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.BkList;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexList;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.StockList;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDates;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
-import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MData;
-import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransData;
-import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfBk;
-import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfIndex;
-import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataOfStock;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
@@ -31,36 +22,36 @@ public class CrawlerChain {
         boolean fullMode = true;
 
         CrawlerChain crawlerChain = new CrawlerChain(1, 1);
-//        crawlerChain.addSynCrawler(new StockList());
-//        crawlerChain.addSynCrawler(new IndexList());
-//        crawlerChain.addSynCrawler(new BkList());
-//        crawlerChain.addSynCrawler(new TradeDates());
+//        crawlerChain.addSynCrawler(new StockListEm());
+//        crawlerChain.addSynCrawler(new IndexListEm());
+//        crawlerChain.addSynCrawler(new BkListEm());
+//        crawlerChain.addSynCrawler(new TradeDatesEm());
 
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("nofq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("hfq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfStock("qfq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfBk(fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataOfIndex(fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 //
-//        crawlerChain.addFrontCrawlers(new Fs1MData());
-//        crawlerChain.addFrontCrawlers(new FsTransData());
+//        crawlerChain.addFrontCrawlers(new Fs1MDataEm());
+//        crawlerChain.addFrontCrawlers(new FsTransDataEm());
 
         // 资讯
-        crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawler());
-        crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawler());
-        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司重大事件
-        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawler()); // 最近今天公司利好消息
-        crawlerChain.addFrontCrawlers(new NewsFeedsCrawler()); // 新闻联播集锦
-        crawlerChain.addFrontCrawlers(new FourPaperNewsCrawler()); // 四大报媒精华
+        crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawlerEm());
+        crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
+        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
+        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
+        crawlerChain.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
+        crawlerChain.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
 
         crawlerChain.run();
 
     }
 
-    List<Crawler> synCrawlers = new ArrayList<>(); // 同步爬虫, 按序run, 一般为 最基本数据. 后续爬虫会使用它们
-    List<Crawler> frontCrawlers = new ArrayList<>(); // 前置爬虫, 多线程执行, 一些优先级偏前的爬虫, 可能被依赖
-    List<Crawler> rearCrawlers = new ArrayList<>(); // 后置爬虫, 常规数据项
+    List<CrawlerEm> synCrawlerEms = new ArrayList<>(); // 同步爬虫, 按序run, 一般为 最基本数据. 后续爬虫会使用它们
+    List<CrawlerEm> frontCrawlerEms = new ArrayList<>(); // 前置爬虫, 多线程执行, 一些优先级偏前的爬虫, 可能被依赖
+    List<CrawlerEm> rearCrawlerEms = new ArrayList<>(); // 后置爬虫, 常规数据项
     ExecutorService esFront;
     ExecutorService esRear;
 
@@ -76,73 +67,73 @@ public class CrawlerChain {
                         Integer.MAX_VALUE);
     }
 
-    public void addSynCrawler(Crawler crawler) {
-        synCrawlers.add(crawler);
+    public void addSynCrawler(CrawlerEm crawlerEm) {
+        synCrawlerEms.add(crawlerEm);
     }
 
-    public void addFrontCrawlers(Crawler crawler) {
-        frontCrawlers.add(crawler);
+    public void addFrontCrawlers(CrawlerEm crawlerEm) {
+        frontCrawlerEms.add(crawlerEm);
     }
 
-    public void addRearCrawlers(Crawler crawler) {
-        rearCrawlers.add(crawler);
+    public void addRearCrawlers(CrawlerEm crawlerEm) {
+        rearCrawlerEms.add(crawlerEm);
     }
 
     private static final Log log = LogUtil.getLogger();
 
-    CopyOnWriteArrayList<Crawler> successCrawlers = new CopyOnWriteArrayList<>(); // 执行成功
-    CopyOnWriteArrayList<Crawler> failCrawlers = new CopyOnWriteArrayList<>(); // 第一次执行失败的爬虫
-    CopyOnWriteArrayList<Crawler> failFinallyCrawlers = new CopyOnWriteArrayList<>(); // 重试后依然失败的爬虫
+    CopyOnWriteArrayList<CrawlerEm> successCrawlerEms = new CopyOnWriteArrayList<>(); // 执行成功
+    CopyOnWriteArrayList<CrawlerEm> failCrawlerEms = new CopyOnWriteArrayList<>(); // 第一次执行失败的爬虫
+    CopyOnWriteArrayList<CrawlerEm> failFinallyCrawlerEms = new CopyOnWriteArrayList<>(); // 重试后依然失败的爬虫
 
     public void run() {
         log.error("show: 开始执行同步爬虫");
-        for (Crawler synCrawler : synCrawlers) {
-            synCrawler.run();
+        for (CrawlerEm synCrawlerEm : synCrawlerEms) {
+            synCrawlerEm.run();
         }
 
         log.error("show: 开始执行前置爬虫");
-        for (Crawler frontCrawler : frontCrawlers) {
+        for (CrawlerEm frontCrawlerEm : frontCrawlerEms) {
             esFront.submit(() -> {
-                frontCrawler.run();
-                if (frontCrawler.isSuccess()) {
-                    successCrawlers.add(frontCrawler);
+                frontCrawlerEm.run();
+                if (frontCrawlerEm.isSuccess()) {
+                    successCrawlerEms.add(frontCrawlerEm);
                 } else {
-                    failCrawlers.add(frontCrawler);
+                    failCrawlerEms.add(frontCrawlerEm);
                 }
             });
         }
         waitPoolFinish(esFront);
-        log.error("失败的前置爬虫数量: {}", failCrawlers.size());
+        log.error("失败的前置爬虫数量: {}", failCrawlerEms.size());
         log.error("show: 开始执行后置爬虫");
-        for (Crawler rearCrawler : rearCrawlers) {
+        for (CrawlerEm rearCrawlerEm : rearCrawlerEms) {
             esRear.submit(() -> {
-                rearCrawler.run();
-                if (rearCrawler.isSuccess()) {
-                    successCrawlers.add(rearCrawler);
+                rearCrawlerEm.run();
+                if (rearCrawlerEm.isSuccess()) {
+                    successCrawlerEms.add(rearCrawlerEm);
                 } else {
-                    failCrawlers.add(rearCrawler);
+                    failCrawlerEms.add(rearCrawlerEm);
                 }
             });
         }
         waitPoolFinish(esRear);
-        log.error("失败总爬虫数量: {}", failCrawlers.size());
+        log.error("失败总爬虫数量: {}", failCrawlerEms.size());
         log.error("show: 尝试再次执行失败爬虫");
 
-        for (Crawler failCrawler : failCrawlers) {
+        for (CrawlerEm failCrawlerEm : failCrawlerEms) {
             esRear.submit(() -> {
-                failCrawler.run();
-                if (failCrawler.isSuccess()) {
-                    successCrawlers.add(failCrawler);
+                failCrawlerEm.run();
+                if (failCrawlerEm.isSuccess()) {
+                    successCrawlerEms.add(failCrawlerEm);
                 } else {
-                    failFinallyCrawlers.add(failCrawler);
+                    failFinallyCrawlerEms.add(failCrawlerEm);
                 }
             });
         }
         waitPoolFinish(esRear);
 
         log.error("show: 执行状况:\n 成功的爬虫:数量: {}\n{}" +
-                        "\n首次失败的爬虫数量: {}\n{}\n重试后最终失败的爬虫数量: {}\n{}", successCrawlers.size(), successCrawlers,
-                failCrawlers.size(), failCrawlers, failFinallyCrawlers.size(), failFinallyCrawlers);
+                        "\n首次失败的爬虫数量: {}\n{}\n重试后最终失败的爬虫数量: {}\n{}", successCrawlerEms.size(), successCrawlerEms,
+                failCrawlerEms.size(), failCrawlerEms, failFinallyCrawlerEms.size(), failFinallyCrawlerEms);
 
     }
 

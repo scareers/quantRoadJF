@@ -3,10 +3,10 @@ package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.FourPaperNew;
+import com.scareers.tools.stockplan.bean.MajorIssue;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import joinery.DataFrame;
 
@@ -16,31 +16,35 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
+import static com.scareers.tools.stockplan.bean.MajorIssue.parseCompanyMajorIssuesNew;
+
 /**
- * description: 交易日, 四大报媒 新闻精选
+ * description: 交易日, 公司重大事项归纳; 来自于财经导读;
  *
  * @noti :机制: 读取近500条 最近财经导读数据, 从数据获取, 查找里面的该类新闻, 访问url解析
  * @author: admin
  * @date: 2022/3/16/016-21:43:13
  */
-public class FourPaperNewsCrawler extends Crawler {
+public class CompanyMajorIssuesCrawlerEm extends CrawlerEm {
     public static void main(String[] args) {
-        new FourPaperNewsCrawler().run();
+        new CompanyMajorIssuesCrawlerEm().run();
     }
 
-    public FourPaperNewsCrawler(String tableName) {
+
+    public CompanyMajorIssuesCrawlerEm(String tableName) {
         super(tableName);
     }
 
-    public FourPaperNewsCrawler() {
-        this("four_paper_new");
+    public CompanyMajorIssuesCrawlerEm() {
+        this("company_major_issue");
     }
 
     @Override
     protected void runCore() {
+
         try {
             for (SimpleNewEm saveBean : this.initLastTimeFetchSaveBeansExpect500()) {
-                if (!saveBean.isFourPaperNew()) { // 是重大事项
+                if (!saveBean.isCompanyMajorIssues()) { // 是重大事项
                     continue;
                 }
                 // 尝试访问数据库, 该日是否被解析过? 得到该日的解析结果数量.
@@ -54,7 +58,7 @@ public class FourPaperNewsCrawler extends Crawler {
                 if (count == 0) {
                     // 首次解析保存
                     // 调用解析 api
-                    actualSaveFourPaperNews(saveBean);
+                    actualSaveCompanyMajorIssues(saveBean);
                     // 其他情况均不保存. 以免覆盖自定义字段!!!
                 }
             }
@@ -75,17 +79,17 @@ public class FourPaperNewsCrawler extends Crawler {
         sqlCreateTable = getSqlCreateCompanyMajorIssuesTable();
     }
 
-    private void actualSaveFourPaperNews(SimpleNewEm saveBean) throws SQLException {
-        List<FourPaperNew.FourPaperNewBatch> fourPaperNewBatches = FourPaperNew.parseFourPaperNews(saveBean);
-        if (fourPaperNewBatches == null) {
+    private void actualSaveCompanyMajorIssues(SimpleNewEm saveBean) throws SQLException {
+        List<MajorIssue.MajorIssueBatch> majorIssueBatches = parseCompanyMajorIssuesNew(saveBean);
+        if (majorIssueBatches == null) {
             return;
         }
-        List<FourPaperNew> shouldSave = new ArrayList<>();
-        for (FourPaperNew.FourPaperNewBatch batch : fourPaperNewBatches) {
-            shouldSave.addAll(batch.getItems());
+        List<MajorIssue> shouldSave = new ArrayList<>();
+        for (MajorIssue.MajorIssueBatch majorIssueBatch : majorIssueBatches) {
+            shouldSave.addAll(majorIssueBatch.getItems());
         }
         // 保存逻辑
-        DataFrame<Object> dataFrame1 = FourPaperNew.buildDfFromBeanListWithoutIdAndSaveTime(shouldSave);
+        DataFrame<Object> dataFrame1 = MajorIssue.buildDfFromBeanListWithoutIdAndSaveTime(shouldSave);
         dataFrame1.add("saveTime");
         // saveTime 初始化
         for (int i = 0; i < dataFrame1.length(); i++) {
@@ -101,7 +105,8 @@ public class FourPaperNewsCrawler extends Crawler {
         return StrUtil.format(
                 "create table if not exists `{}`(\n"
                         + "id bigint primary key auto_increment,"
-                        + "url text  null,"
+                        + "name text  null,"
+                        + "quoteUrl text  null,"
                         + "title text  null,"
                         + "content longtext  null,"
                         + "dateStr varchar(32)  null,"
@@ -109,7 +114,6 @@ public class FourPaperNewsCrawler extends Crawler {
                         + "saveTime datetime  null,"
 
                         + "briefly varchar(2048)  null,"
-                        + "relatedObject varchar(2048)  null,"
                         + "trend double  null," // 振幅
                         + "remark longtext  null,"
                         + "lastModified datetime  null,"

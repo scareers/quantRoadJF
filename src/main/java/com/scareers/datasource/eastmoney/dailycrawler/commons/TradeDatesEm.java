@@ -3,7 +3,7 @@ package com.scareers.datasource.eastmoney.dailycrawler.commons;
 import cn.hutool.core.date.*;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
@@ -24,13 +24,13 @@ import java.util.stream.Collectors;
  * @author: admin
  * @date: 2022/3/5/005-09:22:50
  */
-public class TradeDates extends Crawler {
-    public TradeDates() {
+public class TradeDatesEm extends CrawlerEm {
+    public TradeDatesEm() {
         super("trade_dates");
     }
 
     public static void main(String[] args) {
-        new TradeDates().run();
+        new TradeDatesEm().run();
     }
 
     @Override

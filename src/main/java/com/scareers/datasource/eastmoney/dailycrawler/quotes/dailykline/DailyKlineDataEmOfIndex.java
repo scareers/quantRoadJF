@@ -1,11 +1,7 @@
 package com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline;
 
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
-import com.scareers.pandasdummy.DataFrameS;
-import joinery.DataFrame;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -14,17 +10,17 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public class DailyKlineDataOfIndex extends DailyKlineData {
-    private DailyKlineDataOfIndex(String tablePrefix, String fq, boolean fullMode) {
+public class DailyKlineDataEmOfIndex extends DailyKlineDataEm {
+    private DailyKlineDataEmOfIndex(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
     }
 
-    public DailyKlineDataOfIndex(boolean fullMode) {
+    public DailyKlineDataEmOfIndex(boolean fullMode) {
         super("index_kline_daily", "", fullMode); // 会使用 nofq 默认
     }
 
     public static void main(String[] args) {
-        new DailyKlineDataOfIndex(true).run();
+        new DailyKlineDataEmOfIndex(true).run();
     }
 
 

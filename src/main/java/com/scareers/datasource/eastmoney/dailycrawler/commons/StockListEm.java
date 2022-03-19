@@ -1,9 +1,8 @@
 package com.scareers.datasource.eastmoney.dailycrawler.commons;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
@@ -23,13 +22,13 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/5/005-09:22:50
  */
-public class IndexList extends Crawler {
-    public IndexList() {
-        super("index_list");
+public class StockListEm extends CrawlerEm {
+    public StockListEm() {
+        super("stock_list");
     }
 
     public static void main(String[] args) {
-        new IndexList().run();
+        new StockListEm().run();
     }
 
     @Override
@@ -59,11 +58,15 @@ public class IndexList extends Crawler {
                         + "securityTypeName varchar(64) not null,"
                         + "convertRawJsonObject text not null,"
 
-                        + "isHuIndex boolean not null,"
-                        + "isShenIndex boolean not null,"
-                        + "isZhongIndex boolean not null,"
+                        + "isShenA boolean not null,"
+                        + "isHuA boolean not null,"
+                        + "isKCB boolean not null,"
+                        + "isCYB boolean not null,"
+                        + "isShenB boolean not null,"
+                        + "isHuB boolean not null,"
+                        + "isJingA int not null,"
+                        + "isXSB boolean not null,"
                         + "self_record_time varchar(32) null,"
-
 
                         + "INDEX secCode_index (secCode ASC),\n"
                         + "INDEX name_index (name ASC)\n"
@@ -73,19 +76,14 @@ public class IndexList extends Crawler {
 
     @Override
     protected void runCore() {
-        DataFrame<Object> indexListDF = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
-        DataFrame<Object> indexListDF2 = EmQuoteApi.getRealtimeQuotes(Arrays.asList("中证系列指数"));
-        indexListDF = indexListDF.concat(indexListDF2);
-
-
-        List<String> bkCodes = DataFrameS.getColAsStringList(indexListDF, "资产代码");
-
-        List<SecurityBeanEm> bkListBeans;
+        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深京A股"));
+        List<String> stockCodes = DataFrameS.getColAsStringList(stockListDf, "资产代码");
+        List<SecurityBeanEm> stockListBeans;
         try {
-            bkListBeans = SecurityBeanEm.createIndexList(bkCodes);
+            stockListBeans = SecurityBeanEm.createStockList(stockCodes, true);
         } catch (Exception e) {
             e.printStackTrace();
-            logApiError("SecurityBeanEm.createBKList");
+            logApiError("SecurityBeanEm.createStockList");
             success = false;
             return;
         }
@@ -96,13 +94,13 @@ public class IndexList extends Crawler {
                 "classify", "market", "marketType", "typeUs",
                 "securityType", "securityTypeName",
                 "convertRawJsonObject",
-                "isHuIndex", "isShenIndex", "isZhongIndex",
+                "isShenA", "isHuA", "isKCB", "isCYB", "isShenB", "isHuB", "isJingA", "isXSB",
 
                 "self_record_time"
         );
         DataFrame<Object> res = new DataFrame<>(cols);
 
-        for (SecurityBeanEm bean : bkListBeans) {
+        for (SecurityBeanEm bean : stockListBeans) {
             List<Object> row = new ArrayList<>();
 
             // 股票基本信息类
@@ -131,10 +129,14 @@ public class IndexList extends Crawler {
             row.add(JSONUtilS.toJsonStr(bean.getConvertRawJsonObject()));
 
             // 所属板块标志
-            row.add(bean.isHuIndex());
-            row.add(bean.isShenIndex());
-            row.add(bean.isZhongIndex());
-
+            row.add(bean.isShenA());
+            row.add(bean.isHuA());
+            row.add(bean.isKCB());
+            row.add(bean.isCYB());
+            row.add(bean.isShenB());
+            row.add(bean.isHuB());
+            row.add(bean.isJingA());
+            row.add(bean.isXSB());
 
             row.add(getRecordTime());
             res.append(row);

@@ -1,20 +1,17 @@
 package com.scareers.datasource.eastmoney.dailycrawler.quotes;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +27,9 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public class FsTransData extends Crawler {
+public class FsTransDataEm extends CrawlerEm {
     public static void main(String[] args) {
-        new FsTransData().run();
+        new FsTransDataEm().run();
     }
 
     ThreadPoolExecutor poolExecutor;
@@ -43,10 +40,10 @@ public class FsTransData extends Crawler {
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public FsTransData() {
+    public FsTransDataEm() {
         super(DateUtil.today());
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("FsTransData-", null, true));
+                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("FsTransDataEm-", null, true));
     }
 
     @Override

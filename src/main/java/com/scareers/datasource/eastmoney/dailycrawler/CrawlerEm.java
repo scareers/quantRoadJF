@@ -3,6 +3,7 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.log.Log;
+import com.scareers.datasource.Crawler;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -26,14 +27,14 @@ import static com.scareers.utils.SqlUtil.execSql;
  */
 @Setter
 @Getter
-public abstract class Crawler {
+public abstract class CrawlerEm extends Crawler {
     protected static final Log log = LogUtil.getLogger();
     protected String tableName;
     protected Connection conn;
     protected String sqlCreateTable;
     protected boolean success = false; // 标志是否运行成功!, 一般run成功后需要设定 success=true
 
-    public Crawler(String tableName) {
+    public CrawlerEm(String tableName) {
         this.tableName = tableName;
         setDb();
         initSqlCreateTable();
@@ -44,6 +45,7 @@ public abstract class Crawler {
         return this.getClass().getSimpleName();
     }
 
+    @Override
     public void run() {
         TimeInterval timer = DateUtil.timer();
         timer.start();

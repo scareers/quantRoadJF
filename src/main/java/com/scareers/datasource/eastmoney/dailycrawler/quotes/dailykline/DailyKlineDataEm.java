@@ -5,7 +5,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import joinery.DataFrame;
@@ -26,7 +26,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public abstract class DailyKlineData extends Crawler {
+public abstract class DailyKlineDataEm extends CrawlerEm {
     String fq;
     boolean fullMode;
     ThreadPoolExecutor poolExecutor;
@@ -38,13 +38,13 @@ public abstract class DailyKlineData extends Crawler {
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public DailyKlineData(String tablePrefix, String fq, boolean fullMode) {
+    public DailyKlineDataEm(String tablePrefix, String fq, boolean fullMode) {
         super(StrUtil.format("{}{}", tablePrefix, fq));
 
         this.fq = fq;
         this.fullMode = fullMode;
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("DailyKlineData-", null, true));
+                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("DailyKlineDataEm-", null, true));
 
         fieldsMap.putAll(Dict.create()
                 // // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
@@ -64,7 +64,7 @@ public abstract class DailyKlineData extends Crawler {
         );
     }
 
-    public DailyKlineData(String tablePrefix, String fq) {
+    public DailyKlineDataEm(String tablePrefix, String fq) {
         this(tablePrefix, fq, true);
         if (DateUtil.date().isWeekend()) {
             this.fullMode = true;
@@ -73,11 +73,11 @@ public abstract class DailyKlineData extends Crawler {
         }
     }
 
-    public DailyKlineData(String tablePrefix) {
+    public DailyKlineDataEm(String tablePrefix) {
         this(tablePrefix, "nofq");
     }
 
-    public DailyKlineData(String tablePrefix, boolean fullMode) {
+    public DailyKlineDataEm(String tablePrefix, boolean fullMode) {
         this(tablePrefix, "nofq", fullMode);
     }
 

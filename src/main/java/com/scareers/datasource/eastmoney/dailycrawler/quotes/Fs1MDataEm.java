@@ -5,7 +5,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import joinery.DataFrame;
@@ -27,11 +27,11 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public class Fs1MData extends Crawler {
+public class Fs1MDataEm extends CrawlerEm {
 
 
     public static void main(String[] args) {
-        new Fs1MData().run();
+        new Fs1MDataEm().run();
     }
 
     ThreadPoolExecutor poolExecutor;
@@ -43,10 +43,10 @@ public class Fs1MData extends Crawler {
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public Fs1MData() {
+    public Fs1MDataEm() {
         super(DateUtil.today());
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("Fs1MData-", null, true));
+                new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("Fs1MDataEm-", null, true));
 
         fieldsMap.putAll(Dict.create()
                 // // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称

@@ -12,6 +12,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import eu.verdelhan.ta4j.indicators.helpers.AmountIndicator;
 import joinery.DataFrame;
@@ -19,10 +20,7 @@ import joinery.DataFrame;
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * description: 问财破解尝试. 相关常用查询api.
@@ -36,18 +34,79 @@ public class WenCaiApi {
     public static void main(String[] args) throws Exception {
         TimeInterval timer = DateUtil.timer();
         timer.start();
-//        Console.log(getPopularityRaisingRanking(DateUtil.date(), 100, 200));
         Console.log(timer.intervalRestart());
 
-        Console.log(getReachDailyHighLimitOf("20220316",  true));
+        HashSet<String> trends = getAllTechnicalFormSet();
+        ArrayList<String> trendList = new ArrayList<>(trends);
+        Collections.sort(trendList);
 
-        Console.log(timer.intervalRestart());
+        Console.log(trendList);
 
-
-        Console.log(timer.intervalRestart());
-
-        Console.log(timer.intervalRestart());
     }
+
+    /**
+     * 所有 "选股动向"
+     * [3连阳, 4连阳, 5日均线大于10日均线, KDJ J线低于10, macd日线指标背离, 业绩预告类型预减, 业绩预告类型预增, 优质股, 低估值, 保险持股（近六个月）, 借壳预期强烈, 停牌, 光脚阳线, 光脚阴线, 券商持股（近六个月）, 发布增持计划, 员工持股计划, 圆弧顶, 基金新进持股比例大于5%, 大股东增持, 安全边际高, 市场关注度高, 年内跌幅大于30%的低价股, 成长股, 持续3天放量, 持续3天缩量, 持续4天放量, 持续4天缩量, 持续5天放量, 持续5天缩量, 控股股东持股比例大于50%, 摘帽预期, 收盘高于年线的股票, 昨日登上龙虎榜, 最新收盘价在60日均线上的, 最牛营业部买入, 最近5日累计换手率超过30%, 最近一个月强于大盘的股票, 朝阳产业, 本月发生大宗交易, 沪港通净买入, 牛散云集, 破发, 社保重仓, 私募调研, 绩优股, 股东户数大幅减少, 股价创30日新低, 股权高度集中, 调升评级, 资金净流入连续3天〉0, 超低估值, 跌破增发价, 轻资产, 连涨3天, 连续3天DDE大单净量小于0, 连续3天的dde大单净额大于0, 重大并购, 阳包阴股票, 预告净利润变动幅度超过100, 高送转, 高送转预期, 黄金坑]
+     *
+     * @return
+     * @cols [选股动向[20220318], code, 股票简称, 最新价, 最新涨跌幅, 技术形态[20220318], market_code, 股票代码]
+     */
+    public static HashSet<String> getAllStockSelectionTrends() {
+        DataFrame<Object> dataFrame = wenCaiQuery("技术形态");
+        String colName = null;
+        HashSet<String> technicalFormSet = new HashSet<>();
+        for (Object column : dataFrame.columns()) {
+            if (column.toString().startsWith("选股动向")) {
+                colName = column.toString();
+            }
+        }
+        if (colName == null) {
+            return technicalFormSet;
+        }
+
+        List<String> colAsStringList = DataFrameS.getColAsStringList(dataFrame, colName);
+        for (String s : colAsStringList) {
+            if (s == null) {
+                continue;
+            } else {
+                technicalFormSet.addAll(StrUtil.split(s, "||"));
+            }
+        }
+        return technicalFormSet;
+    }
+
+    /**
+     * 所有技术形态
+     * <p>
+     * [下降通道, 中线超跌, 价升量涨, 价升量缩, 价跌量升, 价跌量缩, 倒锤阳线, 假阳线, 博弈K线长阳, 反弹, 回调缩量, 大阳线, 尖三兵, 底部吸筹, 强中选强, 放量, 旗形, 旭日初升, 月价托, 月线长下影线, 短线超跌, 突破压力位, 缩量, 聚宝盆, 跳空低开, 长上影线, 长下影线, 阳线, 阴线, 阶段放量]
+     *
+     * @return
+     * @cols [选股动向[20220318], code, 股票简称, 最新价, 最新涨跌幅, 技术形态[20220318], market_code, 股票代码]
+     */
+    public static HashSet<String> getAllTechnicalFormSet() {
+        DataFrame<Object> dataFrame = wenCaiQuery("技术形态");
+        String colName = null;
+        HashSet<String> technicalFormSet = new HashSet<>();
+        for (Object column : dataFrame.columns()) {
+            if (column.toString().startsWith("技术形态")) {
+                colName = column.toString();
+            }
+        }
+        if (colName == null) {
+            return technicalFormSet;
+        }
+
+        List<String> colAsStringList = DataFrameS.getColAsStringList(dataFrame, colName);
+        for (String s : colAsStringList) {
+            if (s == null) {
+                continue;
+            } else {
+                technicalFormSet.addAll(StrUtil.split(s, "||"));
+            }
+        }
+        return technicalFormSet;
+    }
+
 
     public static String vCode; // 只需要调用一次初始化,
 
@@ -382,6 +441,7 @@ public class WenCaiApi {
      * 某日全部涨停, 默认以 涨停封单额 排序
      * 1.2022年03月18日涨停封单额排名;2022年03月18日涨停;非st
      * 2.@noti: 字段极多
+     *
      * @param date
      * @param dailyHighLimitAmountGe
      * @param excludeSt
@@ -389,7 +449,7 @@ public class WenCaiApi {
      * @cols a股市值(不含限售股)[20220316]      code	涨停封单量占流通a股比[20220316]	涨停封单量占成交量比[20220316]	   最新价	涨停封单额排名[20220316]	    涨停原因类别[20220316]	  最新涨跌幅	涨停封单量[20220316]	market_code	首次涨停时间[20220316]	     股票代码	    涨停封单额[20220316]	涨停[20220316]	    涨停明细数据[20220316]	几天几板[20220316]	股票简称	最终涨停时间[20220316]	连续涨停天数[20220316]	   涨停类型[20220316]	涨停开板次数[20220316]
      */
     public static DataFrame<Object> getReachDailyHighLimitOf(String date,
-                                                                        boolean excludeSt) {
+                                                             boolean excludeSt) {
         String question = StrUtil
                 .format("{}涨停封单额排名;{}涨停",
                         DateUtil.format(DateUtil.parse(date), DatePattern.CHINESE_DATE_PATTERN),

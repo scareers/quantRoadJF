@@ -95,6 +95,9 @@ public class ConnectionFactory {
     public static Connection getConnLocalEastmoney() {
         return connectToLocalMysqlMain("eastmoney");
     }
+    public static Connection getConnLocalThs() {
+        return connectToLocalMysqlMain("ths");
+    }
     public static Connection getConnLocalFS1MFromEastmoney() {
         return connectToLocalMysqlMain("eastmoney_fs1m");
     }

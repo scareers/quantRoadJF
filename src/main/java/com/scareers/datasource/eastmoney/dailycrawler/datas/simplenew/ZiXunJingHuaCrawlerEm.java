@@ -1,7 +1,7 @@
 package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
 
 import cn.hutool.core.lang.Console;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.SimpleNewCrawler;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.SimpleNewCrawlerEm;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
@@ -15,10 +15,10 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/12/012-20:07:26
  */
-public class ZiXunJingHuaCrawler extends SimpleNewCrawler {
+public class ZiXunJingHuaCrawlerEm extends SimpleNewCrawlerEm {
 
     public static void main(String[] args) {
-        SimpleNewCrawler simpleNewCrawler = new ZiXunJingHuaCrawler();
+        SimpleNewCrawlerEm simpleNewCrawler = new ZiXunJingHuaCrawlerEm();
         Console.log(simpleNewCrawler.isSuccess());
         simpleNewCrawler.run();
         Console.log(simpleNewCrawler.isSuccess());

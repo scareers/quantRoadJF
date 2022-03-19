@@ -3,48 +3,44 @@ package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.MajorIssue;
+import com.scareers.tools.stockplan.bean.NewsFeed;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static com.scareers.tools.stockplan.bean.MajorIssue.parseCompanyMajorIssuesNew;
-
 /**
- * description: 交易日, 公司重大事项归纳; 来自于财经导读;
+ * description: 新闻联播集锦
  *
  * @noti :机制: 读取近500条 最近财经导读数据, 从数据获取, 查找里面的该类新闻, 访问url解析
  * @author: admin
  * @date: 2022/3/16/016-21:43:13
  */
-public class CompanyMajorIssuesCrawler extends Crawler {
+public class NewsFeedsCrawlerEm extends CrawlerEm {
     public static void main(String[] args) {
-        new CompanyMajorIssuesCrawler().run();
+        new NewsFeedsCrawlerEm().run();
     }
 
 
-    public CompanyMajorIssuesCrawler(String tableName) {
+    public NewsFeedsCrawlerEm(String tableName) {
         super(tableName);
     }
 
-    public CompanyMajorIssuesCrawler() {
-        this("company_major_issue");
+    public NewsFeedsCrawlerEm() {
+        this("news_feed");
     }
 
     @Override
     protected void runCore() {
-
         try {
             for (SimpleNewEm saveBean : this.initLastTimeFetchSaveBeansExpect500()) {
-                if (!saveBean.isCompanyMajorIssues()) { // 是重大事项
+                if (!saveBean.isNewsFeed()) {
                     continue;
                 }
                 // 尝试访问数据库, 该日是否被解析过? 得到该日的解析结果数量.
@@ -58,7 +54,7 @@ public class CompanyMajorIssuesCrawler extends Crawler {
                 if (count == 0) {
                     // 首次解析保存
                     // 调用解析 api
-                    actualSaveCompanyMajorIssues(saveBean);
+                    actualSaveNewsFeeds(saveBean);
                     // 其他情况均不保存. 以免覆盖自定义字段!!!
                 }
             }
@@ -76,41 +72,34 @@ public class CompanyMajorIssuesCrawler extends Crawler {
 
     @Override
     protected void initSqlCreateTable() {
-        sqlCreateTable = getSqlCreateCompanyMajorIssuesTable();
+        sqlCreateTable = getSqlCreateNewsFeedsTable();
     }
 
-    private void actualSaveCompanyMajorIssues(SimpleNewEm saveBean) throws SQLException {
-        List<MajorIssue.MajorIssueBatch> majorIssueBatches = parseCompanyMajorIssuesNew(saveBean);
-        if (majorIssueBatches == null) {
+    private void actualSaveNewsFeeds(SimpleNewEm saveBean) throws SQLException {
+        List<NewsFeed> news = NewsFeed.parseNewsFeeds(saveBean);
+        if (news == null) {
             return;
         }
-        List<MajorIssue> shouldSave = new ArrayList<>();
-        for (MajorIssue.MajorIssueBatch majorIssueBatch : majorIssueBatches) {
-            shouldSave.addAll(majorIssueBatch.getItems());
-        }
+
         // 保存逻辑
-        DataFrame<Object> dataFrame1 = MajorIssue.buildDfFromBeanListWithoutIdAndSaveTime(shouldSave);
+        DataFrame<Object> dataFrame1 = NewsFeed.buildDfFromBeanListWithoutIdAndSaveTime(news);
         dataFrame1.add("saveTime");
         // saveTime 初始化
         for (int i = 0; i < dataFrame1.length(); i++) {
             dataFrame1.set(i, "saveTime", Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
         }
-
         DataFrameS.toSql(dataFrame1, tableName, conn, "append",
                 sqlCreateTable);
     }
 
 
-    public String getSqlCreateCompanyMajorIssuesTable() {
+    public String getSqlCreateNewsFeedsTable() {
         return StrUtil.format(
                 "create table if not exists `{}`(\n"
                         + "id bigint primary key auto_increment,"
-                        + "name text  null,"
-                        + "quoteUrl text  null,"
                         + "title text  null,"
                         + "content longtext  null,"
                         + "dateStr varchar(32)  null,"
-                        + "type varchar(32)  null,"
                         + "saveTime datetime  null,"
 
                         + "briefly varchar(2048)  null,"

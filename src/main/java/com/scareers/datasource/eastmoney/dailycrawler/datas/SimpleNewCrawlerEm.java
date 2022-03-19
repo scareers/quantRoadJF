@@ -1,11 +1,8 @@
 package com.scareers.datasource.eastmoney.dailycrawler.datas;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.eastmoney.dailycrawler.Crawler;
-import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
@@ -16,9 +13,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.maxPageOfZiXunJingHua;
 import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildDfFromBeanListWithoutIdAndSaveTime;
@@ -34,12 +28,12 @@ import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildDfFromBeanListW
  * @author: admin
  * @date: 2022/3/12/012-19:04:43
  */
-public abstract class SimpleNewCrawler extends Crawler {
+public abstract class SimpleNewCrawlerEm extends CrawlerEm {
     public static String tableName = "simple_new";
     // 按页访问过程中, 如果重复的新闻数量超过 20, 则不再访问后面的页, 结束本次爬取; 实测因为东财机制, 该值不能太少,因为新闻顺序不固定
     public static int repeatCountThreshold = 500;
 
-    public SimpleNewCrawler() {
+    public SimpleNewCrawlerEm() {
         super(tableName);
     }
 

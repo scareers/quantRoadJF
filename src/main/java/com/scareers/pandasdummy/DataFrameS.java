@@ -179,50 +179,6 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         return newDf;
     }
 
-    public static List<Double> getColAsDoubleList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
-        }
-        List<Double> res = new ArrayList<>();
-        for (Object o : col) {
-            res.add(Double.valueOf(o.toString()));
-        }
-        return res;
-    }
-
-    public static double[] getColAsDoubleArray(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
-        }
-        double[] res = new double[df.length()];
-        for (int i = 0; i < df.length(); i++) {
-            res[i] = Double.parseDouble(col.get(i).toString());
-        }
-        return res;
-    }
-
-
-    public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
-        //System.out.println(df.columns());
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            //e.printStackTrace();
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
-        }
-        List<String> res = new ArrayList<>();
-        for (Object o : col) {
-            res.add(o.toString());
-        }
-        return res;
-    }
 
     public static List<Object> getColAsObjectList(DataFrame<Object> df, Object colNameOrIndex) {
         //System.out.println(df.columns());
@@ -233,49 +189,81 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
             //e.printStackTrace();
             col = df.col(Integer.parseInt(colNameOrIndex.toString()));
         }
-        return col;
+        return col; // 可能某些值为null
     }
 
-    public static List<DateTime> getColAsDateList(DataFrame<Object> df, Object colNameOrIndex) {
-        //System.out.println(df.columns());
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            //e.printStackTrace();
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
+    public static List<Double> getColAsDoubleList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
+        List<Double> res = new ArrayList<>();
+        for (Object o : col) {
+            if (o == null) {
+                res.add(null);
+            } else {
+                res.add(Double.valueOf(o.toString()));
+            }
         }
+        return res;
+    }
+
+    public static double[] getColAsDoubleArray(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
+        double[] res = new double[df.length()];
+        for (int i = 0; i < df.length(); i++) {
+            res[i] = Double.parseDouble(col.get(i).toString());
+        }
+        return res;
+    }
+
+
+    public static List<String> getColAsStringList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
+        List<String> res = new ArrayList<>();
+        for (Object o : col) {
+            if (o == null) {
+                res.add(null);
+            } else {
+                res.add(o.toString());
+            }
+        }
+        return res;
+    }
+
+
+    public static List<DateTime> getColAsDateList(DataFrame<Object> df, Object colNameOrIndex) {
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
         List<DateTime> res = new ArrayList<>();
         for (Object o : col) {
-            res.add(DateUtil.parse(o.toString()));
+            if (o == null) {
+                res.add(null);
+            } else {
+                res.add(DateUtil.parse(o.toString()));
+            }
         }
         return res;
     }
 
     public static List<Integer> getColAsIntegerList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
-        }
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
         List<Integer> res = new ArrayList<>();
         for (Object o : col) {
-            res.add(Integer.valueOf(o.toString()));
+            if (o == null) {
+                res.add(null);
+            } else {
+                res.add(Integer.valueOf(o.toString()));
+            }
         }
         return res;
     }
 
     public static List<Long> getColAsLongList(DataFrame<Object> df, Object colNameOrIndex) {
-        List<Object> col;
-        try {
-            col = df.col(colNameOrIndex);
-        } catch (Exception e) {
-            col = df.col(Integer.parseInt(colNameOrIndex.toString()));
-        }
+        List<Object> col = getColAsObjectList(df, colNameOrIndex);
         List<Long> res = new ArrayList<>();
         for (Object o : col) {
-            res.add(Long.valueOf(o.toString()));
+            if (o == null) {
+                res.add(null);
+            } else {
+                res.add(Long.valueOf(o.toString()));
+            }
         }
         return res;
     }

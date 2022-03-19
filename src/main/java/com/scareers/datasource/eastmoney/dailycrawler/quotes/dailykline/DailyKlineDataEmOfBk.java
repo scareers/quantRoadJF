@@ -2,14 +2,10 @@ package com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline;
 
 import cn.hutool.core.lang.Console;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.MysqlApi;
-import joinery.DataFrame;
 
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -18,17 +14,17 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
  */
-public class DailyKlineDataOfBk extends DailyKlineData {
-    private DailyKlineDataOfBk(String tablePrefix, String fq, boolean fullMode) {
+public class DailyKlineDataEmOfBk extends DailyKlineDataEm {
+    private DailyKlineDataEmOfBk(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
     }
 
-    public DailyKlineDataOfBk(boolean fullMode) {
+    public DailyKlineDataEmOfBk(boolean fullMode) {
         super("bk_kline_daily", "", fullMode); // 会使用 nofq 默认
     }
 
     public static void main(String[] args) throws SQLException {
-//        new DailyKlineDataOfBk(true).run();
+//        new DailyKlineDataEmOfBk(true).run();
         Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs_transaction",
                 ConnectionFactory.getConnLocalFSTransactionFromEastmoney()));
         Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs1m",
