@@ -356,6 +356,8 @@ public class ThsDbApi {
             this.includeStockAmountA = (int)CommonUtil.roundHalfUP(sameIncludeStockAmount/percentA, 0);
             this.includeStockAmountB = (int)CommonUtil.roundHalfUP(sameIncludeStockAmount/percentB, 0);
         }
+        // 同花顺概念指数涨幅排名;主力金额;涨速;指数市值;指数流通市值;指数涨跌家数;指数领涨股;指数阶段涨幅
+        // 同花顺概念指数5日阶段涨幅,10日的区间涨跌幅,20日区间涨跌幅
 
         /**
          * 给定两个权重, 它们将 * percentA 和B,  计算得到 在此2权重之下, 两个概念的 相关性值!
