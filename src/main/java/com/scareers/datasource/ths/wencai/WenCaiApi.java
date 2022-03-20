@@ -3,18 +3,14 @@ package com.scareers.datasource.ths.wencai;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain;
 import com.scareers.datasource.ths.ThsConstants;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
@@ -22,7 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 /**
  * description: 问财破解尝试. 相关常用查询api.

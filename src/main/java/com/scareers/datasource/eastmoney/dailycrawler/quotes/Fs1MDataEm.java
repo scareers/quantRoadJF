@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain.waitPoolFinish;
+import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm.waitPoolFinish;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**

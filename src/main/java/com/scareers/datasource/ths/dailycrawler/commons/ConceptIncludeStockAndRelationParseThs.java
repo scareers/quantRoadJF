@@ -5,12 +5,10 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
-import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain;
-import com.scareers.datasource.ths.ThsWebApi;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm;
 import com.scareers.datasource.ths.dailycrawler.CrawlerThs;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.ThsDbApi;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
@@ -28,7 +26,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  * 读取 stockBelongTo 数据表, 以及 ConceptList 表; 自行分析
  * 1. 放弃实现: 放弃读取ths web api; 因为太容易被屏蔽
  * 2. 可选实现: 可以使用问财, 单概念一次访问, 但需要控制频率, 且 需要两类问句; "金属铅"等少数概念无结果!
- * 3. 具体实现: 读取两个数据表, 只对常规概念, 进行成分股解析, 以及关系解析, 保存结果. 因此不访问http
+ * 3. 具体实现: 读取两个数据表, 只对常规概念, 进行成分股解析, 以及关系解析, 保存结果. 因此不访问http; 速度比想象中快太多
  *
  * @noti : 该表支持 概念 查 所有股票成分 以及 与其他概念的相关性
  * @author: admin
@@ -86,8 +84,12 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
             // code	  name	  belongToConceptAll
             String stockCode = stockBelongToConceptsWithNameDf.get(i, "code").toString();
             String stockName = stockBelongToConceptsWithNameDf.get(i, "name").toString();
+            Object belongToConceptAll = stockBelongToConceptsWithNameDf.get(i, "belongToConceptAll");
+            if (belongToConceptAll == null) {
+                continue; // 例如某些退市个股没有所属概念
+            }
             JSONArray conceptList = JSONUtilS
-                    .parseArray(stockBelongToConceptsWithNameDf.get(i, "belongToConceptAll").toString());
+                    .parseArray(belongToConceptAll.toString());
 
             for (Object o : conceptList) {
                 String conceptName = o.toString();
@@ -256,7 +258,7 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
                 }
             });
         }
-        CrawlerChain.waitPoolFinish(pool);
+        CrawlerChainEm.waitPoolFinish(pool);
         return errors;
     }
 }

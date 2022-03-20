@@ -17,35 +17,35 @@ import java.util.concurrent.TimeUnit;
  * @author: admin
  * @date: 2022/3/5/005-09:21:58
  */
-public class CrawlerChain {
+public class CrawlerChainEm {
     public static void main(String[] args) {
         boolean fullMode = true;
 
-        CrawlerChain crawlerChain = new CrawlerChain(1, 1);
-//        crawlerChain.addSynCrawler(new StockListEm());
-//        crawlerChain.addSynCrawler(new IndexListEm());
-//        crawlerChain.addSynCrawler(new BkListEm());
-//        crawlerChain.addSynCrawler(new TradeDatesEm());
+        CrawlerChainEm crawlerChainEm = new CrawlerChainEm(1, 1);
+//        crawlerChainEm.addSynCrawler(new StockListEm());
+//        crawlerChainEm.addSynCrawler(new IndexListEm());
+//        crawlerChainEm.addSynCrawler(new BkListEm());
+//        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
-//        crawlerChain.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 //
-//        crawlerChain.addFrontCrawlers(new Fs1MDataEm());
-//        crawlerChain.addFrontCrawlers(new FsTransDataEm());
+//        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+//        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         // 资讯
-        crawlerChain.addRearCrawlers(new CaiJingDaoDuCrawlerEm());
-        crawlerChain.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
-        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
-        crawlerChain.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
-        crawlerChain.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
-        crawlerChain.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
+        crawlerChainEm.addRearCrawlers(new CaiJingDaoDuCrawlerEm());
+        crawlerChainEm.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
+        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
+        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
+        crawlerChainEm.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
+        crawlerChainEm.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
 
-        crawlerChain.run();
+        crawlerChainEm.run();
 
     }
 
@@ -56,7 +56,7 @@ public class CrawlerChain {
     ExecutorService esRear;
 
 
-    public CrawlerChain(
+    public CrawlerChainEm(
             int coreSizeOfFrontCrawlersThreadPool,
             int coreSizeOfRearCrawlersThreadPool) {
         this.esFront = ThreadUtil
