@@ -112,6 +112,10 @@ public abstract class CrawlerThs extends Crawler {
         log.warn("{}: time consume: {} s ", this.toString(), time / 1000.0);
     }
 
+    protected void logDependence(String otherCraler) {
+        log.warn("同花顺爬虫依赖: {} --> {}", this.toString(), otherCraler);
+    }
+
     /*
      * 其他常用方法
      */

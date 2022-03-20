@@ -1,26 +1,28 @@
 package com.scareers.datasource.ths.wencai;
 
 import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChain;
+import com.scareers.datasource.ths.ThsConstants;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.JSONUtilS;
-import eu.verdelhan.ta4j.indicators.helpers.AmountIndicator;
 import joinery.DataFrame;
 
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * description: 问财破解尝试. 相关常用查询api.
@@ -32,17 +34,22 @@ import java.util.*;
  */
 public class WenCaiApi {
     public static void main(String[] args) throws Exception {
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
-        Console.log(timer.intervalRestart());
+//        TimeInterval timer = DateUtil.timer();
+//        timer.start();
+//        Console.log(timer.intervalRestart());
+//
+//        HashSet<String> trends = getAllTechnicalFormSet();
+//        ArrayList<String> trendList = new ArrayList<>(trends);
+//        Collections.sort(trendList);
+//
+//        Console.log(trendList);
 
-        HashSet<String> trends = getAllTechnicalFormSet();
-        ArrayList<String> trendList = new ArrayList<>(trends);
-        Collections.sort(trendList);
 
-        Console.log(trendList);
+        //[家庭医生, 冬奥会, 数据安全, 氢能源, 建筑节能, 辅助生殖, 军工, 体育产业, 禽流感, 智能音箱, 土壤修复, 蚂蚁金服, DRG/DIP, 安防, 职业教育, 举牌, 固废处理, 消费电子, 金属锌, 天津自贸区, 自由贸易港, 京津冀一体化, 重组蛋白, 天然气, 同花顺漂亮100, 金属铜, 稀缺资源, ST板块, 两轮车, 硅能源, 上海自贸区, 养老, 云办公, 氟化工, 电子竞技, 华为海思概念股, 大豆, 中船系]
+        Console.log(wenCaiQuery(StrUtil.format("金属铅", "金属铅")));
 
     }
+
 
     /**
      * 所有 "选股动向"
@@ -108,42 +115,8 @@ public class WenCaiApi {
     }
 
 
-    public static String vCode; // 只需要调用一次初始化,
-
     /**
-     * 执行js代码, 初始化vCode; 常态仅需要调用一次;
-     *
-     * @return
-     * @throws Exception
-     */
-    private static String getVCode() throws Exception {
-        ScriptEngineManager engineManager = new ScriptEngineManager();
-        ScriptEngine engine = engineManager.getEngineByName("js"); // 得到脚本引擎
-
-        String str = ResourceUtil.readUtf8Str("ths/wencai/ths.js"); // 将会自动查找类路径下; 别绝对路径
-        engine.eval(str);
-        Invocable inv = (Invocable) engine;
-        Object test2 = inv.invokeFunction("v");
-        vCode = test2.toString();
-        return test2.toString();
-    }
-
-    /**
-     * 死循环初始化
-     */
-    private static void checkVCode() {
-        while (vCode == null) {
-            try {
-                vCode = getVCode();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    /**
-     * @return 访问http失败, 或者结果数据项为空, 或者json解析失败, json解析null指针异常, 均返回null
+     * @return 当正常问句, 可能返回空df
      * @key3 核心问财api, 各实用api均调用此api, 各自对表头进行部分解析!
      * 一般而言数据量都较大, 人工智能计算也较慢, 因此问财api速度不快. 100ms - 1s 级别, 达不到毫秒级
      * data_json["data"]["answer"][0]["txt"][0]["content"]["components"][0]["data"][
@@ -151,7 +124,6 @@ public class WenCaiApi {
      * ]  为列表, 单项为 {}, key为表头, value为值
      */
     public static DataFrame<Object> wenCaiQuery(String question, int perPage, int page) {
-        checkVCode();
         String url = "http://www.iwencai.com/unifiedwap/unified-wap/v2/result/get-robot-data";
         HttpRequest request = new HttpRequest(url);
         request.setMethod(Method.POST);
@@ -161,7 +133,7 @@ public class WenCaiApi {
         request.header("Accept-Encoding", "gzip");
         request.header("Accept", "*/*");
         request.header("Connection", "keep-alive");
-        request.header("hexin-v", vCode);
+        request.header("hexin-v", ThsConstants.getNewVCode());
         request.header("Content-Type", "application/x-www-form-urlencoded");
 
         HashMap<String, Object> params = new HashMap<>();
@@ -192,12 +164,11 @@ public class WenCaiApi {
                     .getJSONObject("content").getJSONArray("components").getJSONObject(0).getJSONObject("data")
                     .getJSONArray("datas");
         } catch (Exception e) {
-            //e.printStackTrace();
             return null;
         }
 
         if (datas.size() == 0) {
-            return null;
+            return new DataFrame<Object>();
         }
 
         List<String> headers = new ArrayList<>(datas.getJSONObject(0).keySet());

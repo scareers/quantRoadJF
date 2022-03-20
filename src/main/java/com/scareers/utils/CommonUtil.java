@@ -97,6 +97,14 @@ public class CommonUtil {
         return res;
     }
 
+    public static Set<String> intersectionOfSet(Set<String> set1, Set<String> set2) {
+        // 交集
+        HashSet<String> res = new HashSet<>();
+        res.addAll(set1);
+        res.retainAll(set2);
+        return res;
+    }
+
     /**
      * 要求 set1 长度短一点, 更快
      *

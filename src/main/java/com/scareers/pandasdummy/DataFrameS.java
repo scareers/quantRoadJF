@@ -8,6 +8,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
 import joinery.DataFrame;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -302,6 +304,40 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
 //        }
 //        return res;
 //    }
+
+    /**
+     * 给定html的 表格元素, 解析为 df. 使用标准格式 // 数据去掉两端空白
+     * --> thead --> tr -> th
+     * --> tbody --> tr --> td
+     * 这里不解析thead和tbody, 解析tr列表, 第一个为表头, 后面为行
+     *
+     * @param tableNode
+     * @return 常规性失败返回null
+     */
+    public static DataFrame<Object> parseHtmlTable(Element tableNode) {
+        Elements trs = tableNode.getElementsByTag("tr");
+        if (trs.size() == 0) {
+            return null;
+        }
+        Element headEle = trs.get(0);
+        Elements ths = headEle.getElementsByTag("th");
+        List<String> columns = new ArrayList<>();
+        for (Element th : ths) {
+            columns.add(StrUtil.trim(th.text()));
+        }
+
+        DataFrame<Object> res = new DataFrame<>(columns);
+        for (int i = 1; i < trs.size(); i++) {
+            Element rowEle = trs.get(i); // 每行
+            Elements tds = rowEle.getElementsByTag("td");
+            List<Object> row = new ArrayList<>();
+            for (Element td : tds) {
+                row.add(StrUtil.trim(td.text()));
+            }
+            res.append(row);
+        }
+        return res;
+    }
 
 }
 

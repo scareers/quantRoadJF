@@ -118,14 +118,14 @@ public class EastMoneyUtil {
         return getAsStrUseHutool(url, params, timeout, 3);
     }
 
-    /**
-     * get 快捷
-     *
-     * @param url
-     * @param params
-     * @param timeout
-     * @return
-     */
+//    /**
+//     * get 快捷
+//     *
+//     * @param url
+//     * @param params
+//     * @param timeout
+//     * @return
+//     */
 //    public static String getAsStrUseKevin(String url, Map<String, Object> params, int timeout, int retry) {
 //        // /api/qt/clist/get?fid=f3&np=1&invt=2&fltt=2&pz=1000000&fields=f12%2Cf14%2Cf3%2Cf2%2Cf15%2Cf16%2Cf17%2Cf4%2Cf8%2Cf10%2Cf9%2Cf5%2Cf6%2Cf18%2Cf20%2Cf21%2Cf13&fs=m%3A0+t%3A6%2Cm%3A0+t%3A80%2Cm%3A1+t%3A2%2Cm%3A1+t%3A23&pn=1&po=1
 //        String res = null;
