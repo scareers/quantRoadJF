@@ -1,9 +1,7 @@
 package com.scareers.datasource.ths.dailycrawler.commons;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.Crawler;
 import com.scareers.datasource.ths.dailycrawler.CrawlerThs;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.pandasdummy.DataFrameS;
@@ -15,23 +13,22 @@ import java.util.*;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 行业指数 -- 行业列表 -- 包含所有二级和三级行业. 一级行业不考虑
- * // [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数@同花顺行业指数, 指数@所属同花顺行业级别, 指数简称, market_code, 指数代码]
+ * description: 同花顺概念指数列表!
+ * [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数简称, market_code, 指数代码, 指数@同花顺概念指数]
  *
- * @noti 某些三级行业, 没有涨跌幅和价格. 是null.
  * @author: admin
  * @date: 2022/3/19/019-20:59:21
  */
-public class BkListThs extends CrawlerThs {
+public class ConceptListThs extends CrawlerThs {
     public static void main(String[] args) {
-        new BkListThs(false).run();
+        new ConceptListThs(true).run();
 
     }
 
-    boolean forceUpdate; // 是否强制更新, 将尝试删除 dateStr==今日, 再行保存
+    boolean forceUpdate; // 是否强制更新, 将尝试删除 dateStr==今日, 再行保存;
 
-    public BkListThs(boolean forceUpdate) {
-        super("industry_list");
+    public ConceptListThs(boolean forceUpdate) {
+        super("concept_list");
         this.forceUpdate = forceUpdate;
     }
 
@@ -42,20 +39,21 @@ public class BkListThs extends CrawlerThs {
             String sql = StrUtil.format("select count(*) from {} where dateStr='{}'", tableName, dateStr);
             try {
                 DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
-                if (dataFrame.size() > 0) {
+                if (Integer.parseInt(dataFrame.get(0, 0).toString()) > 0) {
                     success = true;
-                    return; // 当不强制更新, 判定是否已运行过, 运行过则直接返回
+                    return; // 当不强制更新, 判定是否已运行过, 运行过则直接返回, 连带不更新 关系数据表
                 }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("同花顺行业指数;");
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("同花顺概念指数;");
         if (dataFrame == null) {
-            logApiError("wenCaiQuery(\"同花顺行业指数;\")");
+            logApiError("wenCaiQuery(\"同花顺概念指数;\")");
             success = false;
             return;
         }
+
 
         //
         dataFrame = dataFrame.rename(getRenameMap(dataFrame.columns()));
@@ -91,17 +89,15 @@ public class BkListThs extends CrawlerThs {
                         + "chgP double  null,"
                         + "close double  null,"
                         + "code varchar(32)  null,"
-                        + "industryIndex varchar(32)  null,"
-                        + "industryType varchar(32)  null,"
                         + "name varchar(32)  null,"
                         + "marketCode int  null,"
                         + "indexCode varchar(32)  null,"
+                        + "conceptIndex varchar(32)  null,"
 
                         + "dateStr varchar(32)  null,"
 
 
                         + "INDEX name_index (name ASC),\n"
-                        + "INDEX industryType_index (industryType ASC),\n"
                         + "INDEX dateStr_index (dateStr ASC)\n"
                         + "\n)"
                 , tableName);
@@ -109,7 +105,7 @@ public class BkListThs extends CrawlerThs {
 
 
     /**
-     * [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数@同花顺行业指数, 指数@所属同花顺行业级别, 指数简称, market_code, 指数代码]
+     * [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数简称, market_code, 指数代码, 指数@同花顺概念指数]
      *
      * @param rawColumns
      * @return
@@ -125,11 +121,10 @@ public class BkListThs extends CrawlerThs {
             }
         }
         renameMap.put("code", "code");
-        renameMap.put("指数@同花顺行业指数", "industryIndex");
-        renameMap.put("指数@所属同花顺行业级别", "industryType");
         renameMap.put("指数简称", "name");
         renameMap.put("market_code", "marketCode");
         renameMap.put("指数代码", "indexCode");
+        renameMap.put("指数@同花顺概念指数", "conceptIndex");
         return renameMap;
     }
 }

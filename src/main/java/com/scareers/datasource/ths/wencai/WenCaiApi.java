@@ -192,7 +192,7 @@ public class WenCaiApi {
                     .getJSONObject("content").getJSONArray("components").getJSONObject(0).getJSONObject("data")
                     .getJSONArray("datas");
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             return null;
         }
 
@@ -215,13 +215,30 @@ public class WenCaiApi {
     }
 
     /**
-     * 默认单页
+     * 默认单页, 重试一次
      *
      * @param question
      * @return
      */
     public static DataFrame<Object> wenCaiQuery(String question) {
-        return wenCaiQuery(question, 100000, 1);
+        return wenCaiQuery(question, 1);
+    }
+
+    public static DataFrame<Object> wenCaiQuery(String question, int retry) {
+        DataFrame<Object> res = null;
+        int times = 0;
+        while (times <= retry) {
+            times++;
+
+            try {
+                res = wenCaiQuery(question, 100000, 1);
+            } catch (Exception e) {
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
     }
 
     /*
