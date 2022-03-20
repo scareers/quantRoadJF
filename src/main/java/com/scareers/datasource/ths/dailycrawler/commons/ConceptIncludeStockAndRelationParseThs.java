@@ -70,13 +70,13 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
         // 1.基本数据读取: 从两大依赖数据表
         log.info("1.读取概念列表,以及个股所属概念列表");
         DataFrame<Object> stockBelongToConceptsWithNameDf = ThsDbApi.getStockBelongToConceptsWithName(dateStr);
-        HashMap<String, String> conceptNameWithCodeMap = ThsDbApi.getConceptNameWithCodeMap(dateStr);
+        HashMap<String, String> conceptNameWithFullCodeMap = ThsDbApi.getConceptNameWithFullCodeMap(dateStr);
 
         // 2.构建成分股map: 概念名称: 概念成分股
         log.info("2.开始构建成分股Map");
         HashMap<String, List<List<String>>> includeMap = new HashMap<>(); // 单只成分股为二元组, 元素1为代码,2为个股名称
         // 成分股列表, key必须是常规概念, 即在conceptNameWithCodeMap里面
-        for (String s : conceptNameWithCodeMap.keySet()) {
+        for (String s : conceptNameWithFullCodeMap.keySet()) {
             includeMap.put(s, new ArrayList<>()); // 空列表,代表没有成分股.
         }
 
@@ -93,7 +93,7 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
 
             for (Object o : conceptList) {
                 String conceptName = o.toString();
-                if (conceptNameWithCodeMap.containsKey(conceptName)) {
+                if (conceptNameWithFullCodeMap.containsKey(conceptName)) {
                     includeMap.get(conceptName).add(Arrays.asList(stockCode, stockName)); // 不会null
                 }
             }
@@ -143,6 +143,9 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
                 // 1.求成分股交集
                 Set<String> intersectionStockList = CommonUtil.intersectionOfSet(includeCodesB, includeCodesA);
                 double intersectionAmount = intersectionStockList.size(); // 转为double
+                if (intersectionAmount == 0) {
+                    continue; // 没有相同成分股, 则无视掉
+                }
                 // 2.占A比
                 double percentA = intersectionAmount / includeCodesA.size();
                 double percentB = intersectionAmount / includeCodesB.size();
@@ -155,11 +158,13 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
         // 4.1. 列: id / conceptName, includeStocks, relationMap, dateStr
         log.info("4.开始构建解析结果Df");
         DataFrame<Object> res = new DataFrame<>(
-                Arrays.asList("conceptName", "includeStocks", "relationMap", "dateStr"));
+                Arrays.asList("conceptName", "conceptCodeFull", "includeStocks", "relationMap", "dateStr"));
         for (String conceptName : relationMap.keySet()) {
             String includeStocks = JSONUtilS.toJsonStr(includeMap.get(conceptName));
             String relationMapStr = JSONUtilS.toJsonStr(relationMap.get(conceptName));
-            res.append(Arrays.asList(conceptName, includeStocks, relationMapStr, dateStr));
+            res.append(Arrays.asList(conceptName, conceptNameWithFullCodeMap.get(conceptName), includeStocks,
+                    relationMapStr,
+                    dateStr));
         }
 
         // 5.保存结果.
@@ -191,6 +196,7 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
                 "create table if not exists `{}`(\n"
                         + "id bigint primary key auto_increment,"
                         + "conceptName varchar(32)  null,"
+                        + "conceptCodeFull varchar(32)  null,"
 
                         + "includeStocks longtext null,"
                         + "relationMap longtext  null,"
