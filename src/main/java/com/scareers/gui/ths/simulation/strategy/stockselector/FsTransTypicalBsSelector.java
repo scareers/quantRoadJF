@@ -20,15 +20,16 @@ import static com.scareers.sqlapi.EastMoneyDbApi.getFsTransByDateAndQuoteId;
  */
 public class FsTransTypicalBsSelector {
     public static void main(String[] args) throws Exception {
-        double factor = typicalVolBsRateFactor("2022-03-25", SecurityBeanEm.createStock("海南高速"), 0.5);
-        Console.log(factor);
+//        double factor = typicalVolBsRateFactor("2022-03-25", SecurityBeanEm.createStock("浩洋股份"), 0.5);
+//        Console.log(factor);
 
-//        main0();
+        main0();
     }
 
     private static void main0() throws Exception {
         DataFrame<Object> dataFrame = WenCaiApi
-                .wenCaiQuery("近5日的区间涨跌幅>-10%且近5日的区间涨跌幅<10%;连续5日的振幅<8%;深市主板或沪市主板;非st的股票；成交额大于1亿;非科创板;非创业板");
+//                .wenCaiQuery("近5日的区间涨跌幅>-10%且近5日的区间涨跌幅<10%;连续5日的振幅<8%;深市主板或沪市主板;非st的股票；成交额大于1亿;非科创板;非创业板");
+                .wenCaiQuery("个股人气排名前200");
         Console.log(dataFrame.columns());
         HashMap<String, Double> codeWithChgPMap = new HashMap<>();
         for (int i = 0; i < dataFrame.length(); i++) {
@@ -38,7 +39,8 @@ public class FsTransTypicalBsSelector {
         }
 
         List<String> stockCodeList = DataFrameS.getColAsStringList(dataFrame, "code")
-                .subList(0, 100);
+//                .subList(0, 100)
+                ;
 
         Console.log("获取bean");
         List<SecurityBeanEm> beanEms = SecurityBeanEm.createStockList(stockCodeList, true);

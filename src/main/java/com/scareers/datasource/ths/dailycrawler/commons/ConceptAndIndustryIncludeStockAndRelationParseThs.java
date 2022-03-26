@@ -22,26 +22,27 @@ import static com.scareers.datasource.ths.wencai.WenCaiApi.wenCaiQuery;
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 概念(主体) --> 所有成分股股票 + 概念相关性分析
- * 读取 stockBelongTo 数据表, 以及 ConceptList 表; 自行分析
+ * description: 概念或行业(主体) --> 所有成分股股票 + 概念行业相关性分析 --> 概念或者行业 与 其他概念或者行业的相关性分析
+ *
+ * @add: 新增 行业 --> 概念 相关性分析; 逻辑相近;
+ * 读取 stockBelongTo 数据表, 以及 ConceptList 表; 自行分析 // 已新增行业部分
  * 1. 放弃实现: 放弃读取ths web api; 因为太容易被屏蔽
  * 2. 可选实现: 可以使用问财, 单概念一次访问, 但需要控制频率, 且 需要两类问句; "金属铅"等少数概念无结果!
  * 3. 具体实现: 读取两个数据表, 只对常规概念, 进行成分股解析, 以及关系解析, 保存结果. 因此不访问http; 速度比想象中快太多
- *
  * @noti : 该表支持 概念 查 所有股票成分 以及 与其他概念的相关性
  * @author: admin
  * @date: 2022/3/19/019-20:59:21
  */
-public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
+public class ConceptAndIndustryIncludeStockAndRelationParseThs extends CrawlerThs {
     public static void main(String[] args) {
-        new ConceptIncludeStockAndRelationParseThs(true).run();
+        new ConceptAndIndustryIncludeStockAndRelationParseThs(true).run();
     }
 
 
     boolean forceUpdate; // 是否强制更新, 将尝试删除 dateStr==今日, 再行保存;
 
-    public ConceptIncludeStockAndRelationParseThs(boolean forceUpdate) {
-        super("concept_include_stock_and_relation_parse");
+    public ConceptAndIndustryIncludeStockAndRelationParseThs(boolean forceUpdate) {
+        super("concept_industry_relation_parse");
         this.forceUpdate = forceUpdate;
     }
 
@@ -71,6 +72,10 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
         log.info("1.读取概念列表,以及个股所属概念列表");
         DataFrame<Object> stockBelongToConceptsWithNameDf = ThsDbApi.getStockBelongToConceptsWithName(dateStr);
         HashMap<String, String> conceptNameWithFullCodeMap = ThsDbApi.getConceptNameWithFullCodeMap(dateStr);
+        // 1.行业相关
+        DataFrame<Object> stockBelongToIndustryWithNameDf = getStockBelongToIndustryWithNameDf(dateStr);
+        HashMap<String, String> industryNameWithFullCodeMap = getIndustryNameWithFullCodeMap(dateStr);
+        conceptNameWithFullCodeMap.putAll(industryNameWithFullCodeMap); // 注意添加
 
         // 2.构建成分股map: 概念名称: 概念成分股
         log.info("2.开始构建成分股Map");
@@ -98,6 +103,8 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
                 }
             }
         }
+        // 2.行业新增
+        includeMap.putAll(getIncludeMapOfIndustry(industryNameWithFullCodeMap, stockBelongToIndustryWithNameDf));
 
         // 3.0. 首先构建成分股代码
         log.info("3.开始构建关系Map");
@@ -107,6 +114,9 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
             Set<String> includeCodes = stockList.stream().map(value -> value.get(0)).collect(Collectors.toSet());
             includeStockCodeMap.put(conceptName, includeCodes);
         }
+        // 3.0. 行业新增
+        // 虽然只需要行业部分, 但这里可以
+        includeStockCodeMap.putAll(getIndustryNameToStockCodeListMap(includeMap));
 
 
         // 3.构建关系图谱
@@ -158,7 +168,7 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
         // 4.1. 列: id / conceptName, includeStocks, relationMap, dateStr
         log.info("4.开始构建解析结果Df");
         DataFrame<Object> res = new DataFrame<>(
-                Arrays.asList("conceptName", "conceptCodeFull", "includeStocks", "relationMap", "dateStr"));
+                Arrays.asList("cptOrIndusName", "cptOrIndusCodeFull", "includeStocks", "relationMap", "dateStr"));
         for (String conceptName : relationMap.keySet()) {
             String includeStocks = JSONUtilS.toJsonStr(includeMap.get(conceptName));
             String relationMapStr = JSONUtilS.toJsonStr(relationMap.get(conceptName));
@@ -179,8 +189,56 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
             success = false;
             return;
         }
-        success = true;
 
+        success = true;
+    }
+
+    private HashMap<String, String> getIndustryNameWithFullCodeMap(String dateStr) {
+        return ThsDbApi.getIndustryNameLevel23WithFullCodeMap(dateStr);
+    }
+
+    private DataFrame<Object> getStockBelongToIndustryWithNameDf(String dateStr) {
+        return ThsDbApi.getStockBelongToIndustry23WithName(dateStr);
+    }
+
+    private HashMap<String, List<List<String>>> getIncludeMapOfIndustry(
+            HashMap<String, String> industryNameWithFullCodeMap,
+            DataFrame<Object> stockBelongToIndustryWithNameDf
+    ) {
+        HashMap<String, List<List<String>>> includeMap = new HashMap<>(); // 单只成分股为二元组, 元素1为代码,2为个股名称
+//         成分股列表, key必须是常规概念, 即在conceptNameWithCodeMap里面
+        for (String s : industryNameWithFullCodeMap.keySet()) {
+            includeMap.put(s, new ArrayList<>()); // 空列表,代表没有成分股.
+        }
+
+        for (int i = 0; i < stockBelongToIndustryWithNameDf.length(); i++) {
+            // code	  name	  industryLevel2,industryLevel3
+            String stockCode = stockBelongToIndustryWithNameDf.get(i, "code").toString();
+            String stockName = stockBelongToIndustryWithNameDf.get(i, "name").toString();
+
+            String industryLevel2Name = stockBelongToIndustryWithNameDf.get(i, "industryLevel2").toString();
+            String industryLevel3Name = stockBelongToIndustryWithNameDf.get(i, "industryLevel3").toString();
+
+            if (includeMap.containsKey(industryLevel2Name)) {
+                includeMap.get(industryLevel2Name).add(Arrays.asList(stockCode, stockName));
+            }
+            if (includeMap.containsKey(industryLevel3Name)) {
+                includeMap.get(industryLevel3Name).add(Arrays.asList(stockCode, stockName));
+            }
+        }
+        return includeMap;
+    }
+
+
+    private HashMap<String, Set<String>> getIndustryNameToStockCodeListMap(
+            HashMap<String, List<List<String>>> includeMap) {
+        HashMap<String, Set<String>> includeStockCodeMap = new HashMap<>(); // 行业名称 --> 成分股票代表列表
+        for (String industryName : includeMap.keySet()) {
+            List<List<String>> stockList = includeMap.get(industryName);
+            Set<String> includeCodes = stockList.stream().map(value -> value.get(0)).collect(Collectors.toSet());
+            includeStockCodeMap.put(industryName, includeCodes);
+        }
+        return includeStockCodeMap;
     }
 
 
@@ -195,15 +253,15 @@ public class ConceptIncludeStockAndRelationParseThs extends CrawlerThs {
         sqlCreateTable = StrUtil.format(
                 "create table if not exists `{}`(\n"
                         + "id bigint primary key auto_increment,"
-                        + "conceptName varchar(32)  null,"
-                        + "conceptCodeFull varchar(32)  null,"
+                        + "cptOrIndusName varchar(32)  null," // 概念/行业 名称
+                        + "cptOrIndusCodeFull varchar(32)  null," // 概念/行业 代码
 
-                        + "includeStocks longtext null,"
-                        + "relationMap longtext  null,"
+                        + "includeStocks longtext null," // 成分股
+                        + "relationMap longtext  null," // 与其他所有 概念+行业 相关性分析
 
-                        + "dateStr varchar(32)  null,"
+                        + "dateStr varchar(32)  null," // 分析日期
 
-                        + "INDEX conceptName_index (conceptName ASC),\n"
+                        + "INDEX conceptName_index (cptOrIndusName ASC),\n"
                         + "INDEX dateStr_index (dateStr ASC)\n"
                         + "\n)"
                 , tableName);

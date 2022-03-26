@@ -2,9 +2,7 @@ package com.scareers.datasource.ths.dailycrawler;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
-import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
-import com.scareers.datasource.ths.dailycrawler.commons.ConceptIncludeStockAndRelationParseThs;
+import com.scareers.datasource.ths.dailycrawler.commons.ConceptAndIndustryIncludeStockAndRelationParseThs;
 import com.scareers.datasource.ths.dailycrawler.commons.ConceptListThs;
 import com.scareers.datasource.ths.dailycrawler.commons.IndustryListThs;
 import com.scareers.datasource.ths.dailycrawler.commons.StockBelongToThs;
@@ -30,7 +28,7 @@ public class CrawlerChainThs {
         crawlerChainThs.addSynCrawler(new ConceptListThs(forceUpdate));
         crawlerChainThs.addSynCrawler(new IndustryListThs(forceUpdate));
         crawlerChainThs.addSynCrawler(new StockBelongToThs(forceUpdate));
-        crawlerChainThs.addSynCrawler(new ConceptIncludeStockAndRelationParseThs(forceUpdate));
+        crawlerChainThs.addSynCrawler(new ConceptAndIndustryIncludeStockAndRelationParseThs(forceUpdate));
 
 
         crawlerChainThs.run();

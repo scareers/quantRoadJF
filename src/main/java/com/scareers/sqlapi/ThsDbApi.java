@@ -4,11 +4,9 @@ import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.Sets;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
@@ -17,7 +15,7 @@ import joinery.DataFrame;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.poi.hssf.record.InterfaceEndRecord;
+import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -54,8 +52,18 @@ public class ThsDbApi {
     }
 
     public static void main(String[] args) {
-        List<String> conceptNameList = getConceptNameList(DateUtil.today());
-//        for (String s : conceptNameList) {
+//        Console.log(getIndustryNameLevel23WithFullCodeMap(DateUtil.today()));
+//        Console.log(getStockBelongToIndustry23WithName(DateUtil.today()));
+//        List<ThsSimpleStock> includeList = getConceptOrIndustryIncludeStocks("新冠检测", DateUtil.today());
+//        Console.log(includeList);
+//        Console.log(includeList.size());
+
+
+//        List<ThsConceptIndustryRelation> relations = getAllRelationsByName("融资融券", DateUtil.today());
+//        Console.log(relations);
+//        Console.log(relations.size());
+
+        //        for (String s : conceptNameList) {
 //            Console.log(s);
 //        }
 
@@ -64,21 +72,19 @@ public class ThsDbApi {
 //        Console.log(conceptIncludeStocks.get(0));
 //        Console.log(conceptIncludeStocks);
 
-//        List<ThsConceptRelation> conceptAllRelations = getConceptAllRelations();
-//        Console.log(conceptAllRelations.get(0));
-//        Console.log(conceptAllRelations.size());
-//        Console.log(conceptAllRelations.stream().mapToDouble(value -> value.getSameIncludeStockAmount()).max());
 
-        List<ThsConceptRelation> maxConceptRelationshipOf = getMaxConceptRelationshipOf(
+        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
 //                RandomUtil.randomEle(conceptNameList),
-               "风电",
+                "贸易",
                 DateUtil.today(), 10, 0.6, 0.4, true);
-        for (ThsConceptRelation thsConceptRelation : maxConceptRelationshipOf) {
+        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
             Console.log(thsConceptRelation);
         }
     }
 
-    /**医疗器械概念
+    /**
+     * 医疗器械概念
+     *
      * @param dateStr 给定日期, 可以不给定, 一般可以给定今天; 标准日期格式
      * @return 读取同花顺概念列表, 返回概念名称列表; 失败返回null ; 已经去重和去null
      */
@@ -185,7 +191,97 @@ public class ThsDbApi {
     }
 
     /**
-     * 给定日期, 返回所有 股票名称,代码, 所属概念列表
+     * 所有行业列表, 映射代码
+     *
+     * @param dateStr
+     * @return
+     */
+    public static HashMap<String, String> getIndustryNameLevel23WithFullCodeMap(String dateStr) {
+        String sql = StrUtil.format("select indexCode,name from industry_list where dateStr='{}'",
+                dateStr);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        HashMap<String, String> res = new HashMap<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+            res.put(dataFrame.get(i, 1).toString(), dataFrame.get(i, 0).toString());
+        }
+        return res;
+    }
+
+    /**
+     * 二级行业列表, 映射代码
+     *
+     * @param dateStr
+     * @return
+     */
+    public static HashMap<String, String> getIndustryNameLevel2WithFullCodeMap(String dateStr) {
+        String sql = StrUtil.format("select indexCode,name from industry_list where dateStr='{}' and " +
+                        "industryType='二级行业'",
+                dateStr);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        HashMap<String, String> res = new HashMap<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+            res.put(dataFrame.get(i, 1).toString(), dataFrame.get(i, 0).toString());
+        }
+        return res;
+    }
+
+
+    /**
+     * 二级行业列表, 映射代码
+     *
+     * @param dateStr
+     * @return
+     */
+    public static HashMap<String, String> getIndustryNameLevel3WithFullCodeMap(String dateStr) {
+        String sql = StrUtil.format("select indexCode,name from industry_list where dateStr='{}' and " +
+                        "industryType='三级行业'",
+                dateStr);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        HashMap<String, String> res = new HashMap<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+            res.put(dataFrame.get(i, 1).toString(), dataFrame.get(i, 0).toString());
+        }
+        return res;
+    }
+
+    /**
+     * 给定日期, 返回所有 股票名称,代码, 二级行业和三级行业
+     *
+     * @param dateStr
+     * @return
+     * @cols code      name	  belongToConceptAll
+     */
+    public static DataFrame<Object> getStockBelongToIndustry23WithName(String dateStr) {
+        String sql = StrUtil.format("select code,name,industryLevel2,industryLevel3 from " +
+                "stock_belong_to_industry_and_concept " +
+                "where dateStr='{}'", dateStr);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
+
+
+    /**
+     * 给定日期, 返回所有 股票名称,代码, 所属 二级行业,三级行业
      * 实测概念包含非常规概念
      *
      * @param dateStr
@@ -205,20 +301,21 @@ public class ThsDbApi {
     }
 
     /*
-    概念成分个股及关系对象
+    行业概念成分个股及关系对象
      */
 
     /**
-     * 获取指定日期, 概念成分股列表:  json 字符串
+     * 获取指定日期, 行业或者概念成分股:  json 字符串 --> 行业包含二级和3级行业
+     * 实测 二级行业/三级行业/概念 名称均正常等价于问财结果
      *
-     * @param conceptName
+     * @param conceptOrIndustryName
      * @param dateStr
      * @return
      */
-    public static List<ThsSimpleStock> getConceptIncludeStocks(String conceptName, String dateStr) {
+    public static List<ThsSimpleStock> getConceptOrIndustryIncludeStocks(String conceptOrIndustryName, String dateStr) {
         String sql = StrUtil
-                .format("select includeStocks from concept_include_stock_and_relation_parse where conceptName='{}' and " +
-                        "dateStr='{}'", conceptName, dateStr);
+                .format("select includeStocks from concept_industry_relation_parse where cptOrIndusName='{}' and " +
+                        "dateStr='{}'", conceptOrIndustryName, dateStr);
         DataFrame<Object> dataFrame = null;
         try {
             dataFrame = DataFrame.readSql(connection, sql);
@@ -239,16 +336,18 @@ public class ThsDbApi {
     }
 
     /**
-     * 获取概念 所有与其他概念关系列表
+     * 获取 行业或概念 所有与其它 概念或行业 的关系列表, 解析json后, 构建 ThsConceptIndustryRelation 列表对象
+     * 注意: 关系列表, 包含了所有的 行业 和 概念; 想要单独查找 与之相关的 行业 或 概念 , 需要自行区分
      *
-     * @param conceptName
+     * @param conceptOrIndustryName
      * @param dateStr
      * @return
      */
-    public static List<ThsConceptRelation> getConceptAllRelations(String conceptName, String dateStr) {
+    public static List<ThsConceptIndustryRelation> getAllRelationsByName(String conceptOrIndustryName,
+                                                                         String dateStr) {
         String sql = StrUtil
-                .format("select relationMap from concept_include_stock_and_relation_parse where conceptName='{}' and " +
-                        "dateStr='{}'", conceptName, dateStr);
+                .format("select relationMap from concept_industry_relation_parse where cptOrIndusName='{}' and " +
+                        "dateStr='{}'", conceptOrIndustryName, dateStr);
         DataFrame<Object> dataFrame = null;
         try {
             dataFrame = DataFrame.readSql(connection, sql);
@@ -259,31 +358,32 @@ public class ThsDbApi {
             return null;
         }
 
-        List<ThsConceptRelation> res = new ArrayList<>();
+        List<ThsConceptIndustryRelation> res = new ArrayList<>();
         JSONObject relationMap = JSONUtilS.parseObj(dataFrame.get(0, 0).toString());
-        for (Object conceptNameBRaw : relationMap.keySet()) {
-            String conceptNameB = conceptNameBRaw.toString();
-            JSONArray jsonArray = relationMap.getJSONArray(conceptNameB);
-            res.add(new ThsConceptRelation(
-                    conceptName,
-                    conceptNameB,
+        for (Object nameBRaw : relationMap.keySet()) {
+            String nameB = nameBRaw.toString();
+            JSONArray jsonArray = relationMap.getJSONArray(nameB);
+            res.add(new ThsConceptIndustryRelation(
+                    conceptOrIndustryName,
+                    nameB,
                     jsonArray.getInteger(0),
                     jsonArray.getDouble(1),
                     jsonArray.getDouble(2)
             ));
-
         }
         return res;
     }
 
     /**
-     * 给定概念, 返回与之最相关的 前N个概念, 关系对象列表.
+     * 给定概念, 返回与之最相关的 前 N个概念 或者行业 , 关系对象列表.
      * 可指定是否排除掉非典型概念!!
      */
-    public static List<ThsConceptRelation> getMaxConceptRelationshipOf(String conceptName, String dateStr, int maxN,
-                                                                       double weightA, double weightB,
-                                                                       boolean dropAtypicalConcepts) {
-        List<ThsConceptRelation> conceptAllRelations = getConceptAllRelations(conceptName, dateStr);
+    public static List<ThsConceptIndustryRelation> getMaxRelationshipOf(String conceptOrIndustryName, String dateStr,
+                                                                        int maxN,
+                                                                        double weightA, double weightB,
+                                                                        boolean dropAtypicalConcepts) {
+        List<ThsConceptIndustryRelation> conceptAllRelations = getAllRelationsByName(conceptOrIndustryName, dateStr);
+
         if (conceptAllRelations == null) {
             return null;
         }
@@ -295,13 +395,13 @@ public class ThsDbApi {
         if (dropAtypicalConcepts) {
             conceptAllRelations =
                     conceptAllRelations.stream()
-                            .filter(value -> !atypicalConceptNameSet.contains(value.getConceptNameB())).collect(
+                            .filter(value -> !atypicalConceptNameSet.contains(value.getNameB())).collect(
                             Collectors.toList());
         }
         // 数量不会太多, 能接受, 全部排序, 取前N
-        Collections.sort(conceptAllRelations, new Comparator<ThsConceptRelation>() {
+        Collections.sort(conceptAllRelations, new Comparator<ThsConceptIndustryRelation>() {
             @Override
-            public int compare(ThsConceptRelation o1, ThsConceptRelation o2) {
+            public int compare(ThsConceptIndustryRelation o1, ThsConceptIndustryRelation o2) {
                 double v1 = o1.calcRelationValue(weightA, weightB);
                 double v2 = o2.calcRelationValue(weightA, weightB);
                 if (v2 < v1) { // @noti: 已经逆序!
@@ -319,6 +419,86 @@ public class ThsDbApi {
         return conceptAllRelations.subList(0, Math.min(maxN, conceptAllRelations.size()));
     }
 
+    /**
+     * 只考虑与 概念 的关系
+     *
+     * @param conceptOrIndustryName
+     * @param dateStr
+     * @param maxN
+     * @param weightA
+     * @param weightB
+     * @param dropAtypicalConcepts
+     * @return
+     */
+    public static List<ThsConceptIndustryRelation> getMaxRelationshipOfConcept(String conceptOrIndustryName,
+                                                                               String dateStr,
+                                                                               int maxN,
+                                                                               double weightA, double weightB,
+                                                                               boolean dropAtypicalConcepts) {
+        List<ThsConceptIndustryRelation> maxRelationshipOfAll = getMaxRelationshipOf(conceptOrIndustryName, dateStr,
+                Integer.MAX_VALUE, weightA, weightB,
+                dropAtypicalConcepts); // 获取所有关系
+        // 筛选出 B 为概念的关系对象; 因为已经排序, 不必再次排序
+        List<ThsConceptIndustryRelation> collect = maxRelationshipOfAll.stream()
+                .filter(ThsConceptIndustryRelation::bIsConcept)
+                .collect(Collectors.toList());
+
+        return collect.subList(0, Math.min(maxN, collect.size()));
+    }
+
+    /**
+     * 只考虑与 二级行业的关系
+     *
+     * @param conceptOrIndustryName
+     * @param dateStr
+     * @param maxN
+     * @param weightA
+     * @param weightB
+     * @param dropAtypicalConcepts
+     * @return
+     */
+    public static List<ThsConceptIndustryRelation> getMaxRelationshipOfIndustryLevel2(String conceptOrIndustryName,
+                                                                                      String dateStr,
+                                                                                      int maxN,
+                                                                                      double weightA, double weightB,
+                                                                                      boolean dropAtypicalConcepts) {
+        List<ThsConceptIndustryRelation> maxRelationshipOfAll = getMaxRelationshipOf(conceptOrIndustryName, dateStr,
+                Integer.MAX_VALUE, weightA, weightB,
+                dropAtypicalConcepts); // 获取所有关系
+        // 筛选出 B 为概念的关系对象; 因为已经排序, 不必再次排序
+        List<ThsConceptIndustryRelation> collect = maxRelationshipOfAll.stream()
+                .filter(ThsConceptIndustryRelation::bIsIndustryLevel2)
+                .collect(Collectors.toList());
+
+        return collect.subList(0, Math.min(maxN, collect.size()));
+    }
+
+    /**
+     * 只考虑与 3级行业的关系
+     *
+     * @param conceptOrIndustryName
+     * @param dateStr
+     * @param maxN
+     * @param weightA
+     * @param weightB
+     * @param dropAtypicalConcepts
+     * @return
+     */
+    public static List<ThsConceptIndustryRelation> getMaxRelationshipOfIndustryLevel3(String conceptOrIndustryName,
+                                                                                      String dateStr,
+                                                                                      int maxN,
+                                                                                      double weightA, double weightB,
+                                                                                      boolean dropAtypicalConcepts) {
+        List<ThsConceptIndustryRelation> maxRelationshipOfAll = getMaxRelationshipOf(conceptOrIndustryName, dateStr,
+                Integer.MAX_VALUE, weightA, weightB,
+                dropAtypicalConcepts); // 获取所有关系
+        // 筛选出 B 为概念的关系对象; 因为已经排序, 不必再次排序
+        List<ThsConceptIndustryRelation> collect = maxRelationshipOfAll.stream()
+                .filter(ThsConceptIndustryRelation::bIsIndustryLevel3)
+                .collect(Collectors.toList());
+
+        return collect.subList(0, Math.min(maxN, collect.size()));
+    }
 
     @Data
     @AllArgsConstructor
@@ -326,18 +506,17 @@ public class ThsDbApi {
     public static class ThsSimpleStock {
         String code;
         String name;
-
-
     }
+
 
     /**
      * 同花顺 概念之间的 关系
      */
     @Data
     @NoArgsConstructor
-    public static class ThsConceptRelation {
-        String conceptNameA;
-        String conceptNameB;
+    public static class ThsConceptIndustryRelation {
+        String nameA;
+        String nameB;
         Integer sameIncludeStockAmount; // 相同成分股个数
         Double percentA; // 相同成分股个数 / 概念A总数
         Double percentB; // 相同成分股个数 / 概念B总数
@@ -345,17 +524,90 @@ public class ThsDbApi {
         Integer includeStockAmountA;
         Integer includeStockAmountB; // 靠推断计算
 
-        public ThsConceptRelation(String conceptNameA, String conceptNameB, Integer sameIncludeStockAmount,
-                                  Double percentA, Double percentB) {
-            this.conceptNameA = conceptNameA;
-            this.conceptNameB = conceptNameB;
+        // 类型靠推断! 读取静态属性的行业名称集合 和 概念名称集合
+        int aType = 0; // a是行业还是概念?  1概念,2 二级行业, 3 三级行业  0 未知
+        int bType = 0; // b是行业还是概念? 1概念, 2 二级行业,3 三级行业 0 未知
+
+
+        public static HashSet<String> allIndustryLevel2NameSet;
+        public static HashSet<String> allIndustryLevel3NameSet;
+        public static HashSet<String> allConceptNameSet;
+
+
+        public ThsConceptIndustryRelation(String nameA, String nameB, Integer sameIncludeStockAmount,
+                                          Double percentA, Double percentB) {
+            this.nameA = nameA;
+            this.nameB = nameB;
             this.sameIncludeStockAmount = sameIncludeStockAmount;
             this.percentA = percentA;
             this.percentB = percentB;
 
-            this.includeStockAmountA = (int)CommonUtil.roundHalfUP(sameIncludeStockAmount/percentA, 0);
-            this.includeStockAmountB = (int)CommonUtil.roundHalfUP(sameIncludeStockAmount/percentB, 0);
+            this.includeStockAmountA = (int) CommonUtil.roundHalfUP(sameIncludeStockAmount / percentA, 0);
+            this.includeStockAmountB = (int) CommonUtil.roundHalfUP(sameIncludeStockAmount / percentB, 0);
+            checkConceptNameSet();
+            checkIndustryLevel2NameSet();
+            checkIndustryLevel3NameSet();
+
+
+            // 推断两指数各自是行业还是概念
+            if (allIndustryLevel2NameSet.contains(this.nameA)) {
+                this.aType = 2;
+            } else if (allIndustryLevel3NameSet.contains(this.nameA)) {
+                this.aType = 3;
+            } else if (allConceptNameSet.contains(this.nameA)) {
+                this.aType = 1;
+            }
+
+            if (allIndustryLevel2NameSet.contains(this.nameB)) {
+                this.bType = 2;
+            } else if (allIndustryLevel3NameSet.contains(this.nameB)) {
+                this.bType = 3;
+            } else if (allConceptNameSet.contains(this.nameB)) {
+                this.bType = 1;
+            }
         }
+
+        @SneakyThrows
+        public static void checkConceptNameSet() {
+            if (allConceptNameSet == null) {
+                HashMap<String, String> conceptNameWithFullCodeMap = getConceptNameWithFullCodeMap(DateUtil.today());
+                if (conceptNameWithFullCodeMap == null) { // 若失败, 则获取最后一次爬虫记录的 最大日期
+                    String sql = "select max(dateStr) from concept_list";
+                    DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
+                    conceptNameWithFullCodeMap = getConceptNameWithFullCodeMap(dataFrame.get(0, 0).toString());
+                }
+                allConceptNameSet = new HashSet<>(conceptNameWithFullCodeMap.keySet());
+            }
+        }
+
+        @SneakyThrows
+        public static void checkIndustryLevel2NameSet() {
+            if (allIndustryLevel2NameSet == null) {
+                HashMap<String, String> industryNameWithFullCodeMap = getIndustryNameLevel2WithFullCodeMap(
+                        DateUtil.today());
+                if (industryNameWithFullCodeMap == null) { // 若失败, 则获取最后一次爬虫记录的 最大日期
+                    String sql = "select max(dateStr) from industry_list";
+                    DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
+                    industryNameWithFullCodeMap = getIndustryNameLevel2WithFullCodeMap(dataFrame.get(0, 0).toString());
+                }
+                allIndustryLevel2NameSet = new HashSet<>(industryNameWithFullCodeMap.keySet());
+            }
+        }
+
+        @SneakyThrows
+        public static void checkIndustryLevel3NameSet() {
+            if (allIndustryLevel3NameSet == null) {
+                HashMap<String, String> industryNameWithFullCodeMap = getIndustryNameLevel3WithFullCodeMap(
+                        DateUtil.today());
+                if (industryNameWithFullCodeMap == null) { // 若失败, 则获取最后一次爬虫记录的 最大日期
+                    String sql = "select max(dateStr) from industry_list";
+                    DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
+                    industryNameWithFullCodeMap = getIndustryNameLevel3WithFullCodeMap(dataFrame.get(0, 0).toString());
+                }
+                allIndustryLevel3NameSet = new HashSet<>(industryNameWithFullCodeMap.keySet());
+            }
+        }
+
         // 同花顺概念指数涨幅排名;主力金额;涨速;指数市值;指数流通市值;指数涨跌家数;指数领涨股;指数阶段涨幅
         // 同花顺概念指数5日阶段涨幅,10日的区间涨跌幅,20日区间涨跌幅
 
@@ -387,6 +639,47 @@ public class ThsDbApi {
         public double calcRelationValue() {
             return calcRelationValue(0.5, 0.5); // 更加偏向于 percentB. 即若占比B更多, 则相关性更高
         }
+
+        public boolean aIsIndustryLevel2() { // a是二级行业/三级行业/概念/行业/未知; b类似
+            return this.aType == 2;
+        }
+
+        public boolean aIsIndustryLevel3() {
+            return this.aType == 3;
+        }
+
+        public boolean aIsConcept() {
+            return this.aType == 1;
+        }
+
+        public boolean aTypeUnknown() {
+            return this.aType == 0;
+        }
+
+        public boolean aIsIndustry() {
+            return aIsIndustryLevel2() || aIsIndustryLevel3();
+        }
+
+        public boolean bIsIndustryLevel2() {
+            return this.bType == 2;
+        }
+
+        public boolean bIsIndustryLevel3() {
+            return this.bType == 3;
+        }
+
+        public boolean bIsConcept() {
+            return this.bType == 1;
+        }
+
+        public boolean bIsIndustry() {
+            return bIsIndustryLevel2() || bIsIndustryLevel3();
+        }
+
+        public boolean bTypeUnknown() {
+            return this.bType == 0;
+        }
+
     }
 
 
