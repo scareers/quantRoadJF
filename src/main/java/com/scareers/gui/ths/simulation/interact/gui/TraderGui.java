@@ -11,6 +11,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
 import lombok.Setter;
@@ -147,20 +148,43 @@ public class TraderGui extends JFrame {
         startMenu = new JMenu("开始");
         startMenu.setForeground(COLOR_GRAY_COMMON);
         // 菜单项
-        startMenu.add(new JMenuItem("启动Trader"));
-        startMenu.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                try {
-                    Trader.getAndStartInstance();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+        JMenuItem startTraderItem = new JMenuItem("启动Trader");
+        startMenu.add(startTraderItem);
+        startTraderItem.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            Trader.getAndStartInstance();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
                 }
-            }
-        });
+        );
+
         // 分隔符
         startMenu.addSeparator();
-        startMenu.add(new JMenuItem("备用项"));
+        JMenuItem bondTtsItem = new JMenuItem("转债套利语音提示");
+        bondTtsItem.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                ConvertibleBondArbitrage.main0();
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem);
+
+
+        startMenu.add(new JMenuItem("备用"));
+
+
         // 把菜单加入到菜单栏
         menuBar.add(startMenu);
         // 把菜单栏加入到frame，这里用的是set而非add

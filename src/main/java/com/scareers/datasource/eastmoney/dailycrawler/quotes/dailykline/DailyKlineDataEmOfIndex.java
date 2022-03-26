@@ -5,7 +5,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import java.util.List;
 
 /**
- * description: 个股日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
+ * description: 指数日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
  *
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
@@ -13,6 +13,7 @@ import java.util.List;
 public class DailyKlineDataEmOfIndex extends DailyKlineDataEm {
     private DailyKlineDataEmOfIndex(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
+        this.hasAlreadyIncrementalUpdatedThreshold=200;
     }
 
     public DailyKlineDataEmOfIndex(boolean fullMode) {

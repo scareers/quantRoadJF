@@ -8,7 +8,9 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -21,7 +23,8 @@ import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm.wait
 import static com.scareers.utils.SqlUtil.execSql;
 
 /**
- * description: 个股日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
+ * description: 个股日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日今日, 它无视是否抓取过昨日以前的日期
+ * 增量更新时, 将尝试访问应当抓取的日期的已有记录数, 若>=阈值, 视为曾增量更新过, 不再更新
  *
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
@@ -29,6 +32,8 @@ import static com.scareers.utils.SqlUtil.execSql;
 public abstract class DailyKlineDataEm extends CrawlerEm {
     String fq;
     boolean fullMode;
+    int hasAlreadyIncrementalUpdatedThreshold = 100;
+    // 当增量更新时, 若该日记录数>=此值,视为全量更新过, 不再执行全量更新
     ThreadPoolExecutor poolExecutor;
     Map<Object, Object> fieldsMap = new HashMap<>();
 
@@ -62,6 +67,11 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
                 .set("资产代码", "secCode")
                 .set("资产名称", "secName")
         );
+    }
+
+    public DailyKlineDataEm setForceIncrementalUpdate(boolean forceIncrementalUpdate) {
+        this.forceIncrementalUpdate = forceIncrementalUpdate;
+        return this;
     }
 
     public DailyKlineDataEm(String tablePrefix, String fq) {
@@ -127,6 +137,9 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
         return this.getClass().getSimpleName() + "[" + fq + "]";
     }
 
+    public boolean forceIncrementalUpdate = false;
+
+    @SneakyThrows
     @Override
     protected void runCore() {
         /**
@@ -143,8 +156,34 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
             }
         } else { // 增量更新模式, 将保留原表, 但日期为今日
             log.warn("日k线数据: 增量更新");
-            begDate = DateUtil.today();
-            endDate = DateUtil.today();
+            String today = DateUtil.today();
+            if (EastMoneyDbApi.isTradeDate(today)) {
+                begDate = today;
+                endDate = today;
+            } else {
+                String preNTradeDateStrict = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
+                begDate = preNTradeDateStrict; // 前1交易日
+                endDate = preNTradeDateStrict;
+                log.warn("应当增量更新上一交易日");
+            }
+
+            // 此时尝试获取原数据库是否有过上一交易日的数据!
+            String sql = StrUtil.format("select count(*) from `{}` where date='{}'", tableName, begDate);
+            DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+            if (Integer.parseInt(dataFrame.get(0, 0).toString()) >hasAlreadyIncrementalUpdatedThreshold) {
+                // 这里>0,基本断定已经增量更新过.这里1000更严谨; 严格应该==  getBeanList().size()
+
+                if (!forceIncrementalUpdate) {
+                    log.error("该交易日似乎已经增量更新过, 不再更新; 强制增量更新, 请设置 forceIncrementalUpdate = true");
+                    return;
+                } else {
+                    log.error("该交易日似乎已经增量更新过, 删除上次增量更新,强制更新");
+
+                    String sqlD = StrUtil.format("delete from `{}` where date='{}'", tableName, begDate);
+                    execSql(sqlD, conn);
+                }
+            }
+
         }
 
         try {

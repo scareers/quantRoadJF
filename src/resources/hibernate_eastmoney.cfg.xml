@@ -27,6 +27,7 @@
         <mapping resource="com/scareers/tools/stockplan/bean/FourPaperNew.hbm.xml"/>
 
         <mapping class="com.scareers.tools.stockplan.bean.NewAspectSummary"/>
+        <mapping class="com.scareers.gui.ths.simulation.trader.StockBondBean"/>
 
     </session-factory>
 

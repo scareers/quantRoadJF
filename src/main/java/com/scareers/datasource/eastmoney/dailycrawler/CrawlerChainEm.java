@@ -1,10 +1,22 @@
 package com.scareers.datasource.eastmoney.dailycrawler;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.BkListEm;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexListEm;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.StockListEm;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDatesEm;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransDataEm;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfBk;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfIndex;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfStock;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.log.LogUtil;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -19,21 +31,29 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlerChainEm {
     public static void main(String[] args) {
-        boolean fullMode = true;
+        String today = DateUtil.today();
+        boolean fullMode = true; // 非交易日全量更新; 主要针对 日k线数据
+        try {
+            if (EastMoneyDbApi.isTradeDate(today)) {
+                fullMode = false; // 交易日增量更新
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         CrawlerChainEm crawlerChainEm = new CrawlerChainEm(1, 1);
-//        crawlerChainEm.addSynCrawler(new StockListEm());
-//        crawlerChainEm.addSynCrawler(new IndexListEm());
-//        crawlerChainEm.addSynCrawler(new BkListEm());
-//        crawlerChainEm.addSynCrawler(new TradeDatesEm());
+        crawlerChainEm.addSynCrawler(new StockListEm());
+        crawlerChainEm.addSynCrawler(new IndexListEm());
+        crawlerChainEm.addSynCrawler(new BkListEm());
+        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
-//
-//        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
+
+        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
 //        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         // 资讯

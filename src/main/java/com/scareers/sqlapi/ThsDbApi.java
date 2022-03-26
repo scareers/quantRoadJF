@@ -71,14 +71,14 @@ public class ThsDbApi {
 
         List<ThsConceptRelation> maxConceptRelationshipOf = getMaxConceptRelationshipOf(
 //                RandomUtil.randomEle(conceptNameList),
-               "华为概念",
+               "风电",
                 DateUtil.today(), 10, 0.6, 0.4, true);
         for (ThsConceptRelation thsConceptRelation : maxConceptRelationshipOf) {
             Console.log(thsConceptRelation);
         }
     }
 
-    /**
+    /**医疗器械概念
      * @param dateStr 给定日期, 可以不给定, 一般可以给定今天; 标准日期格式
      * @return 读取同花顺概念列表, 返回概念名称列表; 失败返回null ; 已经去重和去null
      */

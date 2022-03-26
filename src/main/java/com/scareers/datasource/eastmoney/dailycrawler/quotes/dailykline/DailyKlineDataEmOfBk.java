@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * description: 个股日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
+ * description: 板块日 k线行情, fullMode == true为全量更新, 否则增量更新, 抓取单日
  *
  * @author: admin
  * @date: 2022/3/6/006-15:21:25
@@ -17,6 +17,7 @@ import java.util.List;
 public class DailyKlineDataEmOfBk extends DailyKlineDataEm {
     private DailyKlineDataEmOfBk(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
+        this.hasAlreadyIncrementalUpdatedThreshold = 200;
     }
 
     public DailyKlineDataEmOfBk(boolean fullMode) {
@@ -24,13 +25,16 @@ public class DailyKlineDataEmOfBk extends DailyKlineDataEm {
     }
 
     public static void main(String[] args) throws SQLException {
-//        new DailyKlineDataEmOfBk(true).run();
-        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs_transaction",
-                ConnectionFactory.getConnLocalFSTransactionFromEastmoney()));
-        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs1m",
-                ConnectionFactory.getConnLocalFS1MFromEastmoney()));
-        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney",
-                ConnectionFactory.getConnLocalEastmoney()));
+        new DailyKlineDataEmOfBk(false).setForceIncrementalUpdate(true).run();
+//        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs_transaction",
+//                ConnectionFactory.getConnLocalFSTransactionFromEastmoney()));
+//        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs1m",
+//                ConnectionFactory.getConnLocalFS1MFromEastmoney()));
+//        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney",
+//                ConnectionFactory.getConnLocalEastmoney()));
+//
+//
+
     }
 
 

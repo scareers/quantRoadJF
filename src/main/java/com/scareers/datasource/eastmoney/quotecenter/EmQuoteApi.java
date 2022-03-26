@@ -74,10 +74,15 @@ public class EmQuoteApi {
 
 
     public static void main(String[] args) throws Exception {
-        DataFrame<Object> bkMembers = getBkMembersQuote(SecurityBeanEm.createBK("医药商业"), 3000, 3);
-        bkMembers = bkMembers.sortBy("-涨跌幅");
-        Console.log(bkMembers);
-        Console.log(DataFrameS.getColAsStringList(bkMembers, "资产名称"));
+//        Console.log(getLatestQuoteOfBeanList(SecurityBeanEm.createStockList(Arrays.asList("000001", "000002"))));
+
+        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 5000, false));
+
+
+//        DataFrame<Object> bkMembers = getBkMembersQuote(SecurityBeanEm.createBK("医药商业"), 3000, 3);
+//        bkMembers = bkMembers.sortBy("-涨跌幅");
+//        Console.log(bkMembers);
+//        Console.log(DataFrameS.getColAsStringList(bkMembers, "资产名称"));
 
 
         //        DataFrame<Object> stockListDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深系列指数"));
@@ -822,6 +827,63 @@ public class EmQuoteApi {
         );
         return dfTemp;
     }
+
+    /**
+     * 给定bean列表, 返回指定股票列表的实时数据. 而非全市场.
+     * <p>
+     * <p>
+     * # 股票、债券榜单表头
+     * EASTMONEY_QUOTE_FIELDS = {
+     * 'f12': '代码',
+     * 'f14': '名称',
+     * 'f3': '涨跌幅',
+     * 'f2': '最新价',
+     * 'f15': '最高',
+     * 'f16': '最低',
+     * 'f17': '今开',
+     * 'f4': '涨跌额',
+     * 'f8': '换手率',
+     * 'f10': '量比',
+     * 'f9': '动态市盈率',
+     * 'f5': '成交量',
+     * 'f6': '成交额',
+     * 'f18': '昨日收盘',
+     * 'f20': '总市值',
+     * 'f21': '流通市值',
+     * 'f13': '市场编号'
+     * }
+     *
+     * @param beans
+     * @return
+     */
+    public static DataFrame<Object> getLatestQuoteOfBeanList(List<SecurityBeanEm> beans) {
+        String url = "https://push2.eastmoney.com/api/qt/ulist.np/get";
+        List<String> fields = Arrays.asList("f12", "f14", "f3", "f2", "f15", "f16", "f17", "f4", "f8",
+                "f10", "f9", "f5", "f6", "f18", "f20", "f21", "f13"); // 同上实时数据api
+        String fieldsStr = StrUtil.join(",", fields);
+        List<String> quoteIds = beans.stream().map(value -> value.getQuoteId()).collect(Collectors.toList());
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("OSVersion", "14.3");
+        params.put("appVersion", "6.3.8");
+        params.put("fields", fieldsStr);
+        params.put("fltt", "2");
+        params.put("plat", "Iphone");
+        params.put("product", "EFund");
+        params.put("secids", StrUtil.join(",", quoteIds));
+        params.put("serverVersion", "6.3.6");
+        params.put("version", "6.3.8");
+
+        String response = getAsStrUseHutool(url, params, 4000);
+        DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
+                fields, Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),
+                Arrays.asList());
+        dfTemp = dfTemp.rename(EASTMONEY_QUOTE_FIELDS);
+        dfTemp = dfTemp.add("市场名称", values ->
+                MARKET_NUMBER_DICT.get(values.get(16).toString())
+        );
+        return dfTemp;
+    }
+
 
     /**
      * 批量资产获取k线. 复刻 efinance   get_quote_history

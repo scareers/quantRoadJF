@@ -1,6 +1,9 @@
 package com.scareers.utils.ai.tts;
 
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
@@ -72,10 +75,12 @@ public class Tts {
         synchronized (soundLock) {
             try {
                 File file = new File(StrUtil.format("resources/tts/audios/{}.mp3", content));
+                Console.log(file.getAbsolutePath());
                 HttpUtil.downloadFile(
                         StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
                                 content), file, 100000);
                 playSoundCore(file);
+                FileUtil.del(file); // 删除
             } catch (Exception e) {
                 log.error("audio error: 语音播放失败,内容: {}", content);
                 e.printStackTrace();
