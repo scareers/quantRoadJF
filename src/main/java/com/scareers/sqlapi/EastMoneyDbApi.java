@@ -9,13 +9,16 @@ import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 
+import java.security.AlgorithmConstraints;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildBeanListFromDfWithId;
@@ -28,23 +31,29 @@ import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildBeanListFromDfW
  */
 public class EastMoneyDbApi {
     public static Connection connection = ConnectionFactory.getConnLocalEastmoney();
+    public static Connection connectionFsTrans = ConnectionFactory.getConnLocalFSTransactionFromEastmoney();
     private static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
     private static Pattern stdDatePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}"); // 标准的日期表达式
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 某个日期的上n个交易日?
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws Exception {
+
+
+
 //        Console.log(isTradeDate("20220304"));
 
-        Console.log(getLatestSaveBeanByType(1, 10));
-        List<SimpleNewEm> latestSaveBeanByType = getLatestSaveBeanByType(1, 10);
-        for (SimpleNewEm simpleNewEm : latestSaveBeanByType) {
-            Console.log(simpleNewEm);
-        }
+//        Console.log(getLatestSaveBeanByType(1, 10));
+//        List<SimpleNewEm> latestSaveBeanByType = getLatestSaveBeanByType(1, 10);
+//        for (SimpleNewEm simpleNewEm : latestSaveBeanByType) {
+//            Console.log(simpleNewEm);
+//        }
 
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
-        Console.log(getPreNTradeDateStrict("20220318", -2));
+//        Console.log(getPreNTradeDateStrict("20220318", -2));
     }
+
+
 
     /**
      * 是否标准日期形式
@@ -158,6 +167,30 @@ public class EastMoneyDbApi {
         String sql = StrUtil
                 .format("select * from simple_new where type={} order by dateTime desc limit {} ", type, limit);
         return buildBeanListFromDfWithId(DataFrameS.readSql(connection, sql));
+    }
+
+
+    /*
+    分时成交相关api: 因为单日一个数据表, 所以必然需要决定访问那一日的分时成交数据; 因分时成交数据包含指数,个股,板块, 使用 quoteId区分
+     */
+
+    /**
+     * 标准api, 给定 日期(决定表名) 以及 quoteId 资产唯一标识, 获取某资产某一日的分时成交数据
+     *
+     * @param date
+     * @param quoteId
+     * @return
+     */
+    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId) {
+        String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connectionFsTrans, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return dataFrame;
     }
 
 }

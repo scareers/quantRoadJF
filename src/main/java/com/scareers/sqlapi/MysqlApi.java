@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,18 +26,24 @@ import static com.scareers.utils.SqlUtil.execSqlQuery;
 public class MysqlApi {
     public static void main(String[] args) throws Exception {
 
+        Connection connection = ConnectionFactory.getConnLocalFS1MFromEastmoney();
 
-        Connection connection = ConnectionFactory.getConnLocalTushare();
-        System.out.println(getDiskUsageOfDB("kline_forms", connection).toString(100));
+        Console.log(alreadyHasTable(connection,"2022-03-25"));
 
-//        Console.com.scareers.log(getMemoryUsageOfBuffer(connection));
-
-        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
-        setBufferPoolSizeGB(20, connection);
-        Console.log(getBufferPoolSizeSetted(connection));
-
-
-        connection.close();
+//        Connection connection = ConnectionFactory.getConnLocalTushare();
+//
+//
+//
+//        System.out.println(getDiskUsageOfDB("kline_forms", connection).toString(100));
+//
+////        Console.com.scareers.log(getMemoryUsageOfBuffer(connection));
+//
+//        Console.log(getNonBufferedRate(connection)); // 0.0014903166436285268 , 磁盘使用
+//        setBufferPoolSizeGB(20, connection);
+//        Console.log(getBufferPoolSizeSetted(connection));
+//
+//
+//        connection.close();
     }
 
 
@@ -133,6 +140,27 @@ public class MysqlApi {
                 "        where table_schema='{}'\n" +
                 "        order by table_rows desc, index_length desc;", dbName);
         return DataFrame.readSql(connection, sql);
+    }
+
+
+
+    /**
+     * 给定表名, 返回是否已经存在该表? 常用于判定是否需要建表等情况
+     *
+     * @param conn
+     * @param tableName
+     * @return
+     */
+    @SneakyThrows
+    public static boolean alreadyHasTable(Connection conn, String tableName) {
+        String sql = "show tables";
+        DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+        for (int i = 0; i < dataFrame.length(); i++) {
+            if (tableName.equals(dataFrame.get(i, 0).toString())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 

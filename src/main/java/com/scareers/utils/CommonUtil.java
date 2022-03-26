@@ -28,7 +28,9 @@ public class CommonUtil {
 //        waitEnter();
 //        waitForever();
 
-        openUrlWithDefaultBrowser("https://www.baidu.com");
+//        openUrlWithDefaultBrowser("https://www.baidu.com");
+
+        Console.log(stdOfListNumberUseLoop(Arrays.asList(1, 2, 3)));
     }
 
     /**
@@ -167,15 +169,44 @@ public class CommonUtil {
                 mapToDouble(Number::doubleValue).sum();
     }
 
-    public static Double sumOfListNumberUseLoop(List<? extends Number> numbers) {
-        if (numbers.size() == 0) {
-            return null;
-        }
+    public static double sumOfListNumberUseLoop(List<? extends Number> numbers) {
         double sum = numbers.get(0).doubleValue();
         for (int i = 1; i < numbers.size(); i++) {
             sum += numbers.get(i).doubleValue();
         }
         return sum;
+    }
+
+    public static double avgOfListNumberUseLoop(List<? extends Number> numbers) {
+        return sumOfListNumberUseLoop(numbers) / numbers.size();
+    }
+
+    public static double varOfListNumberUseLoop(List<? extends Number> numbers) {
+        double avg = avgOfListNumberUseLoop(numbers);
+        return varOfListNumberUseLoop(numbers, avg);
+    }
+
+    /**
+     * 可给定平均值计算方差
+     *
+     * @param numbers
+     * @param avg
+     * @return
+     */
+    public static double varOfListNumberUseLoop(List<? extends Number> numbers, double avg) {
+        double expSum = 0;
+        for (Number number : numbers) {
+            expSum += Math.pow(number.doubleValue() - avg, 2);
+        }
+        return expSum / numbers.size();
+    }
+
+    public static double stdOfListNumberUseLoop(List<? extends Number> numbers) {
+        return Math.sqrt(varOfListNumberUseLoop(numbers));
+    }
+
+    public static double stdOfListNumberUseLoop(List<? extends Number> numbers, double avg) {
+        return Math.sqrt(varOfListNumberUseLoop(numbers, avg));
     }
 
     public static Double maxOfListDouble(List<Double> doubles) {

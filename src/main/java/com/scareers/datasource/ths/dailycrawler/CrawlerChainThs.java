@@ -24,13 +24,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlerChainThs {
     public static void main(String[] args) {
-        boolean fullMode = true;
+        boolean forceUpdate = true;
 
-        CrawlerChainThs crawlerChainThs = new CrawlerChainThs(1, 1);
-        crawlerChainThs.addSynCrawler(new ConceptListThs(true));
-        crawlerChainThs.addSynCrawler(new IndustryListThs(true));
-        crawlerChainThs.addSynCrawler(new StockBelongToThs(true));
-        crawlerChainThs.addSynCrawler(new ConceptIncludeStockAndRelationParseThs(true));
+        CrawlerChainThs crawlerChainThs = new CrawlerChainThs(4, 4);
+        crawlerChainThs.addSynCrawler(new ConceptListThs(forceUpdate));
+        crawlerChainThs.addSynCrawler(new IndustryListThs(forceUpdate));
+        crawlerChainThs.addSynCrawler(new StockBelongToThs(forceUpdate));
+        crawlerChainThs.addSynCrawler(new ConceptIncludeStockAndRelationParseThs(forceUpdate));
 
 
         crawlerChainThs.run();

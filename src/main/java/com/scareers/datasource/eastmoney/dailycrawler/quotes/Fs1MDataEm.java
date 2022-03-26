@@ -11,6 +11,7 @@ import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.sqlapi.MysqlApi;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
@@ -43,6 +44,11 @@ public class Fs1MDataEm extends CrawlerEm {
 
     ThreadPoolExecutor poolExecutor;
     Map<Object, Object> fieldsMap = new HashMap<>();
+    private boolean forceUpdate;
+
+    public Fs1MDataEm() {
+        this(false);
+    }
 
     /**
      * 可直接指定是否增量更新
@@ -50,8 +56,9 @@ public class Fs1MDataEm extends CrawlerEm {
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public Fs1MDataEm() {
+    public Fs1MDataEm(boolean forceUpdate) {
         super(DateUtil.today());
+        this.forceUpdate = forceUpdate;
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("Fs1MDataEm-", null, true));
 
@@ -124,6 +131,7 @@ public class Fs1MDataEm extends CrawlerEm {
     @SneakyThrows
     @Override
     public void run() {
+
         TimeInterval timer = DateUtil.timer();
         timer.start();
         logStart();
@@ -134,10 +142,13 @@ public class Fs1MDataEm extends CrawlerEm {
             initSqlCreateTable(); // 并重置建表语句
         }
 
-        try { // 同样尝试建表
-            execSql(sqlCreateTable, conn);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!forceUpdate) {
+            if (MysqlApi.alreadyHasTable(conn, tableName)) {
+                log.warn("Fs1M: 已经存在数据表,默认视为已经获取过 分时1分钟数据, 不再获取; 若需要重新获取, 请手动删除数据表或者设置forceUpdate为true");
+                success = true;
+                logSuccess();
+                return;
+            }
         }
 
         runCore();
@@ -150,13 +161,16 @@ public class Fs1MDataEm extends CrawlerEm {
     }
 
     List<SecurityBeanEm> failBeans = new CopyOnWriteArrayList<>(); // 暂存本轮失败的股票, 将重试它们
+
     @Override
     protected void runCore() {
+
         try { // 全量更新模式, 将删除原表
             execSql(StrUtil.format("drop table if exists `{}`", tableName), conn);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
 
         try { // 创建新表
             execSql(sqlCreateTable, conn);
@@ -185,7 +199,7 @@ public class Fs1MDataEm extends CrawlerEm {
                 log.error("分时1m失败队列重试超过5次, 视为失败!");
                 log.error("最终失败的股票队列: \n");
                 log.error(failBeans.stream().map(SecurityBeanEm::getQuoteId).collect(Collectors.toList()).toString());
-                success=true;
+                success = true;
                 poolExecutor.shutdownNow();
                 return;
             }
@@ -201,7 +215,7 @@ public class Fs1MDataEm extends CrawlerEm {
             }
             waitPoolFinish(poolExecutor);
         }
-        success=true;
+        success = true;
         logSuccess();
         poolExecutor.shutdownNow();
     }

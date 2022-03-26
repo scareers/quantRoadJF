@@ -9,6 +9,7 @@ import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.sqlapi.MysqlApi;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 import org.jsoup.select.Collector;
@@ -42,17 +43,24 @@ public class FsTransDataEm extends CrawlerEm {
 
     ThreadPoolExecutor poolExecutor;
 
+    public FsTransDataEm() {
+        this(false);
+    }
+
     /**
      * 可直接指定是否增量更新
      *
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public FsTransDataEm() {
+    public FsTransDataEm(boolean forceUpdate) {
         super(DateUtil.today());
+        this.forceUpdate = forceUpdate;
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("FsTransDataEm-", null, true));
     }
+
+    private boolean forceUpdate;
 
 
     @Override
@@ -107,10 +115,13 @@ public class FsTransDataEm extends CrawlerEm {
             initSqlCreateTable(); // 并重置建表语句
         }
 
-        try { // 同样尝试建表
-            execSql(sqlCreateTable, conn);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (!forceUpdate) {
+            if (MysqlApi.alreadyHasTable(conn, tableName)) {
+                log.warn("FsTrans: 已经存在数据表,默认视为已经获取过 分时成交数据, 不再获取; 若需要重新获取, 请手动删除数据表或者设置forceUpdate为true");
+                success = true;
+                logSuccess();
+                return;
+            }
         }
 
         runCore();

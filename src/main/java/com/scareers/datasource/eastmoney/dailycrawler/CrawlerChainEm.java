@@ -40,12 +40,13 @@ public class CrawlerChainEm {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        fullMode = false;
 
-        CrawlerChainEm crawlerChainEm = new CrawlerChainEm(1, 1);
-        crawlerChainEm.addSynCrawler(new StockListEm());
-        crawlerChainEm.addSynCrawler(new IndexListEm());
-        crawlerChainEm.addSynCrawler(new BkListEm());
-        crawlerChainEm.addSynCrawler(new TradeDatesEm());
+        CrawlerChainEm crawlerChainEm = new CrawlerChainEm(4, 4);
+//        crawlerChainEm.addSynCrawler(new StockListEm());
+//        crawlerChainEm.addSynCrawler(new IndexListEm());
+//        crawlerChainEm.addSynCrawler(new BkListEm());
+//        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
@@ -54,7 +55,7 @@ public class CrawlerChainEm {
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
         crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
-//        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
+        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         // 资讯
         crawlerChainEm.addRearCrawlers(new CaiJingDaoDuCrawlerEm());

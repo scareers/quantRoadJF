@@ -175,6 +175,7 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
 
                 if (!forceIncrementalUpdate) {
                     log.error("该交易日似乎已经增量更新过, 不再更新; 强制增量更新, 请设置 forceIncrementalUpdate = true");
+                    success=true;
                     return;
                 } else {
                     log.error("该交易日似乎已经增量更新过, 删除上次增量更新,强制更新");
