@@ -48,14 +48,14 @@ public class CrawlerChainEm {
 //        crawlerChainEm.addSynCrawler(new BkListEm());
 //        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
-        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
-        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
+//        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+//        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         // 资讯
         crawlerChainEm.addRearCrawlers(new CaiJingDaoDuCrawlerEm());

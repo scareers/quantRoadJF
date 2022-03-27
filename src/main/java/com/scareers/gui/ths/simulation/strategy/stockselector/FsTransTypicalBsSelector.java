@@ -30,7 +30,7 @@ public class FsTransTypicalBsSelector {
         DataFrame<Object> dataFrame = WenCaiApi
 //                .wenCaiQuery("近5日的区间涨跌幅>-10%且近5日的区间涨跌幅<10%;连续5日的振幅<8%;深市主板或沪市主板;非st的股票；成交额大于1亿;非科创板;非创业板");
                 .wenCaiQuery("个股人气排名前200");
-        Console.log(dataFrame.columns());
+//        Console.log(dataFrame.columns());
         HashMap<String, Double> codeWithChgPMap = new HashMap<>();
         for (int i = 0; i < dataFrame.length(); i++) {
             codeWithChgPMap.put(dataFrame.get(i, "code").toString(),
@@ -60,8 +60,8 @@ public class FsTransTypicalBsSelector {
             public int compare(Object o1, Object o2) {
                 ArrayList<Object> o11 = (ArrayList<Object>) o1;
                 ArrayList<Object> o22 = (ArrayList<Object>) o2;
-                Double d1 = (Double) o11.get(1);
-                Double d2 = (Double) o22.get(1);
+                double d1 = (Double) o11.get(1);
+                double d2 = (Double) o22.get(1);
 
 //                Double chg1 = (Double) o11.get(2);
 //                Double chg2 = (Double) o22.get(2);
@@ -127,7 +127,9 @@ public class FsTransTypicalBsSelector {
                 sellAmounts += amount;
             }
         }
-
+        if ((buyAmounts + sellAmounts) <= 0) {
+            return -2; // 无典型成交量时,
+        }
         return (buyAmounts - sellAmounts) / (buyAmounts + sellAmounts);
 
     }
