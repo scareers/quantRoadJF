@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * description: 操盘计划时, 使用的同花顺行业对象 bean
- * 源数据参考 industry_list 数据表
+ * 源数据字段参考 industry_list 数据表
  *
  * @word: hype: 炒作 / hazy 朦胧 / ebb 退潮 / revival 复兴再起
  * @author: admin
@@ -54,7 +54,8 @@ public class IndustryThsOfPlan {
         bean.setType(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
         bean.setCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "code")));
         bean.setIndexCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "indexCode")));
-        bean.setDateStr(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "dateStr")));
+//        bean.setDateStr(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "dateStr")));
+        bean.setDateStr(dateStr); // @noti: 第二种情况, 读取结果的字符串将不等于参数日期
 
         Double chgP = null;
         try {
