@@ -1,11 +1,11 @@
-package com.scareers.tools.stockplan.bean.dao;
+package com.scareers.tools.stockplan.news.bean.dao;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.NewsFeed;
+import com.scareers.tools.stockplan.news.bean.NewsFeed;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
 import org.hibernate.query.Query;

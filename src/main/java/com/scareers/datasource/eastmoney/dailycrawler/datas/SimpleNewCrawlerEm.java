@@ -5,7 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
@@ -15,7 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.maxPageOfZiXunJingHua;
-import static com.scareers.tools.stockplan.bean.SimpleNewEm.buildDfFromBeanListWithoutIdAndSaveTime;
+import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildDfFromBeanListWithoutIdAndSaveTime;
 
 /**
  * description: 简单新闻 抓取, 例如 资讯精华0, 财经导读1,   由数据库 type字段区分. 由Em api 设定;

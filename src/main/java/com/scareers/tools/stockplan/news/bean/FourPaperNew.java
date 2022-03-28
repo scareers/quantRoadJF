@@ -1,4 +1,4 @@
-package com.scareers.tools.stockplan.bean;
+package com.scareers.tools.stockplan.news.bean;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
@@ -15,14 +15,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
 
 /**
  * 四大证券报(主要媒体) 头条精华

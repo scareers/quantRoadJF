@@ -6,8 +6,8 @@ import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.MajorIssue;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.MajorIssue;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
 
 import java.sql.SQLException;
@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static com.scareers.tools.stockplan.bean.MajorIssue.parseCompanyMajorIssuesNew;
+import static com.scareers.tools.stockplan.news.bean.MajorIssue.parseCompanyMajorIssuesNew;
 
 /**
  * description: 交易日, 公司重大事项归纳; 来自于财经导读;

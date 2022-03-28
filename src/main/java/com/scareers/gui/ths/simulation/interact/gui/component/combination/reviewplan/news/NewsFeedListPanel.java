@@ -2,13 +2,10 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.CompanyGoodNewEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.NewsFeedEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.tools.stockplan.bean.CompanyGoodNew;
-import com.scareers.tools.stockplan.bean.NewsFeed;
-import com.scareers.utils.CommonUtil;
+import com.scareers.tools.stockplan.news.bean.NewsFeed;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;

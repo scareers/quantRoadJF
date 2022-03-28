@@ -1,4 +1,4 @@
-package com.scareers.tools.stockplan.bean;
+package com.scareers.tools.stockplan.news.bean;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
@@ -20,8 +20,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
 
 /**
  * 重大事项解析结果

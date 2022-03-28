@@ -4,20 +4,14 @@ import cn.hutool.core.date.DateUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
-import com.scareers.tools.stockplan.bean.NewAspectSummary;
-import com.scareers.tools.stockplan.bean.dao.NewAspectSummaryDao;
+import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
+import com.scareers.tools.stockplan.news.bean.dao.NewAspectSummaryDao;
 
-import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.Transient;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
@@ -189,6 +183,8 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
+        jTextField.setBackground(Color.red);
+        jTextField.setCaretColor(Color.red);
         return jTextField;
     }
 

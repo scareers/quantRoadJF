@@ -13,7 +13,7 @@ import java.util.List;
 public class DailyKlineDataEmOfIndex extends DailyKlineDataEm {
     private DailyKlineDataEmOfIndex(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
-        this.hasAlreadyIncrementalUpdatedThreshold=200;
+        this.hasAlreadyIncrementalUpdatedThreshold=100000000;
     }
 
     public DailyKlineDataEmOfIndex(boolean fullMode) {

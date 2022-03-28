@@ -1,22 +1,16 @@
-package com.scareers.tools.stockplan.bean;
+package com.scareers.tools.stockplan.news.bean;
 
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import com.alibaba.fastjson.JSONArray;
-import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.utils.JSONUtilS;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * description: 资讯面个人总结 bean

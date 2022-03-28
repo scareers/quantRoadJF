@@ -1,4 +1,4 @@
-package com.scareers.tools.stockplan.bean.dao;
+package com.scareers.tools.stockplan.news.bean.dao;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -6,16 +6,13 @@ import cn.hutool.core.lang.Console;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.NewAspectSummary;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 

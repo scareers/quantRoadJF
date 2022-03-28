@@ -43,10 +43,21 @@ public class CrawlerChainEm {
         //fullMode = false;
 
         CrawlerChainEm crawlerChainEm = new CrawlerChainEm(4, 4);
+
         crawlerChainEm.addSynCrawler(new StockListEm());
         crawlerChainEm.addSynCrawler(new IndexListEm());
         crawlerChainEm.addSynCrawler(new BkListEm());
         crawlerChainEm.addSynCrawler(new TradeDatesEm());
+
+
+        // 资讯
+        crawlerChainEm.addFrontCrawlers(new CaiJingDaoDuCrawlerEm());
+        crawlerChainEm.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
+        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
+        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
+        crawlerChainEm.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
+        crawlerChainEm.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
+
 
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
@@ -57,13 +68,6 @@ public class CrawlerChainEm {
         crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
         crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
-        // 资讯
-        crawlerChainEm.addRearCrawlers(new CaiJingDaoDuCrawlerEm());
-        crawlerChainEm.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
-        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
-        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
-        crawlerChainEm.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
-        crawlerChainEm.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
 
         crawlerChainEm.run();

@@ -1,7 +1,6 @@
-package com.scareers.tools.stockplan.bean;
+package com.scareers.tools.stockplan.news.bean;
 
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.utils.CommonUtil;

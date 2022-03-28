@@ -1,17 +1,13 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.CompanyGoodNewEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
-import com.scareers.tools.stockplan.bean.CompanyGoodNew;
-import com.scareers.tools.stockplan.bean.NewAspectSummary;
-import com.scareers.tools.stockplan.bean.dao.CompanyGoodNewDao;
-import com.scareers.tools.stockplan.bean.dao.NewAspectSummaryDao;
+import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
+import com.scareers.tools.stockplan.news.bean.dao.NewAspectSummaryDao;
 import lombok.Getter;
 import lombok.Setter;
 

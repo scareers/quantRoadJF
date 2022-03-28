@@ -6,8 +6,8 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.Displa
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
-import com.scareers.tools.stockplan.bean.NewAspectSummary;
-import com.scareers.tools.stockplan.bean.dao.NewAspectSummaryDao;
+import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
+import com.scareers.tools.stockplan.news.bean.dao.NewAspectSummaryDao;
 import com.scareers.utils.CommonUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,8 +15,6 @@ import lombok.Setter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * description: 对资讯总结, 大势预判 列表! 作为NewAspectSummaryPanel 第三个子组件

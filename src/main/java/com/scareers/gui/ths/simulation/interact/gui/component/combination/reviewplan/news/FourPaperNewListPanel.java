@@ -3,11 +3,9 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.FourPaperNewEditorPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.MajorIssueEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.tools.stockplan.bean.FourPaperNew;
-import com.scareers.tools.stockplan.bean.MajorIssue;
+import com.scareers.tools.stockplan.news.bean.FourPaperNew;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;

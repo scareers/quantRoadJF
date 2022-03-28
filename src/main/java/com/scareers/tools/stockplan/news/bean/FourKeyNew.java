@@ -1,6 +1,5 @@
-package com.scareers.tools.stockplan.bean;
+package com.scareers.tools.stockplan.news.bean;
 
-import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
 import lombok.Data;
 
 /**

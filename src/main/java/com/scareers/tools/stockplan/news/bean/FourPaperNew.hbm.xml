@@ -4,11 +4,14 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
 
-    <class name="com.scareers.tools.stockplan.bean.NewsFeed" table="news_feed" schema="eastmoney">
+    <class name="com.scareers.tools.stockplan.news.bean.FourPaperNew" table="four_paper_new" schema="eastmoney">
         <id name="id">
             <column name="id" sql-type="bigint"/>
             <generator class="identity"/>
         </id>
+        <property name="url">
+            <column name="url" sql-type="text" not-null="false"/>
+        </property>
         <property name="title">
             <column name="title" sql-type="text" not-null="false"/>
         </property>
@@ -18,11 +21,17 @@
         <property name="dateStr">
             <column name="dateStr" sql-type="varchar(32)" length="32" not-null="false"/>
         </property>
+        <property name="type">
+            <column name="type" sql-type="varchar(32)" length="32" not-null="false"/>
+        </property>
         <property name="saveTime">
             <column name="saveTime" sql-type="datetime" not-null="false"/>
         </property>
         <property name="briefly">
             <column name="briefly" sql-type="varchar(2048)" length="2048" not-null="false"/>
+        </property>
+        <property name="relatedObject">
+            <column name="relatedObject" sql-type="varchar(2048)" length="2048" not-null="false"/>
         </property>
         <property name="trend">
             <column name="trend" sql-type="double" precision="-1" not-null="false"/>

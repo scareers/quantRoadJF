@@ -5,12 +5,11 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.Displa
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.SimpleNewEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
-import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;

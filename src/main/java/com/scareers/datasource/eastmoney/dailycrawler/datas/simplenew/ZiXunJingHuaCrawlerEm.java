@@ -4,7 +4,7 @@ import cn.hutool.core.lang.Console;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.SimpleNewCrawlerEm;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 
 import java.util.HashSet;
 import java.util.List;

@@ -56,7 +56,7 @@ public abstract class NewsTabPanel extends DisplayPanel {
                     } catch (Exception e) {
 
                     }
-                    ThreadUtil.sleep(60000);
+                    ThreadUtil.sleep(30000); // 1分钟自动刷新; 平时需要手动点击全量刷新
                 }
             }
         }, true);

@@ -17,7 +17,7 @@ import java.util.List;
 public class DailyKlineDataEmOfBk extends DailyKlineDataEm {
     private DailyKlineDataEmOfBk(String tablePrefix, String fq, boolean fullMode) {
         super(tablePrefix, fq, fullMode);
-        this.hasAlreadyIncrementalUpdatedThreshold = 200;
+        this.hasAlreadyIncrementalUpdatedThreshold = 100000000;
     }
 
     public DailyKlineDataEmOfBk(boolean fullMode) {

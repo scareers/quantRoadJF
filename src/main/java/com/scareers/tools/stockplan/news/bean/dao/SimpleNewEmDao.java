@@ -1,4 +1,4 @@
-package com.scareers.tools.stockplan.bean.dao;
+package com.scareers.tools.stockplan.news.bean.dao;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
@@ -8,7 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

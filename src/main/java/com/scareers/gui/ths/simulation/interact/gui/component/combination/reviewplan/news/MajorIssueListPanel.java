@@ -5,7 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.Displa
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.MajorIssueEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.tools.stockplan.bean.MajorIssue;
+import com.scareers.tools.stockplan.news.bean.MajorIssue;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;

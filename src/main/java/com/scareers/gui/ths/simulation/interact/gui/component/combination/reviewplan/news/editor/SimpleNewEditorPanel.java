@@ -6,8 +6,8 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.SimpleNewListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
-import com.scareers.tools.stockplan.bean.dao.SimpleNewEmDao;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 

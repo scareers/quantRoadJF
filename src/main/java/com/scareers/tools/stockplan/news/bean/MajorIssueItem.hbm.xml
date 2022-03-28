@@ -4,7 +4,7 @@
     "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <hibernate-mapping>
 
-    <class name="com.scareers.tools.stockplan.bean.CompanyGoodNew" table="company_good_new" schema="eastmoney">
+    <class name="com.scareers.tools.stockplan.news.bean.MajorIssue" table="company_major_issue" schema="eastmoney">
         <id name="id">
             <column name="id" sql-type="bigint"/>
             <generator class="identity"/>
@@ -23,6 +23,9 @@
         </property>
         <property name="dateStr">
             <column name="dateStr" sql-type="varchar(32)" length="32" not-null="false"/>
+        </property>
+        <property name="type">
+            <column name="type" sql-type="varchar(32)" length="32" not-null="false"/>
         </property>
         <property name="saveTime">
             <column name="saveTime" sql-type="datetime" not-null="false"/>

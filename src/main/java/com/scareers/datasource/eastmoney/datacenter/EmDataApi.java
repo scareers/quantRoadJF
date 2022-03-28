@@ -14,7 +14,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.tools.stockplan.bean.SimpleNewEm;
+import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import org.jsoup.Jsoup;

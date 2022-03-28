@@ -1,11 +1,11 @@
-package com.scareers.tools.stockplan.bean.dao;
+package com.scareers.tools.stockplan.news.bean.dao;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.tools.stockplan.bean.MajorIssue;
+import com.scareers.tools.stockplan.news.bean.CompanyGoodNew;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -13,7 +13,6 @@ import org.hibernate.query.Query;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -22,66 +21,33 @@ import java.util.List;
  * @author: admin
  * @date: 2022/3/16/016-23:43:25
  */
-public class MajorIssueDao {
+public class CompanyGoodNewDao {
     public static void main(String[] args) throws SQLException {
         Console.log(getNewsForTradePlanByDate("2022-03-15"));
-        Console.log(getNewsForTradePlanByDateGrouped("2022-03-15"));
     }
 
     /**
-     * 给定日期, 返回当日所有 公司重大事项
+     * 给定日期, 返回当日所有 公司利好消息
      *
      * @param dateStr 标准日期字符串
      * @return
      * @throws SQLException
      */
-    public static List<MajorIssue> getNewsForTradePlanByDate(String dateStr) {
+    public static List<CompanyGoodNew> getNewsForTradePlanByDate(String dateStr) {
         // hibernate API, 访问数据库
         Session session = SimpleNewEmDao.sessionFactory.openSession();
-        String hql = "FROM MajorIssue E WHERE E.dateStr=:dateStr"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
+        String hql = "FROM CompanyGoodNew E WHERE E.dateStr=:dateStr"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
         Query query = session.createQuery(hql);
         query.setParameter("dateStr", dateStr); // 注意类型
         List beans = query.list();
-        List<MajorIssue> res = new ArrayList<>();
+        List<CompanyGoodNew> res = new ArrayList<>();
         for (Object bean : beans) {
-            res.add((MajorIssue) bean);
+            res.add((CompanyGoodNew) bean);
         }
         session.close();
         return res;
     }
 
-
-    /**
-     * 给定日期, 返回当日所有 公司重大事项; 按照原始顺序(新闻中出现的顺序) 已经分类好!
-     *
-     * @param dateStr
-     * @return
-     * @throws SQLException
-     */
-    public static List<MajorIssue.MajorIssueBatch> getNewsForTradePlanByDateGrouped(String dateStr)
-            throws SQLException {
-        // hibernate API, 访问数据库
-        List<MajorIssue> items = getNewsForTradePlanByDate(dateStr);
-
-        List<String> types = new ArrayList<>(); // 维持顺序
-        for (MajorIssue item : items) {
-            if (!types.contains(item.getType())) {
-                types.add(item.getType());
-            }
-        }
-
-        HashMap<String, ArrayList<MajorIssue>> mapped = new HashMap<>();
-        for (MajorIssue item : items) {
-            mapped.putIfAbsent(item.getType(), new ArrayList<>());
-            mapped.get(item.getType()).add(item);
-        }
-
-        List<MajorIssue.MajorIssueBatch> res = new ArrayList<>();
-        for (String type : types) {
-            res.add(new MajorIssue.MajorIssueBatch(mapped.get(type), type));
-        }
-        return res;
-    }
 
     /**
      * 根据id获取bean
@@ -89,11 +55,11 @@ public class MajorIssueDao {
      * @param id
      * @return
      */
-    public static MajorIssue getBeanById(long id) {
+    public static CompanyGoodNew getBeanById(long id) {
         Session session = SimpleNewEmDao.sessionFactory.openSession();
-        MajorIssue simpleNewEm = session.get(MajorIssue.class, id);
+        CompanyGoodNew bean = session.get(CompanyGoodNew.class, id);
         session.close();
-        return simpleNewEm;
+        return bean;
     }
 
     /**
@@ -102,17 +68,17 @@ public class MajorIssueDao {
      * @param id
      * @return
      */
-    public static void updateBean(MajorIssue bean) {
+    public static void updateBean(CompanyGoodNew bean) {
         Session session = SimpleNewEmDao.sessionFactory.openSession();
         session.beginTransaction();
         session.update(bean);
         session.getTransaction().commit();
-        log.warn("MajorIssue: 更新成功, id: {}", bean.getId());
+        log.warn("CompanyGoodNew: 更新成功, id: {}", bean.getId());
         session.close();
     }
 
     /**
-     * 为操盘计划, 获取适当日期的 重大事件新闻;
+     * 为操盘计划, 获取适当日期的 利好公告 --> 相同于 公司重大公告
      * 逻辑:
      * 1.当今日是交易日
      * 当时间<=15:00, 则获取 上一交易日
@@ -123,7 +89,7 @@ public class MajorIssueDao {
      * @param dateStr
      * @return
      */
-    public static List<MajorIssue> getNewsForPlan(Date equivalenceNow) throws SQLException {
+    public static List<CompanyGoodNew> getNewsForPlan(Date equivalenceNow) throws SQLException {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) { // 超过下午3点
@@ -135,8 +101,9 @@ public class MajorIssueDao {
         return getNewsForTradePlanByDate(preDate);
     }
 
+
     /**
-     * 为复盘, 获取适当日期的 重大事件新闻;
+     * 为复盘, 获取适当日期的 利好公告 --> 相同于 公司重大事件
      * 逻辑:
      * 1.当今日是交易日
      * 获取上一交易日, 为上一交易日复盘
@@ -146,7 +113,7 @@ public class MajorIssueDao {
      * @param dateStr
      * @return
      */
-    public static List<MajorIssue> getNewsForReview(Date equivalenceNow) throws SQLException {
+    public static List<CompanyGoodNew> getNewsForReview(Date equivalenceNow) throws SQLException {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));

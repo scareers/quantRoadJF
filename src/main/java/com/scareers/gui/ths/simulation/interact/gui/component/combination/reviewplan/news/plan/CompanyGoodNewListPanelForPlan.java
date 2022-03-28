@@ -3,8 +3,8 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.CompanyGoodNewListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
-import com.scareers.tools.stockplan.bean.CompanyGoodNew;
-import com.scareers.tools.stockplan.bean.dao.CompanyGoodNewDao;
+import com.scareers.tools.stockplan.news.bean.CompanyGoodNew;
+import com.scareers.tools.stockplan.news.bean.dao.CompanyGoodNewDao;
 
 import java.sql.SQLException;
 import java.util.List;
