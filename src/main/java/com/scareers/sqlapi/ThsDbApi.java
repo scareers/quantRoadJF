@@ -5,6 +5,7 @@ import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.HmacAlgorithm;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -16,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.jfree.chart.util.HMSNumberFormat;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -52,6 +54,9 @@ public class ThsDbApi {
     }
 
     public static void main(String[] args) {
+//        Console.log(getIndustryByNameAndDate("电力", "2022-03-28"));
+        Console.log(getIndustryAllRecordByName("电力"));
+
 //        Console.log(getIndustryNameLevel23WithFullCodeMap(DateUtil.today()));
 //        Console.log(getStockBelongToIndustry23WithName(DateUtil.today()));
 //        List<ThsSimpleStock> includeList = getConceptOrIndustryIncludeStocks("新冠检测", DateUtil.today());
@@ -73,13 +78,13 @@ public class ThsDbApi {
 //        Console.log(conceptIncludeStocks);
 
 
-        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
-//                RandomUtil.randomEle(conceptNameList),
-                "贸易",
-                DateUtil.today(), 10, 0.6, 0.4, true);
-        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
-            Console.log(thsConceptRelation);
-        }
+//        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
+////                RandomUtil.randomEle(conceptNameList),
+//                "贸易",
+//                DateUtil.today(), 10, 0.6, 0.4, true);
+//        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
+//            Console.log(thsConceptRelation);
+//        }
     }
 
     /**
@@ -257,6 +262,46 @@ public class ThsDbApi {
             res.put(dataFrame.get(i, 1).toString(), dataFrame.get(i, 0).toString());
         }
         return res;
+    }
+
+    /**
+     * 获取行业单条记录. 需要提供行业名称 和 日期字符串
+     *
+     * @param dateStr
+     * @return
+     * @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
+     */
+    public static DataFrame<Object> getIndustryByNameAndDate(String industryName, String dateStr) {
+        String sql = StrUtil.format("select * from industry_list where dateStr='{}' and " +
+                        "name='{}'",
+                dateStr, industryName);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
+
+    /**
+     * 获取行业所有日期的记录. 需要提供行业名称, 返回所有日期的 industry_list 中对应行业的记录
+     *
+     * @param dateStr
+     * @return
+     * @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
+     */
+    public static DataFrame<Object> getIndustryAllRecordByName(String industryName) {
+        String sql = StrUtil.format("select * from industry_list where " +
+                        "name='{}'",
+                industryName);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
     }
 
     /**
@@ -506,6 +551,23 @@ public class ThsDbApi {
     public static class ThsSimpleStock {
         String code;
         String name;
+
+        public JSONObject toJsonObject() {
+            JSONObject res = new JSONObject();
+            res.put("code", code);
+            res.put("name", name);
+            return res;
+        }
+
+        /**
+         * 从JSONObject加载数据构建对象
+         */
+        public static ThsSimpleStock createFromJsonObject(JSONObject rawJson) {
+            ThsSimpleStock res = new ThsSimpleStock();
+            res.setCode(rawJson.getString("code"));
+            res.setName(rawJson.getString("name"));
+            return res;
+        }
     }
 
 
@@ -525,8 +587,8 @@ public class ThsDbApi {
         Integer includeStockAmountB; // 靠推断计算
 
         // 类型靠推断! 读取静态属性的行业名称集合 和 概念名称集合
-        int aType = 0; // a是行业还是概念?  1概念,2 二级行业, 3 三级行业  0 未知
-        int bType = 0; // b是行业还是概念? 1概念, 2 二级行业,3 三级行业 0 未知
+        Integer aType = 0; // a是行业还是概念?  1概念,2 二级行业, 3 三级行业  0 未知
+        Integer bType = 0; // b是行业还是概念? 1概念, 2 二级行业,3 三级行业 0 未知
 
 
         public static HashSet<String> allIndustryLevel2NameSet;
@@ -678,6 +740,42 @@ public class ThsDbApi {
 
         public boolean bTypeUnknown() {
             return this.bType == 0;
+        }
+
+        /**
+         * 转换为JSONObject; 即 属性名:属性值, 方便json序列化
+         *
+         * @return
+         */
+        public JSONObject toJsonObject() { // 类型匹配 JSONObject
+            JSONObject res = new JSONObject();
+            res.put("nameA", nameA);
+            res.put("nameB", nameB);
+            res.put("sameIncludeStockAmount", sameIncludeStockAmount);
+            res.put("percentA", percentA);
+            res.put("percentB", percentB);
+            res.put("includeStockAmountA", includeStockAmountA);
+            res.put("includeStockAmountB", includeStockAmountB);
+            res.put("aType", aType);
+            res.put("bType", bType);
+            return res;
+        }
+
+        /**
+         * 从JSONObject加载数据构建对象
+         */
+        public static ThsConceptIndustryRelation createFromJsonObject(JSONObject rawJson) {
+            ThsConceptIndustryRelation res = new ThsConceptIndustryRelation();
+            res.setNameA(rawJson.getString("nameA"));
+            res.setNameB(rawJson.getString("nameB"));
+            res.setSameIncludeStockAmount(rawJson.getInteger("sameIncludeStockAmount"));
+            res.setPercentA(rawJson.getDouble("percentA"));
+            res.setPercentB(rawJson.getDouble("percentB"));
+            res.setIncludeStockAmountA(rawJson.getInteger("includeStockAmountA"));
+            res.setIncludeStockAmountB(rawJson.getInteger("includeStockAmountB"));
+            res.setAType(rawJson.getInteger("aType"));
+            res.setBType(rawJson.getInteger("bType"));
+            return res;
         }
 
     }
