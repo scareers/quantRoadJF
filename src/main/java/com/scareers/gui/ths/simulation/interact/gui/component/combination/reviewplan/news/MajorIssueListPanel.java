@@ -10,6 +10,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
+import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -117,7 +118,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
                     return false; // 不可编辑!
                 }
             };
-            jTable = new JTable();
+            jTable = new JXTable();
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
             jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {

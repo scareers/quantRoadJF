@@ -32,77 +32,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
  * @date: 2022/3/17/017-19:09:17
  */
 public class NewAspectSummaryPanel extends DisplayPanel {
-    @Id
-    @GeneratedValue // 默认就是auto
-    @Column(name = "id", unique = true)
-    Long id;
-    @Column(name = "type", length = 64)
-    String type; // 操盘 plan? 复盘 review? 见类型列表
-    @Column(name = "generatedTime", columnDefinition = "datetime")
-    Date generatedTime; // 首次初始化 (new) 时间
-    @Column(name = "lastModified", columnDefinition = "datetime")
-    Date lastModified; // 手动修改最后时间;
-    @Column(name = "dateStr", length = 32)
-    String dateStr; // 简单日期字符串, 特指对某一天的观点.  一般将以此字段读取
 
-    /*
-总体评价字段
- */
-    @Column(name = "trend")
-    Double trend; // -1.0 - 1.0 总体利空利好偏向自定义
-    @Column(name = "remark", columnDefinition = "longtext")
-    String remark; // 总体备注
-
-    @Column(name = "scoreSchemaOfPreJudgment", columnDefinition = "longtext")
-    Double scoreSchemaOfPreJudgment; // 未来对总体预判的总评分
-
-    /*
-    4类因素
-     */
-
-    // 维护四大列表, 为了数据库便于维护, 不使用外键方式, 简单保存 jsonStr;
-    // 这些字段均不保存到数据库
-    @Transient
-    List<String> goodPoints = new ArrayList<>(); // 利好因素
-    @Transient
-    List<String> badPoints = new ArrayList<>(); // 利空因素
-    @Transient
-    List<String> neutralPoints = new ArrayList<>(); // 中性因素
-    @Transient
-    List<String> otherPoints = new ArrayList<>(); // 其他因素
-
-    // 与之对应的4大字符串. 这些字符串不手动设定, 当每次修改列表时, 将自动转换json, 自动设置!
-    @Column(name = "goodPoints", columnDefinition = "longtext")
-    String goodPointsJsonStr = "[]";
-    @Column(name = "badPoints", columnDefinition = "longtext")
-    String badPointsJsonStr = "[]";
-    @Column(name = "neutralPoints", columnDefinition = "longtext")
-    String neutralPointsJsonStr = "[]";
-    @Column(name = "otherPoints", columnDefinition = "longtext")
-    String otherPointsJsonStr = "[]";
-
-
-    /*
-    预判相关 + 未来对预判打分
-     */
-    // 核心字段: 预判看法列表 + 未来实际情景列表 + 对预判评分列表 + 评分解析列表; 它们将一一对应
-    // 增加预判项目时, 自动添加(初始化)对应的 情景/评分/评分解析 项目. 始终维持 4个列表项目相同
-    @Transient
-    List<String> preJudgmentViews = new ArrayList<>(); // 预判观点, 核心字段
-    @Column(name = "preJudgmentViews", columnDefinition = "longtext")
-    String preJudgmentViewsJsonStr = "[]";
-    @Transient
-    List<String> futures = new ArrayList<>(); // 未来情况列表
-    @Column(name = "futures", columnDefinition = "longtext")
-    String futuresJsonStr = "[]";
-    @Transient
-    List<Double> scoresOfPreJudgment = new ArrayList<>(); // 未来对预判进行评分, 范围 -100.0 - 100.0; 默认0
-    @Column(name = "scoresOfPreJudgment", columnDefinition = "longtext")
-    String scoresOfPreJudgmentJsonStr = "[]"; // 未来情景描述, json字符串
-    @Transient
-    List<String> scoreReasons = new ArrayList<>(); // 如此评分的原因
-    @Column(name = "scoreReasons", columnDefinition = "longtext")
-    String scoreReasonsJsonStr = "[]"; // 未来情景描述, json字符串
 
     NewAspectSummary bean;
 
@@ -131,22 +61,6 @@ public class NewAspectSummaryPanel extends DisplayPanel {
     JTextField scoreSchemaOfPreJudgmentValueLabel = getCommonEditor(this); // scoreSchemaOfPreJudgment
 
 
-    // 固定
-    JLabel nameLabel = getCommonLabel("name"); // 三大时间
-    JLabel nameValueLabel = getCommonLabel();
-    JLabel quoteUrlLabel = getCommonLabel("quoteUrl");
-    JLabel quoteUrlValueLabel = getCommonLabel();
-    JLabel titleLabel = getCommonLabel("title");
-    JLabel titleValueLabel = getCommonLabel();
-    JLabel contentLabel = getCommonLabel("content");
-    JLabel contentValueLabel = getCommonLabel();
-
-
-    // 编辑
-    JLabel markedLabel = getCommonLabel("marked", Color.pink);
-    JCheckBox markedValueLabel = getCommonCheckBox();
-    JLabel brieflyLabel = getCommonLabel("briefly", Color.pink);
-    JTextField brieflyValueLabel = getCommonEditor(this);
 
 
     public NewAspectSummaryPanel() {

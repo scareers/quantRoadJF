@@ -44,7 +44,8 @@ public class WenCaiMultiConceptSelector {
             "预制菜",
             "猪肉",
             "农业种植",
-            "工业大麻"
+            "工业大麻",
+            "氢能源"
 
     );     // 主线可能概念列表设定
 
@@ -52,10 +53,11 @@ public class WenCaiMultiConceptSelector {
     public static String resColName2 = "股票简称"; // 读取问财的哪一列结果, 例如 code, 股票简称
 
     public static void main(String[] args) {
-//        HashMap<String, List<String>> res = hotAndMainLineAnalyze(300);
-        HashMap<String, List<String>> res = multiConceptAnalyze();
+        HashMap<String, List<String>> res = hotAndMainLineAnalyze(200);
         String resStr = JSONUtilS.toJsonPrettyStr(res);
         Console.log(resStr);
+        HashMap<String, List<String>> res2 = multiConceptAnalyze();
+        Console.log(JSONUtilS.toJsonPrettyStr(res2));
 
 
     }
@@ -108,7 +110,7 @@ public class WenCaiMultiConceptSelector {
 
             List<String> value = new ArrayList<>();
             for (int i = 0; i < codes.size(); i++) {
-                value.add(StrUtil.format("{}__{}", codes.get(i), names.get(i)));
+                value.add(StrUtil.format("{} -- {}", codes.get(i), names.get(i)));
             }
             res.put(key, value);
 
@@ -162,7 +164,7 @@ public class WenCaiMultiConceptSelector {
 
             List<String> value = new ArrayList<>();
             for (int i = 0; i < codes.size(); i++) {
-                value.add(StrUtil.format("{}__{}", codes.get(i), names.get(i)));
+                value.add(StrUtil.format("{} -- {}", codes.get(i), names.get(i)));
             }
             res.put(key, value);
         }

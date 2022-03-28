@@ -5,7 +5,6 @@ import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan.NewsTabPanelForPlan;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.review.NewsTabPanelForReview;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -64,13 +63,6 @@ public class FuncTreeWindow extends FuncFrameS {
             ((BasicInternalFrameUI) INSTANCE.getUI()).setNorthPane(null);
         }
         INSTANCE.getFuncTools().setVisible(false);
-//        BasicInternalFrameUI ui = (BasicInternalFrameUI) INSTANCE.getUI();
-//        BasicInternalFrameTitlePane titlePane = (BasicInternalFrameTitlePane)ui.getNorthPane();
-//        titlePane.selectedTitleColor
-//        selectedTitleColor = UIManager.getColor("InternalFrame.activeTitleBackground");
-//        selectedTextColor = UIManager.getColor("InternalFrame.activeTitleForeground");
-//        notSelectedTitleColor = UIManager.getColor("InternalFrame.inactiveTitleBackground");
-//        notSelectedTextColor = UIManager.getColor("InternalFrame.inactiveTitleForeground");
         INSTANCE.flushBounds();
         INSTANCE.getMainDisplayWindow().flushBounds();
         return INSTANCE;
@@ -190,15 +182,11 @@ public class FuncTreeWindow extends FuncFrameS {
         3.复盘报告,与操盘计划
          */
         DefaultMutableTreeNode reviewAndPlanNode = new DefaultMutableTreeNode("复盘操盘");
-        DefaultMutableTreeNode reviewNode = new DefaultMutableTreeNode("复盘报告");
         DefaultMutableTreeNode tradePlanNode = new DefaultMutableTreeNode("操盘计划");
         // 资讯面
-        DefaultMutableTreeNode importantNewsNode = new DefaultMutableTreeNode("资讯面");
-        reviewNode.add(importantNewsNode);
         DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("资讯面");
         tradePlanNode.add(importantNewsNode2);
 
-        reviewAndPlanNode.add(reviewNode);
         reviewAndPlanNode.add(tradePlanNode);
 
 
@@ -236,7 +224,6 @@ public class FuncTreeWindow extends FuncFrameS {
         });
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.REVIEW_IMPORTANT_NEWS);
         GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
         return tree;
     }
@@ -268,8 +255,6 @@ public class FuncTreeWindow extends FuncFrameS {
             // 2.2.账户状态
         } else if (TreePathConstants.SELL_QUEUE.equals(treePath)) {
             changeToSellQueue();
-        } else if (TreePathConstants.REVIEW_IMPORTANT_NEWS.equals(treePath)) {
-            changeToReviseImportantNews();
         } else if (TreePathConstants.PLAN_IMPORTANT_NEWS.equals(treePath)) {
             changeToPlanImportantNews();
         } else {
@@ -304,11 +289,6 @@ public class FuncTreeWindow extends FuncFrameS {
                 .showInMainDisplayWindow();
     }
 
-    private void changeToReviseImportantNews() {
-        NewsTabPanelForReview
-                .getInstance(this.getMainDisplayWindow())
-                .showInMainDisplayWindow();
-    }
 
     private void changeToPlanImportantNews() {
         NewsTabPanelForPlan
@@ -368,15 +348,11 @@ public class FuncTreeWindow extends FuncFrameS {
 
         /**
          * [功能树, 复盘操盘]
-         * [功能树, 复盘操盘, 复盘报告]
-         * [功能树, 复盘操盘, 复盘报告, 资讯面]
          * [功能树, 复盘操盘, 操盘计划]
          * [功能树, 复盘操盘, 操盘计划, 资讯面]
          */
 
         public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
-        public static final String REVIEW_REPORT = "[功能树, 复盘操盘, 复盘报告]";
-        public static final String REVIEW_IMPORTANT_NEWS = "[功能树, 复盘操盘, 复盘报告, 资讯面]";
         public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 资讯面]";
 
         public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";

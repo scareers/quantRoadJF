@@ -163,7 +163,7 @@ public class SimpleNewEditorPanel extends DisplayPanel {
         return new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER ) {
                     tryAutoSaveEditedBean(panel, "要闻");
                 }
             }
@@ -265,7 +265,10 @@ public class SimpleNewEditorPanel extends DisplayPanel {
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
         jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
-        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
+//        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
+        jTextField.setBackground(Color.BLACK);
+        jTextField.setForeground(Color.red);
+        jTextField.setCaretColor(Color.red);
         return jTextField;
     }
 

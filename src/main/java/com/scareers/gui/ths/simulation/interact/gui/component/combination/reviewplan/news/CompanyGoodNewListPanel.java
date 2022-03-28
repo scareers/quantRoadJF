@@ -10,6 +10,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
+import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -117,7 +118,7 @@ public abstract class CompanyGoodNewListPanel extends DisplayPanel {
                     return false; // 不可编辑!
                 }
             };
-            jTable = new JTable();
+            jTable = new JXTable();
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
             jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -264,8 +265,9 @@ public abstract class CompanyGoodNewListPanel extends DisplayPanel {
                 column.setWidth(20); // 多5
             }
             if (dummyIndex == 4) {
-                column.setWidth(20); // 多5
+                column.setWidth(5); // 多5
             }
+
 
             dummyIndex++;
         }

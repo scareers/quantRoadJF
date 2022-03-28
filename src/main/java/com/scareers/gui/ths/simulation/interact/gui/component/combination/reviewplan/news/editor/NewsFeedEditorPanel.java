@@ -244,7 +244,10 @@ public class NewsFeedEditorPanel extends DisplayPanel {
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
         jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
-        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
+//        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
+        jTextField.setBackground(Color.BLACK);
+        jTextField.setForeground(Color.red);
+        jTextField.setCaretColor(Color.red);
         return jTextField;
     }
 

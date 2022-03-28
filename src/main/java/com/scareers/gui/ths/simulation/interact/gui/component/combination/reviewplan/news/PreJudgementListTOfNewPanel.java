@@ -224,10 +224,10 @@ public class PreJudgementListTOfNewPanel extends DisplayPanel {
             PreJudgementPanel panel) {
         JTextField jTextField = new JTextField();
         jTextField.setBackground(SettingsOfGuiGlobal.COLOR_CHART_BG_EM);
-        jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
+        jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
-        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
+//        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
         return jTextField;
     }
 

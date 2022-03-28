@@ -11,6 +11,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import org.jdesktop.swingx.JXCollapsiblePane;
+import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -48,9 +49,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
     protected JButton buttonFlushAll; // 全量刷新按钮
 
 
-
     protected NewsTabPanel parentS; // 维护所属 newstab
-
 
 
     public SimpleNewListPanel(NewsTabPanel parentS) {
@@ -129,11 +128,14 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             DefaultTableModel model = new DefaultTableModel(datas, cols) {
                 @Override
                 public boolean isCellEditable(int row, int column) {
+
                     return false; // 不可编辑!
+//                    return true; //
                 }
             };
 
-            jTable = new JTable();
+            jTable = new JXTable();
+
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
             jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -272,11 +274,14 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             column.setWidth(actualWidth); // 多5
 //            break; // 仅第一列日期. 其他的平均
 
-            if (dummyIndex == 3) {
-                column.setWidth(20); // 多5
+            if (dummyIndex == 3) { // url
+                column.setWidth(5);
             }
-            if (dummyIndex == 4) {
-                column.setWidth(20); // 多5
+            if (dummyIndex == 4) { // 具体内容
+                column.setWidth(5);
+            }
+            if (dummyIndex == 5) { // 保存时间
+                column.setWidth(10);
             }
 
             dummyIndex++;
