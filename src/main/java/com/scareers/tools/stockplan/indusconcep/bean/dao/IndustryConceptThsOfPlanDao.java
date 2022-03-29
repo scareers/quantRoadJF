@@ -72,7 +72,9 @@ public class IndustryConceptThsOfPlanDao {
         List beans = query.list();
         List<IndustryConceptThsOfPlan> res = new ArrayList<>();
         for (Object bean : beans) {
-            res.add((IndustryConceptThsOfPlan) bean);
+            IndustryConceptThsOfPlan bean1 = (IndustryConceptThsOfPlan) bean;
+            bean1.initTransientAttrsWhenBeanFromDb();
+            res.add(bean1);
         }
         session.close();
         return res;

@@ -1,29 +1,35 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import org.jdesktop.swingx.JXComboBox;
+import org.jdesktop.swingx.JXList;
+import org.jdesktop.swingx.JXMultiSplitPane;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Date;
-import java.util.Vector;
+import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
  * description:
@@ -288,8 +294,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     dialog.setContentPane(panel);
 
                     JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getRelatedConceptListJsonStr()));
+                    jLabel.setForeground(Color.orange);
+                    jLabel.setBackground(COLOR_THEME_MINOR);
                     //添加控件到对话框
                     JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                    BasicScrollBarUIS
+                            .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
                     jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
                     jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
                     jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -328,8 +339,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     dialog.setContentPane(panel);
 
                     JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getRelatedIndustryListJsonStr()));
+                    jLabel.setForeground(Color.orange);
+                    jLabel.setBackground(COLOR_THEME_MINOR);
                     //添加控件到对话框
                     JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                    BasicScrollBarUIS
+                            .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
                     jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
                     jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
                     jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -369,8 +385,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     dialog.setContentPane(panel);
 
                     JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getIncludeStockListJsonStr()));
+                    jLabel.setForeground(Color.orange);
+                    jLabel.setBackground(COLOR_THEME_MINOR);
                     //添加控件到对话框
                     JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                    BasicScrollBarUIS
+                            .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
                     jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
                     jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
                     jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -412,24 +433,152 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     JPanel panel = new JPanel();
                     panel.setLayout(new BorderLayout());
                     dialog.setContentPane(panel);
-// todo: 龙头股编辑
-                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getIncludeStockListJsonStr()));
+
+                    JPanel leaderStockListEditPanel = initLeaderStockListEditPanel();
+
                     //添加控件到对话框
                     JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                    BasicScrollBarUIS
+                            .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
                     jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
                     jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
                     jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-                    jScrollPane.setViewportView(jLabel);
-                    panel.add(jScrollPane, BorderLayout.CENTER);
+                    jScrollPane.setViewportView(leaderStockListEditPanel);
+                    panel.add(leaderStockListEditPanel, BorderLayout.CENTER);
 
                     //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
-                    dialog.setSize(500, 800);
+                    dialog.setSize(1000, 800);
 //                    dialog.setLocation();
                     dialog.setLocationRelativeTo(dialog.getParent());
                     dialog.setVisible(true);
                 }
             }
         });
+        return jPanel;
+    }
+
+    /**
+     * 龙头股编辑对话框主内容: 左成分股列表, 中 添加 和 删除按钮, 右龙头股列表; 使用 BorderLayout
+     * todo: 龙头股编辑
+     *
+     * @return
+     */
+    private JPanel initLeaderStockListEditPanel() {
+
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+
+        // 1.左列表: 全部成分股
+        Vector<ThsDbApi.ThsSimpleStock> allIncludeStockList = new Vector<>(bean.getIncludeStockList());
+        DefaultListModel model1 = new DefaultListModel();
+        model1.addAll(allIncludeStockList);
+        JXList allStocksList = new JXList(model1);
+        allStocksList.setForeground(Color.orange);
+        allStocksList.setBackground(COLOR_THEME_MINOR);
+
+        JScrollPane jScrollPaneLeft = new JScrollPane();
+        jScrollPaneLeft.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneLeft, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+        jScrollPaneLeft.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+        jScrollPaneLeft.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPaneLeft.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneLeft.setViewportView(allStocksList);
+        jScrollPaneLeft.setPreferredSize(new Dimension(440, 800));
+
+        // 2.两个按钮, 添加 和 删除按钮
+        JPanel buttonsPanel = new JPanel();
+        buttonsPanel.setLayout(new VerticalFlowLayout()); // 居中对齐
+        JButton addButton = ButtonFactory.getButton("添加->");
+        JButton deleteButton = ButtonFactory.getButton("<-删除");
+        JButton saveButton = ButtonFactory.getButton("保存");
+        saveButton.setBackground(Color.red);
+        saveButton.setForeground(Color.black);
+        buttonsPanel.add(addButton);
+        buttonsPanel.add(deleteButton);
+        buttonsPanel.add(saveButton);
+        buttonsPanel.setSize(new Dimension(60, 800));
+
+        // 3.右列表: 龙头股
+        Vector<ThsDbApi.ThsSimpleStock> leaderStocks = new Vector<>(bean.getLeaderStockList());
+        DefaultListModel model2 = new DefaultListModel();
+        model2.addAll(leaderStocks);
+        JXList leaderStocksList = new JXList(model2);
+        leaderStocksList.setForeground(Color.orange);
+        leaderStocksList.setBackground(COLOR_THEME_MINOR);
+
+        JScrollPane jScrollPaneRight = new JScrollPane();
+        jScrollPaneRight.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneRight, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+        jScrollPaneRight.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+        jScrollPaneRight.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        jScrollPaneRight.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneRight.setViewportView(leaderStocksList);
+        jScrollPaneRight.setPreferredSize(new Dimension(440, 800));
+
+        jPanel.add(jScrollPaneLeft, BorderLayout.WEST);
+        jPanel.add(buttonsPanel, BorderLayout.CENTER);
+        jPanel.add(jScrollPaneRight, BorderLayout.EAST);
+
+        addButton.addActionListener(new ActionListener() { // 读取左列表当前选择, 添加到右列表,
+            // 仅控件数据更新,bean数据不变, 要保存更改, 需要点击保存按钮
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ThsDbApi.ThsSimpleStock selectedValue = (ThsDbApi.ThsSimpleStock) allStocksList.getSelectedValue();
+                if (selectedValue == null) {
+                    return;
+                }
+                DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                model.addElement(selectedValue);
+
+            }
+        });
+
+        deleteButton.addActionListener(new ActionListener() { // 读取右列表当前选择, 删除
+            // 仅控件数据更新,bean数据不变, 要保存更改, 需要点击保存按钮
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = leaderStocksList.getSelectedIndex();
+                if (selectedIndex < 0) { // -1
+                    return;
+                }
+                DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                int rawSize = model.getSize();
+                model.remove(selectedIndex);
+
+                int shouldIndex = selectedIndex;
+                if (selectedIndex == rawSize - 1) {
+                    shouldIndex--;
+                }
+                try {
+                    leaderStocksList.setSelectedIndex(shouldIndex); // 选择索引不变
+                } catch (Exception e1) {
+                }
+            }
+        });
+        IndustryConceptThsOfPlanEditorPanel panelTemp = this;
+        saveButton.addActionListener(new ActionListener() { // 保存右侧列表, 作为bean的龙头股列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                List<ThsDbApi.ThsSimpleStock> stocks = new ArrayList<>();
+                for (int i = 0; i < model.getSize(); i++) {
+                    try {
+                        ThsDbApi.ThsSimpleStock elementAt = (ThsDbApi.ThsSimpleStock) model.getElementAt(i);
+                        stocks.add(elementAt);
+                    } catch (Exception ex) {
+                        // 一般不会
+                    }
+                }
+                bean.updateLeaderStockList(stocks);
+                tryAutoSaveEditedBean(panelTemp, "概念行业");
+                ManiLog.put("IndustryConceptThsOfPlan: 已更新龙头股列表");
+                panelTemp.update(); // 将刷新显示
+            }
+        });
+
         return jPanel;
     }
 

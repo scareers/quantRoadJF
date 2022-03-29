@@ -340,6 +340,18 @@ public class IndustryConceptThsOfPlan {
         this.leaderStockList = res; // 一次性更新
     }
 
+    /*
+    数据api, 主要同时更新 list和对应的json; 按需实现
+     */
+    public void updateLeaderStockList(List<ThsSimpleStock> newList) {
+        List<JSONObject> jsonObjectList = new ArrayList<>();
+        for (ThsSimpleStock thsSimpleStock : newList) {
+            jsonObjectList.add(thsSimpleStock.toJsonObject());
+        }
+        this.leaderStockListJsonStr = JSONUtilS.toJsonPrettyStr(jsonObjectList);
+        this.leaderStockList = newList;
+    }
+
 
     /**
      * 行业主线支线类型, 这里不使用枚举, 直接使用字符串

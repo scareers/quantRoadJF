@@ -69,7 +69,7 @@ public class VerticalFlowLayout extends FlowLayout {
      * to edge flag set.
      */
     public VerticalFlowLayout() {
-        this(TOP, 5, 5, true, false);
+        this(MIDDLE, 5, 5, true, false);
     }
 
     /**
