@@ -293,7 +293,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             IndustryConceptThsOfPlanDao.saveOrUpdateBean(editedBean);
             panel.update(editedBean); // 将更新显示自动设置字段
             panel.parentPanel.update(); // 更新列表
-            ManiLog.put(StrUtil.format("{}: 更新概念行业bean成功: {} --> {}", logPrefix,editedBean.getId(),
+            ManiLog.put(StrUtil.format("{}: 更新概念行业bean成功: {} --> {}", logPrefix, editedBean.getId(),
                     editedBean.getName()
                     )
             );
@@ -307,51 +307,6 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         if (this.bean == null) {
             return;
         }
-
-        // 子控件, 对应bean 各种属性, 以及部分操作按钮
-        JLabel idValueLabel = getCommonLabel();
-        JLabel nameValueLabel = getCommonLabel();
-        JLabel typeValueLabel = getCommonLabel();
-        JLabel type2ValueLabel = getCommonLabel();
-        JLabel codeValueLabel = getCommonLabel();
-        JLabel indexCodeValueLabel = getCommonLabel();
-        JLabel dateStrValueLabel = getCommonLabel();
-        JLabel chgPValueLabel = getCommonLabel();
-
-        JLabel generatedTimeValueLabel = getCommonLabel();
-        JLabel lastModifiedValueLabel = getCommonLabel();
-
-        // todo: 具体展示
-        JLabel relatedConceptListValueLabel = getCommonLabel();
-        JLabel relatedIndustryListValueLabel = getCommonLabel();
-        JLabel includeStockListValueLabel = getCommonLabel();
-
-        JTextField leaderStockListValueLabel = getCommonEditor(this);
-
-        // 编辑
-        JTextField pricePositionShortTermValueLabel = getCommonEditor(this);
-        JTextField pricePositionLongTermValueLabel = getCommonEditor(this);
-        JTextField priceTrendValueLabel = getCommonEditor(this);
-        JTextField oscillationAmplitudeValueLabel = getCommonEditor(this);
-        JTextField lineTypeValueLabel = getCommonEditor(this);
-        JTextField hypeReasonValueLabel = getCommonEditor(this);
-        JTextField hypeStartDateValueLabel = getCommonEditor(this);
-        JTextField hypePhaseCurrentValueLabel = getCommonEditor(this);
-        JTextField specificDescriptionValueLabel = getCommonEditor(this);
-        JTextField goodAspectsValueLabel = getCommonEditor(this);
-        JTextField badAspectsValueLabel = getCommonEditor(this);
-        JTextField warningsValueLabel = getCommonEditor(this);
-
-        JTextField trendValueLabel = getCommonEditor(this);
-        JTextField remarkValueLabel = getCommonEditor(this);
-
-        JTextField preJudgmentViewsValueLabel = getCommonEditor(this);
-        JTextField futuresValueLabel = getCommonEditor(this);
-        JTextField scoreOfPreJudgmentValueLabel = getCommonEditor(this);
-        JTextField scoreReasonValueLabel = getCommonEditor(this);
-
-
-
 
         idValueLabel.setText(String.valueOf(bean.getId()));
         nameValueLabel.setText(String.valueOf(bean.getName()));
@@ -378,19 +333,21 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         hypeReasonValueLabel.setText(String.valueOf(bean.getHypeReason()));
         setDateTimeOrNull(bean.getHypeStartDate(), hypeStartDateValueLabel); // todo
         hypePhaseCurrentValueLabel.setText(String.valueOf(bean.getHypePhaseCurrent()));
+        specificDescriptionValueLabel.setText(String.valueOf(bean.getSpecificDescription()));
+        goodAspectsValueLabel.setText(String.valueOf(bean.getGoodAspects()));
+        badAspectsValueLabel.setText(String.valueOf(bean.getBadAspects()));
+        warningsValueLabel.setText(String.valueOf(bean.getWarnings()));
+        warningsValueLabel.setText(String.valueOf(bean.getWarnings()));
 
-
-//        titleValueLabel.setText(String.valueOf(bean.getTitle()));
-//        urlRawHtmlValueLabel.setText(String.valueOf(bean.getUrlRawHtml()));
-//        urlValueLabel.setText(String.valueOf(bean.getUrl()));
-//        detailTitleValueLabel.setText(String.valueOf(bean.getDetailTitle()));
-
-
-//        brieflyValueLabel.setText(CommonUtil.toStringCheckNull(bean.getBriefly(), ""));
-//        relatedObjectValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRelatedObject(), ""));
         trendValueLabel.setText(CommonUtil.toStringCheckNull(bean.getTrend(), ""));
-//        markedValueLabel.setSelected(bean.getMarked());
         remarkValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRemark(), ""));
+
+        preJudgmentViewsValueLabel.setText(String.valueOf(bean.getPreJudgmentViews()));
+        futuresValueLabel.setText(String.valueOf(bean.getFutures()));
+        scoreOfPreJudgmentValueLabel.setText(String.valueOf(bean.getScoreOfPreJudgment()));
+        scoreReasonValueLabel.setText(String.valueOf(bean.getScoreReason()));
+
+
     }
 
     public void setDateTimeOrNull(Date timestamp, JLabel label) {
@@ -400,6 +357,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             label.setText(DateUtil.date(timestamp).toStringDefaultTimeZone());
         }
     }
+
     public void setDateTimeOrNull(Date timestamp, JTextField jTextField) {
         if (timestamp == null) {
             jTextField.setText("");
