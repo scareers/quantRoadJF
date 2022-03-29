@@ -115,8 +115,8 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     public IndustryConceptThsOfPlanEditorPanel(IndustryConceptPanelForPlan parentPanel) {
         this.parentPanel = parentPanel;
-        this.setLayout(new GridLayout(15, 2, 1, 1)); // 简易网格布局
-        this.setPreferredSize(new Dimension(350, 800));
+        this.setLayout(new GridLayout(33, 2, 1, 1)); // 简易网格布局
+        this.setPreferredSize(new Dimension(350, 1200));
 
         this.add(totalAmountLabel);
         this.add(totalAmountLabelLabel);
@@ -237,7 +237,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         }
 
 
-        bean.setLastModified(Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
+        bean.setLastModified(DateUtil.date());
 //        bean.setBriefly(this.brieflyValueLabel.getText());
 //        bean.setRelatedObject(this.relatedObjectValueLabel.getText());
         try {
@@ -307,16 +307,83 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         if (this.bean == null) {
             return;
         }
+
+        // 子控件, 对应bean 各种属性, 以及部分操作按钮
+        JLabel idValueLabel = getCommonLabel();
+        JLabel nameValueLabel = getCommonLabel();
+        JLabel typeValueLabel = getCommonLabel();
+        JLabel type2ValueLabel = getCommonLabel();
+        JLabel codeValueLabel = getCommonLabel();
+        JLabel indexCodeValueLabel = getCommonLabel();
+        JLabel dateStrValueLabel = getCommonLabel();
+        JLabel chgPValueLabel = getCommonLabel();
+
+        JLabel generatedTimeValueLabel = getCommonLabel();
+        JLabel lastModifiedValueLabel = getCommonLabel();
+
+        // todo: 具体展示
+        JLabel relatedConceptListValueLabel = getCommonLabel();
+        JLabel relatedIndustryListValueLabel = getCommonLabel();
+        JLabel includeStockListValueLabel = getCommonLabel();
+
+        JTextField leaderStockListValueLabel = getCommonEditor(this);
+
+        // 编辑
+        JTextField pricePositionShortTermValueLabel = getCommonEditor(this);
+        JTextField pricePositionLongTermValueLabel = getCommonEditor(this);
+        JTextField priceTrendValueLabel = getCommonEditor(this);
+        JTextField oscillationAmplitudeValueLabel = getCommonEditor(this);
+        JTextField lineTypeValueLabel = getCommonEditor(this);
+        JTextField hypeReasonValueLabel = getCommonEditor(this);
+        JTextField hypeStartDateValueLabel = getCommonEditor(this);
+        JTextField hypePhaseCurrentValueLabel = getCommonEditor(this);
+        JTextField specificDescriptionValueLabel = getCommonEditor(this);
+        JTextField goodAspectsValueLabel = getCommonEditor(this);
+        JTextField badAspectsValueLabel = getCommonEditor(this);
+        JTextField warningsValueLabel = getCommonEditor(this);
+
+        JTextField trendValueLabel = getCommonEditor(this);
+        JTextField remarkValueLabel = getCommonEditor(this);
+
+        JTextField preJudgmentViewsValueLabel = getCommonEditor(this);
+        JTextField futuresValueLabel = getCommonEditor(this);
+        JTextField scoreOfPreJudgmentValueLabel = getCommonEditor(this);
+        JTextField scoreReasonValueLabel = getCommonEditor(this);
+
+
+
+
         idValueLabel.setText(String.valueOf(bean.getId()));
-//        setDateTimeOrNull(bean.getDateTime(), dateTimeValueLabel);
-//        setDateTimeOrNull(bean.getSaveTime(), saveTimeValueLabel);
+        nameValueLabel.setText(String.valueOf(bean.getName()));
+        typeValueLabel.setText(String.valueOf(bean.getType()));
+        type2ValueLabel.setText(String.valueOf(bean.getType2()));
+        codeValueLabel.setText(String.valueOf(bean.getCode()));
+        indexCodeValueLabel.setText(String.valueOf(bean.getIndexCode()));
+        dateStrValueLabel.setText(String.valueOf(bean.getDateStr()));
+        chgPValueLabel.setText(String.valueOf(bean.getChgP()));
+
+        setDateTimeOrNull(bean.getGeneratedTime(), generatedTimeValueLabel);
         setDateTimeOrNull(bean.getLastModified(), lastModifiedValueLabel);
 
+        relatedConceptListValueLabel.setText(String.valueOf(bean.getRelatedConceptListJsonStr()));
+        relatedIndustryListValueLabel.setText(String.valueOf(bean.getRelatedIndustryListJsonStr()));
+        includeStockListValueLabel.setText(String.valueOf(bean.getIncludeStockListJsonStr()));
+
+        leaderStockListValueLabel.setText(String.valueOf(bean.getLeaderStockListJsonStr()));
+        pricePositionShortTermValueLabel.setText(String.valueOf(bean.getPricePositionShortTerm()));
+        pricePositionLongTermValueLabel.setText(String.valueOf(bean.getPricePositionLongTerm()));
+        priceTrendValueLabel.setText(String.valueOf(bean.getPriceTrend()));
+        oscillationAmplitudeValueLabel.setText(String.valueOf(bean.getOscillationAmplitude()));
+        lineTypeValueLabel.setText(String.valueOf(bean.getLineType()));
+        hypeReasonValueLabel.setText(String.valueOf(bean.getHypeReason()));
+        setDateTimeOrNull(bean.getHypeStartDate(), hypeStartDateValueLabel); // todo
+        hypePhaseCurrentValueLabel.setText(String.valueOf(bean.getHypePhaseCurrent()));
+
+
 //        titleValueLabel.setText(String.valueOf(bean.getTitle()));
+//        urlRawHtmlValueLabel.setText(String.valueOf(bean.getUrlRawHtml()));
 //        urlValueLabel.setText(String.valueOf(bean.getUrl()));
 //        detailTitleValueLabel.setText(String.valueOf(bean.getDetailTitle()));
-        typeValueLabel.setText(String.valueOf(bean.getType()));
-//        urlRawHtmlValueLabel.setText(String.valueOf(bean.getUrlRawHtml()));
 
 
 //        brieflyValueLabel.setText(CommonUtil.toStringCheckNull(bean.getBriefly(), ""));
@@ -331,6 +398,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             label.setText("");
         } else {
             label.setText(DateUtil.date(timestamp).toStringDefaultTimeZone());
+        }
+    }
+    public void setDateTimeOrNull(Date timestamp, JTextField jTextField) {
+        if (timestamp == null) {
+            jTextField.setText("");
+        } else {
+            jTextField.setText(DateUtil.date(timestamp).toStringDefaultTimeZone());
         }
     }
 
