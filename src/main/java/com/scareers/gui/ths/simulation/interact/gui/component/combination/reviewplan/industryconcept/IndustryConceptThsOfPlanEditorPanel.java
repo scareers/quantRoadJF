@@ -3,23 +3,25 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.SimpleNewListPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
+import org.jdesktop.swingx.JXComboBox;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.sql.Timestamp;
+import java.awt.event.*;
 import java.util.Date;
+import java.util.Vector;
+import java.util.function.Consumer;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
@@ -61,34 +63,47 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel lastModifiedLabel = getCommonLabel("lastModified"); // 编辑后自动设定
     JLabel lastModifiedValueLabel = getCommonLabel();
 
-    // todo: 具体展示
-    JLabel relatedConceptListLabel = getCommonLabel("relatedConceptList"); // 编辑后自动设定
+    // 带有查看的不可变3字段: 关联概念/关联行业/成分股
+    JLabel relatedConceptListLabel = getCommonLabel("relatedConceptList");
     JLabel relatedConceptListValueLabel = getCommonLabel();
-    JLabel relatedIndustryListLabel = getCommonLabel("relatedIndustryList"); // 编辑后自动设定
+    JPanel relatedConceptListPanel = initRelatedConceptListDisplayPanel();
+    JLabel relatedIndustryListLabel = getCommonLabel("relatedIndustryList");
     JLabel relatedIndustryListValueLabel = getCommonLabel();
+    JPanel relatedIndustryListPanel = initRelatedIndustryListDisplayPanel();
     JLabel includeStockListLabel = getCommonLabel("includeStockList"); // 编辑后自动设定
     JLabel includeStockListValueLabel = getCommonLabel();
-
+    JPanel includeStockListPanel = initIncludeStockListPanel();
+    // 龙头股可编辑
     JLabel leaderStockListLabel = getCommonLabel("leaderStockList", Color.pink); // 龙头股编辑
     JTextField leaderStockListValueLabel = getCommonEditor(this);
+    JPanel leaderStockListPanel = initLeaderStockListPanel();
+
 
     // 编辑
     JLabel pricePositionShortTermLabel = getCommonLabel("pricePositionShortTerm", Color.pink);
-    JTextField pricePositionShortTermValueLabel = getCommonEditor(this);
+    JXComboBox pricePositionShortTermValueComboBox = getCommonJXComboBox(this,
+            IndustryConceptThsOfPlan.PricePosition.allPricePositions);
     JLabel pricePositionLongTermLabel = getCommonLabel("pricePositionLongTerm", Color.pink);
-    JTextField pricePositionLongTermValueLabel = getCommonEditor(this);
+    JXComboBox pricePositionLongTermValueComboBox = getCommonJXComboBox(this,
+            IndustryConceptThsOfPlan.PricePosition.allPricePositions);
     JLabel priceTrendLabel = getCommonLabel("priceTrend", Color.pink);
-    JTextField priceTrendValueLabel = getCommonEditor(this);
+    JXComboBox priceTrendValueComboBox = getCommonJXComboBox(this, IndustryConceptThsOfPlan.PriceTrend.allPriceTrends);
     JLabel oscillationAmplitudeLabel = getCommonLabel("oscillationAmplitude", Color.pink);
-    JTextField oscillationAmplitudeValueLabel = getCommonEditor(this);
+    JXComboBox oscillationAmplitudeValueComboBox = getCommonJXComboBox(this,
+            IndustryConceptThsOfPlan.OscillationAmplitude.allOscillationAmplitudes);
     JLabel lineTypeLabel = getCommonLabel("lineType", Color.pink);
-    JTextField lineTypeValueLabel = getCommonEditor(this);
+    JXComboBox lineTypeValueComboBox = getCommonJXComboBox(this, IndustryConceptThsOfPlan.LineType.allLineTypes);
     JLabel hypeReasonLabel = getCommonLabel("hypeReason", Color.pink);
     JTextField hypeReasonValueLabel = getCommonEditor(this);
     JLabel hypeStartDateLabel = getCommonLabel("hypeStartDate", Color.pink); // todo: 日期控件
     JTextField hypeStartDateValueLabel = getCommonEditor(this);
+
+    // 特殊: 炒作开始时间, 使用 JTextField, 配合 日期选择器, 将绑定 hypeStartDateValueLabel
+    DateTimePicker hypeStartDatePicker;
+
     JLabel hypePhaseCurrentLabel = getCommonLabel("hypePhaseCurrent", Color.pink);
-    JTextField hypePhaseCurrentValueLabel = getCommonEditor(this);
+    JXComboBox hypePhaseCurrentValueComboBox = getCommonJXComboBox(this,
+            IndustryConceptThsOfPlan.HypePhase.allHypePhases);
     JLabel specificDescriptionLabel = getCommonLabel("specificDescription", Color.pink);
     JTextField specificDescriptionValueLabel = getCommonEditor(this);
     JLabel goodAspectsLabel = getCommonLabel("goodAspects", Color.pink);
@@ -152,28 +167,35 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         this.add(lastModifiedValueLabel);
 
         this.add(relatedConceptListLabel);
-        this.add(relatedConceptListValueLabel);
+        //this.add(relatedConceptListValueLabel);
+        this.add(relatedConceptListPanel); // 单纯的label展示,换成label和查看按钮
 
         this.add(relatedIndustryListLabel);
-        this.add(relatedIndustryListValueLabel);
+        //this.add(relatedIndustryListValueLabel);
+        this.add(relatedIndustryListPanel);
 
         this.add(includeStockListLabel);
-        this.add(includeStockListValueLabel);
+        //this.add(includeStockListValueLabel);
+        this.add(includeStockListPanel);
+
+        this.add(leaderStockListLabel); // @noti: 龙头股设置, 移动到成分股后面
+        //this.add(leaderStockListValueLabel);
+        this.add(leaderStockListPanel);
 
         this.add(pricePositionShortTermLabel);
-        this.add(pricePositionShortTermValueLabel);
+        this.add(pricePositionShortTermValueComboBox);
 
         this.add(pricePositionLongTermLabel);
-        this.add(pricePositionLongTermValueLabel);
+        this.add(pricePositionLongTermValueComboBox);
 
         this.add(priceTrendLabel);
-        this.add(priceTrendValueLabel);
+        this.add(priceTrendValueComboBox);
 
         this.add(oscillationAmplitudeLabel);
-        this.add(oscillationAmplitudeValueLabel);
+        this.add(oscillationAmplitudeValueComboBox);
 
         this.add(lineTypeLabel);
-        this.add(lineTypeValueLabel);
+        this.add(lineTypeValueComboBox);
 
         this.add(hypeReasonLabel);
         this.add(hypeReasonValueLabel);
@@ -182,13 +204,11 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         this.add(hypeStartDateValueLabel);
 
         this.add(hypePhaseCurrentLabel);
-        this.add(hypePhaseCurrentValueLabel);
+        this.add(hypePhaseCurrentValueComboBox);
 
         this.add(specificDescriptionLabel);
         this.add(specificDescriptionValueLabel);
 
-        this.add(leaderStockListLabel);
-        this.add(leaderStockListValueLabel);
 
         this.add(goodAspectsLabel);
         this.add(goodAspectsValueLabel);
@@ -217,6 +237,200 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         this.add(scoreReasonLabel);
         this.add(scoreReasonValueLabel);
 
+        initOther();
+
+    }
+
+    private void initOther() {
+        // 1. 炒作时间选择器绑定
+        hypeStartDatePicker = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
+        hypeStartDatePicker.setEnable(true).setSelect(DateUtil.date()).changeDateEvent(new Consumer<DateTimePicker>() {
+            @Override
+            public void accept(DateTimePicker o) {
+
+            }
+        }).register(hypeStartDateValueLabel); // 绑定到时间选择
+
+        // 2.炒作原因背景色
+        hypeReasonValueLabel.setBackground(Color.cyan);
+
+        // 3.预判4字段背景色
+        preJudgmentViewsValueLabel.setBackground(Color.cyan);
+        futuresValueLabel.setBackground(Color.cyan);
+        scoreOfPreJudgmentValueLabel.setBackground(Color.cyan);
+        scoreReasonValueLabel.setBackground(Color.cyan);
+        // 4.龙头股标签醒目
+        leaderStockListLabel.setForeground(Color.red);
+    }
+
+    /**
+     * 关联概念列表展示 panel
+     */
+    private JPanel initRelatedConceptListDisplayPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+
+        JButton detailButton = ButtonFactory.getButton("查看");
+        detailButton.setPreferredSize(new Dimension(60, 30));
+        detailButton.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        jPanel.add(relatedConceptListValueLabel, BorderLayout.CENTER);
+        jPanel.add(detailButton, BorderLayout.EAST);
+        detailButton.addActionListener(new ActionListener() { // 点击按钮, 弹窗展示详细的 相关概念列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bean != null) {
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联概念列表");
+
+                    //创建JDialog
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BorderLayout());
+                    dialog.setContentPane(panel);
+
+                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getRelatedConceptListJsonStr()));
+                    //添加控件到对话框
+                    JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                    jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    jScrollPane.setViewportView(jLabel);
+                    panel.add(jScrollPane, BorderLayout.CENTER);
+
+                    //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                    dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                    dialog.setLocationRelativeTo(dialog.getParent());
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        return jPanel;
+    }
+
+    private JPanel initRelatedIndustryListDisplayPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+        JButton detailButton = ButtonFactory.getButton("查看");
+        detailButton.setPreferredSize(new Dimension(60, 30));
+        detailButton.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        jPanel.add(relatedIndustryListValueLabel, BorderLayout.CENTER);
+        jPanel.add(detailButton, BorderLayout.EAST);
+        detailButton.addActionListener(new ActionListener() { // 点击按钮, 弹窗展示详细的 相关概念列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bean != null) {
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联行业列表");
+
+                    //创建JDialog
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BorderLayout());
+                    dialog.setContentPane(panel);
+
+                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getRelatedIndustryListJsonStr()));
+                    //添加控件到对话框
+                    JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                    jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    jScrollPane.setViewportView(jLabel);
+                    panel.add(jScrollPane, BorderLayout.CENTER);
+
+                    //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                    dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                    dialog.setLocationRelativeTo(dialog.getParent());
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        return jPanel;
+    }
+
+
+    private JPanel initIncludeStockListPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+        JButton detailButton = ButtonFactory.getButton("查看");
+        detailButton.setPreferredSize(new Dimension(60, 30));
+        detailButton.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        jPanel.add(includeStockListValueLabel, BorderLayout.CENTER);
+        jPanel.add(detailButton, BorderLayout.EAST);
+        detailButton.addActionListener(new ActionListener() { // 点击按钮, 弹窗展示详细的 相关概念列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bean != null) {
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联行业列表");
+
+                    //创建JDialog
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BorderLayout());
+                    dialog.setContentPane(panel);
+
+                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getIncludeStockListJsonStr()));
+                    //添加控件到对话框
+                    JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                    jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    jScrollPane.setViewportView(jLabel);
+                    panel.add(jScrollPane, BorderLayout.CENTER);
+
+                    //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                    dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                    dialog.setLocationRelativeTo(dialog.getParent());
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        return jPanel;
+    }
+
+    /**
+     * 龙头股列表 编辑 和 查看, 主要是点击按钮显示的对话框回调
+     *
+     * @return
+     */
+    private JPanel initLeaderStockListPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+        JButton detailButton = ButtonFactory.getButton("编辑查看");
+        detailButton.setPreferredSize(new Dimension(60, 30));
+        detailButton.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        jPanel.add(leaderStockListValueLabel, BorderLayout.CENTER);
+        jPanel.add(detailButton, BorderLayout.EAST);
+        detailButton.addActionListener(new ActionListener() { // 点击按钮, 弹窗展示详细的 相关概念列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bean != null) {
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "龙头股列表");
+
+                    //创建JDialog
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BorderLayout());
+                    dialog.setContentPane(panel);
+// todo: 龙头股编辑
+                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getIncludeStockListJsonStr()));
+                    //添加控件到对话框
+                    JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                    jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    jScrollPane.setViewportView(jLabel);
+                    panel.add(jScrollPane, BorderLayout.CENTER);
+
+                    //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                    dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                    dialog.setLocationRelativeTo(dialog.getParent());
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        return jPanel;
     }
 
     /**
@@ -236,18 +450,20 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             return null;
         }
 
+//
+//        bean.setLastModified(DateUtil.date());
+////        bean.setBriefly(this.brieflyValueLabel.getText());
+////        bean.setRelatedObject(this.relatedObjectValueLabel.getText());
+//        try {
+//            bean.setTrend(Double.parseDouble(this.trendValueLabel.getText()));
+//        } catch (NumberFormatException e) {
+//            // e.printStackTrace();
+//            log.warn("SimpleNewEm.trend: 解析为double失败, 请正确设置");
+//        }
+////        bean.setMarked(this.markedValueLabel.isSelected());
+//        bean.setRemark(this.remarkValueLabel.getText());
 
-        bean.setLastModified(DateUtil.date());
-//        bean.setBriefly(this.brieflyValueLabel.getText());
-//        bean.setRelatedObject(this.relatedObjectValueLabel.getText());
-        try {
-            bean.setTrend(Double.parseDouble(this.trendValueLabel.getText()));
-        } catch (NumberFormatException e) {
-            // e.printStackTrace();
-            log.warn("SimpleNewEm.trend: 解析为double失败, 请正确设置");
-        }
-//        bean.setMarked(this.markedValueLabel.isSelected());
-        bean.setRemark(this.remarkValueLabel.getText());
+        log.info("假装修改了");
         return bean;
     }
 
@@ -325,14 +541,14 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         includeStockListValueLabel.setText(String.valueOf(bean.getIncludeStockListJsonStr()));
 
         leaderStockListValueLabel.setText(String.valueOf(bean.getLeaderStockListJsonStr()));
-        pricePositionShortTermValueLabel.setText(String.valueOf(bean.getPricePositionShortTerm()));
-        pricePositionLongTermValueLabel.setText(String.valueOf(bean.getPricePositionLongTerm()));
-        priceTrendValueLabel.setText(String.valueOf(bean.getPriceTrend()));
-        oscillationAmplitudeValueLabel.setText(String.valueOf(bean.getOscillationAmplitude()));
-        lineTypeValueLabel.setText(String.valueOf(bean.getLineType()));
+        pricePositionShortTermValueComboBox.setSelectedItem(String.valueOf(bean.getPricePositionShortTerm()));
+        pricePositionLongTermValueComboBox.setSelectedItem(String.valueOf(bean.getPricePositionLongTerm()));
+        priceTrendValueComboBox.setSelectedItem(String.valueOf(bean.getPriceTrend()));
+        oscillationAmplitudeValueComboBox.setSelectedItem(String.valueOf(bean.getOscillationAmplitude()));
+        lineTypeValueComboBox.setSelectedItem(String.valueOf(bean.getLineType()));
         hypeReasonValueLabel.setText(String.valueOf(bean.getHypeReason()));
         setDateTimeOrNull(bean.getHypeStartDate(), hypeStartDateValueLabel); // todo
-        hypePhaseCurrentValueLabel.setText(String.valueOf(bean.getHypePhaseCurrent()));
+        hypePhaseCurrentValueComboBox.setSelectedItem(String.valueOf(bean.getHypePhaseCurrent()));
         specificDescriptionValueLabel.setText(String.valueOf(bean.getSpecificDescription()));
         goodAspectsValueLabel.setText(String.valueOf(bean.getGoodAspects()));
         badAspectsValueLabel.setText(String.valueOf(bean.getBadAspects()));
@@ -396,11 +612,26 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         return jTextField;
     }
 
+
     public static JCheckBox getCommonCheckBox() {
         JCheckBox checkBox = new JCheckBox();
         checkBox.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         checkBox.setBackground(COLOR_THEME_MINOR);
         checkBox.setForeground(Color.pink);
         return checkBox;
+    }
+
+    /**
+     * 因bean多个字段设置为备选项列表, 因此使用 JXComboBox, 而非编辑框
+     *
+     * @param panel
+     * @return
+     */
+    public static JXComboBox getCommonJXComboBox(
+            IndustryConceptThsOfPlanEditorPanel panel, Vector<?> items) {
+        JXComboBox comboBox = new JXComboBox(items);
+        comboBox.setBackground(Color.black);
+        comboBox.setForeground(Color.orange);
+        return comboBox;
     }
 }

@@ -30,14 +30,18 @@ public class IndustryConceptThsOfPlanDao {
     private static SessionFactory sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
 
     public static void main(String[] args) throws SQLException {
-//        IndustryConceptThsOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
-//        Console.log(bean);
+        IndustryConceptThsOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.CONCEPT);
+        Console.log(bean);
 
-        List<IndustryConceptThsOfPlan> beans = getBeanListForPlan(DateUtil.date());
-        Console.log(beans);
-        DataFrame<Object> dataFrame = IndustryConceptThsOfPlan.buildDfFromBeanList(beans);
-        Console.log(dataFrame);
+        IndustryConceptThsOfPlan bean2 = getOrInitBeanForPlan("电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.INDUSTRY);
+        Console.log(bean2);
+
+//        List<IndustryConceptThsOfPlan> beans = getBeanListForPlan(DateUtil.date());
+//        Console.log(beans);
+//        DataFrame<Object> dataFrame = IndustryConceptThsOfPlan.buildDfFromBeanList(beans);
+//        Console.log(dataFrame);
     }
 
 

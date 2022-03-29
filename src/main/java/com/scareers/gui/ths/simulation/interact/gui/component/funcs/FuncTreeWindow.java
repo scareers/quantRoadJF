@@ -225,9 +225,10 @@ public class FuncTreeWindow extends FuncFrameS {
                 }
             }
         });
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
+//        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
+//        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
+        //GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.INDUSTRY_AND_CONCEPT);
         return tree;
     }
 

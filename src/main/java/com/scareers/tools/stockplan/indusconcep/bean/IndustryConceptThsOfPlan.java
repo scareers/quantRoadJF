@@ -14,10 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * description: 操盘计划时, 使用的同花顺 行业对象 bean
@@ -35,7 +32,7 @@ import java.util.List;
                 @Index(name = "type_Index", columnList = "type")})
 public class IndustryConceptThsOfPlan {
     public static void main(String[] args) {
-        IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance("三胎概念", "2022-03-28", Type.CONCEPT);
+        IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance("三胎概念", "2022-03-30", Type.CONCEPT);
         Console.log(bean);
     }
 
@@ -360,16 +357,18 @@ public class IndustryConceptThsOfPlan {
         public static String CARE_LINE = "关注线";
         public static String OTHER_LINE = "其他线";
 
-        public static List<String> allLineTypes = Arrays.asList(
-                MAIN_LINE_1,
-                MAIN_LINE_2,
-                MAIN_LINE_3,
-                BRANCH_LINE_1,
-                BRANCH_LINE_2,
-                BRANCH_LINE_3,
-                SPECIAL_LINE,
-                CARE_LINE,
-                OTHER_LINE
+        public static Vector<String> allLineTypes = new Vector<>(
+                Arrays.asList(
+                        MAIN_LINE_1,
+                        MAIN_LINE_2,
+                        MAIN_LINE_3,
+                        BRANCH_LINE_1,
+                        BRANCH_LINE_2,
+                        BRANCH_LINE_3,
+                        SPECIAL_LINE,
+                        CARE_LINE,
+                        OTHER_LINE
+                )
         );
     }
 
@@ -385,14 +384,14 @@ public class IndustryConceptThsOfPlan {
 
         public static String UNKNOWN_POSITION = "未知";
 
-        public static List<String> allPricePositions = Arrays.asList(
+        public static Vector<String> allPricePositions = new Vector<>(Arrays.asList(
                 HIGH_POSITION,
                 MEDIUM_HIGH_POSITION,
                 LOW_POSITION,
                 MEDIUM_LOW_POSITION,
                 MEDIUM_POSITION,
                 UNKNOWN_POSITION
-        );
+        ));
     }
 
     /**
@@ -406,14 +405,14 @@ public class IndustryConceptThsOfPlan {
         public static String SLOW_FALL = "慢降";
         public static String UNKNOWN = "未知";
 
-        public static List<String> allPriceTrends = Arrays.asList(
+        public static Vector<String> allPriceTrends = new Vector<>(Arrays.asList(
                 HORIZONTAL_LINE,
                 FAST_RAISE,
                 SLOW_RAISE,
                 FAST_FALL,
                 SLOW_FALL,
                 UNKNOWN
-        );
+        ));
     }
 
     /**
@@ -425,12 +424,12 @@ public class IndustryConceptThsOfPlan {
         public static String MEDIUM_AMPLITUDE = "中";
         public static String UNKNOWN = "未知";
 
-        public static List<String> allOscillationAmplitudes = Arrays.asList(
+        public static Vector<String> allOscillationAmplitudes = new Vector<>(Arrays.asList(
                 BIG_AMPLITUDE,
                 SMALL_AMPLITUDE,
                 MEDIUM_AMPLITUDE,
                 UNKNOWN
-        );
+        ));
     }
 
     /**
@@ -446,7 +445,7 @@ public class IndustryConceptThsOfPlan {
 
         public static String UNKNOWN = "未知";
 
-        public static List<String> allHypePhases = Arrays.asList(
+        public static Vector<String> allHypePhases = new Vector<>(Arrays.asList(
                 HAZY_PHASE,
                 INITIAL_START_PHASE,
                 SPEED_UP_PHASE,
@@ -454,6 +453,6 @@ public class IndustryConceptThsOfPlan {
                 EBB_PHASE,
                 REVIVAL_PHASE,
                 UNKNOWN
-        );
+        ));
     }
 }
