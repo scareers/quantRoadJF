@@ -130,10 +130,11 @@ public abstract class NewsFeedListPanel extends DisplayPanel {
             });
             initJTableStyle();
             jScrollPane.setViewportView(jTable); // 默认显式"数据获取中", 第一次刷新
+            fitTableColumns(jTable);
         } else { // 不断更新时
             fullFlush();
         }
-        fitTableColumns(jTable);
+
     }
 
     /**

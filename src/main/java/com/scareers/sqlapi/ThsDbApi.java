@@ -55,7 +55,9 @@ public class ThsDbApi {
 
     public static void main(String[] args) {
 //        Console.log(getIndustryByNameAndDate("电力", "2022-03-28"));
-        Console.log(getIndustryAllRecordByName("电力"));
+//        Console.log(getIndustryAllRecordByName("电力"));
+        Console.log(getConceptByNameAndDate("三胎概念", "2022-03-28"));
+        Console.log(getConceptAllRecordByName("三胎概念"));
 
 //        Console.log(getIndustryNameLevel23WithFullCodeMap(DateUtil.today()));
 //        Console.log(getStockBelongToIndustry23WithName(DateUtil.today()));
@@ -295,6 +297,46 @@ public class ThsDbApi {
         String sql = StrUtil.format("select * from industry_list where " +
                         "name='{}'",
                 industryName);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
+
+    /**
+     * 获取概念单条记录. 需要提供 概念名称 和 日期字符串
+     *
+     * @param dateStr
+     * @return
+     * @cols [id, chgP, close, code, name, marketCode, indexCode, conceptIndex, dateStr]
+     */
+    public static DataFrame<Object> getConceptByNameAndDate(String conceptName, String dateStr) {
+        String sql = StrUtil.format("select * from concept_list where dateStr='{}' and " +
+                        "name='{}'",
+                dateStr, conceptName);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
+
+    /**
+     * 获取行业所有日期的记录. 需要提供行业名称, 返回所有日期的 industry_list 中对应行业的记录
+     *
+     * @param dateStr
+     * @return
+     * @cols [id, chgP, close, code, name, marketCode, indexCode, conceptIndex, dateStr]
+     */
+    public static DataFrame<Object> getConceptAllRecordByName(String conceptName) {
+        String sql = StrUtil.format("select * from concept_list where " +
+                        "name='{}'",
+                conceptName);
         DataFrame<Object> dataFrame;
         try {
             dataFrame = DataFrame.readSql(connection, sql);

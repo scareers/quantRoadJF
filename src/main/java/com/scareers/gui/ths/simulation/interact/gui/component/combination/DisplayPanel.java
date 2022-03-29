@@ -1,5 +1,8 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination;
 
+import cn.hutool.log.Log;
+import com.scareers.utils.log.LogUtil;
+
 import javax.swing.*;
 
 /**
@@ -9,5 +12,6 @@ import javax.swing.*;
  * @date: 2022/2/18/018-16:48:28
  */
 public abstract class DisplayPanel extends JPanel {
+    protected static final Log log = LogUtil.getLogger();
     public abstract void update();
 }

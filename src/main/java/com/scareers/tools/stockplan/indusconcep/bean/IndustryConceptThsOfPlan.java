@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * description: 操盘计划时, 使用的同花顺行业对象 bean
+ * description: 操盘计划时, 使用的同花顺 行业对象 bean
  * 源数据字段参考 industry_list 数据表
  *
  * @word: hype: 炒作 / hazy 朦胧 / ebb 退潮 / revival 复兴再起
@@ -33,28 +33,51 @@ import java.util.List;
 @Table(name = "plan_of_industry_and_concept",
         indexes = {@Index(name = "dateStr_Index", columnList = "dateStr"),
                 @Index(name = "type_Index", columnList = "type")})
-public class IndustryThsOfPlan {
+public class IndustryConceptThsOfPlan {
     public static void main(String[] args) {
-        IndustryThsOfPlan bean = IndustryThsOfPlan.newInstance("电力", "2022-03-28");
+        IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance("三胎概念", "2022-03-28", Type.CONCEPT);
         Console.log(bean);
+    }
+
+
+    public enum Type {
+        INDUSTRY,
+        CONCEPT
     }
 
     /**
      * 最常用的初始化工厂方法:
      * 当给定日期没有记录时, 将尝试访问所有记录, 应用最后一条, 构建具有基本字段的bean
      */
-    public static IndustryThsOfPlan newInstance(String industryName, String dateStr) {
-        IndustryThsOfPlan bean = new IndustryThsOfPlan();
-        DataFrame<Object> dfTemp = ThsDbApi.getIndustryByNameAndDate(industryName, dateStr);
-        // @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
-        if (dfTemp == null || dfTemp.length() == 0) {
-            dfTemp = ThsDbApi.getIndustryAllRecordByName(industryName); // 获取所有记录后, 将获取最后一条
+    public static IndustryConceptThsOfPlan newInstance(String industryOrConceptName, String dateStr, Type type) {
+        IndustryConceptThsOfPlan bean = new IndustryConceptThsOfPlan();
+        if (type.equals(Type.INDUSTRY)) {
+            DataFrame<Object> dfTemp = ThsDbApi.getIndustryByNameAndDate(industryOrConceptName, dateStr);
+            // @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
+            if (dfTemp == null || dfTemp.length() == 0) {
+                dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
+            }
+            bean.setName(industryOrConceptName);
+            bean.setType("行业");
+            bean.setType2(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
+            return getIndustryConceptThsOfPlanCore(dateStr, bean, dfTemp);
+        } else {
+            DataFrame<Object> dfTemp = ThsDbApi.getConceptByNameAndDate(industryOrConceptName, dateStr);
+            // @cols [id, chgP, close, code, name, marketCode, indexCode, conceptIndex, dateStr]
+            if (dfTemp == null || dfTemp.length() == 0) {
+                dfTemp = ThsDbApi.getConceptAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
+            }
+            bean.setName(industryOrConceptName);
+            bean.setType("概念");
+            return getIndustryConceptThsOfPlanCore(dateStr, bean, dfTemp);
         }
-        bean.setName(industryName);
-        bean.setType(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
+    }
+
+    private static IndustryConceptThsOfPlan getIndustryConceptThsOfPlanCore(String dateStr,
+                                                                            IndustryConceptThsOfPlan bean,
+                                                                            DataFrame<Object> dfTemp) {
         bean.setCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "code")));
         bean.setIndexCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "indexCode")));
-//        bean.setDateStr(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "dateStr")));
         bean.setDateStr(dateStr); // @noti: 第二种情况, 读取结果的字符串将不等于参数日期
 
         Double chgP = null;
@@ -70,6 +93,75 @@ public class IndustryThsOfPlan {
         return bean; // 只有基本字段
     }
 
+    // 成分股列表, 相关行业列表, 相关概念列表, 均不直接显示
+    public static List<String> allColForDf = Arrays
+            .asList("id", "名称", "类型", "类型2", "代码", "代码2", "日期", "涨跌幅",
+                    "生成时间", "最终修改时间", "短期位置", "长期位置", "趋势",
+                    "震荡",
+                    "主支线",
+                    "炒作原因",
+                    "开始时间",
+                    "炒作阶段",
+                    "其他描述",
+                    "龙头股",
+                    "利好",
+                    "利空",
+                    "注意",
+                    "总体偏向",
+                    "备注",
+
+                    "预判",
+                    "未来",
+                    "得分",
+                    "分析"
+            ); // 多了id列
+
+    /**
+     * 本方法将bean列表转换为df, 进行显示, gui Table使用
+     *
+     * @param beans
+     * @return
+     */
+    public static DataFrame<Object> buildDfFromBeanList(List<IndustryConceptThsOfPlan> beans) {
+        DataFrame<Object> res = new DataFrame<>(allColForDf);
+        for (IndustryConceptThsOfPlan bean : beans) {
+            List<Object> row = new ArrayList<>();
+
+            row.add(bean.getId());
+            row.add(bean.getName());
+            row.add(bean.getType());
+            row.add(bean.getType2());
+            row.add(bean.getCode());
+            row.add(bean.getIndexCode());
+            row.add(bean.getDateStr());
+            row.add(bean.getChgP());
+            row.add(bean.getGeneratedTime());
+            row.add(bean.getLastModified());
+            row.add(bean.getPricePositionShortTerm());
+            row.add(bean.getPricePositionLongTerm());
+            row.add(bean.getPriceTrend());
+            row.add(bean.getOscillationAmplitude());
+            row.add(bean.getLineType());
+            row.add(bean.getHypeReason());
+            row.add(bean.getHypeStartDate());
+            row.add(bean.getHypePhaseCurrent());
+            row.add(bean.getSpecificDescription());
+            row.add(bean.getLeaderStockListJsonStr());
+            row.add(bean.getGoodAspects());
+            row.add(bean.getBadAspects());
+            row.add(bean.getWarnings());
+            row.add(bean.getTrend());
+            row.add(bean.getRemark());
+            row.add(bean.getPreJudgmentViews());
+            row.add(bean.getFutures());
+            row.add(bean.getScoreOfPreJudgment());
+            row.add(bean.getScoreReason());
+
+            res.append(row);
+        }
+        return res;
+    }
+
 
     /*
     基本字段: 都来自与 ths. industry_list 数据表
@@ -81,7 +173,9 @@ public class IndustryThsOfPlan {
     @Column(name = "name", columnDefinition = "varchar(32)")
     String name; // 行业名称
     @Column(name = "type", columnDefinition = "varchar(32)")
-    String type; // "二级行业" 或者 "三级行业"
+    String type; // 行业 或者 概念?
+    @Column(name = "type2", columnDefinition = "varchar(32)")
+    String type2; // "二级行业" 或者 "三级行业", 当行业时此字段有效
     @Column(name = "code", columnDefinition = "varchar(32)")
     String code; // 简单代码
     @Column(name = "indexCode", columnDefinition = "varchar(32)")
@@ -99,9 +193,15 @@ public class IndustryThsOfPlan {
     // 自动计算: 相关性较高的概念列表(名称表示)  // 因行业互斥, 无相关性较高的行业列表
     // 相关性与成分股
     @Transient
-    List<ThsConceptIndustryRelation> relatedConceptList = new ArrayList<>(); // 关系列表对象, 算法见initRelationList()
+    List<ThsConceptIndustryRelation> relatedConceptList = new ArrayList<>(); // 关系列表对象, 算法见 initRelationList()
     @Column(name = "relatedConceptList", columnDefinition = "longtext")
     String relatedConceptListJsonStr = "[]"; // 该列表只保留字符串; 调用 ThsConceptIndustryRelation的两个方法, 从json相互转化
+    @Transient
+    List<ThsConceptIndustryRelation> relatedIndustryList = new ArrayList<>(); // 关系列表对象, 算法见initRelationList()
+    @Column(name = "relatedIndustryList", columnDefinition = "longtext")
+    String relatedIndustryListJsonStr = "[]"; // 该列表只保留字符串; 调用 ThsConceptIndustryRelation的两个方法, 从json相互转化
+
+
     @Transient
     List<ThsSimpleStock> includeStockList = new ArrayList<>(); // 成分股列表
     @Column(name = "includeStockList", columnDefinition = "longtext")
@@ -173,7 +273,16 @@ public class IndustryThsOfPlan {
         for (ThsConceptIndustryRelation thsConceptIndustryRelation : relatedConceptList) {
             jsons.add(thsConceptIndustryRelation.toJsonObject());
         }
-        this.relatedConceptListJsonStr = JSONUtilS.toJsonStr(jsons); // 初始化为字符串
+        this.relatedConceptListJsonStr = JSONUtilS.toJsonPrettyStr(jsons); // 初始化为字符串
+
+        this.relatedIndustryList = ThsDbApi.getMaxRelationshipOfIndustryLevel2(this.name,
+                dateStr, 10, 0.6, 0.4, true);
+        List<JSONObject> jsons2 = new ArrayList<>();
+        for (ThsConceptIndustryRelation thsConceptIndustryRelation : relatedIndustryList) {
+            jsons2.add(thsConceptIndustryRelation.toJsonObject());
+        }
+        this.relatedIndustryListJsonStr = JSONUtilS.toJsonPrettyStr(jsons2); // 初始化为字符串
+
     }
 
     private void initIncludeStockList() {
@@ -185,7 +294,7 @@ public class IndustryThsOfPlan {
         for (ThsSimpleStock thsSimpleStock : includeStockList) {
             jsons.add(thsSimpleStock.toJsonObject());
         }
-        this.includeStockListJsonStr = JSONUtilS.toJsonStr(jsons); // 初始化为字符串
+        this.includeStockListJsonStr = JSONUtilS.toJsonPrettyStr(jsons); // 初始化为字符串
     }
 
     /**
@@ -193,11 +302,12 @@ public class IndustryThsOfPlan {
      */
     public void initTransientAttrsWhenBeanFromDb() {
         initRelatedConceptListWhenBeanFromDb();
+        initRelatedIndustryListWhenBeanFromDb();
         initIncludeStockListWhenBeanFromDb();
         initLeaderStockListWhenBeanFromDb();
     }
 
-    public void initRelatedConceptListWhenBeanFromDb() {
+    private void initRelatedConceptListWhenBeanFromDb() {
         JSONArray objects = JSONUtilS.parseArray(this.relatedConceptListJsonStr);
         List<ThsConceptIndustryRelation> res = new ArrayList<>();
         for (int i = 0; i < objects.size(); i++) {
@@ -206,7 +316,16 @@ public class IndustryThsOfPlan {
         this.relatedConceptList = res; // 一次性更新
     }
 
-    public void initIncludeStockListWhenBeanFromDb() {
+    private void initRelatedIndustryListWhenBeanFromDb() {
+        JSONArray objects = JSONUtilS.parseArray(this.relatedIndustryListJsonStr);
+        List<ThsConceptIndustryRelation> res = new ArrayList<>();
+        for (int i = 0; i < objects.size(); i++) {
+            res.add(ThsConceptIndustryRelation.createFromJsonObject(objects.getJSONObject(i)));
+        }
+        this.relatedIndustryList = res; // 一次性更新
+    }
+
+    private void initIncludeStockListWhenBeanFromDb() {
         JSONArray objects = JSONUtilS.parseArray(this.includeStockListJsonStr);
         List<ThsSimpleStock> res = new ArrayList<>();
         for (int i = 0; i < objects.size(); i++) {
@@ -215,7 +334,7 @@ public class IndustryThsOfPlan {
         this.includeStockList = res; // 一次性更新
     }
 
-    public void initLeaderStockListWhenBeanFromDb() {
+    private void initLeaderStockListWhenBeanFromDb() {
         JSONArray objects = JSONUtilS.parseArray(this.leaderStockListJsonStr);
         List<ThsSimpleStock> res = new ArrayList<>();
         for (int i = 0; i < objects.size(); i++) {
