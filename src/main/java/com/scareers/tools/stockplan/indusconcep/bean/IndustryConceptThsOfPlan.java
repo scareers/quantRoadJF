@@ -198,6 +198,17 @@ public class IndustryConceptThsOfPlan {
     @Column(name = "relatedIndustryList", columnDefinition = "longtext")
     String relatedIndustryListJsonStr = "[]"; // 该列表只保留字符串; 调用 ThsConceptIndustryRelation的两个方法, 从json相互转化
 
+    // @key3: 新增字段: 当有其他概念行业存在时, 设置了trend后, 如果本对象, 关联到该行业/概念,
+    // 则应当将对方 的trend, 记录到本属性字典中. 本属性将在任意 实例更新trend值后, 自动计算全部并设置保存! // gui实现
+    // 不区分行业或者对象, key:value -> 关联行业或概念: 对方trend
+    // relatedTrendsDiscount 则以一定权重(关联性越高,则权重越高), 折算所有关联trend, 加总得到 关联行业概念的 trend加成;
+    @Transient
+    HashMap<String, Double> relatedTrendMap = new HashMap<>(); // 关联概念trend字典
+    @Column(name = "relatedTrendMap", columnDefinition = "longtext")
+    String relatedTrendMapJsonStr = "{}";
+    @Column(name = "relatedTrendsDiscount")
+    Double relatedTrendsDiscount = 0.0; // 关联概念trend折算加成
+
 
     @Transient
     List<ThsSimpleStock> includeStockList = new ArrayList<>(); // 成分股列表
@@ -246,7 +257,7 @@ public class IndustryConceptThsOfPlan {
     总体评价字段
      */
     @Column(name = "trend")
-    Double trend; // -1.0 - 1.0 总体利空利好偏向自定义
+    Double trend = 0.0; // -1.0 - 1.0 总体利空利好偏向自定义
     @Column(name = "remark", columnDefinition = "longtext")
     String remark; // 总体备注
 

@@ -36,19 +36,13 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2022/3/6/006-15:21:25
  */
 public class Fs1MDataEm extends CrawlerEm {
-
-
     public static void main(String[] args) {
         new Fs1MDataEm().run();
     }
 
     ThreadPoolExecutor poolExecutor;
     Map<Object, Object> fieldsMap = new HashMap<>();
-    private boolean forceUpdate;
 
-    public Fs1MDataEm() {
-        this(false);
-    }
 
     /**
      * 可直接指定是否增量更新
@@ -56,9 +50,8 @@ public class Fs1MDataEm extends CrawlerEm {
      * @param fq       "qfq","hfq","nofq", 默认nofq
      * @param fullMode
      */
-    public Fs1MDataEm(boolean forceUpdate) {
+    public Fs1MDataEm() {
         super(DateUtil.today());
-        this.forceUpdate = forceUpdate;
         poolExecutor = new ThreadPoolExecutor(16, 32, 10000, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(), ThreadUtil.newNamedThreadFactory("Fs1MDataEm-", null, true));
 
@@ -140,16 +133,21 @@ public class Fs1MDataEm extends CrawlerEm {
 
             tableName = EastMoneyDbApi.getPreNTradeDateStrict(tableName, 1); // 转换为上一交易日
             initSqlCreateTable(); // 并重置建表语句
+        }else { // 今天交易日
+            if (DateUtil.hour(DateUtil.date(), true) <= 5) { // 凌晨6点钟以前, 均抓取上一交易日
+                log.warn("今日交易日,但凌晨6点钟以前, 仍然抓取上一交易日");
+                tableName = EastMoneyDbApi.getPreNTradeDateStrict(tableName, 1); // 转换为上一交易日
+                initSqlCreateTable(); // 并重置建表语句
+            } else if (DateUtil.hour(DateUtil.date(), true) < 15) {
+                log.error("今日交易日,但尚未收盘,请收盘后运行");
+                tableName = EastMoneyDbApi.getPreNTradeDateStrict(tableName, 1); // 转换为上一交易日
+                initSqlCreateTable(); // 并重置建表语句
+                success = true;
+                return;
+            }// 其他情况正常抓取
+            // >=15点才抓取
         }
 
-        if (!forceUpdate) {
-            if (MysqlApi.alreadyHasTable(conn, tableName)) {
-                log.warn("Fs1M: 已经存在数据表,默认视为已经获取过 分时1分钟数据, 不再获取; 若需要重新获取, 请手动删除数据表或者设置forceUpdate为true");
-                success = true;
-                logSuccess();
-                return;
-            }
-        }
 
         runCore();
         if (success) {
@@ -161,27 +159,39 @@ public class Fs1MDataEm extends CrawlerEm {
     }
 
     List<SecurityBeanEm> failBeans = new CopyOnWriteArrayList<>(); // 暂存本轮失败的股票, 将重试它们
-
+    HashSet<String> existsQuoteIdSet = new HashSet<>();
     @Override
     protected void runCore() {
-
-        try { // 全量更新模式, 将删除原表
-            execSql(StrUtil.format("drop table if exists `{}`", tableName), conn);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        try { // 创建新表
+        // 1.尝试创建新表
+        try {
             execSql(sqlCreateTable, conn);
         } catch (Exception e) {
             e.printStackTrace();
         }
+        // 2.读取 quoteId 列, group by; 得到所有已经获取过的资产; 后面将会排除掉它们
+        String sqlGetAlreadyExistQuoteIds = StrUtil.format("select quoteId from `{}` group by quoteId", tableName);
+        DataFrame<Object> dataFrame = null;
+        try {
+            dataFrame = DataFrame.readSql(conn, sqlGetAlreadyExistQuoteIds);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        if (dataFrame != null && dataFrame.length() != 0) {
+            List<String> quoteIds = DataFrameS.getColAsStringList(dataFrame, "quoteId");
+            existsQuoteIdSet.addAll(quoteIds);
+        }
 
         List<SecurityBeanEm> stockBeans = getBeanList();
         if (stockBeans == null) {
+            success = false;
+            log.error("stockBeans 获取错误");
             return;
         }
+        log.info("Fs1MDataEm: 应抓取资产总数量:{} ; 已经获取总数量: {}", stockBeans.size(), existsQuoteIdSet.size());
+
+        stockBeans = stockBeans.stream().filter(value -> !existsQuoteIdSet.contains(value.getQuoteId())).collect(
+                Collectors.toList());
+        log.info("Fs1MDataEm: 实际应抓取资产总数量:{}", stockBeans.size());
 
         success = true;
         AtomicInteger process = new AtomicInteger(1);

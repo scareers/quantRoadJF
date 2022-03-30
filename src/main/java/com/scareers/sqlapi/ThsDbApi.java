@@ -80,13 +80,13 @@ public class ThsDbApi {
 //        Console.log(conceptIncludeStocks);
 
 
-//        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
-////                RandomUtil.randomEle(conceptNameList),
-//                "贸易",
-//                DateUtil.today(), 10, 0.6, 0.4, true);
-//        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
-//            Console.log(thsConceptRelation);
-//        }
+        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
+//                RandomUtil.randomEle(conceptNameList),
+                "俄乌冲突概念",
+                DateUtil.today(), 10, 0.6, 0.4, true);
+        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
+            Console.log(thsConceptRelation);
+        }
     }
 
     /**

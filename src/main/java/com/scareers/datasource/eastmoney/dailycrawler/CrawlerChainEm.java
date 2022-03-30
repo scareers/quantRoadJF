@@ -44,21 +44,21 @@ public class CrawlerChainEm {
 
         CrawlerChainEm crawlerChainEm = new CrawlerChainEm(4, 4);
 
+        // 资讯
+        crawlerChainEm.addSynCrawler(new CaiJingDaoDuCrawlerEm());
+        crawlerChainEm.addSynCrawler(new ZiXunJingHuaCrawlerEm());
+        crawlerChainEm.addSynCrawler(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
+        crawlerChainEm.addSynCrawler(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
+        crawlerChainEm.addSynCrawler(new NewsFeedsCrawlerEm()); // 新闻联播集锦
+        crawlerChainEm.addSynCrawler(new FourPaperNewsCrawlerEm()); // 四大报媒精华
+
+        // 基本列表
         crawlerChainEm.addSynCrawler(new StockListEm());
         crawlerChainEm.addSynCrawler(new IndexListEm());
         crawlerChainEm.addSynCrawler(new BkListEm());
         crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
-
-        // 资讯
-        crawlerChainEm.addFrontCrawlers(new CaiJingDaoDuCrawlerEm());
-        crawlerChainEm.addFrontCrawlers(new ZiXunJingHuaCrawlerEm());
-        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件
-        crawlerChainEm.addFrontCrawlers(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司利好消息
-        crawlerChainEm.addFrontCrawlers(new NewsFeedsCrawlerEm()); // 新闻联播集锦
-        crawlerChainEm.addFrontCrawlers(new FourPaperNewsCrawlerEm()); // 四大报媒精华
-
-
+        // k线和分时
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
         crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
@@ -67,7 +67,6 @@ public class CrawlerChainEm {
 
         crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
         crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
-
 
 
         crawlerChainEm.run();
