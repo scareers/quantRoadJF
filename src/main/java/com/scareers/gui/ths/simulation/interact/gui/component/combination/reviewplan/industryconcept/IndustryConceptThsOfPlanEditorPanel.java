@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -23,10 +25,9 @@ import org.jdesktop.swingx.JXList;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -79,9 +80,14 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel includeStockListLabel = getCommonLabel("includeStockList"); // 编辑后自动设定
     JLabel includeStockListValueLabel = getCommonLabel();
     JPanel includeStockListPanel = initIncludeStockListPanel();
+
+    JLabel relatedTrendMapLabel = getCommonLabel("relatedTrendMap");
+    JLabel relatedTrendMapValueLabel = getCommonLabel();
+    JPanel relatedTrendMapPanel = initRelatedTrendMapPanel();
+
     // 龙头股可编辑
     JLabel leaderStockListLabel = getCommonLabel("leaderStockList", Color.pink); // 龙头股编辑
-    JTextField leaderStockListValueLabel = getCommonEditor(this);
+    JLabel leaderStockListValueLabel = getCommonLabel("", Color.pink); // 龙头股自动填充, 专门的编辑界面
     JPanel leaderStockListPanel = initLeaderStockListPanel();
 
 
@@ -102,7 +108,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel hypeReasonLabel = getCommonLabel("hypeReason", Color.pink);
     JTextField hypeReasonValueLabel = getCommonEditor(this);
     JLabel hypeStartDateLabel = getCommonLabel("hypeStartDate", Color.pink); // todo: 日期控件
-    JTextField hypeStartDateValueLabel = getCommonEditor(this);
+    JTextField hypeStartDateValueTextField = getCommonEditor(this);
 
     // 特殊: 炒作开始时间, 使用 JTextField, 配合 日期选择器, 将绑定 hypeStartDateValueLabel
     DateTimePicker hypeStartDatePicker;
@@ -121,6 +127,8 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     JLabel trendLabel = getCommonLabel("trend", Color.pink);
     JTextField trendValueLabel = getCommonEditor(this);
+    JLabel relatedTrendsDiscountLabel = getCommonLabel("relatedTrendsDiscountLabel", Color.pink);
+    JLabel relatedTrendsDiscountValueLabel = getCommonLabel("", Color.pink); // 此trend自动计算刷新
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
     JTextField remarkValueLabel = getCommonEditor(this);
 
@@ -136,7 +144,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     public IndustryConceptThsOfPlanEditorPanel(IndustryConceptPanelForPlan parentPanel) {
         this.parentPanel = parentPanel;
-        this.setLayout(new GridLayout(33, 2, 1, 1)); // 简易网格布局
+        this.setLayout(new GridLayout(35, 2, 1, 1)); // 简易网格布局
         this.setPreferredSize(new Dimension(350, 1200));
 
         this.add(totalAmountLabel);
@@ -180,6 +188,10 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         //this.add(relatedIndustryListValueLabel);
         this.add(relatedIndustryListPanel);
 
+        this.add(relatedTrendMapLabel);
+        //this.add(leaderStockListValueLabel);
+        this.add(relatedTrendMapPanel);
+
         this.add(includeStockListLabel);
         //this.add(includeStockListValueLabel);
         this.add(includeStockListPanel);
@@ -207,7 +219,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         this.add(hypeReasonValueLabel);
 
         this.add(hypeStartDateLabel);
-        this.add(hypeStartDateValueLabel);
+        this.add(hypeStartDateValueTextField);
 
         this.add(hypePhaseCurrentLabel);
         this.add(hypePhaseCurrentValueComboBox);
@@ -227,6 +239,10 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         this.add(trendLabel);
         this.add(trendValueLabel);
+
+        this.add(relatedTrendsDiscountLabel);
+        this.add(relatedTrendsDiscountValueLabel);
+
 
         this.add(remarkLabel);
         this.add(remarkValueLabel);
@@ -250,12 +266,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     private void initOther() {
         // 1. 炒作时间选择器绑定
         hypeStartDatePicker = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
+        IndustryConceptThsOfPlanEditorPanel panelTemp = this;
         hypeStartDatePicker.setEnable(true).setSelect(DateUtil.date()).changeDateEvent(new Consumer<DateTimePicker>() {
             @Override
             public void accept(DateTimePicker o) {
-
+                tryAutoSaveEditedBean(panelTemp, "概念行业");
             }
-        }).register(hypeStartDateValueLabel); // 绑定到时间选择
+        }).register(hypeStartDateValueTextField); // 绑定到时间选择
 
         // 2.炒作原因背景色
         hypeReasonValueLabel.setBackground(Color.cyan);
@@ -267,6 +284,9 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         scoreReasonValueLabel.setBackground(Color.cyan);
         // 4.龙头股标签醒目
         leaderStockListLabel.setForeground(Color.red);
+
+        // 5.炒作开始日期控件不可编辑, 只能选择设置
+        hypeStartDateValueTextField.setEditable(false);
     }
 
     /**
@@ -286,7 +306,15 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (bean != null) {
-                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联概念列表");
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联概念列表", false);
+                    // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                    dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
 
                     //创建JDialog
                     JPanel panel = new JPanel();
@@ -312,6 +340,17 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 //                    dialog.setLocation();
                     dialog.setLocationRelativeTo(dialog.getParent());
                     dialog.setVisible(true);
+
+
+//                    dialog.addKeyListener(new KeyAdapter() { // 对话框按键监听无效, 需要快捷键
+//                        @Override
+//                        public void keyPressed(KeyEvent e) {
+//                            Console.log("按键");
+//                            if(e.getKeyCode()==KeyEvent.VK_ESCAPE){
+//                                dialog.dispose();
+//                            }
+//                        }
+//                    });
                 }
             }
         });
@@ -332,6 +371,14 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             public void actionPerformed(ActionEvent e) {
                 if (bean != null) {
                     JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联行业列表");
+                    // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                    dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
 
                     //创建JDialog
                     JPanel panel = new JPanel();
@@ -351,6 +398,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
                     jScrollPane.setViewportView(jLabel);
                     panel.add(jScrollPane, BorderLayout.CENTER);
+
 
                     //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
                     dialog.setSize(500, 800);
@@ -377,7 +425,15 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (bean != null) {
-                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联行业列表");
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "成分股列表");
+                    // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                    dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
 
                     //创建JDialog
                     JPanel panel = new JPanel();
@@ -409,6 +465,61 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         return jPanel;
     }
 
+
+    private JPanel initRelatedTrendMapPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(new BorderLayout());
+        JButton detailButton = ButtonFactory.getButton("查看");
+        detailButton.setPreferredSize(new Dimension(60, 30));
+        detailButton.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        jPanel.add(relatedTrendMapValueLabel, BorderLayout.CENTER);
+        jPanel.add(detailButton, BorderLayout.EAST);
+        detailButton.addActionListener(new ActionListener() { // 点击按钮, 弹窗展示详细的 相关概念列表
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (bean != null) {
+                    JDialog dialog = new JDialog(TraderGui.INSTANCE, "关联TrendMap");
+                    // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                    dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+                    //创建JDialog
+                    JPanel panel = new JPanel();
+                    panel.setLayout(new BorderLayout());
+                    dialog.setContentPane(panel);
+
+                    JLabel jLabel = new JLabel(GuiCommonUtil.jsonStrToHtmlFormat(bean.getRelatedTrendMapJsonStr()));
+                    jLabel.setForeground(Color.orange);
+                    jLabel.setBackground(COLOR_THEME_MINOR);
+                    //添加控件到对话框
+                    JScrollPane jScrollPane = new JScrollPane();
+                    jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                    BasicScrollBarUIS
+                            .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+                    jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                    jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                    jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                    jScrollPane.setViewportView(jLabel);
+                    panel.add(jScrollPane, BorderLayout.CENTER);
+
+                    //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                    dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                    dialog.setLocationRelativeTo(dialog.getParent());
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        return jPanel;
+    }
+
+
     /**
      * 龙头股列表 编辑 和 查看, 主要是点击按钮显示的对话框回调
      *
@@ -428,6 +539,14 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             public void actionPerformed(ActionEvent e) {
                 if (bean != null) {
                     JDialog dialog = new JDialog(TraderGui.INSTANCE, "龙头股列表");
+                    // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                    KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                    dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            dialog.dispose();
+                        }
+                    }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
 
                     //创建JDialog
                     JPanel panel = new JPanel();
@@ -460,7 +579,6 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     /**
      * 龙头股编辑对话框主内容: 左成分股列表, 中 添加 和 删除按钮, 右龙头股列表; 使用 BorderLayout
-     * todo: 龙头股编辑
      *
      * @return
      */
@@ -626,7 +744,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     return;
                 }
                 DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
-                if (selectedIndex == model.size()-1) {
+                if (selectedIndex == model.size() - 1) {
                     ManiLog.put("龙头股已到达最后,无法下移");
                     return;
                 }
@@ -661,20 +779,37 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             return null;
         }
 
-//
-//        bean.setLastModified(DateUtil.date());
-////        bean.setBriefly(this.brieflyValueLabel.getText());
-////        bean.setRelatedObject(this.relatedObjectValueLabel.getText());
-//        try {
-//            bean.setTrend(Double.parseDouble(this.trendValueLabel.getText()));
-//        } catch (NumberFormatException e) {
-//            // e.printStackTrace();
-//            log.warn("SimpleNewEm.trend: 解析为double失败, 请正确设置");
-//        }
-////        bean.setMarked(this.markedValueLabel.isSelected());
-//        bean.setRemark(this.remarkValueLabel.getText());
+        // 龙头股列表在编辑对话框完成设置, 其余可变字段在此设置!
+        bean.setPricePositionShortTerm(pricePositionShortTermValueComboBox.getSelectedItem().toString());
+        bean.setPricePositionLongTerm(pricePositionLongTermValueComboBox.getSelectedItem().toString());
+        bean.setPriceTrend(priceTrendValueComboBox.getSelectedItem().toString());
+        bean.setOscillationAmplitude(oscillationAmplitudeValueComboBox.getSelectedItem().toString());
+        bean.setLineType(lineTypeValueComboBox.getSelectedItem().toString());
+        bean.setHypeReason(hypeReasonValueLabel.getText());
+        if (!hypeStartDateValueTextField.getText().equals("")) {// 尝试设置炒作开始日期,一般要么空, 要么可解析;已设置不可手动编辑
+            bean.setHypeStartDate(DateUtil.parse(hypeStartDateValueTextField.getText()));
+        }
+        bean.setHypePhaseCurrent(hypePhaseCurrentValueComboBox.getSelectedItem().toString());
+        bean.setSpecificDescription(specificDescriptionValueLabel.getText());
+        bean.setGoodAspects(goodAspectsValueLabel.getText());
+        bean.setBadAspects(badAspectsValueLabel.getText());
+        bean.setWarnings(warningsValueLabel.getText());
 
-        log.info("假装修改了");
+        try {
+            bean.setTrend(Double.valueOf(trendValueLabel.getText()));
+        } catch (NumberFormatException e) {
+            ManiLog.put("trend 为Double, 格式不对, 设置错误");
+        }
+        bean.setRemark(remarkValueLabel.getText());
+        bean.setPreJudgmentViews(preJudgmentViewsValueLabel.getText());
+        bean.setFutures(futuresValueLabel.getText());
+        try {
+            bean.setScoreOfPreJudgment(Double.valueOf(scoreOfPreJudgmentValueLabel.getText()));
+        } catch (NumberFormatException e) {
+            ManiLog.put("scoreOfPreJudgment 为Double, 格式不对, 设置错误");
+        }
+        bean.setScoreReason(scoreReasonValueLabel.getText());
+        bean.setLastModified(DateUtil.date()); // 最后修改时间
         return bean;
     }
 
@@ -735,44 +870,47 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             return;
         }
 
-        idValueLabel.setText(String.valueOf(bean.getId()));
-        nameValueLabel.setText(String.valueOf(bean.getName()));
-        typeValueLabel.setText(String.valueOf(bean.getType()));
-        type2ValueLabel.setText(String.valueOf(bean.getType2()));
-        codeValueLabel.setText(String.valueOf(bean.getCode()));
-        indexCodeValueLabel.setText(String.valueOf(bean.getIndexCode()));
-        dateStrValueLabel.setText(String.valueOf(bean.getDateStr()));
-        chgPValueLabel.setText(String.valueOf(bean.getChgP()));
+        idValueLabel.setText(CommonUtil.toStringCheckNull(bean.getId()));
+        nameValueLabel.setText(CommonUtil.toStringCheckNull(bean.getName()));
+        typeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getType()));
+        type2ValueLabel.setText(CommonUtil.toStringCheckNull(bean.getType2()));
+        codeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getCode()));
+        indexCodeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getIndexCode()));
+        dateStrValueLabel.setText(CommonUtil.toStringCheckNull(bean.getDateStr()));
+        chgPValueLabel.setText(CommonUtil.toStringCheckNull(bean.getChgP()));
 
         setDateTimeOrNull(bean.getGeneratedTime(), generatedTimeValueLabel);
         setDateTimeOrNull(bean.getLastModified(), lastModifiedValueLabel);
 
-        relatedConceptListValueLabel.setText(String.valueOf(bean.getRelatedConceptListJsonStr()));
-        relatedIndustryListValueLabel.setText(String.valueOf(bean.getRelatedIndustryListJsonStr()));
-        includeStockListValueLabel.setText(String.valueOf(bean.getIncludeStockListJsonStr()));
+        relatedConceptListValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRelatedConceptListJsonStr()));
+        relatedIndustryListValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRelatedIndustryListJsonStr()));
+        relatedTrendMapValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRelatedTrendMapJsonStr()));
+        includeStockListValueLabel.setText(CommonUtil.toStringCheckNull(bean.getIncludeStockListJsonStr()));
 
-        leaderStockListValueLabel.setText(String.valueOf(bean.getLeaderStockListJsonStr()));
-        pricePositionShortTermValueComboBox.setSelectedItem(String.valueOf(bean.getPricePositionShortTerm()));
-        pricePositionLongTermValueComboBox.setSelectedItem(String.valueOf(bean.getPricePositionLongTerm()));
-        priceTrendValueComboBox.setSelectedItem(String.valueOf(bean.getPriceTrend()));
-        oscillationAmplitudeValueComboBox.setSelectedItem(String.valueOf(bean.getOscillationAmplitude()));
-        lineTypeValueComboBox.setSelectedItem(String.valueOf(bean.getLineType()));
-        hypeReasonValueLabel.setText(String.valueOf(bean.getHypeReason()));
-        setDateTimeOrNull(bean.getHypeStartDate(), hypeStartDateValueLabel); // todo
-        hypePhaseCurrentValueComboBox.setSelectedItem(String.valueOf(bean.getHypePhaseCurrent()));
-        specificDescriptionValueLabel.setText(String.valueOf(bean.getSpecificDescription()));
-        goodAspectsValueLabel.setText(String.valueOf(bean.getGoodAspects()));
-        badAspectsValueLabel.setText(String.valueOf(bean.getBadAspects()));
-        warningsValueLabel.setText(String.valueOf(bean.getWarnings()));
-        warningsValueLabel.setText(String.valueOf(bean.getWarnings()));
+        leaderStockListValueLabel.setText(CommonUtil.toStringCheckNull(bean.getLeaderStockListJsonStr()));
+        pricePositionShortTermValueComboBox
+                .setSelectedItem(CommonUtil.toStringCheckNull(bean.getPricePositionShortTerm()));
+        pricePositionLongTermValueComboBox
+                .setSelectedItem(CommonUtil.toStringCheckNull(bean.getPricePositionLongTerm()));
+        priceTrendValueComboBox.setSelectedItem(CommonUtil.toStringCheckNull(bean.getPriceTrend()));
+        oscillationAmplitudeValueComboBox.setSelectedItem(CommonUtil.toStringCheckNull(bean.getOscillationAmplitude()));
+        lineTypeValueComboBox.setSelectedItem(CommonUtil.toStringCheckNull(bean.getLineType()));
+        hypeReasonValueLabel.setText(CommonUtil.toStringCheckNull(bean.getHypeReason()));
+        setDateTimeOrNull(bean.getHypeStartDate(), hypeStartDateValueTextField);
+        hypePhaseCurrentValueComboBox.setSelectedItem(CommonUtil.toStringCheckNull(bean.getHypePhaseCurrent()));
+        specificDescriptionValueLabel.setText(CommonUtil.toStringCheckNull(bean.getSpecificDescription()));
+        goodAspectsValueLabel.setText(CommonUtil.toStringCheckNull(bean.getGoodAspects()));
+        badAspectsValueLabel.setText(CommonUtil.toStringCheckNull(bean.getBadAspects()));
+        warningsValueLabel.setText(CommonUtil.toStringCheckNull(bean.getWarnings()));
 
         trendValueLabel.setText(CommonUtil.toStringCheckNull(bean.getTrend(), ""));
+        relatedTrendsDiscountValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRelatedTrendsDiscount(), ""));
         remarkValueLabel.setText(CommonUtil.toStringCheckNull(bean.getRemark(), ""));
 
-        preJudgmentViewsValueLabel.setText(String.valueOf(bean.getPreJudgmentViews()));
-        futuresValueLabel.setText(String.valueOf(bean.getFutures()));
-        scoreOfPreJudgmentValueLabel.setText(String.valueOf(bean.getScoreOfPreJudgment()));
-        scoreReasonValueLabel.setText(String.valueOf(bean.getScoreReason()));
+        preJudgmentViewsValueLabel.setText(CommonUtil.toStringCheckNull(bean.getPreJudgmentViews()));
+        futuresValueLabel.setText(CommonUtil.toStringCheckNull(bean.getFutures()));
+        scoreOfPreJudgmentValueLabel.setText(CommonUtil.toStringCheckNull(bean.getScoreOfPreJudgment()));
+        scoreReasonValueLabel.setText(CommonUtil.toStringCheckNull(bean.getScoreReason()));
 
 
     }
@@ -785,11 +923,11 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         }
     }
 
-    public void setDateTimeOrNull(Date timestamp, JTextField jTextField) {
-        if (timestamp == null) {
+    public void setDateTimeOrNull(Date date, JTextField jTextField) {
+        if (date == null) {
             jTextField.setText("");
         } else {
-            jTextField.setText(DateUtil.date(timestamp).toStringDefaultTimeZone());
+            jTextField.setText(DateUtil.format(date, DatePattern.NORM_DATETIME_PATTERN));
         }
     }
 
@@ -812,10 +950,27 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     public static JTextField getCommonEditor(
             IndustryConceptThsOfPlanEditorPanel panel) {
+        return getCommonEditor(false, panel);
+    }
+
+    /**
+     * trend编辑器的 回调函数有所不同, 除了自动保存外,
+     * 还应该 自动更新 所有bean 的  relatedTrendMap/relatedTrendsDiscount 三个字段; 随后进行全量保存
+     *
+     * @param isTrendEditor
+     * @param panel
+     * @return
+     */
+    public static JTextField getCommonEditor(boolean isTrendEditor,
+                                             IndustryConceptThsOfPlanEditorPanel panel) {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
-        jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
+        if (!isTrendEditor) {
+            jTextField.addKeyListener(buildKeyAdapterForEdit(panel));
+        } else {
+            jTextField.addKeyListener(buildKeyAdapterForTrendEdit(panel));
+        }
 //        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel));
         jTextField.setBackground(Color.BLACK);
         jTextField.setForeground(Color.red);
@@ -823,14 +978,40 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         return jTextField;
     }
 
+    /**
+     * trend编辑器回调, 它将 自动计算所有bean 的 relatedTrendMap/relatedTrendsDiscount 三个字段, 随后进行全部 bean 的保存
+     *
+     * @param panel
+     * @return
+     */
+    private static KeyListener buildKeyAdapterForTrendEdit(IndustryConceptThsOfPlanEditorPanel panel) {
+        return new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    tryAutoSaveEditedBean(panel, "概念行业"); // 为了保险, 完整执行一遍. 此时刷新了 父亲beanMap最新
 
-    public static JCheckBox getCommonCheckBox() {
-        JCheckBox checkBox = new JCheckBox();
-        checkBox.setBorder(BorderFactory.createLineBorder(Color.black, 1));
-        checkBox.setBackground(COLOR_THEME_MINOR);
-        checkBox.setForeground(Color.pink);
-        return checkBox;
+                    // 所有bean.
+                    ConcurrentHashMap<Long, IndustryConceptThsOfPlan> beanMap = panel.parentPanel.getBeanMap();
+                    // 1.收集所有bean(无视概念还是行业) 的trend设置, 以名称为key,trend为value
+                    HashMap<String, Double> trendMap = new HashMap<>();
+                    for (IndustryConceptThsOfPlan bean : beanMap.values()) {
+                        Double trend = bean.getTrend();
+                        if (trend != null && trend != 0.0) {
+                            trendMap.put(bean.getName(), trend);
+                        }
+                    }
+                    // 2.遍历所有bean, 遍历 关联行业列表,和关联概念列表, 若元素名称在 trendMap内,
+                    // 则将 name:trend, 放入 bean的 relatedTrendMap, 并更新对应 JsonStr字段
+
+
+
+                }
+            }
+        };
+
     }
+
 
     /**
      * 因bean多个字段设置为备选项列表, 因此使用 JXComboBox, 而非编辑框
@@ -843,6 +1024,22 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         JXComboBox comboBox = new JXComboBox(items);
         comboBox.setBackground(Color.black);
         comboBox.setForeground(Color.orange);
+        comboBox.addItemListener(new ItemListener() {
+            int times = 0; // 标志切换次数, 当首次更新会触发, 当选项切换将触发两次, 这里首次无视, 然后每两次调用一次逻辑
+
+            @Override
+            public void itemStateChanged(ItemEvent e) { // 当选择框选项切换, 则类似编辑框的enter, 将整个保存bean
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    if (times == 0) {
+                        times++; // 首次初始化时, 不触发保存.
+                        return;
+                    } else {
+                        tryAutoSaveEditedBean(panel, "概念行业");
+                    }
+
+                }
+            }
+        });
         return comboBox;
     }
 }

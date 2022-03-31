@@ -352,7 +352,7 @@ public class CommonUtil {
      * @return
      */
     public static String toStringCheckNull(Object o) {
-        return toStringCheckNull(o, "null");
+        return toStringCheckNull(o, "");
     }
 
     public static String toStringCheckNull(Object o, String defaultStr) {
