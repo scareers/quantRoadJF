@@ -124,6 +124,7 @@ public class IndustryConceptThsOfPlanDao {
                                                                 IndustryConceptThsOfPlan.Type type)
             throws SQLException {
         String dateStr = decideDateStrForPlan(equivalenceNow);
+        //String dateStr = DateUtil.today();
         return getOrInitBeanByDateStr(industryOrConceptName, dateStr, type);
     }
 
@@ -146,11 +147,16 @@ public class IndustryConceptThsOfPlanDao {
             IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance(industryOrConceptName, dateStr,
                     type);
             saveOrUpdateBean(bean);
+
             return bean;
         } else {
             // 读取第一个(一般且唯一)bean结果
             IndustryConceptThsOfPlan bean = (IndustryConceptThsOfPlan) beans.get(0);
             bean.initTransientAttrsWhenBeanFromDb();
+            // todo: 因为爬虫保存相同数据到下一交易日, 导致 关系和成分股可能是昨天数据, 因此, 需要保留随时刷新的机制,重设关系
+//            bean.initRelationList(); // 初始化关系列表
+//            bean.initIncludeStockList(); // 初始化成分股列表
+
             return bean;
         }
     }

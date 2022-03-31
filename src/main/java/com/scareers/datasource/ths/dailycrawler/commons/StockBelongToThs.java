@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.ths.dailycrawler.CrawlerThs;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
@@ -127,7 +128,44 @@ public class StockBelongToThs extends CrawlerThs {
             success = false;
             return;
         }
+
+        // @key: 新增: 将下一交易日的本数据, 也暂时保存为与此刻相同的df! 为了操盘计划gui而做的妥协;
+        // 待明日运行后, 也保存后日的; 后日的实际刷新将在后日!
+        String nextTradeDateStr = null;
+        try {
+            nextTradeDateStr = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1);
+        } catch (SQLException e) {
+            log.warn("获取下一交易日失败,不尝试将结果复制保存到下一交易日");
+
+        }
+
+        if (nextTradeDateStr != null) {
+            saveNextTradeDateTheSameDf(dataFrame, nextTradeDateStr);
+        }
+
         success = true;
+    }
+
+
+    /**
+     * 它将修改 df 的 dateStr 列
+     *
+     * @param dataFrame
+     */
+    private void saveNextTradeDateTheSameDf(DataFrame<Object> dataFrame, String nextDateStr) {
+        for (int i = 0; i < dataFrame.length(); i++) {
+            dataFrame.set(i, "dateStr", nextDateStr);
+        }
+
+
+        try {
+            String sqlDelete = StrUtil.format("delete from {} where dateStr='{}'", tableName, nextDateStr);
+            execSql(sqlDelete, conn);
+            DataFrameS.toSql(dataFrame, tableName, this.conn, "append", sqlCreateTable);
+        } catch (Exception e) {
+            log.error("保存相同数据到下一交易日失败,暂不视为错误");
+            return;
+        }
     }
 
     @Override

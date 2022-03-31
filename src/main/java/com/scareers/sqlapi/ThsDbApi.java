@@ -441,7 +441,7 @@ public class ThsDbApi {
         } catch (SQLException e) {
             return null;
         }
-        if (dataFrame.size() == 0) {
+        if (dataFrame.length() == 0) {
             return null;
         }
 

@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
@@ -20,13 +19,14 @@ import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import org.jdesktop.swingx.JXComboBox;
 import org.jdesktop.swingx.JXList;
-import org.jdesktop.swingx.JXMultiSplitPane;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Vector;
 import java.util.function.Consumer;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -486,17 +486,25 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         jScrollPaneLeft.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneLeft.setViewportView(allStocksList);
         jScrollPaneLeft.setPreferredSize(new Dimension(440, 800));
+        try {
+            allStocksList.setSelectedIndex(0);
+        } catch (Exception e) {
+        }
 
         // 2.两个按钮, 添加 和 删除按钮
         JPanel buttonsPanel = new JPanel();
         buttonsPanel.setLayout(new VerticalFlowLayout()); // 居中对齐
         JButton addButton = ButtonFactory.getButton("添加->");
         JButton deleteButton = ButtonFactory.getButton("<-删除");
+        JButton upButton = ButtonFactory.getButton("上移"); // 龙头股排序, 将选中的项目上移
+        JButton downButton = ButtonFactory.getButton("下移");
         JButton saveButton = ButtonFactory.getButton("保存");
         saveButton.setBackground(Color.red);
         saveButton.setForeground(Color.black);
         buttonsPanel.add(addButton);
         buttonsPanel.add(deleteButton);
+        buttonsPanel.add(upButton);
+        buttonsPanel.add(downButton);
         buttonsPanel.add(saveButton);
         buttonsPanel.setSize(new Dimension(60, 800));
 
@@ -517,6 +525,10 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         jScrollPaneRight.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneRight.setViewportView(leaderStocksList);
         jScrollPaneRight.setPreferredSize(new Dimension(440, 800));
+        try {
+            leaderStocksList.setSelectedIndex(0);
+        } catch (Exception e) {
+        }
 
         jPanel.add(jScrollPaneLeft, BorderLayout.WEST);
         jPanel.add(buttonsPanel, BorderLayout.CENTER);
@@ -531,8 +543,13 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                     return;
                 }
                 DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                for (int i = 0; i < model.getSize(); i++) {
+                    if (model.getElementAt(i).equals(selectedValue)) {
+                        ManiLog.put("龙头股已存在,不可重复添加");
+                        return;
+                    }
+                }
                 model.addElement(selectedValue);
-
             }
         });
 
@@ -574,10 +591,55 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                 }
                 bean.updateLeaderStockList(stocks);
                 tryAutoSaveEditedBean(panelTemp, "概念行业");
-                ManiLog.put("IndustryConceptThsOfPlan: 已更新龙头股列表");
+                //ManiLog.put("IndustryConceptThsOfPlan: 已更新龙头股列表");
                 panelTemp.update(); // 将刷新显示
             }
         });
+
+        upButton.addActionListener(new ActionListener() { // 读取右列表当前选择, 上移
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = leaderStocksList.getSelectedIndex();
+                if (selectedIndex < 0) { // -1
+                    return;
+                }
+                DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                if (selectedIndex == 0) {
+                    ManiLog.put("龙头股已到达最前,无法上移");
+                    return;
+                }
+
+                Object raw = model.getElementAt(selectedIndex);
+                Object rawUp = model.getElementAt(selectedIndex - 1);
+
+                model.set(selectedIndex, rawUp);
+                model.set(selectedIndex - 1, raw);
+                leaderStocksList.setSelectedIndex(selectedIndex - 1); // 选中跟随
+            }
+        });
+
+        downButton.addActionListener(new ActionListener() { // 读取右列表当前选择, 下移
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedIndex = leaderStocksList.getSelectedIndex();
+                if (selectedIndex < 0) { // -1
+                    return;
+                }
+                DefaultListModel model = (DefaultListModel) leaderStocksList.getModel();
+                if (selectedIndex == model.size()-1) {
+                    ManiLog.put("龙头股已到达最后,无法下移");
+                    return;
+                }
+
+                Object raw = model.getElementAt(selectedIndex);
+                Object rawDown = model.getElementAt(selectedIndex + 1);
+
+                model.set(selectedIndex, rawDown);
+                model.set(selectedIndex + 1, raw);
+                leaderStocksList.setSelectedIndex(selectedIndex + 1); // 选中跟随
+            }
+        });
+
 
         return jPanel;
     }

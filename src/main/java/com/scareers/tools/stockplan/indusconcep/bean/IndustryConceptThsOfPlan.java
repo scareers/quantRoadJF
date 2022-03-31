@@ -105,6 +105,7 @@ public class IndustryConceptThsOfPlan {
                     "利空",
                     "注意",
                     "总体偏向",
+                    "关联折算偏向",
                     "备注",
 
                     "预判",
@@ -137,6 +138,7 @@ public class IndustryConceptThsOfPlan {
             row.add(bean.getPricePositionShortTerm());
             row.add(bean.getPricePositionLongTerm());
             row.add(bean.getPriceTrend());
+            row.add(bean.getRelatedTrendsDiscount());
             row.add(bean.getOscillationAmplitude());
             row.add(bean.getLineType());
             row.add(bean.getHypeReason());
@@ -215,7 +217,6 @@ public class IndustryConceptThsOfPlan {
     @Column(name = "includeStockList", columnDefinition = "longtext")
     String includeStockListJsonStr = "[]"; // 成分股列表json字符串
 
-
     /*
     核心自定义字段: 未指明长短期, 默认短期
      */
@@ -274,7 +275,7 @@ public class IndustryConceptThsOfPlan {
     String scoreReason = ""; // 得分原因
 
 
-    private void initRelationList() {
+    public void initRelationList() {
         this.relatedConceptList = ThsDbApi.getMaxRelationshipOfConcept(this.name,
                 dateStr, 10, 0.6, 0.4, true);
         List<JSONObject> jsons = new ArrayList<>();
@@ -293,7 +294,7 @@ public class IndustryConceptThsOfPlan {
 
     }
 
-    private void initIncludeStockList() {
+    public void initIncludeStockList() {
         this.includeStockList = ThsDbApi.getConceptOrIndustryIncludeStocks(name, dateStr);
         if (this.includeStockList == null) {
             this.includeStockList = new ArrayList<>(); // null则设置为空
@@ -313,6 +314,7 @@ public class IndustryConceptThsOfPlan {
         initRelatedIndustryListWhenBeanFromDb();
         initIncludeStockListWhenBeanFromDb();
         initLeaderStockListWhenBeanFromDb();
+        initRelatedTrendMapWhenBeanFromDb();
     }
 
     private void initRelatedConceptListWhenBeanFromDb() {
@@ -349,6 +351,15 @@ public class IndustryConceptThsOfPlan {
             res.add(ThsSimpleStock.createFromJsonObject(objects.getJSONObject(i)));
         }
         this.leaderStockList = res; // 一次性更新
+    }
+
+    private void initRelatedTrendMapWhenBeanFromDb() {
+        JSONObject objects = JSONUtilS.parseObj(this.relatedTrendMapJsonStr);
+        HashMap<String, Double> res = new HashMap<>();
+        for (String s : objects.keySet()) {
+            res.put(s, objects.getDouble(s));
+        }
+        this.relatedTrendMap = res; // 一次性更新
     }
 
     /*

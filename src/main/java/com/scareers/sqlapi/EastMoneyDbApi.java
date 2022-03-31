@@ -132,7 +132,6 @@ public class EastMoneyDbApi {
                             "limit {}", todayDate, Math.abs(n) + 2); // +1即可
             DataFrame<Object> dataFrame = DataFrame.readSql(connection, sql);
             List<String> dates = DataFrameS.getColAsStringList(dataFrame, "date");
-            Console.log(dates);
 
             int index = Math.abs(n) - 1;
             if (dates.get(0).equals(todayDate)) {
