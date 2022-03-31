@@ -20,7 +20,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromAllType;
 
 /**
  * description: x月x日 上市公司重大利好新闻 解析结果
@@ -67,7 +67,7 @@ public class CompanyGoodNew {
      * @return
      */
     public static SimpleNewEm getCompanyGoodNewsOf(String dateStr) {
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间上市公司利好消息一览");
+        return getSpecialNewFromAllType(dateStr, "晚间上市公司利好消息一览");
     }
 
     // 对应4个传递 DateTime作为参数

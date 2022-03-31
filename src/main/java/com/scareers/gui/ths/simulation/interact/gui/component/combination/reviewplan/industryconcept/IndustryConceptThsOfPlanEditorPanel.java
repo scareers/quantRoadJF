@@ -3,8 +3,10 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
@@ -107,7 +109,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JXComboBox lineTypeValueComboBox = getCommonJXComboBox(this, IndustryConceptThsOfPlan.LineType.allLineTypes);
     JLabel hypeReasonLabel = getCommonLabel("hypeReason", Color.pink);
     JTextField hypeReasonValueLabel = getCommonEditor(this);
-    JLabel hypeStartDateLabel = getCommonLabel("hypeStartDate", Color.pink); // todo: 日期控件
+    JLabel hypeStartDateLabel = getCommonLabel("hypeStartDate", Color.pink);
     JTextField hypeStartDateValueTextField = getCommonEditor(this);
 
     // 特殊: 炒作开始时间, 使用 JTextField, 配合 日期选择器, 将绑定 hypeStartDateValueLabel
@@ -126,8 +128,8 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JTextField warningsValueLabel = getCommonEditor(this);
 
     JLabel trendLabel = getCommonLabel("trend", Color.pink);
-    JTextField trendValueLabel = getCommonEditor(this);
-    JLabel relatedTrendsDiscountLabel = getCommonLabel("relatedTrendsDiscountLabel", Color.pink);
+    JTextField trendValueLabel = getCommonEditor(true, this);//todo
+    JLabel relatedTrendsDiscountLabel = getCommonLabel("relatedTrendsDiscount", Color.pink);
     JLabel relatedTrendsDiscountValueLabel = getCommonLabel("", Color.pink); // 此trend自动计算刷新
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
     JTextField remarkValueLabel = getCommonEditor(this);
@@ -212,17 +214,19 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         this.add(oscillationAmplitudeLabel);
         this.add(oscillationAmplitudeValueComboBox);
 
+
         this.add(lineTypeLabel);
         this.add(lineTypeValueComboBox);
 
-        this.add(hypeReasonLabel);
-        this.add(hypeReasonValueLabel);
+        this.add(hypePhaseCurrentLabel);
+        this.add(hypePhaseCurrentValueComboBox);
 
         this.add(hypeStartDateLabel);
         this.add(hypeStartDateValueTextField);
 
-        this.add(hypePhaseCurrentLabel);
-        this.add(hypePhaseCurrentValueComboBox);
+        this.add(hypeReasonLabel);
+        this.add(hypeReasonValueLabel);
+
 
         this.add(specificDescriptionLabel);
         this.add(specificDescriptionValueLabel);
@@ -265,23 +269,26 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     private void initOther() {
         // 1. 炒作时间选择器绑定
-        hypeStartDatePicker = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
+        hypeStartDatePicker = new DateTimePicker("yyyy-MM-dd", 160, 200);
         IndustryConceptThsOfPlanEditorPanel panelTemp = this;
-        hypeStartDatePicker.setEnable(true).setSelect(DateUtil.date()).changeDateEvent(new Consumer<DateTimePicker>() {
-            @Override
-            public void accept(DateTimePicker o) {
-                tryAutoSaveEditedBean(panelTemp, "概念行业");
-            }
-        }).register(hypeStartDateValueTextField); // 绑定到时间选择
 
+        hypeStartDatePicker.setEnable(true).setSelect(DateUtil.date())
+                .changeDateEvent(new Consumer<DateTimePicker>() {
+                    @Override
+                    public void accept(DateTimePicker o) {
+                        tryAutoSaveEditedBean(panelTemp, "概念行业"); // todo
+                    }
+                }).register(hypeStartDateValueTextField); // 绑定到时间选择
+
+        Color keyColor = COLOR_THEME_TITLE; // 5个字段醒目一点
         // 2.炒作原因背景色
-        hypeReasonValueLabel.setBackground(Color.cyan);
+        hypeReasonValueLabel.setBackground(keyColor);
 
         // 3.预判4字段背景色
-        preJudgmentViewsValueLabel.setBackground(Color.cyan);
-        futuresValueLabel.setBackground(Color.cyan);
-        scoreOfPreJudgmentValueLabel.setBackground(Color.cyan);
-        scoreReasonValueLabel.setBackground(Color.cyan);
+        preJudgmentViewsValueLabel.setBackground(keyColor);
+        futuresValueLabel.setBackground(keyColor);
+        scoreOfPreJudgmentValueLabel.setBackground(keyColor);
+        scoreReasonValueLabel.setBackground(keyColor);
         // 4.龙头股标签醒目
         leaderStockListLabel.setForeground(Color.red);
 
@@ -846,8 +853,9 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         };
     }
 
-    private static void tryAutoSaveEditedBean(IndustryConceptThsOfPlanEditorPanel panel, String logPrefix) {
+    public static void tryAutoSaveEditedBean(IndustryConceptThsOfPlanEditorPanel panel, String logPrefix) {
         IndustryConceptThsOfPlan editedBean = panel.getEditedBean();
+
         if (editedBean == null) {
             return;
         }
@@ -927,7 +935,8 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         if (date == null) {
             jTextField.setText("");
         } else {
-            jTextField.setText(DateUtil.format(date, DatePattern.NORM_DATETIME_PATTERN));
+            jTextField.setText(DateUtil.format(date, DatePattern.NORM_DATE_PATTERN));
+            hypeStartDatePicker.setSelect(date);
         }
     }
 
@@ -989,26 +998,63 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
             @Override
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    tryAutoSaveEditedBean(panel, "概念行业"); // 为了保险, 完整执行一遍. 此时刷新了 父亲beanMap最新
-
-                    // 所有bean.
-                    ConcurrentHashMap<Long, IndustryConceptThsOfPlan> beanMap = panel.parentPanel.getBeanMap();
-                    // 1.收集所有bean(无视概念还是行业) 的trend设置, 以名称为key,trend为value
-                    HashMap<String, Double> trendMap = new HashMap<>();
-                    for (IndustryConceptThsOfPlan bean : beanMap.values()) {
-                        Double trend = bean.getTrend();
-                        if (trend != null && trend != 0.0) {
-                            trendMap.put(bean.getName(), trend);
-                        }
-                    }
-                    // 2.遍历所有bean, 遍历 关联行业列表,和关联概念列表, 若元素名称在 trendMap内,
-                    // 则将 name:trend, 放入 bean的 relatedTrendMap, 并更新对应 JsonStr字段
-
-
-
+                    flushWithRelatedTrends(panel);
+                    panel.update(); // 将更新显示自动设置字段
+                    panel.parentPanel.update(); // 更新列表
                 }
             }
         };
+
+    }
+
+    /**
+     * 使得父亲可调用; 通常需要自行添加 刷新
+     * panel.update(); // 将更新显示自动设置字段
+     * panel.parentPanel.update(); // 更新列表
+     *
+     * @param panel
+     */
+    public static void flushWithRelatedTrends(IndustryConceptThsOfPlanEditorPanel panel) {
+        tryAutoSaveEditedBean(panel, "概念行业"); // 为了保险, 完整执行一遍. 此时刷新了 父亲beanMap最新
+
+        // 所有bean.
+        ConcurrentHashMap<Long, IndustryConceptThsOfPlan> beanMap = panel.parentPanel.getBeanMap();
+        // 1.收集所有bean(无视概念还是行业) 的trend设置, 以名称为key,trend为value
+        HashMap<String, Double> trendMap = new HashMap<>();
+        for (IndustryConceptThsOfPlan bean : beanMap.values()) {
+            Double trend = bean.getTrend();
+            if (trend != null && trend != 0.0) {
+                trendMap.put(bean.getName(), trend);
+            }
+        }
+        // 2.遍历所有bean, 遍历 关联行业列表,和关联概念列表, 若元素名称在 trendMap内,
+        // 则将 name:trend, 放入 bean的 relatedTrendMap, 并更新对应 JsonStr字段
+        for (IndustryConceptThsOfPlan bean : beanMap.values()) {
+            bean.getRelatedTrendMap().clear(); // 清空老数据
+            for (ThsDbApi.ThsConceptIndustryRelation thsConceptIndustryRelation : bean
+                    .getRelatedConceptList()) {// 关联概念
+                String nameB = thsConceptIndustryRelation.getNameB();
+                if (trendMap.containsKey(nameB)) {
+                    bean.getRelatedTrendMap().put(nameB + "__概念", trendMap.get(nameB));
+                }
+            }
+
+            for (ThsDbApi.ThsConceptIndustryRelation thsConceptIndustryRelation : bean
+                    .getRelatedIndustryList()) {// 关联行业
+                String nameB = thsConceptIndustryRelation.getNameB();
+                if (trendMap.containsKey(nameB)) {
+                    bean.getRelatedTrendMap().put(nameB + "__行业", trendMap.get(nameB));
+                }
+            }
+
+            // 再更新对应 jsonStr属性
+            bean.updateRelatedTrendMapJsonStr();
+            bean.calcRelatedTrendsDiscount(); // 并且更新计算 关联概念trend 折算加成因子; 关系越高, trend加成越高
+        }
+
+        // 3. 所有bean均已经更新, 此时保存所有bean到数据库
+        IndustryConceptThsOfPlanDao.saveOrUpdateBeanBatch(beanMap.values());
+        ManiLog.put("IndustryConceptThsOfPlan:已自动计算并保存: 关联行业概念 trend 加成折算因子");
 
     }
 
@@ -1024,22 +1070,34 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         JXComboBox comboBox = new JXComboBox(items);
         comboBox.setBackground(Color.black);
         comboBox.setForeground(Color.orange);
-        comboBox.addItemListener(new ItemListener() {
-            int times = 0; // 标志切换次数, 当首次更新会触发, 当选项切换将触发两次, 这里首次无视, 然后每两次调用一次逻辑
-
-            @Override
-            public void itemStateChanged(ItemEvent e) { // 当选择框选项切换, 则类似编辑框的enter, 将整个保存bean
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    if (times == 0) {
-                        times++; // 首次初始化时, 不触发保存.
-                        return;
-                    } else {
-                        tryAutoSaveEditedBean(panel, "概念行业");
-                    }
-
-                }
-            }
-        });
+        // 选择框各种bug, 请自行保存
+//        comboBox.addItemListener(new ItemListener() {
+//            int times = 0; // 标志切换次数, 当首次更新会触发, 当选项切换将触发两次, 这里首次无视, 然后每两次调用一次逻辑
+//            String lastTimeText = null; // 保留上次结果, 若结果改了, 视为成功改变, 才执行保存. 因本控件2次事件触发造成各种bug
+//
+//            @Override
+//            public void itemStateChanged(ItemEvent e) { // 当选择框选项切换, 则类似编辑框的enter, 将整个保存bean
+//                if (e.getStateChange() == ItemEvent.SELECTED) {
+//                    if (times == 0) {
+//                        times++; // 首次初始化时, 不触发保存.
+//                        return;
+//                    } else {
+//                        String s = "";
+//                        try {
+//                            s = comboBox.getSelectedItem().toString();
+//                        } catch (Exception ex) {
+//
+//                        }
+//                        if (!s.equals(lastTimeText)) { // 当值确实改变了, 才触发
+////                            tryAutoSaveEditedBean(panel, "概念行业");
+//                            ManiLog.put("xxx");
+//                        }
+//                        lastTimeText = s;
+//                    }
+//
+//                }
+//            }
+//        });
         return comboBox;
     }
 }

@@ -10,6 +10,7 @@ import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.news.bean.MajorIssue;
 import com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -17,6 +18,7 @@ import org.hibernate.query.Query;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -38,6 +40,22 @@ public class IndustryConceptThsOfPlanDao {
                 IndustryConceptThsOfPlan.Type.INDUSTRY);
         Console.log(bean2);
 
+        IndustryConceptThsOfPlan bean3 = getOrInitBeanForPlan("绿色电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.CONCEPT);
+        Console.log(bean3);
+
+        IndustryConceptThsOfPlan bean4 = getOrInitBeanForPlan("俄乌冲突概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.CONCEPT);
+        Console.log(bean4);
+
+        IndustryConceptThsOfPlan bean5 = getOrInitBeanForPlan("农业种植", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.CONCEPT);
+        Console.log(bean5);
+
+        IndustryConceptThsOfPlan bean6 = getOrInitBeanForPlan("玉米", PlanReviewDateTimeDecider.getUniqueDatetime(),
+                IndustryConceptThsOfPlan.Type.CONCEPT);
+        Console.log(bean6);
+
 //        List<IndustryConceptThsOfPlan> beans = getBeanListForPlan(DateUtil.date());
 //        Console.log(beans);
 //        DataFrame<Object> dataFrame = IndustryConceptThsOfPlan.buildDfFromBeanList(beans);
@@ -51,7 +69,7 @@ public class IndustryConceptThsOfPlanDao {
      * @param dateStr
      * @return
      */
-    public static List<IndustryConceptThsOfPlan> getBeanListForPlan(Date equivalenceNow) throws SQLException {
+    public static List<IndustryConceptThsOfPlan> getBeanListForPlan(Date equivalenceNow)  {
         String dateStrForPlan = decideDateStrForPlan(equivalenceNow);
         return getBeansByDate(dateStrForPlan);
     }
@@ -111,6 +129,27 @@ public class IndustryConceptThsOfPlanDao {
     }
 
     /**
+     * 批量保存或者更新bean; 遍历, 但一定数量后(一批), 立即保存并清除缓存;
+     *
+     * @param bean
+     */
+    public static void saveOrUpdateBeanBatch(Collection<IndustryConceptThsOfPlan> beans) {
+        Session session = sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+        int i = 1;
+        for (IndustryConceptThsOfPlan bean : beans) {
+            session.saveOrUpdate(bean);
+            i++;
+            if (i % 10 == 0) {
+                session.flush(); // 保持同步数据库
+                session.clear(); // 保持清除缓存内存占用
+            }
+        }
+        transaction.commit();
+        session.close();
+    }
+
+    /**
      * 为操盘计划, 从数据库获取 bean, 或者(实例化并, 并首次保存到数据库)! 返回bean
      * 操盘计划:
      * 1.若今日为交易日:
@@ -161,7 +200,8 @@ public class IndustryConceptThsOfPlanDao {
         }
     }
 
-    private static String decideDateStrForPlan(Date equivalenceNow) throws SQLException {
+    @SneakyThrows
+    private static String decideDateStrForPlan(Date equivalenceNow)  {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) {

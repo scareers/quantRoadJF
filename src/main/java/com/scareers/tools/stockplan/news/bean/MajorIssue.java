@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromAllType;
 
 /**
  * 重大事项解析结果
@@ -67,7 +67,7 @@ public class MajorIssue {
      * @return
      */
     public static SimpleNewEm getCompanyMajorIssuesOf(String dateStr) {
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间沪深上市公司重大事项公告最新快递");
+        return getSpecialNewFromAllType(dateStr, "晚间沪深上市公司重大事项公告最新快递");
     }
 
     public static SimpleNewEm getCompanyMajorIssuesOf(DateTime date) {

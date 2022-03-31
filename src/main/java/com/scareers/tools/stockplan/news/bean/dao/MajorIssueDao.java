@@ -38,7 +38,7 @@ public class MajorIssueDao {
     public static List<MajorIssue> getNewsForTradePlanByDate(String dateStr) {
         // hibernate API, 访问数据库
         Session session = SimpleNewEmDao.sessionFactory.openSession();
-        String hql = "FROM MajorIssue E WHERE E.dateStr=:dateStr"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
+        String hql = "FROM MajorIssue E WHERE E.dateStr=:dateStr";
         Query query = session.createQuery(hql);
         query.setParameter("dateStr", dateStr); // 注意类型
         List beans = query.list();

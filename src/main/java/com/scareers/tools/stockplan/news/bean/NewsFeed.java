@@ -22,7 +22,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromAllType;
 
 /**
  * description: x月x日 新闻联播 新闻; 解析逻辑稍微复杂.
@@ -73,7 +73,7 @@ public class NewsFeed {
     public static SimpleNewEm getNewsFeedsOf(String dateStr) {
         // 3月15日晚间央视新闻联播财经内容集锦
         // 3月15日晚间央视新闻联播财经内容集锦%
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "晚间央视新闻联播财经内容集锦");
+        return getSpecialNewFromAllType(dateStr, "晚间央视新闻联播财经内容集锦");
     }
 
     public static SimpleNewEm getNewsFeedsOf(DateTime date) {

@@ -129,6 +129,10 @@ public class FourPaperNewsCrawlerEm extends CrawlerEm {
      * @throws Exception
      */
     protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
-        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+        HashSet<SimpleNewEm> simpleNewEms = new HashSet<>(
+                EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+        simpleNewEms.addAll(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE, 520));
+        // @key: 两种都找
+        return simpleNewEms;
     }
 }

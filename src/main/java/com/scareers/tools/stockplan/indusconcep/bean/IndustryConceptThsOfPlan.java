@@ -2,6 +2,7 @@ package com.scareers.tools.stockplan.indusconcep.bean;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.sqlapi.ThsDbApi;
@@ -54,6 +55,7 @@ public class IndustryConceptThsOfPlan {
             if (dfTemp == null || dfTemp.length() == 0) {
                 dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
             }
+            Console.log(dfTemp);
             bean.setName(industryOrConceptName);
             bean.setType("行业");
             bean.setType2(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
@@ -93,7 +95,11 @@ public class IndustryConceptThsOfPlan {
     // 成分股列表, 相关行业列表, 相关概念列表, 均不直接显示
     public static List<String> allColForDf = Arrays
             .asList("id", "名称", "类型", "类型2", "代码", "代码2", "日期", "涨跌幅",
-                    "生成时间", "最终修改时间", "短期位置", "长期位置", "趋势",
+                    "生成时间", "最终修改时间",
+
+                    "短期位置",
+                    "长期位置",
+                    "趋势",
                     "震荡",
                     "主支线",
                     "炒作原因",
@@ -101,13 +107,13 @@ public class IndustryConceptThsOfPlan {
                     "炒作阶段",
                     "其他描述",
                     "龙头股",
+
                     "利好",
                     "利空",
                     "注意",
                     "总体偏向",
                     "关联折算偏向",
                     "备注",
-
                     "预判",
                     "未来",
                     "得分",
@@ -135,10 +141,10 @@ public class IndustryConceptThsOfPlan {
             row.add(bean.getChgP());
             row.add(bean.getGeneratedTime());
             row.add(bean.getLastModified());
+
             row.add(bean.getPricePositionShortTerm());
             row.add(bean.getPricePositionLongTerm());
             row.add(bean.getPriceTrend());
-            row.add(bean.getRelatedTrendsDiscount());
             row.add(bean.getOscillationAmplitude());
             row.add(bean.getLineType());
             row.add(bean.getHypeReason());
@@ -146,10 +152,12 @@ public class IndustryConceptThsOfPlan {
             row.add(bean.getHypePhaseCurrent());
             row.add(bean.getSpecificDescription());
             row.add(bean.getLeaderStockListJsonStr());
+
             row.add(bean.getGoodAspects());
             row.add(bean.getBadAspects());
             row.add(bean.getWarnings());
             row.add(bean.getTrend());
+            row.add(bean.getRelatedTrendsDiscount());
             row.add(bean.getRemark());
             row.add(bean.getPreJudgmentViews());
             row.add(bean.getFutures());
@@ -206,8 +214,8 @@ public class IndustryConceptThsOfPlan {
     // relatedTrendsDiscount 则以一定权重(关联性越高,则权重越高), 折算所有关联trend, 加总得到 关联行业概念的 trend加成;
     @Transient
     HashMap<String, Double> relatedTrendMap = new HashMap<>(); // 关联概念trend字典
-    @Column(name = "relatedTrendMap", columnDefinition = "longtext")
-    String relatedTrendMapJsonStr = "{}";
+    @Column(name = "relatedTrendMap", columnDefinition = "longtext") // key为 名称__行业 或者 名称__概念; 注意split
+            String relatedTrendMapJsonStr = "{}";
     @Column(name = "relatedTrendsDiscount")
     Double relatedTrendsDiscount = 0.0; // 关联概念trend折算加成
 
@@ -234,7 +242,7 @@ public class IndustryConceptThsOfPlan {
     String lineType = LineType.OTHER_LINE; // 主线还是支线? 默认其他线
     @Column(name = "hypeReason", columnDefinition = "longtext")
     String hypeReason; // 炒作原因
-    @Column(name = "hypeStartDate", columnDefinition = "datetime")
+    @Column(name = "hypeStartDate", columnDefinition = "date")
     Date hypeStartDate; // 本轮炒作大约开始时间
     @Column(name = "hypePhaseCurrent", columnDefinition = "varchar(32)")
     String hypePhaseCurrent = HypePhase.UNKNOWN; // 当前炒作阶段
@@ -374,6 +382,44 @@ public class IndustryConceptThsOfPlan {
         this.leaderStockList = newList;
     }
 
+    /**
+     * 此时RelatedTrendMap已经设置好, 更新对应 jsonStr 字段
+     */
+    public void updateRelatedTrendMapJsonStr() {
+        this.relatedTrendMapJsonStr = JSONUtilS.toJsonPrettyStr(this.relatedTrendMap);
+    }
+
+    /**
+     * 此时RelatedTrendMap已经设置好, 使用自定义算法, 计算 关联概念行业 折算trend 因子;
+     * 这里简单 进行加法
+     */
+    public void calcRelatedTrendsDiscount() {
+        Double res = 0.0;
+        for (String s : this.relatedTrendMap.keySet()) {
+            List<String> nameAndType = StrUtil.split(s, "__");
+            String name = nameAndType.get(0);
+            String type = nameAndType.get(1);
+            Double trend = this.relatedTrendMap.get(s);
+            if ("行业".equals(type)) {
+                for (ThsConceptIndustryRelation relation : this.relatedIndustryList) {
+                    if (relation.getNameB().equals(name)) {
+                        double relationValue = relation.calcRelationValue(0.3, 0.7); // 关系值,偏向b一点
+                        res += relationValue * trend;
+                        break; // 只可能1
+                    }
+                }
+            } else if ("概念".equals(type)) {
+                for (ThsConceptIndustryRelation relation : this.relatedConceptList) {
+                    if (relation.getNameB().equals(name)) {
+                        double relationValue = relation.calcRelationValue(0.3, 0.7); // 关系值,偏向b一点
+                        res += relationValue * trend;
+                        break; // 只可能1次
+                    }
+                }
+            }
+        }
+        this.relatedTrendsDiscount = CommonUtil.roundHalfUP(res, 3); // 保留3位小数
+    }
 
     /**
      * 行业主线支线类型, 这里不使用枚举, 直接使用字符串

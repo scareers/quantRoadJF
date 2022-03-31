@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.buildDateStr;
-import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromCaiJingDaoDu;
+import static com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao.getSpecialNewFromAllType;
 
 /**
  * 四大证券报(主要媒体) 头条精华
@@ -79,7 +79,7 @@ public class FourPaperNew {
      * @return
      */
     public static SimpleNewEm getFourPaperNewsOf(String dateStr) {
-        return getSpecialNewFromCaiJingDaoDu(dateStr, "国内四大证券报纸、重要财经媒体头版头条内容精华摘要");
+        return getSpecialNewFromAllType(dateStr, "国内四大证券报纸、重要财经媒体头版头条内容精华摘要");
     }
 
     public static SimpleNewEm getFourPaperNewsOf(DateTime date) {

@@ -52,7 +52,7 @@ public class CrawlerChainEm {
         crawlerChainEm.addSynCrawler(new NewsFeedsCrawlerEm()); // 新闻联播集锦
         crawlerChainEm.addSynCrawler(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
-        // 基本列表
+//         基本列表
         crawlerChainEm.addSynCrawler(new StockListEm());
         crawlerChainEm.addSynCrawler(new IndexListEm());
         crawlerChainEm.addSynCrawler(new BkListEm());

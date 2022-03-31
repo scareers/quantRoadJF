@@ -2,6 +2,7 @@ package com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.pandasdummy.DataFrameS;
@@ -44,6 +45,7 @@ public class CompanyMajorIssuesCrawlerEm extends CrawlerEm {
 
         try {
             for (SimpleNewEm saveBean : this.initLastTimeFetchSaveBeansExpect500()) {
+
                 if (!saveBean.isCompanyMajorIssues()) { // 是重大事项
                     continue;
                 }
@@ -54,6 +56,7 @@ public class CompanyMajorIssuesCrawlerEm extends CrawlerEm {
                         tableName,
                         dateStr);
                 DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
+
                 int count = Integer.parseInt(dataFrame.get(0, 0).toString());
                 if (count == 0) {
                     // 首次解析保存
@@ -133,6 +136,10 @@ public class CompanyMajorIssuesCrawlerEm extends CrawlerEm {
      * @throws Exception
      */
     protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
-        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+        HashSet<SimpleNewEm> simpleNewEms = new HashSet<>(
+                EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+        simpleNewEms.addAll(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE, 520));
+        // @key: 两种都找
+        return simpleNewEms;
     }
 }

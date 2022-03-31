@@ -203,18 +203,20 @@ public class SimpleNewEmDao {
      */
 
     /**
-     * 财经导读中, 获取4类特殊新闻对象
+     * 财经导读或者资讯要闻中, 获取4类特殊新闻对象
      *
      * @param dateStr 形如 "x月y日", 不需要标准2位
      * @param prefix  标题前缀即可
      * @return
      */
-    public static SimpleNewEm getSpecialNewFromCaiJingDaoDu(String dateStr, String prefix) {
+    public static SimpleNewEm getSpecialNewFromAllType(String dateStr, String prefix) {
+
         Session session = sessionFactory.openSession();
-        String hql = "FROM SimpleNewEm E WHERE E.type = :type and E.title like :title"; // 访问发布时间在区间内的新闻列表,
+        // E.type = :type and 取消限制
+        String hql = "FROM SimpleNewEm E WHERE  E.title like :title"; // 访问发布时间在区间内的新闻列表,
         // 类型==1, 即财经导读
         Query query = session.createQuery(hql);
-        query.setParameter("type", SimpleNewEm.CAI_JING_DAO_DU_TYPE); // 注意类型
+        //query.setParameter("type", SimpleNewEm.CAI_JING_DAO_DU_TYPE); // 注意类型
         query.setParameter("title", StrUtil.format("{}{}%", dateStr, prefix));
         List beans = query.list();
         SimpleNewEm res = null;

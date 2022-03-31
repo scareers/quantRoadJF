@@ -77,20 +77,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
         jScrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS); // 一般都需要
         jScrollPane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS); // 一般都需要
-        buttonFlushAll = ButtonFactory.getButton("全量刷新");
-        buttonFlushAll.setMaximumSize(new Dimension(60, 16));
-        IndustryConceptPanelForPlan panelForPlan = this;
-        buttonFlushAll.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                panelForPlan.update(); // 点击后 表格全量更新 df数据,
-            }
-        });
-
-        buttonContainer = new JPanel();
-        buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
-        buttonContainer.setBorder(null);
-        buttonContainer.add(buttonFlushAll);
+        initButtons();
 
         // 包装一下, 将按钮放于表格上方
         JPanel panelTemp = new JPanel();
@@ -105,6 +92,71 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
     }
 
+    private void initButtons() {
+        // 1.全量刷新显示
+        buttonFlushAll = ButtonFactory.getButton("全量刷新");
+        buttonFlushAll.setMaximumSize(new Dimension(60, 16));
+        IndustryConceptPanelForPlan panelForPlan = this;
+        buttonFlushAll.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                panelForPlan.update(); // 点击后 表格全量更新 df数据,
+            }
+        });
+
+        // 2.单个正在编辑的bean保存
+        JButton saveEditingBeanButton = ButtonFactory.getButton("保存编辑");
+        saveEditingBeanButton.setMaximumSize(new Dimension(60, 16));
+        saveEditingBeanButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                IndustryConceptThsOfPlanEditorPanel.tryAutoSaveEditedBean(panelForPlan.editorPanel, "概念行业");
+            }
+        });
+
+        // 3.批量新增: 将以各种方式, 批量增加bean; 例如: 昨日全部, 或者 行业全列表, 概念全列表
+        // @noti: 该功能对话框, 可选择将 "合理的可编辑字段", 初始赋值为 历史中有记录的最新一个相同行业/概念bean 的对应字段
+        // 这样省去大量相同的自定义过程; 只需要修改不同的
+        // 这些可变字段不会被复制过来: 预判相关4字段
+        // @noti: 将自动设置关联trend
+        JButton addBeansBatchButton = ButtonFactory.getButton("批量添加");
+        addBeansBatchButton.setMaximumSize(new Dimension(60, 16));
+        addBeansBatchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 弹出对话框, 批量选择, 新增今日 bean 列表到数据库; 随后调用 update() 刷新显示
+
+
+                // 0.获取今日已有bean, 以下列表都将不显示今天已存在的bean, 排除掉
+                List<IndustryConceptThsOfPlan> existsBeanList = IndustryConceptThsOfPlanDao
+                        .getBeanListForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
+
+                // 1.读取概念列表, 二级/三级行业列表, 仅带涨跌幅, 和二三级行业 字段, 方便排序
+
+                // todo: 补齐
+                // 2.读取昨日所有已存在bean, 其名称和类型, 将被默认添加到 今日列表
+
+
+                // 3. 同样, 添加/删除 按钮, 确定保存按钮.
+
+
+
+
+                panelForPlan.update(); // 更新列表,使得 flushWithRelatedTrends 访问 beanMap有效
+                IndustryConceptThsOfPlanEditorPanel.flushWithRelatedTrends(panelForPlan.editorPanel);
+                panelForPlan.editorPanel.update(); // 将更新显示自动设置字段
+                panelForPlan.update(); // 更新显示
+            }
+        });
+
+
+        buttonContainer = new JPanel();
+        buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
+        buttonContainer.setBorder(null);
+        buttonContainer.add(buttonFlushAll);
+        buttonContainer.add(saveEditingBeanButton);
+    }
+
     /**
      * 全量 从数据库读取 bean列表 以更新 表格显示
      * 需要设置属性 beanMap, 以及 newDf 两大属性
@@ -113,14 +165,8 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
      */
     public void flushBeanMapAndShowDf() {
         List<IndustryConceptThsOfPlan> newsForReviseByType;
-        try {
-            newsForReviseByType =
-                    IndustryConceptThsOfPlanDao.getBeanListForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
-        } catch (SQLException e) {
-            e.printStackTrace();
-            // 此时使用老数据,没有老数据将不update
-            return;
-        }
+        newsForReviseByType =
+                IndustryConceptThsOfPlanDao.getBeanListForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
         ConcurrentHashMap<Long, IndustryConceptThsOfPlan> tempMap = new ConcurrentHashMap<>();
         newsForReviseByType.forEach(value -> tempMap.put(value.getId(), value));
         this.beanMap = tempMap;
@@ -279,6 +325,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             dummyIndex++;
         }
     }
+
     public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身
         mainDisplayWindow.setCenterPanel(this);
