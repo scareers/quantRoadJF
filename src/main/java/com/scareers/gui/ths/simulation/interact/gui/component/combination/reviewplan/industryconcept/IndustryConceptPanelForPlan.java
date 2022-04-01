@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
@@ -416,12 +417,33 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             // 将自动按照最后曾存在bean,初始化某些字段,见下; 因耗时所以显示进度条. 完成后关闭对话框.
             @Override
             public void actionPerformed(ActionEvent e) {
-                DefaultListModel model = (DefaultListModel) newBeanList.getModel();
-                HashSet<IndustryConceptSimple> beansFromRightList = new HashSet<>();
-                for (int i = 0; i < model.getSize(); i++) {
-                    beansFromRightList.add((IndustryConceptSimple) model.getElementAt(i));
-                }
+                JDialog dialog = new JDialog(TraderGui.INSTANCE, "生成中", true);
+                JPanel jPanel1 = new JPanel();
+                jPanel1.setLayout(new BorderLayout());
+                JProgressBar jProgressBar = new JProgressBar();
+                jProgressBar.setMaximum(100);
+                jProgressBar.setMinimum(0);
+                jPanel1.add(jProgressBar, BorderLayout.CENTER);
+                dialog.setContentPane(jPanel1);
+                dialog.setLocationRelativeTo(dialog.getParent());
+                dialog.setVisible(true);// 进度条对话框显示
 
+                DefaultListModel model = (DefaultListModel) newBeanList.getModel();
+                int total = model.getSize(); // 进度和遍历
+                for (int i = 0; i < total; i++) {
+                    IndustryConceptSimple element = (IndustryConceptSimple) model.getElementAt(i);
+                    IndustryConceptThsOfPlan.Type type;
+                    if ("行业".equals(element.getType())) {
+                        type = IndustryConceptThsOfPlan.Type.INDUSTRY;
+                    } else { // "概念".equals(element.getType())
+                        type = IndustryConceptThsOfPlan.Type.CONCEPT;
+                    }
+                    IndustryConceptThsOfPlan newBean = IndustryConceptThsOfPlanDao
+                            .getOrInitBeanForPlan(element.getName(),
+                                    PlanReviewDateTimeDecider.getUniqueDatetime(), type);
+
+                    // 读取历史上倒数1
+                }
 
 
             }

@@ -69,7 +69,7 @@ public class IndustryConceptThsOfPlanDao {
      * @param dateStr
      * @return
      */
-    public static List<IndustryConceptThsOfPlan> getBeanListForPlan(Date equivalenceNow)  {
+    public static List<IndustryConceptThsOfPlan> getBeanListForPlan(Date equivalenceNow) {
         String dateStrForPlan = decideDateStrForPlan(equivalenceNow);
         return getBeansByDate(dateStrForPlan);
     }
@@ -160,8 +160,7 @@ public class IndustryConceptThsOfPlanDao {
      * @param equivalenceNow 等价的now时间! 不默认使用 真实now
      */
     public static IndustryConceptThsOfPlan getOrInitBeanForPlan(String industryOrConceptName, Date equivalenceNow,
-                                                                IndustryConceptThsOfPlan.Type type)
-            throws SQLException {
+                                                                IndustryConceptThsOfPlan.Type type) {
         String dateStr = decideDateStrForPlan(equivalenceNow);
         //String dateStr = DateUtil.today();
         return getOrInitBeanByDateStr(industryOrConceptName, dateStr, type);
@@ -201,7 +200,7 @@ public class IndustryConceptThsOfPlanDao {
     }
 
     @SneakyThrows
-    public static String decideDateStrForPlan(Date equivalenceNow)  {
+    public static String decideDateStrForPlan(Date equivalenceNow) {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) {
