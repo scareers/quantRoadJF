@@ -180,7 +180,6 @@ public class IndustryConceptThsOfPlanDao {
     }
 
 
-
     /**
      * 批量保存或者更新bean; 遍历, 但一定数量后(一批), 立即保存并清除缓存;
      *
@@ -212,7 +211,30 @@ public class IndustryConceptThsOfPlanDao {
     public static void deleteBean(IndustryConceptThsOfPlan bean) {
         Session session = sessionFactory.openSession();
         Transaction transaction = session.beginTransaction();
-        session.saveOrUpdate(bean);
+        session.delete(bean);
+        transaction.commit();
+        session.close();
+    }
+
+    /**
+     * 删除多个bean
+     *
+     * @param id
+     * @return
+     * @noti 某些未序列化字段, 将不被保存到数据库;
+     */
+    public static void deleteBeanBatch(List<IndustryConceptThsOfPlan> beans) {
+        Session session = sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+        int i = 1;
+        for (IndustryConceptThsOfPlan bean : beans) {
+            session.delete(bean);
+            i++;
+            if (i % 10 == 0) {
+                session.flush(); // 保持同步数据库
+                session.clear(); // 保持清除缓存内存占用
+            }
+        }
         transaction.commit();
         session.close();
     }
