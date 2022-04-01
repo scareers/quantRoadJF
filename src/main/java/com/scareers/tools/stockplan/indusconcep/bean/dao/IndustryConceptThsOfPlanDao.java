@@ -201,7 +201,7 @@ public class IndustryConceptThsOfPlanDao {
     }
 
     @SneakyThrows
-    private static String decideDateStrForPlan(Date equivalenceNow)  {
+    public static String decideDateStrForPlan(Date equivalenceNow)  {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) {
