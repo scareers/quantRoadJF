@@ -82,7 +82,7 @@ public class IndustryConceptThsOfPlan {
         Double chgP = null;
         try {
             chgP = Double.valueOf(dfTemp.get(dfTemp.length() - 1, "chgP").toString());
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
         }
         bean.setChgP(chgP);
         bean.setGeneratedTime(DateUtil.date());

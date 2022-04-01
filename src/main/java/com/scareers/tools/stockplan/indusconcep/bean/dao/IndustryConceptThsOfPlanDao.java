@@ -32,34 +32,84 @@ public class IndustryConceptThsOfPlanDao {
     private static SessionFactory sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
 
     public static void main(String[] args) throws SQLException {
-        IndustryConceptThsOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.CONCEPT);
-        Console.log(bean);
+//
+        List<IndustryConceptThsOfPlan> beanListByNameAndType = getBeanListByNameAndType("三胎概念", "概念", "2022-04-01",
+                null);
+        Console.log(beanListByNameAndType);
+        Console.log(beanListByNameAndType.size());
 
-        IndustryConceptThsOfPlan bean2 = getOrInitBeanForPlan("电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.INDUSTRY);
-        Console.log(bean2);
 
-        IndustryConceptThsOfPlan bean3 = getOrInitBeanForPlan("绿色电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.CONCEPT);
-        Console.log(bean3);
-
-        IndustryConceptThsOfPlan bean4 = getOrInitBeanForPlan("俄乌冲突概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.CONCEPT);
-        Console.log(bean4);
-
-        IndustryConceptThsOfPlan bean5 = getOrInitBeanForPlan("农业种植", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.CONCEPT);
-        Console.log(bean5);
-
-        IndustryConceptThsOfPlan bean6 = getOrInitBeanForPlan("玉米", PlanReviewDateTimeDecider.getUniqueDatetime(),
-                IndustryConceptThsOfPlan.Type.CONCEPT);
-        Console.log(bean6);
+//        IndustryConceptThsOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        Console.log(bean);
+//
+//        IndustryConceptThsOfPlan bean2 = getOrInitBeanForPlan("电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.INDUSTRY);
+//        Console.log(bean2);
+//
+//        IndustryConceptThsOfPlan bean3 = getOrInitBeanForPlan("绿色电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        Console.log(bean3);
+//
+//        IndustryConceptThsOfPlan bean4 = getOrInitBeanForPlan("俄乌冲突概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        Console.log(bean4);
+//
+//        IndustryConceptThsOfPlan bean5 = getOrInitBeanForPlan("农业种植", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        Console.log(bean5);
+//
+//        IndustryConceptThsOfPlan bean6 = getOrInitBeanForPlan("玉米", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        Console.log(bean6);
 
 //        List<IndustryConceptThsOfPlan> beans = getBeanListForPlan(DateUtil.date());
 //        Console.log(beans);
 //        DataFrame<Object> dataFrame = IndustryConceptThsOfPlan.buildDfFromBeanList(beans);
 //        Console.log(dataFrame);
+    }
+
+    /**
+     * 根据name和type, 获取所有结果, dateStr倒序排列; 可给定 dateStrLimit 则取 dateStr >=它; 若null则全部
+     * 无结果返回空列表
+     *
+     * @param name
+     * @param type       行业 或者 概念
+     * @param dateStrMin 可null, 否则标准日期字符串
+     * @param dateStrMax 可null, 否则标准日期字符串; 日期上限, 不包含! 前包后不包
+     * @return
+     */
+    public static List<IndustryConceptThsOfPlan> getBeanListByNameAndType(String name, String type,
+                                                                          String dateStrMin, String dateStrMax) {
+        Session session = SimpleNewEmDao.sessionFactory.openSession();
+        String hql;
+        if (dateStrMax == null) {
+            dateStrMax = "2200-01-01";
+        }
+        if (dateStrMin == null) {
+            hql = "FROM IndustryConceptThsOfPlan E WHERE E.type=:type and E.name=:name and dateStr<:dateStrMax order " +
+                    "by dateStr " +
+                    "desc ";
+        } else {
+            hql = "FROM IndustryConceptThsOfPlan E WHERE E.type=:type and E.name=:name and " +
+                    "dateStr>=:dateStrMin and dateStr<:dateStrMax order by dateStr desc ";
+        }
+        Query query = session.createQuery(hql);
+        query.setParameter("type", type);
+        query.setParameter("name", name);
+        query.setParameter("dateStrMax", dateStrMax);
+        if (dateStrMin != null) {
+            query.setParameter("dateStrMin", dateStrMin);
+        }
+        List beans = query.list();
+        List<IndustryConceptThsOfPlan> res = new ArrayList<>();
+        for (Object bean : beans) {
+            IndustryConceptThsOfPlan bean1 = (IndustryConceptThsOfPlan) bean;
+            bean1.initTransientAttrsWhenBeanFromDb();
+            res.add(bean1);
+        }
+        session.close();
+        return res;
     }
 
 
@@ -73,6 +123,7 @@ public class IndustryConceptThsOfPlanDao {
         String dateStrForPlan = decideDateStrForPlan(equivalenceNow);
         return getBeansByDate(dateStrForPlan);
     }
+
 
     /**
      * 给定日期, 返回当日所有 概念,行业 bean
@@ -128,6 +179,8 @@ public class IndustryConceptThsOfPlanDao {
         session.close();
     }
 
+
+
     /**
      * 批量保存或者更新bean; 遍历, 但一定数量后(一批), 立即保存并清除缓存;
      *
@@ -145,6 +198,21 @@ public class IndustryConceptThsOfPlanDao {
                 session.clear(); // 保持清除缓存内存占用
             }
         }
+        transaction.commit();
+        session.close();
+    }
+
+    /**
+     * 删除单个bean
+     *
+     * @param id
+     * @return
+     * @noti 某些未序列化字段, 将不被保存到数据库;
+     */
+    public static void deleteBean(IndustryConceptThsOfPlan bean) {
+        Session session = sessionFactory.openSession();
+        Transaction transaction = session.beginTransaction();
+        session.saveOrUpdate(bean);
         transaction.commit();
         session.close();
     }

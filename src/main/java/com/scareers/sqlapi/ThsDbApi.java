@@ -59,7 +59,7 @@ public class ThsDbApi {
 //        Console.log(getConceptByNameAndDate("三胎概念", "2022-03-28"));
 //        Console.log(getConceptAllRecordByName("三胎概念"));
 
-        List<String> conceptNameList = getConceptNameList("2022-04-01");
+        List<String> conceptNameList = getConceptNameList("2022-04-06");
         Console.log(conceptNameList);
         Console.log(conceptNameList.size());
 
@@ -101,22 +101,15 @@ public class ThsDbApi {
      * @return 读取同花顺概念列表, 返回概念名称列表; 失败返回null ; 已经去重和去null
      */
     public static List<String> getConceptNameList(String dateStr) {
-        String sql = StrUtil.format("select name from concept_list where dateStr='{}' order by chgP desc", dateStr);
+        String sql = StrUtil.format("select name,chgP from concept_list where dateStr='{}' order by chgP desc", dateStr);
+
         DataFrame<Object> dataFrame;
         try {
             dataFrame = DataFrame.readSql(connection, sql);
         } catch (SQLException e) {
             return null;
         }
-
-        List<String> names = DataFrameS.getColAsStringList(dataFrame, "name");
-        HashSet<String> nameSet = new HashSet<>();
-        for (String name : names) {
-            if (name != null) {
-                nameSet.add(name);
-            }
-        }
-        return new ArrayList<>(nameSet);
+        return DataFrameS.getColAsStringList(dataFrame, "name");
     }
 
 
@@ -294,11 +287,13 @@ public class ThsDbApi {
 
     /**
      * 2级行业列表, 涨跌幅排序
+     *
      * @param dateStr
      * @return
      */
     public static List<String> getIndustryNameListLevel2(String dateStr) {
-        String sql = StrUtil.format("select name from industry_list where dateStr='{}' and industryType='二级行业' order " +
+        String sql = StrUtil.format("select name,chgP from industry_list where dateStr='{}' and industryType='二级行业' " +
+                "order " +
                 "by" +
                 " " +
                 "chgP desc", dateStr);
@@ -308,24 +303,17 @@ public class ThsDbApi {
         } catch (SQLException e) {
             return null;
         }
-
-        List<String> names = DataFrameS.getColAsStringList(dataFrame, "name");
-        HashSet<String> nameSet = new HashSet<>();
-        for (String name : names) {
-            if (name != null) {
-                nameSet.add(name);
-            }
-        }
-        return new ArrayList<>(nameSet);
+        return DataFrameS.getColAsStringList(dataFrame, "name");
     }
 
     /**
      * 3级行业列表, 涨跌幅排序
+     *
      * @param dateStr
      * @return
      */
     public static List<String> getIndustryNameListLevel3(String dateStr) {
-        String sql = StrUtil.format("select name from industry_list where dateStr='{}' and industryType='三级行业' order " +
+        String sql = StrUtil.format("select name,chgP from industry_list where dateStr='{}' and industryType='三级行业' order " +
                 "by" +
                 " " +
                 "chgP desc", dateStr);
@@ -335,15 +323,7 @@ public class ThsDbApi {
         } catch (SQLException e) {
             return null;
         }
-
-        List<String> names = DataFrameS.getColAsStringList(dataFrame, "name");
-        HashSet<String> nameSet = new HashSet<>();
-        for (String name : names) {
-            if (name != null) {
-                nameSet.add(name);
-            }
-        }
-        return new ArrayList<>(nameSet);
+        return DataFrameS.getColAsStringList(dataFrame, "name");
     }
 
     /**

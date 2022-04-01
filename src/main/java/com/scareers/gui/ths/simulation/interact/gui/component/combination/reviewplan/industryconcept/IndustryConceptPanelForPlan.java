@@ -2,6 +2,9 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
@@ -15,6 +18,7 @@ import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
@@ -31,6 +35,7 @@ import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.List;
@@ -163,17 +168,43 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 List<IndustryConceptSimple> industryLevel3s = industryNameListLevel3.stream()
                         .map(value -> new IndustryConceptSimple(value, "行业")).collect(Collectors.toList());
 
-                // 对话框, tab面板, 3tab, 概念,23级行业; 添加时自行判定是否已经存在于今日bean和右方列表
+                // 3.对话框显示, tab面板, 3tab, 概念,23级行业; 添加时自行判定是否已经存在于今日bean和右方列表
                 // 按钮"添加所有昨日" 则自动读取昨日bean, 全部添加
+                JDialog dialog = new JDialog(TraderGui.INSTANCE, "添加新行业/概念");
+                // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        dialog.dispose();
+                    }
+                }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+                //创建JDialog
+                JPanel panel = new JPanel();
+                panel.setLayout(new BorderLayout());
+                dialog.setContentPane(panel);
 
-                // 3. 同样, 添加/删除 按钮, 确定保存按钮.
+                JPanel addBeansPanel = initAddBeansPanel(concepts, industryLevel2s, industryLevel3s,
+                        existsSimpleBeans, dialog);
 
+                //添加控件到对话框
+                JScrollPane jScrollPane = new JScrollPane();
+                jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                BasicScrollBarUIS
+                        .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+                jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                jScrollPane.setViewportView(addBeansPanel);
+                panel.add(addBeansPanel, BorderLayout.CENTER);
 
-                panelForPlan.update(); // 更新列表,使得 flushWithRelatedTrends 访问 beanMap有效
-                IndustryConceptThsOfPlanEditorPanel.flushWithRelatedTrends(panelForPlan.editorPanel);
-                panelForPlan.editorPanel.update(); // 将更新显示自动设置字段
-                panelForPlan.update(); // 更新显示
+                //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                dialog.setSize(1000, 800);
+//                    dialog.setLocation();
+                dialog.setLocationRelativeTo(dialog.getParent());
+                dialog.setVisible(true);
+
             }
         });
 
@@ -183,6 +214,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         buttonContainer.setBorder(null);
         buttonContainer.add(buttonFlushAll);
         buttonContainer.add(saveEditingBeanButton);
+        buttonContainer.add(addBeansBatchButton);
     }
 
     /**
@@ -193,10 +225,11 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
      * @param industryLevel3s
      * @return
      */
-    private JPanel initAddBeansDialog(List<IndustryConceptSimple> concepts,
-                                      List<IndustryConceptSimple> industryLevel2s,
-                                      List<IndustryConceptSimple> industryLevel3s,
-                                      Set<IndustryConceptSimple> existsSimpleBeans // 今日已存在的bean, 将不被添加
+    private JPanel initAddBeansPanel(List<IndustryConceptSimple> concepts,
+                                     List<IndustryConceptSimple> industryLevel2s,
+                                     List<IndustryConceptSimple> industryLevel3s,
+                                     Set<IndustryConceptSimple> existsSimpleBeans, // 今日已存在的bean, 将不被添加
+                                     JDialog parentDialog
     ) {
 
         JPanel jPanel = new JPanel();
@@ -204,6 +237,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
         // 1.左侧tabpane
         JTabbedPane jTabbedPaneLeft = new JTabbedPane();
+        jTabbedPaneLeft.setPreferredSize(new Dimension(440, 800));
 
         // 1.1. 概念列表
         DefaultListModel model1 = new DefaultListModel();
@@ -211,7 +245,6 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         JXList jxListOfConceptList = new JXList(model1);
         jxListOfConceptList.setForeground(Color.orange);
         jxListOfConceptList.setBackground(COLOR_THEME_MINOR);
-
 
         JScrollPane jScrollPane1 = new JScrollPane();
         jScrollPane1.getViewport().setBackground(COLOR_THEME_MINOR);
@@ -221,7 +254,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         jScrollPane1.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane1.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPane1.setViewportView(jxListOfConceptList);
-        jScrollPane1.setPreferredSize(new Dimension(440, 800));
+//        jScrollPane1.setPreferredSize(new Dimension(440, 800));
         try {
             jxListOfConceptList.setSelectedIndex(0);
         } catch (Exception e) {
@@ -229,7 +262,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
         // 1.2. 二级行业列表: 逻辑一模一样
         DefaultListModel model2 = new DefaultListModel();
-        model1.addAll(industryLevel2s);
+        model2.addAll(industryLevel2s);
         JXList jxListOfIndustryListLevel2 = new JXList(model2);
         jxListOfIndustryListLevel2.setForeground(Color.orange);
         jxListOfIndustryListLevel2.setBackground(COLOR_THEME_MINOR);
@@ -242,7 +275,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         jScrollPane2.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane2.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPane2.setViewportView(jxListOfIndustryListLevel2);
-        jScrollPane2.setPreferredSize(new Dimension(440, 800));
+//        jScrollPane2.setPreferredSize(new Dimension(440, 800));
         try {
             jxListOfIndustryListLevel2.setSelectedIndex(0);
         } catch (Exception e) {
@@ -251,7 +284,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         // 1.3. 三级行业
         // 1.2. 二级行业列表: 逻辑一模一样
         DefaultListModel model3 = new DefaultListModel();
-        model1.addAll(industryLevel3s);
+        model3.addAll(industryLevel3s);
         JXList jxListOfIndustryListLevel3 = new JXList(model3);
         jxListOfIndustryListLevel3.setForeground(Color.orange);
         jxListOfIndustryListLevel3.setBackground(COLOR_THEME_MINOR);
@@ -264,16 +297,16 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         jScrollPane3.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         jScrollPane3.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPane3.setViewportView(jxListOfIndustryListLevel3);
-        jScrollPane3.setPreferredSize(new Dimension(440, 800));
+//        jScrollPane3.setPreferredSize(new Dimension(440, 800));
         try {
             jxListOfIndustryListLevel3.setSelectedIndex(0);
         } catch (Exception e) {
         }
 
         // 1.4. 添加3个tab
-        jTabbedPaneLeft.addTab("二级行业", jxListOfIndustryListLevel2);
-        jTabbedPaneLeft.addTab("三级行业", jxListOfIndustryListLevel3);
-        jTabbedPaneLeft.addTab("所有概念", jxListOfConceptList);
+        jTabbedPaneLeft.addTab("所有概念", jScrollPane1);
+        jTabbedPaneLeft.addTab("二级行业", jScrollPane2);
+        jTabbedPaneLeft.addTab("三级行业", jScrollPane3);
 
 
         // 2.两个按钮, 添加 和 删除按钮
@@ -312,7 +345,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         }
 
         // 4.添加3大部分
-        jPanel.add(jScrollPane2, BorderLayout.WEST);
+        jPanel.add(jTabbedPaneLeft, BorderLayout.WEST);
         jPanel.add(buttonsPanel, BorderLayout.CENTER);
         jPanel.add(jScrollPaneRight, BorderLayout.EAST);
 
@@ -322,39 +355,49 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // 1.当前左侧list
-                Component tabComponentAt = jTabbedPaneLeft.getTabComponentAt(jTabbedPaneLeft.getSelectedIndex());
-                if (!(tabComponentAt instanceof JXList)) {
+                Component tabComponentAt = jTabbedPaneLeft.getSelectedComponent();
+                int selectedIndex = jTabbedPaneLeft.getSelectedIndex();
+                JXList currentJXList;
+                if (selectedIndex == 0) {
+                    currentJXList = jxListOfConceptList;
+                } else if (selectedIndex == 1) {
+                    currentJXList = jxListOfIndustryListLevel2;
+                } else if (selectedIndex == 2) {
+                    currentJXList = jxListOfIndustryListLevel3;
+                } else {
                     return;
                 }
-                JXList currentJXList = (JXList) tabComponentAt;
 
                 // 2.得到当前选择bean
-                Object selectedValue0 = currentJXList.getSelectedValue();
-                if (selectedValue0 == null) {
-                    return;
+                Object[] selectedValues0 = currentJXList.getSelectedValues();
+
+                IndustryConceptSimple[] selectedValues = new IndustryConceptSimple[selectedValues0.length];
+                for (int i = 0; i < selectedValues0.length; i++) {
+                    selectedValues[i] = (IndustryConceptSimple) (selectedValues0[i]);
                 }
-                IndustryConceptSimple selectedValue = (IndustryConceptSimple) selectedValue0; // 当前选择对象
 
 
                 // 判定当前选择对象, 是否已存在今日已存在bean集合, 或者已存在右边列表
                 // 3.是否已存在今日bean
-
-                if (existsSimpleBeans.contains(selectedValue)) {
-                    ManiLog.put("所选bean已生成,不可再次生成");
-                    return;
-                }
                 // 4.是否在右侧已选择
                 DefaultListModel model = (DefaultListModel) newBeanList.getModel();
                 HashSet<IndustryConceptSimple> beansFromRightList = new HashSet<>();
                 for (int i = 0; i < model.getSize(); i++) {
                     beansFromRightList.add((IndustryConceptSimple) model.getElementAt(i));
                 }
-                if (beansFromRightList.contains(selectedValue)) {
-                    ManiLog.put("所选bean已被选择,不可重复添加");
+                // 5.添加逻辑
+                for (IndustryConceptSimple selectedValue : selectedValues) {
+                    if (existsSimpleBeans.contains(selectedValue)) {
+                        ManiLog.put(StrUtil.format("所选bean已生成,不可再次生成: {}", selectedValue.toString()));
+                        continue;
+                    }
+                    if (beansFromRightList.contains(selectedValue)) {
+                        ManiLog.put(StrUtil.format("所选bean已被选择,不可重复添加: {}", selectedValue.toString()));
+                        continue;
+                    }
+                    model.addElement(selectedValue);
                 }
 
-                // 5.添加逻辑
-                model.addElement(selectedValue);
             }
         });
 
@@ -411,39 +454,94 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 }
             }
         });
-
+        IndustryConceptPanelForPlan panelForPlan = this;
         saveButton.addActionListener(new ActionListener() {
             // 保存右侧列表,
             // 将自动按照最后曾存在bean,初始化某些字段,见下; 因耗时所以显示进度条. 完成后关闭对话框.
+
             @Override
             public void actionPerformed(ActionEvent e) {
-                JDialog dialog = new JDialog(TraderGui.INSTANCE, "生成中", true);
+                JDialog dialog = new JDialog(parentDialog, "生成中", true);
                 JPanel jPanel1 = new JPanel();
                 jPanel1.setLayout(new BorderLayout());
                 JProgressBar jProgressBar = new JProgressBar();
                 jProgressBar.setMaximum(100);
                 jProgressBar.setMinimum(0);
+                jProgressBar.setValue(0);
+                jProgressBar.setStringPainted(true);
+
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    @SneakyThrows
+                    public void run() {
+                        DefaultListModel model = (DefaultListModel) newBeanList.getModel();
+                        int total = model.getSize(); // 进度和遍历
+
+                        Date uniqueDatetime = PlanReviewDateTimeDecider.getUniqueDatetime();
+                        String stdDateStr = IndustryConceptThsOfPlanDao.decideDateStrForPlan(uniqueDatetime);
+                        // 前10个交易日内的同名bean, 设置某些属性; 若获取全部则随着时间, 太多了太慢
+                        String pre10DateStr = EastMoneyDbApi.getPreNTradeDateStrict(stdDateStr, 10);
+
+                        for (int i = 0; i < total; i++) {
+                            IndustryConceptSimple element = (IndustryConceptSimple) model.getElementAt(i);
+                            IndustryConceptThsOfPlan.Type type;
+                            if ("行业".equals(element.getType())) {
+                                type = IndustryConceptThsOfPlan.Type.INDUSTRY;
+                            } else { // "概念".equals(element.getType())
+                                type = IndustryConceptThsOfPlan.Type.CONCEPT;
+                            }
+                            List<IndustryConceptThsOfPlan> oldBeans = IndustryConceptThsOfPlanDao
+                                    .getBeanListByNameAndType("三胎概念", "概念", pre10DateStr, stdDateStr); // 曾经bean列表
+                            IndustryConceptThsOfPlan newBean = IndustryConceptThsOfPlanDao
+                                    .getOrInitBeanForPlan(element.getName(), uniqueDatetime, type); // 已初步保存新bean
+
+                            // @key: 对简单可编辑属性 赋值
+                            if (oldBeans.size() != 0) { // 存在历史
+                                // @key: 主要是trend 必须自行设定, 以及预判4字段
+
+                                IndustryConceptThsOfPlan lastBean = oldBeans.get(0); // 倒序, 第一个即最新
+
+                                newBean.setPricePositionLongTerm(lastBean.getPricePositionLongTerm());
+                                newBean.setPricePositionShortTerm(lastBean.getPricePositionShortTerm());
+                                newBean.setPriceTrend(lastBean.getPriceTrend());
+                                newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
+                                newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
+                                newBean.setLineType(lastBean.getLineType());
+                                newBean.setHypeReason(lastBean.getHypeReason());
+                                newBean.setHypeStartDate(lastBean.getHypeStartDate());
+                                newBean.setHypePhaseCurrent(lastBean.getHypePhaseCurrent());
+                                newBean.setSpecificDescription(lastBean.getSpecificDescription());
+
+                                newBean.setLeaderStockList(lastBean.getLeaderStockList());
+                                newBean.setLeaderStockListJsonStr(lastBean.getLeaderStockListJsonStr());
+
+                                newBean.setGoodAspects(lastBean.getGoodAspects());
+                                newBean.setBadAspects(lastBean.getBadAspects());
+                                newBean.setWarnings(lastBean.getWarnings());
+
+                                newBean.setRemark(lastBean.getRemark());
+                            }
+
+                            IndustryConceptThsOfPlanDao.saveOrUpdateBean(newBean); // 保存更新
+                            int n = (int) CommonUtil.roundHalfUP((i + 1) * 1.0 / total * 100, 0);
+                            Console.log(n);
+                            jProgressBar.setValue(n); // 进度显示
+                            // 读取历史上倒数1
+                        }
+                        panelForPlan.update();
+                        panelForPlan.editorPanel.update();
+                        ManiLog.put("批量添加完成!");
+                        dialog.dispose();
+                        parentDialog.dispose();
+                    }
+                }, true);
+
+
                 jPanel1.add(jProgressBar, BorderLayout.CENTER);
                 dialog.setContentPane(jPanel1);
+                dialog.setSize(500, 70);
                 dialog.setLocationRelativeTo(dialog.getParent());
                 dialog.setVisible(true);// 进度条对话框显示
-
-                DefaultListModel model = (DefaultListModel) newBeanList.getModel();
-                int total = model.getSize(); // 进度和遍历
-                for (int i = 0; i < total; i++) {
-                    IndustryConceptSimple element = (IndustryConceptSimple) model.getElementAt(i);
-                    IndustryConceptThsOfPlan.Type type;
-                    if ("行业".equals(element.getType())) {
-                        type = IndustryConceptThsOfPlan.Type.INDUSTRY;
-                    } else { // "概念".equals(element.getType())
-                        type = IndustryConceptThsOfPlan.Type.CONCEPT;
-                    }
-                    IndustryConceptThsOfPlan newBean = IndustryConceptThsOfPlanDao
-                            .getOrInitBeanForPlan(element.getName(),
-                                    PlanReviewDateTimeDecider.getUniqueDatetime(), type);
-
-                    // 读取历史上倒数1
-                }
 
 
             }
