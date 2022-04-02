@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
+import cn.hutool.json.JSONUtil;
 import com.alee.managers.animation.easing.Back;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -31,6 +32,9 @@ import java.util.stream.Collectors;
  */
 public class WenCaiApi {
     public static void main(String[] args) throws Exception {
+        Console.log(wenCaiQueryResult("同花顺行业指数;涨幅>5%"));
+
+
 //        TimeInterval timer = DateUtil.timer();
 //        timer.start();
 //        Console.log(timer.intervalRestart());
@@ -45,14 +49,14 @@ public class WenCaiApi {
         //[家庭医生, 冬奥会, 数据安全, 氢能源, 建筑节能, 辅助生殖, 军工, 体育产业, 禽流感, 智能音箱, 土壤修复, 蚂蚁金服, DRG/DIP, 安防, 职业教育, 举牌, 固废处理, 消费电子, 金属锌, 天津自贸区, 自由贸易港, 京津冀一体化, 重组蛋白, 天然气, 同花顺漂亮100, 金属铜, 稀缺资源, ST板块, 两轮车, 硅能源, 上海自贸区, 养老, 云办公, 氟化工, 电子竞技, 华为海思概念股, 大豆, 中船系]
 //        Console.log(wenCaiQuery(StrUtil.format("金属铅", "金属铅")));
 
-        DataFrame<Object> dataFrame = wenCaiQuery(
-                "同花顺行业指数;涨幅;量比;成交量;总市值;流通市值;主力净量;主力净额;上涨家数;下跌家数;上涨家数/成分股总数;涨停家数;一字涨停家数;跌停家数;一字跌停家数;跌停家数/成分股总数;所属同花顺行业级别");
-
-        List<String> cols =
-                dataFrame.columns().stream().map(value -> value.toString()).collect(Collectors.toList());
-        Collections.sort(cols);
-        Console.log(cols);
-        Console.log(dataFrame.length());
+//        DataFrame<Object> dataFrame = wenCaiQuery(
+//                "同花顺行业指数;涨幅;量比;成交量;总市值;流通市值;主力净量;主力净额;上涨家数;下跌家数;上涨家数/成分股总数;涨停家数;一字涨停家数;跌停家数;一字跌停家数;跌停家数/成分股总数;所属同花顺行业级别");
+//
+//        List<String> cols =
+//                dataFrame.columns().stream().map(value -> value.toString()).collect(Collectors.toList());
+//        Collections.sort(cols);
+//        Console.log(cols);
+//        Console.log(dataFrame.length());
 //        Console.log(dataFrame);
 
 
@@ -198,6 +202,39 @@ public class WenCaiApi {
      * ]  为列表, 单项为 {}, key为表头, value为值
      */
     public static DataFrame<Object> wenCaiQuery(String question, int perPage, int page) {
+        JSONObject jsonObject = accessWenCaiApi(question, perPage, page);
+        if (jsonObject == null) {
+            return null;
+        }
+        JSONArray datas = null;
+        try {
+            datas = jsonObject.getJSONObject("data").getJSONArray("answer").getJSONObject(0)
+                    .getJSONArray("txt").getJSONObject(0)
+                    .getJSONObject("content").getJSONArray("components").getJSONObject(0).getJSONObject("data")
+                    .getJSONArray("datas");
+        } catch (Exception e) {
+            return null;
+        }
+
+        if (datas.size() == 0) {
+            return new DataFrame<Object>();
+        }
+
+        List<String> headers = new ArrayList<>(datas.getJSONObject(0).keySet());
+        DataFrame<Object> res = new DataFrame<>(headers);
+
+        for (int i = 0; i < datas.size(); i++) {
+            JSONObject jsonObject1 = datas.getJSONObject(i);
+            List<Object> row = new ArrayList<>();
+            for (String header : headers) {
+                row.add(jsonObject1.get(header));
+            }
+            res.append(row);
+        }
+        return res;
+    }
+
+    private static JSONObject accessWenCaiApi(String question, int perPage, int page) {
         String url = "http://www.iwencai.com/unifiedwap/unified-wap/v2/result/get-robot-data";
         HttpRequest request = new HttpRequest(url);
         request.setMethod(Method.POST);
@@ -230,34 +267,9 @@ public class WenCaiApi {
             e.printStackTrace();
             return null;
         }
-        JSONObject jsonObject = JSONUtilS.parseObj(body);
-        JSONArray datas = null;
-        try {
-            datas = jsonObject.getJSONObject("data").getJSONArray("answer").getJSONObject(0)
-                    .getJSONArray("txt").getJSONObject(0)
-                    .getJSONObject("content").getJSONArray("components").getJSONObject(0).getJSONObject("data")
-                    .getJSONArray("datas");
-        } catch (Exception e) {
-            return null;
-        }
-
-        if (datas.size() == 0) {
-            return new DataFrame<Object>();
-        }
-
-        List<String> headers = new ArrayList<>(datas.getJSONObject(0).keySet());
-        DataFrame<Object> res = new DataFrame<>(headers);
-
-        for (int i = 0; i < datas.size(); i++) {
-            JSONObject jsonObject1 = datas.getJSONObject(i);
-            List<Object> row = new ArrayList<>();
-            for (String header : headers) {
-                row.add(jsonObject1.get(header));
-            }
-            res.append(row);
-        }
-        return res;
+        return JSONUtilS.parseObj(body);
     }
+
 
     /**
      * 默认单页, 重试一次
@@ -266,7 +278,7 @@ public class WenCaiApi {
      * @return
      */
     public static DataFrame<Object> wenCaiQuery(String question) {
-        return wenCaiQuery(question, 1);
+        return wenCaiQuery(question, 2);
     }
 
     public static DataFrame<Object> wenCaiQuery(String question, int retry) {
@@ -274,9 +286,84 @@ public class WenCaiApi {
         int times = 0;
         while (times <= retry) {
             times++;
-
             try {
                 res = wenCaiQuery(question, 100000, 1);
+            } catch (Exception e) {
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * @return 当正常问句, 可能返回空df
+     * @key3 核心问财api, 各实用api均调用此api, 各自对表头进行部分解析!
+     * 一般而言数据量都较大, 人工智能计算也较慢, 因此问财api速度不快. 100ms - 1s 级别, 达不到毫秒级
+     * data_json["data"]["answer"][0]["txt"][0]["content"]["components"][0]["data"][
+     * "datas"
+     * ]  为列表, 单项为 {}, key为表头, value为值
+     */
+    public static WenCaiResult wenCaiQueryResult(String question, int perPage, int page) {
+        JSONObject jsonObject = accessWenCaiApi(question, perPage, page);
+        if (jsonObject == null) {
+            return null;
+        }
+        JSONObject dataNode = null;
+        try {
+            dataNode = jsonObject.getJSONObject("data").getJSONArray("answer").getJSONObject(0)
+                    .getJSONArray("txt").getJSONObject(0)
+                    .getJSONObject("content").getJSONArray("components").getJSONObject(0).getJSONObject("data");
+        } catch (Exception e) {
+            return null;
+        }
+
+        JSONArray chunksInfo = null;
+        try {
+            chunksInfo = dataNode.getJSONObject("meta").getJSONObject("extra").getJSONArray("chunks_info");
+        } catch (Exception e) {
+
+        }
+
+        JSONArray datas = null;
+        try {
+            datas = dataNode.getJSONArray("datas");
+        } catch (Exception e) {
+            return null;
+        }
+        WenCaiResult wenCaiResult = new WenCaiResult();
+        wenCaiResult.setChunksInfo(chunksInfo);
+        if (datas.size() != 0) {
+            List<String> headers = new ArrayList<>(datas.getJSONObject(0).keySet());
+            DataFrame<Object> res = new DataFrame<>(headers);
+            for (int i = 0; i < datas.size(); i++) {
+                JSONObject jsonObject1 = datas.getJSONObject(i);
+                List<Object> row = new ArrayList<>();
+                for (String header : headers) {
+                    row.add(jsonObject1.get(header));
+                }
+                res.append(row);
+            }
+            wenCaiResult.setDfResult(res);
+        } else {
+            wenCaiResult.setDfResult(new DataFrame<Object>()); //没数据, 空df,非null
+        }
+
+        return wenCaiResult;
+    }
+
+    public static WenCaiResult wenCaiQueryResult(String question) {
+        return wenCaiQueryResult(question, 2);
+    }
+
+    public static WenCaiResult wenCaiQueryResult(String question, int retry) {
+        WenCaiResult res = null;
+        int times = 0;
+        while (times <= retry) {
+            times++;
+            try {
+                res = wenCaiQueryResult(question, 100000, 1);
             } catch (Exception e) {
             }
             if (res != null) {

@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.accoun
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept.IndustryConceptPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan.NewsTabPanelForPlan;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.wencai.WenCaiApiPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.state.SellStockListAndHsStatePanel;
@@ -230,7 +231,8 @@ public class FuncTreeWindow extends FuncFrameS {
 //        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.SELL_QUEUE);
 //        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
         //GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.INDUSTRY_AND_CONCEPT);
+//        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.INDUSTRY_AND_CONCEPT);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_WENCAI_API);
         return tree;
     }
 
@@ -314,7 +316,7 @@ public class FuncTreeWindow extends FuncFrameS {
     }
 
     private void changeToWenCaiApiForPlan() {
-        IndustryConceptPanelForPlan
+        WenCaiApiPanelForPlan
                 .getInstance(this.getMainDisplayWindow())
                 .showInMainDisplayWindow();
     }

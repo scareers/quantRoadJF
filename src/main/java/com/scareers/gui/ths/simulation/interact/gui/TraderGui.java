@@ -7,6 +7,7 @@ import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
+import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -66,7 +67,12 @@ public class TraderGui extends JFrame {
     }
 
     public static void main0(String[] agrs) throws Exception {
-
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                HibernateSessionFactory.getSessionFactoryOfEastMoney();
+            }
+        }, true);
         TraderGui gui = new TraderGui();
         INSTANCE = gui;
         gui.setVisible(true);

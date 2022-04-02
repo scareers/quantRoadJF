@@ -32,7 +32,17 @@ public class JXFindBarS extends JXFindPanel {
     protected JButton findPreviousS;
 
     public JXFindBarS() {
-        this(null);
+        this(Color.red);
+    }
+
+    Color findLabelColor;
+
+    public JXFindBarS(Color findLabelColor) {
+        super(null);
+        getPatternModel().setIncremental(true);
+        getPatternModel().setWrapping(true);
+        this.setBackground(COLOR_THEME_MINOR);
+        this.findLabelColor = findLabelColor;
     }
 
 
@@ -41,6 +51,7 @@ public class JXFindBarS extends JXFindPanel {
         getPatternModel().setIncremental(true);
         getPatternModel().setWrapping(true);
         this.setBackground(COLOR_THEME_MINOR);
+        this.findLabelColor = Color.red;
     }
 
     @Override
@@ -166,7 +177,7 @@ public class JXFindBarS extends JXFindPanel {
     @Override
     protected void bindSearchLabel(Locale locale) {
         searchLabel.setText("查找 :");
-        searchLabel.setForeground(Color.red);
+        searchLabel.setForeground(this.findLabelColor);
 
         String mnemonic = getUIString(SEARCH_FIELD_MNEMONIC, locale);
         if (mnemonic != SEARCH_FIELD_MNEMONIC) {

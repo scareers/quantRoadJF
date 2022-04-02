@@ -395,10 +395,17 @@ public class CommonUtil {
         return roundHalfUP(value.doubleValue() / 10000, 2) + "万";
     }
 
-    public static String formatNumberWithSuitable(Number value) {
+    /**
+     * 可以对原值 / 一个数,
+     * @param value
+     * @param divide
+     * @return
+     */
+    public static String formatNumberWithSuitable(Number value,double divide) {
         if (value == null) {
             return "null";
         }
+        value = value.doubleValue()/divide;
         if (Math.abs(value.doubleValue()) < 10000) {
             return Double.valueOf(roundHalfUP(value.doubleValue(), 2)).toString();
         } else if (Math.abs(value.doubleValue()) < 100000000) {
@@ -407,6 +414,9 @@ public class CommonUtil {
             return formatNumberWithYi(value);
         }
 
+    }
+    public static String formatNumberWithSuitable(Number value) {
+        return formatNumberWithSuitable(value, 1.0);
     }
 
 

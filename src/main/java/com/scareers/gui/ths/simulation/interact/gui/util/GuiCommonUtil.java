@@ -150,7 +150,6 @@ public class GuiCommonUtil {
                 "<br>" +
                 "<p><font color='{}'>{}</font></p>" +
                 "</html>", color1, infoContent, color2, coreContent);
-        Console.log(coreContent);
         return res;
     }
 

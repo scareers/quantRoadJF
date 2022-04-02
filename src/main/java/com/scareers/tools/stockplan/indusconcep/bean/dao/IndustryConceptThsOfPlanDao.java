@@ -252,7 +252,6 @@ public class IndustryConceptThsOfPlanDao {
     public static IndustryConceptThsOfPlan getOrInitBeanForPlan(String industryOrConceptName, Date equivalenceNow,
                                                                 IndustryConceptThsOfPlan.Type type) {
         String dateStr = decideDateStrForPlan(equivalenceNow);
-        Console.log(dateStr);
         //String dateStr = DateUtil.today();
         return getOrInitBeanByDateStr(industryOrConceptName, dateStr, type);
     }

@@ -934,11 +934,11 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                         CommonUtil.formatNumberWithSuitable(bean.getUpPercent())));
         highLimitLineValueLabel
                 .setText(StrUtil.format("[{}, {}, {}]", bean.getHighLimitAmount(),
-                        CommonUtil.formatNumberWithSuitable(bean.getHighLimitPercent() / 100.0),
+                        CommonUtil.formatNumberWithSuitable(bean.getHighLimitPercent(), 100.0),
                         bean.getLineHighLimitAmount()));
         lowLimitLineValueLabel
                 .setText(StrUtil.format("[{}, {}, {}]", bean.getLowLimitAmount(),
-                        CommonUtil.formatNumberWithSuitable(bean.getLowLimitPercent() / 100.0),
+                        CommonUtil.formatNumberWithSuitable(bean.getLowLimitPercent(), 100.0),
                         bean.getLineLowLimitAmount()));
 
         setDateTimeOrNull(bean.getGeneratedTime(), generatedTimeValueLabel);
