@@ -98,7 +98,7 @@ public class NewAspectSummaryPanel extends DisplayPanel {
 
     private void fillBaseInfoPanel() {
         baseInfoPanel.setLayout(new GridLayout(8, 2, 1, 1)); // 3
-        baseInfoPanel.setPreferredSize(new Dimension(350, 400));
+        baseInfoPanel.setPreferredSize(new Dimension(350, 320));
         TitledBorder border = new TitledBorder("基本信息");
         border.setTitleColor(Color.red);
         baseInfoPanel.setBorder(border);
@@ -183,7 +183,7 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         JTextField jTextField = new JTextField();
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
-        jTextField.setBackground(Color.red);
+        jTextField.setBackground(Color.black);
         jTextField.setCaretColor(Color.red);
         return jTextField;
     }

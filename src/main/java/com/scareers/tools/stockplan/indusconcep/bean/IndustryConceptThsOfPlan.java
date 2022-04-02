@@ -33,7 +33,7 @@ import java.util.*;
                 @Index(name = "type_Index", columnList = "type")})
 public class IndustryConceptThsOfPlan {
     public static void main(String[] args) {
-        IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance("三胎概念", "2022-03-30", Type.CONCEPT);
+        IndustryConceptThsOfPlan bean = IndustryConceptThsOfPlan.newInstance("三胎概念", "2022-04-06", Type.CONCEPT);
         Console.log(bean);
     }
 
@@ -55,7 +55,6 @@ public class IndustryConceptThsOfPlan {
             if (dfTemp == null || dfTemp.length() == 0) {
                 dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
             }
-            Console.log(dfTemp);
             bean.setName(industryOrConceptName);
             bean.setType("行业");
             bean.setType2(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
@@ -79,12 +78,42 @@ public class IndustryConceptThsOfPlan {
         bean.setIndexCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "indexCode")));
         bean.setDateStr(dateStr); // @noti: 第二种情况, 读取结果的字符串将不等于参数日期
 
-        Double chgP = null;
-        try {
-            chgP = Double.valueOf(dfTemp.get(dfTemp.length() - 1, "chgP").toString());
-        } catch (Exception e) {
-        }
-        bean.setChgP(chgP);
+        /*
+            新增12 自动计算且不变 属性
+            Double volRate; // 量比
+            Double ddeNetAmount; // 主力净额
+            Double circulatingMarketValue; // 流通市值
+
+            Integer includeStockAmount; // 成分股数量
+            Integer upAmount; // 上涨家数
+            Double upPercent; // 上涨家数占比   // 下跌家数也没用上
+
+            Integer highLimitAmount; // 涨停数量
+            Double highLimitPercent; // 涨停占比
+            Integer lineHighLimitAmount; // 一字涨停数量
+
+            Integer lowLimitAmount; // 跌停数量
+            Double lowLimitPercent; // 跌停占比
+            Integer lineLowLimitAmount; // 一字跌停数量
+         */
+        bean.setVolRate(tryParseDoubleOfLastLine(dfTemp, "volRate"));
+        bean.setDdeNetAmount(tryParseDoubleOfLastLine(dfTemp, "ddeNetAmount"));
+        bean.setCirculatingMarketValue(tryParseDoubleOfLastLine(dfTemp, "circulatingMarketValue"));
+
+        bean.setIncludeStockAmount(tryParseIntegerOfLastLine(dfTemp, "includeStockAmount"));
+        bean.setUpAmount(tryParseIntegerOfLastLine(dfTemp, "upAmount"));
+        bean.setUpPercent(tryParseDoubleOfLastLine(dfTemp, "upPercent"));
+
+        bean.setHighLimitAmount(tryParseIntegerOfLastLine(dfTemp, "highLimitAmount"));
+        bean.setHighLimitPercent(tryParseDoubleOfLastLine(dfTemp, "highLimitPercent"));
+        bean.setLineHighLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lineHighLimitAmount"));
+
+        bean.setLowLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lowLimitAmount"));
+        bean.setLowLimitPercent(tryParseDoubleOfLastLine(dfTemp, "lowLimitPercent"));
+        bean.setLineLowLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lineLowLimitAmount"));
+
+
+        bean.setChgP(tryParseDoubleOfLastLine(dfTemp, "chgP"));
         bean.setGeneratedTime(DateUtil.date());
 
         bean.initRelationList(); // 初始化关系列表
@@ -92,9 +121,40 @@ public class IndustryConceptThsOfPlan {
         return bean; // 只有基本字段
     }
 
+    public static Double tryParseDoubleOfLastLine(DataFrame<Object> dataFrame, Object colName) {
+        try {
+            return Double.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Integer tryParseIntegerOfLastLine(DataFrame<Object> dataFrame, Object colName) {
+        try {
+            return Integer.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // 成分股列表, 相关行业列表, 相关概念列表, 均不直接显示
     public static List<String> allColForDf = Arrays
-            .asList("id", "名称", "类型", "类型2", "代码", "代码2", "日期", "涨跌幅",
+            .asList("id", "名称", "类型", "类型2", "代码", "代码2", "日期",
+                    "涨跌幅",
+                    // 新增12字段, 分列
+                    "量比",
+                    "主力净额",
+                    "流通市值",
+                    "成分股数",
+                    "上涨家数",
+                    "上涨占比",
+                    "涨停数",
+                    "涨停占比",
+                    "一字涨停",
+                    "跌停数",
+                    "跌停占比",
+                    "一字跌停",
+
                     "生成时间", "最终修改时间",
 
                     "短期位置",
@@ -131,6 +191,7 @@ public class IndustryConceptThsOfPlan {
         for (IndustryConceptThsOfPlan bean : beans) {
             List<Object> row = new ArrayList<>();
 
+
             row.add(bean.getId());
             row.add(bean.getName());
             row.add(bean.getType());
@@ -139,6 +200,22 @@ public class IndustryConceptThsOfPlan {
             row.add(bean.getIndexCode());
             row.add(bean.getDateStr());
             row.add(bean.getChgP());
+
+            // 新增12
+            row.add(bean.getVolRate());
+            row.add(bean.getDdeNetAmount());
+            row.add(bean.getCirculatingMarketValue());
+            row.add(bean.getIncludeStockAmount());
+            row.add(bean.getUpAmount());
+            row.add(bean.getUpPercent());
+            row.add(bean.getHighLimitAmount());
+            row.add(bean.getHighLimitPercent());
+            row.add(bean.getLineHighLimitAmount());
+            row.add(bean.getLowLimitAmount());
+            row.add(bean.getLowLimitPercent());
+            row.add(bean.getLineLowLimitAmount());
+            // 结束12
+
             row.add(bean.getGeneratedTime());
             row.add(bean.getLastModified());
 
@@ -191,6 +268,43 @@ public class IndustryConceptThsOfPlan {
     String dateStr; // 该行业原始数据抓取时的日期
     @Column(name = "chgP", length = 64)
     Double chgP; // 最新涨跌幅
+
+    /* 新增基本字段: 主要涨跌停相关的; 均为自动计算自动载入, 且为最新数据
+                        + "vol double  null,"
+                        + "volRate double  null,"
+                        + "ddeNetVol double  null,"
+                        + "ddeNetAmount double  null,"
+                        + "totalMarketValue double  null,"
+                        + "circulatingMarketValue double  null,"
+                        + "includeStockAmount int  null,"
+                        + "upAmount int  null,"
+                        + "downAmount int  null," // 需要推断计算
+                        + "upPercent double  null,"
+                        + "lowLimitAmount int  null,"
+                        + "lowLimitPercent double  null,"
+                        + "highLimitAmount int  null,"
+                        + "highLimitPercent double  null,"
+                        + "lineLowLimitAmount int  null,"
+                        + "lineHighLimitAmount int  null,"
+                        + "lineHighLimitPercent double  null,"
+     */
+    // 新增12属性, 用4个label显示;  显示文字均为 [xx,yy,zz] 形式; 但是表格df中 分开列显示
+    Double volRate; // 量比
+    Double ddeNetAmount; // 主力净额
+    Double circulatingMarketValue; // 流通市值
+
+    Integer includeStockAmount; // 成分股数量
+    Integer upAmount; // 上涨家数
+    Double upPercent; // 上涨家数占比   // 下跌家数也没用上
+
+    Integer highLimitAmount; // 涨停数量
+    Double highLimitPercent; // 涨停占比
+    Integer lineHighLimitAmount; // 一字涨停数量
+
+    Integer lowLimitAmount; // 跌停数量
+    Double lowLimitPercent; // 跌停占比
+    Integer lineLowLimitAmount; // 一字跌停数量
+
 
     @Column(name = "generatedTime", columnDefinition = "datetime")
     Date generatedTime; // 首次初始化 (new) 时间
@@ -299,7 +413,6 @@ public class IndustryConceptThsOfPlan {
             jsons2.add(thsConceptIndustryRelation.toJsonObject());
         }
         this.relatedIndustryListJsonStr = JSONUtilS.toJsonPrettyStr(jsons2); // 初始化为字符串
-
     }
 
     public void initIncludeStockList() {

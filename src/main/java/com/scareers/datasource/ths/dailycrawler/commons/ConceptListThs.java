@@ -15,14 +15,22 @@ import static com.scareers.utils.SqlUtil.execSql;
 
 /**
  * description: 同花顺概念指数列表!
- * [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数简称, market_code, 指数代码, 指数@同花顺概念指数]
  *
+ * @question: 同花顺概念指数;涨幅;量比;成交量;总市值;流通市值;主力净量;主力净额;;上涨家数;下跌家数;上涨家数/成分股总数;涨停家数;一字涨停家数;跌停家数;一字跌停家数;跌停家数/成分股总数;
+ * [code, market_code, {(}指数@上涨家数[20220401]{/}指数@成分股总数[20220401]{)},
+ * {(}指数@跌停家数[20220401]{/}指数@成分股总数[20220401]{)},
+ * 指数@dde大单净量[20220401], 指数@一字涨停家数[20220401], 指数@一字涨停家数占比[20220401],
+ * 指数@一字跌停家数[20220401], 指数@上涨家数[20220401], 指数@下跌家数[20220401], 指数@主力资金流向[20220401],
+ * 指数@同花顺概念指数, 指数@总市值[20220401], 指数@成交量[20220401], 指数@成分股总数[20220401],
+ * 指数@收盘价:不复权[20220401], 指数@流通市值[20220401], 指数@涨停家数[20220401], 指数@涨停家数占比[20220401],
+ * 指数@涨跌幅:前复权[20220401], 指数@跌停家数[20220401], 指数@量比[20220401], 指数代码, 指数简称]
  * @author: admin
  * @date: 2022/3/19/019-20:59:21
  */
 public class ConceptListThs extends CrawlerThs {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         new ConceptListThs(true).run();
+
 
     }
 
@@ -48,7 +56,8 @@ public class ConceptListThs extends CrawlerThs {
                 e.printStackTrace();
             }
         }
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("同花顺概念指数;");
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery(
+                "同花顺概念指数;涨幅;量比;成交量;总市值;流通市值;主力净量;主力净额;;上涨家数;下跌家数;上涨家数/成分股总数;涨停家数;一字涨停家数;跌停家数;一字跌停家数;跌停家数/成分股总数;");
         if (dataFrame == null) {
             logApiError("wenCaiQuery(\"同花顺概念指数;\")");
             success = false;
@@ -58,6 +67,7 @@ public class ConceptListThs extends CrawlerThs {
 
         //
         dataFrame = dataFrame.rename(getRenameMap(dataFrame.columns()));
+        dataFrame = dataFrame.drop("deleteLine1", "deleteLine2"); // 删除不保存行
         List<Object> dateStrList = new ArrayList<>();
         for (int i = 0; i < dataFrame.length(); i++) {
             dateStrList.add(dateStr);
@@ -130,6 +140,26 @@ public class ConceptListThs extends CrawlerThs {
                         + "indexCode varchar(32)  null,"
                         + "conceptIndex varchar(32)  null,"
 
+                        // 新增
+                        + "vol double  null,"
+                        + "volRate double  null,"
+                        + "ddeNetVol double  null,"
+                        + "ddeNetAmount double  null,"
+                        + "totalMarketValue double  null,"
+                        + "circulatingMarketValue double  null,"
+                        + "includeStockAmount int  null,"
+                        + "upAmount int  null,"
+                        + "downAmount int  null,"
+                        + "upPercent double  null,"
+                        + "lowLimitAmount int  null,"
+                        + "lowLimitPercent double  null,"
+                        + "highLimitAmount int  null,"
+                        + "highLimitPercent double  null,"
+                        + "lineLowLimitAmount int  null,"
+                        + "lineHighLimitAmount int  null,"
+                        + "lineHighLimitPercent double  null,"
+
+
                         + "dateStr varchar(32)  null,"
 
 
@@ -141,7 +171,17 @@ public class ConceptListThs extends CrawlerThs {
 
 
     /**
-     * [指数@涨跌幅:前复权[20220318], 指数@收盘价:不复权[20220318], code, 指数简称, market_code, 指数代码, 指数@同花顺概念指数]
+     * [code, market_code, {(}指数@上涨家数[20220401]{/}指数@成分股总数[20220401]{)},
+     * {(}指数@跌停家数[20220401]{/}指数@成分股总数[20220401]{)},
+     * 指数@dde大单净量[20220401], 指数@一字涨停家数[20220401], 指数@一字涨停家数占比[20220401],
+     * 指数@一字跌停家数[20220401], 指数@上涨家数[20220401], 指数@下跌家数[20220401], 指数@主力资金流向[20220401],
+     * 指数@同花顺概念指数, 指数@总市值[20220401], 指数@成交量[20220401], 指数@成分股总数[20220401],
+     * 指数@收盘价:不复权[20220401], 指数@流通市值[20220401], 指数@涨停家数[20220401], 指数@涨停家数占比[20220401],
+     * 指数@涨跌幅:前复权[20220401], 指数@跌停家数[20220401], 指数@量比[20220401],
+     * <p>
+     * 指数@非一字涨停家数[20220401], 指数@非一字涨停家数占比[20220401],        // 不保存. 重命名后将删除掉
+     * <p>
+     * 指数代码, 指数简称]
      *
      * @param rawColumns
      * @return
@@ -150,17 +190,59 @@ public class ConceptListThs extends CrawlerThs {
     protected Map<Object, Object> getRenameMap(Set<Object> rawColumns) {
         HashMap<Object, Object> renameMap = new HashMap<>();
         for (Object column : rawColumns) {
-            if (column.toString().startsWith("指数@涨跌幅:前复权")) {
-                renameMap.put(column, "chgP");
-            } else if (column.toString().startsWith("指数@收盘价:不复权")) {
+            if (WenCaiApi.fieldLike(column.toString(), "{(}指数@上涨家数[20220401]{/}指数@成分股总数[20220401]{)}")) {
+                renameMap.put(column, "upPercent");
+            } else if (WenCaiApi.fieldLike(column.toString(), "{(}指数@跌停家数[20220401]{/}指数@成分股总数[20220401]{)}")) {
+                renameMap.put(column, "lowLimitPercent");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@dde大单净量[20220401]")) {
+                renameMap.put(column, "ddeNetVol");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@一字涨停家数[20220401]")) {
+                renameMap.put(column, "lineHighLimitAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@一字涨停家数占比[20220401]")) {
+                renameMap.put(column, "lineHighLimitPercent");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@一字跌停家数[20220401]")) {
+                renameMap.put(column, "lineLowLimitAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@上涨家数[20220401]")) {
+                renameMap.put(column, "upAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@下跌家数[20220401]")) {
+                renameMap.put(column, "downAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@主力资金流向[20220401]")) {
+                renameMap.put(column, "ddeNetAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@总市值[20220401]")) {
+                renameMap.put(column, "totalMarketValue");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@成交量[20220401]")) {
+                renameMap.put(column, "vol");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@成分股总数[20220401]")) {
+                renameMap.put(column, "includeStockAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@收盘价:不复权[20220401]")) {
                 renameMap.put(column, "close");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@流通市值[20220401]")) {
+                renameMap.put(column, "circulatingMarketValue");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@涨停家数[20220401]")) {
+                renameMap.put(column, "highLimitAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@涨停家数占比[20220401]")) {
+                renameMap.put(column, "highLimitPercent");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@涨跌幅:前复权[20220401]")) {
+                renameMap.put(column, "chgP");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@跌停家数[20220401]")) {
+                renameMap.put(column, "lowLimitAmount");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@量比[20220401]")) {
+                renameMap.put(column, "volRate");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@非一字涨停家数[20220401]")) {
+                renameMap.put(column, "deleteLine1");
+            } else if (WenCaiApi.fieldLike(column.toString(), "指数@非一字涨停家数占比[20220401]")) {
+                renameMap.put(column, "deleteLine2");
             }
+
+
         }
+
         renameMap.put("code", "code");
-        renameMap.put("指数简称", "name");
         renameMap.put("market_code", "marketCode");
-        renameMap.put("指数代码", "indexCode");
         renameMap.put("指数@同花顺概念指数", "conceptIndex");
+        renameMap.put("指数代码", "indexCode");
+        renameMap.put("指数简称", "name");
+
         return renameMap;
     }
 }

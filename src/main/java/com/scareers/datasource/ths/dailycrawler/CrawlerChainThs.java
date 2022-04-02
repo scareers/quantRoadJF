@@ -2,10 +2,7 @@ package com.scareers.datasource.ths.dailycrawler;
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.ths.dailycrawler.commons.ConceptAndIndustryIncludeStockAndRelationParseThs;
-import com.scareers.datasource.ths.dailycrawler.commons.ConceptListThs;
-import com.scareers.datasource.ths.dailycrawler.commons.IndustryListThs;
-import com.scareers.datasource.ths.dailycrawler.commons.StockBelongToThs;
+import com.scareers.datasource.ths.dailycrawler.commons.*;
 import com.scareers.utils.log.LogUtil;
 
 import java.util.ArrayList;
@@ -29,6 +26,7 @@ public class CrawlerChainThs {
         crawlerChainThs.addSynCrawler(new IndustryListThs(forceUpdate));
         crawlerChainThs.addSynCrawler(new StockBelongToThs(forceUpdate));
         crawlerChainThs.addSynCrawler(new ConceptAndIndustryIncludeStockAndRelationParseThs(forceUpdate));
+        crawlerChainThs.addSynCrawler(new StockListThs(forceUpdate));
 
 
         crawlerChainThs.run();

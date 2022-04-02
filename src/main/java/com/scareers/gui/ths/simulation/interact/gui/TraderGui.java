@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
@@ -11,6 +12,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -365,7 +367,10 @@ public class TraderGui extends JFrame {
             @SneakyThrows
             @Override
             public void windowClosing(WindowEvent e) {
-                int res = JOptionPane.showConfirmDialog(mainWindow, "确定关闭?", "是否关闭程序", JOptionPane.YES_NO_OPTION);
+                int res = JOptionPane.showConfirmDialog(mainWindow, GuiCommonUtil.buildDialogShowStr("确认关闭", "将关闭程序",
+                        "yellow", "red"),
+                        "是否关闭程序",
+                        JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
                     if (Trader.getInstance() != null) {
@@ -502,6 +507,9 @@ public class TraderGui extends JFrame {
         UIManager.put("ScrollBar.width", 12); // 滚动条宽度
         UIManager.put("ScrollBar.thumb", new javax.swing.plaf.ColorUIResource(Color.black)); // 滚动条上下按钮背景色
 
+        // 对话框
+        // 使得背景色同信息显示的背景色, 不会白色一块
+        UIManager.put("OptionPane.background", new javax.swing.plaf.ColorUIResource(COLOR_THEME_MINOR));
 
     }
 

@@ -185,9 +185,11 @@ public class FuncTreeWindow extends FuncFrameS {
         DefaultMutableTreeNode reviewAndPlanNode = new DefaultMutableTreeNode("复盘操盘");
         DefaultMutableTreeNode tradePlanNode = new DefaultMutableTreeNode("操盘计划");
         // 资讯面
-        DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("资讯面");
+        DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("大势与资讯");
+        DefaultMutableTreeNode wencaiApiNode = new DefaultMutableTreeNode("问财接入");
         DefaultMutableTreeNode industryAndConceptNode = new DefaultMutableTreeNode("行业与概念");
         tradePlanNode.add(importantNewsNode2);
+        tradePlanNode.add(wencaiApiNode);
         tradePlanNode.add(industryAndConceptNode);
 
         reviewAndPlanNode.add(tradePlanNode);
@@ -262,6 +264,8 @@ public class FuncTreeWindow extends FuncFrameS {
         } else if (TreePathConstants.PLAN_IMPORTANT_NEWS.equals(treePath)) {
             changeToPlanImportantNews();
             // 操盘计划 -- 行业和概念
+        } else if (TreePathConstants.PLAN_WENCAI_API.equals(treePath)) {
+            changeToWenCaiApiForPlan();
         } else if (TreePathConstants.INDUSTRY_AND_CONCEPT.equals(treePath)) {
             changeToIndustryConceptPanelForPlan();
         } else {
@@ -304,6 +308,12 @@ public class FuncTreeWindow extends FuncFrameS {
     }
 
     private void changeToIndustryConceptPanelForPlan() {
+        IndustryConceptPanelForPlan
+                .getInstance(this.getMainDisplayWindow())
+                .showInMainDisplayWindow();
+    }
+
+    private void changeToWenCaiApiForPlan() {
         IndustryConceptPanelForPlan
                 .getInstance(this.getMainDisplayWindow())
                 .showInMainDisplayWindow();
@@ -363,12 +373,14 @@ public class FuncTreeWindow extends FuncFrameS {
         /**
          * [功能树, 复盘操盘]
          * [功能树, 复盘操盘, 操盘计划]
-         * [功能树, 复盘操盘, 操盘计划, 资讯面]
+         * [功能树, 复盘操盘, 操盘计划, 大势与资讯]
+         * "[功能树, 复盘操盘, 操盘计划, 问财接入]";
          * "[功能树, 复盘操盘, 操盘计划, 行业与概念]";
          */
 
         public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
-        public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 资讯面]";
+        public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 大势与资讯]";
+        public static final String PLAN_WENCAI_API = "[功能树, 复盘操盘, 操盘计划, 问财接入]";
         public static final String INDUSTRY_AND_CONCEPT = "[功能树, 复盘操盘, 操盘计划, 行业与概念]";
 
         public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";

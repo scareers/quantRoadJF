@@ -59,11 +59,11 @@ public class CrawlerChainEm {
         crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
         // k线和分时
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
-        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
         crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
         crawlerChainEm.addFrontCrawlers(new FsTransDataEm());

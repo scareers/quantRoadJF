@@ -1,7 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -10,9 +8,11 @@ import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
@@ -22,23 +22,23 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
+import org.jdesktop.swingx.JXDialog;
 import org.jdesktop.swingx.JXList;
+import org.jdesktop.swingx.JXPanel;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.sql.SQLException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -101,7 +101,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
         editorPanel = new IndustryConceptThsOfPlanEditorPanel(this);
         JPanel panel = new JPanel();
-        panel.add(editorPanel);
+        panel.add(editorPanel.getEditorContainerScrollPane()); // 不直接编辑器, 而容器滚动面板
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
     }
 
@@ -208,6 +208,96 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             }
         });
 
+        // 4.批量删除table所选bean, 已经支持排序
+        JButton deleteTableSelectRowsButton = ButtonFactory.getButton("删除所选");
+        deleteTableSelectRowsButton.setMaximumSize(new Dimension(60, 16));
+        deleteTableSelectRowsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (jTable == null) {
+                    return;
+                }
+
+                ArrayList<IndustryConceptThsOfPlan> beansBeDelete = new ArrayList<>();
+                int[] selectedRows = jTable.getSelectedRows();
+                DefaultTableModel model = (DefaultTableModel) jTable.getModel();
+                RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                for (int selectedRow : selectedRows) {
+                    // @key3: 将视图的被选中的index, 转换为 model中的; 再从model中读取数据!
+                    selectedRow = rowSorter.convertRowIndexToModel(selectedRow);
+                    Object valueAt = model.getValueAt(selectedRow, 0);// id在第一列
+                    if (valueAt == null) {
+                        continue;
+                    }
+                    Long id;
+                    try {
+                        id = Long.valueOf(valueAt.toString());
+                    } catch (NumberFormatException ex) {
+                        continue;
+                    }
+
+                    IndustryConceptThsOfPlan bean = panelForPlan.beanMap.get(id);
+                    if (bean != null) {
+                        beansBeDelete.add(bean);
+                    }
+                }
+                List<String> beanNameList = beansBeDelete.stream().map(IndustryConceptThsOfPlan::getName)
+                        .collect(Collectors.toList());
+
+                int opt = JOptionPane.showConfirmDialog(TraderGui.INSTANCE,
+                        GuiCommonUtil.buildDialogShowStr("将删除以下行业/概念,是否确定?", beanNameList.toString()),
+                        "即将删除",
+                        JOptionPane.YES_NO_OPTION);
+                if (opt == JOptionPane.YES_OPTION) {
+                    //确认继续操作
+                    IndustryConceptThsOfPlanDao.deleteBeanBatch(beansBeDelete);
+                    panelForPlan.editorPanel.update();
+                    panelForPlan.update();
+                    ManiLog.put(StrUtil.format("已删除: {}",
+                            beanNameList));
+                }
+
+
+            }
+        });
+
+        // 5.手动 自动刷新 关联trend Map, 和关联trend
+        JButton flushRelatedTrendMapButton = ButtonFactory.getButton("刷新关联trend");
+        flushRelatedTrendMapButton.setMaximumSize(new Dimension(60, 16));
+        flushRelatedTrendMapButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                IndustryConceptThsOfPlanEditorPanel.flushWithRelatedTrends(panelForPlan.editorPanel);
+                panelForPlan.editorPanel.update(); // 将更新显示自动设置字段
+                panelForPlan.update(); // 更新列表
+            }
+        });
+
+
+        // 100.测试按钮
+        JButton testButton = ButtonFactory.getButton("测试");
+        testButton.setMaximumSize(new Dimension(60, 16));
+        testButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JXPanel jxPanel = new JXPanel();
+                jxPanel.setLayout(new BorderLayout());
+
+                JXDialog jxDialog = new JXDialog(jxPanel);
+
+                DefaultListModel model = new DefaultListModel();
+                model.addAll(Arrays.asList("三胎概念", "电力", "电力2"));
+                JXList jxList = new JXList(model);
+                JXFindBarS findbar = new JXFindBarS(jxList.getSearchable());
+
+                jxPanel.add(jxList, BorderLayout.CENTER);
+                jxPanel.add(findbar, BorderLayout.NORTH);
+
+
+                jxDialog.setSize(1000, 800);
+                jxDialog.setVisible(true);
+            }
+        });
 
         buttonContainer = new JPanel();
         buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -215,6 +305,11 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         buttonContainer.add(buttonFlushAll);
         buttonContainer.add(saveEditingBeanButton);
         buttonContainer.add(addBeansBatchButton);
+        buttonContainer.add(deleteTableSelectRowsButton);
+        buttonContainer.add(flushRelatedTrendMapButton);
+
+
+        buttonContainer.add(testButton);
     }
 
     /**
@@ -237,7 +332,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
         // 1.左侧tabpane
         JTabbedPane jTabbedPaneLeft = new JTabbedPane();
-        jTabbedPaneLeft.setPreferredSize(new Dimension(440, 800));
+        jTabbedPaneLeft.setPreferredSize(new Dimension(440, 775));
 
         // 1.1. 概念列表
         DefaultListModel model1 = new DefaultListModel();
@@ -344,8 +439,57 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         } catch (Exception e) {
         }
 
+        /*
+
+        // 6.
+        JButton testButton = ButtonFactory.getButton("测试");
+        testButton.setMaximumSize(new Dimension(60, 16));
+        testButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JXPanel jxPanel = new JXPanel();
+                jxPanel.setLayout(new BorderLayout());
+
+                JXDialog jxDialog = new JXDialog(jxPanel);
+
+                DefaultListModel model = new DefaultListModel();
+                model.addAll(Arrays.asList("三胎概念", "电力", "电力2"));
+                JXList jxList = new JXList(model);
+                JXFindBarS findbar = new JXFindBarS(jxList.getSearchable());
+
+                jxPanel.add(jxList, BorderLayout.CENTER);
+                jxPanel.add(findbar, BorderLayout.NORTH);
+
+
+                jxDialog.setSize(1000,800);
+                jxDialog.setVisible(true);
+            }
+        });
+         */
+
+        // @update: 将原来的 jTabbedPaneLeft放在左边, 在上方添加一个查找框
+        JPanel jPanel1 = new JPanel();
+        jPanel1.setLayout(new BorderLayout());
+        JXFindBarS jxFindBarS = new JXFindBarS(jxListOfConceptList.getSearchable());
+        jPanel1.add(jxFindBarS, BorderLayout.NORTH);
+        jPanel1.add(jTabbedPaneLeft, BorderLayout.CENTER);
+        jPanel1.setPreferredSize(new Dimension(440, 800));
+        jTabbedPaneLeft.addChangeListener(new ChangeListener() { // 切换tab, 必须切换查找框的 查找对象
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                int selectedIndex = jTabbedPaneLeft.getSelectedIndex();
+                if (selectedIndex == 0) {
+                    jxFindBarS.setSearchable(jxListOfConceptList.getSearchable());
+                } else if (selectedIndex == 1) {
+                    jxFindBarS.setSearchable(jxListOfIndustryListLevel2.getSearchable());
+                } else if (selectedIndex == 2) {
+                    jxFindBarS.setSearchable(jxListOfIndustryListLevel3.getSearchable());
+                }
+            }
+        });
+
         // 4.添加3大部分
-        jPanel.add(jTabbedPaneLeft, BorderLayout.WEST);
+        jPanel.add(jPanel1, BorderLayout.WEST);
         jPanel.add(buttonsPanel, BorderLayout.CENTER);
         jPanel.add(jScrollPaneRight, BorderLayout.EAST);
 
@@ -355,7 +499,6 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 // 1.当前左侧list
-                Component tabComponentAt = jTabbedPaneLeft.getSelectedComponent();
                 int selectedIndex = jTabbedPaneLeft.getSelectedIndex();
                 JXList currentJXList;
                 if (selectedIndex == 0) {
@@ -609,13 +752,19 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 @Override
                 public void valueChanged(ListSelectionEvent e) {
                     int row = jTable.getSelectedRow();
-                    currentBean = beanMap.get(Long.parseLong(model.getValueAt(row, 0).toString()));
+                    Object valueAt;
+                    try {
+                        valueAt = model.getValueAt(row, 0);
+                    } catch (Exception ex) {
+                        return;
+                    }
+                    currentBean = beanMap.get(Long.parseLong(valueAt.toString()));
                     editorPanel.update(currentBean);
                 }
             });
             initJTableStyle();
             jScrollPane.setViewportView(jTable); // 默认显式"数据获取中", 第一次刷新
-            // jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+            jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
             fitTableColumns(jTable);
         } else { // 不断更新时
             fullFlush();
@@ -716,7 +865,11 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
             int actualWidth = width + myTable.getIntercellSpacing().width + 2;
             actualWidth = Math.min(700, actualWidth); // 单列最大宽度
-            column.setWidth(Math.max(actualWidth, 80)); // 多5
+            if (dummyIndex <= 20 && dummyIndex > 8) {
+                column.setWidth(Math.min(actualWidth, 80)); // 12字段限制最大宽度
+            } else {
+                column.setWidth(Math.max(actualWidth, 80)); // 多5
+            }
 //            break; // 仅第一列日期. 其他的平均
 
             if (dummyIndex == 5) {
@@ -728,6 +881,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             if (dummyIndex == 9) {
                 column.setWidth(5); // 多5
             }
+
 
             dummyIndex++;
         }

@@ -252,6 +252,7 @@ public class IndustryConceptThsOfPlanDao {
     public static IndustryConceptThsOfPlan getOrInitBeanForPlan(String industryOrConceptName, Date equivalenceNow,
                                                                 IndustryConceptThsOfPlan.Type type) {
         String dateStr = decideDateStrForPlan(equivalenceNow);
+        Console.log(dateStr);
         //String dateStr = DateUtil.today();
         return getOrInitBeanByDateStr(industryOrConceptName, dateStr, type);
     }
@@ -289,14 +290,26 @@ public class IndustryConceptThsOfPlanDao {
         }
     }
 
+    /**
+     * 当此刻今日是交易日:
+     * 时间>15, 下一交易日
+     * <15, 今日
+     * 当今日非交易日,
+     * 下一交易日
+     *
+     * @param equivalenceNow
+     * @return
+     */
     @SneakyThrows
     public static String decideDateStrForPlan(Date equivalenceNow) {
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) {
                 return EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 明日
+            } else {
+                return today;
             }
         }
-        return today;
+        return EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 明日;
     }
 }

@@ -46,7 +46,7 @@ public class SettingsOfGuiGlobal {
 
     public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
 
-    public static Color colorTest = new Color(200, 221, 242); // 测试颜色.., 方便看..
+    public static Color colorTest = new Color(51); // 测试颜色.., 方便看..
 
     // 2.主界面相关设定
     public static final String ICON_TITLE_PATH = "gui/img/titleIcon0.png"; // 图标

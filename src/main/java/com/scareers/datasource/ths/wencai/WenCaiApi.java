@@ -3,21 +3,23 @@ package com.scareers.datasource.ths.wencai;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
+import com.alee.managers.animation.easing.Back;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.ths.ThsConstants;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
 /**
  * description: 问财破解尝试. 相关常用查询api.
@@ -41,7 +43,84 @@ public class WenCaiApi {
 
 
         //[家庭医生, 冬奥会, 数据安全, 氢能源, 建筑节能, 辅助生殖, 军工, 体育产业, 禽流感, 智能音箱, 土壤修复, 蚂蚁金服, DRG/DIP, 安防, 职业教育, 举牌, 固废处理, 消费电子, 金属锌, 天津自贸区, 自由贸易港, 京津冀一体化, 重组蛋白, 天然气, 同花顺漂亮100, 金属铜, 稀缺资源, ST板块, 两轮车, 硅能源, 上海自贸区, 养老, 云办公, 氟化工, 电子竞技, 华为海思概念股, 大豆, 中船系]
-        Console.log(wenCaiQuery(StrUtil.format("金属铅", "金属铅")));
+//        Console.log(wenCaiQuery(StrUtil.format("金属铅", "金属铅")));
+
+        DataFrame<Object> dataFrame = wenCaiQuery(
+                "同花顺行业指数;涨幅;量比;成交量;总市值;流通市值;主力净量;主力净额;上涨家数;下跌家数;上涨家数/成分股总数;涨停家数;一字涨停家数;跌停家数;一字跌停家数;跌停家数/成分股总数;所属同花顺行业级别");
+
+        List<String> cols =
+                dataFrame.columns().stream().map(value -> value.toString()).collect(Collectors.toList());
+        Collections.sort(cols);
+        Console.log(cols);
+        Console.log(dataFrame.length());
+//        Console.log(dataFrame);
+
+
+        // [code, market_code, {(}指数@上涨家数[20220401]{/}指数@成分股总数[20220401]{)}, {(}指数@跌停家数[20220401]{/}指数@成分股总数[20220401]{)}, 指数@dde大单净量[20220401], 指数@一字涨停家数[20220401], 指数@一字涨停家数占比[20220401], 指数@一字跌停家数[20220401], 指数@上涨家数[20220401], 指数@主力资金流向[20220401], 指数@同花顺概念指数, 指数@总市值[20220401], 指数@成交量[20220401], 指数@成分股总数[20220401], 指数@收盘价:不复权[20220401], 指数@流通市值[20220401], 指数@涨停家数[20220401], 指数@涨停家数占比[20220401], 指数@涨跌幅:前复权[20220401], 指数@跌停家数[20220401], 指数@量比[20220401],  指数代码, 指数简称]
+        // [code, market_code, {(}指数@上涨家数[20220401]{/}指数@成分股总数[20220401]{)}, {(}指数@跌停家数[20220401]{/}指数@成分股总数[20220401]{)}, 指数@dde大单净量[20220401], 指数@一字涨停家数[20220401], 指数@一字涨停家数占比[20220401], 指数@一字跌停家数[20220401], 指数@上涨家数[20220401], 指数@主力资金流向[20220401], 指数@同花顺行业指数, 指数@总市值[20220401], 指数@成交量[20220401], 指数@成分股总数[20220401], 指数@收盘价:不复权[20220401], 指数@流通市值[20220401], 指数@涨停家数[20220401], 指数@涨停家数占比[20220401], 指数@涨跌幅:前复权[20220401], 指数@跌停家数[20220401], 指数@量比[20220401], 指数@非一字涨停家数[20220401], 指数代码, 指数简称]
+
+
+        // 指数@下跌家数[20220401], 没有; 指数@非一字涨停家数[20220401], 不需要
+        // 指数@所属同花顺行业级别,  多了
+
+
+//        String x = "指数@上涨家数[20220401]";
+//        String pattern = "^指数@上涨家数[\\d{8}]$";
+
+        Console.log(fieldLike("指数@上涨家数[2022x401]", "指数@上涨家数[20190203]"));
+
+
+    }
+
+    /**
+     * 问财字段简易匹配解决方案: 因多数字段带有 日期, 导致字段名重命名不方便; 暂放弃使用正则表达式方案
+     * 本方法 将 fieldName 与 formStr 并行遍历, 必须相同位置的字符相同, 仅允许同时为 0-9 的数字字符不相等;
+     * 符合以上条件返回 true
+     * --> todo: 严谨性待提高; 解决日期变化问题暂时够用
+     *
+     * @param fieldName
+     * @param formStr
+     * @return
+     */
+    public static HashSet<Character> numbers = new HashSet<>();
+
+    public static boolean fieldLike(String fieldName, String formStr) {
+        if (numbers.size() == 0) {
+            numbers.add('0');
+            numbers.add('1');
+            numbers.add('2');
+            numbers.add('3');
+            numbers.add('4');
+            numbers.add('5');
+            numbers.add('6');
+            numbers.add('7');
+            numbers.add('8');
+            numbers.add('9');
+        }
+        if (fieldName == null || formStr == null) {
+            return false;
+        }
+        if (fieldName.length() != formStr.length()) {
+            return false;
+        }
+        for (int i = 0; i < fieldName.length(); i++) {
+            char c1 = fieldName.charAt(i);
+            char c2 = formStr.charAt(i);
+
+            if (numbers.contains(c1)) { // 数字
+                if (numbers.contains(c2)) { // 也数字
+                } else {
+                    return false; // 不通过
+                }
+            } else {
+                if (c1 == c2) { // 通过
+                } else {
+                    return false; // 不通过
+                }
+            }
+        }
+        return true;
+
 
     }
 

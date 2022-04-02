@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.util;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 
@@ -130,5 +131,48 @@ public class GuiCommonUtil {
 //        }
 //    }
 
+    /**
+     * 常规对话框, 背景色为主色调, 文字默认黑色不清晰;
+     * 本方法将 常规内容, 转换为 html,
+     * 分两部分内容和对应地 两个颜色.
+     * 第一部分为提示标题, 第二部分为核心信息
+     *
+     * @param infoContent
+     * @param coreContent
+     * @param color1
+     * @param color2
+     * @return
+     * @noti : 内容可能太长, 这里分行 80个字符
+     */
+    public static String buildDialogShowStr(String infoContent, String coreContent, String color1, String color2) {
+        coreContent = splitLineWithBr(coreContent, 80);
+        String res = StrUtil.format("<html><h2><font color='{}'>{}</font></h2>" +
+                "<br>" +
+                "<p><font color='{}'>{}</font></p>" +
+                "</html>", color1, infoContent, color2, coreContent);
+        Console.log(coreContent);
+        return res;
+    }
+
+    private static String splitLineWithBr(String content, int amount) {
+        double lineCount = Math.ceil(content.length() * 1.0 / amount); // 行数
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < lineCount; i++) {
+            stringBuilder.append(content.substring(i * amount, Math.min(content.length(), (i + 1) * amount)));
+            stringBuilder.append("<br>");
+        }
+        return stringBuilder.toString();
+    }
+
+    /**
+     * 默认黄色+红色. 注意, 内容字符串别包含 {}
+     *
+     * @param infoContent
+     * @param coreContent
+     * @return
+     */
+    public static String buildDialogShowStr(String infoContent, String coreContent) {
+        return buildDialogShowStr(infoContent, coreContent, "yellow", "red");
+    }
 
 }

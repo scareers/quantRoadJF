@@ -67,6 +67,17 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel chgPLabel = getCommonLabel("chgP");
     JLabel chgPValueLabel = getCommonLabel();
 
+    // 12字段新增
+    JLabel vrDdeCmvLabel = getCommonLabel("量比dde流市值");
+    JLabel vrDdeCmvValueLabel = getCommonLabel("", Color.pink);
+    JLabel includeUpPercentLabel = getCommonLabel("成分上涨占比");
+    JLabel includeUpPercentValueLabel = getCommonLabel("", Color.pink);
+    JLabel highLimitLineLabel = getCommonLabel("涨停一字涨停");
+    JLabel highLimitLineValueLabel = getCommonLabel("", Color.pink);
+    JLabel lowLimitLineLabel = getCommonLabel("跌停一字跌停");
+    JLabel lowLimitLineValueLabel = getCommonLabel("", Color.pink);
+
+
     JLabel generatedTimeLabel = getCommonLabel("generatedTime");
     JLabel generatedTimeValueLabel = getCommonLabel();
     JLabel lastModifiedLabel = getCommonLabel("lastModified"); // 编辑后自动设定
@@ -143,11 +154,12 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel scoreReasonLabel = getCommonLabel("scoreReason", Color.pink);
     JTextField scoreReasonValueLabel = getCommonEditor(this);
 
+    JScrollPane editorContainerScrollPane; // 包裹this的滑动框
 
     public IndustryConceptThsOfPlanEditorPanel(IndustryConceptPanelForPlan parentPanel) {
         this.parentPanel = parentPanel;
-        this.setLayout(new GridLayout(35, 2, 1, 1)); // 简易网格布局
-        this.setPreferredSize(new Dimension(350, 1200));
+        this.setLayout(new GridLayout(39, 2, 1, 1)); // 简易网格布局
+
 
         this.add(totalAmountLabel);
         this.add(totalAmountLabelLabel);
@@ -175,6 +187,16 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         this.add(chgPLabel);
         this.add(chgPValueLabel);
+
+        // 新增4label, 显示12字段
+        this.add(vrDdeCmvLabel);
+        this.add(vrDdeCmvValueLabel);
+        this.add(includeUpPercentLabel);
+        this.add(includeUpPercentValueLabel);
+        this.add(highLimitLineLabel);
+        this.add(highLimitLineValueLabel);
+        this.add(lowLimitLineLabel);
+        this.add(lowLimitLineValueLabel);
 
         this.add(generatedTimeLabel);
         this.add(generatedTimeValueLabel);
@@ -265,6 +287,23 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         initOther();
 
+        editorContainerScrollPane = new JScrollPane();
+        editorContainerScrollPane.setBorder(null);
+        editorContainerScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(editorContainerScrollPane, COLOR_THEME_TITLE,
+                        COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+        editorContainerScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        editorContainerScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        editorContainerScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+        editorContainerScrollPane.setViewportView(this);
+        // 尺寸
+        this.setPreferredSize(new Dimension(350, 1200));
+        editorContainerScrollPane.setPreferredSize(
+                new Dimension(360,
+                        1210));
+        editorContainerScrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(10, 1210));
+        editorContainerScrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(360, 10));
     }
 
     private void initOther() {
@@ -887,6 +926,21 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         dateStrValueLabel.setText(CommonUtil.toStringCheckNull(bean.getDateStr()));
         chgPValueLabel.setText(CommonUtil.toStringCheckNull(bean.getChgP()));
 
+        vrDdeCmvValueLabel.setText(StrUtil.format("[{}, {}, {}]", bean.getVolRate(),
+                CommonUtil.formatNumberWithSuitable(bean.getDdeNetAmount()),
+                CommonUtil.formatNumberWithSuitable(bean.getCirculatingMarketValue())));
+        includeUpPercentValueLabel
+                .setText(StrUtil.format("[{}, {}, {}]", bean.getIncludeStockAmount(), bean.getUpAmount(),
+                        CommonUtil.formatNumberWithSuitable(bean.getUpPercent())));
+        highLimitLineValueLabel
+                .setText(StrUtil.format("[{}, {}, {}]", bean.getHighLimitAmount(),
+                        CommonUtil.formatNumberWithSuitable(bean.getHighLimitPercent() / 100.0),
+                        bean.getLineHighLimitAmount()));
+        lowLimitLineValueLabel
+                .setText(StrUtil.format("[{}, {}, {}]", bean.getLowLimitAmount(),
+                        CommonUtil.formatNumberWithSuitable(bean.getLowLimitPercent() / 100.0),
+                        bean.getLineLowLimitAmount()));
+
         setDateTimeOrNull(bean.getGeneratedTime(), generatedTimeValueLabel);
         setDateTimeOrNull(bean.getLastModified(), lastModifiedValueLabel);
 
@@ -1054,7 +1108,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         // 3. 所有bean均已经更新, 此时保存所有bean到数据库
         IndustryConceptThsOfPlanDao.saveOrUpdateBeanBatch(beanMap.values());
-        ManiLog.put("IndustryConceptThsOfPlan:已自动计算并保存: 关联行业概念 trend 加成折算因子");
+        ManiLog.put("IndustryConceptThsOfPlan: 已自动计算并保存: 关联行业概念 trend 加成折算因子");
 
     }
 

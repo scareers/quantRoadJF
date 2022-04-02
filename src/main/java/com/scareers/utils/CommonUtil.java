@@ -368,4 +368,46 @@ public class CommonUtil {
         }
         return o.toString();
     }
+
+    /**
+     * 将数字, 转换为 "1.23亿" 文字
+     *
+     * @param value
+     * @return
+     */
+    public static String formatNumberWithYi(Number value) {
+        if (value == null) {
+            return "null";
+        }
+        return roundHalfUP(value.doubleValue() / 100000000, 2) + "亿";
+    }
+
+    /**
+     * 将数字, 转换为 "1.23万" 文字
+     *
+     * @param value
+     * @return
+     */
+    public static String formatNumberWithWan(Number value) {
+        if (value == null) {
+            return "null";
+        }
+        return roundHalfUP(value.doubleValue() / 10000, 2) + "万";
+    }
+
+    public static String formatNumberWithSuitable(Number value) {
+        if (value == null) {
+            return "null";
+        }
+        if (Math.abs(value.doubleValue()) < 10000) {
+            return Double.valueOf(roundHalfUP(value.doubleValue(), 2)).toString();
+        } else if (Math.abs(value.doubleValue()) < 100000000) {
+            return formatNumberWithWan(value);
+        } else {
+            return formatNumberWithYi(value);
+        }
+
+    }
+
+
 }
