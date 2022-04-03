@@ -17,6 +17,7 @@ import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -29,6 +30,9 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -120,9 +124,25 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
                 questionTextField.setText("");
             }
         });
+
+        JButton openWebButton = ButtonFactory.getButton("打开web");
+        openWebButton.setFont(new Font("微软雅黑", Font.PLAIN, 20));
+        openWebButton.setForeground(Color.red);
+        openWebButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String encode = URLEncoder.encode(questionTextField.getText(), StandardCharsets.UTF_8);
+                CommonUtil.openUrlWithDefaultBrowser(
+                        StrUtil.format("http://www.iwencai.com/unifiedwap/result?w={}",
+                                encode
+                        ));
+            }
+        });
+
         questionPanel.add(findButton);
         questionPanel.add(questionTextField);
         questionPanel.add(clearButton);
+        questionPanel.add(openWebButton);
 
         // 2.条件解析结果栏
         JPanel conditionsPanel = new JPanel();

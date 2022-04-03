@@ -119,9 +119,11 @@ public class NewAspectSummaryDao {
         if (EastMoneyDbApi.isTradeDate(today)) {
             if (DateUtil.hour(equivalenceNow, true) >= 15) {
                 return EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 明日
+            } else {
+                return today;
             }
         }
-        return today;
+        return  EastMoneyDbApi.getPreNTradeDateStrict(today, -1); // 明日;
     }
 
     private static String decideDateStrForReview(Date equivalenceNow) throws SQLException {

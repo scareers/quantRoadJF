@@ -11,6 +11,9 @@ import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;

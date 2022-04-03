@@ -1,16 +1,23 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
+import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.tools.stockplan.news.bean.CompanyGoodNew;
 import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
 import com.scareers.tools.stockplan.news.bean.dao.NewAspectSummaryDao;
+import com.scareers.utils.CommonUtil;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Date;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
@@ -52,9 +59,7 @@ public class NewAspectSummaryPanel extends DisplayPanel {
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
     JTextField remarkValueLabel = getCommonEditor(this);
     JLabel scoreSchemaOfPreJudgmentLabel = getCommonLabel("预判评分[未来设置]", Color.red); // 未来设置
-    JTextField scoreSchemaOfPreJudgmentValueLabel = getCommonEditor(this); // scoreSchemaOfPreJudgment
-
-
+    JLabel scoreSchemaOfPreJudgmentValueLabel = getCommonLabel(); // scoreSchemaOfPreJudgment
 
 
     public NewAspectSummaryPanel() {
@@ -65,6 +70,8 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         fillPointsPanel(); // 资讯总结4类,
 
         fillPreJudgementPanel();
+
+        this.update();
     }
 
     private void fillPreJudgementPanel() {
@@ -73,7 +80,7 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         border.setTitleColor(Color.red);
         preJudgementPanel.setBorder(border);
 
-        preJudgementPanel.add(new PreJudgementListTOfNewPanel(this.bean), BorderLayout.CENTER);
+        preJudgementPanel.add(new PreJudgementListTOfNewPanel(this, this.bean), BorderLayout.CENTER);
     }
 
     public void initBean() {
@@ -90,10 +97,10 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         border.setTitleColor(Color.red);
         pointsPanel.setBorder(border);
 
-        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_GOOD, bean));
-        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_BAD, bean));
-        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_NEUTRAL, bean));
-        pointsPanel.add(new NewPointsPanel(NewAspectSummary.POINT_TYPE_OTHER, bean));
+        pointsPanel.add(new NewPointsPanel(this, NewAspectSummary.POINT_TYPE_GOOD, bean));
+        pointsPanel.add(new NewPointsPanel(this, NewAspectSummary.POINT_TYPE_BAD, bean));
+        pointsPanel.add(new NewPointsPanel(this, NewAspectSummary.POINT_TYPE_NEUTRAL, bean));
+        pointsPanel.add(new NewPointsPanel(this, NewAspectSummary.POINT_TYPE_OTHER, bean));
     }
 
     private void fillBaseInfoPanel() {
@@ -148,8 +155,25 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         this.add(jPanelCenter, BorderLayout.CENTER);
     }
 
+    public void update(NewAspectSummary bean) {
+        this.bean = bean;
+        this.update();
+    }
+
     @Override
     public void update() {
+        if (this.bean == null) {
+            return;
+        }
+        idValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getId()));
+        typeValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getType()));
+        dateStrValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getDateStr()));
+        setDateTimeOrNull(this.bean.getGeneratedTime(), saveTimeValueLabel);
+        setDateTimeOrNull(this.bean.getLastModified(), lastModifiedValueLabel);
+
+        trendValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getTrend()));
+        remarkValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getRemark()));
+        scoreSchemaOfPreJudgmentValueLabel.setText(CommonUtil.toStringCheckNull(this.bean.getScoresOfPreJudgment()));
 
     }
 
@@ -185,7 +209,44 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         jTextField.setForeground(Color.red);
         jTextField.setBackground(Color.black);
         jTextField.setCaretColor(Color.red);
+        jTextField.addKeyListener(buildKeyAdapterForEdit(panel, "大势总结"));
         return jTextField;
+    }
+
+    private static KeyAdapter buildKeyAdapterForEdit(NewAspectSummaryPanel panel, String pointType) {
+        return new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    tryAutoSaveEditedBean(panel, pointType);
+                }
+            }
+        };
+    }
+
+    public NewAspectSummary getEditedBean() {
+        if (this.bean == null) {
+            return null;
+        }
+        bean.setLastModified(Timestamp.valueOf(DateUtil.date().toLocalDateTime()));
+        try {
+            bean.setTrend(Double.parseDouble(this.trendValueLabel.getText()));
+        } catch (Exception e) {
+        }
+        bean.setRemark(this.remarkValueLabel.getText());
+        return bean;
+    }
+
+    public static void tryAutoSaveEditedBean(NewAspectSummaryPanel panel, String logPrefix) {
+        try {
+            NewAspectSummary editedBean = panel.getEditedBean();
+            NewAspectSummaryDao.saveOrUpdateBean(editedBean);
+            panel.update(editedBean);
+            ManiLog.put(StrUtil.format("{}: 更新成功: {} --> {}", logPrefix,
+                    panel.bean.getId(), panel.bean.getDateStr()));
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     public static JCheckBox getCommonCheckBox() {

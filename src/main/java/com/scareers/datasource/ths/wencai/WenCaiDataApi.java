@@ -7,14 +7,11 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.Method;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.ths.ThsConstants;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
-import javax.swing.plaf.metal.MetalIconFactory;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -25,34 +22,36 @@ import java.util.List;
  */
 public class WenCaiDataApi {
     public static void main(String[] args) {
-        DataFrame<Object> lastNDailyKline = getLastNKline(48, "885311", 2, 0, 1000);
-        Console.log(lastNDailyKline);
-        Console.log(lastNDailyKline.length());
-        Console.log(lastNDailyKline.size());
+//        DataFrame<Object> lastNDailyKline = getLastNKline(48, "885311", 2, 0, 1000);
+//        Console.log(lastNDailyKline);
+//        Console.log(lastNDailyKline.length());
+//        Console.log(lastNDailyKline.size());
+//
+//        for (int i = 0; i < 3; i++) {
+//            for (int j = 0; j < 3; j++) {
+//
+//                HashMap<String, Object> lastDayBaseDatas = getLastDayBaseDatas(17, "600018", i, j);
+//                Console.log(lastDayBaseDatas);
+//            }
+//        }
+        for (int i = 0; i < 100; i++) {
 
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-
-                HashMap<String, Object> lastDayBaseDatas = getLastDayBaseDatas(17, "600018", i, j);
-                Console.log(lastDayBaseDatas);
-            }
+            DataFrame<Object> fs1M = getFS1M(32, "399001");
+            Console.log(fs1M.length());
         }
 
-        DataFrame<Object> fs1M = getFS1M(32, "399001");
-        Console.log(fs1M);
-
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("指数类型排序;同花顺概念指数取反;同花顺行业指数取反;");
-        Console.log(dataFrame.columns());
-        Console.log(dataFrame.length());
-        // [指数@指数类型, 指数@涨跌幅:前复权[20220401], code, 指数@收盘价:不复权[20220401], 指数简称, market_code, 指数代码]
-
-        List<String> colAsStringList = DataFrameS.getColAsStringList(dataFrame, "指数@指数类型");
-        HashSet<String> types = new HashSet<>(colAsStringList);
-        Console.log(types);
-
-        List<String> names = DataFrameS.getColAsStringList(dataFrame, "指数简称");
-        Console.log(names.contains("细分化工"));
-        Console.log(dataFrame.toString(10000));
+//        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("指数类型排序;同花顺概念指数取反;同花顺行业指数取反;");
+//        Console.log(dataFrame.columns());
+//        Console.log(dataFrame.length());
+//        // [指数@指数类型, 指数@涨跌幅:前复权[20220401], code, 指数@收盘价:不复权[20220401], 指数简称, market_code, 指数代码]
+//
+//        List<String> colAsStringList = DataFrameS.getColAsStringList(dataFrame, "指数@指数类型");
+//        HashSet<String> types = new HashSet<>(colAsStringList);
+//        Console.log(types);
+//
+//        List<String> names = DataFrameS.getColAsStringList(dataFrame, "指数简称");
+//        Console.log(names.contains("细分化工"));
+//        Console.log(dataFrame.toString(10000));
     }
 
     /**

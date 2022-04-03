@@ -29,8 +29,10 @@ import java.awt.event.*;
 public class PreJudgementListTOfNewPanel extends DisplayPanel {
     NewAspectSummary bean;
     JPanel itemsPanel;
+    NewAspectSummaryPanel parentPanel;
 
-    public PreJudgementListTOfNewPanel(NewAspectSummary bean) {
+    public PreJudgementListTOfNewPanel(NewAspectSummaryPanel parentPanel, NewAspectSummary bean) {
+        this.parentPanel = parentPanel;
         this.bean = bean;
 
         initHeaderPanel();
@@ -143,6 +145,7 @@ public class PreJudgementListTOfNewPanel extends DisplayPanel {
             deleteButton.setForeground(Color.pink);
             deleteButton.setFont(new Font("微软雅黑", Font.ITALIC, 12));
             deleteButton.setPreferredSize(new Dimension(40, 18));
+            PreJudgementPanel temp = this;
             deleteButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -151,6 +154,7 @@ public class PreJudgementListTOfNewPanel extends DisplayPanel {
                     containerPanel.setVisible(false);
                     containerPanel.update();
                     containerPanel.setVisible(true);
+                    NewAspectSummaryPanel.tryAutoSaveEditedBean(temp.containerPanel.parentPanel, "大势总结");
                 }
             });
 
@@ -279,5 +283,6 @@ public class PreJudgementListTOfNewPanel extends DisplayPanel {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        NewAspectSummaryPanel.tryAutoSaveEditedBean(panel.containerPanel.parentPanel, "大势总结");
     }
 }

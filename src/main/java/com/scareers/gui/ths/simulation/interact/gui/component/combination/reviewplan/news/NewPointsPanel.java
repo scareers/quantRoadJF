@@ -33,9 +33,11 @@ public class NewPointsPanel extends DisplayPanel {
     String pointType; // 使用带标题边框
 
     JPanel pointsPanel;
+    NewAspectSummaryPanel parentPanel;
 
-    public NewPointsPanel(String pointType, NewAspectSummary bean) {
+    public NewPointsPanel(NewAspectSummaryPanel parentPanel, String pointType, NewAspectSummary bean) {
         // 数据
+        this.parentPanel = parentPanel;
         this.pointType = pointType;
         this.bean = bean;
 
@@ -158,6 +160,7 @@ public class NewPointsPanel extends DisplayPanel {
             deleteButton = ButtonFactory.getButton("删除");
             deleteButton.setForeground(Color.pink);
             deleteButton.setFont(new Font("微软雅黑", Font.ITALIC, 12));
+            PointPanel temp = this;
             deleteButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -174,6 +177,7 @@ public class NewPointsPanel extends DisplayPanel {
                     containerPanel.setVisible(false);
                     containerPanel.update();
                     containerPanel.setVisible(true);
+                    NewAspectSummaryPanel.tryAutoSaveEditedBean(temp.containerPanel.parentPanel, "大势总结");
                 }
             });
 
@@ -217,7 +221,7 @@ public class NewPointsPanel extends DisplayPanel {
         jTextField.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         jTextField.setForeground(Color.red);
         jTextField.addKeyListener(buildKeyAdapterForEdit(panel, pointType));
-        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel, pointType));
+//        jTextField.addFocusListener(buildJTextFieldBlurForEdit(panel, pointType));
         return jTextField;
     }
 
@@ -227,6 +231,7 @@ public class NewPointsPanel extends DisplayPanel {
             public void keyPressed(KeyEvent e) { // 按下回车, 自动保存当前bean. null时忽略
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     tryAutoSaveEditedBean(panel, StrUtil.format("NewAspectSummary [{}]", pointType));
+                    NewAspectSummaryPanel.tryAutoSaveEditedBean(panel.containerPanel.parentPanel, "大势总结");
                 }
             }
         };

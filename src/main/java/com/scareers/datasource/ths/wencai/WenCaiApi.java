@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  */
 public class WenCaiApi {
     public static void main(String[] args) throws Exception {
-        Console.log(wenCaiQueryResult("同花顺行业指数;涨幅>5%"));
+        Console.log(wenCaiQueryResult("涨跌幅;成交额"));
 
 
 //        TimeInterval timer = DateUtil.timer();
