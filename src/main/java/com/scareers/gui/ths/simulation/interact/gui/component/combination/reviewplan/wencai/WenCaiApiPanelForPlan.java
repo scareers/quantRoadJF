@@ -22,6 +22,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import org.jdesktop.swingx.JXPanel;
+import org.jdesktop.swingx.JXRadioGroup;
 import org.jdesktop.swingx.JXTable;
 
 import javax.swing.*;
@@ -128,21 +129,33 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
         JButton openWebButton = ButtonFactory.getButton("打开web");
         openWebButton.setFont(new Font("微软雅黑", Font.PLAIN, 20));
         openWebButton.setForeground(Color.red);
-        openWebButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String encode = URLEncoder.encode(questionTextField.getText(), StandardCharsets.UTF_8);
-                CommonUtil.openUrlWithDefaultBrowser(
-                        StrUtil.format("http://www.iwencai.com/unifiedwap/result?w={}",
-                                encode
-                        ));
-            }
-        });
+
 
         questionPanel.add(findButton);
         questionPanel.add(questionTextField);
         questionPanel.add(clearButton);
         questionPanel.add(openWebButton);
+
+        // 1.2: 新增: 问财类型单选按钮组;
+        JPanel jPanelQueryContainer = new JPanel(); // 包裹原 questionPanel,和单选按钮
+        JXRadioGroup<String> jxRadioGroup = new JXRadioGroup<>(WenCaiApi.TypeStr.allTypeNames);
+        // jxRadioGroup.setBackground(COLOR_THEME_MINOR); // 无效
+        for (int i = 0; i < jxRadioGroup.getChildButtonCount(); i++) {
+            jxRadioGroup.getChildButton(i).setBackground(COLOR_THEME_MINOR);
+            jxRadioGroup.getChildButton(i).setForeground(Color.green);
+        }
+        jxRadioGroup.getChildButton(0).setSelected(true); // 默认选择
+        // questionPanel.setBorder(BorderFactory.createLineBorder(Color.red,1));
+
+
+        jPanelQueryContainer.setPreferredSize(new Dimension(300, 80));
+        JLabel placeHolderLabel = new JLabel();
+        placeHolderLabel.setPreferredSize(new Dimension(90, 60));
+        jPanelQueryContainer.setLayout(new BorderLayout());
+        jPanelQueryContainer.add(questionPanel, BorderLayout.NORTH);
+        jPanelQueryContainer.add(jxRadioGroup, BorderLayout.CENTER);
+        jPanelQueryContainer.add(placeHolderLabel, BorderLayout.WEST);
+
 
         // 2.条件解析结果栏
         JPanel conditionsPanel = new JPanel();
@@ -160,10 +173,32 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
         tableRelatePanel.add(tableLenthLabel);
 
         // 4.添加
-        wenCaiSearchPanel.add(questionPanel, BorderLayout.NORTH);
+        wenCaiSearchPanel.add(jPanelQueryContainer, BorderLayout.NORTH);
         wenCaiSearchPanel.add(conditionsPanel, BorderLayout.CENTER);
         wenCaiSearchPanel.add(tableRelatePanel, BorderLayout.SOUTH);
 
+        openWebButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object currentSelectType = WenCaiApi.TypeStr.allTypesMap.get(jxRadioGroup.getSelectedValue());
+                String typeStr = "";
+                if (currentSelectType != null) {
+                    typeStr = currentSelectType.toString();
+                }
+                String encode = URLEncoder.encode(questionTextField.getText(), StandardCharsets.UTF_8);
+                String url;
+                if ("".equals(typeStr)) {
+                    url = StrUtil.format("http://www.iwencai.com/unifiedwap/result?w={}",
+                            encode
+                    );
+                } else {
+                    url = StrUtil.format("http://www.iwencai.com/unifiedwap/result?w={}&querytype={}",
+                            encode, typeStr
+                    );
+                }
+                CommonUtil.openUrlWithDefaultBrowser(url);
+            }
+        });
         WenCaiApiPanelForPlan panelTemp = this;
         findButton.addActionListener(new ActionListener() {
             @Override
@@ -173,7 +208,12 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
-                        WenCaiResult wenCaiResult = WenCaiApi.wenCaiQueryResult(question);
+                        Object currentSelectType = WenCaiApi.TypeStr.allTypesMap.get(jxRadioGroup.getSelectedValue());
+                        String typeStr = "";
+                        if (currentSelectType != null) {
+                            typeStr = currentSelectType.toString();
+                        }
+                        WenCaiResult wenCaiResult = WenCaiApi.wenCaiQueryResult(question, typeStr);
                         if (wenCaiResult == null) {
                             return;
                         }

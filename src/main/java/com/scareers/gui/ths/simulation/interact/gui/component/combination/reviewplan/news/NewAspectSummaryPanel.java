@@ -4,16 +4,21 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.tools.stockplan.news.bean.CompanyGoodNew;
 import com.scareers.tools.stockplan.news.bean.NewAspectSummary;
 import com.scareers.tools.stockplan.news.bean.dao.NewAspectSummaryDao;
 import com.scareers.utils.CommonUtil;
+import org.jdesktop.swingx.JXCollapsiblePane;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.sql.SQLException;
@@ -148,12 +153,17 @@ public class NewAspectSummaryPanel extends DisplayPanel {
         panelTemp.add(new JPanel(), BorderLayout.CENTER); // 必须占位
         this.add(panelTemp, BorderLayout.WEST);
 
+
+
         JPanel jPanelCenter = new JPanel();
         jPanelCenter.setLayout(new VerticalFlowLayout(VerticalFlowLayout.TOP));
         jPanelCenter.add(pointsPanel);
         jPanelCenter.add(preJudgementPanel);
+
         this.add(jPanelCenter, BorderLayout.CENTER);
     }
+
+
 
     public void update(NewAspectSummary bean) {
         this.bean = bean;

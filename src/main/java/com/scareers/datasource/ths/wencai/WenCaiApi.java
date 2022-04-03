@@ -3,6 +3,7 @@ package com.scareers.datasource.ths.wencai;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpException;
@@ -201,8 +202,8 @@ public class WenCaiApi {
      * "datas"
      * ]  为列表, 单项为 {}, key为表头, value为值
      */
-    public static DataFrame<Object> wenCaiQuery(String question, int perPage, int page) {
-        JSONObject jsonObject = accessWenCaiApi(question, perPage, page);
+    public static DataFrame<Object> wenCaiQuery(String question, int perPage, int page, String typeStr) {
+        JSONObject jsonObject = accessWenCaiApi(question, perPage, page, typeStr);
         if (jsonObject == null) {
             return null;
         }
@@ -234,7 +235,7 @@ public class WenCaiApi {
         return res;
     }
 
-    private static JSONObject accessWenCaiApi(String question, int perPage, int page) {
+    private static JSONObject accessWenCaiApi(String question, int perPage, int page, String typeStr) {
         String url = "http://www.iwencai.com/unifiedwap/unified-wap/v2/result/get-robot-data";
         HttpRequest request = new HttpRequest(url);
         request.setMethod(Method.POST);
@@ -251,7 +252,10 @@ public class WenCaiApi {
         params.put("question", question);
         params.put("perpage", perPage);
         params.put("page", page);
-        params.put("secondary_intent", "");
+        params.put("secondary_intent", typeStr);
+        // stock, fund, threeboard, insurance(保险),lccp(理财产品), usstock, hkstock, zhishu, conbond, futures,
+        // foreign_exchange, macro(其他)
+
         params.put("log_info", "{\"input_type\":\"click\"}");
         params.put("source", "Ths_iwencai_Xuangu");
         params.put("version", "2.0");
@@ -287,7 +291,7 @@ public class WenCaiApi {
         while (times <= retry) {
             times++;
             try {
-                res = wenCaiQuery(question, 100000, 1);
+                res = wenCaiQuery(question, 100000, 1, TypeStr.NONE);
             } catch (Exception e) {
             }
             if (res != null) {
@@ -297,6 +301,27 @@ public class WenCaiApi {
         return res;
     }
 
+    public static DataFrame<Object> wenCaiQuery(String question, String typeStr) {
+        return wenCaiQuery(question, 2, typeStr);
+    }
+
+    public static DataFrame<Object> wenCaiQuery(String question, int retry, String typeStr) {
+        DataFrame<Object> res = null;
+        int times = 0;
+        while (times <= retry) {
+            times++;
+            try {
+                res = wenCaiQuery(question, 100000, 1, typeStr);
+            } catch (Exception e) {
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
+    }
+
+
     /**
      * @return 当正常问句, 可能返回空df
      * @key3 核心问财api, 各实用api均调用此api, 各自对表头进行部分解析!
@@ -305,8 +330,8 @@ public class WenCaiApi {
      * "datas"
      * ]  为列表, 单项为 {}, key为表头, value为值
      */
-    public static WenCaiResult wenCaiQueryResult(String question, int perPage, int page) {
-        JSONObject jsonObject = accessWenCaiApi(question, perPage, page);
+    public static WenCaiResult wenCaiQueryResult(String question, int perPage, int page, String typeStr) {
+        JSONObject jsonObject = accessWenCaiApi(question, perPage, page, typeStr);
         if (jsonObject == null) {
             return null;
         }
@@ -363,7 +388,7 @@ public class WenCaiApi {
         while (times <= retry) {
             times++;
             try {
-                res = wenCaiQueryResult(question, 100000, 1);
+                res = wenCaiQueryResult(question, 100000, 1, TypeStr.NONE);
             } catch (Exception e) {
             }
             if (res != null) {
@@ -371,6 +396,65 @@ public class WenCaiApi {
             }
         }
         return res;
+    }
+
+    public static WenCaiResult wenCaiQueryResult(String question, String typeStr) {
+        return wenCaiQueryResult(question, 2, typeStr);
+    }
+
+    public static WenCaiResult wenCaiQueryResult(String question, int retry, String typeStr) {
+        WenCaiResult res = null;
+        int times = 0;
+        while (times <= retry) {
+            times++;
+            try {
+                res = wenCaiQueryResult(question, 100000, 1, typeStr);
+            } catch (Exception e) {
+            }
+            if (res != null) {
+                break;
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 问财api, 资产类型, 可空; 作为 wenCaiQuery 的 typeStr参数
+     */
+    public static class TypeStr {
+        // stock, fund, threeboard, insurance(保险),lccp(理财产品), usstock, hkstock, zhishu, conbond, futures,
+        // foreign_exchange, macro(其他)
+        public static final String NONE = ""; // 传递空, 将尝试解析
+        public static final String ASTOCK = "stock";
+        public static final String INDEX = "zhishu";
+        public static final String HKSTOCK = "hkstock";
+        public static final String USSTOCK = "usstock";
+        public static final String FUND = "fund";
+        public static final String XSB = "threeboard";
+        public static final String INSURANCE = "insurance";
+        public static final String LCCP = "lccp";
+        public static final String BOND = "conbond";
+        public static final String FUTURE = "futures";
+        public static final String EXCHANGE = "foreign_exchange";
+        public static final String OTHER = "macro";
+
+        public static String[] allTypeNames = {
+                "全部", "股票", "指数", "债券", "期货", "港股", "美股", "基金", "三板", "保险", "理财", "外汇", "其他"
+        };
+        public static Dict allTypesMap = Dict.create() // KEY作为单选按钮文字, value为值
+                .set("全部", NONE)
+                .set("股票", ASTOCK)
+                .set("指数", INDEX)
+                .set("港股", HKSTOCK)
+                .set("美股", USSTOCK)
+                .set("基金", FUND)
+                .set("三板", XSB)
+                .set("保险", INSURANCE)
+                .set("理财", LCCP)
+                .set("债券", BOND)
+                .set("期货", FUTURE)
+                .set("外汇", EXCHANGE)
+                .set("其他", OTHER);
     }
 
     /*

@@ -52,10 +52,10 @@ public class SecurityBeanEm implements Serializable {
     private static HashSet<String> bkSecurityTypeNames = new HashSet<>(Collections.singletonList("板块"));
     private static HashSet<String> indexSecurityTypeNames = new HashSet<>(Collections.singletonList("指数"));
     private static HashSet<String> bondSecurityTypeNames = new HashSet<>(Collections.singletonList("债券"));
-    private static final SecurityBeanEm SHANG_ZHENG_ZHI_SHU = initShIndex(); // 上证指数, 死循环获取直到成功
-    private static final SecurityBeanEm SHEN_ZHENG_CHENG_ZHI = initSzIndex(); // 上证指数, 死循环获取直到成功
-    private static final SecurityBeanEm ShangZhengZhuanZhaiIndex = initShBondIndex(); // 上证转债指数
-    private static final SecurityBeanEm ShenZhengZhuanZhaiIndex = initSzBondIndex(); // 深证转债指数
+    private static SecurityBeanEm SHANG_ZHENG_ZHI_SHU; // 上证指数, 死循环获取直到成功
+    private static SecurityBeanEm SHEN_ZHENG_CHENG_ZHI; // 上证指数, 死循环获取直到成功
+    private static SecurityBeanEm ShangZhengZhuanZhaiIndex; // 上证转债指数
+    private static SecurityBeanEm ShenZhengZhuanZhaiIndex; // 深证转债指数
 
     public static void main(String[] args) throws Exception {
 //        Console.log(SecurityBeanEm.createStock("002070",true).getConvertRawJsonObject());
@@ -376,8 +376,14 @@ public class SecurityBeanEm implements Serializable {
         INDEX, // 已转换为指数
         BK, // 已转换为板块
         BOND, // 已转换为 债券
+        MG_BY_CODE, // 强制用 "Code" 属性, 转换的美股!
+        FUTURE_BY_CODE, //  强制用 "Code" 属性, 转换的期货, 例如富时A50期指连续
         OTHER, // 其他类型, 尚未实现的转换类型冗余
     }
+    /**
+     * [{"SecurityType":"7","Classify":"UsStock","JYS":"AMEX","QuoteID":"107.YINN","TypeUS":"5","Code":"YINN","MktNum":"107","Name":"三倍做多FTSE中国ETF-Direxion","UnifiedCode":"YINN","InnerCode":"17236082930963","SecurityTypeName":"美股","PinYin":"SBZDFTSEZGETFDIREXION","ID":"YINN7","MarketType":"7"},{"SecurityType":"7","Classify":"UsStock","JYS":"AMEX","QuoteID":"107.BITQ","TypeUS":"5","Code":"BITQ","MktNum":"107","Name":"Bitwise Crypto Industry Innovat","UnifiedCode":"BITQ","InnerCode":"27066737335219","SecurityTypeName":"美股","PinYin":"BITWISECRYPTOINDUSTRYINNOVAT","ID":"BITQ7","MarketType":"7"}]
+     * [{"SecurityType":"13","Classify":"UniversalFutures","JYS":"SGX","QuoteID":"104.CN00Y","TypeUS":"1","Code":"CN00Y","MktNum":"104","Name":"A50期指当月连续","UnifiedCode":"CN00Y","InnerCode":"46183740881780","SecurityTypeName":"期货","PinYin":"A50QZDYLX","ID":"CN00Y0","MarketType":"0"}]
+     */
 
     /**
      * 给定查询结果构造.
@@ -529,6 +535,88 @@ public class SecurityBeanEm implements Serializable {
     }
 
     /**
+     * 尝试从查询结果中, 解析美股, 且其 Code属性, 需要等于 查询条件!
+     *
+     * @noti: 不新建对象
+     */
+    private SecurityBeanEm convertToMGByCode() throws Exception {
+        if (secType != SecType.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if (ele.getString("Code").equals(queryCondition) && "美股".equals(ele.getString("SecurityTypeName"))) {
+                // 三项基本
+                try {
+                    quoteId = ele.get("QuoteID").toString();
+                    secCode = ele.get("Code").toString();
+                    market = Integer.valueOf(ele.get("MktNum").toString());
+                    Name = ele.get("Name").toString();
+                    PinYin = ele.get("PinYin").toString();
+                    ID = ele.get("ID").toString();
+                    JYS = ele.get("JYS").toString();
+                    Classify = ele.get("Classify").toString();
+                    MarketType = ele.get("MarketType").toString();
+                    SecurityTypeName = ele.get("SecurityTypeName").toString();
+                    SecurityType = ele.get("SecurityType").toString();
+                    TypeUS = ele.get("TypeUS").toString();
+                    UnifiedCode = ele.get("UnifiedCode").toString();
+                    InnerCode = ele.get("InnerCode").toString();
+
+                    convertRawJsonObject = ele;
+                    secType = SecType.MG_BY_CODE;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+                return this;
+            }
+        }
+        secType = SecType.FAIL;
+        throw new Exception("转换StockBean为 美股ByCode 失败");
+    }
+
+    /**
+     * 尝试从查询结果中, 解析期货, 且其 Code属性, 需要等于 查询条件!
+     *
+     * @noti: 不新建对象
+     */
+    private SecurityBeanEm convertToFutureByCode() throws Exception {
+        if (secType != SecType.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if (ele.getString("Code").equals(queryCondition) && "期货".equals(ele.getString("SecurityTypeName"))) {
+                // 三项基本
+                try {
+                    quoteId = ele.get("QuoteID").toString();
+                    secCode = ele.get("Code").toString();
+                    market = Integer.valueOf(ele.get("MktNum").toString());
+                    Name = ele.get("Name").toString();
+                    PinYin = ele.get("PinYin").toString();
+                    ID = ele.get("ID").toString();
+                    JYS = ele.get("JYS").toString();
+                    Classify = ele.get("Classify").toString();
+                    MarketType = ele.get("MarketType").toString();
+                    SecurityTypeName = ele.get("SecurityTypeName").toString();
+                    SecurityType = ele.get("SecurityType").toString();
+                    TypeUS = ele.get("TypeUS").toString();
+                    UnifiedCode = ele.get("UnifiedCode").toString();
+                    InnerCode = ele.get("InnerCode").toString();
+
+                    convertRawJsonObject = ele;
+                    secType = SecType.FUTURE_BY_CODE;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+                return this;
+            }
+        }
+        secType = SecType.FAIL;
+        throw new Exception("转换StockBean为 期货ByCode 失败");
+    }
+
+    /**
      * 转换中具体的那一条json结果
      */
     JSONObject convertRawJsonObject;
@@ -644,6 +732,14 @@ public class SecurityBeanEm implements Serializable {
         return this.getSecurityTypeName().equals("三板");
     }
 
+    public boolean isMg() {
+        return "美股".equals(this.getSecurityTypeName());
+    }
+
+    public boolean isFuture() {
+        return "期货".equals(this.getSecurityTypeName());
+    }
+
     /**
      * 单个实例工厂, 使用缓存. SecurityBeanEm 一旦被转换为股票或者指数后, 不可变
      *
@@ -662,6 +758,28 @@ public class SecurityBeanEm implements Serializable {
             return res;
         }
         res = new SecurityBeanEm(queryCondition).convertToStock(lazyInitBkInfo);
+        beanPool.put(cacheKey, res);
+        return res;
+    }
+
+    public static SecurityBeanEm createMgByCode(String code) throws Exception {
+        String cacheKey = code + "__mg_by_code";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(code).convertToMGByCode();
+        beanPool.put(cacheKey, res);
+        return res;
+    }
+
+    public static SecurityBeanEm createFutureByCode(String code) throws Exception {
+        String cacheKey = code + "__future_by_code";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(code).convertToFutureByCode();
         beanPool.put(cacheKey, res);
         return res;
     }
@@ -701,18 +819,30 @@ public class SecurityBeanEm implements Serializable {
     }
 
     public static SecurityBeanEm getShenZhengZhuanZhaiIndex() {
+        if (ShenZhengZhuanZhaiIndex == null) {
+            ShenZhengZhuanZhaiIndex=initSzBondIndex();
+        }
         return ShenZhengZhuanZhaiIndex;
     }
 
     public static SecurityBeanEm getShangZhengZhuanZhaiIndex() {
+        if (ShangZhengZhuanZhaiIndex == null) {
+            ShangZhengZhuanZhaiIndex=initShBondIndex();
+        }
         return ShangZhengZhuanZhaiIndex;
     }
 
     public static SecurityBeanEm getShangZhengZhiShu() {
+        if (SHANG_ZHENG_ZHI_SHU == null) {
+            SHANG_ZHENG_ZHI_SHU = initShIndex();
+        }
         return SHANG_ZHENG_ZHI_SHU;
     }
 
     public static SecurityBeanEm getShenZhengChengZhi() {
+        if (SHEN_ZHENG_CHENG_ZHI == null) {
+            SHEN_ZHENG_CHENG_ZHI = initSzIndex();
+        }
         return SHEN_ZHENG_CHENG_ZHI;
     }
 
@@ -725,6 +855,10 @@ public class SecurityBeanEm implements Serializable {
             return createBK(queryCondition);
         } else if (type == SecType.BOND) {
             return createBond(queryCondition);
+        } else if (type == SecType.MG_BY_CODE) {
+            return createMgByCode(queryCondition); // code必须
+        } else if (type == SecType.FUTURE_BY_CODE) {
+            return createFutureByCode(queryCondition); // code必须
         } else {
             throw new Exception("未知资产类型, 无法创建");
         }
