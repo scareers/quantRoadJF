@@ -32,6 +32,8 @@ public abstract class NewsTabPanel extends DisplayPanel {
     protected JPanel buttonContainer;
     protected NewAspectSummaryPanel newAspectSummaryPanel; // 资讯面总结内容面板, 放于可折叠面板中
 
+    JScrollPane containerScrollPane; // 包裹自身
+
     protected NewsTabPanel(MainDisplayWindow mainDisplayWindow) {
         this.mainDisplayWindow = mainDisplayWindow;
         this.setLayout(new BorderLayout());
@@ -60,6 +62,11 @@ public abstract class NewsTabPanel extends DisplayPanel {
                 }
             }
         }, true);
+
+        containerScrollPane = new JScrollPane();
+        containerScrollPane.setViewportView(this);
+//        containerScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
     }
 
     private void initTabbedPane() {
@@ -73,7 +80,10 @@ public abstract class NewsTabPanel extends DisplayPanel {
         tabbedPane.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
+                try {
+                    ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
+                } catch (Exception ex) {
+                }
             }
         });
     }
@@ -124,6 +134,7 @@ public abstract class NewsTabPanel extends DisplayPanel {
 
     public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身
+//        mainDisplayWindow.setCenterPanel(this.containerScrollPane); // 面对可折叠面板无效,无法使得下部分高度不变
         mainDisplayWindow.setCenterPanel(this);
         if (tabbedPane.getSelectedIndex() != -1) {
 

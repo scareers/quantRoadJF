@@ -72,8 +72,8 @@ public class MainDisplayWindow extends FuncFrameS {
      *
      * @param centerPanel
      */
-    @Override
-    public void setCenterPanel(JPanel centerPanel) {
+//    @Override
+    public void setCenterPanel(JComponent centerPanel) {
         if (this.centerPanel != null) {
             this.centerPanel.setVisible(false);
         }

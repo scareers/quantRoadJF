@@ -22,13 +22,12 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
 import static com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout.TOP;
 
 /**
- * description: 给定东财bean, 展示 分时图和k线图; 使用 东财wdb版本, 行情里面的 图片k线和图片分时
- * 平均分左右两边, 左边分时, 右边k线;    均包含 按钮组(控制周期), 以及 各自 JXImageView 显示图片
+ * description: 同花顺概念行业 k线和分时图显示! 类似问财显示panel
  *
  * @author: admin
  * @date: 2022/4/4/004-02:45:02
  */
-public class KlineFsSimpleDisplayPanel extends DisplayPanel {
+public class KlineFsDisplayPanelForThsConcept extends DisplayPanel {
     public static void main(String[] args) {
 
     }
@@ -49,12 +48,12 @@ public class KlineFsSimpleDisplayPanel extends DisplayPanel {
     JPanel klinePanel;
 
 
-    public KlineFsSimpleDisplayPanel() {
+    public KlineFsDisplayPanelForThsConcept() {
 //        this.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
         this.setLayout(new VerticalFlowLayout(TOP)); // 平均分左右两边
         this.setPreferredSize(new Dimension(600,
-                (int) (buttonContainerHeight * 2 + fsImageHeight * (1 + fsDivideKLineHeightRate))+20));
+                (int) (buttonContainerHeight * 2 + fsImageHeight * (1 + fsDivideKLineHeightRate)) + 20));
 
         initLeftPanel();
         initRightPanel();

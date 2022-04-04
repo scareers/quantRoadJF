@@ -874,6 +874,9 @@ public class EmQuoteApi {
         params.put("version", "6.3.8");
 
         String response = getAsStrUseHutool(url, params, 4000);
+        if (response == null) {
+            return null;
+        }
         DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
                 fields, Arrays.asList("data", "diff"), JSONObject.class, Arrays.asList(),
                 Arrays.asList());
@@ -901,8 +904,7 @@ public class EmQuoteApi {
             int retrySingle,
             int timeoutOfReq,
             boolean useCache
-    )
-            throws ExecutionException, InterruptedException {
+    ) {
 
         log.info("klines gets batch: 线程池批量获取k线, 股票数量: {}", beanEmList.size());
         checkPoolExecutor();
@@ -910,7 +912,7 @@ public class EmQuoteApi {
         for (SecurityBeanEm beanEm : beanEmList) {
             futures.put(beanEm, poolExecutor.submit(new Callable<DataFrame<Object>>() {
                 @Override
-                public DataFrame<Object> call() throws Exception {
+                public DataFrame<Object> call() {
                     return getQuoteHistorySingle(useCache, beanEm, begDate, endDate, klType, fq, retrySingle,
                             timeoutOfReq);
                 }
@@ -918,7 +920,14 @@ public class EmQuoteApi {
         }
         ConcurrentHashMap<SecurityBeanEm, DataFrame<Object>> res = new ConcurrentHashMap<>();
         for (SecurityBeanEm beanEm : Tqdm.tqdm(beanEmList, "process: ")) {
-            DataFrame<Object> dfTemp = futures.get(beanEm).get();
+            DataFrame<Object> dfTemp = null;
+            try {
+                dfTemp = futures.get(beanEm).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
             if (dfTemp != null) {
                 res.put(beanEm, dfTemp);
             }

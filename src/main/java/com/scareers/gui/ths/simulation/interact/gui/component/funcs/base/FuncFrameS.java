@@ -78,7 +78,7 @@ public abstract class FuncFrameS extends JInternalFrame {
     CopyOnWriteArrayList<FuncButton> toolButtonList2 = new CopyOnWriteArrayList<>();
 
     // 抽象方法实现初始化功能框内容
-    protected JPanel centerPanel; // 主内容, 若调用特殊方法, 应当强制转型后调用
+    protected JComponent centerPanel; // 主内容, 若调用特殊方法, 应当强制转型后调用
 
     // 3抽象方法, 需要填充中央组件, 内部工具栏2类按钮
     protected abstract void initCenterPanel();

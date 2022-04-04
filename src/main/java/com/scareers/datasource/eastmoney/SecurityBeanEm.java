@@ -378,6 +378,7 @@ public class SecurityBeanEm implements Serializable {
         BOND, // 已转换为 债券
         MG_BY_CODE, // 强制用 "Code" 属性, 转换的美股!
         FUTURE_BY_CODE, //  强制用 "Code" 属性, 转换的期货, 例如富时A50期指连续
+        FOREIGN_EXCHANGE_BY_CODE, //  强制用 "Code" 属性, 转换的期货, 例如富时A50期指连续
         OTHER, // 其他类型, 尚未实现的转换类型冗余
     }
     /**
@@ -617,6 +618,47 @@ public class SecurityBeanEm implements Serializable {
     }
 
     /**
+     * 尝试从查询结果中, 解析期货, 且其 Code属性, 需要等于 查询条件!
+     *
+     * @noti: 不新建对象
+     */
+    private SecurityBeanEm convertToForeignExchangeByCode() throws Exception {
+        if (secType != SecType.NULL) {
+            throw new Exception("SecurityBeanEm 已被转化,不可再次转换");
+        }
+        for (int i = 0; i < queryResults.size(); i++) {
+            JSONObject ele = queryResults.getJSONObject(i);
+            if (ele.getString("Code").equals(queryCondition) && "外汇".equals(ele.getString("SecurityTypeName"))) {
+                // 三项基本
+                try {
+                    quoteId = ele.get("QuoteID").toString();
+                    secCode = ele.get("Code").toString();
+                    market = Integer.valueOf(ele.get("MktNum").toString());
+                    Name = ele.get("Name").toString();
+                    PinYin = ele.get("PinYin").toString();
+                    ID = ele.get("ID").toString();
+                    JYS = ele.get("JYS").toString();
+                    Classify = ele.get("Classify").toString();
+                    MarketType = ele.get("MarketType").toString();
+                    SecurityTypeName = ele.get("SecurityTypeName").toString();
+                    SecurityType = ele.get("SecurityType").toString();
+                    TypeUS = ele.get("TypeUS").toString();
+                    UnifiedCode = ele.get("UnifiedCode").toString();
+                    InnerCode = ele.get("InnerCode").toString();
+
+                    convertRawJsonObject = ele;
+                    secType = SecType.FOREIGN_EXCHANGE_BY_CODE;
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+                return this;
+            }
+        }
+        secType = SecType.FAIL;
+        throw new Exception("转换StockBean为 外汇ByCode 失败");
+    }
+
+    /**
      * 转换中具体的那一条json结果
      */
     JSONObject convertRawJsonObject;
@@ -783,6 +825,16 @@ public class SecurityBeanEm implements Serializable {
         beanPool.put(cacheKey, res);
         return res;
     }
+    public static SecurityBeanEm createForeignExchangeByCode(String code) throws Exception {
+        String cacheKey = code + "__foreign_exchange_by_code";
+        SecurityBeanEm res = beanPool.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = new SecurityBeanEm(code).convertToForeignExchangeByCode();
+        beanPool.put(cacheKey, res);
+        return res;
+    }
 
 
     public static SecurityBeanEm createIndex(String queryCondition) throws Exception {
@@ -859,7 +911,9 @@ public class SecurityBeanEm implements Serializable {
             return createMgByCode(queryCondition); // code必须
         } else if (type == SecType.FUTURE_BY_CODE) {
             return createFutureByCode(queryCondition); // code必须
-        } else {
+        } else if (type == SecType.FOREIGN_EXCHANGE_BY_CODE) {
+            return createForeignExchangeByCode(queryCondition); // code必须
+        }else {
             throw new Exception("未知资产类型, 无法创建");
         }
     }
