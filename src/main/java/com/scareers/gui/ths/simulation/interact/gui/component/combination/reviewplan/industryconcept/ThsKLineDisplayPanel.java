@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
 import cn.hutool.core.date.DateTime;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.pandasdummy.DataFrameS;
@@ -9,7 +8,6 @@ import com.scareers.utils.charts.ThsChart;
 import joinery.DataFrame;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.ui.ApplicationFrame;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,17 +23,16 @@ import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForFsXYPlot
  * @author: admin
  * @date: 2022/4/5/005-06:30:09
  */
-public class ThsFsDisplayPanel extends DisplayPanel {
+public class ThsKLineDisplayPanel extends DisplayPanel {
     DataFrame<Object> thsFsDf;
     String title = "暂无标题";
-    double preClose;
 
     JFreeChart chart;
     ChartPanel chartPanel;
 
-    public ThsFsDisplayPanel() {
+    public ThsKLineDisplayPanel() {
         this.setLayout(new BorderLayout());
-        JLabel jLabel = new JLabel("暂无分时数据");
+        JLabel jLabel = new JLabel("暂无k线数据");
         jLabel.setForeground(Color.red);
         jLabel.setBackground(COLOR_THEME_MINOR);
         this.add(jLabel, BorderLayout.CENTER);
@@ -50,12 +47,11 @@ public class ThsFsDisplayPanel extends DisplayPanel {
      * @param title
      * @param preClose
      */
-    public void update(DataFrame<Object> thsFsDf, String title, double preClose) {
+    public void update(DataFrame<Object> thsFsDf, String title) {
         this.thsFsDf = thsFsDf;
         if (!StrUtil.isBlank(title)) {
             this.title = title;
         }
-        this.preClose = preClose;
         this.update();
     }
 
@@ -64,8 +60,8 @@ public class ThsFsDisplayPanel extends DisplayPanel {
         if (this.thsFsDf == null || this.thsFsDf.length() == 0) {
             return;
         }
-        List<DateTime> timeTicks = DataFrameS.getColAsDateList(thsFsDf, "时间"); // 日期列表;传递给监听器,设置横轴marker
-        chart = ThsChart.createFs1MOfThs(thsFsDf, preClose, title, true);
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(thsFsDf, "日期"); // 日期列表;传递给监听器,设置横轴marker
+        chart = ThsChart.createKLineOfThs(thsFsDf, title);
         if (chartPanel == null) {
             chartPanel = new ChartPanel(this.chart);
             chartPanel.setMouseZoomable(false);

@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -15,15 +16,20 @@ import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.charts.ThsChart;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
 import org.jdesktop.swingx.*;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.ui.ApplicationFrame;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -117,47 +123,99 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
     }
 
-    ThsFsDisplayPanel fsDisplayPanel;
+    ThsFsDisplayPanel fsDisplayPanel; // 分时图
+    ThsKLineDisplayPanel dailyKLineDisplayPanel; // 日k线
+    ThsKLineDisplayPanel weeklyKLineDisplayPanel; // 周k线
+    ThsKLineDisplayPanel monthlyKLineDisplayPanel; // 月k线
 
     private void initKlineDisplayPanel() {
         klineDisplayContainerPanel = new JPanel();
-//        JLabel jLabel = new JLabel("测试内容");
-//        jLabel.setPreferredSize(new Dimension(500, 300));
-//        klineDisplayPanel.add(jLabel);
-
         klineDisplayContainerPanel.setLayout(new GridLayout(1, 4, -1, -1)); // 4份 k线
-
+        // 4大k线
         fsDisplayPanel = new ThsFsDisplayPanel();
+        fsDisplayPanel.setPreferredSize(new Dimension(300, 300));
+        dailyKLineDisplayPanel = new ThsKLineDisplayPanel();
+        weeklyKLineDisplayPanel = new ThsKLineDisplayPanel();
+        monthlyKLineDisplayPanel = new ThsKLineDisplayPanel();
 
 
         klineDisplayContainerPanel.add(fsDisplayPanel);
-
-//        ThsChart.createDailyKLineOfThs()
-        /*
-                // 分时
-//        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
-//        Console.log(industryDf);
-//        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
-//        String code = industryDf.get(0, "code").toString();
-//        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(33, "000001");
-//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
-//        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
-         */
-
-
+        klineDisplayContainerPanel.add(dailyKLineDisplayPanel);
+        klineDisplayContainerPanel.add(weeklyKLineDisplayPanel);
+        klineDisplayContainerPanel.add(monthlyKLineDisplayPanel);
     }
 
     /**
-     * 当切换选项, 也应该自动切换分时和k线显示内容.
+     * 当切换选项, 也应该自动切换分时和k线显示内容. 见 jTable的监听
      */
     private void updateKLineAndFsDisplay() {
         if (this.currentBean == null) {
             return;
         }
-//                DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(this.currentBean.setCirculatingMarketValue();,"000001");
-//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
-//        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                updateFsDisplay();
+                updateKLineDisplay();
+            }
+        }, true);
+    }
 
+    private void updateFsDisplay() {
+        try {
+            DataFrame<Object> fs1M = WenCaiDataApi
+                    .getFS1M(this.currentBean.getMarketCode(), this.currentBean.getCode());
+            Double preClose = 10.0;
+            try {
+                DataFrame<Object> last5DailyKLine = WenCaiDataApi
+                        .getLastNKline(this.currentBean.getMarketCode(), this.currentBean.getCode(), 0, 0, 2);
+                preClose = Double.valueOf(last5DailyKLine.get(last5DailyKLine.length() - 2, "收盘").toString());
+            } catch (NumberFormatException e) {
+                preClose = Double.valueOf(fs1M.get(0, "收盘").toString());
+                ManiLog.put(StrUtil.format("获取昨日收盘价失败,使用第一条分时图close替代: {}", currentBean.getName()));
+            }
+            fsDisplayPanel.update(fs1M, currentBean.getName() + "-分时", preClose);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            ManiLog.put(StrUtil.format("更新分时图失败: {}", currentBean.getName()));
+        }
+    }
+
+    public static final int preferKLinePeriods = 60; // k线 画多少根
+
+    /**
+     * 依次更新日/周/月 k线展示
+     */
+    private void updateKLineDisplay() {
+        try {
+            DataFrame<Object> lastNKline = WenCaiDataApi
+                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 0, 1
+                            , preferKLinePeriods);
+            dailyKLineDisplayPanel.update(lastNKline, currentBean.getName() + "-日K");
+        } catch (Exception e) {
+            e.printStackTrace();
+            ManiLog.put(StrUtil.format("更新日k线失败: {}", currentBean.getName()));
+        }
+
+        try {
+            DataFrame<Object> lastNKline2 = WenCaiDataApi
+                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 1, 1
+                            , preferKLinePeriods);
+            weeklyKLineDisplayPanel.update(lastNKline2, currentBean.getName() + "-周K");
+        } catch (Exception e) {
+            e.printStackTrace();
+            ManiLog.put(StrUtil.format("更新周k线失败: {}", currentBean.getName()));
+        }
+
+        try {
+            DataFrame<Object> lastNKline3 = WenCaiDataApi
+                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 2, 1
+                            , preferKLinePeriods);
+            monthlyKLineDisplayPanel.update(lastNKline3, currentBean.getName() + "-月K");
+        } catch (Exception e) {
+            e.printStackTrace();
+            ManiLog.put(StrUtil.format("更新月k线失败: {}", currentBean.getName()));
+        }
     }
 
     private void initButtons() {
@@ -811,9 +869,16 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
             jTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+                int preRow = -10;
+
                 @Override
                 public void valueChanged(ListSelectionEvent e) {
                     int row = jTable.getSelectedRow();
+                    if (row != preRow) {
+                        preRow = row;
+                    } else {
+                        return; // 实际更新了行, 才调用后面逻辑
+                    }
                     Object valueAt;
                     try {
                         valueAt = model.getValueAt(row, 0);
@@ -822,6 +887,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                     }
                     currentBean = beanMap.get(Long.parseLong(valueAt.toString()));
                     editorPanel.update(currentBean);
+                    updateKLineAndFsDisplay(); // k线展示也改变
                 }
             });
             initJTableStyle();

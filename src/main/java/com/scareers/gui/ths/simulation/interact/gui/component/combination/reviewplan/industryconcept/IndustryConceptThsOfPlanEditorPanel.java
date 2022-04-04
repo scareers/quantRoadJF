@@ -62,6 +62,8 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
     JLabel codeValueLabel = getCommonLabel();
     JLabel indexCodeLabel = getCommonLabel("indexCode");
     JLabel indexCodeValueLabel = getCommonLabel();
+    JLabel marketCodeLabel = getCommonLabel("indexCode");
+    JLabel marketCodeValueLabel = getCommonLabel();
     JLabel dateStrLabel = getCommonLabel("dateStr");
     JLabel dateStrValueLabel = getCommonLabel();
     JLabel chgPLabel = getCommonLabel("chgP");
@@ -158,7 +160,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
     public IndustryConceptThsOfPlanEditorPanel(IndustryConceptPanelForPlan parentPanel) {
         this.parentPanel = parentPanel;
-        this.setLayout(new GridLayout(39, 2, 1, 1)); // 简易网格布局
+        this.setLayout(new GridLayout(40, 2, -1, -1)); // 简易网格布局
 
 
         this.add(totalAmountLabel);
@@ -181,6 +183,9 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         this.add(indexCodeLabel);
         this.add(indexCodeValueLabel);
+
+        this.add(marketCodeLabel);
+        this.add(marketCodeValueLabel);
 
         this.add(dateStrLabel);
         this.add(dateStrValueLabel);
@@ -923,6 +928,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
         type2ValueLabel.setText(CommonUtil.toStringCheckNull(bean.getType2()));
         codeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getCode()));
         indexCodeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getIndexCode()));
+        marketCodeValueLabel.setText(CommonUtil.toStringCheckNull(bean.getMarketCode()));
         dateStrValueLabel.setText(CommonUtil.toStringCheckNull(bean.getDateStr()));
         chgPValueLabel.setText(CommonUtil.toStringCheckNull(bean.getChgP()));
 

@@ -65,7 +65,7 @@ public class ThsChart {
 
     public static Color bgColorKLine = new Color(7, 7, 7);
     //    public static Color bgColorKLine = Color.white;
-    public static int gapOfTwoPlotOfKLine = 10; // 分时价格和成交量,两个图的gap
+    public static int gapOfTwoPlotOfKLine = 0; // 分时价格和成交量,两个图的gap
     public static final int weight1OfTwoPlotOfKLine = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
     public static final int weight2OfTwoPlotOfKLine = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
@@ -84,15 +84,15 @@ public class ThsChart {
     public static Color bgColorFs = new Color(7, 7, 7);
 
     // 分时图形状控制!
-    public static final int gapOfTwoPlotOfFs = 10; // 分时价格和成交量,两个图的gap
+    public static final int gapOfTwoPlotOfFs = 0; // 分时价格和成交量,两个图的gap
     public static final int weight1OfTwoPlotOfFs = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
     public static final int weight2OfTwoPlotOfFs = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
     public static void main(String[] args) {
-//        kLineDemo();
+        kLineDemo();
 //
-        fsDemo();
+//        fsDemo();
     }
 
     private static void kLineDemo() {
@@ -103,7 +103,7 @@ public class ThsChart {
         int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
         String code = industryDf.get(0, "code").toString();
 
-        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 0, 1, 120);
+        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 0, 1, 60);
         List<DateTime> timeTicks = DataFrameS.getColAsDateList(lastNKline, "日期"); // 日期列表;传递给监听器,设置横轴marker
 
         JFreeChart chart = createKLineOfThs(lastNKline, String.valueOf(code));

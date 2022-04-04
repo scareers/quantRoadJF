@@ -1,10 +1,12 @@
 package com.scareers.datasource.eastmoney.dailycrawler.commons;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
@@ -27,8 +29,10 @@ public class BkListEm extends CrawlerEm {
         super("bk_list");
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
         new BkListEm().run();
+//        Console.log(EastMoneyDbApi.isTradeDate("2022-04-07"));
+
     }
 
     @Override
