@@ -9,10 +9,13 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import org.hibernate.id.enhanced.PooledLoThreadLocalOptimizer;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
@@ -24,36 +27,33 @@ import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.CandlestickRenderer;
-import org.jfree.chart.renderer.xy.XYBarRenderer;
-import org.jfree.chart.renderer.xy.XYItemRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.*;
 import org.jfree.chart.urls.StandardXYURLGenerator;
 import org.jfree.chart.urls.XYURLGenerator;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.time.Minute;
-import org.jfree.data.time.Second;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
+import org.jfree.data.time.*;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.ApplicationFrame;
-import org.jfree.ui.LengthAdjustmentType;
-import org.jfree.ui.RectangleAnchor;
-import org.jfree.ui.TextAnchor;
+import org.jfree.text.TextUtilities;
+import org.jfree.ui.*;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
+import java.math.RoundingMode;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,13 +73,39 @@ public class ChartUtil {
     }
 
     public static void main(String[] args) throws Exception {
-//        demoOfXYPlotAndShiZiAndDynamicData();
-        demo2();
+
+
+        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
+        Console.log(industryDf);
+//
+        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
+        String code = industryDf.get(0, "code").toString();
+//        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(marketCode, code);
+//        Console.log(fs1M);
+//
+//        /*
+//         *     	      日期	      开盘	      最高	      最低	      收盘	        成交量	              成交额
+//         *    0	20070831	976.728 	1032.163	940.157 	1017.768	1787555400 	32589345000.000
+//         *    1	20070928	1028.107	1123.050	1004.033	1113.713	2044824800 	39127837000.000
+//         */
+//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 0, 0, 20);
+//        Console.log(lastNKline.toString(100));
+//
+//        JFreeChart chart = createFs1MOfThs(fs1M, 1368.816, "标题");
+//        showChartSimple(chart);
+        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 0, 1, 241);
+        Console.log(lastNKline);
+
+
+        JFreeChart chart = createKLineOfThs(lastNKline, null, "标题", KLineYType.VALUE);
+        showChartSimple(chart);
 
 //        String stock = "000001";
 //        DataFrame<Object> fs1MToday = EmQuoteApi.getFs1MToday(SecurityBeanEm.createStock(stock), 3, 3000);
 //        JFreeChart chart = createFs1MKLineOfEm(fs1MToday,
-//                EmQuoteApi.getStockPreCloseAndTodayOpen(stock, 2000, 3, true).get(0), "000001", KLineYType.PERCENT);
+//                EmQuoteApi.getStockBondPreCloseAndTodayOpen(SecurityBeanEm.createStock(stock), 2000, 3, true).get(0),
+//                "000001",
+//                KLineYType.PERCENT);
 //        showChartSimple(chart);
 
 
@@ -184,8 +210,6 @@ public class ChartUtil {
         chartPanel.setPreferredSize(new java.awt.Dimension(1800, 1000));
 
         chartPanel.addChartMouseListener(new CrossLineListenerForTimeSeriesXYPlot());
-
-
 
 
         chartPanel.setDisplayToolTips(true);
@@ -468,6 +492,7 @@ public class ChartUtil {
         // 是否确定需要百分比化
         boolean percentizeFlag = kLineYType == KLineYType.PERCENT && stdValue != null && !stdValue.equals(0.0);
         List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, dateTimeColName);
+        Console.log(timeTicks);
         List<Double> opens = DataFrameS.getColAsDoubleList(dataFrame, openColName);
         List<Double> closes = DataFrameS.getColAsDoubleList(dataFrame, closeColName);
         List<Double> highs = DataFrameS.getColAsDoubleList(dataFrame, highColName);
@@ -616,6 +641,575 @@ public class ChartUtil {
     public static JFreeChart createFs1MKLineOfEm(DataFrame<Object> dataFrame, Double preClose,
                                                  String title, KLineYType kLineYType) {
         return createKlineCore(dataFrame, preClose, title, "日期", "开盘", "收盘", "最高", "最低", "成交量", kLineYType);
+    }
+
+    /**
+     * //         *     	      日期	      开盘	      最高	      最低	      收盘	        成交量	              成交额
+     * //         *    0	20070831	976.728 	1032.163	940.157 	1017.768	1787555400 	32589345000.000
+     * //         *    1	20070928	1028.107	1123.050	1004.033	1113.713	2044824800 	39127837000.000
+     * @param dataFrame
+     * @param preClose
+     * @param title
+     * @param kLineYType
+     * @return
+     */
+    public static JFreeChart createKLineOfThs(DataFrame<Object> dataFrame, Double preClose,
+                                                 String title, KLineYType kLineYType) {
+        return createKlineCore(dataFrame, preClose, title, "日期", "开盘", "收盘", "最高", "最低", "成交量", kLineYType);
+    }
+
+    /**
+     * 同花顺分时图, 非k线图; 坐标轴使用 涨跌幅百分比 坐标
+     * 时间	      价格	      成交额	   均价	     成交量
+     * 0	09:30	1361.471	70277980 	6.485	10836443
+     * 1	09:31	1355.017	274092870	5.562	51076425
+     * 2	09:32	1354.467	201235350	5.913	30360420
+     *
+     * @param dataFrame
+     * @param preClose
+     * @param title
+     * @param kLineYType
+     * @return
+     */
+    public static JFreeChart createFs1MOfThs(DataFrame<Object> dataFrame, Double preClose,
+                                             String title) {
+        return timeSharingChartPlant(dataFrame, preClose, title);
+
+    }
+
+    // todo
+    public static JFreeChart timeSharingChartPlant(DataFrame<Object> dataFrame, Double yClose,
+                                                   String title) {
+        String path = null;
+        try {
+            // 是否确定需要百分比化
+            List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, "时间");
+            List<Double> prices = DataFrameS.getColAsDoubleList(dataFrame, "价格");
+            List<Double> vols = DataFrameS.getColAsDoubleList(dataFrame, "成交量");
+
+            double mLow = CommonUtil.minOfListDouble(prices); // 价格最低
+            double mHigh = CommonUtil.maxOfListDouble(prices); // 价格最高
+
+            TimeSeriesCollection lineSeriesConllection = new TimeSeriesCollection();
+            TimeSeries serise1 = new TimeSeries("分时数据");
+            TimeSeries serise2 = new TimeSeries("昨日收盘价");
+
+            TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection();//保留成交量数据的集合
+            TimeSeries serise3 = new TimeSeries("成交量");
+
+            Date today = timeTicks.get(0);//今天
+
+
+            //循环写入数据
+            for (int i = 0; i < prices.size(); i++) {
+                serise1.add(new Millisecond(timeTicks.get(i)), prices.get(i));
+                serise3.add(new Millisecond(timeTicks.get(i)), vols.get(i));
+            }
+
+            serise2.add(new Day(today), yClose);
+
+            Date tomorrow = new Date(today.getTime() + 86400000); // 明天
+            serise2.add(new Day(tomorrow), yClose);
+
+            //分时图数据
+            lineSeriesConllection.addSeries(serise1);
+            lineSeriesConllection.addSeries(serise2);
+
+            //成交量数据
+            barSeriesCollection.addSeries(serise3);
+
+
+            //设置均线图画图器
+            XYLineAndShapeRenderer lineAndShapeRenderer = new XYLineAndShapeRenderer();
+            lineAndShapeRenderer.setBaseItemLabelsVisible(true);
+            lineAndShapeRenderer.setSeriesShapesVisible(0, false);//设置不显示数据点模型
+            lineAndShapeRenderer.setSeriesShapesVisible(1, false);
+            lineAndShapeRenderer.setSeriesPaint(0, Color.WHITE);//设置均线颜色
+            lineAndShapeRenderer.setSeriesPaint(1, Color.RED);
+
+
+            //设置k线图x轴，也就是时间轴
+            DateAxis domainAxis = new DateAxis();
+            domainAxis.setAutoRange(false);//设置不采用自动设置时间范围
+            //设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
+            Calendar calendar = Calendar.getInstance();
+            Date da = today;
+            calendar.setTime(da);
+            calendar.set(Calendar.HOUR_OF_DAY, 9);
+            calendar.set(Calendar.MINUTE, 29);
+            calendar.set(Calendar.SECOND, 0);
+            Date sda = calendar.getTime();
+            calendar.set(Calendar.HOUR_OF_DAY, 15);
+            calendar.set(Calendar.MINUTE, 01);
+            da = calendar.getTime();
+            domainAxis.setRange(sda, da);//设置时间范围
+
+
+            DateFormat df = new SimpleDateFormat("HH:mm");
+            domainAxis.setAutoTickUnitSelection(false);//设置不采用自动选择刻度值
+            domainAxis.setTickMarkPosition(DateTickMarkPosition.START);//设置标记的位置
+            domainAxis.setStandardTickUnits(DateAxis.createStandardDateTickUnits());// 设置标准的时间刻度单位
+
+
+            domainAxis.setTickUnit(new DateTickUnit(DateTickUnit.MINUTE, 30));// 设置时间刻度的间隔
+            domainAxis.setDateFormatOverride(df);//设置时间格式
+
+
+            SegmentedTimeline timeline = SegmentedTimeline
+                    .newFifteenMinuteTimeline();//设置时间线显示的规则，用这个方法摒除掉周六和周日这些没有交易的日期
+
+
+            calendar.set(Calendar.HOUR_OF_DAY, 11);
+            calendar.set(Calendar.MINUTE, 31);
+            calendar.set(Calendar.SECOND, 0);
+            sda = calendar.getTime();
+            calendar.set(Calendar.HOUR_OF_DAY, 12);
+            calendar.set(Calendar.MINUTE, 59);
+            da = calendar.getTime();
+
+
+            timeline.addException(sda.getTime(), da.getTime());//排除非交易时间段
+            domainAxis.setTimeline(timeline);
+
+
+            //设置k线图y轴参数
+            NumberAxisY1 y1Axis = new NumberAxisY1();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y1Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y1Axis.setLabel(String.valueOf(yClose));
+            y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            double t = yClose - mLow;
+            double t1 = mHigh - yClose;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            double range = t1 > t ? t1 : t;//计算涨跌最大幅度
+            DecimalFormat df1 = new DecimalFormat("#0.00");
+            df1.setRoundingMode(RoundingMode.FLOOR);
+
+
+            y1Axis.setRange(Double.valueOf(df1.format(yClose - range)),
+                    Double.valueOf(df1.format(yClose + range)));//设置y轴数据范围
+            y1Axis.setNumberFormatOverride(df1);
+            y1Axis.centerRange(yClose);
+            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+            y1Axis.setTickUnit(numberTickUnit);
+
+
+            NumberAxisY2 y2Axis = new NumberAxisY2();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+
+
+            t = (mLow - yClose) / yClose;
+            t1 = (mHigh - yClose) / yClose;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            range = t1 > t ? t1 : t;
+            y2Axis.setRange(-range, range);//设置y轴数据范围
+            y2Axis.setTickLabelPaint(Color.RED);
+            DecimalFormat df2 = new DecimalFormat("#0.00%");
+            df2.setRoundingMode(RoundingMode.FLOOR);
+            y2Axis.setNumberFormatOverride(df2);
+            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+            y2Axis.setTickUnit(numberTickUnit2);
+
+
+            //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
+            //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
+            XYPlot plot = new XYPlot(lineSeriesConllection, domainAxis, null, lineAndShapeRenderer);
+            plot.setBackgroundPaint(Color.BLACK);//设置曲线图背景色
+            plot.setDomainGridlinesVisible(false);//不显示网格
+            plot.setRangeGridlinePaint(Color.RED);//设置间距格线颜色为红色
+            plot.setRangeAxis(0, y1Axis);
+            plot.setRangeAxis(1, y2Axis);
+
+
+            //设置柱状图参数
+            XYBarRenderer barRenderer = new XYBarRenderer();
+
+
+            barRenderer.setDrawBarOutline(true);//设置显示边框线
+            barRenderer.setBarPainter(new StandardXYBarPainter());//取消渐变效果
+            barRenderer.setMargin(0.5);//设置柱形图之间的间隔
+            barRenderer.setSeriesPaint(0, Color.YELLOW);//设置柱子内部颜色
+            barRenderer.setSeriesOutlinePaint(0, Color.YELLOW);//设置柱子边框颜色
+            barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
+            barRenderer.setShadowVisible(false);//设置没有阴影
+
+
+            //设置柱状图y轴参数
+            NumberAxis y3Axis = new NumberAxis();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
+            y3Axis.setAutoRange(true);//设置采用自动设置时间范围
+            y3Axis.setTickLabelPaint(Color.ORANGE);//设置y轴刻度值颜色
+
+
+            //这里不设置x轴，x轴参数依照k线图x轴为模板
+            XYPlot plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
+            plot2.setBackgroundPaint(Color.BLACK);//设置曲线图背景色
+            plot2.setDomainGridlinesVisible(false);//不显示网格
+            plot2.setRangeGridlinePaint(Color.RED);//设置间距格线颜色为红色
+
+
+            //建立一个恰当的联合图形区域对象，以x轴为共享轴
+            CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);//
+            domainXYPlot.add(plot, 2);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+            domainXYPlot.add(plot2, 1);
+            domainXYPlot.setGap(2);//设置两个图形区域对象之间的间隔空间
+
+            plot.setBackgroundPaint(Color.black);
+            plot2.setBackgroundPaint(Color.black);
+            domainXYPlot.setBackgroundPaint(Color.black);
+            //生成图纸
+            JFreeChart chart = new JFreeChart(title, new Font("微软雅黑", Font.BOLD, 24), domainXYPlot, true);
+            chart.setBackgroundPaint(Color.black);
+            return chart;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    /**
+     * 此内部类专门为分时图提供，已解决分时图y轴数据刻度无法显示多种颜色的情况
+     *
+     * @author t
+     */
+    private static class NumberAxisY2 extends NumberAxis {
+        @Override
+        protected AxisState drawTickMarksAndLabels(Graphics2D g2, double cursor, Rectangle2D plotArea,
+                                                   Rectangle2D dataArea, RectangleEdge edge) {
+            AxisState state = new AxisState(cursor);
+            if (isAxisLineVisible()) {
+                drawAxisLine(g2, cursor, dataArea, edge);
+            }
+
+
+            List ticks = refreshTicks(g2, state, dataArea, edge);
+            state.setTicks(ticks);
+            g2.setFont(getTickLabelFont());
+            Iterator iterator = ticks.iterator();
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                if (isTickLabelsVisible()) {
+                    if (tick.getValue() > 0) {
+                        g2.setPaint(Color.RED);
+                    } else if (tick.getValue() == 0) {
+                        g2.setPaint(Color.GRAY);
+                    } else {
+                        g2.setPaint(Color.GREEN);
+                    }
+
+
+                    float[] anchorPoint = calculateAnchorPoint(tick, cursor, dataArea, edge);
+                    TextUtilities
+                            .drawRotatedString(tick.getText(), g2, anchorPoint[0], anchorPoint[1], tick.getTextAnchor(),
+                                    tick.getAngle(), tick.getRotationAnchor());
+                }
+
+
+                if (((isTickMarksVisible()) && (tick.getTickType()
+                        .equals(TickType.MAJOR))) || ((isMinorTickMarksVisible()) && (tick.getTickType()
+                        .equals(TickType.MINOR)))) {
+                    double ol = getTickMarkOutsideLength();
+
+
+                    double il = getTickMarkInsideLength();
+
+
+                    float xx = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+
+
+                    Line2D mark = null;
+                    g2.setStroke(getTickMarkStroke());
+                    g2.setPaint(getTickMarkPaint());
+                    if (edge == RectangleEdge.LEFT) {
+                        mark = new Line2D.Double(cursor - ol, xx, cursor + il, xx);
+                    } else if (edge == RectangleEdge.RIGHT) {
+                        mark = new Line2D.Double(cursor + ol, xx, cursor - il, xx);
+                    } else if (edge == RectangleEdge.TOP) {
+                        mark = new Line2D.Double(xx, cursor - ol, xx, cursor + il);
+                    } else if (edge == RectangleEdge.BOTTOM) {
+                        mark = new Line2D.Double(xx, cursor + ol, xx, cursor - il);
+                    }
+                    g2.draw(mark);
+                }
+
+
+            }
+
+
+            double used = 0.0D;
+            if (isTickLabelsVisible()) {
+                if (edge == RectangleEdge.LEFT) {
+                    used += findMaximumTickLabelWidth(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorLeft(used);
+                } else if (edge == RectangleEdge.RIGHT) {
+                    used = findMaximumTickLabelWidth(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorRight(used);
+                } else if (edge == RectangleEdge.TOP) {
+                    used = findMaximumTickLabelHeight(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorUp(used);
+                } else if (edge == RectangleEdge.BOTTOM) {
+                    used = findMaximumTickLabelHeight(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorDown(used);
+                }
+            }
+
+
+            return state;
+        }
+    }
+
+
+    /**
+     * 此内部类专门为分时图提供，以解决分时图y轴无法以昨日收盘价为中心来描写刻度数据的问题
+     *
+     * @author t
+     */
+    private static class NumberAxisY1 extends NumberAxis {
+        @Override
+        protected AxisState drawTickMarksAndLabels(Graphics2D g2, double cursor, Rectangle2D plotArea,
+                                                   Rectangle2D dataArea, RectangleEdge edge) {
+            AxisState state = new AxisState(cursor);
+            if (isAxisLineVisible()) {
+                drawAxisLine(g2, cursor, dataArea, edge);
+            }
+
+
+            List ticks = refreshTicks(g2, state, dataArea, edge);
+            //昨日收盘价
+            double yClose = Double.valueOf(getLabel());
+            //获取两个价位
+            NumberTick tick1 = (NumberTick) ticks.get(0);
+            NumberTick tick2 = (NumberTick) ticks.get(1);
+
+
+            //获取价位差值，而每个差值都是约等于
+            Double tick1Val = Double.valueOf(tick1.getText());
+            Double tick2Val = Double.valueOf(tick2.getText());
+            Double range = tick2Val - tick1Val;
+
+
+            //重置ticks集合，将昨日收盘价置于中间刻度，因设置刻度时与国内股票分时图刻度规则有差异，例：国内为上下7个刻度，加上中间的昨日收盘价，一起为15个刻度
+            //而这里设置7个刻度则没有写入昨日收盘价的中间刻度，所以这里重置ticks集合，长度为ticks集合size + 1，中间为昨日收盘价，然后以价位差值从中间开始往上
+            //下两个方向推，则可以得到合适的且平均的刻度价位
+            int ticksSize = 14;
+            NumberTick[] nticks = new NumberTick[ticksSize + 1];
+            NumberTick tickCenter = new NumberTick(yClose, String.valueOf(yClose), tick1.getTextAnchor(),
+                    tick1.getRotationAnchor(), tick1.getAngle());
+            //定位中间刻度，昨日收盘价
+            nticks[ticksSize / 2] = tickCenter;
+            double t = yClose;
+            //计算向下的价位，并写入集合中
+            for (int i = ticksSize / 2 - 1; i >= 0; i--) {
+                t = t - range;
+                NumberTick tickF = new NumberTick(t, String.valueOf(t), tick1.getTextAnchor(),
+                        tick1.getRotationAnchor(), tick1.getAngle());
+                nticks[i] = tickF;
+            }
+            t = yClose;
+            //计算向上的价位，并写入集合中
+            for (int i = ticksSize / 2 + 1; i < ticksSize + 1; i++) {
+                t = t + range;
+                NumberTick tickF = new NumberTick(t, String.valueOf(t), tick1.getTextAnchor(),
+                        tick1.getRotationAnchor(), tick1.getAngle());
+                nticks[i] = tickF;
+            }
+            ticks = new ArrayList();
+            for (NumberTick ti : nticks) {
+                ticks.add(ti);
+            }
+            state.setTicks(ticks);
+            g2.setFont(getTickLabelFont());
+            Iterator iterator = ticks.iterator();
+
+
+            while (iterator.hasNext()) {
+                ValueTick tick = (ValueTick) iterator.next();
+                double tickValue = Double.valueOf(tick.getText());
+                float[] anchorPoint = calculateAnchorPoint(tick, cursor, dataArea, edge);
+                if (isTickLabelsVisible()) {
+                    if (tickValue > yClose) {
+                        g2.setPaint(Color.RED);
+                    } else if (tickValue == yClose) {
+                        g2.setPaint(Color.GRAY);
+                    } else {
+                        g2.setPaint(Color.GREEN);
+                    }
+                    DecimalFormat df1 = new DecimalFormat("#0.00");
+
+
+                    TextUtilities.drawRotatedString(df1.format(tickValue), g2, anchorPoint[0], anchorPoint[1],
+                            tick.getTextAnchor(), tick.getAngle(), tick.getRotationAnchor());
+                }
+
+
+                if (((isTickMarksVisible()) && (tick.getTickType()
+                        .equals(TickType.MAJOR))) || ((isMinorTickMarksVisible()) && (tick.getTickType()
+                        .equals(TickType.MINOR)))) {
+                    double ol = getTickMarkOutsideLength();
+
+
+                    double il = getTickMarkInsideLength();
+
+
+                    float xx = (float) valueToJava2D(tick.getValue(), dataArea, edge);
+
+
+                    Line2D mark = null;
+                    g2.setStroke(getTickMarkStroke());
+                    g2.setPaint(getTickMarkPaint());
+                    if (edge == RectangleEdge.LEFT) {
+                        mark = new Line2D.Double(cursor - ol, xx, cursor + il, xx);
+                    } else if (edge == RectangleEdge.RIGHT) {
+                        mark = new Line2D.Double(cursor + ol, xx, cursor - il, xx);
+                    } else if (edge == RectangleEdge.TOP) {
+                        mark = new Line2D.Double(xx, cursor - ol, xx, cursor + il);
+                    } else if (edge == RectangleEdge.BOTTOM) {
+                        mark = new Line2D.Double(xx, cursor + ol, xx, cursor - il);
+                    }
+                    g2.draw(mark);
+                }
+
+
+            }
+
+
+            double used = 0.0D;
+            if (isTickLabelsVisible()) {
+                if (edge == RectangleEdge.LEFT) {
+                    used += findMaximumTickLabelWidth(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorLeft(used);
+                } else if (edge == RectangleEdge.RIGHT) {
+                    used = findMaximumTickLabelWidth(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorRight(used);
+                } else if (edge == RectangleEdge.TOP) {
+                    used = findMaximumTickLabelHeight(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorUp(used);
+                } else if (edge == RectangleEdge.BOTTOM) {
+                    used = findMaximumTickLabelHeight(ticks, g2, plotArea, isVerticalTickLabels());
+
+
+                    state.cursorDown(used);
+                }
+            }
+
+
+            return state;
+        }
+
+
+        @Override
+        protected AxisState drawLabel(String label, Graphics2D g2, Rectangle2D plotArea, Rectangle2D dataArea,
+                                      RectangleEdge edge, AxisState state) {
+
+
+            AffineTransform t;
+            Shape rotatedLabelBounds;
+            double labelx;
+            double labely;
+            if (state == null) {
+                throw new IllegalArgumentException("Null 'state' argument.");
+            }
+            //此y轴不提供y轴数据标题
+            label = "";
+            if ((label == null) || (label.equals(""))) {
+                return state;
+            }
+
+
+            Font font = getLabelFont();
+            RectangleInsets insets = getLabelInsets();
+            g2.setFont(font);
+            g2.setPaint(getLabelPaint());
+            FontMetrics fm = g2.getFontMetrics();
+            Rectangle2D labelBounds = TextUtilities.getTextBounds(label, g2, fm);
+
+
+            if (edge == RectangleEdge.TOP) {
+                t = AffineTransform
+                        .getRotateInstance(getLabelAngle(), labelBounds.getCenterX(), labelBounds.getCenterY());
+
+
+                rotatedLabelBounds = t.createTransformedShape(labelBounds);
+                labelBounds = rotatedLabelBounds.getBounds2D();
+                labelx = dataArea.getCenterX();
+                labely = state.getCursor() - insets.getBottom() - (labelBounds.getHeight() / 2.0D);
+
+
+                TextUtilities.drawRotatedString(label, g2, (float) labelx, (float) labely, TextAnchor.CENTER,
+                        getLabelAngle(), TextAnchor.CENTER);
+
+
+                state.cursorUp(insets.getTop() + labelBounds.getHeight() + insets.getBottom());
+            } else if (edge == RectangleEdge.BOTTOM) {
+                t = AffineTransform
+                        .getRotateInstance(getLabelAngle(), labelBounds.getCenterX(), labelBounds.getCenterY());
+
+
+                rotatedLabelBounds = t.createTransformedShape(labelBounds);
+                labelBounds = rotatedLabelBounds.getBounds2D();
+                labelx = dataArea.getCenterX();
+                labely = state.getCursor() + insets.getTop() + labelBounds.getHeight() / 2.0D;
+
+
+                TextUtilities.drawRotatedString(label, g2, (float) labelx, (float) labely, TextAnchor.CENTER,
+                        getLabelAngle(), TextAnchor.CENTER);
+
+
+                state.cursorDown(insets.getTop() + labelBounds.getHeight() + insets.getBottom());
+            } else if (edge == RectangleEdge.LEFT) {
+                t = AffineTransform.getRotateInstance(getLabelAngle() - 1.570796326794897D, labelBounds.getCenterX(),
+                        labelBounds.getCenterY());
+
+
+                rotatedLabelBounds = t.createTransformedShape(labelBounds);
+                labelBounds = rotatedLabelBounds.getBounds2D();
+                labelx = state.getCursor() - insets.getRight() - (labelBounds.getWidth() / 2.0D);
+
+
+                labely = dataArea.getCenterY();
+                TextUtilities.drawRotatedString(label, g2, (float) labelx, (float) labely, TextAnchor.CENTER,
+                        getLabelAngle() - 1.570796326794897D, TextAnchor.CENTER);
+
+
+                state.cursorLeft(insets.getLeft() + labelBounds.getWidth() + insets.getRight());
+            } else if (edge == RectangleEdge.RIGHT) {
+                t = AffineTransform.getRotateInstance(getLabelAngle() + 1.570796326794897D, labelBounds.getCenterX(),
+                        labelBounds.getCenterY());
+
+
+                rotatedLabelBounds = t.createTransformedShape(labelBounds);
+                labelBounds = rotatedLabelBounds.getBounds2D();
+                labelx = state.getCursor() + insets.getLeft() + labelBounds.getWidth() / 2.0D;
+
+
+                labely = dataArea.getY() + dataArea.getHeight() / 2.0D;
+                TextUtilities.drawRotatedString(label, g2, (float) labelx, (float) labely, TextAnchor.CENTER,
+                        getLabelAngle() + 1.570796326794897D, TextAnchor.CENTER);
+
+
+                state.cursorRight(insets.getLeft() + labelBounds.getWidth() + insets.getRight());
+            }
+
+
+            return state;
+        }
     }
 
 

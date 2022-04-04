@@ -23,6 +23,10 @@ import static com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLa
 
 /**
  * description: 同花顺概念行业 k线和分时图显示! 类似问财显示panel
+ * 只有单日1分钟, 日k线, 周k线, 月k线;
+ * 默认1分钟分时241个周期
+ * k线都100周期;
+ * 横向显示
  *
  * @author: admin
  * @date: 2022/4/4/004-02:45:02

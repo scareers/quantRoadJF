@@ -22,10 +22,10 @@ import java.util.List;
  */
 public class WenCaiDataApi {
     public static void main(String[] args) {
-//        DataFrame<Object> lastNDailyKline = getLastNKline(48, "885311", 2, 0, 1000);
-//        Console.log(lastNDailyKline);
-//        Console.log(lastNDailyKline.length());
-//        Console.log(lastNDailyKline.size());
+        DataFrame<Object> lastNDailyKline = getLastNKline(48, "885311", 2, 0, 1000);
+        Console.log(lastNDailyKline);
+        Console.log(lastNDailyKline.length());
+        Console.log(lastNDailyKline.size());
 //
 //        for (int i = 0; i < 3; i++) {
 //            for (int j = 0; j < 3; j++) {
@@ -34,11 +34,11 @@ public class WenCaiDataApi {
 //                Console.log(lastDayBaseDatas);
 //            }
 //        }
-        for (int i = 0; i < 100; i++) {
-
-            DataFrame<Object> fs1M = getFS1M(32, "399001");
-            Console.log(fs1M.length());
-        }
+//        for (int i = 0; i < 100; i++) {
+//
+//            DataFrame<Object> fs1M = getFS1M(32, "399001");
+//            Console.log(fs1M.length());
+//        }
 
 //        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("指数类型排序;同花顺概念指数取反;同花顺行业指数取反;");
 //        Console.log(dataFrame.columns());
@@ -64,6 +64,13 @@ public class WenCaiDataApi {
      * http://d.10jqka.com.cn/v6/line/33_300086/21/last3600.js?hexin-v=A_DbMYDbZsVvBDqww3_BaPlMwbVHOcyF9gEotuo_vhUfOZ7rkkmkE0Yt-Jc5
      * http://d.10jqka.com.cn/v6/line/33_300575/22/last3600.js?hexin-v=A2hD2Vhznj2X7LLIi1XJALG0OV1_kdVzruugLiLnt4_XoQZDyqGcK_4
      * http://d.10jqka.com.cn/v6/line/33_002314/20/last3600.js?hexin-v=A9T_nYTvSrEjSN6MR1K9HKWQpRlDLeOXOnGMam7LY7TjrnoHlj3Ip4phXHq9
+     * new DataFrame<>(Arrays.asList("日期", "开盘", "最高", "最低", "收盘", "成交量", "成交额"));
+     *
+     *     	      日期	      开盘	      最高	      最低	      收盘	        成交量	              成交额
+     *    0	20070831	976.728 	1032.163	940.157 	1017.768	1787555400 	32589345000.000
+     *    1	20070928	1028.107	1123.050	1004.033	1113.713	2044824800 	39127837000.000
+     *    2	20071031	1138.843	1138.984	913.064 	1000.847	1374504900 	36482250000.000
+     *    3	20071130	1000.338	1000.338	858.067 	912.622 	1035683990 	20753044000.000
      *
      * @param marketCode 资产都有 marketCode 属性, 必须指定
      * @param simpleCode 简单6位代码
