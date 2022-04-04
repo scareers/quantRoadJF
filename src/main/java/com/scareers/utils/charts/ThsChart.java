@@ -10,7 +10,7 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import org.jdesktop.swingx.text.NumberFormatExt;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
@@ -19,12 +19,18 @@ import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.StandardXYBarPainter;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.time.*;
+import org.jfree.chart.title.TextTitle;
+import org.jfree.chart.title.Title;
+import org.jfree.data.time.Day;
+import org.jfree.data.time.Minute;
+import org.jfree.data.time.TimeSeries;
+import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import org.jfree.data.xy.OHLCDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.text.TextUtilities;
+import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.TextAnchor;
@@ -37,9 +43,6 @@ import java.math.RoundingMode;
 import java.text.*;
 import java.util.List;
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.scareers.utils.charts.ChartUtil.showChartSimple;
 
 /**
  * description: 同花顺数据源的图表; 主要是分时图 和 3个周期的k线图
@@ -48,54 +51,128 @@ import static com.scareers.utils.charts.ChartUtil.showChartSimple;
  * @date: 2022/4/5/005-00:48:19
  */
 public class ThsChart {
+    /*
+    k线常量
+     */
+    // k线颜色
     public static Color upColorKLine = new Color(255, 50, 50);
     public static Color downColorKLine = new Color(84, 252, 252);
     public static Color equalColorKLine = new Color(182, 255, 219);
-    public static Color bgColorKLine = Color.black;
+    // y轴文字颜色: 同东财
+    public static Color upColorLabelKLine = new Color(255, 92, 92);
+    public static Color downColorLabelKLine = new Color(57, 195, 59);
+    public static Color equalColorLabelKLine = new Color(128, 138, 138);
 
-    // 分时成交量
+    public static Color bgColorKLine = new Color(7, 7, 7);
+    //    public static Color bgColorKLine = Color.white;
+    public static int gapOfTwoPlotOfKLine = 10; // 分时价格和成交量,两个图的gap
+    public static final int weight1OfTwoPlotOfKLine = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
+    public static final int weight2OfTwoPlotOfKLine = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
+
+    /*
+    分时图常量
+     */
+    // 成交量颜色
     public static Color upColorFs = new Color(240, 248, 136);
     public static Color downColorFs = new Color(84, 252, 252);
     public static Color equalColorFs = Color.white;
+    public static Color volTickLabelPaint = Color.red; // 成交量y轴tick文字
     // 分时价格线和均线
     public static Color priceColorFs = Color.white;
     public static Color avgPriceColorFs = new Color(240, 248, 136);
     public static Color preCloseColorFs = new Color(128, 0, 0);
-    public static Color volTickLabelPaint = new Color(128, 138, 138); // 成交量y轴tick文字
-    public static Color bgColorFs = Color.black;
+    public static Color bgColorFs = new Color(7, 7, 7);
 
-    public static int gapOfTwoPlotOfFs = 5; // 分时价格和成交量,两个图的gap
-    public static int gapOfTwoPlotOfKLine = 10; // 分时价格和成交量,两个图的gap
+    // 分时图形状控制!
+    public static final int gapOfTwoPlotOfFs = 10; // 分时价格和成交量,两个图的gap
+    public static final int weight1OfTwoPlotOfFs = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
+    public static final int weight2OfTwoPlotOfFs = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
     public static void main(String[] args) {
-        // k线
+//        kLineDemo();
+//
+        fsDemo();
+    }
+
+    private static void kLineDemo() {
+        //         k线
         DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
         Console.log(industryDf);
 //
         int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
         String code = industryDf.get(0, "code").toString();
 
-        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 2, 1, 120);
-        Console.log(lastNKline);
+        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(marketCode, code, 0, 1, 120);
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(lastNKline, "日期"); // 日期列表;传递给监听器,设置横轴marker
+
+        JFreeChart chart = createKLineOfThs(lastNKline, String.valueOf(code));
+
+        ApplicationFrame frame = new ApplicationFrame("temp");
+        ChartPanel chartPanel = new ChartPanel(chart);
 
 
-        JFreeChart chart = createDailyKLineOfThs(lastNKline, null, "标题", ChartUtil.KLineYType.VALUE);
-//        chart.setBackgroundPaint(Color.black);
-        showChartSimple(chart);
+        // 大小
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMouseZoomable(false);
+        chartPanel.setRangeZoomable(false);
+        chartPanel.setDomainZoomable(false);
+
+        chartPanel.addChartMouseListener(getCrossLineListenerForKLineXYPlot(timeTicks));
 
 
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
+    }
+
+
+    /**
+     * 分时图,将自动调用api, 读取 preClose; 也可自行提供
+     */
+    private static void fsDemo() {
         // 分时
-//        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
-//        Console.log(industryDf);
-//        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
-//        String code = industryDf.get(0, "code").toString();
-//        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(33, "000001");
-//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 20);
-//        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
-//        JFreeChart chart = createFs1MOfThs(fs1M, preClose, "标题", true);
-//        showChartSimple(chart);
+        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
+        Console.log(industryDf);
+        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
+        String code = industryDf.get(0, "code").toString();
+        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(33, "000001");
+        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
+        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
 
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(fs1M, "时间"); // 日期列表;传递给监听器,设置横轴marker
+
+
+        JFreeChart chart = createFs1MOfThs(fs1M, preClose, "测试标题", true);
+        ApplicationFrame frame = new ApplicationFrame("temp");
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+
+
+        // 大小
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMouseZoomable(false);
+        chartPanel.setRangeZoomable(false);
+        chartPanel.setDomainZoomable(false);
+
+        chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(timeTicks));
+
+
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
+    }
+
+    public static CrossLineListenerForFsXYPlot getCrossLineListenerForFsXYPlot(List<DateTime> dates) {
+        // 默认y marker 文字在横线右侧之上
+        return new CrossLineListenerForFsXYPlot(dates);
+    }
+
+    public static CrossLineListenerForKLineXYPlot getCrossLineListenerForKLineXYPlot(List<DateTime> dates) {
+        // 默认y marker 文字在横线右侧之上
+        return new CrossLineListenerForKLineXYPlot(dates);
     }
 
     /**
@@ -103,6 +180,7 @@ public class ThsChart {
      * 0	20210407	1228.754	1259.509	1224.338	1248.329	4491210600 	29751900000.000
      * 1	20210408	1247.548	1247.548	1202.121	1203.991	4870522300 	34337664000.000
      * 2	20210409	1191.466	1226.937	1190.805	1203.788	3882218100 	27379241000.000
+     * 实测 日/周/月 k线均可; 只需要日期列, 是单日日期即可
      *
      * @param dailyKLineDf
      * @param preClose
@@ -110,9 +188,8 @@ public class ThsChart {
      * @param kLineYType
      * @return
      */
-    public static JFreeChart createDailyKLineOfThs(DataFrame<Object> dailyKLineDf, Double preClose,
-                                                   String title, ChartUtil.KLineYType kLineYType) {
-        return createDailyKlineCore(dailyKLineDf, title, "日期", "开盘", "收盘", "最高", "最低", "成交量");
+    public static JFreeChart createKLineOfThs(DataFrame<Object> dailyKLineDf, String title) {
+        return createKlineCore(dailyKLineDf, title, "日期", "开盘", "收盘", "最高", "最低", "成交量");
     }
 
     /**
@@ -130,17 +207,18 @@ public class ThsChart {
      * @param kLineYType      y轴显示类型, 价格值或者百分比. 百分比时需要提供非0的 stdValue
      * @return
      */
-    private static JFreeChart createDailyKlineCore(DataFrame<Object> dataFrame, String title,
-                                                   String dateTimeColName,
-                                                   String openColName,
-                                                   String closeColName,
-                                                   String highColName,
-                                                   String lowColName,
-                                                   String volColName
+    private static JFreeChart createKlineCore(DataFrame<Object> dataFrame, String title,
+                                              String dateTimeColName,
+                                              String openColName,
+                                              String closeColName,
+                                              String highColName,
+                                              String lowColName,
+                                              String volColName
     ) {
 
         // 1.时间列以及4箱数据列;
         java.util.List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, dateTimeColName);
+
         java.util.List<Double> opens = DataFrameS.getColAsDoubleList(dataFrame, openColName);
         java.util.List<Double> closes = DataFrameS.getColAsDoubleList(dataFrame, closeColName);
         java.util.List<Double> highs = DataFrameS.getColAsDoubleList(dataFrame, highColName);
@@ -269,7 +347,7 @@ public class ThsChart {
         range = t1 > t ? t1 : t;
         y2Axis.setRange(-range, range);//设置y轴数据范围
         y2Axis.setTickLabelPaint(Color.red);
-        DecimalFormat df2 = new DecimalFormat("#0.00%");
+        DecimalFormat df2 = new DecimalFormat("##0.00%");
         df2.setRoundingMode(RoundingMode.FLOOR);
         y2Axis.setNumberFormatOverride(df2);
         NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
@@ -314,7 +392,7 @@ public class ThsChart {
         y3Axis.setRange(0, volMax * 1.05); // 从0开始显示
         y3Axis.setTickUnit(new NumberTickUnit((volMax * 1.05) / 5)); // 单位, 需要与范围匹配
         y3Axis.setTickLabelPaint(Color.red);
-        y3Axis.setNumberFormatOverride(new NumberFormat()); // 数据轴数据标签的显示格式
+        y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
 
 
         // 15. 成交量图表
@@ -324,8 +402,8 @@ public class ThsChart {
 
         // 16. 共享x轴的图表: 将添加2个图表
         CombinedDomainXYPlot combineddomainxyplot = new CombinedDomainXYPlot(x1Axis);//建立一个恰当的联合图形区域对象，以x轴为共享轴
-        combineddomainxyplot.add(plot1, 3);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
-        combineddomainxyplot.add(plot2, 1);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域1/3
+        combineddomainxyplot.add(plot1, weight1OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+        combineddomainxyplot.add(plot2, weight2OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域1/3
         combineddomainxyplot.setGap(gapOfTwoPlotOfKLine);//设置两个图形区域对象之间的间隔空间
 
 
@@ -334,6 +412,11 @@ public class ThsChart {
         plot2.setBackgroundPaint(bgColorKLine);
         combineddomainxyplot.setBackgroundPaint(bgColorKLine);
         chart.setBackgroundPaint(bgColorKLine);
+        chart.setTitle(
+                new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red, Title.DEFAULT_POSITION,
+                        Title.DEFAULT_HORIZONTAL_ALIGNMENT,
+                        Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+
         return chart;
     }
 
@@ -343,12 +426,12 @@ public class ThsChart {
     public static class NumberFormatCnForBigNumber extends NumberFormat {
         @Override
         public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition pos) {
-            return null;
+            return new StringBuffer(CommonUtil.formatNumberWithSuitable(number));
         }
 
         @Override
         public StringBuffer format(long number, StringBuffer toAppendTo, FieldPosition pos) {
-            return null;
+            return new StringBuffer(CommonUtil.formatNumberWithSuitable(number));
         }
 
         @Override
@@ -508,12 +591,12 @@ public class ThsChart {
 
             //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
             //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
-            XYPlot plot = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
-            plot.setBackgroundPaint(bgColorFs);//设置曲线图背景色
-            plot.setDomainGridlinesVisible(false);//不显示网格
-            plot.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
-            plot.setRangeAxis(0, y1Axis);
-            plot.setRangeAxis(1, y2Axis);
+            XYPlot plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
+            plot1.setBackgroundPaint(bgColorFs);//设置曲线图背景色
+            plot1.setDomainGridlinesVisible(false);//不显示网格
+            plot1.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
+            plot1.setRangeAxis(0, y1Axis);
+            plot1.setRangeAxis(1, y2Axis);
 
 
             //设置柱状图参数
@@ -556,7 +639,7 @@ public class ThsChart {
             y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
             y3Axis.setAutoRange(true);//设置采用自动设置时间范围
             y3Axis.setTickLabelPaint(volTickLabelPaint);//设置y轴刻度值颜色
-
+            y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
 
             //这里不设置x轴，x轴参数依照k线图x轴为模板
             XYPlot plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
@@ -567,16 +650,21 @@ public class ThsChart {
 
             //建立一个恰当的联合图形区域对象，以x轴为共享轴
             CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);//
-            domainXYPlot.add(plot, 3);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
-            domainXYPlot.add(plot2, 1);
+            domainXYPlot.add(plot1, weight1OfTwoPlotOfFs);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+            domainXYPlot.add(plot2, weight2OfTwoPlotOfFs);
             domainXYPlot.setGap(gapOfTwoPlotOfFs);//设置两个图形区域对象之间的间隔空间
 
-            plot.setBackgroundPaint(Color.black);
-            plot2.setBackgroundPaint(Color.black);
-            domainXYPlot.setBackgroundPaint(Color.black);
+            plot1.setBackgroundPaint(bgColorFs);
+            plot2.setBackgroundPaint(bgColorFs);
+            domainXYPlot.setBackgroundPaint(bgColorFs);
             //生成图纸
             JFreeChart chart = new JFreeChart(title, new Font("微软雅黑", Font.BOLD, 24), domainXYPlot, true);
-            chart.setBackgroundPaint(Color.black);
+            chart.setBackgroundPaint(bgColorFs);
+            chart.setTitle(
+                    new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
+                            Title.DEFAULT_POSITION,
+                            Title.DEFAULT_HORIZONTAL_ALIGNMENT,
+                            Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
             return chart;
         } catch (Exception e) {
             e.printStackTrace();
@@ -606,11 +694,11 @@ public class ThsChart {
                 ValueTick tick = (ValueTick) iterator.next();
                 if (isTickLabelsVisible()) {
                     if (tick.getValue() > 0) {
-                        g2.setPaint(Color.RED);
+                        g2.setPaint(upColorLabelKLine);
                     } else if (tick.getValue() == 0) {
-                        g2.setPaint(Color.white);
+                        g2.setPaint(equalColorLabelKLine);
                     } else {
-                        g2.setPaint(Color.GREEN);
+                        g2.setPaint(downColorLabelKLine);
                     }
 
 
@@ -752,11 +840,11 @@ public class ThsChart {
                 float[] anchorPoint = calculateAnchorPoint(tick, cursor, dataArea, edge);
                 if (isTickLabelsVisible()) {
                     if (tickValue > yClose) {
-                        g2.setPaint(Color.RED);
+                        g2.setPaint(upColorLabelKLine);
                     } else if (tickValue == yClose) {
-                        g2.setPaint(Color.white);
+                        g2.setPaint(equalColorLabelKLine);
                     } else {
-                        g2.setPaint(Color.GREEN);
+                        g2.setPaint(downColorLabelKLine);
                     }
                     DecimalFormat df1 = new DecimalFormat("#0.00");
 

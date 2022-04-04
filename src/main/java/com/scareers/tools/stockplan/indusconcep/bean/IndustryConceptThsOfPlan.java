@@ -96,6 +96,8 @@ public class IndustryConceptThsOfPlan {
             Double lowLimitPercent; // 跌停占比
             Integer lineLowLimitAmount; // 一字跌停数量
          */
+        bean.setMarketCode(tryParseIntegerOfLastLine(dfTemp, "marketCode"));
+
         bean.setVolRate(tryParseDoubleOfLastLine(dfTemp, "volRate"));
         bean.setDdeNetAmount(tryParseDoubleOfLastLine(dfTemp, "ddeNetAmount"));
         bean.setCirculatingMarketValue(tryParseDoubleOfLastLine(dfTemp, "circulatingMarketValue"));
@@ -139,7 +141,9 @@ public class IndustryConceptThsOfPlan {
 
     // 成分股列表, 相关行业列表, 相关概念列表, 均不直接显示
     public static List<String> allColForDf = Arrays
-            .asList("id", "名称", "类型", "类型2", "代码", "代码2", "日期",
+            .asList("id", "名称", "类型", "类型2", "代码", "代码2",
+                    "市场代码",
+                    "日期",
                     "涨跌幅",
                     // 新增12字段, 分列
                     "量比",
@@ -198,6 +202,7 @@ public class IndustryConceptThsOfPlan {
             row.add(bean.getType2());
             row.add(bean.getCode());
             row.add(bean.getIndexCode());
+            row.add(bean.getMarketCode());
             row.add(bean.getDateStr());
             row.add(bean.getChgP());
 
@@ -262,6 +267,8 @@ public class IndustryConceptThsOfPlan {
     String type2; // "二级行业" 或者 "三级行业", 当行业时此字段有效
     @Column(name = "code", columnDefinition = "varchar(32)")
     String code; // 简单代码
+    @Column(name = "marketCode", columnDefinition = "int")
+    Integer marketCode; // 简单代码
     @Column(name = "indexCode", columnDefinition = "varchar(32)")
     String indexCode; // 完整代码, 一般有 .TI 后缀
     @Column(name = "dateStr", columnDefinition = "varchar(32)")

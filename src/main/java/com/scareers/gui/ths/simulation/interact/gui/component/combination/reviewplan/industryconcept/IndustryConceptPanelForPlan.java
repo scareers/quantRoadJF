@@ -4,6 +4,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
@@ -22,10 +23,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
-import org.jdesktop.swingx.JXDialog;
-import org.jdesktop.swingx.JXList;
-import org.jdesktop.swingx.JXPanel;
-import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.*;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -75,6 +73,9 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
 
+    protected JXCollapsiblePane klineCollapsiblePane;
+    protected JPanel klineDisplayContainerPanel;
+
     public IndustryConceptPanelForPlan(MainDisplayWindow mainDisplayWindow) {
         this.mainDisplayWindow = mainDisplayWindow;
         this.setBorder(null);
@@ -90,11 +91,22 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
         jScrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS); // 一般都需要
         jScrollPane.setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS); // 一般都需要
-        initButtons();
+
 
         // 包装一下, 将按钮放于表格上方
         JPanel panelTemp = new JPanel();
         panelTemp.setLayout(new BorderLayout());
+
+        // @update: 在底部增加可折叠面板, 显示 概念行业 的分时图/k线图! --> ths 4图
+        klineCollapsiblePane = new JXCollapsiblePane();
+        klineCollapsiblePane.setLayout(new BorderLayout());
+        initKlineDisplayPanel();
+        klineCollapsiblePane.add("Center", klineDisplayContainerPanel);
+        klineCollapsiblePane.setAnimated(true);
+        klineCollapsiblePane.setCollapsed(false); // 默认展开
+
+        panelTemp.add(klineCollapsiblePane, BorderLayout.SOUTH); // 可折叠展示k线, 放在南边
+        initButtons();
         panelTemp.add(buttonContainer, BorderLayout.NORTH);
         panelTemp.add(jScrollPane, BorderLayout.CENTER);
         this.add(panelTemp, BorderLayout.CENTER);
@@ -103,6 +115,49 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         JPanel panel = new JPanel();
         panel.add(editorPanel.getEditorContainerScrollPane()); // 不直接编辑器, 而容器滚动面板
         this.add(panel, BorderLayout.WEST); // 需要包装一下, 否则 editorPanel将被拉长
+    }
+
+    ThsFsDisplayPanel fsDisplayPanel;
+
+    private void initKlineDisplayPanel() {
+        klineDisplayContainerPanel = new JPanel();
+//        JLabel jLabel = new JLabel("测试内容");
+//        jLabel.setPreferredSize(new Dimension(500, 300));
+//        klineDisplayPanel.add(jLabel);
+
+        klineDisplayContainerPanel.setLayout(new GridLayout(1, 4, -1, -1)); // 4份 k线
+
+        fsDisplayPanel = new ThsFsDisplayPanel();
+
+
+        klineDisplayContainerPanel.add(fsDisplayPanel);
+
+//        ThsChart.createDailyKLineOfThs()
+        /*
+                // 分时
+//        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
+//        Console.log(industryDf);
+//        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
+//        String code = industryDf.get(0, "code").toString();
+//        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(33, "000001");
+//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
+//        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
+         */
+
+
+    }
+
+    /**
+     * 当切换选项, 也应该自动切换分时和k线显示内容.
+     */
+    private void updateKLineAndFsDisplay() {
+        if (this.currentBean == null) {
+            return;
+        }
+//                DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(this.currentBean.setCirculatingMarketValue();,"000001");
+//        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
+//        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
+
     }
 
     private void initButtons() {
@@ -273,6 +328,12 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             }
         });
 
+        // 6.折叠/展示k线, 控制可折叠面板.
+        JButton buttonOfKLineDisplay = ButtonFactory.getButton("分时k线");
+        buttonOfKLineDisplay.setAction(klineCollapsiblePane.getActionMap().get(JXCollapsiblePane.TOGGLE_ACTION));
+        buttonOfKLineDisplay.setText("分时k线");
+        buttonOfKLineDisplay.setForeground(Color.red);
+
 
         // 100.测试按钮
         JButton testButton = ButtonFactory.getButton("测试");
@@ -307,6 +368,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         buttonContainer.add(addBeansBatchButton);
         buttonContainer.add(deleteTableSelectRowsButton);
         buttonContainer.add(flushRelatedTrendMapButton);
+        buttonContainer.add(buttonOfKLineDisplay);
 
 
         buttonContainer.add(testButton);
