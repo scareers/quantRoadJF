@@ -50,7 +50,7 @@ public class FsTransTypicalBsSelector {
         for (SecurityBeanEm beanEm : beanEms) {
             ArrayList<Object> objects = new ArrayList<>();
             objects.add(beanEm.getSecCode());
-            objects.add(typicalVolBsRateFactor("2022-03-25", beanEm, 0.5));
+            objects.add(typicalVolBsRateFactor("2022-04-01", beanEm, 0.5));
             objects.add(codeWithChgPMap.get(beanEm.getSecCode()));
             objects.add(beanEm.getName());
             res.add(objects);
