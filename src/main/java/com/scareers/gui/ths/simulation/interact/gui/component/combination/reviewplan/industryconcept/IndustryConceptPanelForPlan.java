@@ -41,6 +41,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,7 +53,7 @@ import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 
 /**
  * description: 行业和概念 操盘计划: 使用同花顺行业和概念
- * 重点是 显示和编辑 IndustryConceptThsOfPlan 对象列表
+ * 重点是 显示和编辑 StockOfPlan 对象列表
  *
  * @author: admin
  * @date: 2022/3/28/028-21:20:34
@@ -735,7 +736,6 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
-                    @SneakyThrows
                     public void run() {
                         DefaultListModel model = (DefaultListModel) newBeanList.getModel();
                         int total = model.getSize(); // 进度和遍历
@@ -743,8 +743,6 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                         Date uniqueDatetime = PlanReviewDateTimeDecider.getUniqueDatetime();
                         String stdDateStr = IndustryConceptThsOfPlanDao.decideDateStrForPlan(uniqueDatetime);
                         // 前10个交易日内的同名bean, 设置某些属性; 若获取全部则随着时间, 太多了太慢
-                        String pre10DateStr = EastMoneyDbApi.getPreNTradeDateStrict(stdDateStr, 10);
-
                         for (int i = 0; i < total; i++) {
                             IndustryConceptSimple element = (IndustryConceptSimple) model.getElementAt(i);
                             IndustryConceptThsOfPlan.Type type;
@@ -753,41 +751,14 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                             } else { // "概念".equals(element.getType())
                                 type = IndustryConceptThsOfPlan.Type.CONCEPT;
                             }
-                            List<IndustryConceptThsOfPlan> oldBeans = IndustryConceptThsOfPlanDao
-                                    .getBeanListByNameAndType("三胎概念", "概念", pre10DateStr, stdDateStr); // 曾经bean列表
                             IndustryConceptThsOfPlan newBean = IndustryConceptThsOfPlanDao
                                     .getOrInitBeanForPlan(element.getName(), uniqueDatetime, type); // 已初步保存新bean
-
-                            // @key: 对简单可编辑属性 赋值
-                            if (oldBeans.size() != 0) { // 存在历史
-                                // @key: 主要是trend 必须自行设定, 以及预判4字段
-
-                                IndustryConceptThsOfPlan lastBean = oldBeans.get(0); // 倒序, 第一个即最新
-
-                                newBean.setPricePositionLongTerm(lastBean.getPricePositionLongTerm());
-                                newBean.setPricePositionShortTerm(lastBean.getPricePositionShortTerm());
-                                newBean.setPriceTrend(lastBean.getPriceTrend());
-                                newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
-                                newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
-                                newBean.setLineType(lastBean.getLineType());
-                                newBean.setHypeReason(lastBean.getHypeReason());
-                                newBean.setHypeStartDate(lastBean.getHypeStartDate());
-                                newBean.setHypePhaseCurrent(lastBean.getHypePhaseCurrent());
-                                newBean.setSpecificDescription(lastBean.getSpecificDescription());
-
-                                newBean.setLeaderStockList(lastBean.getLeaderStockList());
-                                newBean.setLeaderStockListJsonStr(lastBean.getLeaderStockListJsonStr());
-
-                                newBean.setGoodAspects(lastBean.getGoodAspects());
-                                newBean.setBadAspects(lastBean.getBadAspects());
-                                newBean.setWarnings(lastBean.getWarnings());
-
-                                newBean.setRemark(lastBean.getRemark());
+                            try {
+                                IndustryConceptThsOfPlanDao.syncEditableAttrByLatestNSameBean(newBean, stdDateStr, 10);
+                            } catch (SQLException ex) {
+                                ManiLog.put(StrUtil.format("同步可编辑属性失败: {}", newBean.getName()));
                             }
-
-                            IndustryConceptThsOfPlanDao.saveOrUpdateBean(newBean); // 保存更新
                             int n = (int) CommonUtil.roundHalfUP((i + 1) * 1.0 / total * 100, 0);
-                            Console.log(n);
                             jProgressBar.setValue(n); // 进度显示
                             // 读取历史上倒数1
                         }

@@ -15,6 +15,7 @@ import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForFsXYPlot;
+import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYPlot;
 
 /**
  * description: 同花顺fs图展示
@@ -67,7 +68,7 @@ public class ThsKLineDisplayPanel extends DisplayPanel {
             chartPanel.setMouseZoomable(false);
             chartPanel.setRangeZoomable(false);
             chartPanel.setDomainZoomable(false);
-            chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(timeTicks));
+            chartPanel.addChartMouseListener(getCrossLineListenerForKLineXYPlot(timeTicks));
             this.removeAll();
             this.add(chartPanel, BorderLayout.CENTER);
         }

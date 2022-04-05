@@ -760,7 +760,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
                 }
                 bean.updateLeaderStockList(stocks);
                 tryAutoSaveEditedBean(panelTemp, "概念行业");
-                //ManiLog.put("IndustryConceptThsOfPlan: 已更新龙头股列表");
+                //ManiLog.put("StockOfPlan: 已更新龙头股列表");
                 panelTemp.update(); // 将刷新显示
             }
         });
@@ -1114,7 +1114,7 @@ public class IndustryConceptThsOfPlanEditorPanel extends DisplayPanel {
 
         // 3. 所有bean均已经更新, 此时保存所有bean到数据库
         IndustryConceptThsOfPlanDao.saveOrUpdateBeanBatch(beanMap.values());
-        ManiLog.put("IndustryConceptThsOfPlan: 已自动计算并保存: 关联行业概念 trend 加成折算因子");
+        ManiLog.put("StockOfPlan: 已自动计算并保存: 关联行业概念 trend 加成折算因子");
 
     }
 

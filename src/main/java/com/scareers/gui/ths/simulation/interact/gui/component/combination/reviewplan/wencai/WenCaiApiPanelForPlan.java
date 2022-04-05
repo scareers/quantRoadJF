@@ -31,7 +31,6 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -515,12 +514,21 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
 
         jxFindBarSForTable.setSearchable(jTable.getSearchable());
         tableLenthLabel.setText(StrUtil.format("  结果行数: {}", newDf.length()));
+
+//        initDefaultRenderer();
+//        for (int i = 0; i < model.getColumnCount(); i++) {
+//            String columnName = model.getColumnName(i);
+//            jTable.getColumn(columnName).setCellRenderer(dataCellRenderer);
+//        }
     }
 
     /**
      * 设置表样式
      */
     private void initJTableStyle() {
+        initDefaultRenderer();
+
+
         // 表头框颜色和背景色
         jTable.getTableHeader().setBackground(Color.BLACK);
         DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
@@ -540,6 +548,42 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
 
         jTable.setRowHeight(30);
         jTable.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+
+    }
+
+    DefaultTableCellRenderer dataCellRenderer;
+
+    private void initDefaultRenderer() {
+        if (dataCellRenderer == null) {
+            // 数字列设置颜色
+            dataCellRenderer = new DefaultTableCellRenderer() {
+                @Override
+                public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                               boolean hasFocus, int row, int column) {
+                    Component tableCellRendererComponent = super
+                            .getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    JLabel label = (JLabel) tableCellRendererComponent;
+
+                    Double number = null;
+                    try {
+                        number = Double.valueOf(value.toString());
+                    } catch (Exception e) {
+
+                    }
+                    if (number == null) {
+                        label.setForeground(Color.white);
+
+                    } else if (number > 0) {
+                        label.setForeground(Color.red);
+                    } else if (number < 0) {
+                        label.setForeground(Color.green);
+                    } else {
+                        label.setForeground(Color.white);
+                    }
+                    return label;
+                }
+            };
+        }
     }
 
     private void removeEnterKeyDefaultAction() {

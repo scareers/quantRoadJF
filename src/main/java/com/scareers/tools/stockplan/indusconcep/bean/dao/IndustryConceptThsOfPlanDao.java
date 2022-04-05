@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * description: IndustryConceptThsOfPlan Dao
+ * description: StockOfPlan Dao
  *
  * @author: admin
  * @date: 2022/3/29/029-00:26:20
@@ -39,33 +39,33 @@ public class IndustryConceptThsOfPlanDao {
         Console.log(beanListByNameAndType.size());
 
 
-//        IndustryConceptThsOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        StockOfPlan bean = getOrInitBeanForPlan("三胎概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.CONCEPT);
 //        Console.log(bean);
 //
-//        IndustryConceptThsOfPlan bean2 = getOrInitBeanForPlan("电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.INDUSTRY);
+//        StockOfPlan bean2 = getOrInitBeanForPlan("电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.INDUSTRY);
 //        Console.log(bean2);
 //
-//        IndustryConceptThsOfPlan bean3 = getOrInitBeanForPlan("绿色电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        StockOfPlan bean3 = getOrInitBeanForPlan("绿色电力", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.CONCEPT);
 //        Console.log(bean3);
 //
-//        IndustryConceptThsOfPlan bean4 = getOrInitBeanForPlan("俄乌冲突概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        StockOfPlan bean4 = getOrInitBeanForPlan("俄乌冲突概念", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.CONCEPT);
 //        Console.log(bean4);
 //
-//        IndustryConceptThsOfPlan bean5 = getOrInitBeanForPlan("农业种植", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        StockOfPlan bean5 = getOrInitBeanForPlan("农业种植", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.CONCEPT);
 //        Console.log(bean5);
 //
-//        IndustryConceptThsOfPlan bean6 = getOrInitBeanForPlan("玉米", PlanReviewDateTimeDecider.getUniqueDatetime(),
-//                IndustryConceptThsOfPlan.Type.CONCEPT);
+//        StockOfPlan bean6 = getOrInitBeanForPlan("玉米", PlanReviewDateTimeDecider.getUniqueDatetime(),
+//                StockOfPlan.Type.CONCEPT);
 //        Console.log(bean6);
 
-//        List<IndustryConceptThsOfPlan> beans = getBeanListForPlan(DateUtil.date());
+//        List<StockOfPlan> beans = getBeanListForPlan(DateUtil.date());
 //        Console.log(beans);
-//        DataFrame<Object> dataFrame = IndustryConceptThsOfPlan.buildDfFromBeanList(beans);
+//        DataFrame<Object> dataFrame = StockOfPlan.buildDfFromBeanList(beans);
 //        Console.log(dataFrame);
     }
 
@@ -110,6 +110,58 @@ public class IndustryConceptThsOfPlanDao {
         }
         session.close();
         return res;
+    }
+
+    /**
+     * 给定一个新建的bean, 自行保证是刚实例化, 可编辑字段都未自定义; // 若已修改则将被覆盖
+     * 将从数据库, 查询 N天内 相同行业/概念, 并读取曾经"最新"的bean, 将参数bean的可编辑字段, 设置为过去N天内最新bean相同
+     * --> 同步可编辑属性, 通过最新N同名bean(中的最新一个);
+     * --> @key: 某些可编辑字段, 例如预判, 将不被同步, 预判需要自行设定
+     * --> 仅更新, 且保存到数据库
+     *
+     * @param newBean
+     * @param stdDateStr
+     * @param preNDay
+     * @return
+     * @throws SQLException
+     */
+    public static IndustryConceptThsOfPlan syncEditableAttrByLatestNSameBean(IndustryConceptThsOfPlan newBean,
+                                                                             String stdDateStr, int preNDay)
+            throws SQLException {
+        String preNTradeDateStrict = EastMoneyDbApi.getPreNTradeDateStrict(stdDateStr, preNDay);
+        List<IndustryConceptThsOfPlan> oldBeans = IndustryConceptThsOfPlanDao
+                .getBeanListByNameAndType(newBean.getName(), newBean.getType(), preNTradeDateStrict,
+                        stdDateStr); // 曾经bean列表
+
+
+        // @key: 对简单可编辑属性 赋值
+        if (oldBeans.size() != 0) { // 存在历史
+            // @key: 主要是trend 必须自行设定, 以及预判4字段
+
+            IndustryConceptThsOfPlan lastBean = oldBeans.get(0); // 倒序, 第一个即最新
+
+            newBean.setPricePositionLongTerm(lastBean.getPricePositionLongTerm());
+            newBean.setPricePositionShortTerm(lastBean.getPricePositionShortTerm());
+            newBean.setPriceTrend(lastBean.getPriceTrend());
+            newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
+            newBean.setOscillationAmplitude(lastBean.getOscillationAmplitude());
+            newBean.setLineType(lastBean.getLineType());
+            newBean.setHypeReason(lastBean.getHypeReason());
+            newBean.setHypeStartDate(lastBean.getHypeStartDate());
+            newBean.setHypePhaseCurrent(lastBean.getHypePhaseCurrent());
+            newBean.setSpecificDescription(lastBean.getSpecificDescription());
+
+            newBean.setLeaderStockList(lastBean.getLeaderStockList());
+            newBean.setLeaderStockListJsonStr(lastBean.getLeaderStockListJsonStr());
+
+            newBean.setGoodAspects(lastBean.getGoodAspects());
+            newBean.setBadAspects(lastBean.getBadAspects());
+            newBean.setWarnings(lastBean.getWarnings());
+
+            newBean.setRemark(lastBean.getRemark());
+        }
+        saveOrUpdateBean(newBean);
+        return newBean;
     }
 
 
