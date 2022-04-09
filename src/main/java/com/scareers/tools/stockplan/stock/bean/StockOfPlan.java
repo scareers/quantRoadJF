@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.sqlapi.ThsDbApi.ThsConceptIndustryRelation;
 import com.scareers.sqlapi.ThsDbApi.ThsSimpleStock;
+import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
@@ -162,121 +163,60 @@ public class StockOfPlan {
     @Column(name = "relatedTrendsStd2")
     Double relatedTrendsStd2 = 0.0;
 
-    // 3.
-
-
-    /* 新增基本字段: 主要涨跌停相关的; 均为自动计算自动载入, 且为最新数据
-                        + "vol double  null,"
-                        + "volRate double  null,"
-                        + "ddeNetVol double  null,"
-                        + "ddeNetAmount double  null,"
-                        + "totalMarketValue double  null,"
-                        + "circulatingMarketValue double  null,"
-                        + "includeStockAmount int  null,"
-                        + "upAmount int  null,"
-                        + "downAmount int  null," // 需要推断计算
-                        + "upPercent double  null,"
-                        + "lowLimitAmount int  null,"
-                        + "lowLimitPercent double  null,"
-                        + "highLimitAmount int  null,"
-                        + "highLimitPercent double  null,"
-                        + "lineLowLimitAmount int  null,"
-                        + "lineHighLimitAmount int  null,"
-                        + "lineHighLimitPercent double  null,"
-     */
-    // 新增12属性, 用4个label显示;  显示文字均为 [xx,yy,zz] 形式; 但是表格df中 分开列显示
-    Double volRate; // 量比
-    Double ddeNetAmount; // 主力净额
-    Double circulatingMarketValue; // 流通市值
-
-    Integer includeStockAmount; // 成分股数量
-    Integer upAmount; // 上涨家数
-    Double upPercent; // 上涨家数占比   // 下跌家数也没用上
-
-    Integer highLimitAmount; // 涨停数量
-    Double highLimitPercent; // 涨停占比
-    Integer lineHighLimitAmount; // 一字涨停数量
-
-    Integer lowLimitAmount; // 跌停数量
-    Double lowLimitPercent; // 跌停占比
-    Integer lineLowLimitAmount; // 一字跌停数量
-
-
-    @Column(name = "generatedTime", columnDefinition = "datetime")
-    Date generatedTime; // 首次初始化 (new) 时间
-    @Column(name = "lastModified", columnDefinition = "datetime")
-    Date lastModified; // 手动修改最后时间;
-
-    // 自动计算: 相关性较高的概念列表(名称表示)  // 因行业互斥, 无相关性较高的行业列表
-    // 相关性与成分股
-    @Transient
-    List<ThsConceptIndustryRelation> relatedConceptList = new ArrayList<>(); // 关系列表对象, 算法见 initRelationList()
-    @Column(name = "relatedConceptList", columnDefinition = "longtext")
-    String relatedConceptListJsonStr = "[]"; // 该列表只保留字符串; 调用 ThsConceptIndustryRelation的两个方法, 从json相互转化
-    @Transient
-    List<ThsConceptIndustryRelation> relatedIndustryList = new ArrayList<>(); // 关系列表对象, 算法见initRelationList()
-    @Column(name = "relatedIndustryList", columnDefinition = "longtext")
-    String relatedIndustryListJsonStr = "[]"; // 该列表只保留字符串; 调用 ThsConceptIndustryRelation的两个方法, 从json相互转化
-
-    // @key3: 新增字段: 当有其他概念行业存在时, 设置了trend后, 如果本对象, 关联到该行业/概念,
-    // 则应当将对方 的trend, 记录到本属性字典中. 本属性将在任意 实例更新trend值后, 自动计算全部并设置保存! // gui实现
-    // 不区分行业或者对象, key:value -> 关联行业或概念: 对方trend
-    // relatedTrendsDiscount 则以一定权重(关联性越高,则权重越高), 折算所有关联trend, 加总得到 关联行业概念的 trend加成;
-    @Transient
-    HashMap<String, Double> relatedTrendMap = new HashMap<>(); // 关联概念trend字典
-    @Column(name = "relatedTrendMap", columnDefinition = "longtext") // key为 名称__行业 或者 名称__概念; 注意split
-            String relatedTrendMapJsonStr = "{}";
-    @Column(name = "relatedTrendsDiscount")
-    Double relatedTrendsDiscount = 0.0; // 关联概念trend折算加成
-
-
-    @Transient
-    List<ThsSimpleStock> includeStockList = new ArrayList<>(); // 成分股列表
-    @Column(name = "includeStockList", columnDefinition = "longtext")
-    String includeStockListJsonStr = "[]"; // 成分股列表json字符串
-
-    /*
-    核心自定义字段: 未指明长短期, 默认短期
-     */
-    // 1.行情描述
+    // 3.核心自定义字段
+    // 3.1.行情描述
+    @Column(name = "bottomPriceApproximately")
+    Double bottomPriceApproximately;  // 底部价格大约! 可自动计算当前从底部至今的涨幅, 手动设定
+    @Column(name = "chgPFromBottom")
+    Double chgPFromBottom;  // 底部至今涨幅, 自动计算!
     @Column(name = "pricePositionShortTerm", columnDefinition = "varchar(32)")
-    String pricePositionShortTerm = PricePosition.UNKNOWN_POSITION; // 当前价格大概位置描述; 短期位置; 默认未知
-    @Column(name = "pricePositionLongTerm", columnDefinition = "varchar(32)")
-    String pricePositionLongTerm = PricePosition.UNKNOWN_POSITION; // 当前价格大概位置描述; 长期位置;  两个位置字段可取值相同.
+    String pricePositionShortTerm = PricePosition.UNKNOWN_POSITION; // 当前价格大概位置描述; 短期位置;
     @Column(name = "priceTrend", columnDefinition = "varchar(32)")
-    String priceTrend = PriceTrend.UNKNOWN; // 价格状态: 横盘/快升/快降/慢升/慢降
+    String priceTrend = PriceTrend.UNKNOWN; // 价格趋势状态: 横盘/快升/快降/慢升/慢降
     @Column(name = "oscillationAmplitude", columnDefinition = "varchar(32)")
     String oscillationAmplitude = OscillationAmplitude.UNKNOWN; // 振荡幅度: 小/中/大
-    // 2.炒作相关 -- 核心
-    @Column(name = "lineType", columnDefinition = "varchar(32)")
-    String lineType = LineType.OTHER_LINE; // 主线还是支线? 默认其他线
+    @Column(name = "klineDescription", columnDefinition = "longtext")
+    String klineDescription = OscillationAmplitude.UNKNOWN; // k线描述
+    @Column(name = "fsDescription", columnDefinition = "longtext")
+    String fsDescription = OscillationAmplitude.UNKNOWN; // 分时图描述
+
+    // 3.2.炒作相关 -- 核心
+    // 3.2.1: 主线支线
+    @Transient
+    HashMap<String, ArrayList<String>> lineTypeMap = new HashMap<>(); // 主线支线Map, 将自动收集并设定!
+    @Column(name = "lineTypeMap", columnDefinition = "longtext")
+    String lineTypeMapJsonStr = "{}"; // key: 主线1/其他; value: 行业/概念列表, 形如 电力_行业
+    @Column(name = "lineTypeAmount", columnDefinition = "int")
+    Integer lineTypeAmount; // 读取lineTypeMap的 value, 自动计算所有 主线支线  的概念行业数量, 出去未知类型的
+    @Transient
+    List<String> leaderStockOfList = new ArrayList<>(); // 是哪些行业/概念的龙头股! 元素为行业/概念名称
+    @Column(name = "leaderStockOfList", columnDefinition = "longtext")
+    String leaderStockOfListJsonStr = "[]"; //
+
+    // 3.2.2: 炒作原因时间阶段
     @Column(name = "hypeReason", columnDefinition = "longtext")
     String hypeReason; // 炒作原因
     @Column(name = "hypeStartDate", columnDefinition = "date")
     Date hypeStartDate; // 本轮炒作大约开始时间
     @Column(name = "hypePhaseCurrent", columnDefinition = "varchar(32)")
     String hypePhaseCurrent = HypePhase.UNKNOWN; // 当前炒作阶段
-    @Column(name = "specificDescription", columnDefinition = "longtext")
-    String specificDescription; // 具体其他描述
-    // 半自动: 龙头股设定;  需要自行手动设定!
-    @Transient
-    List<ThsSimpleStock> leaderStockList = new ArrayList<>(); // 龙头股列表
-    @Column(name = "leaderStockList", columnDefinition = "longtext")
-    String leaderStockListJsonStr = "[]"; // 龙头股列表json字符串
-
-    // 利好利空
-    @Column(name = "goodAspects", columnDefinition = "longtext")
-    String goodAspects; // 利好消息, 为了方便, 这里自行将内容 分段分点, 程序上不维护列表
-    @Column(name = "badAspects", columnDefinition = "longtext")
-    String badAspects; // 利空
+    @Column(name = "hypeAdvantage", columnDefinition = "longtext")
+    String hypeAdvantage = ""; // 炒作优势点
+    @Column(name = "hypeDisadvantage", columnDefinition = "longtext")
+    String hypeDisadvantage = ""; // 炒作劣势点
+    @Column(name = "maxRiskPoint", columnDefinition = "longtext")
+    String maxRiskPoint = ""; // 最大风险描述
     @Column(name = "warnings", columnDefinition = "longtext")
     String warnings; // 注意点
+
 
     /*
     总体评价字段
      */
     @Column(name = "trend")
     Double trend = 0.0; // -1.0 - 1.0 总体利空利好偏向自定义
+    @Column(name = "specificDescription", columnDefinition = "longtext")
+    String specificDescription; // 具体其他描述
     @Column(name = "remark", columnDefinition = "longtext")
     String remark; // 总体备注
 
@@ -292,143 +232,6 @@ public class StockOfPlan {
     @Column(name = "scoreReason", columnDefinition = "longtext")
     String scoreReason = ""; // 得分原因
 
-
-    public void initRelationList() {
-        this.relatedConceptList = ThsDbApi.getMaxRelationshipOfConcept(this.name,
-                dateStr, 10, 0.6, 0.4, true);
-        List<JSONObject> jsons = new ArrayList<>();
-        for (ThsConceptIndustryRelation thsConceptIndustryRelation : relatedConceptList) {
-            jsons.add(thsConceptIndustryRelation.toJsonObject());
-        }
-        this.relatedConceptListJsonStr = JSONUtilS.toJsonPrettyStr(jsons); // 初始化为字符串
-
-        this.relatedIndustryList = ThsDbApi.getMaxRelationshipOfIndustryLevel2(this.name,
-                dateStr, 10, 0.6, 0.4, true);
-        List<JSONObject> jsons2 = new ArrayList<>();
-        for (ThsConceptIndustryRelation thsConceptIndustryRelation : relatedIndustryList) {
-            jsons2.add(thsConceptIndustryRelation.toJsonObject());
-        }
-        this.relatedIndustryListJsonStr = JSONUtilS.toJsonPrettyStr(jsons2); // 初始化为字符串
-    }
-
-    public void initIncludeStockList() {
-        this.includeStockList = ThsDbApi.getConceptOrIndustryIncludeStocks(name, dateStr);
-        if (this.includeStockList == null) {
-            this.includeStockList = new ArrayList<>(); // null则设置为空
-        }
-        List<JSONObject> jsons = new ArrayList<>();
-        for (ThsSimpleStock thsSimpleStock : includeStockList) {
-            jsons.add(thsSimpleStock.toJsonObject());
-        }
-        this.includeStockListJsonStr = JSONUtilS.toJsonPrettyStr(jsons); // 初始化为字符串
-    }
-
-    /**
-     * 从数据表获取bean时, 需要自动填充 transient 字段
-     */
-    public void initTransientAttrsWhenBeanFromDb() {
-        initRelatedConceptListWhenBeanFromDb();
-        initRelatedIndustryListWhenBeanFromDb();
-        initIncludeStockListWhenBeanFromDb();
-        initLeaderStockListWhenBeanFromDb();
-        initRelatedTrendMapWhenBeanFromDb();
-    }
-
-    private void initRelatedConceptListWhenBeanFromDb() {
-        JSONArray objects = JSONUtilS.parseArray(this.relatedConceptListJsonStr);
-        List<ThsConceptIndustryRelation> res = new ArrayList<>();
-        for (int i = 0; i < objects.size(); i++) {
-            res.add(ThsConceptIndustryRelation.createFromJsonObject(objects.getJSONObject(i)));
-        }
-        this.relatedConceptList = res; // 一次性更新
-    }
-
-    private void initRelatedIndustryListWhenBeanFromDb() {
-        JSONArray objects = JSONUtilS.parseArray(this.relatedIndustryListJsonStr);
-        List<ThsConceptIndustryRelation> res = new ArrayList<>();
-        for (int i = 0; i < objects.size(); i++) {
-            res.add(ThsConceptIndustryRelation.createFromJsonObject(objects.getJSONObject(i)));
-        }
-        this.relatedIndustryList = res; // 一次性更新
-    }
-
-    private void initIncludeStockListWhenBeanFromDb() {
-        JSONArray objects = JSONUtilS.parseArray(this.includeStockListJsonStr);
-        List<ThsSimpleStock> res = new ArrayList<>();
-        for (int i = 0; i < objects.size(); i++) {
-            res.add(ThsSimpleStock.createFromJsonObject(objects.getJSONObject(i)));
-        }
-        this.includeStockList = res; // 一次性更新
-    }
-
-    private void initLeaderStockListWhenBeanFromDb() {
-        JSONArray objects = JSONUtilS.parseArray(this.leaderStockListJsonStr);
-        List<ThsSimpleStock> res = new ArrayList<>();
-        for (int i = 0; i < objects.size(); i++) {
-            res.add(ThsSimpleStock.createFromJsonObject(objects.getJSONObject(i)));
-        }
-        this.leaderStockList = res; // 一次性更新
-    }
-
-    private void initRelatedTrendMapWhenBeanFromDb() {
-        JSONObject objects = JSONUtilS.parseObj(this.relatedTrendMapJsonStr);
-        HashMap<String, Double> res = new HashMap<>();
-        for (String s : objects.keySet()) {
-            res.put(s, objects.getDouble(s));
-        }
-        this.relatedTrendMap = res; // 一次性更新
-    }
-
-    /*
-    数据api, 主要同时更新 list和对应的json; 按需实现
-     */
-    public void updateLeaderStockList(List<ThsSimpleStock> newList) {
-        List<JSONObject> jsonObjectList = new ArrayList<>();
-        for (ThsSimpleStock thsSimpleStock : newList) {
-            jsonObjectList.add(thsSimpleStock.toJsonObject());
-        }
-        this.leaderStockListJsonStr = JSONUtilS.toJsonPrettyStr(jsonObjectList);
-        this.leaderStockList = newList;
-    }
-
-    /**
-     * 此时RelatedTrendMap已经设置好, 更新对应 jsonStr 字段
-     */
-    public void updateRelatedTrendMapJsonStr() {
-        this.relatedTrendMapJsonStr = JSONUtilS.toJsonPrettyStr(this.relatedTrendMap);
-    }
-
-    /**
-     * 此时RelatedTrendMap已经设置好, 使用自定义算法, 计算 关联概念行业 折算trend 因子;
-     * 这里简单 进行加法
-     */
-    public void calcRelatedTrendsDiscount() {
-        Double res = 0.0;
-        for (String s : this.relatedTrendMap.keySet()) {
-            List<String> nameAndType = StrUtil.split(s, "__");
-            String name = nameAndType.get(0);
-            String type = nameAndType.get(1);
-            Double trend = this.relatedTrendMap.get(s);
-            if ("行业".equals(type)) {
-                for (ThsConceptIndustryRelation relation : this.relatedIndustryList) {
-                    if (relation.getNameB().equals(name)) {
-                        double relationValue = relation.calcRelationValue(0.3, 0.7); // 关系值,偏向b一点
-                        res += relationValue * trend;
-                        break; // 只可能1
-                    }
-                }
-            } else if ("概念".equals(type)) {
-                for (ThsConceptIndustryRelation relation : this.relatedConceptList) {
-                    if (relation.getNameB().equals(name)) {
-                        double relationValue = relation.calcRelationValue(0.3, 0.7); // 关系值,偏向b一点
-                        res += relationValue * trend;
-                        break; // 只可能1次
-                    }
-                }
-            }
-        }
-        this.relatedTrendsDiscount = CommonUtil.roundHalfUP(res, 3); // 保留3位小数
-    }
 
     /**
      * 行业主线支线类型, 这里不使用枚举, 直接使用字符串
@@ -483,23 +286,37 @@ public class StockOfPlan {
         ));
     }
 
+
     /**
      * 趋势描述
      */
     public static class PriceTrend {
-        public static String HORIZONTAL_LINE = "横盘"; // 水平线
+        public static String HORIZONTAL_LINE_LOW = "横盘低点"; // 水平线
+        public static String HORIZONTAL_LINE_HIGH = "横盘高点"; // 水平线
+        public static String HORIZONTAL_LINE_COMMON = "横盘"; // 水平线
+
         public static String FAST_RAISE = "快升";
+        public static String FAST_RAISE_ADJUST = "快升调整";
         public static String SLOW_RAISE = "慢升";
+        public static String SLOW_RAISE_ADJUST = "慢升调整";
         public static String FAST_FALL = "快降";
+        public static String FAST_FALL_ADJUST = "快降反弹";
         public static String SLOW_FALL = "慢降";
+        public static String SLOW_FALL_ADJUST = "慢降反弹";
         public static String UNKNOWN = "未知";
 
         public static Vector<String> allPriceTrends = new Vector<>(Arrays.asList(
-                HORIZONTAL_LINE,
+                HORIZONTAL_LINE_LOW,
+                HORIZONTAL_LINE_HIGH,
+                HORIZONTAL_LINE_COMMON,
                 FAST_RAISE,
+                FAST_RAISE_ADJUST,
                 SLOW_RAISE,
+                SLOW_RAISE_ADJUST,
                 FAST_FALL,
+                FAST_FALL_ADJUST,
                 SLOW_FALL,
+                SLOW_FALL_ADJUST,
                 UNKNOWN
         ));
     }
@@ -525,22 +342,26 @@ public class StockOfPlan {
      * 表示当前 炒作进行到的阶段
      */
     public static class HypePhase {
-        public static String HAZY_PHASE = "朦胧"; //
-        public static String INITIAL_START_PHASE = "初启";
-        public static String SPEED_UP_PHASE = "加速";
-        public static String ADJUSTMENT_PHASE = "调整";
-        public static String EBB_PHASE = "衰退";
-        public static String REVIVAL_PHASE = "再起";
+        public static String HAZY = "朦胧";
+        public static String INITIAL_START = "初启";
+        public static String MAIN_RAISE = "主升";
+        public static String MAIN_RAISE_ADJUSTMENT = "主升调整";
+        public static String ADJUSTMENT = "调整";
+        public static String BUILD_TOP_PERHAPS = "筑顶疑似";
+        public static String EBB = "衰退";
+        public static String REVIVAL = "再起";
 
         public static String UNKNOWN = "未知";
 
         public static Vector<String> allHypePhases = new Vector<>(Arrays.asList(
-                HAZY_PHASE,
-                INITIAL_START_PHASE,
-                SPEED_UP_PHASE,
-                ADJUSTMENT_PHASE,
-                EBB_PHASE,
-                REVIVAL_PHASE,
+                HAZY,
+                INITIAL_START,
+                MAIN_RAISE,
+                MAIN_RAISE_ADJUSTMENT,
+                ADJUSTMENT,
+                BUILD_TOP_PERHAPS,
+                EBB,
+                REVIVAL,
                 UNKNOWN
         ));
     }
