@@ -87,46 +87,82 @@ public class StockOfPlan {
     @Column(name = "volRate")
     Double volRate; // 量比
 
+
     // 涨停相关字段
 
-    /*
-        highLimitBlockadeVolumeRate double      null,
-    highLimitType               varchar(32) null,
-    highLimitBlockadeCMVRate    double      null,
-    highLimitFirstTime          varchar(32) null,
-    highLimitBlockadeAmount     double      null,
-    highLimit                   varchar(32) null,
-    highLimitReason             longtext    null,
-    highLimitAmountType         longtext    null,
-    highLimitDetail             longtext    null,
-    highLimitBlockadeVol        double      null,
-    highLimitBrokeTimes         int         null,
-    highLimitLastTime           varchar(32) null,
-    highLimitContinuousDays     int         null,
-
-    lowLimit                    varchar(32) null,
-    lowLimitBlockadeVol         double      null,
-    lowLimitDetails             longtext    null,
-    lowLimitFirstTime           varchar(32) null,
-    lowLimitBlockadeVolCMVRate  double      null,
-    lowLimitBlockadeAmount      double      null,
-    lowLimitReason              longtext    null,
-    lowLimitBrokeTimes          int         null,
-    lowLimitType                varchar(32) null,
-    lowLimitLastTime            varchar(32) null,
-    lowLimitBlockadeVolumeRate  double      null,
-    lowLimitContinuousDays      int         null,
-    dateStr                     varchar(32) null
-     */
-    @Column(name = "highLimitBlockadeVolumeRate")
-    Double highLimitBlockadeVolumeRate; // 涨停封成比  封单量/成交量
     @Column(name = "highLimitType", columnDefinition = "varchar(32)")
     String highLimitType; // 涨停类型, 例如"放量涨停"
+    @Column(name = "highLimitReason", columnDefinition = "longtext")
+    String highLimitReason;
+    @Column(name = "highLimitBlockadeAmount")
+    Double highLimitBlockadeAmount;
     @Column(name = "highLimitBlockadeCMVRate")
     Double highLimitBlockadeCMVRate; // 涨停封单额/流通市值
-    @Column(name = "highLimitFirstTime")
-    Double highLimitBlockadeCMVRate; // 涨停封单额/流通市值
+    @Column(name = "highLimitBlockadeVolumeRate")
+    Double highLimitBlockadeVolumeRate; // 涨停封成比  封单量/成交量
+    @Column(name = "highLimitFirstTime", columnDefinition = "varchar(32)")
+    String highLimitFirstTime;
+    @Column(name = "highLimitLastTime", columnDefinition = "varchar(32)")
+    String highLimitLastTime;
+    @Column(name = "highLimitAmountType", columnDefinition = "longtext")
+    String highLimitAmountType;
+    @Column(name = "highLimitBrokeTimes", columnDefinition = "int")
+    Integer highLimitBrokeTimes;
+    @Column(name = "highLimitContinuousDays", columnDefinition = "int")
+    Integer highLimitContinuousDays;
+    @Column(name = "highLimitDetail", columnDefinition = "longtext")
+    String highLimitDetail;
 
+
+    // 跌停相关字段
+    @Column(name = "lowLimitType", columnDefinition = "varchar(32)")
+    String lowLimitType; // 涨停类型, 例如"放量涨停"
+    @Column(name = "lowLimitReason", columnDefinition = "longtext")
+    String lowLimitReason;
+    @Column(name = "lowLimitBlockadeAmount")
+    Double lowLimitBlockadeAmount;
+    @Column(name = "lowLimitBlockadeVolCMVRate")
+    Double lowLimitBlockadeVolCMVRate;
+    @Column(name = "lowLimitBlockadeVolumeRate")
+    Double lowLimitBlockadeVolumeRate; // 涨停封成比  封单量/成交量
+    @Column(name = "lowLimitFirstTime", columnDefinition = "varchar(32)")
+    String lowLimitFirstTime;
+    @Column(name = "lowLimitLastTime", columnDefinition = "varchar(32)")
+    String lowLimitLastTime;
+    @Column(name = "lowLimitBrokeTimes", columnDefinition = "int")
+    Integer lowLimitBrokeTimes;
+    @Column(name = "lowLimitContinuousDays", columnDefinition = "int")
+    Integer lowLimitContinuousDays;
+    @Column(name = "lowLimitDetails", columnDefinition = "longtext")
+    String lowLimitDetails;
+
+    // 自定义字段
+    // 1.生成时间和修改时间
+    @Column(name = "generatedTime", columnDefinition = "datetime")
+    Date generatedTime; // 首次初始化 (new) 时间
+    @Column(name = "lastModified", columnDefinition = "datetime")
+    Date lastModified; // 手动修改最后时间;
+
+    // 2.个股所属的 行业/概念, 若存在行业概念bean, 则收集对应的 trend 属性, 作为Map, 并且以平均值和标准差衡量 关联行业概念 trend
+    @Transient
+    HashMap<String, Double> relatedTrendMap = new HashMap<>(); // 关联概念trend字典
+    @Column(name = "relatedTrendMap", columnDefinition = "longtext")
+    String relatedTrendMapJsonStr = "{}";// key为 名称__行业 或者 名称__概念; 注意split
+    @Column(name = "relatedTrendsAvg")
+    Double relatedTrendsAvg = 0.0; // 关联 概念trend 平均值
+    @Column(name = "relatedTrendsStd")
+    Double relatedTrendsStd = 0.0; // 关联概念trend 标准差; 两者简单衡量个股所属行业概念 trend 总体状况;
+    // 2.2. 关联trend2, 则计算 所属概念/行业的 relatedTrendsDiscount, 它衡量了 所属概念的 相关概念的影响
+    @Transient
+    HashMap<String, Double> relatedTrendMap2 = new HashMap<>();
+    @Column(name = "relatedTrendMap2", columnDefinition = "longtext")
+    String relatedTrendMap2JsonStr = "{}";
+    @Column(name = "relatedTrendsAvg2")
+    Double relatedTrendsAvg2 = 0.0;
+    @Column(name = "relatedTrendsStd2")
+    Double relatedTrendsStd2 = 0.0;
+
+    // 3.
 
 
     /* 新增基本字段: 主要涨跌停相关的; 均为自动计算自动载入, 且为最新数据
