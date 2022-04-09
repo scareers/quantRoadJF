@@ -54,14 +54,17 @@ public class ThsDbApi {
     }
 
     public static void main(String[] args) {
+        Console.log(getStockAllRecordByCode("000001").length());
+
+
 //        Console.log(getIndustryByNameAndDate("电力", "2022-03-28"));
 //        Console.log(getIndustryAllRecordByName("电力"));
 //        Console.log(getConceptByNameAndDate("三胎概念", "2022-03-28"));
 //        Console.log(getConceptAllRecordByName("三胎概念"));
 
-        List<String> conceptNameList = getConceptNameList("2022-04-06");
-        Console.log(conceptNameList);
-        Console.log(conceptNameList.size());
+//        List<String> conceptNameList = getConceptNameList("2022-04-06");
+//        Console.log(conceptNameList);
+//        Console.log(conceptNameList.size());
 
 
 //        Console.log(getIndustryNameLevel23WithFullCodeMap(DateUtil.today()));
@@ -85,13 +88,13 @@ public class ThsDbApi {
 //        Console.log(conceptIncludeStocks);
 
 
-        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
-//                RandomUtil.randomEle(conceptNameList),
-                "俄乌冲突概念",
-                DateUtil.today(), 10, 0.6, 0.4, true);
-        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
-            Console.log(thsConceptRelation);
-        }
+//        List<ThsConceptIndustryRelation> maxConceptRelationshipOf = getMaxRelationshipOfConcept(
+////                RandomUtil.randomEle(conceptNameList),
+//                "俄乌冲突概念",
+//                DateUtil.today(), 10, 0.6, 0.4, true);
+//        for (ThsConceptIndustryRelation thsConceptRelation : maxConceptRelationshipOf) {
+//            Console.log(thsConceptRelation);
+//        }
     }
 
     /**
@@ -101,7 +104,8 @@ public class ThsDbApi {
      * @return 读取同花顺概念列表, 返回概念名称列表; 失败返回null ; 已经去重和去null
      */
     public static List<String> getConceptNameList(String dateStr) {
-        String sql = StrUtil.format("select name,chgP from concept_list where dateStr='{}' order by chgP desc", dateStr);
+        String sql = StrUtil
+                .format("select name,chgP from concept_list where dateStr='{}' order by chgP desc", dateStr);
 
         DataFrame<Object> dataFrame;
         try {
@@ -313,10 +317,11 @@ public class ThsDbApi {
      * @return
      */
     public static List<String> getIndustryNameListLevel3(String dateStr) {
-        String sql = StrUtil.format("select name,chgP from industry_list where dateStr='{}' and industryType='三级行业' order " +
-                "by" +
-                " " +
-                "chgP desc", dateStr);
+        String sql = StrUtil
+                .format("select name,chgP from industry_list where dateStr='{}' and industryType='三级行业' order " +
+                        "by" +
+                        " " +
+                        "chgP desc", dateStr);
         DataFrame<Object> dataFrame;
         try {
             dataFrame = DataFrame.readSql(connection, sql);
@@ -327,7 +332,7 @@ public class ThsDbApi {
     }
 
     /**
-     * 获取行业所有日期的记录. 需要提供行业名称, 返回所有日期的 industry_list 中对应行业的记录
+     * 获取行业所有日期的记录. 需要提供行业名称, 返回所有日期的 industry_list 中对应行业的记录; 时间升序
      *
      * @param dateStr
      * @return
@@ -335,7 +340,7 @@ public class ThsDbApi {
      */
     public static DataFrame<Object> getIndustryAllRecordByName(String industryName) {
         String sql = StrUtil.format("select * from industry_list where " +
-                        "name='{}'",
+                        "name='{}' order by dateStr",
                 industryName);
         DataFrame<Object> dataFrame;
         try {
@@ -862,5 +867,45 @@ public class ThsDbApi {
 
     }
 
+    /**
+     * 从 stock_list表, 读取给定 code和dateStr 的 一条个股基本数据记录!
+     *
+     * @param code
+     * @param dateStr
+     * @return
+     */
+    public static DataFrame<Object> getStockByCodeAndDate(String code, String dateStr) {
+        String sql = StrUtil.format("select * from stock_list where dateStr='{}' and " +
+                        "code='{}'",
+                dateStr, code);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
+
+    /**
+     * 获取行业所有日期的记录. 需要提供 个股代码, 返回所有日期的 stock_list表 中对应个股的记录, 默认时间升序!
+     *
+     * @param dateStr
+     * @return
+     * @noti : 本方法已放弃调用!
+     * @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
+     */
+    public static DataFrame<Object> getStockAllRecordByCode(String code) {
+        String sql = StrUtil.format("select * from stock_list where " +
+                        "code='{}' order by dateStr",
+                code);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return dataFrame;
+    }
 
 }

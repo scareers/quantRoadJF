@@ -53,7 +53,7 @@ public class IndustryConceptThsOfPlan {
             DataFrame<Object> dfTemp = ThsDbApi.getIndustryByNameAndDate(industryOrConceptName, dateStr);
             // @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
             if (dfTemp == null || dfTemp.length() == 0) {
-                dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
+                dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条; 时间升序
             }
             bean.setName(industryOrConceptName);
             bean.setType("行业");
@@ -272,7 +272,7 @@ public class IndustryConceptThsOfPlan {
     @Column(name = "indexCode", columnDefinition = "varchar(32)")
     String indexCode; // 完整代码, 一般有 .TI 后缀
     @Column(name = "dateStr", columnDefinition = "varchar(32)")
-    String dateStr; // 该行业原始数据抓取时的日期
+    String dateStr; // 视为对哪一个交易日做计划? 不是爬虫记录日期
     @Column(name = "chgP", length = 64)
     Double chgP; // 最新涨跌幅
 

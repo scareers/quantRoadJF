@@ -8,7 +8,7 @@
         <!-- 首先我们要对需要连接数据进行配置 -->
         <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
         <property
-                name="hibernate.connection.url">jdbc:mysql://localhost:3306/eastmoney?serverTimezone=Asia/Shanghai
+                name="hibernate.connection.url">jdbc:mysql://localhost:3306/eastmoney?useSSL=false&amp;serverTimezone=Asia/Shanghai
         </property>
 
         <!-- 区别不同的sql语言，要告诉本数据库的方言 -->

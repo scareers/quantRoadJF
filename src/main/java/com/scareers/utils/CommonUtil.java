@@ -167,24 +167,24 @@ public class CommonUtil {
     }
 
 
-    public static Double sumOfListNumber(List<? extends Number> numbers) {
+    public static Double sumOfListNumber(Collection<? extends Number> numbers) {
         return numbers.stream().
                 mapToDouble(Number::doubleValue).sum();
     }
 
-    public static double sumOfListNumberUseLoop(List<? extends Number> numbers) {
-        double sum = numbers.get(0).doubleValue();
-        for (int i = 1; i < numbers.size(); i++) {
-            sum += numbers.get(i).doubleValue();
+    public static double sumOfListNumberUseLoop(Collection<? extends Number> numbers) {
+        double sum = 0.0;
+        for (Number number : numbers) {
+            sum+=number.doubleValue();
         }
         return sum;
     }
 
-    public static double avgOfListNumberUseLoop(List<? extends Number> numbers) {
+    public static double avgOfListNumberUseLoop(Collection<? extends Number> numbers) {
         return sumOfListNumberUseLoop(numbers) / numbers.size();
     }
 
-    public static double varOfListNumberUseLoop(List<? extends Number> numbers) {
+    public static double varOfListNumberUseLoop(Collection<? extends Number> numbers) {
         double avg = avgOfListNumberUseLoop(numbers);
         return varOfListNumberUseLoop(numbers, avg);
     }
@@ -196,7 +196,7 @@ public class CommonUtil {
      * @param avg
      * @return
      */
-    public static double varOfListNumberUseLoop(List<? extends Number> numbers, double avg) {
+    public static double varOfListNumberUseLoop(Collection<? extends Number> numbers, double avg) {
         double expSum = 0;
         for (Number number : numbers) {
             expSum += Math.pow(number.doubleValue() - avg, 2);
@@ -204,11 +204,11 @@ public class CommonUtil {
         return expSum / numbers.size();
     }
 
-    public static double stdOfListNumberUseLoop(List<? extends Number> numbers) {
+    public static double stdOfListNumberUseLoop(Collection<? extends Number> numbers) {
         return Math.sqrt(varOfListNumberUseLoop(numbers));
     }
 
-    public static double stdOfListNumberUseLoop(List<? extends Number> numbers, double avg) {
+    public static double stdOfListNumberUseLoop(Collection<? extends Number> numbers, double avg) {
         return Math.sqrt(varOfListNumberUseLoop(numbers, avg));
     }
 

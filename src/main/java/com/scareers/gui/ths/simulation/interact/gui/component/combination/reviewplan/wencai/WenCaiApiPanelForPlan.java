@@ -33,6 +33,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -321,6 +322,13 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
                     bean = IndustryConceptThsOfPlanDao
                             .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
                                     IndustryConceptThsOfPlan.Type.INDUSTRY);
+                    try {
+                        IndustryConceptThsOfPlanDao.syncEditableAttrByLatestNSameBean(bean,
+                                IndustryConceptThsOfPlanDao
+                                        .decideDateStrForPlan(PlanReviewDateTimeDecider.getUniqueDatetime()), 10);
+                    } catch (SQLException ex) {
+                        ManiLog.put(StrUtil.format("同步可编辑属性失败: {}", bean.getName()));
+                    }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     ManiLog.put("生成行业[当前行]失败: 生成bean过程失败!");
@@ -336,32 +344,46 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
         generateIndustryItem2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (popupPointRow == -1 || jTable == null) {
-                    return;
-                }
-                int[] selectedRows = jTable.getSelectedRows();
-                for (int selectedRow : selectedRows) {
-                    RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
-                    int index = rowSorter.convertRowIndexToModel(selectedRow); // 模型中的row; 本质等于 newDf 的行数
-                    String name = null;
-                    try {
-                        name = newDf.get(index, "指数简称").toString();
-                    } catch (Exception ex) {
-                        ManiLog.put("生成行业[当前行]失败: 获取行业名称失败");
-                        continue;
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        if (popupPointRow == -1 || jTable == null) {
+                            return;
+                        }
+                        int[] selectedRows = jTable.getSelectedRows();
+                        for (int selectedRow : selectedRows) {
+                            RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                            int index = rowSorter.convertRowIndexToModel(selectedRow); // 模型中的row; 本质等于 newDf 的行数
+                            String name = null;
+                            try {
+                                name = newDf.get(index, "指数简称").toString();
+                            } catch (Exception ex) {
+                                ManiLog.put("生成行业[当前行]失败: 获取行业名称失败");
+                                continue;
+                            }
+                            IndustryConceptThsOfPlan bean;
+                            try {
+                                bean = IndustryConceptThsOfPlanDao
+                                        .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
+                                                IndustryConceptThsOfPlan.Type.INDUSTRY);
+                                try {
+                                    IndustryConceptThsOfPlanDao.syncEditableAttrByLatestNSameBean(bean,
+                                            IndustryConceptThsOfPlanDao
+                                                    .decideDateStrForPlan(
+                                                            PlanReviewDateTimeDecider.getUniqueDatetime()), 10);
+                                } catch (SQLException ex) {
+                                    ManiLog.put(StrUtil.format("同步可编辑属性失败: {}", bean.getName()));
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                ManiLog.put("生成行业[当前行]失败: 生成bean过程失败!");
+                                continue;
+                            }
+                            ManiLog.put(StrUtil.format("生成行业[当前行]成功: {}", bean.getName()));
+                        }
                     }
-                    IndustryConceptThsOfPlan bean;
-                    try {
-                        bean = IndustryConceptThsOfPlanDao
-                                .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
-                                        IndustryConceptThsOfPlan.Type.INDUSTRY);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        ManiLog.put("生成行业[当前行]失败: 生成bean过程失败!");
-                        continue;
-                    }
-                    ManiLog.put(StrUtil.format("生成行业[当前行]成功: {}", bean.getName()));
-                }
+                }, true);
 
             }
         });
@@ -394,6 +416,13 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
                     bean = IndustryConceptThsOfPlanDao
                             .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
                                     IndustryConceptThsOfPlan.Type.CONCEPT);
+                    try {
+                        IndustryConceptThsOfPlanDao.syncEditableAttrByLatestNSameBean(bean,
+                                IndustryConceptThsOfPlanDao
+                                        .decideDateStrForPlan(PlanReviewDateTimeDecider.getUniqueDatetime()), 10);
+                    } catch (SQLException ex) {
+                        ManiLog.put(StrUtil.format("同步可编辑属性失败: {}", bean.getName()));
+                    }
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     ManiLog.put("生成概念[当前行]失败: 生成bean过程失败!");
@@ -409,32 +438,46 @@ public class WenCaiApiPanelForPlan extends DisplayPanel {
         generateConceptItem2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (popupPointRow == -1 || jTable == null) {
-                    return;
-                }
-                int[] selectedRows = jTable.getSelectedRows();
-                for (int selectedRow : selectedRows) {
-                    RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
-                    int index = rowSorter.convertRowIndexToModel(selectedRow); // 模型中的row; 本质等于 newDf 的行数
-                    String name = null;
-                    try {
-                        name = newDf.get(index, "指数简称").toString();
-                    } catch (Exception ex) {
-                        ManiLog.put("生成概念[当前行]失败: 获取概念名称失败");
-                        continue;
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        if (popupPointRow == -1 || jTable == null) {
+                            return;
+                        }
+                        int[] selectedRows = jTable.getSelectedRows();
+                        for (int selectedRow : selectedRows) {
+                            RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                            int index = rowSorter.convertRowIndexToModel(selectedRow); // 模型中的row; 本质等于 newDf 的行数
+                            String name = null;
+                            try {
+                                name = newDf.get(index, "指数简称").toString();
+                            } catch (Exception ex) {
+                                ManiLog.put("生成概念[当前行]失败: 获取概念名称失败");
+                                continue;
+                            }
+                            IndustryConceptThsOfPlan bean;
+                            try {
+                                bean = IndustryConceptThsOfPlanDao
+                                        .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
+                                                IndustryConceptThsOfPlan.Type.CONCEPT);
+                                try {
+                                    IndustryConceptThsOfPlanDao.syncEditableAttrByLatestNSameBean(bean,
+                                            IndustryConceptThsOfPlanDao
+                                                    .decideDateStrForPlan(
+                                                            PlanReviewDateTimeDecider.getUniqueDatetime()), 10);
+                                } catch (SQLException ex) {
+                                    ManiLog.put(StrUtil.format("同步可编辑属性失败: {}", bean.getName()));
+                                }
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                                ManiLog.put("生成概念[当前行]失败: 生成bean过程失败!");
+                                continue;
+                            }
+                            ManiLog.put(StrUtil.format("生成概念[当前行]成功: {}", bean.getName()));
+                        }
                     }
-                    IndustryConceptThsOfPlan bean;
-                    try {
-                        bean = IndustryConceptThsOfPlanDao
-                                .getOrInitBeanForPlan(name, PlanReviewDateTimeDecider.getUniqueDatetime(),
-                                        IndustryConceptThsOfPlan.Type.CONCEPT);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        ManiLog.put("生成概念[当前行]失败: 生成bean过程失败!");
-                        continue;
-                    }
-                    ManiLog.put(StrUtil.format("生成概念[当前行]成功: {}", bean.getName()));
-                }
+                }, true);
             }
         });
 
