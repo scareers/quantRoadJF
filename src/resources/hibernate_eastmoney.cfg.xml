@@ -28,6 +28,7 @@
 
         <mapping class="com.scareers.tools.stockplan.news.bean.NewAspectSummary"/>
         <mapping class="com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan"/>
+        <mapping class="com.scareers.tools.stockplan.stock.bean.StockOfPlan"/>
         <mapping class="com.scareers.gui.ths.simulation.trader.StockBondBean"/>
 
     </session-factory>

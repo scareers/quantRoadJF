@@ -18,8 +18,8 @@ import javax.persistence.*;
 import java.util.*;
 
 /**
- * description: 操盘计划时,
- * 源数据字段参考 industry_list 数据表
+ * description: 操盘计划时, 核心个股对象! 数据库有大量默认字段; 整合显示,否则字段太多;
+ * 基本字段从 ths.stock_list 数据表得来; 数据来源于问财, 主要包含基本属性字段+涨跌停字段
  *
  * @word: hype: 炒作 / hazy 朦胧 / ebb 退潮 / revival 复兴再起
  * @author: admin
@@ -28,230 +28,13 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "plan_of_industry_and_concept",
+@Table(name = "test_stock",
         indexes = {@Index(name = "dateStr_Index", columnList = "dateStr"),
                 @Index(name = "type_Index", columnList = "type")})
 public class StockOfPlan {
     public static void main(String[] args) {
-        StockOfPlan bean = StockOfPlan
-                .newInstance("三胎概念", "2022-04-06", Type.CONCEPT);
-        Console.log(bean);
+
     }
-
-
-    public enum Type {
-        INDUSTRY,
-        CONCEPT
-    }
-
-    /**
-     * 最常用的初始化工厂方法:
-     * 当给定日期没有记录时, 将尝试访问所有记录, 应用最后一条, 构建具有基本字段的bean
-     */
-    public static StockOfPlan newInstance(String industryOrConceptName, String dateStr, Type type) {
-        StockOfPlan bean = new StockOfPlan();
-        if (type.equals(Type.INDUSTRY)) {
-            DataFrame<Object> dfTemp = ThsDbApi.getIndustryByNameAndDate(industryOrConceptName, dateStr);
-            // @cols [id, chgP, close, code, industryIndex, industryType, name, marketCode, indexCode, dateStr]
-            if (dfTemp == null || dfTemp.length() == 0) {
-                dfTemp = ThsDbApi.getIndustryAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
-            }
-            bean.setName(industryOrConceptName);
-            bean.setType("行业");
-            bean.setType2(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "industryType")));
-            return getIndustryConceptThsOfPlanCore(dateStr, bean, dfTemp);
-        } else {
-            DataFrame<Object> dfTemp = ThsDbApi.getConceptByNameAndDate(industryOrConceptName, dateStr);
-            // @cols [id, chgP, close, code, name, marketCode, indexCode, conceptIndex, dateStr]
-            if (dfTemp == null || dfTemp.length() == 0) {
-                dfTemp = ThsDbApi.getConceptAllRecordByName(industryOrConceptName); // 获取所有记录后, 将获取最后一条
-            }
-            bean.setName(industryOrConceptName);
-            bean.setType("概念");
-            return getIndustryConceptThsOfPlanCore(dateStr, bean, dfTemp);
-        }
-    }
-
-    private static StockOfPlan getIndustryConceptThsOfPlanCore(String dateStr,
-                                                               StockOfPlan bean,
-                                                               DataFrame<Object> dfTemp) {
-        bean.setCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "code")));
-        bean.setIndexCode(CommonUtil.toStringOrNull(dfTemp.get(dfTemp.length() - 1, "indexCode")));
-        bean.setDateStr(dateStr); // @noti: 第二种情况, 读取结果的字符串将不等于参数日期
-
-        /*
-            新增12 自动计算且不变 属性
-            Double volRate; // 量比
-            Double ddeNetAmount; // 主力净额
-            Double circulatingMarketValue; // 流通市值
-
-            Integer includeStockAmount; // 成分股数量
-            Integer upAmount; // 上涨家数
-            Double upPercent; // 上涨家数占比   // 下跌家数也没用上
-
-            Integer highLimitAmount; // 涨停数量
-            Double highLimitPercent; // 涨停占比
-            Integer lineHighLimitAmount; // 一字涨停数量
-
-            Integer lowLimitAmount; // 跌停数量
-            Double lowLimitPercent; // 跌停占比
-            Integer lineLowLimitAmount; // 一字跌停数量
-         */
-        bean.setMarketCode(tryParseIntegerOfLastLine(dfTemp, "marketCode"));
-
-        bean.setVolRate(tryParseDoubleOfLastLine(dfTemp, "volRate"));
-        bean.setDdeNetAmount(tryParseDoubleOfLastLine(dfTemp, "ddeNetAmount"));
-        bean.setCirculatingMarketValue(tryParseDoubleOfLastLine(dfTemp, "circulatingMarketValue"));
-
-        bean.setIncludeStockAmount(tryParseIntegerOfLastLine(dfTemp, "includeStockAmount"));
-        bean.setUpAmount(tryParseIntegerOfLastLine(dfTemp, "upAmount"));
-        bean.setUpPercent(tryParseDoubleOfLastLine(dfTemp, "upPercent"));
-
-        bean.setHighLimitAmount(tryParseIntegerOfLastLine(dfTemp, "highLimitAmount"));
-        bean.setHighLimitPercent(tryParseDoubleOfLastLine(dfTemp, "highLimitPercent"));
-        bean.setLineHighLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lineHighLimitAmount"));
-
-        bean.setLowLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lowLimitAmount"));
-        bean.setLowLimitPercent(tryParseDoubleOfLastLine(dfTemp, "lowLimitPercent"));
-        bean.setLineLowLimitAmount(tryParseIntegerOfLastLine(dfTemp, "lineLowLimitAmount"));
-
-
-        bean.setChgP(tryParseDoubleOfLastLine(dfTemp, "chgP"));
-        bean.setGeneratedTime(DateUtil.date());
-
-        bean.initRelationList(); // 初始化关系列表
-        bean.initIncludeStockList(); // 初始化成分股列表
-        return bean; // 只有基本字段
-    }
-
-    public static Double tryParseDoubleOfLastLine(DataFrame<Object> dataFrame, Object colName) {
-        try {
-            return Double.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    public static Integer tryParseIntegerOfLastLine(DataFrame<Object> dataFrame, Object colName) {
-        try {
-            return Integer.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // 成分股列表, 相关行业列表, 相关概念列表, 均不直接显示
-    public static List<String> allColForDf = Arrays
-            .asList("id", "名称", "类型", "类型2", "代码", "代码2",
-                    "市场代码",
-                    "日期",
-                    "涨跌幅",
-                    // 新增12字段, 分列
-                    "量比",
-                    "主力净额",
-                    "流通市值",
-                    "成分股数",
-                    "上涨家数",
-                    "上涨占比",
-                    "涨停数",
-                    "涨停占比",
-                    "一字涨停",
-                    "跌停数",
-                    "跌停占比",
-                    "一字跌停",
-
-                    "生成时间", "最终修改时间",
-
-                    "短期位置",
-                    "长期位置",
-                    "趋势",
-                    "震荡",
-                    "主支线",
-                    "炒作原因",
-                    "开始时间",
-                    "炒作阶段",
-                    "其他描述",
-                    "龙头股",
-
-                    "利好",
-                    "利空",
-                    "注意",
-                    "总体偏向",
-                    "关联折算偏向",
-                    "备注",
-                    "预判",
-                    "未来",
-                    "得分",
-                    "分析"
-            ); // 多了id列
-
-    /**
-     * 本方法将bean列表转换为df, 进行显示, gui Table使用
-     *
-     * @param beans
-     * @return
-     */
-    public static DataFrame<Object> buildDfFromBeanList(List<StockOfPlan> beans) {
-        DataFrame<Object> res = new DataFrame<>(allColForDf);
-        for (StockOfPlan bean : beans) {
-            List<Object> row = new ArrayList<>();
-
-
-            row.add(bean.getId());
-            row.add(bean.getName());
-            row.add(bean.getType());
-            row.add(bean.getType2());
-            row.add(bean.getCode());
-            row.add(bean.getIndexCode());
-            row.add(bean.getMarketCode());
-            row.add(bean.getDateStr());
-            row.add(bean.getChgP());
-
-            // 新增12
-            row.add(bean.getVolRate());
-            row.add(bean.getDdeNetAmount());
-            row.add(bean.getCirculatingMarketValue());
-            row.add(bean.getIncludeStockAmount());
-            row.add(bean.getUpAmount());
-            row.add(bean.getUpPercent());
-            row.add(bean.getHighLimitAmount());
-            row.add(bean.getHighLimitPercent());
-            row.add(bean.getLineHighLimitAmount());
-            row.add(bean.getLowLimitAmount());
-            row.add(bean.getLowLimitPercent());
-            row.add(bean.getLineLowLimitAmount());
-            // 结束12
-
-            row.add(bean.getGeneratedTime());
-            row.add(bean.getLastModified());
-
-            row.add(bean.getPricePositionShortTerm());
-            row.add(bean.getPricePositionLongTerm());
-            row.add(bean.getPriceTrend());
-            row.add(bean.getOscillationAmplitude());
-            row.add(bean.getLineType());
-            row.add(bean.getHypeReason());
-            row.add(bean.getHypeStartDate());
-            row.add(bean.getHypePhaseCurrent());
-            row.add(bean.getSpecificDescription());
-            row.add(bean.getLeaderStockListJsonStr());
-
-            row.add(bean.getGoodAspects());
-            row.add(bean.getBadAspects());
-            row.add(bean.getWarnings());
-            row.add(bean.getTrend());
-            row.add(bean.getRelatedTrendsDiscount());
-            row.add(bean.getRemark());
-            row.add(bean.getPreJudgmentViews());
-            row.add(bean.getFutures());
-            row.add(bean.getScoreOfPreJudgment());
-            row.add(bean.getScoreReason());
-
-            res.append(row);
-        }
-        return res;
-    }
-
 
     /*
     基本字段: 都来自与 ths. industry_list 数据表
@@ -260,22 +43,91 @@ public class StockOfPlan {
     @GeneratedValue // 默认就是auto
     @Column(name = "id")
     Long id;
-    @Column(name = "name", columnDefinition = "varchar(32)")
-    String name; // 行业名称
-    @Column(name = "type", columnDefinition = "varchar(32)")
-    String type; // 行业 或者 概念?
-    @Column(name = "type2", columnDefinition = "varchar(32)")
-    String type2; // "二级行业" 或者 "三级行业", 当行业时此字段有效
+    // 基本信息字段
     @Column(name = "code", columnDefinition = "varchar(32)")
     String code; // 简单代码
     @Column(name = "marketCode", columnDefinition = "int")
-    Integer marketCode; // 简单代码
-    @Column(name = "indexCode", columnDefinition = "varchar(32)")
-    String indexCode; // 完整代码, 一般有 .TI 后缀
+    Integer marketCode; // 市场代码
+    @Column(name = "stockCode", columnDefinition = "varchar(32)")
+    String stockCode; // 股票代码完整
+    @Column(name = "name", columnDefinition = "varchar(32)")
+    String name; // 股票名称
+    @Column(name = "concepts", columnDefinition = "longtext")
+    String concepts; // 所属概念, ; 分割
+    @Column(name = "conceptAmount", columnDefinition = "int")
+    Integer conceptAmount; // 概念数量
+    @Column(name = "industries", columnDefinition = "longtext")
+    String industries; // 所属行业, 形式:  一级-二级-三级
+
+
     @Column(name = "dateStr", columnDefinition = "varchar(32)")
     String dateStr; // 该行业原始数据抓取时的日期
-    @Column(name = "chgP", length = 64)
-    Double chgP; // 最新涨跌幅
+
+    // 基本数据字段
+    @Column(name = "marketValue")
+    Double marketValue; // 总市值
+    @Column(name = "circulatingMarketValue")
+    Double circulatingMarketValue; // 流通市值
+    @Column(name = "pe")
+    Double pe; //
+    @Column(name = "chgP")
+    Double chgP; //
+    @Column(name = "open")
+    Double open; //
+    @Column(name = "high")
+    Double high; //
+    @Column(name = "low")
+    Double low; // 最低
+    @Column(name = "close")
+    Double close; // 收盘价前复权默认
+    @Column(name = "turnover")
+    Double turnover; //
+    @Column(name = "amplitude")
+    Double amplitude; // 振幅
+    @Column(name = "volRate")
+    Double volRate; // 量比
+
+    // 涨停相关字段
+
+    /*
+        highLimitBlockadeVolumeRate double      null,
+    highLimitType               varchar(32) null,
+    highLimitBlockadeCMVRate    double      null,
+    highLimitFirstTime          varchar(32) null,
+    highLimitBlockadeAmount     double      null,
+    highLimit                   varchar(32) null,
+    highLimitReason             longtext    null,
+    highLimitAmountType         longtext    null,
+    highLimitDetail             longtext    null,
+    highLimitBlockadeVol        double      null,
+    highLimitBrokeTimes         int         null,
+    highLimitLastTime           varchar(32) null,
+    highLimitContinuousDays     int         null,
+
+    lowLimit                    varchar(32) null,
+    lowLimitBlockadeVol         double      null,
+    lowLimitDetails             longtext    null,
+    lowLimitFirstTime           varchar(32) null,
+    lowLimitBlockadeVolCMVRate  double      null,
+    lowLimitBlockadeAmount      double      null,
+    lowLimitReason              longtext    null,
+    lowLimitBrokeTimes          int         null,
+    lowLimitType                varchar(32) null,
+    lowLimitLastTime            varchar(32) null,
+    lowLimitBlockadeVolumeRate  double      null,
+    lowLimitContinuousDays      int         null,
+    dateStr                     varchar(32) null
+     */
+    @Column(name = "highLimitBlockadeVolumeRate")
+    Double highLimitBlockadeVolumeRate; // 涨停封成比  封单量/成交量
+    @Column(name = "highLimitType", columnDefinition = "varchar(32)")
+    String highLimitType; // 涨停类型, 例如"放量涨停"
+    @Column(name = "highLimitBlockadeCMVRate")
+    Double highLimitBlockadeCMVRate; // 涨停封单额/流通市值
+    @Column(name = "highLimitFirstTime")
+    Double highLimitBlockadeCMVRate; // 涨停封单额/流通市值
+
+
 
     /* 新增基本字段: 主要涨跌停相关的; 均为自动计算自动载入, 且为最新数据
                         + "vol double  null,"
@@ -655,5 +507,21 @@ public class StockOfPlan {
                 REVIVAL_PHASE,
                 UNKNOWN
         ));
+    }
+
+    public static Double tryParseDoubleOfLastLine(DataFrame<Object> dataFrame, Object colName) {
+        try {
+            return Double.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Integer tryParseIntegerOfLastLine(DataFrame<Object> dataFrame, Object colName) {
+        try {
+            return Integer.valueOf(dataFrame.get(dataFrame.length() - 1, colName).toString());
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

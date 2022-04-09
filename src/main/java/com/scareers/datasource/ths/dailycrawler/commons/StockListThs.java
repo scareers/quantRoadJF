@@ -91,12 +91,12 @@ public class StockListThs extends CrawlerThs {
         dataFrame2 = moveTheJoinColToForemost(dataFrame2, Arrays.asList("code", "marketCode"));
         dataFrame3 = moveTheJoinColToForemost(dataFrame3, Arrays.asList("code", "marketCode"));
 
-        Console.log(dataFrame1);
-        Console.log(dataFrame2);
-        Console.log(dataFrame3);
-        Console.log(dataFrame1.columns());
-        Console.log(dataFrame2.columns());
-        Console.log(dataFrame3.columns());
+//        Console.log(dataFrame1);
+//        Console.log(dataFrame2);
+//        Console.log(dataFrame3);
+//        Console.log(dataFrame1.columns());
+//        Console.log(dataFrame2.columns());
+//        Console.log(dataFrame3.columns());
 
 
         DataFrame<Object> dataFrame = dataFrame1
@@ -110,49 +110,50 @@ public class StockListThs extends CrawlerThs {
         dataFrame = dataFrame.drop("code_right", "marketCode_right");
         dataFrame = dataFrame.rename("code_left", "code");
         dataFrame = dataFrame.rename("marketCode_left", "marketCode");
+        dataFrame = dataFrame.resetIndex(); // 重新排列行索引
 
-        Console.log(dataFrame.columns());
+//        Console.log(dataFrame.columns());
+        log.warn("数据行: {}", dataFrame.length());
         /*
         [code, marketCode, concepts, close, marketValue, low, circulatingMarketValue, closeNofq, open, pe, stockCode, high, openNofq, turnover, highNofq, industries, name, lowNofq, chgP, conceptAmount, amplitude, volRate, highLimitBlockadeVolumeRate, highLimitType, highLimitBlockadeCMVRate, highLimitFirstTime, highLimitBlockadeAmount, highLimit, highLimitReason, highLimitAmountType, highLimitDetail, highLimitBlockadeVol, highLimitBrokeTimes, highLimitLastTime, highLimitContinuousDays, lowLimit, lowLimitBlockadeVol, lowLimitDetails, lowLimitFirstTime, lowLimitBlockadeVolCMVRate, lowLimitBlockadeAmount, lowLimitReason, lowLimitBrokeTimes, lowLimitType, lowLimitLastTime, lowLimitBlockadeVolumeRate, lowLimitContinuousDays]
          */
 
 
-//        List<Object> dateStrList = new ArrayList<>();
-//        for (int i = 0; i < dataFrame1.length(); i++) {
-//            dateStrList.add(dateStr);
-//        }
-//        dataFrame1 = dataFrame1.add("dateStr", dateStrList);
-//        try {
-//            dataFrame1 = dataFrame1.drop("最新涨跌幅");
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            String sqlDelete = StrUtil.format("delete from {} where dateStr='{}'", tableName, dateStr);
-//            execSql(sqlDelete, conn);
-//            DataFrameS.toSql(dataFrame1, tableName, this.conn, "append", sqlCreateTable);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            logSaveError();
-//            success = false;
-//            return;
-//        }
-//
-//        // @key: 新增: 将下一交易日的本数据, 也暂时保存为与此刻相同的df! 为了操盘计划gui而做的妥协;
-//        // 待明日运行后, 也保存后日的; 后日的实际刷新将在后日!
-//        String nextTradeDateStr = null;
-//        try {
-//            nextTradeDateStr = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1);
-//        } catch (SQLException e) {
-//            log.warn("获取下一交易日失败,不尝试将结果复制保存到下一交易日");
-//
-//        }
-//        if (nextTradeDateStr != null) {
-//            saveNextTradeDateTheSameDf(dataFrame1, nextTradeDateStr);
-//        }
-//
-//        success = true;
+        List<Object> dateStrList = new ArrayList<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+            dateStrList.add(dateStr);
+        }
+        dataFrame = dataFrame.add("dateStr", dateStrList);
+        try {
+            dataFrame = dataFrame.drop("最新涨跌幅");
+        } catch (Exception e) {
+            log.warn("最新涨跌幅: 无此列");
+        }
+
+        try {
+            String sqlDelete = StrUtil.format("delete from {} where dateStr='{}'", tableName, dateStr);
+            execSql(sqlDelete, conn);
+            DataFrameS.toSql(dataFrame, tableName, this.conn, "append", sqlCreateTable);
+        } catch (Exception e) {
+            e.printStackTrace();
+            logSaveError();
+            success = false;
+            return;
+        }
+
+        // @key: 新增: 将下一交易日的本数据, 也暂时保存为与此刻相同的df! 为了操盘计划gui而做的妥协;
+        // 待明日运行后, 也保存后日的; 后日的实际刷新将在后日!
+        String nextTradeDateStr = null;
+        try {
+            nextTradeDateStr = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1);
+        } catch (SQLException e) {
+            log.warn("获取下一交易日失败,不尝试将结果复制保存到下一交易日");
+        }
+        if (nextTradeDateStr != null) {
+            saveNextTradeDateTheSameDf(dataFrame, nextTradeDateStr);
+        }
+
+        success = true;
     }
 
     /**
@@ -185,7 +186,13 @@ public class StockListThs extends CrawlerThs {
      * 三个df 合并字段后!
      * [code, marketCode, concepts, close, marketValue, low, circulatingMarketValue,
      * closeNofq, open, pe, stockCode, high, openNofq, turnover, highNofq, industries, name,
-     * lowNofq, chgP, conceptAmount, amplitude, volRate, highLimitBlockadeVolumeRate, highLimitType, highLimitBlockadeCMVRate, highLimitFirstTime, highLimitBlockadeAmount, highLimit, highLimitReason, highLimitAmountType, highLimitDetail, highLimitBlockadeVol, highLimitBrokeTimes, highLimitLastTime, highLimitContinuousDays, lowLimit, lowLimitBlockadeVol, lowLimitDetails, lowLimitFirstTime, lowLimitBlockadeVolCMVRate, lowLimitBlockadeAmount, lowLimitReason, lowLimitBrokeTimes, lowLimitType, lowLimitLastTime, lowLimitBlockadeVolumeRate, lowLimitContinuousDays]
+     * lowNofq, chgP, conceptAmount, amplitude, volRate, highLimitBlockadeVolumeRate, highLimitType, highLimitBlockadeCMVRate,
+     *
+     * highLimitFirstTime, highLimitBlockadeAmount, highLimit, highLimitReason, highLimitAmountType,
+     * highLimitDetail, highLimitBlockadeVol, highLimitBrokeTimes, highLimitLastTime, highLimitContinuousDays,
+     * lowLimit, lowLimitBlockadeVol, lowLimitDetails, lowLimitFirstTime, lowLimitBlockadeVolCMVRate,
+     * lowLimitBlockadeAmount, lowLimitReason, lowLimitBrokeTimes, lowLimitType, lowLimitLastTime,
+     * lowLimitBlockadeVolumeRate, lowLimitContinuousDays]
      */
     @Override
     protected void initSqlCreateTable() {
@@ -212,23 +219,43 @@ public class StockListThs extends CrawlerThs {
                         + "lowNofq double  null,"
                         + "chgP double  null,"
                         + "conceptAmount int  null,"
-                        + "conceptAmount int  null,"
-
-
-                        + "chgP double  null,"
-                        + "open double  null,"
-                        + "high double  null,"
-                        + "low double  null,"
-                        + "close double  null,"
-                        + "vol double  null,"
-                        + "amount double  null,"
-
                         + "amplitude double  null,"
+                        + "volRate double  null,"
+
+                        + "highLimitBlockadeVolumeRate double  null,"
+                        + "highLimitType varchar(32)   null,"
+                        + "highLimitBlockadeCMVRate double   null,"
+                        + "highLimitFirstTime varchar(32)   null,"
+                        + "highLimitBlockadeAmount double   null,"
+                        + "highLimit varchar(32)   null,"
+                        + "highLimitReason longtext   null,"
+                        + "highLimitAmountType longtext   null,"
+                        + "highLimitDetail longtext   null,"
+                        + "highLimitBlockadeVol double   null,"
+                        + "highLimitBrokeTimes int   null,"
+                        + "highLimitLastTime varchar(32)   null,"
+                        + "highLimitContinuousDays int   null,"
+
+                        + "lowLimit varchar(32)   null,"
+                        + "lowLimitBlockadeVol double   null,"
+                        + "lowLimitDetails longtext   null,"
+                        + "lowLimitFirstTime varchar(32)    null,"
+                        + "lowLimitBlockadeVolCMVRate double   null,"
+                        + "lowLimitBlockadeAmount double   null,"
+                        + "lowLimitReason longtext   null,"
+                        + "lowLimitBrokeTimes int   null,"
+                        + "lowLimitType varchar(32)    null,"
+                        + "lowLimitLastTime varchar(32)    null,"
+                        + "lowLimitBlockadeVolumeRate double  null,"
+                        + "lowLimitContinuousDays int  null,"
+
+
 
                         + "dateStr varchar(32)  null,"
 
 
                         + "INDEX name_index (name ASC),\n"
+                        + "INDEX marketCode_index (marketCode ASC),\n"
                         + "INDEX code_index (code ASC),\n"
                         + "INDEX dateStr_index (dateStr ASC)\n"
                         + "\n)"
