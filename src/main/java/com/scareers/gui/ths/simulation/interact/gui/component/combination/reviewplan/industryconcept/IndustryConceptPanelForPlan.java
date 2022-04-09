@@ -14,7 +14,7 @@ import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
-import com.scareers.gui.ths.simulation.strategy.stockselector.MultiConceptSelector;
+import com.scareers.tools.stockplan.stock.bean.selector.MultiConceptSelector;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
@@ -395,11 +395,14 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
-                        List<String> names = beanMap.values().stream().map(IndustryConceptThsOfPlan::getName)
-                                .collect(Collectors.toList()); // 所有概念和行业的名称
-                        HashMap<Integer, HashMap<String, ArrayList<String>>> multiMainLine = MultiConceptSelector
-                                .threeAndTwoMainLine(names);// 注意, 该方法使用的是 today作为日期, 符合常规需求
-                        jLabel.setText(GuiCommonUtil.jsonStrToHtmlFormat(JSONUtilS.toJsonPrettyStr(multiMainLine)));
+                        HashMap<String, String> lineTypeMap = new HashMap<>();
+                        for (IndustryConceptThsOfPlan bean0 : beanMap.values()) {
+                            lineTypeMap.put(bean0.getName(), bean0.getLineType());
+                        }
+
+                        MultiConceptSelector multiConceptSelector = new MultiConceptSelector(lineTypeMap);
+                        multiConceptSelector.stockSelect();
+                        jLabel.setText(GuiCommonUtil.jsonStrToHtmlFormat(multiConceptSelector.resToJson()));
                     }
                 }, true);
 

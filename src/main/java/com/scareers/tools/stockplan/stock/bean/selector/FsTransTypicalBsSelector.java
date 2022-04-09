@@ -1,16 +1,16 @@
-package com.scareers.gui.ths.simulation.strategy.stockselector;
+package com.scareers.tools.stockplan.stock.bean.selector;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import org.jfree.chart.plot.ValueMarker;
 
 import java.util.*;
 
@@ -18,17 +18,44 @@ import static com.scareers.sqlapi.EastMoneyDbApi.getFsTransByDateAndQuoteId;
 
 /**
  * description: 读取分时成交, 筛选其中的典型成交量(即成交量-平均成交量>标准差*某倍数), 分类这些典型成交量, 买盘和买盘比例情况
- * --> 常规的所谓资金流入流出不太合理
+ * --> 常规的所谓资金流入流出不可控
+ * // todo: 完善
  *
  * @author: admin
  * @date: 2022/3/26/026-19:03:44
  */
-public class FsTransTypicalBsSelector {
+public class FsTransTypicalBsSelector extends StockSelector {
+
+    public FsTransTypicalBsSelector() {
+        this.name = "典型分时成交量买卖方向选股";
+        this.description = "读取东财分时成交, 筛选其中的典型成交量(即成交量-平均成交量>标准差*某倍数), " +
+                "分类这些典型成交量, 买盘和买盘比例情况";
+        this.scoreRule = "计算典型成交量中, (买方向-卖方向) /(买方向+卖方向), 得到净买值比例, 映射到[0,100]即得到score; 可多日,则取平均值";
+    }
+
+    int nDays;
+
+    @Override
+    public void stockSelect() {
+
+    }
+
+    @Override
+    public JSONObject getSelectResultOf(String code) {
+        return null;
+    }
+
+    @Override
+    public void showAllSelectRes() {
+
+    }
+
+
     public static void main(String[] args) throws Exception {
 //        double factor = typicalVolBsRateFactor("2022-03-25", SecurityBeanEm.createStock("浩洋股份"), 0.5);
 //        Console.log(factor);
 
-        main0(2);
+        main0(1);
     }
 
     private static void main0(int ndays) throws Exception {
@@ -82,7 +109,7 @@ public class FsTransTypicalBsSelector {
             for (String date : dates) {
 
                 try {
-                    factors.add(typicalVolBsRateFactor(date, beanEm, 0.5));
+                    factors.add(typicalVolBsRateFactor(date, beanEm, 0.0));
                 } catch (Exception e) {
                     continue;
                 }
@@ -121,7 +148,7 @@ public class FsTransTypicalBsSelector {
             }
         });
         for (List<Object> objects : res2) {
-            Console.log(objects );
+            Console.log(objects);
         }
 
     }
@@ -156,7 +183,7 @@ public class FsTransTypicalBsSelector {
         double sellAmounts = 0;
         for (int i = 0; i < dfFs.length(); i++) {
             double amount = Double.parseDouble(dfFs.get(i, "amount").toString());
-            if (!(Math.abs(amount - avg) >= typicalStdRate * std)) { // 要求成交额 -avg >= 标准差*倍率
+            if (amount - avg < typicalStdRate * std) { // 要求成交额 -avg >= 标准差*倍率
                 continue;
             }
 
@@ -177,4 +204,6 @@ public class FsTransTypicalBsSelector {
         return (buyAmounts - sellAmounts) / (buyAmounts + sellAmounts);
 
     }
+
+
 }

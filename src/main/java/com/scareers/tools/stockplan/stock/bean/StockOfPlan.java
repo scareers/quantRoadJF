@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
+import com.scareers.tools.stockplan.stock.bean.selector.StockSelector;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
@@ -268,6 +269,14 @@ public class StockOfPlan {
     @Column(name = "lastModified", columnDefinition = "datetime")
     Date lastModified; // 手动修改最后时间;
 
+    // 1.1.@update: 增加该股票 "被选择理由" "选股方法" -- 即 怎么选择得到的该个股 相关字段
+    @Transient
+    HashMap<String, JSONObject> selectorMap = new HashMap<>();// 选股器Map; key为选股方法名称, value是 json对象表示的, 选股方法对该股的选择情况; 使用json提供很好的灵活性
+    @Column(name = "selectorMap", columnDefinition = "longtext")
+    String selectorMapJsonStr = "{}";
+    @Transient
+    List<StockSelector> selectors = new ArrayList<>(); // 维护相关选股器指针; 在 addSelectorRes时添加; 不被序列化
+
     // 2.个股所属的 行业/概念, 若存在行业概念bean, 则收集对应的 trend 属性, 作为Map, 并且以平均值和标准差衡量 关联行业概念 trend
     @Transient
     HashMap<String, Double> relatedTrendMap = new HashMap<>(); // 关联概念trend字典
@@ -468,13 +477,14 @@ public class StockOfPlan {
 
 
     /**
-     * 从数据表获取bean时, 需要自动填充 transient 字段: 当前 4
+     * 从数据表获取bean时, 需要自动填充 transient 字段: 当前 5
      * 它无视你是否再最新刷新相关字段
      */
     public void initTransientAttrsWhenBeanFromDb() {
         this.initRelatedTrendMapsWhenBeanFromDb();
         this.initLeaderStockOfListWhenBeanFromDb();
         this.initLineTypeMapWhenBeanFromDb();
+        this.initSelectorMapWhenBeanFromDb();
     }
 
     private void initRelatedTrendMapsWhenBeanFromDb() {
@@ -517,9 +527,30 @@ public class StockOfPlan {
         this.lineTypeMap = res;
     }
 
+    private void initSelectorMapWhenBeanFromDb() {
+        JSONObject objects = JSONUtilS.parseObj(this.selectorMapJsonStr);
+        HashMap<String, JSONObject> res = new HashMap<>();
+        for (String key : objects.keySet()) {
+            res.put(key, objects.getJSONObject(key));
+        }
+        this.selectorMap = res;
+    }
+
+
     /*
     数据api, 主要同时更新 list和对应的json; 按需实现
      */
+
+    /**
+     * 添加选股结果
+     *
+     * @param selector
+     */
+    public void addSelectorRes(StockSelector selector) {
+        this.selectorMap.put(selector.getName(), selector.getSelectResultOf(this.code));
+        selectors.add(selector);
+        this.selectorMapJsonStr = JSONUtilS.toJsonPrettyStr(selectorMap);
+    }
 
 
     /**
