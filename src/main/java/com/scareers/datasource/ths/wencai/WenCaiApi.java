@@ -33,7 +33,15 @@ import java.util.stream.Collectors;
  */
 public class WenCaiApi {
     public static void main(String[] args) throws Exception {
-        Console.log(wenCaiQueryResult("涨跌幅;成交额"));
+//        DataFrame<Object> dfTemp = wenCaiQuery("涨跌幅;现价;流通市值;量比;市盈率;roe;所属概念;", TypeStr.ASTOCK);
+        DataFrame<Object> dfTemp = wenCaiQuery("跌停", TypeStr.ASTOCK);
+        Console.log(dfTemp.columns());
+        Console.log(DataFrameS.getColAsStringList(dfTemp, "涨停明细数据[20220408]"));
+//        Console.log(DataFrameS.getColAsStringList(dfTemp, "所属同花顺行业"));
+//        Console.log(DataFrameS.getColAsStringList(dfTemp, "所属概念"));
+
+        // 所属概念, 收盘价:前复权[20220408], 总市值[20220408], code, 最低价:前复权[20220408], a股市值(不含限售股)[20220408], 收盘价:不复权[20220408], market_code, 开盘价:前复权[20220408], 市盈率(pe)[20220408], 股票代码, 最高价:前复权[20220408], 开盘价:不复权[20220408], 换手率[20220408], 最高价:不复权[20220408], 所属同花顺行业, 股票简称, 最低价:不复权[20220408], 涨跌幅:前复权[20220408], 所属概念数量, 振幅[20220408], 量比[20220408]
+        // [涨停封单量占成交量比[20220408], 涨停类型[20220408], 涨停封单量占流通a股比[20220408], 首次涨停时间[20220408], code, a股市值(不含限售股)[20220408], 最新价, 最新涨跌幅, market_code, 涨停封单额[20220408], 涨停[20220408], 股票代码, 涨停原因类别[20220408], 几天几板[20220408], 涨停明细数据[20220408], 涨停封单量[20220408], 股票简称, 涨停开板次数[20220408], 最终涨停时间[20220408], 连续涨停天数[20220408]]
 
 
 //        TimeInterval timer = DateUtil.timer();
