@@ -76,6 +76,11 @@ public class IndustryListThs extends CrawlerThs {
         }
         dataFrame = dataFrame.add("dateStr", dateStrList);
         dataFrame = dataFrame.drop("deleteLine1"); // 删除不保存行
+        try {
+            dataFrame = dataFrame.drop("deleteLine2"); // 删除不保存行
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         // @key: 推断计算下跌行.
         ArrayList<Object> downAmountList = new ArrayList<>();
         List<Integer> includeStockAmount = DataFrameS.getColAsIntegerList(dataFrame, "includeStockAmount");
@@ -240,6 +245,10 @@ public class IndustryListThs extends CrawlerThs {
                 renameMap.put(column, "volRate");
             } else if (WenCaiApi.fieldLike(column.toString(), "指数@非一字涨停家数[20220401]")) {
                 renameMap.put(column, "deleteLine1");
+            }
+
+            else if (column.toString().contains("下跌家数")) {
+                renameMap.put(column, "deleteLine2");
             }
 //            else if (WenCaiApi.fieldLike(column.toString(), "指数@非一字涨停家数占比[20220401]")) {
 //                renameMap.put(column, "deleteLine2");

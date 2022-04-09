@@ -1,7 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -16,20 +14,17 @@ import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
-import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.gui.ths.simulation.strategy.stockselector.MultiConceptSelector;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
 import com.scareers.utils.CommonUtil;
-import com.scareers.utils.charts.ThsChart;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
 import org.jdesktop.swingx.*;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.ui.ApplicationFrame;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -45,6 +40,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -156,11 +154,16 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
-                updateFsDisplay();
-                updateKLineDisplay();
+                poolOfFsAndKlineUpdate.submit(() -> updateFsDisplay());
+                poolOfFsAndKlineUpdate.submit(() -> updateKLine(0, dailyKLineDisplayPanel, "-日K", "更新日k线失败: {}"));
+                poolOfFsAndKlineUpdate.submit(() -> updateKLine(1, weeklyKLineDisplayPanel, "-周K", "更新周k线失败: {}"));
+                poolOfFsAndKlineUpdate.submit(() -> updateKLine(2, monthlyKLineDisplayPanel, "-月K", "更新月k线失败: {}"));
             }
         }, true);
     }
+
+    ThreadPoolExecutor poolOfFsAndKlineUpdate = new ThreadPoolExecutor(4, 6, 1000, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(Integer.MAX_VALUE));
 
     private void updateFsDisplay() {
         try {
@@ -184,38 +187,15 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
     public static final int preferKLinePeriods = 60; // k线 画多少根
 
-    /**
-     * 依次更新日/周/月 k线展示
-     */
-    private void updateKLineDisplay() {
+    private void updateKLine(int i, ThsKLineDisplayPanel dailyKLineDisplayPanel, String s, String s2) {
         try {
             DataFrame<Object> lastNKline = WenCaiDataApi
-                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 0, 1
+                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), i, 1
                             , preferKLinePeriods);
-            dailyKLineDisplayPanel.update(lastNKline, currentBean.getName() + "-日K");
+            dailyKLineDisplayPanel.update(lastNKline, currentBean.getName() + s);
         } catch (Exception e) {
             e.printStackTrace();
-            ManiLog.put(StrUtil.format("更新日k线失败: {}", currentBean.getName()));
-        }
-
-        try {
-            DataFrame<Object> lastNKline2 = WenCaiDataApi
-                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 1, 1
-                            , preferKLinePeriods);
-            weeklyKLineDisplayPanel.update(lastNKline2, currentBean.getName() + "-周K");
-        } catch (Exception e) {
-            e.printStackTrace();
-            ManiLog.put(StrUtil.format("更新周k线失败: {}", currentBean.getName()));
-        }
-
-        try {
-            DataFrame<Object> lastNKline3 = WenCaiDataApi
-                    .getLastNKline(currentBean.getMarketCode(), currentBean.getCode(), 2, 1
-                            , preferKLinePeriods);
-            monthlyKLineDisplayPanel.update(lastNKline3, currentBean.getName() + "-月K");
-        } catch (Exception e) {
-            e.printStackTrace();
-            ManiLog.put(StrUtil.format("更新月k线失败: {}", currentBean.getName()));
+            ManiLog.put(StrUtil.format(s2, currentBean.getName()));
         }
     }
 
@@ -387,7 +367,67 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
             }
         });
 
-        // 6.折叠/展示k线, 控制可折叠面板.
+        // 6.多主线加身 选股, 控制可折叠面板.
+        JButton multiConceptSelectorButton = ButtonFactory.getButton("多主线选股");
+        multiConceptSelectorButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (beanMap == null) {
+                    return;
+                }
+
+                JDialog dialog = new JDialog(TraderGui.INSTANCE, "多线加身结果", false);
+                // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
+                KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+                dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        dialog.dispose();
+                    }
+                }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+                //创建JDialog
+                JPanel panel = new JPanel();
+                panel.setLayout(new BorderLayout());
+                dialog.setContentPane(panel);
+
+                JLabel jLabel = new JLabel();
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<String> names = beanMap.values().stream().map(IndustryConceptThsOfPlan::getName)
+                                .collect(Collectors.toList()); // 所有概念和行业的名称
+                        HashMap<Integer, HashMap<String, ArrayList<String>>> multiMainLine = MultiConceptSelector
+                                .threeAndTwoMainLine(names);// 注意, 该方法使用的是 today作为日期, 符合常规需求
+                        jLabel.setText(GuiCommonUtil.jsonStrToHtmlFormat(JSONUtilS.toJsonPrettyStr(multiMainLine)));
+                    }
+                }, true);
+
+
+                jLabel.setForeground(Color.orange);
+                jLabel.setBackground(COLOR_THEME_MINOR);
+                //添加控件到对话框
+                JScrollPane jScrollPane = new JScrollPane();
+                jScrollPane.getViewport().setBackground(COLOR_THEME_MINOR);
+                BasicScrollBarUIS
+                        .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+                jScrollPane.getVerticalScrollBar().setUnitIncrement(25); // 滑动速度
+                jScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+                jScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+                jScrollPane.setViewportView(jLabel);
+                panel.add(jScrollPane, BorderLayout.CENTER);
+
+                //显示对话框（setVisible()方法会阻塞，直到对话框关闭）
+                dialog.setSize(500, 800);
+//                    dialog.setLocation();
+                dialog.setLocationRelativeTo(dialog.getParent());
+                dialog.setVisible(true);
+
+            }
+        });
+
+
+        // 7.折叠/展示k线, 控制可折叠面板.
         JButton buttonOfKLineDisplay = ButtonFactory.getButton("分时k线");
         buttonOfKLineDisplay.setAction(klineCollapsiblePane.getActionMap().get(JXCollapsiblePane.TOGGLE_ACTION));
         buttonOfKLineDisplay.setText("分时k线");
@@ -427,6 +467,7 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
         buttonContainer.add(addBeansBatchButton);
         buttonContainer.add(deleteTableSelectRowsButton);
         buttonContainer.add(flushRelatedTrendMapButton);
+        buttonContainer.add(multiConceptSelectorButton);
         buttonContainer.add(buttonOfKLineDisplay);
 
 

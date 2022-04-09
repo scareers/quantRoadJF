@@ -69,6 +69,11 @@ public class StockListThs extends CrawlerThs {
             dateStrList.add(dateStr);
         }
         dataFrame = dataFrame.add("dateStr", dateStrList);
+        try {
+            dataFrame = dataFrame.drop("最新涨跌幅");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         try {
             String sqlDelete = StrUtil.format("delete from {} where dateStr='{}'", tableName, dateStr);

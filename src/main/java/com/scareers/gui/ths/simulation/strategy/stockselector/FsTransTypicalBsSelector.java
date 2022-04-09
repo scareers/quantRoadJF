@@ -1,11 +1,16 @@
 package com.scareers.gui.ths.simulation.strategy.stockselector;
 
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import org.jfree.chart.plot.ValueMarker;
 
 import java.util.*;
 
@@ -23,63 +28,102 @@ public class FsTransTypicalBsSelector {
 //        double factor = typicalVolBsRateFactor("2022-03-25", SecurityBeanEm.createStock("浩洋股份"), 0.5);
 //        Console.log(factor);
 
-        main0();
+        main0(2);
     }
 
-    private static void main0() throws Exception {
+    private static void main0(int ndays) throws Exception {
         DataFrame<Object> dataFrame = WenCaiApi
-//                .wenCaiQuery("近5日的区间涨跌幅>-10%且近5日的区间涨跌幅<10%;连续5日的振幅<8%;深市主板或沪市主板;非st的股票；成交额大于1亿;非科创板;非创业板");
-                .wenCaiQuery("个股人气排名前200");
+                .wenCaiQuery("个股人气排名前500;流通市值<300亿;非st;非科创板;非创业板");
 //        Console.log(dataFrame.columns());
         HashMap<String, Double> codeWithChgPMap = new HashMap<>();
         for (int i = 0; i < dataFrame.length(); i++) {
-            codeWithChgPMap.put(dataFrame.get(i, "code").toString(),
-                    Double.valueOf(dataFrame.get(i, "最新涨跌幅").toString())
-            );
+
+            try {
+                if (dataFrame.get(i, "最新涨跌幅") == null) {
+                    continue;
+                }
+                Double chgP = Double.valueOf(dataFrame.get(i, "最新涨跌幅").toString());
+                codeWithChgPMap.put(dataFrame.get(i, "code").toString(),
+                        chgP
+                );
+            } catch (NumberFormatException e) {
+                e.printStackTrace();
+            }
         }
 
-        List<String> stockCodeList = DataFrameS.getColAsStringList(dataFrame, "code")
-//                .subList(0, 100)
-                ;
+        List<String> stockCodeList = DataFrameS.getColAsStringList(dataFrame, "code");
 
         Console.log("获取bean");
         List<SecurityBeanEm> beanEms = SecurityBeanEm.createStockList(stockCodeList, true);
+        HashMap<String, List<Double>> res = new HashMap<>();
 
-        ArrayList<ArrayList<Object>> res = new ArrayList<>();
-        Console.log("开始解析");
-        for (SecurityBeanEm beanEm : beanEms) {
-            ArrayList<Object> objects = new ArrayList<>();
-            objects.add(beanEm.getSecCode());
-            objects.add(typicalVolBsRateFactor("2022-04-01", beanEm, 0.5));
-            objects.add(codeWithChgPMap.get(beanEm.getSecCode()));
-            objects.add(beanEm.getName());
-            res.add(objects);
+        Console.log("确定日期");
+        String dateStr;
+        DateTime now = DateUtil.date();
+        if (EastMoneyDbApi.isTradeDate(DateUtil.today())) {
+            if (DateUtil.hour(now, true) <= 8) { // 9点之前, 首个日期为上个交易日
+                dateStr = EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
+            } else {
+                dateStr = DateUtil.today();
+            }
+        } else {
+            dateStr = EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
         }
-        Collections.sort(res, new Comparator<Object>() {
+
+        List<String> dates = new ArrayList<>();
+        dates.add(dateStr);
+        for (int i = 1; i < ndays; i++) {
+            dates.add(EastMoneyDbApi.getPreNTradeDateStrict(dateStr, i));
+        }
+        Console.log("开始解析");
+        // 开始解析
+        for (SecurityBeanEm beanEm : beanEms) {
+            List<Double> factors = new ArrayList<>();
+            for (String date : dates) {
+
+                try {
+                    factors.add(typicalVolBsRateFactor(date, beanEm, 0.5));
+                } catch (Exception e) {
+                    continue;
+                }
+            }
+            res.put(StrUtil.format("{}, __{}", beanEm.getSecCode(), beanEm.getName()), factors);
+        }
+
+        List<List<Object>> resList = new ArrayList<>();
+        for (String s : res.keySet()) {
+            resList.add(Arrays.asList(s, res.get(s)));
+        }
+
+        List<List<Object>> res2 = new ArrayList<>();
+        for (List<Object> objects : resList) {
+            List<Double> doubles1 = (List<Double>) objects.get(1);
+            res2.add(Arrays.asList(objects.get(0), CommonUtil.avgOfListNumberUseLoop(doubles1)));
+        }
+
+        res2.sort(new Comparator<>() {
             @Override
-            public int compare(Object o1, Object o2) {
-                ArrayList<Object> o11 = (ArrayList<Object>) o1;
-                ArrayList<Object> o22 = (ArrayList<Object>) o2;
-                double d1 = (Double) o11.get(1);
-                double d2 = (Double) o22.get(1);
-
-//                Double chg1 = (Double) o11.get(2);
-//                Double chg2 = (Double) o22.get(2);
-
-
-                if (d1 > d2) { // 反序
+            public int compare(List<Object> o1, List<Object> o2) {
+                Double v1 = (Double) o1.get(1);
+                Double v2 = (Double) o2.get(1);
+                if (v1 > v2) {
                     return -1;
-                } else if (d1 < d2) {
+                } else if (v1 < v2) {
                     return 1;
                 } else {
                     return 0;
                 }
             }
-        });
 
-        for (ArrayList<Object> re : res) {
-            Console.log(re);
+            @Override
+            public boolean equals(Object obj) {
+                return obj.toString().equals(this.toString());
+            }
+        });
+        for (List<Object> objects : res2) {
+            Console.log(objects );
         }
+
     }
 
     /**

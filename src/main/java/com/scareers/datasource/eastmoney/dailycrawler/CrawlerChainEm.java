@@ -52,18 +52,18 @@ public class CrawlerChainEm {
         crawlerChainEm.addSynCrawler(new NewsFeedsCrawlerEm()); // 新闻联播集锦
         crawlerChainEm.addSynCrawler(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
-//         基本列表
-        crawlerChainEm.addSynCrawler(new StockListEm());
-        crawlerChainEm.addSynCrawler(new IndexListEm());
-        crawlerChainEm.addSynCrawler(new BkListEm());
-        crawlerChainEm.addSynCrawler(new TradeDatesEm());
-
         // k线和分时
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
+
+//         //基本列表
+        crawlerChainEm.addSynCrawler(new StockListEm());
+        crawlerChainEm.addSynCrawler(new IndexListEm());
+        crawlerChainEm.addSynCrawler(new BkListEm());
+        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
         crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
         crawlerChainEm.addFrontCrawlers(new FsTransDataEm());

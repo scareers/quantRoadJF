@@ -18,7 +18,7 @@ import javax.persistence.*;
 import java.util.*;
 
 /**
- * description: 操盘计划时, 使用的同花顺 行业对象 bean
+ * description: 操盘计划时,
  * 源数据字段参考 industry_list 数据表
  *
  * @word: hype: 炒作 / hazy 朦胧 / ebb 退潮 / revival 复兴再起
