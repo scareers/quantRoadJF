@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept;
+package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.util.StrUtil;

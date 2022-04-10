@@ -140,6 +140,14 @@ public class StockOfPlan {
         return bean;
     }
 
+    public static DataFrame<Object> buildDfFromBeanList(List<StockOfPlan> beans) {
+        // todo
+        DataFrame<Object> testDf = new DataFrame<Object>(Arrays.asList("a", "b"));
+        testDf.append(Arrays.asList(1, 2));
+        testDf.append(Arrays.asList(3, 4));
+        return testDf;
+    }
+
     /**
      * 当概念行业更新, 则个股这些字段应当使用最新数据, 重新自动计算!
      *

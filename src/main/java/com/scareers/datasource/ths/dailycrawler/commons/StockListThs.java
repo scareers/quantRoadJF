@@ -146,7 +146,7 @@ public class StockListThs extends CrawlerThs {
         String nextTradeDateStr = null;
         try {
             nextTradeDateStr = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             log.warn("获取下一交易日失败,不尝试将结果复制保存到下一交易日");
         }
         if (nextTradeDateStr != null) {

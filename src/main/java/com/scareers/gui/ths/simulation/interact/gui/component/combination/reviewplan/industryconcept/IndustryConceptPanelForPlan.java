@@ -7,6 +7,8 @@ import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsFsDisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsKLineDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -20,7 +22,6 @@ import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
 import com.scareers.utils.CommonUtil;
-import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.*;
@@ -51,7 +52,6 @@ import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 
 /**
  * description: 行业和概念 操盘计划: 使用同花顺行业和概念
- * 重点是 显示和编辑 StockOfPlan 对象列表
  *
  * @author: admin
  * @date: 2022/3/28/028-21:20:34

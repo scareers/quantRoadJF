@@ -6,6 +6,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.accoun
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.industryconcept.IndustryConceptPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.plan.NewsTabPanelForPlan;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.stock.StockPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.wencai.WenCaiApiPanelForPlan;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsFetcherListAndDataPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.FsTransFetcherListAndDataPanel;
@@ -189,9 +190,11 @@ public class FuncTreeWindow extends FuncFrameS {
         DefaultMutableTreeNode importantNewsNode2 = new DefaultMutableTreeNode("大势与资讯");
         DefaultMutableTreeNode wencaiApiNode = new DefaultMutableTreeNode("问财接入");
         DefaultMutableTreeNode industryAndConceptNode = new DefaultMutableTreeNode("行业与概念");
+        DefaultMutableTreeNode stockPlanNode = new DefaultMutableTreeNode("个股计划");
         tradePlanNode.add(importantNewsNode2);
         tradePlanNode.add(wencaiApiNode);
         tradePlanNode.add(industryAndConceptNode);
+        tradePlanNode.add(stockPlanNode);
 
         reviewAndPlanNode.add(tradePlanNode);
 
@@ -232,7 +235,7 @@ public class FuncTreeWindow extends FuncFrameS {
 //        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.ORDER_ALL_MAP);
         //GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_IMPORTANT_NEWS);
 //        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.INDUSTRY_AND_CONCEPT);
-        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.PLAN_WENCAI_API);
+        GuiCommonUtil.selectTreeNode(tree, TreePathConstants.STOCK_PLAN);
         return tree;
     }
 
@@ -270,6 +273,8 @@ public class FuncTreeWindow extends FuncFrameS {
             changeToWenCaiApiForPlan();
         } else if (TreePathConstants.INDUSTRY_AND_CONCEPT.equals(treePath)) {
             changeToIndustryConceptPanelForPlan();
+        } else if (TreePathConstants.STOCK_PLAN.equals(treePath)) {
+            changeToStockPlanPanel();
         } else {
             System.out.println(treePath);
         }
@@ -321,6 +326,11 @@ public class FuncTreeWindow extends FuncFrameS {
                 .showInMainDisplayWindow();
     }
 
+    private void changeToStockPlanPanel() {
+        StockPanelForPlan
+                .getInstance(this.getMainDisplayWindow())
+                .showInMainDisplayWindow();
+    }
 
 
     public static class TreePathConstants { // 路径常量, 字符串配置
@@ -378,12 +388,14 @@ public class FuncTreeWindow extends FuncFrameS {
          * [功能树, 复盘操盘, 操盘计划, 大势与资讯]
          * "[功能树, 复盘操盘, 操盘计划, 问财接入]";
          * "[功能树, 复盘操盘, 操盘计划, 行业与概念]";
+         * "[功能树, 复盘操盘, 操盘计划, 个股计划]";
          */
 
         public static final String REVIEW_AND_PLAN = "[功能树, 复盘操盘]";
         public static final String PLAN_IMPORTANT_NEWS = "[功能树, 复盘操盘, 操盘计划, 大势与资讯]";
         public static final String PLAN_WENCAI_API = "[功能树, 复盘操盘, 操盘计划, 问财接入]";
         public static final String INDUSTRY_AND_CONCEPT = "[功能树, 复盘操盘, 操盘计划, 行业与概念]";
+        public static final String STOCK_PLAN = "[功能树, 复盘操盘, 操盘计划, 个股计划]";
 
         public static final String TRADE_PLAN = "[功能树, 复盘操盘, 操盘计划]";
 

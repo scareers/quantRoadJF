@@ -7,6 +7,8 @@ import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.tools.stockplan.indusconcep.bean.dao.IndustryConceptThsOfPlanDao;
+import com.scareers.tools.stockplan.news.bean.dao.SimpleNewEmDao;
+import com.scareers.tools.stockplan.stock.bean.StockGroupOfPlan;
 import com.scareers.tools.stockplan.stock.bean.StockOfPlan;
 import lombok.SneakyThrows;
 import org.hibernate.Session;
@@ -14,6 +16,8 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -163,6 +167,52 @@ public class StockOfPlanDao {
             return bean;
         }
     }
+
+    /**
+     * 为操盘计划, 获取适当日期的, 指定股票组的, 数据表中已存在的个股bean 列表
+     * 若股票组null, 则默认获取 所有股票
+     *
+     * @param dateStr
+     * @return
+     */
+    public static List<StockOfPlan> getBeanListForPlan(Date equivalenceNow, StockGroupOfPlan stockGroup) {
+        String dateStrForPlan = decideDateStrForPlan(equivalenceNow);
+        return getBeansByDateAndGroup(dateStrForPlan, stockGroup);
+    }
+
+
+    /**
+     * 若股票组null, 则默认获取 所有股票
+     *
+     * @param dateStr 标准日期字符串
+     * @return
+     * @throws SQLException
+     */
+    public static List<StockOfPlan> getBeansByDateAndGroup(String dateStr, StockGroupOfPlan stockGroup) {
+        // hibernate API, 访问数据库
+        Session session = SimpleNewEmDao.sessionFactory.openSession();
+        Query query;
+        if (stockGroup == null) {
+            String hql = "FROM StockOfPlan E WHERE E.dateStr=:dateStr";
+            query = session.createQuery(hql);
+            query.setParameter("dateStr", dateStr);
+        } else {
+            String hql = "FROM StockOfPlan E WHERE E.dateStr=:dateStr and E.code in :codes";
+            query = session.createQuery(hql);
+            query.setParameter("dateStr", dateStr);
+            query.setParameter("codes", stockGroup.getIncludeStockCodes());
+        }
+        List beans = query.list();
+        List<StockOfPlan> res = new ArrayList<>();
+        for (Object bean : beans) {
+            StockOfPlan bean1 = (StockOfPlan) bean;
+            bean1.initTransientAttrsWhenBeanFromDb();
+            res.add(bean1);
+        }
+        session.close();
+        return res;
+    }
+
 
     /**
      * 当此刻今日是交易日:

@@ -392,7 +392,7 @@ public class GeneralSituationOverviewPanel extends DisplayPanel {
             String startDate = DateUtil.today();
             try {
                 EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 3); // 取3天所有数据, 等下用到最新的一条数据
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             DataFrame<Object> dfTemp = EmQuoteApi.getLatestQuoteOfBeanList(beans);

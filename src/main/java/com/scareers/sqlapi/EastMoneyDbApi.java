@@ -11,6 +11,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -95,7 +96,8 @@ public class EastMoneyDbApi {
      * @throws SQLException
      */
     @TimeoutCache(timeout = "3600 * 1000")
-    public static String getPreNTradeDateStrict(String todayDate, int n) throws SQLException {
+    @SneakyThrows
+    public static String getPreNTradeDateStrict(String todayDate, int n)  {
         if (!isStdDatePattern(todayDate)) { // 匹配标准形式, 否则解析
             todayDate = DateUtil.parse(todayDate).toString(DatePattern.NORM_DATE_PATTERN); // 标准化
         }

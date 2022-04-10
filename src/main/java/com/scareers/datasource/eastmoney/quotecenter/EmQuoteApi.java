@@ -1365,7 +1365,7 @@ public class EmQuoteApi {
     public static String getPreNTradeDateStrict(String todayDate, int n) {
         try {
             return EastMoneyDbApi.getPreNTradeDateStrict(todayDate, n);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
