@@ -12,6 +12,7 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -37,7 +38,6 @@ public class EastMoneyDbApi {
     public static void main(String[] args) throws Exception {
 
 
-
 //        Console.log(isTradeDate("20220304"));
 
 //        Console.log(getLatestSaveBeanByType(1, 10));
@@ -49,7 +49,6 @@ public class EastMoneyDbApi {
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
 //        Console.log(getPreNTradeDateStrict("20220318", -2));
     }
-
 
 
     /**
@@ -97,7 +96,7 @@ public class EastMoneyDbApi {
      */
     @TimeoutCache(timeout = "3600 * 1000")
     @SneakyThrows
-    public static String getPreNTradeDateStrict(String todayDate, int n)  {
+    public static String getPreNTradeDateStrict(String todayDate, int n) {
         if (!isStdDatePattern(todayDate)) { // 匹配标准形式, 否则解析
             todayDate = DateUtil.parse(todayDate).toString(DatePattern.NORM_DATE_PATTERN); // 标准化
         }
@@ -179,7 +178,22 @@ public class EastMoneyDbApi {
      * @return
      */
     public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId) {
+        return getFsTransByDateAndQuoteId(date, quoteId, false);
+    }
+
+    /**
+     * 标准api, 给定 日期(决定表名) 以及 quoteId 资产唯一标识, 获取某资产某一日的分时成交数据
+     * 可排除早盘竞价!
+     *
+     * @param date
+     * @param quoteId
+     * @return
+     */
+    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId, boolean excludeBid) {
         String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
+        if (excludeBid) {
+            sql = StrUtil.format("select * from `{}` where quoteId='{}' and time_tick>='09:30:00'", date, quoteId);
+        }
         DataFrame<Object> dataFrame;
         try {
             dataFrame = DataFrame.readSql(connectionFsTrans, sql);
@@ -189,5 +203,6 @@ public class EastMoneyDbApi {
         }
         return dataFrame;
     }
+
 
 }

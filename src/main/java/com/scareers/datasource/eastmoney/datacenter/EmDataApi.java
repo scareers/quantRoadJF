@@ -10,11 +10,13 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
+import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import org.jsoup.Jsoup;
@@ -69,8 +71,156 @@ public class EmDataApi {
 //        Console.log("获取日期区间 财经日历");
 //        Console.log(getEconomicCalendarByDateRange("2022-03-08", "2022-03-11", 3000, 3));
 
-        Console.log(getCaiJingDaoDuNewsPerPage(1));
+//        Console.log(getCaiJingDaoDuNewsPerPage(1));
 
+        Console.log(getAllAnnouncementOfOneDay("2022-04-27", 251, 10000, 2));
+        Console.log(getAnnouncementOfOneStockDateTimes("300010", 1, 10000, 2));
+
+    }
+
+    /**
+     * 给定股票代码, 和页码, 返回股票公告, 页码从1开始; 每页固定 50条公告; 的发布时间列表
+     * https://np-anotice-stock.eastmoney.com/api/security/ann?cb=jQuery1123016109221510953065_1650990560519&sr=-1
+     * &page_size=50&page_index=1&ann_type=A&client_source=web&stock_list=300010&f_node=0&s_node=0
+     *
+     * @param dateStr
+     * @param page
+     * @param timeout
+     * @param retry
+     * @return
+     */
+    public static List<Date> getAnnouncementOfOneStockDateTimes(String stockCodeSimple, int page, int timeout,
+                                                                     int retry) {
+        String url = "https://np-anotice-stock.eastmoney.com/api/security/ann";
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("cb", "jQuery1123016109221510953065_" + (System.currentTimeMillis() - 1));
+        params.put("sr", "-1");
+        params.put("page_size", "50");
+        params.put("page_index", page);
+        params.put("ann_type", "A");
+        params.put("client_source", "web");
+        params.put("stock_list", stockCodeSimple);
+        params.put("f_node", 0);
+        params.put("s_node", 0);
+
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+
+        int start = 0, end = 0;
+        start = response.indexOf("(") + 1;
+        end = response.lastIndexOf(")");
+        response = response.substring(start, end);
+
+        JSONObject jsonObject = JSONUtilS.parseObj(response);
+
+        List<Date> res = new ArrayList<>();
+        try {
+            JSONArray jsonArray = jsonObject.getJSONObject("data").getJSONArray("list");
+            for (int i = 0; i < jsonArray.size(); i++) {
+                try {
+                    JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                    String noticeDate = jsonObject1.getString("notice_date");
+                    res.add(DateUtil.parse(noticeDate));
+                } catch (Exception e) {
+
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
+        return res;
+    }
+
+    /**
+     * 给定单个日期字符串, 从东财数据中心, 获取所有当日发布了公告的公司名称 集合; 无内容, 自行查看;
+     * 需要给定页码, 从 1 开始; 每页50条
+     * https://np-anotice-stock.eastmoney.com/api/security/ann?cb=jQuery112309403262652933302_1650988901859&sr=-1&page_size=50&page_index=1&ann_type=SHA%2CCYB%2CSZA%2CBJA&client_source=web&f_node=0&s_node=0&begin_time=2022-04-26&end_time=2022-04-26
+     * <p>
+     * {
+     * "data": {
+     * "list": [
+     * {
+     * "art_code": "AN202204261561801876",
+     * "codes": [
+     * {
+     * "ann_type": "A,BJA",
+     * "inner_code": "40415376513752",
+     * "market_code": "0",
+     * "short_name": "七丰精工",
+     * "stock_code": "873169"
+     * }
+     * ],
+     * "columns": [
+     * {
+     * "column_code": "001003001001004",
+     * "column_name": "独立董事述职报告"
+     * }
+     * ],
+     * "display_time": "2022-04-26 22:53:19:020",
+     * "eiTime": "2022-04-26 22:52:39:000",
+     * "language": "0",
+     * "notice_date": "2022-04-26 00:00:00",
+     * "title": "七丰精工:2021年度独立董事述职报告",
+     * "title_ch": "七丰精工:2021年度独立董事述职报告",
+     * "title_en": ""
+     * }
+     *
+     * @param dateStr
+     */
+    public static HashSet<String> getAllAnnouncementOfOneDay(String dateStr, int page, int timeout,
+                                                             int retry) {
+        String url = "https://np-anotice-stock.eastmoney.com/api/security/ann";
+
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("cb", "jQuery112309403262652933302_" + (System.currentTimeMillis() - 1));
+        params.put("sr", "-1");
+        params.put("page_size", "50");
+        params.put("page_index", page);
+        params.put("ann_type", "SHA,CYB,SZA,BJA");
+        params.put("f_node", "0");
+        params.put("s_node", "0");
+        params.put("client_source", "web");
+        params.put("begin_time", dateStr);
+        params.put("end_time", dateStr);
+
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+
+        int start = 0, end = response.length();
+        start = response.indexOf("(") + 1;
+        end = response.lastIndexOf(")");
+        response = response.substring(start, end);
+
+        JSONObject jsonObject = JSONUtilS.parseObj(response);
+
+        HashSet<String> res = new HashSet<>();
+        try {
+            JSONArray jsonArray = jsonObject.getJSONObject("data").getJSONArray("list");
+            for (int i = 0; i < jsonArray.size(); i++) {
+                try {
+                    JSONObject jsonObject1 = jsonArray.getJSONObject(i);
+                    String companyName = jsonObject1.getJSONArray("codes").getJSONObject(0).getString("short_name");
+                    res.add(companyName);
+                } catch (Exception e) {
+
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
+        return res;
     }
 
     /**

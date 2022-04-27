@@ -280,6 +280,7 @@ public class Fs1MDataEm extends CrawlerEm {
         List<SecurityBeanEm> allBkList = getAllBkList();
         List<SecurityBeanEm> allIndexList = getAllIndexList();
         List<SecurityBeanEm> allStockList = getAllStockList();
+        List<SecurityBeanEm> allBondList = getAllBondList();
 
         if (allBkList == null || allIndexList == null || allStockList == null) {
             return null;
@@ -287,6 +288,7 @@ public class Fs1MDataEm extends CrawlerEm {
 
         allStockList.addAll(allIndexList);
         allStockList.addAll(allBkList);
+        allStockList.addAll(allBondList);
 
         return allStockList;
 //        return allBkList;

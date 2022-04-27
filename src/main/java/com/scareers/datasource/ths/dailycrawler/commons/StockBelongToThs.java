@@ -1,6 +1,7 @@
 package com.scareers.datasource.ths.dailycrawler.commons;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.ths.dailycrawler.CrawlerThs;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
@@ -110,6 +111,7 @@ public class StockBelongToThs extends CrawlerThs {
 
         // 4.将 belongToConceptAll 概念列表, 解析转换为 json列表字符串保存
         // 消费电子概念;小米概念;专精特新;
+//
         for (int i = 0; i < dataFrame.length(); i++) {
             Object belongToConceptAll = dataFrame.get(i, "belongToConceptAll");
             if (belongToConceptAll != null) { // 为null时不修改

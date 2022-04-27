@@ -61,7 +61,7 @@ public class StockGroupOfPlan {
     Long id;
     @Column(name = "name", columnDefinition = "varchar(256)", unique = true)
     String name;// 组名称
-    @Column(name = "description", columnDefinition = "varchar(256)", unique = true)
+    @Column(name = "description", columnDefinition = "varchar(256)")
     String description; // 组描述
 
     @Transient

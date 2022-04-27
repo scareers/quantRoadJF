@@ -76,7 +76,12 @@ public class EmQuoteApi {
     public static void main(String[] args) throws Exception {
 //        Console.log(getLatestQuoteOfBeanList(SecurityBeanEm.createStockList(Arrays.asList("000001", "000002"))));
 
-        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 5000, false));
+//        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 5000, false));
+        DataFrame<Object> bondsDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+        Console.log(bondsDf);
+        List<String> codes = DataFrameS.getColAsStringList(bondsDf, "资产代码");
+        List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(codes, true);
+        Console.log(bondList.size());
 
 
 //        DataFrame<Object> bkMembers = getBkMembersQuote(SecurityBeanEm.createBK("医药商业"), 3000, 3);

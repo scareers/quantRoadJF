@@ -259,13 +259,16 @@ public class FsTransDataEm extends CrawlerEm {
         List<SecurityBeanEm> allBkList = getAllBkList();
         List<SecurityBeanEm> allIndexList = getAllIndexList();
         List<SecurityBeanEm> allStockList = getAllStockList();
+        List<SecurityBeanEm> allBondList = getAllBondList();
 
-        if (allBkList == null || allIndexList == null || allStockList == null) {
+
+        if (allBkList == null || allIndexList == null || allStockList == null ||allBondList==null) {
             return null;
         }
 
         allStockList.addAll(allIndexList);
         allStockList.addAll(allBkList);
+        allStockList.addAll(allBondList);
 
         return allStockList;
     }

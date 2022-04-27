@@ -3,9 +3,12 @@ package com.scareers.tools.stockplan.stock.bean.selector;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.datasource.ths.wencai.WenCaiApi;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan;
 import com.scareers.utils.JSONUtilS;
+import joinery.DataFrame;
 
 import java.util.*;
 
@@ -20,14 +23,13 @@ public class MultiConceptSelector extends StockSelector {
 
     public static void main(String[] args) throws Exception {
         HashMap<String, String> industryOrConceptWithLineTypeMap = new HashMap<>();
-        industryOrConceptWithLineTypeMap.put("乡村振兴", IndustryConceptThsOfPlan.LineType.CARE_LINE);
-        industryOrConceptWithLineTypeMap.put("数字货币", IndustryConceptThsOfPlan.LineType.MAIN_LINE_2);
-        industryOrConceptWithLineTypeMap.put("华为概念", IndustryConceptThsOfPlan.LineType.MAIN_LINE_3);
-        industryOrConceptWithLineTypeMap.put("鸿蒙概念", IndustryConceptThsOfPlan.LineType.BRANCH_LINE_1);
-        industryOrConceptWithLineTypeMap.put("养鸡", IndustryConceptThsOfPlan.LineType.BRANCH_LINE_2);
+        industryOrConceptWithLineTypeMap.put("种植业与林业", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
+        industryOrConceptWithLineTypeMap.put("农业种植", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
+        industryOrConceptWithLineTypeMap.put("医药电商", IndustryConceptThsOfPlan.LineType.MAIN_LINE_3);
+        industryOrConceptWithLineTypeMap.put("猪肉", IndustryConceptThsOfPlan.LineType.BRANCH_LINE_1);
         industryOrConceptWithLineTypeMap.put("房地产开发", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
-        industryOrConceptWithLineTypeMap.put("房地产服务", IndustryConceptThsOfPlan.LineType.MAIN_LINE_2);
-        industryOrConceptWithLineTypeMap.put("银行", IndustryConceptThsOfPlan.LineType.OTHER_LINE);
+        industryOrConceptWithLineTypeMap.put("物流", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
+        industryOrConceptWithLineTypeMap.put("冷链物流", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
         industryOrConceptWithLineTypeMap.put("中药", IndustryConceptThsOfPlan.LineType.MAIN_LINE_1);
 
 
@@ -146,7 +148,13 @@ public class MultiConceptSelector extends StockSelector {
         // 1. 构建所有概念行业的 成分股map, 方便访问
         HashMap<String, List<ThsDbApi.ThsSimpleStock>> includeStockMap = new HashMap<>();
         for (String concept : concepts) {
-            includeStockMap.put(concept, ThsDbApi.getConceptOrIndustryIncludeStocks(concept, DateUtil.today()));
+
+            try {
+                includeStockMap.put(concept, ThsDbApi.getConceptOrIndustryIncludeStocks(concept, DateUtil.today()));
+            } catch (Exception e) {
+                Console.log(concept);
+                e.printStackTrace();
+            }
         }
         // 1.2. 集合化, 方便contain 计算
         HashMap<String, HashSet<ThsDbApi.ThsSimpleStock>> includeStockSetMap = new HashMap<>();
@@ -169,6 +177,15 @@ public class MultiConceptSelector extends StockSelector {
             }
         }
 
+        // 4.0. 用问财筛选一下近期曾涨停过的股票, 最终结果仅保留涨停池中的
+        HashSet<String> priceLimitCodePool = null;
+        try {
+            DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("近60日的涨停次数>=1次;非st;非科创板;非创业板");
+            priceLimitCodePool = new HashSet<>(DataFrameS.getColAsStringList(dataFrame, "code"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         // 4.结果
         HashMap<String, JSONObject> res = new HashMap<>();
         for (ThsDbApi.ThsSimpleStock thsSimpleStock : belongToConceptMap.keySet()) {
@@ -176,6 +193,11 @@ public class MultiConceptSelector extends StockSelector {
             if (conceptList.size() <= 1) { // 只关心多主线的
                 continue;
             }
+
+            if (priceLimitCodePool != null && !priceLimitCodePool.contains(thsSimpleStock.getCode())) {
+                continue;
+            }
+
             // 对单只股票 结果 json进行构造
 
             JSONObject jsonObject = new JSONObject();

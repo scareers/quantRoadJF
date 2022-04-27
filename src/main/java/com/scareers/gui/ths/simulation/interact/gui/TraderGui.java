@@ -14,6 +14,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFra
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
+import com.scareers.gui.ths.simulation.trader.BondStockVolNotify;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -188,6 +189,30 @@ public class TraderGui extends JFrame {
                 }
         );
         startMenu.add(bondTtsItem);
+
+        JMenuItem bondTtsItem2 = new JMenuItem("正股巨量买入提示可转债");
+        bondTtsItem2.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                while (true) {
+                                    try {
+                                        BondStockVolNotify.main0();
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                    }
+                                }
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem2);
+
+        // BondStockVolNotify
 
 
         startMenu.add(new JMenuItem("备用"));

@@ -2,6 +2,7 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.datasource.Crawler;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -15,6 +16,7 @@ import lombok.Setter;
 
 import java.sql.Connection;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.scareers.utils.SqlUtil.execSql;
@@ -207,6 +209,25 @@ public abstract class CrawlerEm extends Crawler {
     }
 
 
+    protected List<SecurityBeanEm> getAllBondList() {
+        DataFrame<Object> bondsDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+        List<String> codes = DataFrameS.getColAsStringList(bondsDf, "资产代码");
+        List<SecurityBeanEm> bondList = null;
+        int i = 0;
+        while (i <= 3 && bondList == null) {
+
+            try {
+                bondList = SecurityBeanEm.createBondList(codes, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            i++;
+        }
+        if (bondList == null) {
+            log.error("获取全部可转债bean失败!");
+        }
+        return bondList;
+    }
 
 
 }

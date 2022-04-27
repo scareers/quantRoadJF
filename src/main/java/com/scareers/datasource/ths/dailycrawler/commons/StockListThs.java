@@ -84,6 +84,15 @@ public class StockListThs extends CrawlerThs {
         dataFrame2 = dataFrame2.rename(getRenameMap2(dataFrame2.columns()));
         dataFrame3 = dataFrame3.rename(getRenameMap3(dataFrame3.columns()));
 
+        for (int i = 2; i <= 5; i++) {
+
+            try {
+                dataFrame1 = dataFrame1.drop("deleteLine" + i);
+            } catch (Exception e) {
+                log.error("无此列: {}", "deleteLine" + i);
+            }
+        }
+
         dataFrame2 = dataFrame2.drop("deleteCol1", "deleteCol2", "deleteCol3", "deleteCol4", "deleteCol5");
         dataFrame3 = dataFrame3.drop("deleteCol1", "deleteCol2", "deleteCol3", "deleteCol4");
 
@@ -128,6 +137,20 @@ public class StockListThs extends CrawlerThs {
             dataFrame = dataFrame.drop("最新涨跌幅");
         } catch (Exception e) {
             log.warn("最新涨跌幅: 无此列");
+        }
+        try {
+            dataFrame = dataFrame.drop("最新价");
+        } catch (Exception e) {
+            log.warn("最新价: 无此列");
+        }
+
+        for (int i = 2; i <= 5; i++) {
+
+            try {
+                dataFrame = dataFrame.drop("deleteLine" + i);
+            } catch (Exception e) {
+                log.error("无此列: {}", "deleteLine" + i);
+            }
         }
 
         try {
@@ -187,7 +210,7 @@ public class StockListThs extends CrawlerThs {
      * [code, marketCode, concepts, close, marketValue, low, circulatingMarketValue,
      * closeNofq, open, pe, stockCode, high, openNofq, turnover, highNofq, industries, name,
      * lowNofq, chgP, conceptAmount, amplitude, volRate, highLimitBlockadeVolumeRate, highLimitType, highLimitBlockadeCMVRate,
-     *
+     * <p>
      * highLimitFirstTime, highLimitBlockadeAmount, highLimit, highLimitReason, highLimitAmountType,
      * highLimitDetail, highLimitBlockadeVol, highLimitBrokeTimes, highLimitLastTime, highLimitContinuousDays,
      * lowLimit, lowLimitBlockadeVol, lowLimitDetails, lowLimitFirstTime, lowLimitBlockadeVolCMVRate,
@@ -248,7 +271,6 @@ public class StockListThs extends CrawlerThs {
                         + "lowLimitLastTime varchar(32)    null,"
                         + "lowLimitBlockadeVolumeRate double  null,"
                         + "lowLimitContinuousDays int  null,"
-
 
 
                         + "dateStr varchar(32)  null,"
@@ -312,8 +334,17 @@ public class StockListThs extends CrawlerThs {
                 renameMap.put(column, "amplitude");
             } else if (WenCaiApi.fieldLike(column.toString(), "量比[20220408]")) {
                 renameMap.put(column, "volRate");
+            } else if (WenCaiApi.fieldLike(column.toString(), "股东权益合计[20211231]")) {
+                renameMap.put(column, "deleteLine2");
+            } else if (WenCaiApi.fieldLike(column.toString(), "归属于母公司所有者的净利润[20211231]")) {
+                renameMap.put(column, "deleteLine3");
+            } else if (WenCaiApi.fieldLike(column.toString(), "净资产收益率roe(加权,公布值)[20211231]")) {
+                renameMap.put(column, "deleteLine4");
             }
 
+            else if(column.toString().contains("(roe)平均值")){
+                renameMap.put(column, "deleteLine5");
+            }
         }
         renameMap.put("所属概念", "concepts"); // str简单保存
         renameMap.put("所属概念数量", "conceptAmount"); // str简单保存
@@ -324,6 +355,8 @@ public class StockListThs extends CrawlerThs {
 
         renameMap.put("股票代码", "stockCode");
         renameMap.put("股票简称", "name");
+
+//        renameMap.put("净资产", "deleteLine1");
 
 
         return renameMap;
