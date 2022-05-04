@@ -43,6 +43,7 @@ public abstract class NewsFeedListPanel extends DisplayPanel {
 
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
+    protected JButton saveButton = ButtonFactory.getButton("保存");
 
     protected NewsTabPanel parentS; // 维护所属 newstab
 
@@ -62,6 +63,7 @@ public abstract class NewsFeedListPanel extends DisplayPanel {
         jScrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS); // 一般都需要
         buttonFlushAll = ButtonFactory.getButton("全量刷新");
         buttonFlushAll.setMaximumSize(new Dimension(60, 16));
+        saveButton.setMaximumSize(new Dimension(60, 16));
         NewsFeedListPanel majorIssueListPanel = this;
         buttonFlushAll.addActionListener(new ActionListener() {
             @Override
@@ -74,6 +76,7 @@ public abstract class NewsFeedListPanel extends DisplayPanel {
         buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
         buttonContainer.setBorder(null);
         buttonContainer.add(buttonFlushAll);
+        buttonContainer.add(saveButton);
 
         // 包装一下, 将按钮放于表格上方
         JPanel panelTemp = new JPanel();

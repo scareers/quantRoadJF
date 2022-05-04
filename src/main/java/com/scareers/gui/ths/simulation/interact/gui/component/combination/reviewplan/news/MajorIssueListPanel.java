@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.MajorIssueEditorPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.tools.stockplan.news.bean.MajorIssue;
@@ -44,8 +45,10 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
 
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
+    protected JButton saveButton = ButtonFactory.getButton("保存");
 
     protected NewsTabPanel parentS; // 维护所属 newstab
+
 
     public MajorIssueListPanel(NewsTabPanel parentS) {
         this.parentS = parentS;
@@ -61,6 +64,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
         jScrollPane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS); // 一般都需要
+
         buttonFlushAll = ButtonFactory.getButton("全量刷新");
         buttonFlushAll.setMaximumSize(new Dimension(60, 16));
         MajorIssueListPanel majorIssueListPanel = this;
@@ -71,10 +75,17 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
             }
         });
 
+        saveButton.setMaximumSize(new Dimension(60, 16));
+
         buttonContainer = new JPanel();
         buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
         buttonContainer.setBorder(null);
         buttonContainer.add(buttonFlushAll);
+        buttonContainer.add(saveButton);
+
+
+
+
 
         // 包装一下, 将按钮放于表格上方
         JPanel panelTemp = new JPanel();

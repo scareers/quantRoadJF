@@ -15,10 +15,7 @@ import org.jdesktop.swingx.JXTable;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.JTableHeader;
-import javax.swing.table.TableColumn;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Enumeration;
@@ -41,11 +38,12 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
     protected SimpleNewEditorPanel editorPanel; // 编辑面
     protected SimpleNewEm currentBean;
 
-    protected JTable jTable;
+    protected JXTable jTable;
     protected JScrollPane jScrollPane;
 
     protected JPanel buttonContainer; // 功能按钮容器
     protected JButton buttonFlushAll; // 全量刷新按钮
+    protected JButton saveButton = ButtonFactory.getButton("保存");
 
 
     protected NewsTabPanel parentS; // 维护所属 newstab
@@ -75,10 +73,13 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             }
         });
 
+        saveButton.setMaximumSize(new Dimension(60, 16));
+
         buttonContainer = new JPanel();
         buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
         buttonContainer.setBorder(null);
         buttonContainer.add(buttonFlushAll);
+        buttonContainer.add(saveButton);
 
         // 包装一下, 将按钮放于表格上方
         JPanel panelTemp = new JPanel();
@@ -134,6 +135,7 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
             };
 
             jTable = new JXTable();
+            jTable.setSortable(true); // 默认排序
 
             jTable.setModel(model);
             removeEnterKeyDefaultAction();
@@ -141,6 +143,9 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
                 @Override
                 public void valueChanged(ListSelectionEvent e) {
                     int row = jTable.getSelectedRow();
+                    RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                    row = rowSorter.convertRowIndexToModel(row);
+
                     currentBean = beanMap.get(Long.parseLong(model.getValueAt(row, 0).toString()));
                     editorPanel.update(currentBean);
                 }
@@ -150,6 +155,9 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     int row = jTable.getSelectedRow();
+                    RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                    row = rowSorter.convertRowIndexToModel(row);
+
                     currentBean = beanMap.get(Long.parseLong(model.getValueAt(row, 0).toString()));
                     editorPanel.update(currentBean);
                     if (e.getClickCount() == 2) {
@@ -161,8 +169,12 @@ public abstract class SimpleNewListPanel extends DisplayPanel {
                 @Override
                 public void keyPressed(KeyEvent e) {
                     if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        int row = jTable.getSelectedRow();
+                        RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                        row = rowSorter.convertRowIndexToModel(row);
+
                         currentBean = beanMap
-                                .get(Long.parseLong(model.getValueAt(jTable.getSelectedRow(), 0).toString()));
+                                .get(Long.parseLong(model.getValueAt(row, 0).toString()));
                         editorPanel.update(currentBean);
                         CommonUtil.openUrlWithDefaultBrowser(currentBean.getUrl());
                     }

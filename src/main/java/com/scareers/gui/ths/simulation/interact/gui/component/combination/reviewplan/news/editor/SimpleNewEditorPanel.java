@@ -13,10 +13,7 @@ import com.scareers.utils.log.LogUtil;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.sql.Timestamp;
 import java.util.Date;
 
@@ -122,6 +119,14 @@ public class SimpleNewEditorPanel extends DisplayPanel {
 
         this.add(remarkLabel);
         this.add(remarkValueLabel);
+
+        SimpleNewEditorPanel panelX = this;
+        parent.getSaveButton().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                tryAutoSaveEditedBean(panelX, "要闻");
+            }
+        });
 
     }
 
