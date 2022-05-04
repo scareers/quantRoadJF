@@ -12,6 +12,8 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.Timestamp;
@@ -62,7 +64,7 @@ public class SimpleNewEditorPanel extends DisplayPanel {
     JLabel trendLabel = getCommonLabel("trend", Color.pink);
     JTextField trendValueLabel = getCommonEditor(this);
     JLabel markedLabel = getCommonLabel("marked", Color.pink);
-    JCheckBox markedValueLabel = getCommonCheckBox();
+    JCheckBox markedValueLabel = getCommonCheckBox(this);
     JLabel remarkLabel = getCommonLabel("remark", Color.pink);
     JTextField remarkValueLabel = getCommonEditor(this);
 
@@ -277,11 +279,17 @@ public class SimpleNewEditorPanel extends DisplayPanel {
         return jTextField;
     }
 
-    public static JCheckBox getCommonCheckBox() {
+    public static JCheckBox getCommonCheckBox(SimpleNewEditorPanel panel) {
         JCheckBox checkBox = new JCheckBox();
         checkBox.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         checkBox.setBackground(COLOR_THEME_MINOR);
         checkBox.setForeground(Color.pink);
+        checkBox.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                tryAutoSaveEditedBean(panel,"要闻");
+            }
+        });
         return checkBox;
     }
 

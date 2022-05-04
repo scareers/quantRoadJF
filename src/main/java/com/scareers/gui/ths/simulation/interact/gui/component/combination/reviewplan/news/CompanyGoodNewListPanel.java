@@ -84,7 +84,7 @@ public abstract class CompanyGoodNewListPanel extends DisplayPanel {
         panelTemp.setLayout(new BorderLayout());
         panelTemp.add(buttonContainer, BorderLayout.NORTH);
         panelTemp.add(jScrollPane, BorderLayout.CENTER);
-        this.add(panelTemp, BorderLayout.CENTER);
+        this.add(panelTemp, BorderLayout.CENTER)    ;
 
         editorPanel = new CompanyGoodNewEditorPanel(this);
         JPanel panel = new JPanel();

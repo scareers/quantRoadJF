@@ -13,6 +13,8 @@ import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.Timestamp;
@@ -56,7 +58,7 @@ public class FourPaperNewEditorPanel extends DisplayPanel {
 
     // 编辑
     JLabel markedLabel = getCommonLabel("marked", Color.pink);
-    JCheckBox markedValueLabel = getCommonCheckBox();
+    JCheckBox markedValueLabel = getCommonCheckBox(this);
     JLabel brieflyLabel = getCommonLabel("briefly", Color.pink);
     JTextField brieflyValueLabel = getCommonEditor(this);
     JLabel relatedObjectLabel = getCommonLabel("relatedObject", Color.pink);
@@ -269,11 +271,17 @@ public class FourPaperNewEditorPanel extends DisplayPanel {
         return jTextField;
     }
 
-    public static JCheckBox getCommonCheckBox() {
+    public static JCheckBox getCommonCheckBox(FourPaperNewEditorPanel panel) {
         JCheckBox checkBox = new JCheckBox();
         checkBox.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         checkBox.setBackground(COLOR_THEME_MINOR);
         checkBox.setForeground(Color.pink);
+        checkBox.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                tryAutoSaveEditedBean(panel,"四大报媒");
+            }
+        });
         return checkBox;
     }
 
