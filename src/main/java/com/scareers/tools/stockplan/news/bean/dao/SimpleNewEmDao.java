@@ -16,9 +16,8 @@ import org.hibernate.query.Query;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * description: SimpleNewEm DAO -- 数据操作api
@@ -113,6 +112,30 @@ public class SimpleNewEmDao {
         return res;
     }
 
+    /**
+     * 财经导读列表, 依据文章标题, 排除掉 资讯精华里面有的, 本质是调用两次上一api
+     *
+     * @param type
+     * @param equivalenceNow
+     * @return
+     * @throws SQLException
+     */
+    public static List<SimpleNewEm> getCaiJingDaoDuNewsExcludeZiXunJingHuaForPlan(Date equivalenceNow)
+            throws SQLException {
+        List<SimpleNewEm> caiJingDaoDus = getNewsForTradePlanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE,
+                equivalenceNow);
+        List<SimpleNewEm> ziXunJingHuas = getNewsForTradePlanByType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE,
+                equivalenceNow);
+        Set<String> titles = ziXunJingHuas.stream().map(SimpleNewEm::getTitle).collect(Collectors.toSet());
+        List<SimpleNewEm> res = new ArrayList<>();
+        for (SimpleNewEm jingDaoDus : caiJingDaoDus) {
+            if (!titles.contains(jingDaoDus.getTitle())) {
+                res.add(jingDaoDus);
+            }
+        }
+        return res;
+    }
+
 
     /**
      * 决定复盘时, 查看新闻的日期区间 开始
@@ -145,7 +168,7 @@ public class SimpleNewEmDao {
      * @return
      * @throws SQLException
      */
-    public static List<DateTime> decideDateTimeRangeForTradePlan( Date equivalenceNow) throws SQLException {
+    public static List<DateTime> decideDateTimeRangeForTradePlan(Date equivalenceNow) throws SQLException {
         List<DateTime> res = new ArrayList<>();
         String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
         Boolean tradeDate = EastMoneyDbApi.isTradeDate(today);

@@ -35,8 +35,9 @@ public class CaiJingDaoDuPanelForPlan extends SimpleNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<SimpleNewEm> newsForReviseByType;
         try {
-            newsForReviseByType = SimpleNewEmDao.getNewsForTradePlanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE,
-                    PlanReviewDateTimeDecider.getUniqueDatetime());
+            // @update: 该api已经排除同一时间, 资讯精华里面的
+            newsForReviseByType = SimpleNewEmDao
+                    .getCaiJingDaoDuNewsExcludeZiXunJingHuaForPlan(PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();
             // 此时使用老数据

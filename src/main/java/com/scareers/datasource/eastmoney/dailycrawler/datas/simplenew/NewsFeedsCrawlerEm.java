@@ -124,7 +124,7 @@ public class NewsFeedsCrawlerEm extends CrawlerEm {
     protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
         HashSet<SimpleNewEm> simpleNewEms = new HashSet<>(
                 EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
-        simpleNewEms.addAll(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE, 520));
+        simpleNewEms.addAll(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE, 520));
         // @key: 两种都找
         return simpleNewEms;
     }

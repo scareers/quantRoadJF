@@ -1,7 +1,6 @@
 package com.scareers.tools.stockplan.news.bean.dao;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.sqlapi.EastMoneyDbApi;
@@ -97,29 +96,19 @@ public class NewsFeedDao {
             }
         }
         // 其他情况均获取上一交易日. 因为非交易日没有数据
-        String preDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
-        return getNewsForTradePlanByDate(preDate);
+        String preDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1); // 上一确定交易日
+
+        List<NewsFeed> res = new ArrayList<>();
+        DateRange range = new DateRange(DateUtil.parse(preDate), DateUtil.parse(today), DateField.DAY_OF_MONTH,
+                1, true, false); // 此时不包含今日
+
+
+        for (DateTime dateTime : range) { // 这里将是 上一交易日 到 绝对的 昨天, 0点.
+            res.addAll(getNewsForTradePlanByDate(DateUtil.format(dateTime, DatePattern.NORM_DATE_PATTERN)));
+        }
+        return res;
     }
 
-    /**
-     * 为复盘, 获取适当日期的 新闻联播集锦 --> 相同于 公司重大事件
-     * 逻辑:
-     * 1.当今日是交易日
-     * 获取上一交易日, 为上一交易日复盘
-     * 2.当今日非交易日
-     * 获取上 2 交易日, 为上一交易日复盘
-     *
-     * @param dateStr
-     * @return
-     */
-    public static List<NewsFeed> getNewsForReview(Date equivalenceNow) throws SQLException {
-        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
-        if (EastMoneyDbApi.isTradeDate(today)) {
-            return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));
-        } else {
-            return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 2));
-        }
-    }
 
     private static final Log log = LogUtil.getLogger();
 }

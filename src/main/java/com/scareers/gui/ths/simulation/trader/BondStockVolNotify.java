@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.trader;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -8,7 +9,6 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
-import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.pandasdummy.DataFrameS;
@@ -18,8 +18,10 @@ import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
-import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -39,7 +41,6 @@ public class BondStockVolNotify {
 
     public static void main(String[] args) throws Exception {
         main0();
-
 
 
     }
@@ -234,24 +235,25 @@ public class BondStockVolNotify {
 
     public static List<StockBondBean> getHotStockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("剩余规模<100亿;上一交易日成交额排名从大到小前500;正股代码",
-                WenCaiApi.TypeStr.BOND);
+                WenCaiApi.TypeStr.BOND); // 全部转债
+
         List<StockBondBean> stockBondBeanList = new ArrayList<>();
 
-        /*
-万孚转债
-福能转债
-湖广转债
-设研转债
-长久转债
-北港转债
 
-         */
-        HashSet<String> careBonds = new HashSet<>(
-                StrUtil.split("交建转债,万孚转债,福能转债,湖广转债,设研转债,长久转债,北港转债", ",")
-        );
+        String s = ResourceUtil.readUtf8Str("bonds.txt");
+        List<String> bonds = StrUtil.split(s, "\r\n");
+        bonds.remove("");
+        HashSet<String> careBonds = new HashSet<>(bonds);
+
+        DataFrame<Object> dataFrame2 = WenCaiApi.wenCaiQuery("剩余规模<100亿;成交额排名从大到小前50;正股代码",
+                WenCaiApi.TypeStr.BOND); // 今日成交额排名100
+        List<String> vol100 = DataFrameS.getColAsStringList(dataFrame2, "可转债@可转债简称");
 
         for (int i = 0; i < dataFrame.length(); i++) {
-            if (!careBonds.contains(dataFrame.get(i, "可转债@可转债简称").toString())) {
+            if (!careBonds.contains(dataFrame.get(i, "可转债@可转债简称").toString())
+//                    && !vol100.contains(dataFrame.get(i, "可转债@可转债简称").toString())
+            ) {
+                // 关注转债, 以及今日成交量前100转债
                 continue;
             }
 
@@ -266,6 +268,11 @@ public class BondStockVolNotify {
         }
         Console.log(stockBondBeanList.get(0));
         Console.log(stockBondBeanList.size());
+        try {
+            ManiLog.put(StrUtil.format("关注转债数量: {}", stockBondBeanList.size()));
+            ManiLog.put(StrUtil.format("关注转债列表: {}", bonds));
+        } catch (Exception e) {
+        }
         return stockBondBeanList;
     }
 

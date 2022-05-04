@@ -35,7 +35,7 @@ public class SimpleNewEm {
                     "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
             );
     public static int CAI_JING_DAO_DU_TYPE = 1; // 财经导读 类型
-    public static int ZI_XUN_JINH_HUA_TYPE = 0; // 资讯精华
+    public static int ZI_XUN_JING_HUA_TYPE = 0; // 资讯精华
 
     /*
     静态方法

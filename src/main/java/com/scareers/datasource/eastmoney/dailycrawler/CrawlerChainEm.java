@@ -60,14 +60,18 @@ public class CrawlerChainEm {
 //        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
 //         //基本列表
-        crawlerChainEm.addSynCrawler(new StockListEm());
-        crawlerChainEm.addSynCrawler(new IndexListEm());
-        crawlerChainEm.addSynCrawler(new BkListEm());
-        crawlerChainEm.addSynCrawler(new TradeDatesEm());
+        if (DateUtil.hour(DateUtil.date(), true) >= 15) {
+            // 3点以后抓
 
-        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
-        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
-//
+            crawlerChainEm.addSynCrawler(new StockListEm());
+            crawlerChainEm.addSynCrawler(new IndexListEm());
+            crawlerChainEm.addSynCrawler(new BkListEm());
+            crawlerChainEm.addSynCrawler(new TradeDatesEm());
+
+            crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+            crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
+
+        }
 
         crawlerChainEm.run();
 

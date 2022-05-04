@@ -389,7 +389,7 @@ public class EmDataApi {
             return res;
         }
         parseEmZiXunListCommon(res, asStrUseHutool);
-        res.forEach(bean -> bean.setType(SimpleNewEm.ZI_XUN_JINH_HUA_TYPE));
+        res.forEach(bean -> bean.setType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE));
         ziXunJingHuaPerPageCache.put(page, res);
         return res;
     }

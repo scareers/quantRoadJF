@@ -1,9 +1,6 @@
 package com.scareers.datasource.eastmoney;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
@@ -40,10 +37,10 @@ public class BondUtil {
         科伦转债
         博世转债
          */
-//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssue("2022-04-26");
-//        for (StockBondBean stockBondBean : temp) {
-//            Console.log(stockBondBean.getBondCode());
-//        }
+        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+        for (StockBondBean stockBondBean : temp) {
+            Console.log(stockBondBean.getStockCode());
+        }
 
 //        List<StockBondBean> allStockWithBondWithAnn = getAllStockWithBondWithAnn();
 //        Console.log(allStockWithBondWithAnn.size());
@@ -52,11 +49,11 @@ public class BondUtil {
 //            Console.log(stockBondBean.getStockCode());
 //        }
 
-        List<String> allStockWithBondWithAnn2 = getAllStockWithBondWithAnnUseWenCai(DateUtil.date());
-        for (String s : allStockWithBondWithAnn2) {
-//            Console.log(stockBondBean);
-            Console.log(s);
-        }
+//        List<String> allStockWithBondWithAnn2 = getAllStockWithBondWithAnnUseWenCai(DateUtil.date());
+//        for (String s : allStockWithBondWithAnn2) {
+////            Console.log(stockBondBean);
+//            Console.log(s);
+//        }
     }
 
 
@@ -68,7 +65,7 @@ public class BondUtil {
      * @throws SQLException
      */
     public static List<StockBondBean> getAllStockWithBondWithMajorIssue(String dateStr) throws SQLException {
-        List<StockBondBean> hotStockWithBond = getHotStockWithBond0();
+        List<StockBondBean> hotStockWithBond = getAllStockWithBond0();
         DataFrame<Object> dataFrame1 = DataFrame.readSql(ConnectionFactory.getConnLocalEastmoney(),
                 StrUtil.format("select *\n" +
                         "from company_major_issue cmi\n" +
@@ -81,6 +78,49 @@ public class BondUtil {
             }
         }
         return hotStockWithBondWithMajorIssue;
+
+        /*
+                String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
+        if (EastMoneyDbApi.isTradeDate(today)) {
+            if (DateUtil.hour(equivalenceNow, true) >= 15) { // 超过下午3点
+                return getNewsForTradePlanByDate(today);
+            }
+        }
+        // 其他情况均获取上一交易日. 因为非交易日没有数据
+        String preDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
+        List<CompanyGoodNew> res = new ArrayList<>();
+        DateRange range = new DateRange(DateUtil.parse(preDate), DateUtil.parse(today), DateField.DAY_OF_MONTH,
+                1, true, false); // 此时不包含今日
+        for (DateTime dateTime : range) { // 这里将是 上一交易日 到 绝对的 昨天, 0点.
+            res.addAll(getNewsForTradePlanByDate(DateUtil.format(dateTime, DatePattern.NORM_DATE_PATTERN)));
+        }
+         */
+    }
+
+    /**
+     * 结合重大事项新闻的发布时间, 以及当前时间, 获取 适当日期列表的 带可转债的带重大事项的 可转债股票对象
+     * 合适的日期列表, 算法同 MajorIssueDao 中的算法
+     *
+     * @param dateStr
+     * @return
+     * @throws SQLException
+     */
+    public static List<StockBondBean> getAllStockWithBondWithMajorIssueNow() throws SQLException {
+        String today = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATE_PATTERN);
+        if (EastMoneyDbApi.isTradeDate(today)) {
+            if (DateUtil.hour(DateUtil.date(), true) >= 15) { // 超过下午3点
+                return getAllStockWithBondWithMajorIssue(today);
+            }
+        }
+        // 其他情况均获取上一交易日. 到今日
+        String preDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
+        List<StockBondBean> res = new ArrayList<>();
+        DateRange range = new DateRange(DateUtil.parse(preDate), DateUtil.parse(today), DateField.DAY_OF_MONTH,
+                1, true, false); // 此时不包含今日
+        for (DateTime dateTime : range) { // 这里将是 上一交易日 到 绝对的 昨天, 0点.
+            res.addAll(getAllStockWithBondWithMajorIssue(DateUtil.format(dateTime, DatePattern.NORM_DATE_PATTERN)));
+        }
+        return res;
     }
 
     /**
@@ -109,7 +149,7 @@ public class BondUtil {
      * @throws SQLException
      */
     public static List<StockBondBean> getAllStockWithBondWithAnn() throws SQLException {
-        List<StockBondBean> hotStockWithBond = getHotStockWithBond0();
+        List<StockBondBean> hotStockWithBond = getAllStockWithBond0();
 
         DateTime stdDate = DateUtil.date(); // 此刻
         if (DateUtil.hour(stdDate, true) >= 15) {
@@ -141,7 +181,7 @@ public class BondUtil {
      *
      * @return
      */
-    private static List<StockBondBean> getHotStockWithBond0() {
+    private static List<StockBondBean> getAllStockWithBond0() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称;成交额;",
                 WenCaiApi.TypeStr.BOND);
         List<StockBondBean> stockBondBeanList = new ArrayList<>();
@@ -162,8 +202,6 @@ public class BondUtil {
             }
 
         }
-        Console.log(stockBondBeanList.get(0));
-        Console.log(stockBondBeanList.size());
         return stockBondBeanList;
     }
 }

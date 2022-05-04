@@ -1,11 +1,11 @@
 package com.scareers.tools.stockplan.news.bean.dao;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.log.Log;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.tools.stockplan.news.bean.FourPaperNew;
+import com.scareers.tools.stockplan.news.bean.MajorIssue;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
 import org.hibernate.query.Query;
@@ -134,28 +134,16 @@ public class FourPaperNewDao {
             }
         }
         String preDate = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
-        return getNewsForTradePlanByDate(preDate);
+        List<FourPaperNew> res = new ArrayList<>();
+        DateRange range = new DateRange(DateUtil.parse(preDate), DateUtil.parse(today), DateField.DAY_OF_MONTH,
+                1, true, false); // 此时不包含今日
+        for (DateTime dateTime : range) { // 这里将是 上一交易日 到 绝对的 昨天, 0点.
+            res.addAll(getNewsForTradePlanByDate(DateUtil.format(dateTime, DatePattern.NORM_DATE_PATTERN)));
+        }
+        return res;
     }
 
-    /**
-     * 为复盘, 获取适当日期的 四大报媒精华新闻
-     * 逻辑:
-     * 1.当今日是交易日
-     * 获取今日, 为今日复盘
-     * 2.当今日非交易日
-     * 获取上 1 交易日, 为上一交易日复盘
-     *
-     * @param dateStr
-     * @return
-     */
-    public static List<FourPaperNew> getNewsForReview(Date equivalenceNow) throws SQLException {
-        String today = DateUtil.format(equivalenceNow, DatePattern.NORM_DATE_PATTERN);
-        if (EastMoneyDbApi.isTradeDate(today)) {
-            return getNewsForTradePlanByDate(today);
-        } else {
-            return getNewsForTradePlanByDate(EastMoneyDbApi.getPreNTradeDateStrict(today, 1));
-        }
-    }
+
 
     private static final Log log = LogUtil.getLogger();
 }
