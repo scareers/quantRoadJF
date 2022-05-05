@@ -200,7 +200,7 @@ public class TraderGui extends JFrame {
                             public void run() {
                                 while (true) {
                                     try {
-                                        BondStockVolNotify.main0();
+                                        BondStockVolNotify.main1();
                                     } catch (Exception ex) {
                                         ex.printStackTrace();
                                     }

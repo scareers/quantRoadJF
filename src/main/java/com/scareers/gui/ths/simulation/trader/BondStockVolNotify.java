@@ -1,5 +1,8 @@
 package com.scareers.gui.ths.simulation.trader;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
@@ -40,7 +43,8 @@ public class BondStockVolNotify {
     public static double notiThreshold = 1; // 百分比差距大于此值, 才进行播报
 
     public static void main(String[] args) throws Exception {
-        main0();
+//        main0();
+        main1();
 
 
     }
@@ -221,6 +225,162 @@ public class BondStockVolNotify {
 
 
                 lastNotiTimeTickMap.put(stockBean.getQuoteId(), timeTickLast);
+
+            }
+
+
+        }
+
+
+    }
+
+    public static int periodSeconds = 30; // 监控转债走势时, 监控的时间窗口大小, 单位时秒
+    public static double chgPercent = 0.01; // 走势变化>= 该数值时, 播报
+    public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
+
+    public static void main1() throws Exception {
+        log.info("解析昨日前100成交量可转债及股票");
+        List<StockBondBean> hotStockWithBondList = getHotStockWithBond();
+        List<SecurityBeanEm> stockList = null;
+        List<SecurityBeanEm> bondList = null;
+        try {
+            log.info("解析股票/转债bean");
+            stockList = SecurityBeanEm.createStockList(
+                    hotStockWithBondList.stream().map(StockBondBean::getStockCode).collect(Collectors.toList()));
+            bondList = SecurityBeanEm.createBondList(
+                    hotStockWithBondList.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
+                    true);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ManiLog.put("问财获取股票转债列表失败");
+            return;
+        }
+        // 4.加入分时成交爬虫池
+        SecurityPool.addToTodaySelectedBonds(bondList);
+        SecurityPool.addToTodaySelectedStocks(stockList); // 加入后, 爬虫自动获取
+        FsTransactionFetcher fsTransactionFetcher =
+                FsTransactionFetcher.getInstance(10,
+                        "15:10:00", 1000, 100, 32); // 跟Trader相同参数
+        fsTransactionFetcher.startFetch();
+
+        // 5.对股票池, 读取其前5日的分时成交数据, 然后求出一个平均的 分时成交量! 然后设定一个倍数, 作为 "大量" 的标准
+        // 将这个 基准平均分时成交量, 保存为集合. key为股票 quoteId, 值为 平均分时成交额     -- 使用成交额而非成交量
+        fillPre5DayAvgFsTransAmountMap(stockList);
+        Console.log(pre5DayAvgFsTransAmount);
+
+        while (true) {
+            ThreadUtil.sleep(100);
+            for (StockBondBean stockBondBean : hotStockWithBondList) {
+                SecurityBeanEm bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
+                DataFrame<Object> fsTransData = FsTransactionFetcher.getFsTransData(bondBean);
+                if (fsTransData == null || fsTransData.length() == 0) {
+                    continue;
+                }
+
+
+                // sec_code	market	time_tick	price	 vol	bs, 使用顺序
+                // 1.找到 分钟 tick点;
+                String timeTickLast = fsTransData.get(fsTransData.length() - 1, 2).toString();
+                DateTime lastTime = DateUtil.parse(timeTickLast);
+                // 时间窗口开始时间,包含
+                DateTime windowStartTime = DateUtil.offset(lastTime, DateField.SECOND, -1 * periodSeconds); //
+                String startTime = DateUtil.format(windowStartTime, DatePattern.NORM_TIME_PATTERN);
+
+                String notiedTimeTick = lastNotiTimeTickMap.get(bondBean.getQuoteId()); // 但tick播放一次
+                if (timeTickLast.equals(notiedTimeTick)) {
+                    continue; // 没有新数据, 当前最后一条数据, 提示过了
+                }
+
+                // 2.筛选得到有效df 数据段
+                DataFrame<Object> effectDf = fsTransData.select(new DataFrame.Predicate<Object>() {
+                    @Override
+                    public Boolean apply(List<Object> value) {
+                        Object o = value.get(2);
+                        if (o == null) {
+                            return false;
+                        }
+                        String s = o.toString();
+                        return s.compareTo(startTime) >= 0;
+                    }
+                });
+
+
+
+                // 3.计算涨跌幅播报, 且当 买卖方向成交量差距明显时, 播报买
+                if (effectDf.length() < (periodSeconds / 6)) { // 起码有一半数据, 6s一个
+                    continue;
+                }
+
+                double priceStart;
+                double priceEnd;
+                try {
+                    priceStart = Double.parseDouble(effectDf.row(0).get(3).toString());
+                    priceEnd = Double.parseDouble(effectDf.row(effectDf.length() - 1).get(3).toString());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                if (Math.abs((priceEnd - priceStart) / priceStart) < chgPercent) {
+                    continue; // 涨跌幅不够, 无视
+                }
+
+                List<Double> buyVols = new ArrayList<>();
+                List<Double> sellVols = new ArrayList<>();
+                for (int i = 0; i < effectDf.length(); i++) {
+                    List<Object> row = effectDf.row(i);
+                    int bs = Integer.parseInt(row.get(5).toString());
+                    if (bs == 2) {
+                        buyVols.add(Double.parseDouble(row.get(4).toString()));
+                    } else if (bs == 1) {
+                        sellVols.add(Double.parseDouble(row.get(4).toString()));
+                    }
+                }
+                if (buyVols.size() == 0 && sellVols.size() == 0) {
+                    continue;
+                }
+
+                Double buyVolAll = CommonUtil.sumOfListNumber(buyVols);
+                Double sellVolAll = CommonUtil.sumOfListNumber(sellVols);
+
+                String description = null;
+                if (priceStart < priceEnd) {
+                    // 价格上涨
+                    if ((buyVolAll - sellVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
+                        // 买力量明显大, 至少 6.5 / 3.5 的样子
+                        description = "量拉";
+                    } else {
+                        description = "拉升";
+                    }
+                } else {
+                    // 价格下降
+                    if ((sellVolAll - buyVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
+                        // 卖力量明显大, 至少 6.5 / 3.5 的样子
+                        description = "量跌";
+                    } else {
+                        description = "下跌";
+                    }
+                }
+                if (description == null) {
+                    continue;
+                }
+
+                // 长信息提示
+                String infoLong = StrUtil
+                        .format("{} {} : 幅度:{} 买卖盘比率:{}", bondBean.getName(), description,
+                                (priceEnd - priceStart) / priceStart,
+                                (buyVolAll - sellVolAll) / (buyVolAll + sellVolAll)
+                        );
+                Console.log(infoLong);
+
+                // 短信息
+                String infoShort = StrUtil.format("{}{}", bondBean.getName().replace("转债", ""), description);
+
+                try {
+                    ManiLog.put(infoLong);
+                } catch (Exception e) {
+                }
+
+                Tts.playSound(infoShort, true);
+                lastNotiTimeTickMap.put(bondBean.getQuoteId(), timeTickLast);
 
             }
 

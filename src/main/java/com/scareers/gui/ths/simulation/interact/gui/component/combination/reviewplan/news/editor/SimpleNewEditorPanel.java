@@ -284,12 +284,14 @@ public class SimpleNewEditorPanel extends DisplayPanel {
         checkBox.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         checkBox.setBackground(COLOR_THEME_MINOR);
         checkBox.setForeground(Color.pink);
-        checkBox.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                tryAutoSaveEditedBean(panel,"要闻");
-            }
-        });
+        checkBox.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        tryAutoSaveEditedBean(panel,"要闻");
+                    }
+                }
+        );
         return checkBox;
     }
 
