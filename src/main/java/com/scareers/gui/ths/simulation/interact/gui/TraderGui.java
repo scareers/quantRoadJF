@@ -198,13 +198,14 @@ public class TraderGui extends JFrame {
                         ThreadUtil.execAsync(new Runnable() {
                             @Override
                             public void run() {
-                                while (true) {
-                                    try {
-                                        BondStockVolNotify.main1();
-                                    } catch (Exception ex) {
-                                        ex.printStackTrace();
-                                    }
+                                try {
+                                    BondStockVolNotify.main1();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
                                 }
+//                                while (true) {
+//
+//                                }
                             }
                         }, true);
                     }

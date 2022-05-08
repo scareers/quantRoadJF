@@ -43,9 +43,45 @@ public class BondStockVolNotify {
     public static double notiThreshold = 1; // 百分比差距大于此值, 才进行播报
 
     public static void main(String[] args) throws Exception {
-//        main0();
+
         main1();
 
+        CommonUtil.waitForever();
+
+//        main0();
+//        main1();
+
+//        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("剩余规模<100亿;上一交易日成交额排名从大到小前500;正股代码",
+//                WenCaiApi.TypeStr.BOND); // 全部转债
+//        List<StockBondBean> stockBondBeanList = new ArrayList<>();
+//        String s = ResourceUtil.readUtf8Str("bonds.txt");
+//        List<String> bonds = StrUtil.split(s, "\r\n");
+//        bonds.remove("");
+//
+//        /*
+//        dataFrame.get(i, "可转债@正股简称").toString(),
+//                    dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
+//                    dataFrame.get(i, "可转债@可转债简称").toString(),
+//                    dataFrame.get(i, "code").toString(),
+//         */
+//
+//
+//        HashMap<String, String> bondWithStockName = new HashMap<>();
+//        for (int i = 0; i < dataFrame.length(); i++) {
+//
+//            try {
+//                bondWithStockName.put(
+//                        dataFrame.get(i, "可转债@可转债简称").toString(),
+//                        dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6)
+//                );
+//            } catch (Exception e) {
+//
+//            }
+//        }
+//
+//        for (String bond : bonds) {
+//            Console.log(bondWithStockName.get(bond));
+//        }
 
     }
 
@@ -235,10 +271,35 @@ public class BondStockVolNotify {
     }
 
     public static int periodSeconds = 30; // 监控转债走势时, 监控的时间窗口大小, 单位时秒
-    public static double chgPercent = 0.01; // 走势变化>= 该数值时, 播报
+    public static double chgPercent = 0.008; // 走势变化>= 该数值时, 播报
     public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
-    public static void main1() throws Exception {
+    public static void main1() throws Exception{
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    main0();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    main2();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+
+        main2();
+    }
+
+    public static void main2() throws Exception {
         log.info("解析昨日前100成交量可转债及股票");
         List<StockBondBean> hotStockWithBondList = getHotStockWithBond();
         List<SecurityBeanEm> stockList = null;
@@ -303,7 +364,6 @@ public class BondStockVolNotify {
                         return s.compareTo(startTime) >= 0;
                     }
                 });
-
 
 
                 // 3.计算涨跌幅播报, 且当 买卖方向成交量差距明显时, 播报买
@@ -405,9 +465,9 @@ public class BondStockVolNotify {
         bonds.remove("");
         HashSet<String> careBonds = new HashSet<>(bonds);
 
-        DataFrame<Object> dataFrame2 = WenCaiApi.wenCaiQuery("剩余规模<100亿;成交额排名从大到小前50;正股代码",
-                WenCaiApi.TypeStr.BOND); // 今日成交额排名100
-        List<String> vol100 = DataFrameS.getColAsStringList(dataFrame2, "可转债@可转债简称");
+//        DataFrame<Object> dataFrame2 = WenCaiApi.wenCaiQuery("剩余规模<100亿;成交额排名从大到小前50;正股代码",
+//                WenCaiApi.TypeStr.BOND); // 今日成交额排名100
+//        List<String> vol100 = DataFrameS.getColAsStringList(dataFrame2, "可转债@可转债简称");
 
         for (int i = 0; i < dataFrame.length(); i++) {
             if (!careBonds.contains(dataFrame.get(i, "可转债@可转债简称").toString())

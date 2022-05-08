@@ -373,7 +373,7 @@ public class EmDataApi {
      * @param page
      * @return
      */
-    @TimeoutCache(timeout = "1 * 60 * 1000")
+    @TimeoutCache(timeout = "1  * 1000")
     public static List<SimpleNewEm> getZiXunJingHuaPerPage(int page) {
         List<SimpleNewEm> res = ziXunJingHuaPerPageCache.get(page);
         if (res != null) {
@@ -409,7 +409,7 @@ public class EmDataApi {
      *
      * @param page 给定页码, 1-25均可, 得到单页 20条新闻对象列表
      */
-    @TimeoutCache(timeout = "1 * 60 * 1000")
+    @TimeoutCache(timeout = "1  * 1000")
     public static List<SimpleNewEm> getCaiJingDaoDuNewsPerPage(int page) {
         List<SimpleNewEm> res = caiJingDaoDuNewsPerPageCache.get(page);
         if (res != null) {

@@ -73,6 +73,14 @@ public class CrawlerChainEm {
 
         }
 
+//        crawlerChainEm.addSynCrawler(new StockListEm());
+//        crawlerChainEm.addSynCrawler(new IndexListEm());
+//        crawlerChainEm.addSynCrawler(new BkListEm());
+//        crawlerChainEm.addSynCrawler(new TradeDatesEm());
+//
+//        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+//        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
+
         crawlerChainEm.run();
 
     }

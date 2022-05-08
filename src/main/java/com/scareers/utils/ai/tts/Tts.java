@@ -197,7 +197,7 @@ public class Tts {
                 for (int i = 0; i < stringList.size(); i++) {
                     playSound(stringList.get(i), false);
                     if (i == 0) {
-                        playSound(stringList.get(i), false); // 两遍七言
+//                        playSound(stringList.get(i), false); // 两遍七言
                     }
                     if (!explanationPlay || stringList.size() == 1) { // 可不播放解释, 只播放七言绝句
                         break;
