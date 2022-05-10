@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.date.*;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
@@ -14,6 +15,7 @@ import joinery.DataFrame;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -26,34 +28,52 @@ public class BondUtil {
     public static void main(String[] args) throws Exception {
 //        main0();
 
-
         /*
-        中矿转债
-        小康转债
-        天壕转债
-        温氏转债
-        拓尔转债
-        韦尔转债
-        科伦转债
-        博世转债
+         * 重大事项带债
          */
-        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
-        for (StockBondBean stockBondBean : temp) {
-            Console.log(stockBondBean.getStockCode());
-        }
-
-//        List<StockBondBean> allStockWithBondWithAnn = getAllStockWithBondWithAnn();
-//        Console.log(allStockWithBondWithAnn.size());
-//        for (StockBondBean stockBondBean : allStockWithBondWithAnn) {
-//            Console.log(stockBondBean);
+//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+//        for (StockBondBean stockBondBean : temp) {
 //            Console.log(stockBondBean.getStockCode());
 //        }
 
-//        List<String> allStockWithBondWithAnn2 = getAllStockWithBondWithAnnUseWenCai(DateUtil.date());
-//        for (String s : allStockWithBondWithAnn2) {
-////            Console.log(stockBondBean);
-//            Console.log(s);
-//        }
+
+        /*
+         * 给定转债名称列表, 打印对应股票名称列表
+         */
+        printStockNameListOfCareBonds();
+    }
+
+    /**
+     * 读取关注转债文件列表, 打印正股列表
+     */
+    public static void printStockNameListOfCareBonds() {
+        String s = ResourceUtil.readUtf8Str("bonds.txt");
+        List<String> bonds = StrUtil.split(s, "\r\n");
+        bonds.remove("");
+        printStockNameListOfBonds(bonds);
+    }
+
+    /**
+     * 给定转债名称列表, 打印出对应的股票名称列表, 以供复制让同花顺识别
+     */
+    public static void printStockNameListOfBonds(List<String> bonds) {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("剩余规模<100亿;上一交易日成交额排名从大到小前500;正股代码",
+                WenCaiApi.TypeStr.BOND); // 全部转债
+        HashMap<String, String> bondWithStockName = new HashMap<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+            try {
+                bondWithStockName.put(
+                        dataFrame.get(i, "可转债@可转债简称").toString(),
+                        dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6)
+                );
+            } catch (Exception e) {
+
+            }
+        }
+
+        for (String bond : bonds) {
+            Console.log(bondWithStockName.get(bond));
+        }
     }
 
 

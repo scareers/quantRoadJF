@@ -253,7 +253,7 @@ public class TraderGui extends JFrame {
                 CronUtil.schedule("*/50 * * * * *", new Task() {
                     @Override
                     public void execute() {
-                        ThreadUtil.sleep(5000);
+                        ThreadUtil.sleep(2000);
                         new CaiJingDaoDuCrawlerEm().run(); // 财经导读抓取
                         new ZiXunJingHuaCrawlerEm().run(); // 资讯精华抓取
                         new CompanyMajorIssuesCrawlerEm().run(); // 重大事件抓取

@@ -1,11 +1,13 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.PlanReviewDateTimeDecider;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.TabbedPaneUIS;
+import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import lombok.Getter;
 import org.jdesktop.swingx.JXCollapsiblePane;
 
@@ -56,9 +58,10 @@ public abstract class NewsTabPanel extends DisplayPanel {
                     try {
                         ((DisplayPanel) tabbedPane.getSelectedComponent()).update();
                     } catch (Exception e) {
-
+                        //ManiLog.put("tab页刷新失败");
                     }
-                    ThreadUtil.sleep(30000); // 1分钟自动刷新; 平时需要手动点击全量刷新
+                    //ManiLog.put("自动刷新中");
+                    ThreadUtil.sleep(10000); // 1分钟自动刷新; 平时需要手动点击全量刷新
                 }
             }
         }, true);

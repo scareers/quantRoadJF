@@ -44,44 +44,13 @@ public class BondStockVolNotify {
 
     public static void main(String[] args) throws Exception {
 
-        main1();
-
-        CommonUtil.waitForever();
+//        main1();
+//        CommonUtil.waitForever();
 
 //        main0();
 //        main1();
 
-//        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("剩余规模<100亿;上一交易日成交额排名从大到小前500;正股代码",
-//                WenCaiApi.TypeStr.BOND); // 全部转债
-//        List<StockBondBean> stockBondBeanList = new ArrayList<>();
-//        String s = ResourceUtil.readUtf8Str("bonds.txt");
-//        List<String> bonds = StrUtil.split(s, "\r\n");
-//        bonds.remove("");
-//
-//        /*
-//        dataFrame.get(i, "可转债@正股简称").toString(),
-//                    dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
-//                    dataFrame.get(i, "可转债@可转债简称").toString(),
-//                    dataFrame.get(i, "code").toString(),
-//         */
-//
-//
-//        HashMap<String, String> bondWithStockName = new HashMap<>();
-//        for (int i = 0; i < dataFrame.length(); i++) {
-//
-//            try {
-//                bondWithStockName.put(
-//                        dataFrame.get(i, "可转债@可转债简称").toString(),
-//                        dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6)
-//                );
-//            } catch (Exception e) {
-//
-//            }
-//        }
-//
-//        for (String bond : bonds) {
-//            Console.log(bondWithStockName.get(bond));
-//        }
+
 
     }
 

@@ -99,6 +99,7 @@ public class SimpleNewEmDao {
         String hql = "FROM SimpleNewEm E WHERE E.type = :type and E.dateTime>=:startDateTime " +
                 "and E.dateTime<=:endDateTime " +
                 "ORDER BY E.dateTime DESC"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
+
         Query query = session.createQuery(hql);
         query.setParameter("type", type); // 注意类型
         query.setParameter("startDateTime", Timestamp.valueOf(startDateTime.toLocalDateTime())); // 注意类型
