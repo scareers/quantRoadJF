@@ -51,7 +51,6 @@ public class BondStockVolNotify {
 //        main1();
 
 
-
     }
 
 
@@ -243,7 +242,7 @@ public class BondStockVolNotify {
     public static double chgPercent = 0.008; // 走势变化>= 该数值时, 播报
     public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
-    public static void main1() throws Exception{
+    public static void main1() throws Exception {
 //        ThreadUtil.execAsync(new Runnable() {
 //            @Override
 //            public void run() {
@@ -267,6 +266,10 @@ public class BondStockVolNotify {
 
         main2();
     }
+
+    // 对每只资产, 记录一下播报的时间, 在 n 秒内, 强制不再进行播报
+    public static HashMap<String, Long> notiTimeMillsMap = new HashMap<>(); // value是时间戳
+    public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报,
 
     public static void main2() throws Exception {
         log.info("解析昨日前100成交量可转债及股票");
@@ -319,6 +322,13 @@ public class BondStockVolNotify {
                 String notiedTimeTick = lastNotiTimeTickMap.get(bondBean.getQuoteId()); // 但tick播放一次
                 if (timeTickLast.equals(notiedTimeTick)) {
                     continue; // 没有新数据, 当前最后一条数据, 提示过了
+                }
+
+                Long lastNotiTime = notiTimeMillsMap.get(bondBean.getQuoteId());
+                if (lastNotiTime != null) {
+                    if (System.currentTimeMillis() - lastNotiTime <= notNotiPeriod) {
+                        continue;
+                    }
                 }
 
                 // 2.筛选得到有效df 数据段
@@ -410,6 +420,8 @@ public class BondStockVolNotify {
 
                 Tts.playSound(infoShort, true);
                 lastNotiTimeTickMap.put(bondBean.getQuoteId(), timeTickLast);
+                notiTimeMillsMap.put(bondBean.getQuoteId(), System.currentTimeMillis());
+
 
             }
 
