@@ -269,7 +269,7 @@ public class BondStockVolNotify {
 
     // 对每只资产, 记录一下播报的时间, 在 n 秒内, 强制不再进行播报
     public static HashMap<String, Long> notiTimeMillsMap = new HashMap<>(); // value是时间戳
-    public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报,
+    public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报, 以免堆积
 
     public static void main2() throws Exception {
         log.info("解析昨日前100成交量可转债及股票");
