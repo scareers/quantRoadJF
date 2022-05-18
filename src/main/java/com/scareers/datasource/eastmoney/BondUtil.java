@@ -31,10 +31,13 @@ public class BondUtil {
         /*
          * 重大事项带债
          */
-//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
-//        for (StockBondBean stockBondBean : temp) {
-//            Console.log(stockBondBean.getStockCode());
-//        }
+        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+        for (StockBondBean stockBondBean : temp) {
+            Console.log(stockBondBean.getStockCode());
+        }
+
+        Console.log("xxxxxxxxxxxxxx");
+
 
 
         /*

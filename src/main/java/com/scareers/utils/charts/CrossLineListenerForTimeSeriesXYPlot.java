@@ -35,7 +35,7 @@ import static com.scareers.utils.charts.ChartUtil.decimalFormatForPercent;
  */
 @Setter
 @Getter
-public class CrossLineListenerForTimeSeriesXYPlot extends CrossLineListenerForSingleNumberXYPlot {
+public class  CrossLineListenerForTimeSeriesXYPlot extends CrossLineListenerForSingleNumberXYPlot {
     public CrossLineListenerForTimeSeriesXYPlot() {
         super();
     }
