@@ -12,7 +12,6 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,6 +33,7 @@ public class EastMoneyDbApi {
     private static Pattern stdDatePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}"); // 标准的日期表达式
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 某个日期的上n个交易日?
+    private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
 
     public static void main(String[] args) throws Exception {
 
@@ -48,6 +48,10 @@ public class EastMoneyDbApi {
 
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
 //        Console.log(getPreNTradeDateStrict("20220318", -2));
+
+        HashSet<String> allBkNameByDate = getAllBkNameByDateRange("2022-05-10", "2022-05-16");
+        Console.log(allBkNameByDate);
+        Console.log(allBkNameByDate.size());
     }
 
 
@@ -204,5 +208,32 @@ public class EastMoneyDbApi {
         return dataFrame;
     }
 
+    /**
+     * 给定时间字符串区间 (前包后不包), 读取爬虫记录的概念列表,     标准: 2022-03-06 18:28:10 , 因大小判定,可只要年月日
+     * getAllBkNameByDate("2022-05-10", "2022-05-16");
+     * 因只有 self_record_time 字段, 访问所有该字段位于 时间区间的;
+     * 返回 全部板块名称集合
+     * 简而言之因为爬虫运行时间不确定, 导致概念列表可能稍有延迟. 不够精确, 勉强能用
+     */
+    @TimeoutCache
+    public static HashSet<String> getAllBkNameByDateRange(String timeStart, String timeEnd) {
+        HashSet<String> res = allConceptNameByDateCache.get(timeStart + timeEnd);
+        if (res != null) {
+            return res;
+        }
+        String sql = StrUtil.format("select name from bk_list where " +
+                "self_record_time>='{}' and self_record_time<'{}'", timeStart, timeEnd);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "name");
+        // json 列表字符串 解析, 保存时保存的json
 
+        res = new HashSet<>(conceptCol);
+        allConceptNameByDateCache.put(timeStart + timeEnd, res);
+        return res;
+    }
 }

@@ -270,7 +270,7 @@ public class BondStockVolNotify {
     public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报, 以免堆积
 
     public static int periodSeconds = 30; // 监控转债走势时, 监控的时间窗口大小, 单位时秒
-    public static double chgPercent = 0.007; // 走势变化>= 该数值时, 播报
+    public static double chgPercent = 0.0065; // 走势变化>= 该数值时, 播报
     public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
     public static void main2() throws Exception {

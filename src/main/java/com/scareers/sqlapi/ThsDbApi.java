@@ -8,6 +8,8 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.HmacAlgorithm;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.scareers.annotations.Cached;
+import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.utils.CommonUtil;
@@ -41,6 +43,7 @@ public class ThsDbApi {
 
     public static Connection connection = ConnectionFactory.getConnLocalThs();
     private static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
+    private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
 
 
     static {
@@ -54,8 +57,11 @@ public class ThsDbApi {
     }
 
     public static void main(String[] args) {
-        Console.log(getStockAllRecordByCode("000001").length());
+//        Console.log(getStockAllRecordByCode("000001").length());
 
+        HashSet<String> allConceptNameByDate = getAllConceptNameByDate("2022-05-19");
+        Console.log(allConceptNameByDate.size());
+        Console.log(allConceptNameByDate);
 
 //        Console.log(getIndustryByNameAndDate("电力", "2022-03-28"));
 //        Console.log(getIndustryAllRecordByName("电力"));
@@ -908,4 +914,40 @@ public class ThsDbApi {
         return dataFrame;
     }
 
+    /**
+     * 给定日期, 读取概念数据表, 读取所有个股所属的概念, 返回 概念名称集合!
+     * 这个概念集合, 显然包括某些 并未列入同花顺正式概念列表 的小概念
+     * 若失败返回null
+     */
+    @TimeoutCache
+    public static HashSet<String> getAllConceptNameByDate(String dateStr) {
+        HashSet<String> res = allConceptNameByDateCache.get(dateStr);
+        if (res != null) {
+            return res;
+        }
+        String sql = StrUtil.format("select belongToConceptAll from stock_belong_to_industry_and_concept where " +
+                        "dateStr='{}'",
+                dateStr);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "belongToConceptAll");
+        // json 列表字符串 解析, 保存时保存的json
+
+        res = new HashSet<>();
+        for (String s : conceptCol) {
+            JSONArray parseArray = JSONUtilS.parseArray(s);
+            if (parseArray == null) {
+                continue;
+            }
+            for (int i = 0; i < parseArray.size(); i++) {
+                res.add(parseArray.getString(i));
+            }
+        }
+        allConceptNameByDateCache.put(dateStr, res);
+        return res;
+    }
 }
