@@ -4,6 +4,7 @@ import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
@@ -11,6 +12,10 @@ import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import joinery.DataFrame;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -32,21 +37,94 @@ public class BondUtil {
         /*
          * 重大事项带债
          */
-        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
-        for (StockBondBean stockBondBean : temp) {
-            Console.log(stockBondBean.getStockCode());
-        }
-
-        Console.log("xxxxxxxxxxxxxx");
-
-
-
-        /*
-         * 给定转债名称列表, 打印对应股票名称列表
-         */
-        printStockNameListOfCareBonds();
+//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+//        for (StockBondBean stockBondBean : temp) {
+//            Console.log(stockBondBean.getStockCode());
+//        }
+//
+//        Console.log("xxxxxxxxxxxxxx");
+//
+//
+//
+//        /*
+//         * 给定转债名称列表, 打印对应股票名称列表
+//         */
+//        printStockNameListOfCareBonds();
 
 //        Console.log(getStockCodeWithBondNameFromUseWenCai());
+
+        generateCSVForRecite1();
+    }
+
+    /**
+     * 背诵时股票信息, 维护字段
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class StockInfo {
+        String code;
+        String name;
+        String industries;
+        String concepts;
+        Double pe;
+        Double marketValue; // 流通
+    }
+
+    /**
+     * 背诵csv生成
+     */
+    public static void generateCSVForRecite1() {
+        // 1.所有带转债股票代码; 股票代码:转债名称, 这里只用到key
+        ConcurrentHashMap<String, String> stockCodeWithBondNameFromUseWenCai = getStockCodeWithBondNameFromUseWenCai();
+        String dateStr = DateUtil.format(DateUtil.offset(DateUtil.date(), DateField.DAY_OF_MONTH, -1), "yyyyMMdd"); //
+        // 问财形式日期
+
+        // 2. 构建股票代码: 股票背诵字段对象map, 并解析填充
+        HashMap<String, StockInfo> stockWithInfoMap = new HashMap<>();
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念;所属行业", WenCaiApi.TypeStr.ASTOCK);
+        // Console.log(dataFrame.columns());
+        // code,股票简称,所属同花顺行业,所属概念,市盈率(pe)[20220524],a股市值(不含限售股)[20220524]  -> 股票基本
+        for (int i = 0; i < dataFrame.length(); i++) {
+            try {
+                StockInfo info = new StockInfo();
+                String code = dataFrame.get(i, "code").toString().substring(0, 6);
+                if (!stockCodeWithBondNameFromUseWenCai.containsKey(code)) {
+                    continue;
+                }
+                info.setCode(code);
+                info.setName(dataFrame.get(i, "股票简称").toString());
+                info.setIndustries(dataFrame.get(i, "所属同花顺行业").toString());
+                info.setConcepts(dataFrame.get(i, "所属概念").toString());
+
+                Double pe = null;
+                try {
+                    pe = Double.valueOf(dataFrame.get(i, StrUtil.format("市盈率(pe)[{}]", dateStr)).toString());
+                } catch (NumberFormatException e) {
+
+                }
+                info.setPe(pe);
+
+                Double marketValue = null;
+                try {
+                    marketValue = Double
+                            .valueOf(dataFrame.get(i, StrUtil.format("a股市值(不含限售股)[{}]", dateStr)).toString());
+                } catch (NumberFormatException e) {
+
+                }
+                info.setMarketValue(marketValue);
+                stockWithInfoMap.put(code, info);
+            } catch (Exception e) {
+                //                e.printStackTrace();
+                // 某些转债会 某些值会null, 引发异常, 这里无视
+            }
+        }
+        // 带债股票信息map生成完成
+        // Console.log(stockWithInfoMap.size());
+
+        // 3. 转债信息map构造, 需要持有股票 code
+
+
     }
 
     /**
