@@ -71,6 +71,19 @@ public class BondUtil {
         Double marketValue; // 流通
     }
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class BondInfo {
+        String code;
+        String name;
+        String stockCode;
+        Double price; // 当前价格, 做参考
+        Double latest20DayAmplitude; // 近20日振幅, 作参考
+        Double remainingSize; // 剩余规模
+        String listingDate; // 上市日期, 方便查看次新
+    }
+
     /**
      * 背诵csv生成
      */
