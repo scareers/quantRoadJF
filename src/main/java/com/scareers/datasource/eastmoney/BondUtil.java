@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * description: 可转债相关api
@@ -44,6 +45,8 @@ public class BondUtil {
          * 给定转债名称列表, 打印对应股票名称列表
          */
         printStockNameListOfCareBonds();
+
+//        Console.log(getStockCodeWithBondNameFromUseWenCai());
     }
 
     /**
@@ -226,5 +229,33 @@ public class BondUtil {
 
         }
         return stockBondBeanList;
+    }
+
+
+    /**
+     * 问财获取所有转债; 返回 股票代码: 转债名称 字典
+     *
+     * @return
+     */
+    public static ConcurrentHashMap<String, String> getStockCodeWithBondNameFromUseWenCai() {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称;成交额;",
+                WenCaiApi.TypeStr.BOND);
+        ConcurrentHashMap<String, String> res = new ConcurrentHashMap<>();
+        for (int i = 0; i < dataFrame.length(); i++) {
+
+
+            try {
+                res.put(
+                        dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
+                        dataFrame.get(i, "可转债@可转债简称").toString()
+                );
+            } catch (Exception e) {
+//                e.printStackTrace();
+                // 某些转债会 某些值会null, 引发异常, 这里无视
+            }
+
+        }
+
+        return res;
     }
 }

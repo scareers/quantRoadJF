@@ -72,7 +72,7 @@ public class CrawlerChainEm {
             crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         }
-
+//
 //        crawlerChainEm.addSynCrawler(new StockListEm());
 //        crawlerChainEm.addSynCrawler(new IndexListEm());
 //        crawlerChainEm.addSynCrawler(new BkListEm());

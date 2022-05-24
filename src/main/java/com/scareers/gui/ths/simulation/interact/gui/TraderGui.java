@@ -8,6 +8,7 @@ import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
+import com.scareers.datasource.ths.ConceptUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -266,6 +267,13 @@ public class TraderGui extends JFrame {
                 CronUtil.start();
             }
         });
+
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                ConceptUtil.newConceptDiscoverStarter(5, 5);
+            }
+        }, true);
 
 
     }
