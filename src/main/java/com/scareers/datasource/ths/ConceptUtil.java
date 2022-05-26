@@ -68,75 +68,79 @@ public class ConceptUtil {
 
         newConceptDiscovering = true;
         while (allowDiscovering) {
-            List<List<NewConcept>> conceptResults = newConceptDiscover(preDayAmountThs, preDayAmountEm);
-            List<NewConcept> thsConcepts = conceptResults.get(0);
-            List<NewConcept> emConcepts = conceptResults.get(1);
+            try {
+                List<List<NewConcept>> conceptResults = newConceptDiscover(preDayAmountThs, preDayAmountEm);
+                List<NewConcept> thsConcepts = conceptResults.get(0);
+                List<NewConcept> emConcepts = conceptResults.get(1);
 
-            if (thsConcepts != null && thsConcepts.size() != 0) {
-                List<String> concepts = thsConcepts.stream().map(NewConcept::getName).collect(Collectors.toList());
-                for (String concept : concepts) {
-                    String key = "同花顺-" + concept;
-                    notifiedConceptsMap.putIfAbsent(key, 0);
-                    notifiedConceptsMap.put(key, notifiedConceptsMap.get(key) + 1);
-                }
-
-                List<String> collect = concepts.stream().filter(new Predicate<String>() {
-                    @Override
-                    public boolean test(String s) {
-                        if (notifiedConceptsMap.get("同花顺-" + s) > notifyTimesLimit) {
-                            return false;
-                        }
-                        return true;
+                if (thsConcepts != null && thsConcepts.size() != 0) {
+                    List<String> concepts = thsConcepts.stream().map(NewConcept::getName).collect(Collectors.toList());
+                    for (String concept : concepts) {
+                        String key = "同花顺-" + concept;
+                        notifiedConceptsMap.putIfAbsent(key, 0);
+                        notifiedConceptsMap.put(key, notifiedConceptsMap.get(key) + 1);
                     }
-                }).collect(Collectors.toList());
 
-                if (collect.size() != 0) {
-                    notifyNewConceptDiscovered("同花顺新概念发现:" + StrUtil.join(",", collect));
-
-                    ThreadUtil.execAsync(new Runnable() {
+                    List<String> collect = concepts.stream().filter(new Predicate<String>() {
                         @Override
-                        public void run() {
-                            notifyNewConceptDiscoveredWithBond(thsConcepts.stream().filter(
-                                    newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
-                            );
+                        public boolean test(String s) {
+                            if (notifiedConceptsMap.get("同花顺-" + s) > notifyTimesLimit) {
+                                return false;
+                            }
+                            return true;
                         }
-                    }, true);
+                    }).collect(Collectors.toList());
 
-                }
-            }
+                    if (collect.size() != 0) {
+                        notifyNewConceptDiscovered("同花顺新概念发现:" + StrUtil.join(",", collect));
 
-            if (emConcepts != null && emConcepts.size() != 0) {
-                List<String> concepts = emConcepts.stream().map(NewConcept::getName).collect(Collectors.toList());
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                notifyNewConceptDiscoveredWithBond(thsConcepts.stream().filter(
+                                        newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
+                                );
+                            }
+                        }, true);
 
-                for (String concept : concepts) {
-                    String key = "东财-" + concept;
-                    notifiedConceptsMap.putIfAbsent(key, 0);
-                    notifiedConceptsMap.put(key, notifiedConceptsMap.get(key) + 1);
-                }
-
-
-                List<String> collect = concepts.stream().filter(new Predicate<String>() {
-                    @Override
-                    public boolean test(String s) {
-                        if (notifiedConceptsMap.get("东财-" + s) > notifyTimesLimit) {
-                            return false;
-                        }
-                        return true;
                     }
-                }).collect(Collectors.toList());
-
-                if (collect.size() != 0) {
-                    notifyNewConceptDiscovered("东财新概念发现:" + StrUtil.join(",", collect));
-
-                    ThreadUtil.execAsync(new Runnable() {
-                        @Override
-                        public void run() {
-                            notifyNewConceptDiscoveredWithBond(emConcepts.stream().filter(
-                                    newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
-                            );
-                        }
-                    }, true);
                 }
+
+                if (emConcepts != null && emConcepts.size() != 0) {
+                    List<String> concepts = emConcepts.stream().map(NewConcept::getName).collect(Collectors.toList());
+
+                    for (String concept : concepts) {
+                        String key = "东财-" + concept;
+                        notifiedConceptsMap.putIfAbsent(key, 0);
+                        notifiedConceptsMap.put(key, notifiedConceptsMap.get(key) + 1);
+                    }
+
+
+                    List<String> collect = concepts.stream().filter(new Predicate<String>() {
+                        @Override
+                        public boolean test(String s) {
+                            if (notifiedConceptsMap.get("东财-" + s) > notifyTimesLimit) {
+                                return false;
+                            }
+                            return true;
+                        }
+                    }).collect(Collectors.toList());
+
+                    if (collect.size() != 0) {
+                        notifyNewConceptDiscovered("东财新概念发现:" + StrUtil.join(",", collect));
+
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                notifyNewConceptDiscoveredWithBond(emConcepts.stream().filter(
+                                        newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
+                                );
+                            }
+                        }, true);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
             discoveringSleep();
@@ -395,7 +399,8 @@ public class ConceptUtil {
 
         // 访问问财最新数据计算, 今日和上一交易日最新概念
         HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(dateStrList.size() - 2)); // 上一
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念");
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念",1,WenCaiApi.TypeStr.ASTOCK);
+
         List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "所属概念");// 分号分割
         HashSet<String> set2 = new HashSet<>(); // 此刻最新
         for (String s : conceptCol) {

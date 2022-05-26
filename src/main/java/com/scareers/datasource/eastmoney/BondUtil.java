@@ -4,24 +4,21 @@ import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
 
+import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -84,6 +81,24 @@ public class BondUtil {
         String listingDate; // 上市日期, 方便查看次新
     }
 
+    // 生成背诵文件时, 概念, 不显示的; 懒得背, 一般是无关紧要
+    public static HashSet<String> excludeConceptNameSetForRecite = new HashSet<>(
+            Arrays.asList(
+                    "融资融券", "转融券标的", "沪股通", "深股通", "富时罗素概念", "富时罗素概念股", "标普道琼斯A股"
+            )
+    );
+
+    public static String excludeConceptSet(String rawConcepts) { // ; 分割
+        List<String> split = StrUtil.split(rawConcepts, ";");
+        List<String> temp = new ArrayList<>();
+        for (String s : split) {
+            if (!excludeConceptNameSetForRecite.contains(s)) {
+                temp.add(s);
+            }
+        }
+        return StrUtil.join(";", temp);
+    }
+
     /**
      * 背诵csv生成
      */
@@ -96,7 +111,8 @@ public class BondUtil {
         // 2. 构建股票代码: 股票背诵字段对象map, 并解析填充
         HashMap<String, StockInfo> stockWithInfoMap = new HashMap<>();
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念;所属行业", WenCaiApi.TypeStr.ASTOCK);
-        // Console.log(dataFrame.columns());
+        Console.log(dataFrame.columns());
+        Console.log();
         // code,股票简称,所属同花顺行业,所属概念,市盈率(pe)[20220524],a股市值(不含限售股)[20220524]  -> 股票基本
         for (int i = 0; i < dataFrame.length(); i++) {
             try {
@@ -108,7 +124,8 @@ public class BondUtil {
                 info.setCode(code);
                 info.setName(dataFrame.get(i, "股票简称").toString());
                 info.setIndustries(dataFrame.get(i, "所属同花顺行业").toString());
-                info.setConcepts(dataFrame.get(i, "所属概念").toString());
+                String concepts = excludeConceptSet(dataFrame.get(i, "所属概念").toString());
+                info.setConcepts(concepts);
 
                 Double pe = null;
                 try {
@@ -125,6 +142,7 @@ public class BondUtil {
                 } catch (NumberFormatException e) {
 
                 }
+
                 info.setMarketValue(marketValue);
                 stockWithInfoMap.put(code, info);
             } catch (Exception e) {
@@ -136,7 +154,96 @@ public class BondUtil {
         // Console.log(stockWithInfoMap.size());
 
         // 3. 转债信息map构造, 需要持有股票 code
+        HashMap<String, BondInfo> bondWithInfoMap = new HashMap<>();
+        DataFrame<Object> bondDf = WenCaiApi.wenCaiQuery("近20日的区间振幅;债券余额;上市日期;可转债简称", WenCaiApi.TypeStr.BOND);
+        Console.log(bondDf.columns());
+        // [可转债@债券余额[20220524], 可转债@上市日期, 可转债@正股简称, 可转债@正股代码, 可转债@可转债简称, code, 可转债@区间振幅[20220422-20220524], 可转债@涨跌幅[20220525], market_code, 可转债@可转债代码, 可转债@最新价]
+        for (int i = 0; i < bondDf.length(); i++) {
+            try {
+                BondInfo info = new BondInfo();
+                String code = bondDf.get(i, "code").toString().substring(0, 6);
 
+                info.setCode(code);
+                info.setName(bondDf.get(i, "可转债@可转债简称").toString());
+                info.setStockCode(bondDf.get(i, "可转债@正股代码").toString().substring(0, 6));
+                info.setListingDate(bondDf.get(i, "可转债@上市日期").toString());
+
+                Double price = null;
+                try {
+                    price = Double.valueOf(bondDf.get(i, "可转债@最新价").toString());
+                } catch (NumberFormatException e) {
+
+                }
+                info.setPrice(price);
+
+                Double latest20DayAmplitude = null;
+                try {
+                    latest20DayAmplitude = Double
+                            .valueOf(bondDf.get(i, "可转债@区间振幅[20220422-20220524]").toString());
+                } catch (NumberFormatException e) {
+
+                }
+
+                info.setLatest20DayAmplitude(latest20DayAmplitude);
+                Double remainingSize = null;
+                try {
+                    remainingSize = Double
+                            .valueOf(bondDf.get(i, "可转债@债券余额[20220524]").toString());
+                } catch (NumberFormatException e) {
+
+                }
+                info.setRemainingSize(remainingSize);
+                bondWithInfoMap.put(code, info);
+            } catch (Exception e) {
+//                                e.printStackTrace();
+                // 某些转债会 某些值会null, 引发异常, 这里无视
+            }
+        }
+        // 带债股票信息map生成完成
+//        Console.log(bondWithInfoMap.size());
+
+        // 4.构造结果df
+        List<String> cols = Arrays.asList(
+                "转债代码", "转债名称", "价格", "剩余规模", "上市日期", "20日振幅", "正股代码", "正股名称", "行业", "概念", "pe动", "流值"
+        );
+        DataFrame<Object> resDf = new DataFrame<>(cols);
+
+        for (String bondCode : bondWithInfoMap.keySet()) {
+            BondInfo bondInfo = bondWithInfoMap.get(bondCode);
+            StockInfo stockInfo = stockWithInfoMap.get(bondInfo.getStockCode());
+
+            // 单行注意对应上面的列名称
+            List<Object> row = new ArrayList<>();
+            row.add(bondInfo.getCode());
+            row.add(bondInfo.getName());
+            row.add(bondInfo.getPrice());
+            row.add(CommonUtil.formatNumberWithYi(bondInfo.getRemainingSize()));
+            row.add(bondInfo.getListingDate());
+            row.add(CommonUtil.roundHalfUP(bondInfo.getLatest20DayAmplitude(), 1));
+
+            row.add(bondInfo.getStockCode());
+            row.add(stockInfo.getName());
+            row.add(stockInfo.getIndustries());
+            row.add(stockInfo.getConcepts());
+            Double pe = stockInfo.getPe();
+            if (pe == null) {
+                row.add("null");
+            } else if (pe < 0) {
+                row.add("亏损");
+            } else {
+                row.add(CommonUtil.roundHalfUP(pe, 1));
+            }
+            row.add(CommonUtil.formatNumberWithYi(stockInfo.getMarketValue()));
+
+            resDf.append(row);
+        }
+
+        Console.log(resDf);
+        try {
+            resDf.writeXls("C:\\Users\\admin\\Desktop\\记忆.xls");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
