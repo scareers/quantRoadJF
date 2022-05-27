@@ -150,8 +150,7 @@ public class ConnectionFactory {
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("获取连接失败, 退出程序: " + url);
-            System.exit(-1);
+            System.out.println("获取连接失败, 返回null: " + url);
         }
         return null;
     }

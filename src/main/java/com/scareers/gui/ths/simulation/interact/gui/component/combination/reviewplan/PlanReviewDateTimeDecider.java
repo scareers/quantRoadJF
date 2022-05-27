@@ -2,8 +2,11 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import lombok.Getter;
 
@@ -111,7 +114,27 @@ public class PlanReviewDateTimeDecider extends JPanel {
         });
         this.add(jCheckBox);
 //        jCheckBox.setSelected(true); // 默认选中
+
+        // @updater: 添加一个按钮, 可设置 小时分钟为 14:59:59, 方便复盘
+        FuncButton button = ButtonFactory.getButton("置复盘时间");
+        button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String text = showDate.getText();
+                String t = text.substring(0, text.length() - 8) + "14:59:59";
+                showDate.setText(t);
+                try {
+                    uniqueDatetime = DateUtil.parse(t);
+                    dateTimePicker.setSelect(uniqueDatetime);
+                    dateTimePicker.refresh();
+                } catch (Exception ex) {
+
+                }
+            }
+        });
+
         this.add(showDate);
+        this.add(button);
     }
 
 

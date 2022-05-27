@@ -13,6 +13,8 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.scareers.datasource.eastmoney.datacenter.EmDataApi.maxPageOfZiXunJingHua;
 import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildDfFromBeanListWithoutIdAndSaveTime;
@@ -52,6 +54,8 @@ public abstract class SimpleNewCrawlerEm extends CrawlerEm {
             success = false;
             return;
         }
+        // @update: 更新实现, 以前是要求新的新闻对象不可equal, 现在更加严格, 需要新的新闻对象, 的标题不能已存在!
+        Set<String> titleSet = last500News.stream().map(x -> x.getTitle()).collect(Collectors.toSet());
 
         int repeatCount = 0;
         for (int i = 1; i <= maxPageOfZiXunJingHua; i++) {
@@ -63,7 +67,8 @@ public abstract class SimpleNewCrawlerEm extends CrawlerEm {
 
             List<SimpleNewEm> shouldSave = new ArrayList<>();
             for (SimpleNewEm simpleNewEm : beansPerPage) {
-                if (!last500News.contains(simpleNewEm)) {
+//                if (!last500News.contains(simpleNewEm)) { // 应更新
+                if (!titleSet.contains(simpleNewEm.getTitle())) {
                     shouldSave.add(simpleNewEm);
                 } else {
                     repeatCount++;
