@@ -25,7 +25,7 @@ public class CaiJingDaoDuCrawlerEm extends SimpleNewCrawlerEm {
 
     @Override
     protected HashSet<SimpleNewEm> initLastTimeFetchSaveBeansExpect500() throws Exception {
-        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 520));
+        return new HashSet<>(EastMoneyDbApi.getLatestSaveBeanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE, 1024));
     }
 
     @Override
