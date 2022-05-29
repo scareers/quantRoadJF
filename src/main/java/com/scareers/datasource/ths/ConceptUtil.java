@@ -53,7 +53,7 @@ public class ConceptUtil {
     public static boolean allowDiscovering = true;
     // 单次调用已播报过的概念记录,当概念播报n次以后,不再播报. key:value --> 新概念名称:已播报次数;
     public static ConcurrentHashMap<String, Integer> notifiedConceptsMap = new ConcurrentHashMap<>();
-    public static int notifyTimesLimit = 3; // 单次调用单新概念最多播报 n 次
+    public static int notifyTimesLimit = 1; // 单次调用单新概念最多播报 n 次
     public static long sleepShort = 20 * 1000; // 死循环单次短sleep, 毫秒
     public static long sleepLong = 60 * 1000; // 长
 

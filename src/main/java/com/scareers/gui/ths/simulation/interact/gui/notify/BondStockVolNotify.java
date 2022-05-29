@@ -1,4 +1,4 @@
-package com.scareers.gui.ths.simulation.trader;
+package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
@@ -14,6 +14,7 @@ import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;

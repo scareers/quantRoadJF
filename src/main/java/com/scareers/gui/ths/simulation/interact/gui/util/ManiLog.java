@@ -12,18 +12,34 @@ import java.awt.*;
  */
 public class ManiLog {
     public static void put(String rawContent, Color color, boolean bold) {
-        ManipulateLogWindow.put(rawContent, color, bold);
+        try {
+            ManipulateLogWindow.put(rawContent, color, bold);
+        } catch (Exception e) {
+
+        }
     }
 
     public static void put(String rawContent) {
-        ManipulateLogWindow.put(rawContent, Color.white, false);
+        try {
+            ManipulateLogWindow.put(rawContent, Color.white, false);
+        } catch (Exception e) {
+
+        }
     }
 
     public static void put(String rawContent, Color color) {
-        ManipulateLogWindow.put(rawContent, color, false);
+        try {
+            ManipulateLogWindow.put(rawContent, color, false);
+        } catch (Exception e) {
+
+        }
     }
 
     public static void put(String rawContent, boolean bold) {
-        ManipulateLogWindow.put(rawContent, Color.white, false);
+        try {
+            ManipulateLogWindow.put(rawContent, Color.white, false);
+        } catch (Exception e) {
+
+        }
     }
 }

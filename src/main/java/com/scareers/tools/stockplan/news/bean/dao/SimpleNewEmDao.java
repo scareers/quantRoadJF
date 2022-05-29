@@ -110,7 +110,17 @@ public class SimpleNewEmDao {
             res.add((SimpleNewEm) bean);
         }
         session.close();
-        return res;
+
+        // @update: 因为爬虫机制, 这里强制去重一下, 对结果集相同title的, 只保留1. --- 去重机制
+        List<SimpleNewEm> res2 = new ArrayList<>();
+        HashSet<String> titles = new HashSet<>(); // 保留已加入res2的title
+        for (SimpleNewEm re : res) {
+            if (!titles.contains(re.getTitle())) { //
+                res2.add(re);
+                titles.add(re.getTitle());
+            }
+        }
+        return res2;
     }
 
     /**

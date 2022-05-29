@@ -2,7 +2,6 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
@@ -14,8 +13,9 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
+import com.scareers.gui.ths.simulation.interact.gui.notify.EmNewsNotify;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
-import com.scareers.gui.ths.simulation.trader.BondStockVolNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.BondStockVolNotify;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -214,8 +214,6 @@ public class TraderGui extends JFrame {
         );
         startMenu.add(bondTtsItem2);
 
-        // BondStockVolNotify
-
 
         startMenu.add(new JMenuItem("备用"));
 
@@ -272,6 +270,13 @@ public class TraderGui extends JFrame {
             @Override
             public void run() {
                 ConceptUtil.newConceptDiscoverStarter(5, 5);
+            }
+        }, true);
+
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                EmNewsNotify.main0(); // 东财实时新闻监控
             }
         }, true);
 

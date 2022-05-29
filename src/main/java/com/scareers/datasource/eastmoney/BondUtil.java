@@ -34,23 +34,23 @@ public class BondUtil {
         /*
          * 重大事项带债
          */
-//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
-//        for (StockBondBean stockBondBean : temp) {
-//            Console.log(stockBondBean.getStockCode());
-//        }
-//
-//        Console.log("xxxxxxxxxxxxxx");
-//
-//
-//
-//        /*
-//         * 给定转债名称列表, 打印对应股票名称列表
-//         */
-//        printStockNameListOfCareBonds();
+        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+        for (StockBondBean stockBondBean : temp) {
+            Console.log(stockBondBean.getStockCode());
+        }
 
-//        Console.log(getStockCodeWithBondNameFromUseWenCai());
+        Console.log("xxxxxxxxxxxxxx");
 
-        generateCSVForRecite1();
+
+
+        /*
+         * 给定转债名称列表, 打印对应股票名称列表
+         */
+        printStockNameListOfCareBonds();
+
+        Console.log(getStockCodeWithBondNameFromUseWenCai());
+
+//        generateCSVForRecite1();
     }
 
     /**
