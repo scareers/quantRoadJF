@@ -1,4 +1,4 @@
-package com.scareers.datasource.ths;
+package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * @author: admin
  * @date: 2022/5/21/021-15:34:13
  */
-public class ConceptUtil {
+public class NewConceptDiscover {
     public static void main(String[] args) {
 //        HashMap<String, List<String>> recentNewConceptMap = calcThsNewConceptRecent(20);
 //        Console.log(recentNewConceptMap);
