@@ -33,7 +33,7 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * @author: admin
  * @date: 2022/3/22/022-17:10:35
  */
-public class BondStockVolNotify {
+public class BondBuyNotify {
 
     // 记录保存每只股票, 最后一次提示时的涨跌幅差距;
     // 当新的涨跌幅 变得更大, 或者变得更小, 会提示 扩大到/缩小到 xxx
@@ -269,7 +269,12 @@ public class BondStockVolNotify {
 //            }
 //        });
 
-        main2();
+//        main2();
+
+        startUpdateBondListTask(false);
+        ThreadUtil.sleep(20000);
+        Console.log(SecurityPool.allSecuritySet.size());
+        waitForever();
     }
 
     // 对每只资产, 记录一下播报的时间, 在 n 秒内, 强制不再进行播报
@@ -280,13 +285,6 @@ public class BondStockVolNotify {
     public static double chgPercent = 0.0065; // 走势变化>= 该数值时, 播报
     public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
-    /**
-     * 动态刷新转债列表, 这里使用问财, 读取当日 成交额前60/涨幅前30/跌幅最大前30/债券余额最小30
-     */
-    public static void dynamicFlushBondList() {
-
-
-    }
 
     public static void main2() throws Exception {
         log.info("解析昨日前100成交量可转债及股票");
@@ -494,6 +492,10 @@ public class BondStockVolNotify {
         return stockBondBeanList;
     }
 
+    /*
+    常规log
+     */
+
     /**
      * 常规log
      */
@@ -511,6 +513,10 @@ public class BondStockVolNotify {
         log.error(content);
         ManiLog.put(content, Color.red);
     }
+
+    /*
+    转债池构建相关
+     */
 
     /**
      * 静态和动态转债列表, 单线程负责维护更新; 并且更新到 爬虫资产池!

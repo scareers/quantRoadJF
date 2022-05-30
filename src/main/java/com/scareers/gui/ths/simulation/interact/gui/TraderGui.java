@@ -15,7 +15,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.notify.EmNewsNotify;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
-import com.scareers.gui.ths.simulation.interact.gui.notify.BondStockVolNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -200,7 +200,7 @@ public class TraderGui extends JFrame {
                             @Override
                             public void run() {
                                 try {
-                                    BondStockVolNotify.main1();
+                                    BondBuyNotify.main1();
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                 }
