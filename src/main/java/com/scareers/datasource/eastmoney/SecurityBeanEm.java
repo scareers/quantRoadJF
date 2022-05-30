@@ -193,11 +193,17 @@ public class SecurityBeanEm implements Serializable {
      */
     public static List<SecurityBeanEm> createStockList(List<String> queryConditionList, boolean lazyInitBkInfo)
             throws Exception {
+        return createStockList(queryConditionList, lazyInitBkInfo, true);
+    }
+
+    public static List<SecurityBeanEm> createStockList(List<String> queryConditionList, boolean lazyInitBkInfo,
+                                                       boolean logError)
+            throws Exception {
         Set<String> withoutCache = queryConditionList.stream()
                 .filter(value -> !beanPool.containsKey(value + "__stock"))
                 .collect(Collectors.toSet());
 
-        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(new ArrayList<>(withoutCache)); // 新增到cache
+        List<SecurityBeanEm> beans = queryBatchStockWithoutConvert(new ArrayList<>(withoutCache), logError); // 新增到cache
         for (SecurityBeanEm bean : beans) {
             bean.convertToStock(lazyInitBkInfo);
             beanPool.put(bean.getSecCode() + "__stock", bean); // 放入缓存池
@@ -825,6 +831,7 @@ public class SecurityBeanEm implements Serializable {
         beanPool.put(cacheKey, res);
         return res;
     }
+
     public static SecurityBeanEm createForeignExchangeByCode(String code) throws Exception {
         String cacheKey = code + "__foreign_exchange_by_code";
         SecurityBeanEm res = beanPool.get(cacheKey);
@@ -872,14 +879,14 @@ public class SecurityBeanEm implements Serializable {
 
     public static SecurityBeanEm getShenZhengZhuanZhaiIndex() {
         if (ShenZhengZhuanZhaiIndex == null) {
-            ShenZhengZhuanZhaiIndex=initSzBondIndex();
+            ShenZhengZhuanZhaiIndex = initSzBondIndex();
         }
         return ShenZhengZhuanZhaiIndex;
     }
 
     public static SecurityBeanEm getShangZhengZhuanZhaiIndex() {
         if (ShangZhengZhuanZhaiIndex == null) {
-            ShangZhengZhuanZhaiIndex=initShBondIndex();
+            ShangZhengZhuanZhaiIndex = initShBondIndex();
         }
         return ShangZhengZhuanZhaiIndex;
     }
@@ -913,7 +920,7 @@ public class SecurityBeanEm implements Serializable {
             return createFutureByCode(queryCondition); // code必须
         } else if (type == SecType.FOREIGN_EXCHANGE_BY_CODE) {
             return createForeignExchangeByCode(queryCondition); // code必须
-        }else {
+        } else {
             throw new Exception("未知资产类型, 无法创建");
         }
     }

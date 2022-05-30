@@ -4,6 +4,7 @@ import cn.hutool.log.Log;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.editor.MajorIssueEditorPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.tools.stockplan.news.bean.MajorIssue;
@@ -40,7 +41,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
     protected MajorIssueEditorPanel editorPanel; // 编辑面
     protected MajorIssue currentBean;
 
-    protected JTable jTable;
+    protected JXTable jTable;
     protected JScrollPane jScrollPane;
 
     protected JPanel buttonContainer; // 功能按钮容器
@@ -48,6 +49,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
     protected JButton saveButton = ButtonFactory.getButton("保存");
 
     protected NewsTabPanel parentS; // 维护所属 newstab
+    protected JXFindBarS jxFindBarSForTable;
 
 
     public MajorIssueListPanel(NewsTabPanel parentS) {
@@ -74,6 +76,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
                 majorIssueListPanel.update(); // 点击后 表格全量更新 df数据,
             }
         });
+        jxFindBarSForTable = new JXFindBarS(Color.pink);
 
         saveButton.setMaximumSize(new Dimension(60, 16));
 
@@ -82,6 +85,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
         buttonContainer.setBorder(null);
         buttonContainer.add(buttonFlushAll);
         buttonContainer.add(saveButton);
+        buttonContainer.add(jxFindBarSForTable);
 
 
 
@@ -170,6 +174,7 @@ public abstract class MajorIssueListPanel extends DisplayPanel {
             initJTableStyle();
             jScrollPane.setViewportView(jTable); // 默认显式"数据获取中", 第一次刷新
             fitTableColumns(jTable);
+            jxFindBarSForTable.setSearchable(jTable.getSearchable());
         } else { // 不断更新时
             fullFlush();
         }
