@@ -645,6 +645,29 @@ public class BondBuyNotify {
 
     }
 
+    /*
+    描述算法接口
+     */
+
+    /**
+     * 转债实时状态判定算法接口 -- 返回播报描述内容 -- 仅限播报程序使用
+     * 实现类见 bondbuyalgorithm 包
+     */
+    public interface BondStateAlgorithm {
+        /**
+         * 该方法返回 "描述字符串" , 以供播报; 例如 "拉升, 下跌, 量拉" 等等, 建议越简短越好
+         * // @key3
+         * 播报程序 将使用算法链, 算法链中, 靠前的算法, 一旦不返回null(即有了具体描述), 则立即终止执行算法链, 播报提示描述内容!
+         * 因此, 算法链中算法的先后顺序, 极大程度上影响播报内容!
+         *
+         * @param bondBean      东财转债资产bean
+         * @param stockBean     对应正股, 若算法实现本身不需要用到正股数据, 则通常可null
+         * @param StockBondBean 同理可null; 持有转债代码名称,正股代码名称的简单对象
+         * @return
+         */
+        String describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean, StockBondBean StockBondBean);
+    }
+
 
     /*
     转债池构建相关
