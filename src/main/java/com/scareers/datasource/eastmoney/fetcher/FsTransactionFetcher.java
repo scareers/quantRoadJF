@@ -445,7 +445,8 @@ public class FsTransactionFetcher {
             // 计算一个合适的数量, 用当前时间 - 进度 的 秒数 / 3 == 数据数量,  外加 n 条冗余!
             int suitableCounts = (int) (calcCountsBetweenNowAndProcess(process) + fetcher.getRedundancyRecords());
 
-            DataFrame<Object> dfNew = EmQuoteApi.getFSTransaction(suitableCounts, stock, 1, fetcher.timeout);
+            int timeout = fetcher.firstTimeFinish.get() ? fetcher.timeout : 3000;
+            DataFrame<Object> dfNew = EmQuoteApi.getFSTransaction(suitableCounts, stock, 1, timeout);
             if (dfNew == null) {
                 return false;
             }

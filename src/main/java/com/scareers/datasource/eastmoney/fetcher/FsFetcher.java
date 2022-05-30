@@ -326,8 +326,10 @@ public class FsFetcher {
             // fsDatas.putIfAbsent(stock, new DataFrame<>());
             // 未抓取过数据将返回 null
             // 而抓取成功但没有数据, 将返回空
+
+            int timeout = fetcher.firstTimeFinish.get() ? fetcher.timeout : 3000; // 首次3秒, 常态则设置
             DataFrame<Object> dfNew = EmQuoteApi
-                    .getFs1MToday(stock, 0, fetcher.getTimeout());
+                    .getFs1MToday(stock, 0, timeout);
 
 //            DataFrame<Object> dfNew = EmQuoteApi
 //                    .getQuoteHistorySingle(false, stock, "2022-03-02 09:36", null, "1", "qfq",
