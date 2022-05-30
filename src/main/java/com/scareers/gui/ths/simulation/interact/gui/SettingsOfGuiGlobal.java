@@ -16,8 +16,7 @@ import java.awt.event.KeyEvent;
  * @see ClassLoader.getSystemResource(iconPath)
  */
 public class SettingsOfGuiGlobal {
-    // 0.重要常用设定
-    public static boolean autoStartTrader = false; // 设置是否自动启动Trader, 可否
+
 
     // 1.颜色相关设定
     public static Color COLOR_THEME_MAIN = new Color(43, 43, 43); // 主色,常见内容框背景色
@@ -39,9 +38,9 @@ public class SettingsOfGuiGlobal {
     public static Color COLOR_LIST_FLAT_EM = new Color(200, 200, 200); // 表示数据持平, 例如涨幅 0%时
     public static Color COLOR_LIST_RAISE_EM = new Color(255, 92, 92); // 表示上涨, 红色
     public static Color COLOR_LIST_FALL_EM = new Color(57, 207, 101); // 表示下跌, 绿色
-    public static Color COLOR_LIST_STOCK_NAME_EM = new Color(245 , 253, 166); // 名称默认金黄色
-    public static Color COLOR_LIST_BK_EM = new Color(7 , 7, 7); // 列表背景色
-    public static Color COLOR_LIST_HEADER_FORE_EM = new Color(93 , 93, 93); // 表头字颜色. 背景色同 BK
+    public static Color COLOR_LIST_STOCK_NAME_EM = new Color(245, 253, 166); // 名称默认金黄色
+    public static Color COLOR_LIST_BK_EM = new Color(7, 7, 7); // 列表背景色
+    public static Color COLOR_LIST_HEADER_FORE_EM = new Color(93, 93, 93); // 表头字颜色. 背景色同 BK
 
 
     public static Color COLOR_MAIN_DISPLAY_BORDER = new Color(50); // 编辑器边框
@@ -67,5 +66,10 @@ public class SettingsOfGuiGlobal {
     // 4.全局快捷键设置  ks: key shortcut
     public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
 
+    // 5.程序启动后, 自动启动小程序设置
+    public static boolean autoStartTrader = false; // 设置是否自动启动Trader自动交易
+    public static final boolean autoStartEmNewFetcher = false; // 自动启动 东财新闻抓取(web api)
+    public static final boolean autoNewConceptDiscover = true; // 自动启动 新概念发现程序
+    public static final boolean autoEmPcNewsNotify = false; // 自动启动 东财新闻发现程序(pc api)
 
 }

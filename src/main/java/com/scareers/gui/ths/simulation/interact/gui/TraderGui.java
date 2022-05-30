@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
+import cn.hutool.setting.Setting;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
@@ -246,39 +247,46 @@ public class TraderGui extends JFrame {
             }
         }, true);
 
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                CronUtil.schedule("*/50 * * * * *", new Task() {
-                    @Override
-                    public void execute() {
-                        ThreadUtil.sleep(2000);
-                        new CaiJingDaoDuCrawlerEm().run(); // 财经导读抓取
-                        new ZiXunJingHuaCrawlerEm().run(); // 资讯精华抓取
-                        new CompanyMajorIssuesCrawlerEm().run(); // 重大事件抓取
-                        new CompanyGoodNewsCrawlerEm().run(); // 利好抓取
-                        new NewsFeedsCrawlerEm().run(); // 新闻联播集锦
-                        new FourPaperNewsCrawlerEm().run(); // 四大报媒精华
-                    }
-                });
-                CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分
-                CronUtil.start();
-            }
-        });
+        if (autoStartEmNewFetcher) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    CronUtil.schedule("*/50 * * * * *", new Task() {
+                        @Override
+                        public void execute() {
+                            ThreadUtil.sleep(2000);
+                            new CaiJingDaoDuCrawlerEm().run(); // 财经导读抓取
+                            new ZiXunJingHuaCrawlerEm().run(); // 资讯精华抓取
+                            new CompanyMajorIssuesCrawlerEm().run(); // 重大事件抓取
+                            new CompanyGoodNewsCrawlerEm().run(); // 利好抓取
+                            new NewsFeedsCrawlerEm().run(); // 新闻联播集锦
+                            new FourPaperNewsCrawlerEm().run(); // 四大报媒精华
+                        }
+                    });
+                    CronUtil.setMatchSecond(true); // 第一位为秒, 否则为分
+                    CronUtil.start();
+                }
+            });
+        }
 
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                NewConceptDiscover.newConceptDiscoverStarter(5, 5);
-            }
-        }, true);
+        if (autoNewConceptDiscover) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    NewConceptDiscover.newConceptDiscoverStarter(5, 5);
+                }
+            }, true);
+        }
 
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                EmNewsNotify.main0(); // 东财实时新闻监控
-            }
-        }, true);
+        if (autoEmPcNewsNotify) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    EmNewsNotify.main0(); // 东财实时新闻监控
+                }
+            }, true);
+        }
+
 
 
     }
