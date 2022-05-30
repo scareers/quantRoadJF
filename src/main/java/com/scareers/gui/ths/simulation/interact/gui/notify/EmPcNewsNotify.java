@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * @author: admin
  * @date: 2022/5/30/030-00:48:28
  */
-public class EmNewsNotify {
+public class EmPcNewsNotify {
     public static String EM_PC_YWJH_URL = "https://eminfo.eastmoney.com/pc_news/News/GetNewsList"; // 东财pc要闻精华
     public static String EM_PC_CJDU_URL = "https://eminfo.eastmoney.com/pc_news/News/GetNewsList"; // 东财pc资讯导读
     public static int commonPageSize = 5; // 死循环时, 访问http时, 单页数量

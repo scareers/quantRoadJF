@@ -5,7 +5,6 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
-import cn.hutool.setting.Setting;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
@@ -14,7 +13,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.notify.EmNewsNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.EmPcNewsNotify;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
@@ -282,7 +281,7 @@ public class TraderGui extends JFrame {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    EmNewsNotify.main0(); // 东财实时新闻监控
+                    EmPcNewsNotify.main0(); // 东财实时新闻监控
                 }
             }, true);
         }
