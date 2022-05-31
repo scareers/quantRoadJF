@@ -16,10 +16,7 @@ import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
@@ -42,7 +39,9 @@ public class EmConvertibleBondApi {
 //        Console.log(EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债")));
 //        Console.log(getBondComparePriceTable(3000, 3));
 
-        Console.log(getAllBondBaseData(3000, 3));
+//        Console.log(getAllBondBaseData(3000, 3));
+
+        Console.log(getRealtimeQuotes());
 //        Console.log(getBondBaseInfo(SecurityBeanEm.createBond("湖广转债"), 3000, 3));
     }
 
@@ -271,8 +270,8 @@ public class EmConvertibleBondApi {
      * @param markets
      * @return
      */
-    public static DataFrame<Object> getRealtimeQuotes(List<String> markets) {
-        return EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+    public static DataFrame<Object> getRealtimeQuotes() {
+        return EmQuoteApi.getRealtimeQuotes(Collections.singletonList("可转债"));
     }
 
     /**

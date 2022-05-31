@@ -42,7 +42,7 @@ public class EmPcNewsNotify {
     // 本程序已发现的最新新闻列表, 本质按发现时间顺序
 
     public static int commonPageSize = 10; // 死循环时, 访问http时, 单页数量
-    public static int sleepPerLoop = 500; // 循环sleep间隔, 毫秒
+    public static int sleepPerLoop = 200; // 循环sleep间隔, 毫秒
     /*
     7*24小时
      */
