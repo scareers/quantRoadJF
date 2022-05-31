@@ -277,11 +277,20 @@ public class TraderGui extends JFrame {
             }, true);
         }
 
-        if (autoEmPcNewsNotify) {
+        if (autoEmPc724NewsNotify) {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    EmPcNewsNotify.main0(); // 东财实时新闻监控
+                    EmPcNewsNotify.notifyFast724New(); // 7*24
+                }
+            }, true);
+        }
+
+        if (autoEmPcHotNewsNotify) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    EmPcNewsNotify.notifyNewestHotNew(); //
                 }
             }, true);
         }
