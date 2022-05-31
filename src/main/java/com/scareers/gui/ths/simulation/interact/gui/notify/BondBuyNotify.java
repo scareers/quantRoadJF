@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
-import cn.hutool.core.date.*;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -8,13 +9,13 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
+import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
+import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
+import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgPctAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
-import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.utils.CommonUtil;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -43,21 +44,15 @@ public class BondBuyNotify {
     public static double notiThreshold = 1; // 百分比差距大于此值, 才进行播报
 
     public static void main(String[] args) throws Exception {
+//        startUpdateBondListTask(false);
+//        ThreadUtil.sleep(20000);
+//        Console.log(SecurityPool.allSecuritySet.size());
+//        waitForever();
 
-//        main1();
-//        CommonUtil.waitForever();
+//        StaticData.flushBondPreCloseMap();
+//        Console.log(StaticData.bondPreCloseMap.size());
 
-//        main0();
-//        main1();
-
-//        List<StockBondBean> allStockWithBond = getAllStockWithBond();
-//        Console.log(allStockWithBond.size());
-//        Console.log(allStockWithBond);
-
-        startUpdateBondListTask(false);
-        ThreadUtil.sleep(20000);
-        Console.log(SecurityPool.allSecuritySet.size());
-        waitForever();
+        main1();
 
     }
 
@@ -248,263 +243,11 @@ public class BondBuyNotify {
 //
 //
     public static void main1() throws Exception {
-//        ThreadUtil.execAsync(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    main0();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
-//        ThreadUtil.execAsync(new Runnable() {
-//            @Override
-//            public void run() {
-//                try {
-//                    main2();
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
-
-//        main2();
-
-        startUpdateBondListTask(false);
-        ThreadUtil.sleep(20000);
-        Console.log(SecurityPool.allSecuritySet.size());
-        waitForever();
+        mainX();
     }
-//
-//    // 对每只资产, 记录一下播报的时间, 在 n 秒内, 强制不再进行播报
-//    public static HashMap<String, Long> notiTimeMillsMap = new HashMap<>(); // value是时间戳
-//    public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报, 以免堆积
-//
-//    public static int periodSeconds = 30; // 监控转债走势时, 监控的时间窗口大小, 单位时秒
-//    public static double chgPercent = 0.0065; // 走势变化>= 该数值时, 播报
-//    public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
-//
-//
-//    public static void main2() throws Exception {
-//        log.info("解析昨日前100成交量可转债及股票");
-//        List<StockBondBean> hotStockWithBondList = getHotStockWithBond();
-//        List<SecurityBeanEm> stockList = null;
-//        List<SecurityBeanEm> bondList = null;
-//        try {
-//            log.info("解析股票/转债bean");
-//            stockList = SecurityBeanEm.createStockList(
-//                    hotStockWithBondList.stream().map(StockBondBean::getStockCode).collect(Collectors.toList()));
-//            bondList = SecurityBeanEm.createBondList(
-//                    hotStockWithBondList.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
-//                    true);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//            ManiLog.put("问财获取股票转债列表失败");
-//            return;
-//        }
-//        // 4.加入分时成交爬虫池
-//        SecurityPool.addToTodaySelectedBonds(bondList);
-//        SecurityPool.addToTodaySelectedStocks(stockList); // 加入后, 爬虫自动获取
-//        FsTransactionFetcher fsTransactionFetcher =
-//                FsTransactionFetcher.getInstance(10,
-//                        "15:10:00", 1000, 100, 32); // 跟Trader相同参数
-//        fsTransactionFetcher.startFetch();
-//
-//        // 5.对股票池, 读取其前5日的分时成交数据, 然后求出一个平均的 分时成交量! 然后设定一个倍数, 作为 "大量" 的标准
-//        // 将这个 基准平均分时成交量, 保存为集合. key为股票 quoteId, 值为 平均分时成交额     -- 使用成交额而非成交量
-//        fillPre5DayAvgFsTransAmountMap(stockList);
-//        Console.log(pre5DayAvgFsTransAmount);
-//
-//        while (true) {
-//            ThreadUtil.sleep(100);
-//            for (StockBondBean stockBondBean : hotStockWithBondList) {
-//                SecurityBeanEm bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
-//                DataFrame<Object> fsTransData = FsTransactionFetcher.getFsTransData(bondBean);
-//                if (fsTransData == null || fsTransData.length() == 0) {
-//                    continue;
-//                }
-//
-//
-//                // sec_code	market	time_tick	price	 vol	bs, 使用顺序
-//                // 1.找到 分钟 tick点;
-//                String timeTickLast = fsTransData.get(fsTransData.length() - 1, 2).toString();
-//                DateTime lastTime = DateUtil.parse(timeTickLast);
-//                // 时间窗口开始时间,包含
-//                DateTime windowStartTime = DateUtil.offset(lastTime, DateField.SECOND, -1 * periodSeconds); //
-//                String startTime = DateUtil.format(windowStartTime, DatePattern.NORM_TIME_PATTERN);
-//
-//                String notiedTimeTick = lastNotiTimeTickMap.get(bondBean.getQuoteId()); // 但tick播放一次
-//                if (timeTickLast.equals(notiedTimeTick)) {
-//                    continue; // 没有新数据, 当前最后一条数据, 提示过了
-//                }
-//
-//                Long lastNotiTime = notiTimeMillsMap.get(bondBean.getQuoteId());
-//                if (lastNotiTime != null) {
-//                    if (System.currentTimeMillis() - lastNotiTime <= notNotiPeriod) {
-//                        continue;
-//                    }
-//                }
-//
-//                // 2.筛选得到有效df 数据段
-//                DataFrame<Object> effectDf = fsTransData.select(new DataFrame.Predicate<Object>() {
-//                    @Override
-//                    public Boolean apply(List<Object> value) {
-//                        Object o = value.get(2);
-//                        if (o == null) {
-//                            return false;
-//                        }
-//                        String s = o.toString();
-//                        return s.compareTo(startTime) >= 0;
-//                    }
-//                });
-//
-//
-//                // 3.计算涨跌幅播报, 且当 买卖方向成交量差距明显时, 播报买
-//                if (effectDf.length() < (periodSeconds / 6)) { // 起码有一半数据, 6s一个
-//                    continue;
-//                }
-//
-//                double priceStart;
-//                double priceEnd;
-//                try {
-//                    priceStart = Double.parseDouble(effectDf.row(0).get(3).toString());
-//                    priceEnd = Double.parseDouble(effectDf.row(effectDf.length() - 1).get(3).toString());
-//                } catch (NumberFormatException e) {
-//                    continue;
-//                }
-//                if (Math.abs((priceEnd - priceStart) / priceStart) < chgPercent) {
-//                    continue; // 涨跌幅不够, 无视
-//                }
-//
-//                List<Double> buyVols = new ArrayList<>();
-//                List<Double> sellVols = new ArrayList<>();
-//                for (int i = 0; i < effectDf.length(); i++) {
-//                    List<Object> row = effectDf.row(i);
-//                    int bs = Integer.parseInt(row.get(5).toString());
-//                    if (bs == 2) {
-//                        buyVols.add(Double.parseDouble(row.get(4).toString()));
-//                    } else if (bs == 1) {
-//                        sellVols.add(Double.parseDouble(row.get(4).toString()));
-//                    }
-//                }
-//                if (buyVols.size() == 0 && sellVols.size() == 0) {
-//                    continue;
-//                }
-//
-//                Double buyVolAll = CommonUtil.sumOfListNumber(buyVols);
-//                Double sellVolAll = CommonUtil.sumOfListNumber(sellVols);
-//
-//                String description = null;
-//                if (priceStart < priceEnd) {
-//                    // 价格上涨
-//                    if ((buyVolAll - sellVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
-//                        // 买力量明显大, 至少 6.5 / 3.5 的样子
-//                        description = "量拉";
-//                    } else {
-//                        description = "拉升";
-//                    }
-//                } else {
-//                    // 价格下降
-//                    if ((sellVolAll - buyVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
-//                        // 卖力量明显大, 至少 6.5 / 3.5 的样子
-//                        description = "量跌";
-//                    } else {
-//                        description = "下跌";
-//                    }
-//                }
-//                if (description == null) {
-//                    continue;
-//                }
-//
-//                // 长信息提示
-//                String infoLong = StrUtil
-//                        .format("{} {} : 幅度:{} 买卖盘比率:{}", bondBean.getName(), description,
-//                                (priceEnd - priceStart) / priceStart,
-//                                (buyVolAll - sellVolAll) / (buyVolAll + sellVolAll)
-//                        );
-//                Console.log(infoLong);
-//
-//                // 短信息
-//                String infoShort = StrUtil.format("{}{}", bondBean.getName().replace("转债", ""), description);
-//
-//                try {
-//                    ManiLog.put(infoLong);
-//                } catch (Exception e) {
-//                }
-//
-//                Tts.playSound(infoShort, true);
-//                lastNotiTimeTickMap.put(bondBean.getQuoteId(), timeTickLast);
-//                notiTimeMillsMap.put(bondBean.getQuoteId(), System.currentTimeMillis());
-//
-//
-//            }
-//
-//
-//        }
-//
-//
-//    }
-//
-//    private static final Log log = LogUtil.getLogger();
-//
-//
-//    public static List<StockBondBean> getHotStockWithBond() {
-//        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称",
-//                WenCaiApi.TypeStr.BOND); // 全部转债
-//
-//        List<StockBondBean> stockBondBeanList = new ArrayList<>();
-//
-//
-//        String s = ResourceUtil.readUtf8Str("bonds.txt");
-//        List<String> bonds = StrUtil.split(s, "\r\n");
-//        bonds.remove("");
-//        HashSet<String> careBonds = new HashSet<>(bonds);
-//
-////        DataFrame<Object> dataFrame2 = WenCaiApi.wenCaiQuery("剩余规模<100亿;成交额排名从大到小前50;正股代码",
-////                WenCaiApi.TypeStr.BOND); // 今日成交额排名100
-////        List<String> vol100 = DataFrameS.getColAsStringList(dataFrame2, "可转债@可转债简称");
-//
-//        for (int i = 0; i < dataFrame.length(); i++) {
-//            if (!careBonds.contains(dataFrame.get(i, "可转债@可转债简称").toString())
-////                    && !vol100.contains(dataFrame.get(i, "可转债@可转债简称").toString())
-//            ) {
-//                // 关注转债, 以及今日成交量前100转债
-//                continue;
-//            }
-//
-//            stockBondBeanList.add(new StockBondBean(
-//                    dataFrame.get(i, "可转债@正股简称").toString(),
-//                    dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
-//                    dataFrame.get(i, "可转债@可转债简称").toString(),
-//                    dataFrame.get(i, "code").toString(),
-//                    -1
-//            ));
-//
-//        }
-//        Console.log(stockBondBeanList.get(0));
-//        Console.log(stockBondBeanList.size());
-//        try {
-//            ManiLog.put(StrUtil.format("关注转债数量: {}", stockBondBeanList.size()));
-//            ManiLog.put(StrUtil.format("关注转债列表: {}", bonds));
-//        } catch (Exception e) {
-//        }
-//        return stockBondBeanList;
-//    }
 
-    // 对每只资产, 记录一下播报的时间, 在 n 秒内, 强制不再进行播报
-    public static HashMap<String, Long> notiTimeMillsMap = new HashMap<>(); // value是时间戳毫秒
-    public static long notNotiPeriod = 1000 * 10; // 十秒内, 不会生成2次播报, 以免堆积
 
-    // 每只转债正股大买单出现, 将有一个 时间tick, 保留某转债最后一次提示时的时间tick; 若下次循环依然是此tick, 将不再提示,自行人工判定
-    // key为 股票bean的 quoteId, value是最后一次提示时的时间, 例如09:40:03
-    public static ConcurrentHashMap<String, String> lastNotiTimeTickMap = new ConcurrentHashMap<>();
-
-    public static int periodSeconds = 30; // 监控转债走势时, 监控的时间窗口大小, 单位时秒
-    public static double chgPercent = 0.0065; // 走势变化>= 该数值时, 播报
-    public static double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
-
-    public static void main2() throws Exception {
+    public static void mainX() {
         // 1.开始更新监控转债列表任务
         startUpdateBondListTask(false);
 
@@ -514,127 +257,26 @@ public class BondBuyNotify {
                         "15:10:00", 300, 100, 32);
         fsTransactionFetcher.startFetch();
 
-
+        ChgPctAlgorithm algorithm = new ChgPctAlgorithm(); // 单例
         while (true) {
             ThreadUtil.sleep(100);
             for (StockBondBean stockBondBean : bondPoolSet) {
-                SecurityBeanEm bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
-                DataFrame<Object> fsTransData = FsTransactionFetcher.getFsTransData(bondBean);
-                if (fsTransData == null || fsTransData.length() == 0) {
-                    continue;
-                }
-
-
-                // sec_code	market	time_tick	price	 vol	bs, 使用顺序
-                // 1.找到 分钟 tick点;
-                String timeTickLast = fsTransData.get(fsTransData.length() - 1, 2).toString();
-                DateTime lastTime = DateUtil.parse(timeTickLast);
-                // 时间窗口开始时间,包含
-                DateTime windowStartTime = DateUtil.offset(lastTime, DateField.SECOND, -1 * periodSeconds); //
-                String startTime = DateUtil.format(windowStartTime, DatePattern.NORM_TIME_PATTERN);
-
-                String notiedTimeTick = lastNotiTimeTickMap.get(bondBean.getQuoteId()); // 单tick播放一次
-                if (timeTickLast.equals(notiedTimeTick)) {
-                    continue; // 没有新数据, 当前最后一条数据, 提示过了
-                }
-
-                Long lastNotiTime = notiTimeMillsMap.get(bondBean.getQuoteId());
-                if (lastNotiTime != null) {
-                    if (System.currentTimeMillis() - lastNotiTime <= notNotiPeriod) {
-                        continue;
-                    }
-                }
-
-                // 2.筛选得到有效df 数据段
-                DataFrame<Object> effectDf = fsTransData.select(new DataFrame.Predicate<Object>() {
-                    @Override
-                    public Boolean apply(List<Object> value) {
-                        Object o = value.get(2);
-                        if (o == null) {
-                            return false;
-                        }
-                        String s = o.toString();
-                        return s.compareTo(startTime) >= 0;
-                    }
-                });
-
-
-                // 3.计算涨跌幅播报, 且当 买卖方向成交量差距明显时, 播报买
-                if (effectDf.length() < (periodSeconds / 6)) { // 起码有一半数据, 6s一个
-                    continue;
-                }
-
-                double priceStart;
-                double priceEnd;
+                SecurityBeanEm bondBean = null;
                 try {
-                    priceStart = Double.parseDouble(effectDf.row(0).get(3).toString());
-                    priceEnd = Double.parseDouble(effectDf.row(effectDf.length() - 1).get(3).toString());
-                } catch (NumberFormatException e) {
+                    bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
+                } catch (Exception e) {
                     continue;
                 }
-                if (Math.abs((priceEnd - priceStart) / priceStart) < chgPercent) {
-                    continue; // 涨跌幅不够, 无视
-                }
-
-                List<Double> buyVols = new ArrayList<>();
-                List<Double> sellVols = new ArrayList<>();
-                for (int i = 0; i < effectDf.length(); i++) {
-                    List<Object> row = effectDf.row(i);
-                    int bs = Integer.parseInt(row.get(5).toString());
-                    if (bs == 2) {
-                        buyVols.add(Double.parseDouble(row.get(4).toString()));
-                    } else if (bs == 1) {
-                        sellVols.add(Double.parseDouble(row.get(4).toString()));
-                    }
-                }
-                if (buyVols.size() == 0 && sellVols.size() == 0) {
+                List<String> describe = algorithm.describe(bondBean, null, null);
+                if (describe == null) {
                     continue;
                 }
-
-                Double buyVolAll = CommonUtil.sumOfListNumber(buyVols);
-                Double sellVolAll = CommonUtil.sumOfListNumber(sellVols);
-
-                String description = null;
-                if (priceStart < priceEnd) {
-                    // 价格上涨
-                    if ((buyVolAll - sellVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
-                        // 买力量明显大, 至少 6.5 / 3.5 的样子
-                        description = "量拉";
-                    } else {
-                        description = "拉升";
-                    }
-                } else {
-                    // 价格下降
-                    if ((sellVolAll - buyVolAll) / (buyVolAll + sellVolAll) > buySellRate) {
-                        // 卖力量明显大, 至少 6.5 / 3.5 的样子
-                        description = "量跌";
-                    } else {
-                        description = "下跌";
-                    }
-                }
-                if (description == null) {
-                    continue;
-                }
-
-                // 长信息提示
-                String infoLong = StrUtil
-                        .format("{} {} : 幅度:{} 买卖盘比率:{}", bondBean.getName(), description,
-                                (priceEnd - priceStart) / priceStart,
-                                (buyVolAll - sellVolAll) / (buyVolAll + sellVolAll)
-                        );
-                Console.log(infoLong);
-
-                // 短信息
-                String infoShort = StrUtil.format("{}{}", bondBean.getName().replace("转债", ""), description);
-
                 try {
-                    ManiLog.put(infoLong);
+                    ManiLog.put(describe.get(1));
                 } catch (Exception e) {
                 }
 
-                Tts.playSound(infoShort, true);
-                lastNotiTimeTickMap.put(bondBean.getQuoteId(), timeTickLast);
-                notiTimeMillsMap.put(bondBean.getQuoteId(), System.currentTimeMillis());
+                Tts.playSound(describe.get(0), true);
 
 
             }
@@ -654,9 +296,25 @@ public class BondBuyNotify {
      * 转债实时状态判定算法接口 -- 返回播报描述内容 -- 仅限播报程序使用
      * 实现类见 bondbuyalgorithm 包
      */
-    public interface BondStateAlgorithm {
+    public abstract static class BondStateAlgorithm {
+        /*
+        针对所有算法的全局限制 相关静态属性! 若算法需要更加灵活机制, 请不使用这些静态属性, 自行实现即可
+         */
         /**
-         * 该方法返回 "描述字符串" , 以供播报; 例如 "拉升, 下跌, 量拉" 等等, 建议越简短越好
+         * 保留某转债最后一次提示时的时间tick; 若下次循环依然是此tick, 将不再提示
+         * key为 股票(或转债)bean的 quoteId, value是最后一次提示时的时间, 例如09:40:03
+         */
+        public static ConcurrentHashMap<String, String> lastNotifyTimeTickMap = new ConcurrentHashMap<>();
+        /**
+         * 对每只资产(转债), 记录一下播报的时间, 在 n 秒内, 强制不再进行播报! 配合 forceNotNotifyPeriod 属性; 默认10秒;
+         * 往往 forceNotNotifyPeriod 需要自定义设置
+         */
+        public static ConcurrentHashMap<String, Long> notifyTimeMillsMap = new ConcurrentHashMap<>(); // value是时间戳
+        public static long forceNotNotifyPeriod = 1000 * 10; // 十秒内, 强制不会生成2次播报, 以免堆积
+
+
+        /**
+         * 该方法返回 "描述字符串"列表, 以供播报;  一般元素1是 简短信息(一般是播报内容), 元素2是长信息提示(一般用于log)
          * // @key3
          * 播报程序 将使用算法链, 算法链中, 靠前的算法, 一旦不返回null(即有了具体描述), 则立即终止执行算法链, 播报提示描述内容!
          * 因此, 算法链中算法的先后顺序, 极大程度上影响播报内容!
@@ -666,7 +324,65 @@ public class BondBuyNotify {
          * @param StockBondBean 同理可null; 持有转债代码名称,正股代码名称的简单对象
          * @return
          */
-        String describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean, StockBondBean StockBondBean);
+        public abstract List<String> describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
+                                              StockBondBean stockBondBean);
+
+        /*
+        默认实现的一些方法
+         */
+
+        // 1.正股和转债的分时和分时成交数据获取默认方法, 从爬虫获取
+        // @noti: 未来复盘实现, 需要重写方法, 才数据库读取数据;  默认实现未使用到 current 参数, 因为获取最新全部数据
+        public DataFrame<Object> getFsTransDfOfBond(Date current, SecurityBeanEm bondBean) {
+            return FsTransactionFetcher.getFsTransData(bondBean);
+        }
+
+        // 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	资产代码	资产名称
+        public DataFrame<Object> getFsDfOfBond(Date current, SecurityBeanEm bondBean) {
+            return FsFetcher.getFsData(bondBean);
+        }
+
+        // sec_code	market	time_tick	price	 vol	bs, 使用顺序
+        public DataFrame<Object> getFsTransDfOfStock(Date current, SecurityBeanEm stockBean) {
+            return FsTransactionFetcher.getFsTransData(stockBean);
+        }
+
+        public DataFrame<Object> getFsDfOfStock(Date current, SecurityBeanEm stockBean) {
+            return FsFetcher.getFsData(stockBean);
+        }
+    }
+
+    /*
+    维护静态数据!! 例如 昨日收盘价
+     */
+    public static class StaticData {
+        // 转债相关
+        // 转债昨日收盘价map, key为转债简单6位代码!!!
+        public static ConcurrentHashMap<String, Double> bondPreCloseMap = new ConcurrentHashMap<>();
+
+        /**
+         * 刷新转债昨收map
+         */
+        public static void flushBondPreCloseMap() {
+            DataFrame<Object> realtimeQuotesOfBond = EmConvertibleBondApi.getRealtimeQuotes();
+            // 资产代码 和 昨收 两列
+            if (realtimeQuotesOfBond == null || realtimeQuotesOfBond.length() == 0) {
+                log.error("获取东财全部转债实时截面数据错误, 无法更新昨收价map");
+                return;
+            }
+            for (int i = 0; i < realtimeQuotesOfBond.length(); i++) {
+                try {
+                    bondPreCloseMap.put(
+                            realtimeQuotesOfBond.get(i, "资产代码").toString(),
+                            Double.valueOf(realtimeQuotesOfBond.get(i, "昨收").toString())
+                    );
+                } catch (Exception e) {
+                    log.warn("获取昨收失败: {} -- {}", realtimeQuotesOfBond.get(i, "资产代码"), realtimeQuotesOfBond.get(i,
+                            "资产名称"));
+                }
+            }
+        }
+
     }
 
 
@@ -732,6 +448,7 @@ public class BondBuyNotify {
         if (first) {
             notifyInfoCommon("首次更新转债列表");
         }
+
         // 1.更新全部转债, 每10分钟更新一次. 且要求新数据行数 > 老数据行数*0.8; 有效更新
         if (allBondsUpdateTime == null || DateUtil
                 .between(allBondsUpdateTime, DateUtil.date(), DateUnit.MINUTE) >= 10) {

@@ -450,24 +450,31 @@ public class FsTransactionFetcher {
             if (dfNew == null) {
                 return false;
             }
-
-            // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
-            HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameS.getColAsStringList(dataOriginal,
-                    "time_tick"));
-            // @noti: 分时有序: 取决于初始化时排序, 且纯新增数据有序后连接
-            DataFrame<Object> dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
-                    .sortBy("time_tick");
-            // 实测使用concat不比遍历添加行慢
-            DataFrame<Object> dfCurrentAll = dataOriginal.concat(dfTemp);
-            // 有序判定
-            // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
+            DataFrame<Object> dfCurrentAll = null;
+            DataFrame<Object> dfTemp = null;
+            if (dataOriginal == null) {
+                dfCurrentAll = dfNew;
+                dfTemp = dfNew;
+            } else {
+                // 将新df 中, 在 旧df中的 time_tick全部删除, 然后拼接更新的df
+                HashSet<String> timeTicksOrginal = new HashSet<>(DataFrameS.getColAsStringList(dataOriginal,
+                        "time_tick"));
+                // @noti: 分时有序: 取决于初始化时排序, 且纯新增数据有序后连接
+                dfTemp = dfNew.select(value -> !timeTicksOrginal.contains(value.get(2).toString()))
+                        .sortBy("time_tick");
+                // 实测使用concat不比遍历添加行慢
+                dfCurrentAll = dataOriginal.concat(dfTemp);
+                // 有序判定
+                // Console.log(dfCurrentAll.col("time_tick").equals(dfCurrentAll.sortBy("time_tick").col("time_tick")));
+            }
 
             fsTransactionDatas.put(stock, dfCurrentAll); // 真实更新
 
             if (dfTemp.length() > 0) { // 若存在纯新数据, 保存到数据库
+                DataFrame<Object> finalDfTemp = dfTemp;
                 threadPoolOfSave.submit(() -> {
                     try { // 保存使用另外线程池, 不阻塞主线程池,因此若从数据库获取数据, 显然有明显延迟.应从静态属性读取内存中数据
-                        DataFrameS.toSql(dfTemp, fetcher.saveTableName, connSave, "append", null);
+                        DataFrameS.toSql(finalDfTemp, fetcher.saveTableName, connSave, "append", null);
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
@@ -485,6 +492,9 @@ public class FsTransactionFetcher {
         }
 
         private long calcCountsBetweenNowAndProcess(String process) {
+            if (process == null) {
+                return 5000;
+            }
             DateTime now = DateUtil.date();
             String today = DateUtil.today();
             DateTime processTick = DateUtil.parse(today + " " + process);
