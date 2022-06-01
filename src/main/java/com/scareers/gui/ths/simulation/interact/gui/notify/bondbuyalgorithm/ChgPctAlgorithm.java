@@ -29,11 +29,15 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
     public double chgPercent = 0.0065; // 走势变化>= 该数值时, 播报
     public double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
+    public long expireMillsDefault = 1000;  // 1秒过期
+    public long priorityDefault = 1000;  // 优先级
+
     public ChgPctAlgorithm() {
     }
 
     @Override
-    public List<String> describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean, StockBondBean stockBondBean) {
+    public BondBuyNotify.NotifyMessage describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
+                                                StockBondBean stockBondBean) {
         DataFrame<Object> fsTransData = this.getFsTransDfOfBond(null, bondBean);
         if (fsTransData == null || fsTransData.length() == 0) {
             return null; // 暂无无分时成交数据
@@ -139,6 +143,13 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
         lastNotifyTimeTickMap.put(bondBean.getQuoteId(), timeTickLast);
         notifyTimeMillsMap.put(bondBean.getQuoteId(), System.currentTimeMillis());
 
-        return Arrays.asList(infoShort, infoLong);
+        BondBuyNotify.NotifyMessage res = new BondBuyNotify.NotifyMessage();
+        res.setInfoShort(infoShort);
+        res.setInfoLong(infoLong);
+        res.setPriority(priorityDefault);
+        res.setExpireMills(expireMillsDefault);
+        res.setGenerateMills(System.currentTimeMillis());
+
+        return res;
     }
 }

@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
@@ -15,15 +16,22 @@ import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgPctAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.awt.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -248,8 +256,11 @@ public class BondBuyNotify {
 
 
     public static void mainX() {
-        // 1.开始更新监控转债列表任务
+        // 1.准备步骤
+        // 1.1.开始更新监控转债列表任务
         startUpdateBondListTask(false);
+        // 1.2.开始消费消息队列
+        startNotifyMessages();
 
         // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
         FsTransactionFetcher fsTransactionFetcher =
@@ -261,31 +272,62 @@ public class BondBuyNotify {
         while (true) {
             ThreadUtil.sleep(100);
             for (StockBondBean stockBondBean : bondPoolSet) {
-                SecurityBeanEm bondBean = null;
+                SecurityBeanEm bondBean;
                 try {
                     bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
                 } catch (Exception e) {
                     continue;
                 }
-                List<String> describe = algorithm.describe(bondBean, null, null);
-                if (describe == null) {
-                    continue;
+                NotifyMessage message = algorithm.describe(bondBean, null, null);
+                if (message != null) {
+                    messageQueue.put(message);
                 }
-                try {
-                    ManiLog.put(describe.get(1));
-                } catch (Exception e) {
-                }
-
-                Tts.playSound(describe.get(0), true);
-
-
             }
-
-
         }
 
 
     }
+
+    /*
+    消息队列和播报
+     */
+
+    /**
+     * 消息优先级队列, 消息对象使用 priority属性作为优先级比较排序;
+     * 无限队列, 使用 put 和 take (可能阻塞)  放入和拿出单个元素
+     */
+    public static volatile PriorityBlockingQueue<NotifyMessage> messageQueue = new PriorityBlockingQueue<>();
+
+    /**
+     * 子线程死循环, 遍历消息队列, 取优先级最高消息, 播报消息!
+     * 一般都会检测消息是否过期 !
+     */
+    public static void startNotifyMessages() {
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                log.info("开始访问消息队列, 播报消息!");
+                while (true) {
+                    NotifyMessage message = null;
+                    try {
+                        message = messageQueue.take();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    // 获取最高优先级消息
+                    if (message != null) {
+                        if (!message.isExpired()) { // 消息未过期;
+                            notifyInfoCommon(message.getInfoLong());
+                            Tts.playSound(message.getInfoShort(), true);
+                        } else { // 已过期消息, 将仅仅 醒目log一下
+                            notifyInfoError("过期消息: " + message.getInfoLong());
+                        }
+                    }
+                }
+            }
+        }, true);
+    }
+
 
 
     /*
@@ -324,8 +366,8 @@ public class BondBuyNotify {
          * @param StockBondBean 同理可null; 持有转债代码名称,正股代码名称的简单对象
          * @return
          */
-        public abstract List<String> describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
-                                              StockBondBean stockBondBean);
+        public abstract NotifyMessage describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
+                                               StockBondBean stockBondBean);
 
         /*
         默认实现的一些方法
@@ -352,8 +394,61 @@ public class BondBuyNotify {
         }
     }
 
-    /*
-    维护静态数据!! 例如 昨日收盘价
+    /**
+     * 播报消息对象!!!
+     * 1.简短信息一般用于播报
+     * 2.长信息用于log
+     * 3.priority 表示优先级, 小在前;
+     * 4.消息过期机制: 使用 生成时时间戳毫秒, 以及 维持时间毫秒;;
+     * 当播报队列拿到此消息, 若 current > 生成时间+维持时间, 表示过期, 将丢弃!
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class NotifyMessage implements Comparable {
+        public String infoShort;
+        public String infoLong;
+        public long priority; // 使用 0 - 10000;  0最大优先级
+        public long generateMills; // 消息生成时 时间戳, 已重写setter
+        public String generateDateTimeStr; // 消息生成时 时间字符串, 一般等于 generateMills 转换的日期字符串
+        public long expireMills; // 消息过期(维持)最大时间,  都是毫秒
+
+        /**
+         * 过期判定!
+         *
+         * @return
+         */
+        public boolean isExpired() {
+            return System.currentTimeMillis() > generateMills + expireMills;
+        }
+
+        public void setGenerateMills(long generateMills) {
+            this.generateMills = generateMills;
+            this.generateDateTimeStr = DateUtil
+                    .format(DateUtil.date(generateMills), DatePattern.NORM_DATETIME_MS_PATTERN);
+        }
+
+        @SneakyThrows
+        @Override
+        public int compareTo(Object o) { // 优先级比较!
+            if (o instanceof NotifyMessage) {
+                NotifyMessage o1 = (NotifyMessage) o;
+                long res = this.priority - o1.priority;
+                if (res > 0) {
+                    return 1;
+                } else if (res == 0) {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            } else {
+                throw new Exception("NotifyMessage 对象只能与NotifyMessage对象进行比较");
+            }
+        }
+    }
+
+    /**
+     * 维护静态数据!! 例如 昨日收盘价
      */
     public static class StaticData {
         // 转债相关
@@ -382,6 +477,25 @@ public class BondBuyNotify {
                 }
             }
         }
+
+        /*
+        入口
+         */
+
+        /**
+         * 总入口, 刷新所有静态数据项 -- 子线程
+         */
+        public static void startFlushAllStaticData() {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        flushBondPreCloseMap();
+                    }
+                }
+            }, true);
+        }
+
 
     }
 
@@ -615,7 +729,7 @@ public class BondBuyNotify {
     private static List<StockBondBean> parseStockBondBeanList(DataFrame<Object> dataFrame) {
         List<StockBondBean> stockBondBeanList = new ArrayList<>();
         if (dataFrame == null) {
-            notifyInfoError("注意, 东财api访问转债列表, 解析结果为空列表");
+            notifyInfoError("注意, 问财api访问转债列表, 解析结果为空列表");
             return stockBondBeanList;
         }
         for (int i = 0; i < dataFrame.length(); i++) {
