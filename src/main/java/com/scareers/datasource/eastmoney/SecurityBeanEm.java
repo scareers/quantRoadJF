@@ -62,15 +62,16 @@ public class SecurityBeanEm implements Serializable {
 //        Console.log(SecurityBeanEm.createStock("000001",true).getConvertRawJsonObject());
 //        Console.log(SecurityBeanEm.createStock("600798",true).getConvertRawJsonObject());
 
-        Console.log(SecurityBeanEm.createIndex("000978").getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createIndex("399990").getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createIndex("930707").getConvertRawJsonObject());
-        Console.log(SecurityBeanEm.createIndex("H11030").getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createIndex("000978").getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createIndex("399990").getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createIndex("930707").getConvertRawJsonObject());
+//        Console.log(SecurityBeanEm.createIndex("H11030").getConvertRawJsonObject());
 
 //        Console.log(SecurityBeanEm.getShangZhengZhuanZhaiIndex());
 //        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
 
 
+        Console.log(SecurityBeanEm.createBond("124005"));
 //        Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
 //        Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
 //
@@ -421,11 +422,11 @@ public class SecurityBeanEm implements Serializable {
             try {
                 this.queryResults = querySecurityId(queryCondition);
             } catch (Exception e) {
-                if (retry_ >= retry) {
-                    log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败");
-                    throw e;
-                }
                 log.warn("new EmSecurityBean warning: new时查询失败, 将重试");
+            }
+            if (retry_ >= retry) {
+                log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败");
+                break;
             }
             retry_++;
         }

@@ -31,6 +31,7 @@ import java.awt.*;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -261,6 +262,8 @@ public class BondBuyNotify {
         startUpdateBondListTask(false);
         // 1.2.开始消费消息队列
         startNotifyMessages();
+        // 1.3.静态数据更新
+        StaticData.startFlushAllStaticData();
 
         // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
         FsTransactionFetcher fsTransactionFetcher =
@@ -271,13 +274,16 @@ public class BondBuyNotify {
         ChgPctAlgorithm algorithm = new ChgPctAlgorithm(); // 单例
         while (true) {
             ThreadUtil.sleep(100);
-            for (StockBondBean stockBondBean : bondPoolSet) {
+            Console.log(bondPoolSet.size());
+            for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
                 SecurityBeanEm bondBean;
+                Console.log(stockBondBean.getBondCode());
                 try {
                     bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
                 } catch (Exception e) {
                     continue;
                 }
+                Console.log(stockBondBean.getBondCode());
                 NotifyMessage message = algorithm.describe(bondBean, null, null);
                 if (message != null) {
                     messageQueue.put(message);
@@ -316,7 +322,7 @@ public class BondBuyNotify {
                     }
                     // 获取最高优先级消息
                     if (message != null) {
-                        if (!message.isExpired()) { // 消息未过期;
+                        if (!message.isExpired(System.currentTimeMillis())) { // 消息未过期;
                             notifyInfoCommon(message.getInfoLong());
                             Tts.playSound(message.getInfoShort(), true);
                         } else { // 已过期消息, 将仅仅 醒目log一下
@@ -418,8 +424,8 @@ public class BondBuyNotify {
          *
          * @return
          */
-        public boolean isExpired() {
-            return System.currentTimeMillis() > generateMills + expireMills;
+        public boolean isExpired(long currentTimeMillis) {
+            return currentTimeMillis > generateMills + expireMills;
         }
 
         public void setGenerateMills(long generateMills) {
@@ -491,6 +497,8 @@ public class BondBuyNotify {
                 public void run() {
                     while (true) {
                         flushBondPreCloseMap();
+
+                        ThreadUtil.sleep(60 * 1000);
                     }
                 }
             }, true);
@@ -515,10 +523,12 @@ public class BondBuyNotify {
     public static List<StockBondBean> chgPctTop30Bonds = new ArrayList<>(); // 涨跌幅最大30,
     public static List<StockBondBean> volTop60Bonds = new ArrayList<>(); // 成交额最大60
 
-    public static HashSet<StockBondBean> bondPoolSet = new HashSet<>(); // 维护更新后的全关注转债对象,遍历时遍历
+    public static volatile CopyOnWriteArraySet<StockBondBean> bondPoolSet = new CopyOnWriteArraySet<>(); // 维护更新后的全关注转债对象,
+    // 遍历时遍历
     // 维护更新后转债列表, 东财资产bean; 本质上更多作用是查询api构建缓存
-    public static HashSet<SecurityBeanEm> bondSet = new HashSet<>();
-    public static HashSet<SecurityBeanEm> stockSet = new HashSet<>(); // 维护更新后正股列表, 东财资产bean
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> bondSet = new CopyOnWriteArraySet<>();
+    public static volatile CopyOnWriteArraySet<SecurityBeanEm> stockSet = new CopyOnWriteArraySet<>(); // 维护更新后正股列表,
+    // 东财资产bean
 
 
     public static long sleepOfUpdateBondListPerLoop = 10 * 1000; // 转债列表更新sleep
@@ -527,17 +537,17 @@ public class BondBuyNotify {
      * 转债列表更新任务, 单线程执行; 注意主线程别结束
      */
     public static void startUpdateBondListTask(boolean addStockToPool) {
+        try {
+            updateBondListAndPushToCrawlerPool(true, addStockToPool);
+            ThreadUtil.sleep(sleepOfUpdateBondListPerLoop);
+        } catch (Exception e) {
+            e.printStackTrace();
+            notifyInfoError("首次更新转债列表失败!");
+        }
+
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
-                try {
-                    updateBondListAndPushToCrawlerPool(true, addStockToPool);
-                    ThreadUtil.sleep(sleepOfUpdateBondListPerLoop);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    notifyInfoError("首次更新转债列表失败!");
-                }
-
                 while (true) {
                     try {
                         updateBondListAndPushToCrawlerPool(false, addStockToPool);
@@ -545,6 +555,7 @@ public class BondBuyNotify {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    ThreadUtil.sleep(60 * 1000);
                 }
             }
         }, true);
@@ -671,7 +682,8 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getScaleLast30StockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债债券余额从小到大排名前30",
-                WenCaiApi.TypeStr.BOND);
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
 
@@ -682,7 +694,8 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getChgPctLast30StockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债涨跌幅从小到大排名前30",
-                WenCaiApi.TypeStr.BOND);
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
 
@@ -693,7 +706,8 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getChgPctTop30StockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债涨跌幅从大到小排名前30",
-                WenCaiApi.TypeStr.BOND);
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
 
@@ -704,7 +718,8 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getVolTop60StockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前60",
-                WenCaiApi.TypeStr.BOND);
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
 
@@ -716,7 +731,8 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getAllStockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称",
-                WenCaiApi.TypeStr.BOND); // 全部转债
+                0, WenCaiApi.TypeStr.BOND); // 全部转债
+        ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
 

@@ -4,18 +4,14 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
-import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.utils.CommonUtil;
-import com.scareers.utils.ai.tts.Tts;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -130,6 +126,7 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
                 description = "下跌";
             }
         }
+
         // 长信息
         String infoLong = StrUtil
                 .format("{} {} : 幅度:{} 买卖盘比率:{}", bondBean.getName(), description,

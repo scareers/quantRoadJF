@@ -46,7 +46,7 @@ public class EastMoneyUtil {
 //        Console.log(querySecurityId("BK1063"));
 //        Console.log(querySecurityId("400012"));
 //        Console.log(querySecurityId("清水源"));
-        Console.log(querySecurityId("17山高EB"));
+        Console.log(querySecurityId("124005"));
 
 
     }
