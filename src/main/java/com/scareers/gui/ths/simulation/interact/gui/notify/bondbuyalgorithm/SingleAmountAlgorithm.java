@@ -21,9 +21,10 @@ import java.util.List;
  * @date: 2022/5/30/030-17:56:10
  */
 public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
-    public int periodSeconds = 30; // 时间窗口大小, 单位秒
-    public double rateBig = 5.0; // 单个tick成交额, 需要>前n秒内, 所有tick的平均值得 这么多倍, 才算大单出现
-    public double rateSky = 10.0; // 天量出现倍率阈值
+    public int periodSeconds = 33; // 时间窗口大小, 单位秒
+    public double rateBig = 4.0; // 单个tick成交额, 需要>前n秒内, 所有tick的平均值得 这么多倍, 才算大单出现
+    public double rateSky = 7.0; // 天量出现倍率阈值
+    public double minNewestTickAmount = 100 * 10000; // 最新tick最少成交额限制
 
     // 衡量 买卖方其中 一方力量明显大 的比率阈值; 即时间窗口内买方成交量和卖方成交量, 差距很大; 正数, 买卖方自行判定
     public double windowBuySellDiffRate = 0.3;
@@ -95,6 +96,10 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
 
         // 3.2. 此时最后一行是最新一个tick, 前面所有, 均为时间窗口内的;
         Double newestAmount = amountCol.get(amountCol.size() - 1); // 最新tick的成交额
+        // @update: 东财tick数据, 成交量为手; 实际计算时需按手数 , *10
+        if (newestAmount * 10 < minNewestTickAmount) {
+            return null; // 至少100万, 要求不过分
+        }
         Double maxAmountPre = CommonUtil.maxOfListDouble(amountCol); // 此前时间窗口内, 最大成交额
         if (newestAmount < maxAmountPre) {
             return null; // 至少要求最新成交额, >时间窗口中最大的成交额, 再计算 与平均值的倍率
@@ -175,7 +180,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
         // 长信息
         String infoLong = StrUtil
                 .format("{} {} : 最新tick成交额:{} ;买卖方向:{} ; 窗口买卖盘比率:{}", bondBean.getName(), description,
-                        newestAmount,bs,windowBsVolRate
+                        newestAmount, bs, windowBsVolRate
                 );
         // 短信息
         String infoShort = StrUtil.format("{}{}", bondBean.getName().replace("转债", ""), description);

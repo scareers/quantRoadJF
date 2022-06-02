@@ -270,16 +270,16 @@ public class BondBuyNotify {
 
         // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
         FsTransactionFetcher fsTransactionFetcher =
-                FsTransactionFetcher.getInstance(5,
-                        "15:10:00", 300, 100, 32);
+                FsTransactionFetcher.getInstance(4,
+                        "15:10:00", 600, 100, 32);
         fsTransactionFetcher.startFetch();
 
         List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
-        algorithmChain.add(new ChgPctAlgorithm());
         algorithmChain.add(new SingleAmountAlgorithm());
+//        algorithmChain.add(new ChgPctAlgorithm());
 
         while (true) {
-            ThreadUtil.sleep(100);
+            ThreadUtil.sleep(50);
             // Console.log(bondPoolSet.size()); // 检测死循环是否进行中
             for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
                 if (excludeBonds.contains(stockBondBean.getBondCode())) {
