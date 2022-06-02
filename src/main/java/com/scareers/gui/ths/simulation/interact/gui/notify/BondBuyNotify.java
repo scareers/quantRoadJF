@@ -15,11 +15,13 @@ import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgPctAlgorithm;
+import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.SingleAmountAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.order.Order;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
+import io.netty.util.internal.NativeLibraryLoader;
 import joinery.DataFrame;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -255,6 +257,7 @@ public class BondBuyNotify {
         mainX();
     }
 
+    public static HashSet<String> excludeBonds = new HashSet<>(); // 保存绝对排除的转债代码; 例如创建东财bean失败的
 
     public static void mainX() {
         // 1.准备步骤
@@ -271,21 +274,34 @@ public class BondBuyNotify {
                         "15:10:00", 300, 100, 32);
         fsTransactionFetcher.startFetch();
 
-        ChgPctAlgorithm algorithm = new ChgPctAlgorithm(); // 单例
+        List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
+        algorithmChain.add(new ChgPctAlgorithm());
+        algorithmChain.add(new SingleAmountAlgorithm());
+
         while (true) {
             ThreadUtil.sleep(100);
-            Console.log(bondPoolSet.size());
+            // Console.log(bondPoolSet.size()); // 检测死循环是否进行中
             for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
+                if (excludeBonds.contains(stockBondBean.getBondCode())) {
+                    continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
+                }
                 SecurityBeanEm bondBean;
-                Console.log(stockBondBean.getBondCode());
                 try {
                     bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
                 } catch (Exception e) {
+                    excludeBonds.add(stockBondBean.getBondCode());
                     continue;
                 }
-                Console.log(stockBondBean.getBondCode());
-                NotifyMessage message = algorithm.describe(bondBean, null, null);
-                if (message != null) {
+
+                // 算法链遍历
+                NotifyMessage message = null;
+                for (BondStateAlgorithm algorithm : algorithmChain) {
+                    message = algorithm.describe(bondBean, null, null);
+                    if (message != null) { // 取最前方算法的非null结果
+                        break;
+                    }
+                }
+                if (message != null) { // 可能算法链遍历完成, 也没有结果
                     messageQueue.put(message);
                 }
             }
@@ -306,7 +322,7 @@ public class BondBuyNotify {
 
     /**
      * 子线程死循环, 遍历消息队列, 取优先级最高消息, 播报消息!
-     * 一般都会检测消息是否过期 !
+     * 会检测消息是否过期 !
      */
     public static void startNotifyMessages() {
         ThreadUtil.execAsync(new Runnable() {
@@ -405,7 +421,7 @@ public class BondBuyNotify {
      * 1.简短信息一般用于播报
      * 2.长信息用于log
      * 3.priority 表示优先级, 小在前;
-     * 4.消息过期机制: 使用 生成时时间戳毫秒, 以及 维持时间毫秒;;
+     * 4.消息过期机制: 使用 生成时时间戳毫秒, 以及 维持时间毫秒; 参数为(等价)当前时间戳; // 复盘程序将使用模拟时间戳
      * 当播报队列拿到此消息, 若 current > 生成时间+维持时间, 表示过期, 将丢弃!
      */
     @Data
@@ -417,7 +433,7 @@ public class BondBuyNotify {
         public long priority; // 使用 0 - 10000;  0最大优先级
         public long generateMills; // 消息生成时 时间戳, 已重写setter
         public String generateDateTimeStr; // 消息生成时 时间字符串, 一般等于 generateMills 转换的日期字符串
-        public long expireMills; // 消息过期(维持)最大时间,  都是毫秒
+        public long expireMills; // 消息过期(维持)最大时间,  毫秒
 
         /**
          * 过期判定!
@@ -537,17 +553,19 @@ public class BondBuyNotify {
      * 转债列表更新任务, 单线程执行; 注意主线程别结束
      */
     public static void startUpdateBondListTask(boolean addStockToPool) {
-        try {
-            updateBondListAndPushToCrawlerPool(true, addStockToPool);
-            ThreadUtil.sleep(sleepOfUpdateBondListPerLoop);
-        } catch (Exception e) {
-            e.printStackTrace();
-            notifyInfoError("首次更新转债列表失败!");
-        }
+
 
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
+                try {
+                    updateBondListAndPushToCrawlerPool(true, addStockToPool);
+                    ThreadUtil.sleep(sleepOfUpdateBondListPerLoop);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    notifyInfoError("首次更新转债列表失败!");
+                }
+
                 while (true) {
                     try {
                         updateBondListAndPushToCrawlerPool(false, addStockToPool);

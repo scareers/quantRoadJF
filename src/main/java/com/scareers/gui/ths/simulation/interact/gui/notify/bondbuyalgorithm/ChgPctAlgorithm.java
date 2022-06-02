@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * description: 针对转债实时涨跌幅相关的算法描述
+ * description: 转债 近n秒快速拉升或者下跌
  *
  * @author: admin
  * @date: 2022/5/30/030-17:56:10
