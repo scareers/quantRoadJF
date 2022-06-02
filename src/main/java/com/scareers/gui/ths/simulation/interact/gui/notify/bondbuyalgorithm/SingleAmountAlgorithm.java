@@ -101,7 +101,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
             return null; // 至少100万, 要求不过分
         }
         Double maxAmountPre = CommonUtil.maxOfListDouble(amountCol); // 此前时间窗口内, 最大成交额
-        if (newestAmount < maxAmountPre) {
+        if (newestAmount < maxAmountPre *1) { // 要求至少2倍
             return null; // 至少要求最新成交额, >时间窗口中最大的成交额, 再计算 与平均值的倍率
         }
         // 3.3. 最新tick成交额倍率计算

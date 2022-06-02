@@ -71,6 +71,6 @@ public class SettingsOfGuiGlobal {
     public static final boolean autoStartEmNewFetcher = false; // 自动启动 东财新闻抓取(web api)
     public static final boolean autoNewConceptDiscover = true; // 自动启动 新概念发现程序
     public static final boolean autoEmPc724NewsNotify = false; // 自动启动 东财新闻发现程序(pc api) 7*24
-    public static final boolean autoEmPcHotNewsNotify = false; // 自动启动 东财热门资讯
+    public static final boolean autoEmPcHotNewsNotify = true; // 自动启动 东财热门资讯
 
 }

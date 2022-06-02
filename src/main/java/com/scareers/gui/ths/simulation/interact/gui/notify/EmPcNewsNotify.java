@@ -91,7 +91,7 @@ public class EmPcNewsNotify {
                         knownHotTitles.add(item.getTitle()); // 已发现
                         foundHotNews.add(item);
                         infoLog("最新热门资讯:\n" + item.toString()); //
-                        guiNotify("最新热门资讯", item);
+//                        guiNotify("最新热门资讯", item);
                         ThreadUtil.sleep(3000);
                     }
                 }
