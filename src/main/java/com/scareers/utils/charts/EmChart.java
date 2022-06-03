@@ -1,14 +1,15 @@
 package com.scareers.utils.charts;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateRange;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.TextPaneDisplay;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
@@ -17,6 +18,9 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jdesktop.swingx.JXFormattedTextField;
+import org.jdesktop.swingx.JXTextArea;
+import org.jdesktop.swingx.JXTextField;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
@@ -44,6 +48,8 @@ import org.jfree.ui.RectangleEdge;
 import org.jfree.ui.RectangleInsets;
 import org.jfree.ui.TextAnchor;
 
+import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
@@ -53,6 +59,8 @@ import java.text.*;
 import java.util.List;
 import java.util.*;
 
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_SCROLL_BAR_THUMB;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MAIN;
 import static com.scareers.utils.CommonUtil.waitForever;
 
 /**
@@ -538,6 +546,8 @@ public class EmChart {
 //            Console.log("{}[{}] -- {}[{}]", allFsDateStr.get(filterIndex),allPricesTemp.get(filterIndex), foundTick,
 //                    newestPrice);
 
+
+            put(fsTransDf.row(fsTransIndexShould));
         }
 
 
@@ -792,8 +802,9 @@ public class EmChart {
             }
         }
 
+
         public void showChartSimple() {
-            ApplicationFrame frame = new ApplicationFrame("temp");
+            JFrame frame = new JFrame("temp");
 
             ChartPanel chartPanel = new ChartPanel(chart);
 
@@ -805,10 +816,94 @@ public class EmChart {
             chartPanel.setDomainZoomable(false);
 
             chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(allFsTimeTicks));
-            frame.setContentPane(chartPanel);
+
+            frame.setLayout(new BorderLayout());
+//            frame.setContentPane(chartPanel);
+
+            JPanel panelRight = new JPanel();
+            panelRight.setPreferredSize(new Dimension(500, 1024));
+
+            ManipulateLogPanel displayForLog = new ManipulateLogPanel();
+            logTextPane = displayForLog.getLogTextPane(); // 操作.
+            logTextPane.setBackground(Color.red);
+
+            panelRight.setLayout(new BorderLayout());
+            jScrollPane = new JScrollPane(logTextPane);
+            jScrollPane.getViewport().setBackground(Color.red);
+            panelRight.add(jScrollPane, BorderLayout.CENTER);
+
+
+            frame.add(panelRight, BorderLayout.EAST);
+            frame.add(chartPanel, BorderLayout.CENTER);
+
+
             frame.pack(); // 显示.
             // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
             frame.setVisible(true);
+        }
+
+        JScrollPane jScrollPane; // 滚动包裹
+        JTextPane logTextPane;
+
+        /**
+         * 单条分时成交数据 显示
+         * // 列4567分别是 时间,价格,成交量,买卖方向
+         * // 同花顺颜色规则: 时间灰白色, 价格>preClose 红, 否则绿,等于白; 买卖方向 买方红,卖方绿
+         *
+         * @param fsTransRow
+         */
+        public void put(List<Object> fsTransRow) {
+            // 1.4项数据解析
+            String timeTick = fsTransRow.get(3).toString();
+            Double price = Double.valueOf(fsTransRow.get(4).toString());
+            int amountRate = 1;
+            if (beanEm.isBond()) {
+                amountRate = 10;
+            } else if (beanEm.isStock()) {
+                amountRate = 100;
+            }
+            Double amount = Double.parseDouble(fsTransRow.get(5).toString()) * price * amountRate; // 成交额
+            Integer bs = Integer.valueOf(fsTransRow.get(6).toString());
+
+            // 2.白色时间
+            Font font = new Font("Consolas", Font.BOLD, 14);
+            StyleContext sc = StyleContext.getDefaultStyleContext();
+            AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, Color.white);
+            aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
+            aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
+            aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
+            aset = sc.addAttribute(aset, StyleConstants.Italic, font.isItalic());
+
+            try {
+                Document document = logTextPane.getDocument();
+                document.insertString(document.getLength(), timeTick, aset);
+            } catch (BadLocationException e) {
+
+            }
+            logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
+
+            // 2.成交额信息
+            String priceInfo = StrUtil.padPre(price.toString(), 10, " ");
+            Font font2 = new Font("Consolas", Font.BOLD, 14);
+            Color color0 = Color.white;
+            if (price > preClose) {
+                color0 = Color.red;
+            } else if (price < preClose) {
+                color0 = Color.green;
+            }
+            aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground,color0);
+            aset = sc.addAttribute(aset, StyleConstants.Family, font2.getFamily());
+            aset = sc.addAttribute(aset, StyleConstants.FontSize, font2.getSize());
+            aset = sc.addAttribute(aset, StyleConstants.Bold, font2.isBold());
+            aset = sc.addAttribute(aset, StyleConstants.Italic, font2.isItalic());
+            try {
+                Document document = logTextPane.getDocument();
+                document.insertString(document.getLength(), priceInfo, aset);
+            } catch (BadLocationException e) {
+
+            }
+            logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
+
         }
     }
 
