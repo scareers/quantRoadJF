@@ -163,7 +163,7 @@ public class CommonUtil {
     }
 
     public static Double minOfListDouble(List<Double> doubles) {
-        return Collections.min(doubles); // 速度凑合
+        return doubles.stream().filter(Objects::nonNull).mapToDouble(x -> x).min().getAsDouble();
     }
 
 
@@ -175,7 +175,7 @@ public class CommonUtil {
     public static double sumOfListNumberUseLoop(Collection<? extends Number> numbers) {
         double sum = 0.0;
         for (Number number : numbers) {
-            sum+=number.doubleValue();
+            sum += number.doubleValue();
         }
         return sum;
     }
@@ -213,7 +213,7 @@ public class CommonUtil {
     }
 
     public static Double maxOfListDouble(List<Double> doubles) {
-        return Collections.max(doubles);
+        return doubles.stream().filter(Objects::nonNull).mapToDouble(x -> x).max().getAsDouble();
     }
 
     public static int countTrueOfListBooleans(List<Boolean> bools) {
@@ -400,15 +400,16 @@ public class CommonUtil {
 
     /**
      * 可以对原值 / 一个数,
+     *
      * @param value
      * @param divide
      * @return
      */
-    public static String formatNumberWithSuitable(Number value,double divide) {
+    public static String formatNumberWithSuitable(Number value, double divide) {
         if (value == null) {
             return "null";
         }
-        value = value.doubleValue()/divide;
+        value = value.doubleValue() / divide;
         if (Math.abs(value.doubleValue()) < 10000) {
             return Double.valueOf(roundHalfUP(value.doubleValue(), 2)).toString();
         } else if (Math.abs(value.doubleValue()) < 100000000) {
@@ -418,6 +419,7 @@ public class CommonUtil {
         }
 
     }
+
     public static String formatNumberWithSuitable(Number value) {
         return formatNumberWithSuitable(value, 1.0);
     }

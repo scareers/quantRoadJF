@@ -209,6 +209,13 @@ public class EastMoneyDbApi {
         return dataFrame;
     }
 
+    /**
+     * date仅仅限制表名称!!!  分时1分钟, 普通版本
+     *
+     * @param date
+     * @param quoteId
+     * @return
+     */
     public static DataFrame<Object> getFs1MByDateAndQuoteId(String date, String quoteId) {
         String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
         DataFrame<Object> dataFrame;
@@ -220,6 +227,26 @@ public class EastMoneyDbApi {
         }
         return dataFrame;
     }
+
+    /**
+     * date仅仅限制表名称!!!  分时1分钟, 普通版本
+     *
+     * @param date
+     * @param quoteId
+     * @return
+     */
+    public static DataFrame<Object> getFs1MV2ByDateAndQuoteId(String date, String quoteId) {
+        String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date + "_v2", quoteId);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connectionFs1M, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return dataFrame;
+    }
+
 
     /**
      * 给定时间字符串区间 (前包后不包), 读取爬虫记录的概念列表,     标准: 2022-03-06 18:28:10 , 因大小判定,可只要年月日

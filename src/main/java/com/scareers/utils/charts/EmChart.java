@@ -93,24 +93,47 @@ public class EmChart {
 
     public static void main(String[] args) throws Exception {
 
-        String bondCode = "113016"; // 小康
-        String dateStr = "2022-06-01";
+//        kLineDemo();
+//
+        fsV2Demo();
+    }
+
+    /**
+     * 分时图,将自动调用api, 读取 preClose; 也可自行提供
+     */
+    private static void fsV2Demo() throws Exception {
+        String bondCode = "113016"; // 小康转债
+        String dateStr = "2022-06-02";
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
-
-
         DataFrame<Object> fsTransDf = EastMoneyDbApi
                 .getFsTransByDateAndQuoteId(dateStr, bondBean.getQuoteId());
         DataFrame<Object> fsDf = EastMoneyDbApi
-                .getFs1MByDateAndQuoteId(dateStr, bondBean.getQuoteId());
+                .getFs1MV2ByDateAndQuoteId(dateStr, bondBean.getQuoteId());
 
-        Console.log(fsTransDf);
-        Console.log(fsDf);
+        for (int i = 100; i < fsDf.length(); i++) {
+            fsDf.set(i,"close", null);
+        }
+
+        JFreeChart chart = createFs1MV2OfEm(fsDf, "测试标题", true);
+        ApplicationFrame frame = new ApplicationFrame("temp");
+
+        ChartPanel chartPanel = new ChartPanel(chart);
 
 
+        // 大小
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMouseZoomable(false);
+        chartPanel.setRangeZoomable(false);
+        chartPanel.setDomainZoomable(false);
 
-//        kLineDemo();
-//
-        fsDemo();
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(fsDf, "date"); // 日期列表;传递给监听器,设置横轴marker
+        chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(timeTicks));
+
+
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
     }
 
     private static void kLineDemo() {
@@ -146,43 +169,6 @@ public class EmChart {
     }
 
 
-    /**
-     * 分时图,将自动调用api, 读取 preClose; 也可自行提供
-     */
-    private static void fsDemo() {
-        // 分时
-        DataFrame<Object> industryDf = ThsDbApi.getIndustryByNameAndDate("电力", "2022-04-01");
-        Console.log(industryDf);
-        int marketCode = Integer.parseInt(industryDf.get(0, "marketCode").toString());
-        String code = industryDf.get(0, "code").toString();
-        DataFrame<Object> fs1M = WenCaiDataApi.getFS1M(33, "000001");
-        DataFrame<Object> lastNKline = WenCaiDataApi.getLastNKline(33, "000001", 0, 0, 5);
-        Double preClose = Double.valueOf(lastNKline.get(lastNKline.length() - 2, "收盘").toString());
-
-        List<DateTime> timeTicks = DataFrameS.getColAsDateList(fs1M, "时间"); // 日期列表;传递给监听器,设置横轴marker
-
-
-        JFreeChart chart = createFs1MOfThs(fs1M, preClose, "测试标题", true);
-        ApplicationFrame frame = new ApplicationFrame("temp");
-
-        ChartPanel chartPanel = new ChartPanel(chart);
-
-
-        // 大小
-        chartPanel.setPreferredSize(new Dimension(1200, 800));
-        chartPanel.setMouseZoomable(false);
-        chartPanel.setRangeZoomable(false);
-        chartPanel.setDomainZoomable(false);
-
-        chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(timeTicks));
-
-
-        frame.setContentPane(chartPanel);
-        frame.pack(); // 显示.
-        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
-        frame.setVisible(true);
-    }
-
     public static CrossLineListenerForFsXYPlot getCrossLineListenerForFsXYPlot(List<DateTime> dates) {
         // 默认y marker 文字在横线右侧之上
         return new CrossLineListenerForFsXYPlot(dates);
@@ -206,6 +192,7 @@ public class EmChart {
      * @param kLineYType
      * @return
      */
+    // todo: 需要修改列名
     public static JFreeChart createKLineOfThs(DataFrame<Object> dailyKLineDf, String title) {
         return createKlineCore(dailyKLineDf, title, "日期", "开盘", "收盘", "最高", "最低", "成交量");
     }
@@ -460,7 +447,8 @@ public class EmChart {
 
 
     /**
-     * 东财同花顺分时图 -- 使用东财数据库形式, 相关列名称为:
+     * 东财同花顺分时图 -- 使用东财数据库v2版本, 同样241条数据
+     * 数据库列相关名称: date, close,avgPrice,vol
      *
      * @param dataFrame
      * @param preClose
@@ -468,14 +456,17 @@ public class EmChart {
      * @param kLineYType
      * @param showAvgPrice : 是否显示均价线? 行业和概念的均价与 价格不再量级, 不显示, 其他均需要显示!
      * @return
+     * @noti : 东财 v2 分时数据, 自带昨收列, 无需传递参数, 自行解析
      */
-    public static JFreeChart createFs1MOfThs(DataFrame<Object> dataFrame, Double preClose,
-                                             String title, boolean showAvgPrice) {
+    public static JFreeChart createFs1MV2OfEm(DataFrame<Object> dataFrame,
+                                              String title, boolean showAvgPrice) {
         try {
-            List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, "时间");
-            List<Double> prices = DataFrameS.getColAsDoubleList(dataFrame, "价格");
-            List<Double> avgPrices = DataFrameS.getColAsDoubleList(dataFrame, "均价");
-            List<Double> vols = DataFrameS.getColAsDoubleList(dataFrame, "成交量");
+            Double preClose = Double.valueOf(dataFrame.get(0, "preClose").toString());
+            // 因东财分时采用了 olhs, 这里只取 close作为分时价格
+            List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, "date");
+            List<Double> prices = DataFrameS.getColAsDoubleList(dataFrame, "close");
+            List<Double> avgPrices = DataFrameS.getColAsDoubleList(dataFrame, "avgPrice");
+            List<Double> vols = DataFrameS.getColAsDoubleList(dataFrame, "vol");
 
             double priceLow = CommonUtil.minOfListDouble(prices); // 价格最低
             double priceHigh = CommonUtil.maxOfListDouble(prices); // 价格最高

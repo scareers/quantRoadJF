@@ -31,6 +31,7 @@ import static com.scareers.utils.SqlUtil.execSql;
  *
  * @key3 : 数据表存储同版本1, 表名带后缀:  _v2 ;  tableName属性依旧是日期字符串, 只在sql语句+ _v2
  * @noti : 该api与同花顺相同, 从9:30开始, 共计 241条数据, 且带有均价!
+ * @key3 "2022-06-02" 及以后,才有数据
  * @author: admin
  */
 public class Fs1MDataEm2 extends CrawlerEm {
@@ -171,7 +172,8 @@ public class Fs1MDataEm2 extends CrawlerEm {
             e.printStackTrace();
         }
         // 2.读取 quoteId 列, group by; 得到所有已经获取过的资产; 后面将会排除掉它们
-        String sqlGetAlreadyExistQuoteIds = StrUtil.format("select quoteId from `{}` group by quoteId", getActualTableName());
+        String sqlGetAlreadyExistQuoteIds = StrUtil
+                .format("select quoteId from `{}` group by quoteId", getActualTableName());
         DataFrame<Object> dataFrame = null;
         try {
             dataFrame = DataFrame.readSql(conn, sqlGetAlreadyExistQuoteIds);
