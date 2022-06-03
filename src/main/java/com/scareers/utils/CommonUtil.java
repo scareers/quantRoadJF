@@ -1,7 +1,6 @@
 package com.scareers.utils;
 
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -33,7 +32,11 @@ public class CommonUtil {
 
 //        openUrlWithDefaultBrowser("https://www.baidu.com");
 
-        Console.log(stdOfListNumberUseLoop(Arrays.asList(1, 2, 3)));
+//        Console.log(stdOfListNumberUseLoop(Arrays.asList(1, 2, 3)));
+        List<Date> dates = generateMarketOpenTimeListHms(false);
+        for (Date date : dates) {
+            Console.log(date);
+        }
     }
 
     /**
@@ -425,4 +428,65 @@ public class CommonUtil {
     }
 
 
+    /**
+     * 开始时间列表, 重点字段为 时和分! 按照每分钟的间隔;
+     * 参数可控制是否生成 盘前竞价时段
+     *
+     * @return
+     */
+    public static List<Date> generateMarketOpenTimeListHm(boolean hasPreOpenBid) {
+        List<Date> res = new ArrayList<>();
+
+        if (hasPreOpenBid) {
+            DateRange range0 = DateUtil.range( // 首尾均包含!
+                    DateUtil.parse("09:15:00"),
+                    DateUtil.parse("11:25:00"),
+                    DateField.MINUTE);
+            range0.forEach(res::add);
+        }
+
+        DateRange range1 = DateUtil.range( // 首尾均包含!
+                DateUtil.parse("09:30:00"),
+                DateUtil.parse("11:30:00"),
+                DateField.MINUTE);
+        DateRange range2 = DateUtil.range( // 首尾均包含!
+                DateUtil.parse("13:00:00"),
+                DateUtil.parse("15:00:00"),
+                DateField.MINUTE);
+
+        range1.forEach(res::add);
+        range2.forEach(res::add);
+        return res;
+    }
+
+    /**
+     * 开始时间列表, 重点字段为 时和分! 按照每秒钟的间隔;
+     * 参数可控制是否生成 盘前竞价时段
+     *
+     * @return
+     */
+    public static List<Date> generateMarketOpenTimeListHms(boolean hasPreOpenBid) {
+        List<Date> res = new ArrayList<>();
+
+        if (hasPreOpenBid) {
+            DateRange range0 = DateUtil.range( // 首尾均包含!
+                    DateUtil.parse("09:15:00"),
+                    DateUtil.parse("11:25:00"),
+                    DateField.SECOND);
+            range0.forEach(res::add);
+        }
+
+        DateRange range1 = DateUtil.range( // 首尾均包含!
+                DateUtil.parse("09:30:00"),
+                DateUtil.parse("11:30:00"),
+                DateField.SECOND);
+        DateRange range2 = DateUtil.range( // 首尾均包含!
+                DateUtil.parse("13:00:00"),
+                DateUtil.parse("15:00:00"),
+                DateField.SECOND);
+
+        range1.forEach(res::add);
+        range2.forEach(res::add);
+        return res;
+    }
 }

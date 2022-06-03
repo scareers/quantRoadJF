@@ -4,10 +4,8 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
@@ -19,10 +17,11 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.collections.functors.FalsePredicate;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
+import org.jfree.chart.labels.ItemLabelAnchor;
+import org.jfree.chart.labels.ItemLabelPosition;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
@@ -107,12 +106,14 @@ public class EmChart {
 //
 //        fsV2Demo();
 
-        String bondCode = "113016"; // 小康转债
+        String bondCode = "002761"; // 小康转债
         String dateStr = "2022-06-02";
-        SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
+        SecurityBeanEm bondBean = SecurityBeanEm.createStock(bondCode);
+        Console.log(bondBean.getName());
         DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
 
 
+        // 简单的分时图更新:
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
@@ -128,6 +129,21 @@ public class EmChart {
 //                }
             }
         }, true);
+
+//        // 分时成交更新!
+//        double timeRate = 5.0;
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+//                for (int i = 200; i < allFsTransTimeTicks.size(); i++) {
+//                    Date tick = allFsTransTimeTicks.get(i);
+//                    ThreadUtil.sleep((long) (1000 / timeRate));
+//                    Console.log("即将刷新");
+//                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
+//                }
+//            }
+//        }, true);
 
 
         dynamicChart.showChartSimple(); // 显示
@@ -161,6 +177,9 @@ public class EmChart {
         List<Double> allAvgPrices;
         List<Double> allVols;
 
+        List<String> allFsTransTimeTicks; // 所有分时成交的时间tick, 方便查找
+        HashMap<String, Integer> allFsTransTimeTicksMap = new HashMap<>(); // 所有分时成交的时间tick,以及对应的索引, 方便查询, 以免遍历查询,太伤
+
         Double preClose; // 自动解析
 
 
@@ -193,6 +212,11 @@ public class EmChart {
                     .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
             this.fsTransDf = EastMoneyDbApi
                     .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+
+            Console.log(fsDfV2Df);
+            Console.log(fsTransDf);
+
+
             // 2. 4项数据完整列表
             this.allFsTimeTicks = DataFrameS.getColAsDateList(fsDfV2Df, "date");
             this.allFsDateStr = DataFrameS.getColAsStringList(fsDfV2Df, "date");
@@ -200,10 +224,18 @@ public class EmChart {
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
+
+            // 3.分时成交时间戳列表
+            this.allFsTransTimeTicks = DataFrameS.getColAsStringList(fsTransDf, "time_tick"); // 时分秒
+            for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
+                allFsTransTimeTicksMap.put(allFsTransTimeTicks.get(i), i);
+            }
+
+
             todayDummy = allFsTimeTicks.get(0); // 虚假的今天
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
-            priceLow = preClose * 0.9; // 默认图表价格下限
-            priceHigh = preClose * 1.1; // 默认图表价格下限
+            priceLow = preClose * 0.99; // 默认图表价格下限
+            priceHigh = preClose * 1.01; // 默认图表价格下限
         }
 
         private static final Log log = LogUtil.getLogger();
@@ -241,6 +273,9 @@ public class EmChart {
             }
             this.filterTimeTick = DateUtil.format(date, "HH:mm");
             preFilterIndex = filterIndex; // 保留此前filter, 再更新现filter
+            if ("15:00".compareTo(filterTimeTick) < 0) {
+                return false; // 超过3点无视
+            }
             filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
             return true;
         }
@@ -268,7 +303,7 @@ public class EmChart {
         // y轴2--涨跌幅轴
         NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
         // 价格图
-        XYPlot plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
+        XYPlot plot1;
         // 成交量图柱状渲染器
         XYBarRenderer barRenderer;
         // 成交量图 y轴
@@ -302,9 +337,9 @@ public class EmChart {
             if (filterIndex > preFilterIndex) { // 新增数据, 数量为差值, 注意第一个应当是 preFilterIndex
                 for (int i = preFilterIndex + 1; i < filterIndex + 1; i++) {
                     Minute tick = new Minute(allFsTimeTicks.get(i));
-                    seriesOfFsPrice.add(tick, allPrices.get(i));
-                    seriesOfVol.add(tick, allVols.get(i)); // 使用分钟, 成交量会更宽一些
-                    seriesOfAvgPrice.add(tick, allAvgPrices.get(i)); // 使用分钟, 成交量会更宽一些
+                    seriesOfFsPrice.addOrUpdate(tick, allPrices.get(i));
+                    seriesOfVol.addOrUpdate(tick, allVols.get(i)); // 使用分钟, 成交量会更宽一些
+                    seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(i)); // 使用分钟, 成交量会更宽一些
                 }
             } else if (filterIndex < preFilterIndex) {// 应删除数据
                 // 注意, 该方法 前后都包括, 因此.
@@ -312,6 +347,16 @@ public class EmChart {
                 seriesOfVol.delete(filterIndex + 1, preFilterIndex);
                 seriesOfAvgPrice.delete(filterIndex + 1, preFilterIndex);
             } // 相等则不变
+        }
+
+        /**
+         * 更新数据到下一个tick显示, 此时已经保证必有下一tick; 且整数分钟部分已经更新, 只需要更新多出来的1分钟的tick
+         */
+        private void updateThreeSeriesDataFsTrans(double fsTransPrice, double alreadySureVol) {
+            Minute tick = new Minute(allFsTimeTicks.get(filterIndex + 1));
+            seriesOfFsPrice.addOrUpdate(tick, fsTransPrice); // 价格和成交量, 更新为给定参数
+            seriesOfVol.addOrUpdate(tick, alreadySureVol); //
+            seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(filterIndex)); // 均价更新为同前1均价, 单纯为了好看
         }
 
         /**
@@ -407,18 +452,81 @@ public class EmChart {
          * 给定时间对象:
          * 1.首先取到 HH:mm:ss,
          * 2.取整数分钟, 首先更新图表到 HH:mm, 即已过分钟全部更新
-         * 3.对于秒数 ss, 则从 fsTransDf 数据中,
+         * 3.对于秒数 ss, 则从 fsTransDf 数据中, 读取最新的 <=该秒数的, 最后一个 tick,的价格, 作为最新价格
+         * 读取 HH:mm:00 - HH:mm:ss 的所有成交量数据(是否*10,要根据底层数据api而定), 求和, 作为最新分钟的成交量!
+         * 而 均价的话, 则复制 前一个分钟的 均价, 而不用未来数据, 这样保持3数据序列一样长!
          *
          * @param date
          */
         public void updateChartFsTrans(Date date) {
+            // 1.整秒数
+//            updateChart(date); // 将完美更新整数秒
+            boolean b = this.setFilterTimeTick(date);
+            if (!b) {
+                log.error("设置筛选tick失败, 无法更新图表");
+                return;
+                // 1.刷新价格上下限 -- 可无
+            }
+            String timeTickStr = DateUtil.format(date, "HH:mm:ss");
+            if (timeTickStr.compareTo("15:00:00") >= 0) {
+                return; // 3点后不再更新
+            }
 
+            // 2.首先查找fs成交数据对应合适的索引 -- 不超过给定的日期的最后一条数据, 要求 30s内
+            DateTime date0 = DateUtil.parse(timeTickStr);
+            Integer fsTransIndexShould = null;
+            // 最多查找60秒, 因为上一tick都更新了
+            for (int i = 0; i < 30; i++) { // 循环60次最多;
+                String tick = DateUtil.format(date0, "HH:mm:ss");
+                Integer index0 = allFsTransTimeTicksMap.get(tick);
+                if (index0 != null) { // 找到了, 则退出
+                    fsTransIndexShould = index0;
+                    break;
+                } else {
+                    // 没有找到, 则 往前一秒!
+                    date0 = DateUtil.offset(date0, DateField.SECOND, -1); //
+                }
+            }
+            if (fsTransIndexShould == null) {
+                log.warn("未找到此前60秒内,有分时成交数据: {}", timeTickStr);
+                return;
+            }
+
+            // 3.数据解析
+            // 3.1. 计算最新价格
+            double newestPrice = Double.parseDouble(fsTransDf.get(fsTransIndexShould, "price").toString()); // 最新价格
+            String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
+            // 3.2. 计算最新的该分钟当前已出现的成交量之和
+            DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
+                @Override
+                public Boolean apply(List<Object> value) {
+                    String timeTick = value.get(3).toString();
+                    if (timeTick.compareTo(lowTimeLimit) >= 0 && timeTick.compareTo(timeTickStr) <= 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
+            Double volSum = CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
+
+            // 4.更新! 此时必有下一分钟的 tick
+            // 4.1. 先更新整数分钟, 比起直接调用 updateChart的整数分钟更新, 用最新数据更新了上下限的刷新
+            updatePriceLowAndHighFsTrans(newestPrice);
+            // 同样更新两个y轴的上下界!
+            updateY1AxisRange();
+            updateY2AxisRange();
+            // 序列数据在更新上下界后更新; ---  即整数部分
+            updateThreeSeriesData();
+            // 4.2. 实时部分, 更新到下一个tick
+            updateThreeSeriesDataFsTrans(newestPrice, volSum);
         }
 
 
         public void initChartFinal() {
             // 11.建立一个恰当的联合图形区域对象，共享x轴 -- 需要提供高度权重
             CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);
+
             domainXYPlot.add(plot1, weight1OfTwoPlotOfFs);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
             domainXYPlot.add(plot2, weight2OfTwoPlotOfFs);
             domainXYPlot.setGap(gapOfTwoPlotOfFs);//设置两个图形区域对象之间的间隔空间
@@ -438,6 +546,7 @@ public class EmChart {
             plot2.setBackgroundPaint(bgColorFs);//设置曲线图背景色
             plot2.setDomainGridlinesVisible(false);//不显示网格
             plot2.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色
+
         }
 
         public void initY3AxisForVol() {
@@ -476,9 +585,9 @@ public class EmChart {
                     }
                 }
             };
-            barRenderer.setDrawBarOutline(true);//设置显示边框线
+            barRenderer.setDrawBarOutline(false);//设置显示边框线
             barRenderer.setBarPainter(new StandardXYBarPainter());//取消渐变效果
-            barRenderer.setMargin(0.5);//设置柱形图之间的间隔
+            barRenderer.setMargin(0.6);//设置柱形图之间的间隔
             barRenderer.setDrawBarOutline(false);
             barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
             barRenderer.setShadowVisible(false);//设置没有阴影
@@ -591,12 +700,15 @@ public class EmChart {
             lineAndShapeRenderer.setSeriesPaint(0, priceColorFs); // 设置价格颜色
             lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
             lineAndShapeRenderer.setSeriesPaint(2, preCloseColorFs);
+            lineAndShapeRenderer.setSeriesStroke(0, new BasicStroke(0.6f));
+            lineAndShapeRenderer.setSeriesStroke(1, new BasicStroke(0.6f));
+            lineAndShapeRenderer.setSeriesStroke(2, new BasicStroke(2));
             lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
             return lineAndShapeRenderer;
         }
 
         /**
-         * 刷新价格上下限
+         * 刷新价格上下限, 注意, 需要新的上下限, 绝对值> 原来的上下限, 才更新; 即上下限只会变大, 不会变小!
          *
          * @return
          */
@@ -604,14 +716,47 @@ public class EmChart {
             if (filterIndex == preFilterIndex) {
                 return; // 未更新筛选, 则上下界不变; 因此注意 两者默认值不一样;
             }
+            // 价格都是正数, 注意了!, 更高更低才更新
             List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
             try {
-                priceHigh = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
+                double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
+                if (Math.abs(priceHigh0) > Math.abs(priceHigh)) {
+                    priceHigh = priceHigh0;
+                }
             } catch (Exception e) {
                 return;
             }
             try {
-                priceLow = CommonUtil.minOfListDouble(prices);
+                double priceLow0 = CommonUtil.minOfListDouble(prices);
+                if (Math.abs(priceLow0) < Math.abs(priceLow)) {
+                    priceLow = priceLow0;
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        /**
+         * 分时成交更新时, 刷新最高最低; 它需要提供最新 price
+         */
+        public void updatePriceLowAndHighFsTrans(double price) {
+            if (filterIndex == preFilterIndex) {
+                return; // 未更新筛选, 则上下界不变; 因此注意 两者默认值不一样;
+            }
+            List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
+            prices.add(price); // 假装加入, 且同样受到 大的更大,小的更小的限制
+            try {
+                double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
+                if (Math.abs(priceHigh0) > Math.abs(priceHigh)) {
+                    priceHigh = priceHigh0;
+                }
+            } catch (Exception e) {
+                return;
+            }
+            try {
+                double priceLow0 = CommonUtil.minOfListDouble(prices);
+                if (Math.abs(priceLow0) < Math.abs(priceLow)) {
+                    priceLow = priceLow0;
+                }
             } catch (Exception e) {
             }
         }
