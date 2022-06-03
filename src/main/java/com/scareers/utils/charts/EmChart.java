@@ -111,7 +111,9 @@ public class EmChart {
                 .getFs1MV2ByDateAndQuoteId(dateStr, bondBean.getQuoteId());
 
         for (int i = 100; i < fsDf.length(); i++) {
-            fsDf.set(i,"close", null);
+            fsDf.set(i, "close", null);
+            fsDf.set(i, "vol", null);
+            fsDf.set(i, "avgPrice", null);
         }
 
         JFreeChart chart = createFs1MV2OfEm(fsDf, "测试标题", true);
@@ -610,22 +612,27 @@ public class EmChart {
 
                 @Override
                 public Paint getItemPaint(int i, int j) { // 匿名内部类用来处理当日的成交量柱形图的颜色与K线图的颜色保持一致
-                    if (j == 0) {
-                        if (prices.get(j) > preClose) {
-                            return upColorFs;
-                        } else if (prices.get(j) < preClose) {
-                            return downColorFs;
+
+                    try {
+                        if (j == 0) {
+                            if (prices.get(j) > preClose) {
+                                return upColorFs;
+                            } else if (prices.get(j) < preClose) {
+                                return downColorFs;
+                            } else {
+                                return equalColorFs;
+                            }
                         } else {
-                            return equalColorFs;
+                            if (prices.get(j) > prices.get(j - 1)) {
+                                return upColorFs;
+                            } else if (prices.get(j) < prices.get(j - 1)) {
+                                return downColorFs;
+                            } else {
+                                return equalColorFs;
+                            }
                         }
-                    } else {
-                        if (prices.get(j) > prices.get(j - 1)) {
-                            return upColorFs;
-                        } else if (prices.get(j) < prices.get(j - 1)) {
-                            return downColorFs;
-                        } else {
-                            return equalColorFs;
-                        }
+                    } catch (Exception e) { // 当数据存在null时可正常~
+                        return equalColorFs;
                     }
                 }
             };
