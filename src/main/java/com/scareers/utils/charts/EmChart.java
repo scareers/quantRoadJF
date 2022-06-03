@@ -172,8 +172,10 @@ public class EmChart {
         List<Double> allPrices;
         // @todo: bugfix-- 实在找不出来原因
         // 备份 allPrices; 可能因为 allPrices 参与了Bar渲染器, 导致 allPrices会被 莫名修改? 因此使用备份,使得分时成交模式,能正确访问前一分钟收盘价
+        // @noti: allPrices用于更新priceLow和High, allPricesTemp用于更新序列数据,allPricesTemp2用于成交量颜色
         List<Double> allPricesTemp;
         List<Double> allPricesTemp2; // 备份2, 仅用于成交量颜色渲染, 如果不用, 则颜色显示也将异常
+
         List<Double> allAvgPrices;
         List<Double> allVols;
 
