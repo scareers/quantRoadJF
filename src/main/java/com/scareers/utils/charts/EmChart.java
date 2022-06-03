@@ -114,36 +114,32 @@ public class EmChart {
 
 
         // 简单的分时图更新:
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                for (Date tick : dynamicChart.getAllFsTimeTicks()) {
-                    ThreadUtil.sleep(1000);
-                    Console.log("即将刷新");
-                    dynamicChart.updateChart(tick); // 重绘图表
-                }
-//                while (true) {
-//                    ThreadUtil.sleep(1000);
-//                    Console.log("即将刷新");
-//                    dynamicChart.updateChart(RandomUtil.randomEle(dynamicChart.getAllFsTimeTicks())); // 重绘图表
-//                }
-            }
-        }, true);
-
-//        // 分时成交更新!
-//        double timeRate = 5.0;
 //        ThreadUtil.execAsync(new Runnable() {
 //            @Override
 //            public void run() {
-//                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-//                for (int i = 200; i < allFsTransTimeTicks.size(); i++) {
-//                    Date tick = allFsTransTimeTicks.get(i);
-//                    ThreadUtil.sleep((long) (1000 / timeRate));
+//                for (Date tick : dynamicChart.getAllFsTimeTicks()) {
+//                    ThreadUtil.sleep(1000);
 //                    Console.log("即将刷新");
-//                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
+//                    dynamicChart.updateChart(tick); // 重绘图表
 //                }
+//
 //            }
 //        }, true);
+
+//        // 分时成交更新!
+        double timeRate = 5.0;
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+                for (int i = 500; i < allFsTransTimeTicks.size(); i++) {
+                    Date tick = allFsTransTimeTicks.get(i);
+                    ThreadUtil.sleep((long) (1000 / timeRate));
+                    Console.log("即将刷新");
+                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
+                }
+            }
+        }, true);
 
 
         dynamicChart.showChartSimple(); // 显示
@@ -174,6 +170,10 @@ public class EmChart {
         List<DateTime> allFsTimeTicks; // 分时tick, 日期对象形式
         List<String> allFsDateStr; // 分时tick 字符串形式, 方便查找筛选
         List<Double> allPrices;
+        // @todo: bugfix-- 实在找不出来原因
+        // 备份 allPrices; 可能因为 allPrices 参与了Bar渲染器, 导致 allPrices会被 莫名修改? 因此使用备份,使得分时成交模式,能正确访问前一分钟收盘价
+        List<Double> allPricesTemp;
+        List<Double> allPricesTemp2; // 备份2, 仅用于成交量颜色渲染, 如果不用, 则颜色显示也将异常
         List<Double> allAvgPrices;
         List<Double> allVols;
 
@@ -220,7 +220,9 @@ public class EmChart {
             // 2. 4项数据完整列表
             this.allFsTimeTicks = DataFrameS.getColAsDateList(fsDfV2Df, "date");
             this.allFsDateStr = DataFrameS.getColAsStringList(fsDfV2Df, "date");
-            this.allPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "close");
+            this.allPrices = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close"));
+            this.allPricesTemp = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close")); // 备份
+            this.allPricesTemp2 = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close")); // 备份2,用于成交量颜色
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
@@ -234,6 +236,7 @@ public class EmChart {
 
             todayDummy = allFsTimeTicks.get(0); // 虚假的今天
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
+            fsTransNewestPrice = preClose;
             priceLow = preClose * 0.99; // 默认图表价格下限
             priceHigh = preClose * 1.01; // 默认图表价格下限
         }
@@ -337,7 +340,7 @@ public class EmChart {
             if (filterIndex > preFilterIndex) { // 新增数据, 数量为差值, 注意第一个应当是 preFilterIndex
                 for (int i = preFilterIndex + 1; i < filterIndex + 1; i++) {
                     Minute tick = new Minute(allFsTimeTicks.get(i));
-                    seriesOfFsPrice.addOrUpdate(tick, allPrices.get(i));
+                    seriesOfFsPrice.addOrUpdate(tick, allPricesTemp.get(i));
                     seriesOfVol.addOrUpdate(tick, allVols.get(i)); // 使用分钟, 成交量会更宽一些
                     seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(i)); // 使用分钟, 成交量会更宽一些
                 }
@@ -447,6 +450,8 @@ public class EmChart {
             }
         }
 
+        private double fsTransNewestPrice; // 暂存分时成交最新价格
+
         /**
          * 针对分时成交3s的更新!
          * 给定时间对象:
@@ -462,6 +467,7 @@ public class EmChart {
             // 1.整秒数
 //            updateChart(date); // 将完美更新整数秒
             boolean b = this.setFilterTimeTick(date);
+
             if (!b) {
                 log.error("设置筛选tick失败, 无法更新图表");
                 return;
@@ -473,28 +479,31 @@ public class EmChart {
             }
 
             // 2.首先查找fs成交数据对应合适的索引 -- 不超过给定的日期的最后一条数据, 要求 30s内
-            DateTime date0 = DateUtil.parse(timeTickStr);
             Integer fsTransIndexShould = null;
-            // 最多查找60秒, 因为上一tick都更新了
-            for (int i = 0; i < 30; i++) { // 循环60次最多;
+            DateTime date0 = DateUtil.parse(timeTickStr);
+            String foundTick = null;
+            while (DateUtil.format(date0, "HH:mm:ss").compareTo(DateUtil.format(date, "HH:mm" + ":00")) >= 0) {
+                // 需要找本分钟内的
                 String tick = DateUtil.format(date0, "HH:mm:ss");
                 Integer index0 = allFsTransTimeTicksMap.get(tick);
                 if (index0 != null) { // 找到了, 则退出
                     fsTransIndexShould = index0;
+                    foundTick = tick;
                     break;
                 } else {
                     // 没有找到, 则 往前一秒!
-                    date0 = DateUtil.offset(date0, DateField.SECOND, -1); //
+                    date0 = DateUtil.offset(date0, DateField.SECOND, -1);
                 }
             }
             if (fsTransIndexShould == null) {
-                log.warn("未找到此前60秒内,有分时成交数据: {}", timeTickStr);
+                log.warn("未找到本分钟内,有分时成交数据: {}", timeTickStr);
                 return;
             }
 
             // 3.数据解析
             // 3.1. 计算最新价格
             double newestPrice = Double.parseDouble(fsTransDf.get(fsTransIndexShould, "price").toString()); // 最新价格
+            fsTransNewestPrice = newestPrice;
             String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
             // 3.2. 计算最新的该分钟当前已出现的成交量之和
             DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
@@ -520,6 +529,13 @@ public class EmChart {
             updateThreeSeriesData();
             // 4.2. 实时部分, 更新到下一个tick
             updateThreeSeriesDataFsTrans(newestPrice, volSum);
+
+            // todo: bug需要修复: 按照原来设置, 应当 allPrices.get(filterIndex), 但不知为何, allPrices 数据会被改变!
+            // todo: 因此, 被迫使用了双份数据, allPricesTemp 是深备份的原始 allPrices, 直接从df获取;
+            // todo: 可能因为 allPrices
+//            Console.log("{}[{}] -- {}[{}]", allFsDateStr.get(filterIndex),allPricesTemp.get(filterIndex), foundTick,
+//                    newestPrice);
+
         }
 
 
@@ -562,19 +578,32 @@ public class EmChart {
 
                 @Override
                 public Paint getItemPaint(int i, int j) { // 匿名内部类用来处理当日的成交量柱形图的颜色与K线图的颜色保持一致
+
+                    List<Double> tempDoubles = allPricesTemp2
+                            .subList(0, Math.min(filterIndex + 2, allPricesTemp2.size()));
                     try {
-                        if (j == 0) {
-                            if (allPrices.get(j) > preClose) {
+                        if (j > filterIndex) { // 分时成交模式下, 有1条柱子会大于 filterIndex; 应当使用最新价和上一做比较
+                            if (tempDoubles.get(filterIndex) < fsTransNewestPrice) {
                                 return upColorFs;
-                            } else if (allPrices.get(j) < preClose) {
+                            } else if (tempDoubles.get(filterIndex) > fsTransNewestPrice) {
+                                return downColorFs;
+                            } else {
+                                return equalColorFs;
+                            }
+                        }
+
+                        if (j == 0) {
+                            if (tempDoubles.get(j) > preClose) {
+                                return upColorFs;
+                            } else if (tempDoubles.get(j) < preClose) {
                                 return downColorFs;
                             } else {
                                 return equalColorFs;
                             }
                         } else {
-                            if (allPrices.get(j) > allPrices.get(j - 1)) {
+                            if (tempDoubles.get(j) > tempDoubles.get(j - 1)) {
                                 return upColorFs;
-                            } else if (allPrices.get(j) < allPrices.get(j - 1)) {
+                            } else if (tempDoubles.get(j) < tempDoubles.get(j - 1)) {
                                 return downColorFs;
                             } else {
                                 return equalColorFs;
