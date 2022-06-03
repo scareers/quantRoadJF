@@ -106,7 +106,7 @@ public class EmChart {
         DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
 
         dynamicChart.setFilterTimeTick("13:53"); // 设置筛选时间
-        dynamicChart.initChart(); // 重绘图表
+        dynamicChart.updateChart(); // 重绘图表
 
         dynamicChart.showChartSimple(); // 显示
 
@@ -159,6 +159,7 @@ public class EmChart {
             this.dateStr = dateStr;
 
             initDataAndAttrs(); // 自动初始化数据 以及 相关字段
+            initChart(); // 初始化图表相关所有对象
         }
 
         /**
@@ -177,6 +178,7 @@ public class EmChart {
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
+            todayDummy = allFsTimeTicks.get(0); // 虚假的今天
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
             priceLow = preClose * 0.9; // 默认图表价格下限
             priceHigh = preClose * 1.1; // 默认图表价格下限
@@ -229,7 +231,7 @@ public class EmChart {
         double priceHigh;
 
         // 方便记录today.
-        Date today = allFsTimeTicks.get(0);
+        Date todayDummy;
 
 
         /**
@@ -264,100 +266,76 @@ public class EmChart {
         }
 
         /**
-         * 首次绘制chart对象! --> 逻辑同常规画图逻辑, 只是组件对象化了, 以便动态更新
-         * updateChart() 则将 使用更新后的 fsDfV2DfShow, 更新各种图表组件对象, 达成 chart的更新; chart本身并不新建对象!
+         * 首次 初始化chart对象! 默认筛选将无数据;
+         * 请调用 updateChart() 更新图像
+         * // 初始状况, filterIndex = -1; preFilterIndex = -2;
          *
          * @return
          */
-        public void initChart() {
-            // 1.刷新价格上下限
-            updatePriceLowAndHigh();
-            // 2.将4序列加入 2 序列集合
+        private void initChart() {
+            // 1.将4序列加入 2 序列集合 -- 执行一次
             lineSeriesCollection.addSeries(seriesOfFsPrice);
             lineSeriesCollection.addSeries(seriesOfAvgPrice);
             lineSeriesCollection.addSeries(seriesOfPreClose);
-            // 2.1.昨收序列首次加载后将不再更新
+            // 2.昨收序列首次加载后将不再更新
             Date today = allFsTimeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
             seriesOfPreClose.add(new Day(today), preClose);
             seriesOfPreClose.add(new Day(DateUtil.offsetDay(today, 1)), preClose);
             barSeriesCollection.addSeries(seriesOfVol);
-
-            // 2.2.序列加载数据
+            // 3.序列加载数据
             updateThreeSeriesData();
 
-            initDomainDateTimeAxis(); // x时间轴初始化
+            // 4.刷新价格上下限 -- 可无
+            updatePriceLowAndHigh();
 
+            // 5.x时间轴初始化
+            initDomainDateTimeAxis();
+            // 6.y1轴 -- 数字轴 -- 自定义类, 实现以昨收盘价为中心描写刻度数据 -- 价格轴
             initY1AxisOfPrice();
+            // 7.y2轴, 类似, 双颜色区分. 百分比显示 -- 涨跌幅轴
+            initY2AxisOfChgPct();
+            // 8.plot1 对象创建
+            initPlot1();
 
+            // 9.(图2)成交量柱状图渲染器
+            initBarRenderer();
 
-            try {
-                // 1.筛选数据
-//                List<Double> prices = new ArrayList<>();
-//                List<Double> avgPrices = new ArrayList<>();
-//                List<Double> vols = new ArrayList<>();
-//                if (filterIndex != -1) { // 筛选有效
-//                    prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
-//                    avgPrices = allAvgPrices.subList(0, filterIndex + 1);
-//                    vols = allVols.subList(0, filterIndex + 1);
-//                }
+            // 10. 成交量图 y轴 单纯数据轴
+            initY3AxisForVol();
+            // 11. plot 对象创建
+            initPlot2();
+            // 12. chart对象创建
+            initChartFinal();
+        }
 
-                // 2. 刷新价格上下限
-                updatePriceLowAndHigh();
+        /**
+         * 筛选更新图表, 将只更新数据序列, 上下界等 动态属性!
+         */
+        public void updateChart() {
+            // 1.刷新价格上下限 -- 可无
+            updatePriceLowAndHigh();
+            // 2.更新两个y轴的上下界!
+            updateY1AxisRange();
+            updateY2AxisRange();
 
-                // 3.构建数据序列
-                updateThreeSeriesData();
+            // 3.序列数据在更新上下界后更新
+            updateThreeSeriesData();
+        }
 
-                // 3.1 循环写入数据
+        public void initChartFinal() {
+            // 11.建立一个恰当的联合图形区域对象，共享x轴 -- 需要提供高度权重
+            CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);
+            domainXYPlot.add(plot1, weight1OfTwoPlotOfFs);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+            domainXYPlot.add(plot2, weight2OfTwoPlotOfFs);
+            domainXYPlot.setGap(gapOfTwoPlotOfFs);//设置两个图形区域对象之间的间隔空间
+            // 12.背景色强制
+            plot1.setBackgroundPaint(bgColorFs);
+            plot2.setBackgroundPaint(bgColorFs);
+            domainXYPlot.setBackgroundPaint(bgColorFs);
 
-                // 3.x. 昨收序列
-
-
-                // 4.(3价格)折线渲染器 对象
-
-
-                // 5.x轴-- 时间轴
-                initDomainDateTimeAxis();
-
-
-                // 5.y1轴 -- 数字轴 -- 自定义类, 实现以昨收盘价为中心描写刻度数据 -- 价格轴
-
-                initY1AxisOfPrice();
-
-                // 6.y2轴, 类似, 双颜色区分. 百分比显示 -- 涨跌幅轴
-                initY2AxisOfChgPct();
-
-                // 7.
-                initPlot1();
-
-
-                // 8.(图2)成交量柱状图渲染器
-                initBarRenderer();
-
-
-                // 9. 成交量图 y轴 单纯数据轴
-                initY3AxisForVol();
-                // 10.
-                initPlot2();
-
-
-                // 11.建立一个恰当的联合图形区域对象，共享x轴 -- 需要提供高度权重
-                CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);
-                domainXYPlot.add(plot1, weight1OfTwoPlotOfFs);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
-                domainXYPlot.add(plot2, weight2OfTwoPlotOfFs);
-                domainXYPlot.setGap(gapOfTwoPlotOfFs);//设置两个图形区域对象之间的间隔空间
-
-                // 12.背景色强制
-                plot1.setBackgroundPaint(bgColorFs);
-                plot2.setBackgroundPaint(bgColorFs);
-                domainXYPlot.setBackgroundPaint(bgColorFs);
-
-                // 13.实例化 chart对象
-                this.chart = new JFreeChart(null, new Font("微软雅黑", Font.BOLD, 24), domainXYPlot, true);
-                this.chart.setBackgroundPaint(bgColorFs);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            // 13.实例化 chart对象
+            this.chart = new JFreeChart(null, new Font("微软雅黑", Font.BOLD, 24), domainXYPlot, true);
+            this.chart.setBackgroundPaint(bgColorFs);
         }
 
         public void initPlot2() {
@@ -425,21 +403,25 @@ public class EmChart {
         }
 
         public void initY2AxisOfChgPct() {
+            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            DecimalFormat df2 = new DecimalFormat("#0.00%");
+            df2.setRoundingMode(RoundingMode.CEILING);
+            y2Axis.setNumberFormatOverride(df2);
+            y2Axis.setTickLabelPaint(Color.red);
+            updateY2AxisRange(); // 首次更新y2轴range; chart更新时可单独调用
+        }
+
+        public void updateY2AxisRange() {
             double t;
             double t1;
             double range;
-            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
-            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
             t = (priceLow - preClose) / preClose;
             t1 = (priceHigh - preClose) / preClose;
             t = Math.abs(t);
             t1 = Math.abs(t1);
             range = t1 > t ? t1 : t;
             y2Axis.setRange(-range, range);//设置y轴数据范围
-            y2Axis.setTickLabelPaint(Color.red);
-            DecimalFormat df2 = new DecimalFormat("#0.00%");
-            df2.setRoundingMode(RoundingMode.FLOOR);
-            y2Axis.setNumberFormatOverride(df2);
             NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
             y2Axis.setTickUnit(numberTickUnit2);
         }
@@ -448,19 +430,24 @@ public class EmChart {
             y1Axis.setAutoRange(false); //不采用自动设置数据范围
             y1Axis.setLabel(String.valueOf(preClose)); // 标记
             y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            y1Axis.centerRange(preClose);
+
+
+            updateY1AxisRange(); // 首次更新y1轴range; chart更新时可单独调用
+        }
+
+        public void updateY1AxisRange() {
+            DecimalFormat df1 = new DecimalFormat("#0.00");
+            df1.setRoundingMode(RoundingMode.CEILING); // 向下或上舍入模式, 原实现是floor
+            y1Axis.setNumberFormatOverride(df1);
+
             double t = preClose - priceLow;
             double t1 = priceHigh - preClose;
             t = Math.abs(t);
             t1 = Math.abs(t1);
             double range = t1 > t ? t1 : t; // 计算涨跌最大幅度
-            DecimalFormat df1 = new DecimalFormat("#0.00");
-            df1.setRoundingMode(RoundingMode.CEILING); // 向下或上舍入模式, 原实现是floor
-
-            // 5.1. 设置range
             y1Axis.setRange(Double.valueOf(df1.format(preClose - range)),
                     Double.valueOf(df1.format(preClose + range))); // 设置y轴数据范围
-            y1Axis.setNumberFormatOverride(df1);
-            y1Axis.centerRange(preClose);
             NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
             y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
         }
@@ -470,7 +457,7 @@ public class EmChart {
             domainAxis = new DateAxis();
             domainAxis.setAutoRange(false); //设置不采用自动设置时间范围
             Calendar calendar = Calendar.getInstance();
-            Date da = today;
+            Date da = todayDummy;
             calendar.setTime(da);
             calendar.set(Calendar.HOUR_OF_DAY, 9);
             calendar.set(Calendar.MINUTE, 29);
