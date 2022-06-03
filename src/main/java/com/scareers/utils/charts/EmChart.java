@@ -6,15 +6,20 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections.functors.FalsePredicate;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
@@ -48,6 +53,8 @@ import java.math.RoundingMode;
 import java.text.*;
 import java.util.List;
 import java.util.*;
+
+import static com.scareers.utils.CommonUtil.waitForever;
 
 /**
  * description: 同花顺数据源的图表; 主要是分时图 和 3个周期的k线图
@@ -105,11 +112,26 @@ public class EmChart {
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
         DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
 
-        dynamicChart.setFilterTimeTick("13:53"); // 设置筛选时间
-        dynamicChart.updateChart(); // 重绘图表
+
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                for (Date tick : dynamicChart.getAllFsTimeTicks()) {
+                    ThreadUtil.sleep(1000);
+                    Console.log("即将刷新");
+                    dynamicChart.updateChart(tick); // 重绘图表
+                }
+//                while (true) {
+//                    ThreadUtil.sleep(1000);
+//                    Console.log("即将刷新");
+//                    dynamicChart.updateChart(RandomUtil.randomEle(dynamicChart.getAllFsTimeTicks())); // 重绘图表
+//                }
+            }
+        }, true);
+
 
         dynamicChart.showChartSimple(); // 显示
-
+        waitForever();
     }
 
     /**
@@ -184,16 +206,43 @@ public class EmChart {
             priceHigh = preClose * 1.1; // 默认图表价格下限
         }
 
+        private static final Log log = LogUtil.getLogger();
+
         /**
-         * 执行筛选, 核心方法
+         * 执行筛选, 核心方法, 参数正确设置返回true
+         * 参数要求: 任意可被 hutool 解析为date对象的字符串, 将被转换为 标准的 HH:mm 样式
          *
          * @param timeTick
          */
-        public void setFilterTimeTick(String timeTick) {
-            Assert.isTrue(timeTick.length() == 5);
-            this.filterTimeTick = timeTick;
+        public boolean setFilterTimeTick(String timeTick) {
+            DateTime date = null;
+            try {
+                date = DateUtil.parse(timeTick);
+            } catch (Exception e) {
+                log.error("设置筛选时间tick失败, 应当可被hutool的DateUtil解析, 而参数为:{}", timeTick);
+                return false;
+            }
+            this.filterTimeTick = DateUtil.format(date, "HH:mm");
             preFilterIndex = filterIndex; // 保留此前filter, 再更新现filter
             filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
+            return true;
+        }
+
+        /**
+         * 也可传递date筛选, 同样, 仅 时分 有效
+         *
+         * @param date
+         * @return
+         */
+        public boolean setFilterTimeTick(Date date) {
+            if (date == null) {
+                log.error("设置筛选时间tick失败, 日期对象不可null");
+                return false;
+            }
+            this.filterTimeTick = DateUtil.format(date, "HH:mm");
+            preFilterIndex = filterIndex; // 保留此前filter, 再更新现filter
+            filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
+            return true;
         }
 
         /*
@@ -321,6 +370,51 @@ public class EmChart {
             // 3.序列数据在更新上下界后更新
             updateThreeSeriesData();
         }
+
+        public void updateChart(String timeTick) {
+            boolean b = this.setFilterTimeTick(timeTick);
+            if (b) {
+                // 1.刷新价格上下限 -- 可无
+                updatePriceLowAndHigh();
+                // 2.更新两个y轴的上下界!
+                updateY1AxisRange();
+                updateY2AxisRange();
+
+                // 3.序列数据在更新上下界后更新
+                updateThreeSeriesData();
+            } else {
+                log.error("设置筛选tick失败, 无法更新图表");
+            }
+        }
+
+        public void updateChart(Date date) {
+            boolean b = this.setFilterTimeTick(date);
+            if (b) {
+                // 1.刷新价格上下限 -- 可无
+                updatePriceLowAndHigh();
+                // 2.更新两个y轴的上下界!
+                updateY1AxisRange();
+                updateY2AxisRange();
+                // 3.序列数据在更新上下界后更新
+                updateThreeSeriesData();
+            } else {
+                log.error("设置筛选tick失败, 无法更新图表");
+            }
+        }
+
+        /**
+         * 针对分时成交3s的更新!
+         * 给定时间对象:
+         * 1.首先取到 HH:mm:ss,
+         * 2.取整数分钟, 首先更新图表到 HH:mm, 即已过分钟全部更新
+         * 3.对于秒数 ss, 则从 fsTransDf 数据中,
+         *
+         * @param date
+         */
+        public void updateChartFsTrans(Date date) {
+
+        }
+
 
         public void initChartFinal() {
             // 11.建立一个恰当的联合图形区域对象，共享x轴 -- 需要提供高度权重
