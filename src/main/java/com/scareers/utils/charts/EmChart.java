@@ -145,6 +145,7 @@ public class EmChart {
         // 核心属性
         String filterTimeTick = "09:10"; // 筛选时间tick, 默认值即不筛选数据; 通过改变此值后,调用updateFsDfShow(),更新显示df
         int filterIndex = -1; // 当设置 timeTick时, 将自动更新本属性, 代表了在全数据中, 当前对应筛选的index, 包含! // 通常sub需要+1
+        int preFilterIndex = -2; // 记录此前的filterIndex, 调用筛选时更新; 在更新数据时, 对序列的更新, 可判定两个index的关系, 而add或者delete数据
 
 
         /**
@@ -157,13 +158,13 @@ public class EmChart {
             this.beanEm = beanEm;
             this.dateStr = dateStr;
 
-            initFsAndFsTransDf(); // 自动初始化数据 以及 相关字段
+            initDataAndAttrs(); // 自动初始化数据 以及 相关字段
         }
 
         /**
          * 需主动调用, 载入两大df数据
          */
-        public void initFsAndFsTransDf() {
+        public void initDataAndAttrs() {
             // 1.数据库两项df
             this.fsDfV2Df = EastMoneyDbApi
                     .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
@@ -177,11 +178,19 @@ public class EmChart {
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
+            priceLow = preClose * 0.9; // 默认图表价格下限
+            priceHigh = preClose * 1.1; // 默认图表价格下限
         }
 
+        /**
+         * 执行筛选, 核心方法
+         *
+         * @param timeTick
+         */
         public void setFilterTimeTick(String timeTick) {
             Assert.isTrue(timeTick.length() == 5);
             this.filterTimeTick = timeTick;
+            preFilterIndex = filterIndex; // 保留此前filter, 再更新现filter
             filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
         }
 
@@ -190,6 +199,58 @@ public class EmChart {
          */
         JFreeChart chart; // 图表对象
 
+        // 两大序列集合
+        TimeSeriesCollection lineSeriesCollection = new TimeSeriesCollection(); // 均价,价格,昨收 3序列集合
+        TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection(); // 成交量数据的集合
+        // 4大数据序列, 更新数据, 调用 add 或者 delete方法. 前3者时间戳需要一致更新
+        TimeSeries seriesOfFsPrice = new TimeSeries("分时数据");
+        TimeSeries seriesOfAvgPrice = new TimeSeries("均价");
+        TimeSeries seriesOfVol = new TimeSeries("成交量");
+        TimeSeries seriesOfPreClose = new TimeSeries("昨日收盘价");
+
+        // 价格图折线渲染器
+        XYLineAndShapeRenderer lineAndShapeRenderer = buildPlot1LineRenderer();
+        DateAxis domainAxis = initDomainDateTimeAxis();
+
+        // 价格上下限, 依然随着filter而可能改变, 带默认值 ,init中会初始化
+        double priceLow;
+        double priceHigh;
+
+        // 方便记录today.
+        Date today = allFsTimeTicks.get(0);
+
+
+        /**
+         * 依据当前筛选值, 更新3大数据序列的数据;  昨收不用更新
+         */
+        private void updateThreeSeriesData() {
+            if (filterIndex == preFilterIndex) {
+                return; // 未重新筛选
+            }
+            if (filterIndex <= -1) {
+                // 此时应当清空3大序列, 算是特殊情况
+                seriesOfFsPrice.clear();
+                seriesOfVol.clear();
+                seriesOfAvgPrice.clear();
+                return;
+            }
+
+            // 已经正常筛选, 此时 preFilterIndex, 至少会是 -1, 而不可能默认的 -2; filterIndex则至少为 0, 或者-1
+            if (filterIndex > preFilterIndex) { // 新增数据, 数量为差值, 注意第一个应当是 preFilterIndex
+                for (int i = preFilterIndex + 1; i < filterIndex + 1; i++) {
+                    Minute tick = new Minute(allFsTimeTicks.get(i));
+                    seriesOfFsPrice.add(tick, allPrices.get(i));
+                    seriesOfVol.add(tick, allVols.get(i)); // 使用分钟, 成交量会更宽一些
+                    seriesOfAvgPrice.add(tick, allAvgPrices.get(i)); // 使用分钟, 成交量会更宽一些
+                }
+            } else if (filterIndex < preFilterIndex) {// 应删除数据
+                // 注意, 该方法 前后都包括, 因此.
+                seriesOfFsPrice.delete(filterIndex + 1, preFilterIndex);
+                seriesOfVol.delete(filterIndex + 1, preFilterIndex);
+                seriesOfAvgPrice.delete(filterIndex + 1, preFilterIndex);
+            } // 相等则不变
+        }
+
         /**
          * 首次绘制chart对象! --> 逻辑同常规画图逻辑, 只是组件对象化了, 以便动态更新
          * updateChart() 则将 使用更新后的 fsDfV2DfShow, 更新各种图表组件对象, 达成 chart的更新; chart本身并不新建对象!
@@ -197,97 +258,50 @@ public class EmChart {
          * @return
          */
         public void initChart() {
+            // 1.刷新价格上下限
+            updatePriceLowAndHigh();
+            // 2.将4序列加入 2 序列集合
+            lineSeriesCollection.addSeries(seriesOfFsPrice);
+            lineSeriesCollection.addSeries(seriesOfAvgPrice);
+            lineSeriesCollection.addSeries(seriesOfPreClose);
+            // 2.1.昨收序列首次加载后将不再更新
+            Date today = allFsTimeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
+            seriesOfPreClose.add(new Day(today), preClose);
+            seriesOfPreClose.add(new Day(DateUtil.offsetDay(today, 1)), preClose);
+            barSeriesCollection.addSeries(seriesOfVol);
+
+            // 2.2.序列加载数据
+            updateThreeSeriesData();
+            initDomainDateTimeAxis(); //
+
+
             try {
                 // 1.筛选数据
-                List<Double> prices = new ArrayList<>();
-                List<Double> avgPrices = new ArrayList<>();
-                List<Double> vols = new ArrayList<>();
-                if (filterIndex != -1) { // 筛选有效
-                    prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
-                    avgPrices = allAvgPrices.subList(0, filterIndex + 1);
-                    vols = allVols.subList(0, filterIndex + 1);
-                }
+//                List<Double> prices = new ArrayList<>();
+//                List<Double> avgPrices = new ArrayList<>();
+//                List<Double> vols = new ArrayList<>();
+//                if (filterIndex != -1) { // 筛选有效
+//                    prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
+//                    avgPrices = allAvgPrices.subList(0, filterIndex + 1);
+//                    vols = allVols.subList(0, filterIndex + 1);
+//                }
 
-                // 2.y轴上下界
-                double priceLow = calcPriceLow(prices); // 得到y范围限制
-                double priceHigh = calcPriceHigh(prices);
+                // 2. 刷新价格上下限
+                updatePriceLowAndHigh();
 
                 // 3.构建数据序列
-                TimeSeriesCollection lineSeriesCollection = new TimeSeriesCollection();
-                TimeSeries seriesOfFsPrice = new TimeSeries("分时数据");
-                TimeSeries seriesOfAvgPrice = new TimeSeries("均价");
-                TimeSeries seriesOfPreClose = new TimeSeries("昨日收盘价");
+                updateThreeSeriesData();
 
-                TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection();//保留成交量数据的集合
-                TimeSeries seriesOfVol = new TimeSeries("成交量");
+                // 3.1 循环写入数据
 
-                // 3.1循环写入数据
-                for (int i = 0; i < prices.size(); i++) {
-                    seriesOfFsPrice.add(new Minute(allFsTimeTicks.get(i)), prices.get(i));
-                    seriesOfVol.add(new Minute(allFsTimeTicks.get(i)), vols.get(i)); // 使用分钟, 成交量会更宽一些
-                    seriesOfAvgPrice.add(new Minute(allFsTimeTicks.get(i)), avgPrices.get(i)); // 使用分钟, 成交量会更宽一些
-                }
-
-                Date today = allFsTimeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
-                seriesOfPreClose.add(new Day(today), preClose);
-                seriesOfPreClose.add(new Day(DateUtil.offsetDay(today, 1)), preClose);
-
-                // 3.2.分时图数据
-                lineSeriesCollection.addSeries(seriesOfFsPrice);
-                lineSeriesCollection.addSeries(seriesOfAvgPrice);
-                lineSeriesCollection.addSeries(seriesOfPreClose);
-
-                // 3.3.成交量数据
-                barSeriesCollection.addSeries(seriesOfVol);
+                // 3.x. 昨收序列
 
 
                 // 4.(3价格)折线渲染器 对象
-                XYLineAndShapeRenderer lineAndShapeRenderer = new XYLineAndShapeRenderer();
-                lineAndShapeRenderer.setBaseItemLabelsVisible(true);
-                lineAndShapeRenderer.setSeriesShapesVisible(0, false); //设置不显示数据点模型
-                lineAndShapeRenderer.setSeriesShapesVisible(1, false);
-                lineAndShapeRenderer.setSeriesPaint(0, priceColorFs); // 设置价格颜色
-                lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
-                lineAndShapeRenderer.setSeriesPaint(2, preCloseColorFs);
-                lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
 
 
                 // 5.x轴-- 时间轴
-                DateAxis domainAxis = new DateAxis();
-
-                // 5.1. 设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
-                domainAxis.setAutoRange(false); //设置不采用自动设置时间范围
-                Calendar calendar = Calendar.getInstance();
-                Date da = today;
-                calendar.setTime(da);
-                calendar.set(Calendar.HOUR_OF_DAY, 9);
-                calendar.set(Calendar.MINUTE, 29);
-                calendar.set(Calendar.SECOND, 0);
-                Date sda = calendar.getTime();
-                calendar.set(Calendar.HOUR_OF_DAY, 15);
-                calendar.set(Calendar.MINUTE, 01);
-                da = calendar.getTime();
-                domainAxis.setRange(sda, da);//设置时间范围
-
-                // 5.2. 时间刻度x轴城常规设置
-                domainAxis.setAutoTickUnitSelection(false); // 设置不采用自动选择刻度值
-                domainAxis.setTickMarkPosition(DateTickMarkPosition.START); // 设置标记的位置
-                domainAxis.setStandardTickUnits(DateAxis.createStandardDateTickUnits());// 设置标准的时间刻度单位
-                domainAxis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 30));// 设置时间刻度的间隔
-                domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));//设置时间格式
-
-                // 5.3. x轴时间线设置, 仅显示全日期tick列表
-                SegmentedTimeline timeline = SegmentedTimeline
-                        .newFifteenMinuteTimeline(); // 设置时间线显示的规则，用这个方法摒除掉周六和周日这些没有交易的日期
-                calendar.set(Calendar.HOUR_OF_DAY, 11);
-                calendar.set(Calendar.MINUTE, 31);
-                calendar.set(Calendar.SECOND, 0);
-                sda = calendar.getTime();
-                calendar.set(Calendar.HOUR_OF_DAY, 12);
-                calendar.set(Calendar.MINUTE, 59);
-                da = calendar.getTime();
-                timeline.addException(sda.getTime(), da.getTime()); // 排除非交易时间段
-                domainAxis.setTimeline(timeline);
+                initDomainDateTimeAxis();
 
 
                 // 5.y1轴 -- 数字轴 -- 自定义类, 实现以昨收盘价为中心描写刻度数据 -- 价格轴
@@ -411,22 +425,74 @@ public class EmChart {
 
         }
 
-        public double calcPriceHigh(List<Double> prices) {
-            double priceHigh = preClose * 1.1; // 价格最高, 默认10%涨跌幅.
+        public void initDomainDateTimeAxis() {
+            // 5.1. 设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
+            domainAxis = new DateAxis();
+            domainAxis.setAutoRange(false); //设置不采用自动设置时间范围
+            Calendar calendar = Calendar.getInstance();
+            Date da = today;
+            calendar.setTime(da);
+            calendar.set(Calendar.HOUR_OF_DAY, 9);
+            calendar.set(Calendar.MINUTE, 29);
+            calendar.set(Calendar.SECOND, 0);
+            Date sda = calendar.getTime();
+            calendar.set(Calendar.HOUR_OF_DAY, 15);
+            calendar.set(Calendar.MINUTE, 01);
+            da = calendar.getTime();
+            domainAxis.setRange(sda, da);//设置时间范围
+
+            // 5.2. 时间刻度x轴城常规设置
+            domainAxis.setAutoTickUnitSelection(false); // 设置不采用自动选择刻度值
+            domainAxis.setTickMarkPosition(DateTickMarkPosition.START); // 设置标记的位置
+            domainAxis.setStandardTickUnits(DateAxis.createStandardDateTickUnits());// 设置标准的时间刻度单位
+            domainAxis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 30));// 设置时间刻度的间隔
+            domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));//设置时间格式
+
+            // 5.3. x轴时间线设置, 仅显示全日期tick列表
+            SegmentedTimeline timeline = SegmentedTimeline
+                    .newFifteenMinuteTimeline(); // 设置时间线显示的规则，用这个方法摒除掉周六和周日这些没有交易的日期
+            calendar.set(Calendar.HOUR_OF_DAY, 11);
+            calendar.set(Calendar.MINUTE, 31);
+            calendar.set(Calendar.SECOND, 0);
+            sda = calendar.getTime();
+            calendar.set(Calendar.HOUR_OF_DAY, 12);
+            calendar.set(Calendar.MINUTE, 59);
+            da = calendar.getTime();
+            timeline.addException(sda.getTime(), da.getTime()); // 排除非交易时间段
+            domainAxis.setTimeline(timeline);
+        }
+
+        public XYLineAndShapeRenderer buildPlot1LineRenderer() {
+            XYLineAndShapeRenderer lineAndShapeRenderer = new XYLineAndShapeRenderer();
+            lineAndShapeRenderer.setBaseItemLabelsVisible(true);
+            lineAndShapeRenderer.setSeriesShapesVisible(0, false); //设置不显示数据点模型
+            lineAndShapeRenderer.setSeriesShapesVisible(1, false);
+            lineAndShapeRenderer.setSeriesPaint(0, priceColorFs); // 设置价格颜色
+            lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
+            lineAndShapeRenderer.setSeriesPaint(2, preCloseColorFs);
+            lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
+            return lineAndShapeRenderer;
+        }
+
+        /**
+         * 刷新价格上下限
+         *
+         * @return
+         */
+        public void updatePriceLowAndHigh() {
+            if (filterIndex == preFilterIndex) {
+                return; // 未更新筛选, 则上下界不变; 因此注意 两者默认值不一样;
+            }
+            List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
             try {
                 priceHigh = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
             } catch (Exception e) {
+                return;
             }
-            return priceHigh;
-        }
-
-        public double calcPriceLow(List<Double> prices) {
-            double priceLow = preClose * 0.9;// 价格最低,默认值
             try {
                 priceLow = CommonUtil.minOfListDouble(prices);
             } catch (Exception e) {
             }
-            return priceLow;
         }
 
         public void showChartSimple() {
@@ -872,6 +938,7 @@ public class EmChart {
 
 
             //设置k线图x轴，也就是时间轴
+
             DateAxis domainAxis = new DateAxis();
             domainAxis.setAutoRange(false);//设置不采用自动设置时间范围
             //设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
