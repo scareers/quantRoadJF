@@ -133,10 +133,6 @@ public class EmChart {
 
         DataFrame<Object> fsDfV2Df; // 东财分时图v2 -- 完整
         DataFrame<Object> fsTransDf; // 东财分时成交! 这些数据本质上并不绘图, 用于动态更新最后一根图! -- 完整
-        // 东财分时图v2 -- 实际显示, 该df date列恒定241行同fsDf;
-        // 其余数据列显示部分为具体数据, 非显示部分为 null
-        DataFrame<Object> fsDfV2DfShow;
-        Set<Object> columnsExcludeDate; // 除去date的其他列
         // 4项数据完整列表
         List<DateTime> allFsTimeTicks; // 分时tick, 日期对象形式
         List<String> allFsDateStr; // 分时tick 字符串形式, 方便查找筛选
