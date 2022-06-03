@@ -188,7 +188,7 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         try {
             col = df.col(colNameOrIndex);
         } catch (Exception e) {
-            //e.printStackTrace();
+            e.printStackTrace();
             col = df.col(Integer.parseInt(colNameOrIndex.toString()));
         }
         return col; // 可能某些值为null
