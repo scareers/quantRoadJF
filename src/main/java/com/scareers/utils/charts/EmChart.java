@@ -12,6 +12,9 @@ import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.apache.poi.ss.usermodel.Chart;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
@@ -99,12 +102,283 @@ public class EmChart {
     }
 
     /**
+     * 东财分时1分钟 分时图 -- 动态复盘,
+     * 1.分时图使用v2版本数据, 即单日 241条!
+     * 2.且需要提供分时成交数据, 以便模拟实盘的动态变化!
+     * 3.将chart绘制逻辑实现为单个方法, 相关组件对象 保存为 属性! 以便动态修改
+     * 4.数据从数据库获得!
+     */
+    @Data
+    @NoArgsConstructor
+    public static class DynamicEmFs1MV2ChartForRevise {
+        SecurityBeanEm beanEm; // 东财资产对象
+        String dateStr; // 标准日期字符串 "2022-06-02";
+
+        DataFrame<Object> fsDfV2; // 东财分时图v2
+        DataFrame<Object> fsTransDf; // 东财分时成交! 这些数据本质上并不绘图, 用于动态更新最后一根图!
+
+        /**
+         * 构造器
+         *
+         * @param securityBeanEm
+         * @param dateStr
+         */
+        public DynamicEmFs1MV2ChartForRevise(SecurityBeanEm beanEm, String dateStr) {
+            this.beanEm = beanEm;
+            this.dateStr = dateStr;
+        }
+
+        /**
+         * 需主动调用, 载入两大df数据
+         */
+        public void initFsAndFsTransDf() {
+            this.fsDfV2 = EastMoneyDbApi
+                    .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+            this.fsTransDf = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+        }
+
+        /**
+         * 绘制或者更新 chart对象! --> 逻辑同常规画图逻辑, 只是均对象化了
+         *
+         * @return
+         */
+        public JFreeChart x() {
+
+            try {
+                Double preClose = Double.valueOf(dataFrame.get(0, "preClose").toString());
+                // 因东财分时采用了 olhs, 这里只取 close作为分时价格
+                List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, "date");
+                List<Double> prices = DataFrameS.getColAsDoubleList(dataFrame, "close");
+                List<Double> avgPrices = DataFrameS.getColAsDoubleList(dataFrame, "avgPrice");
+                List<Double> vols = DataFrameS.getColAsDoubleList(dataFrame, "vol");
+
+                double priceLow = CommonUtil.minOfListDouble(prices); // 价格最低
+                double priceHigh = CommonUtil.maxOfListDouble(prices); // 价格最高
+
+                TimeSeriesCollection lineSeriesCollection = new TimeSeriesCollection();
+                TimeSeries seriesOfFsPrice = new TimeSeries("分时数据");
+                TimeSeries seriesOfAvgPrice = new TimeSeries("均价");
+                TimeSeries seriesOfPreClose = new TimeSeries("昨日收盘价");
+
+                TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection();//保留成交量数据的集合
+                TimeSeries seriesOfVol = new TimeSeries("成交量");
+
+                //循环写入数据
+                for (int i = 0; i < prices.size(); i++) {
+//                seriesOfFsPrice.add(new Millisecond(timeTicks.get(i)), prices.get(i));
+//                seriesOfVol.add(new Millisecond(timeTicks.get(i)), vols.get(i));
+
+                    seriesOfFsPrice.add(new Minute(timeTicks.get(i)), prices.get(i));
+                    seriesOfVol.add(new Minute(timeTicks.get(i)), vols.get(i)); // 使用分钟, 成交量会更宽一些
+                    seriesOfAvgPrice.add(new Minute(timeTicks.get(i)), avgPrices.get(i)); // 使用分钟, 成交量会更宽一些
+                }
+
+                Date today = timeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
+                seriesOfPreClose.add(new Day(today), preClose);
+                seriesOfPreClose.add(new Day(DateUtil.offsetDay(today, 1)), preClose);
+
+                //分时图数据
+                lineSeriesCollection.addSeries(seriesOfFsPrice);
+                if (showAvgPrice) {
+                    lineSeriesCollection.addSeries(seriesOfAvgPrice);
+                }
+                lineSeriesCollection.addSeries(seriesOfPreClose);
+
+                //成交量数据
+                barSeriesCollection.addSeries(seriesOfVol);
+
+
+                // 设置均线图画图器
+                XYLineAndShapeRenderer lineAndShapeRenderer = new XYLineAndShapeRenderer();
+                lineAndShapeRenderer.setBaseItemLabelsVisible(true);
+                lineAndShapeRenderer.setSeriesShapesVisible(0, false);//设置不显示数据点模型
+                lineAndShapeRenderer.setSeriesShapesVisible(1, false);
+                lineAndShapeRenderer.setSeriesPaint(0, priceColorFs);//设置均线颜色
+                lineAndShapeRenderer.setSeriesPaint(1, preCloseColorFs);
+                lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
+                lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
+
+
+                //设置k线图x轴，也就是时间轴
+                DateAxis domainAxis = new DateAxis();
+                domainAxis.setAutoRange(false);//设置不采用自动设置时间范围
+                //设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
+                Calendar calendar = Calendar.getInstance();
+                Date da = today;
+                calendar.setTime(da);
+                calendar.set(Calendar.HOUR_OF_DAY, 9);
+                calendar.set(Calendar.MINUTE, 29);
+                calendar.set(Calendar.SECOND, 0);
+                Date sda = calendar.getTime();
+                calendar.set(Calendar.HOUR_OF_DAY, 15);
+                calendar.set(Calendar.MINUTE, 01);
+                da = calendar.getTime();
+                domainAxis.setRange(sda, da);//设置时间范围
+
+
+                domainAxis.setAutoTickUnitSelection(false);//设置不采用自动选择刻度值
+                domainAxis.setTickMarkPosition(DateTickMarkPosition.START);//设置标记的位置
+                domainAxis.setStandardTickUnits(DateAxis.createStandardDateTickUnits());// 设置标准的时间刻度单位
+
+                domainAxis.setTickUnit(new DateTickUnit(DateTickUnitType.MINUTE, 30));// 设置时间刻度的间隔
+                domainAxis.setDateFormatOverride(new SimpleDateFormat("HH:mm"));//设置时间格式
+
+
+                SegmentedTimeline timeline = SegmentedTimeline
+                        .newFifteenMinuteTimeline(); // 设置时间线显示的规则，用这个方法摒除掉周六和周日这些没有交易的日期
+                calendar.set(Calendar.HOUR_OF_DAY, 11);
+                calendar.set(Calendar.MINUTE, 31);
+                calendar.set(Calendar.SECOND, 0);
+                sda = calendar.getTime();
+                calendar.set(Calendar.HOUR_OF_DAY, 12);
+                calendar.set(Calendar.MINUTE, 59);
+                da = calendar.getTime();
+                timeline.addException(sda.getTime(), da.getTime()); // 排除非交易时间段
+                domainAxis.setTimeline(timeline);
+
+
+                // 设置k线图y轴参数
+                NumberAxisYSupportTickToPreClose y1Axis = new NumberAxisYSupportTickToPreClose();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+                y1Axis.setAutoRange(false);//设置不采用自动设置数据范围
+                y1Axis.setLabel(String.valueOf(preClose));
+                y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+                double t = preClose - priceLow;
+                double t1 = priceHigh - preClose;
+                t = Math.abs(t);
+                t1 = Math.abs(t1);
+                double range = t1 > t ? t1 : t;//计算涨跌最大幅度
+                DecimalFormat df1 = new DecimalFormat("#0.00");
+                df1.setRoundingMode(RoundingMode.FLOOR);
+
+
+                y1Axis.setRange(Double.valueOf(df1.format(preClose - range)),
+                        Double.valueOf(df1.format(preClose + range)));//设置y轴数据范围
+                y1Axis.setNumberFormatOverride(df1);
+                y1Axis.centerRange(preClose);
+                NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+                y1Axis.setTickUnit(numberTickUnit);
+
+
+                NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+                y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
+                y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+
+
+                t = (priceLow - preClose) / preClose;
+                t1 = (priceHigh - preClose) / preClose;
+                t = Math.abs(t);
+                t1 = Math.abs(t1);
+                range = t1 > t ? t1 : t;
+                y2Axis.setRange(-range, range);//设置y轴数据范围
+                y2Axis.setTickLabelPaint(Color.red);
+                DecimalFormat df2 = new DecimalFormat("#0.00%");
+                df2.setRoundingMode(RoundingMode.FLOOR);
+                y2Axis.setNumberFormatOverride(df2);
+                NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+                y2Axis.setTickUnit(numberTickUnit2);
+
+
+                //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
+                //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
+                XYPlot plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
+                plot1.setBackgroundPaint(bgColorFs);//设置曲线图背景色
+                plot1.setDomainGridlinesVisible(false);//不显示网格
+                plot1.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
+                plot1.setRangeAxis(0, y1Axis);
+                plot1.setRangeAxis(1, y2Axis);
+
+
+                //设置柱状图参数
+                XYBarRenderer barRenderer = new XYBarRenderer() {
+                    private static final long serialVersionUID = 1L;// 为了避免出现警告消息，特设定此值
+
+                    @Override
+                    public Paint getItemPaint(int i, int j) { // 匿名内部类用来处理当日的成交量柱形图的颜色与K线图的颜色保持一致
+
+                        try {
+                            if (j == 0) {
+                                if (prices.get(j) > preClose) {
+                                    return upColorFs;
+                                } else if (prices.get(j) < preClose) {
+                                    return downColorFs;
+                                } else {
+                                    return equalColorFs;
+                                }
+                            } else {
+                                if (prices.get(j) > prices.get(j - 1)) {
+                                    return upColorFs;
+                                } else if (prices.get(j) < prices.get(j - 1)) {
+                                    return downColorFs;
+                                } else {
+                                    return equalColorFs;
+                                }
+                            }
+                        } catch (Exception e) { // 当数据存在null时可正常~
+                            return equalColorFs;
+                        }
+                    }
+                };
+
+
+                barRenderer.setDrawBarOutline(true);//设置显示边框线
+                barRenderer.setBarPainter(new StandardXYBarPainter());//取消渐变效果
+                barRenderer.setMargin(0.5);//设置柱形图之间的间隔
+                barRenderer.setDrawBarOutline(false);
+                barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
+                barRenderer.setShadowVisible(false);//设置没有阴影
+
+
+                //设置柱状图y轴参数
+                NumberAxis y3Axis = new NumberAxis();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+                y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
+                y3Axis.setAutoRange(true);//设置采用自动设置时间范围
+                y3Axis.setTickLabelPaint(volTickLabelPaint);//设置y轴刻度值颜色
+                y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
+
+                //这里不设置x轴，x轴参数依照k线图x轴为模板
+                XYPlot plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
+                plot2.setBackgroundPaint(bgColorFs);//设置曲线图背景色
+                plot2.setDomainGridlinesVisible(false);//不显示网格
+                plot2.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色
+
+
+                //建立一个恰当的联合图形区域对象，以x轴为共享轴
+                CombinedDomainXYPlot domainXYPlot = new CombinedDomainXYPlot(domainAxis);//
+                domainXYPlot.add(plot1, weight1OfTwoPlotOfFs);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+                domainXYPlot.add(plot2, weight2OfTwoPlotOfFs);
+                domainXYPlot.setGap(gapOfTwoPlotOfFs);//设置两个图形区域对象之间的间隔空间
+
+                plot1.setBackgroundPaint(bgColorFs);
+                plot2.setBackgroundPaint(bgColorFs);
+                domainXYPlot.setBackgroundPaint(bgColorFs);
+                //生成图纸
+                JFreeChart chart = new JFreeChart(title, new Font("微软雅黑", Font.BOLD, 24), domainXYPlot, true);
+                chart.setBackgroundPaint(bgColorFs);
+                chart.setTitle(
+                        new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
+                                Title.DEFAULT_POSITION,
+                                Title.DEFAULT_HORIZONTAL_ALIGNMENT,
+                                Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+                return chart;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+
+        }
+    }
+
+
+    /**
      * 分时图,将自动调用api, 读取 preClose; 也可自行提供
      */
     private static void fsV2Demo() throws Exception {
         String bondCode = "113016"; // 小康转债
         String dateStr = "2022-06-02";
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
+
+
         DataFrame<Object> fsTransDf = EastMoneyDbApi
                 .getFsTransByDateAndQuoteId(dateStr, bondBean.getQuoteId());
         DataFrame<Object> fsDf = EastMoneyDbApi

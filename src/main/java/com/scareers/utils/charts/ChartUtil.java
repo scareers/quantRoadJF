@@ -95,7 +95,7 @@ public class ChartUtil {
 //                KLineYType.PERCENT);
 //        showChartSimple(chart);
 
-        //demoOfXYPlotAndShiZiAndDynamicData();
+        demoOfXYPlotAndShiZiAndDynamicData();
 
     }
 
@@ -128,7 +128,7 @@ public class ChartUtil {
                 int i = 0;
                 while (true) {
 
-                    datas.addOrUpdate(amount + i, RandomUtil.randomDouble());
+                    datas.addOrUpdate(amount + i, RandomUtil.randomDouble()+0.8);
                     ThreadUtil.sleep(2000);
                     System.out.println("数据刷新");
                     i++;
