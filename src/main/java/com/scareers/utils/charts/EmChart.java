@@ -222,6 +222,7 @@ public class EmChart {
         XYBarRenderer barRenderer;
         // 成交量图 y轴
         NumberAxis y3Axis = new NumberAxis();
+        XYPlot plot2; // 成交量图
 
         // 价格上下限, 依然随着filter而可能改变, 带默认值 ,init中会初始化
         double priceLow;
@@ -335,12 +336,8 @@ public class EmChart {
 
                 // 9. 成交量图 y轴 单纯数据轴
                 initY3AxisForVol();
-
-                // 10.plot2-- 成交量图, 这里不设置x轴，将与plot共用x轴
-                XYPlot plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
-                plot2.setBackgroundPaint(bgColorFs);//设置曲线图背景色
-                plot2.setDomainGridlinesVisible(false);//不显示网格
-                plot2.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色
+                // 10.
+                initPlot2();
 
 
                 // 11.建立一个恰当的联合图形区域对象，共享x轴 -- 需要提供高度权重
@@ -361,6 +358,14 @@ public class EmChart {
                 e.printStackTrace();
             }
 
+        }
+
+        public void initPlot2() {
+            // 10.plot2-- 成交量图, 这里不设置x轴，将与plot共用x轴
+            plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
+            plot2.setBackgroundPaint(bgColorFs);//设置曲线图背景色
+            plot2.setDomainGridlinesVisible(false);//不显示网格
+            plot2.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色
         }
 
         public void initY3AxisForVol() {
@@ -411,7 +416,7 @@ public class EmChart {
             // 7. 图1: 价格图 -- 3条序列.
             //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
             //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
-
+            plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
             plot1.setBackgroundPaint(bgColorFs);// 设置曲线图背景色
             plot1.setDomainGridlinesVisible(false);// 不显示网格
             plot1.setRangeGridlinePaint(preCloseColorFs);// 设置间距格线颜色为红色, 同昨收颜色
