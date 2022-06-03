@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.util;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.order.Order;
 

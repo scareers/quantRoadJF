@@ -731,6 +731,16 @@ public class SecurityBeanEm implements Serializable {
         return this.secType == SecType.BOND;
     }
 
+    public boolean isShenBond() {
+        return this.isBond() && this.getSecCode().startsWith("12");
+    }
+
+
+    public boolean isHuBond() {
+        return this.isBond() && this.getSecCode().startsWith("11");
+    }
+
+
     public boolean isConvertibleBond() {
         return this.isBond() && "21".equals(this.SecurityType);
         // 可转债的securityType为"21", 国债和企业债,逆回购债券都是"16"

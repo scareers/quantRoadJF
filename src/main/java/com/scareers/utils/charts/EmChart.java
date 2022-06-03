@@ -1,6 +1,9 @@
 package com.scareers.utils.charts;
 
-import cn.hutool.core.date.*;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateRange;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -8,7 +11,6 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.TextPaneDisplay;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
@@ -18,14 +20,9 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jdesktop.swingx.JXFormattedTextField;
-import org.jdesktop.swingx.JXTextArea;
-import org.jdesktop.swingx.JXTextField;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
-import org.jfree.chart.labels.ItemLabelAnchor;
-import org.jfree.chart.labels.ItemLabelPosition;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
@@ -60,7 +57,7 @@ import java.util.List;
 import java.util.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_SCROLL_BAR_THUMB;
-import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MAIN;
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
 import static com.scareers.utils.CommonUtil.waitForever;
 
 /**
@@ -114,9 +111,12 @@ public class EmChart {
 //
 //        fsV2Demo();
 
-        String bondCode = "002761"; // 小康转债
+//        String bondCode = "002761"; // 浙江建投
+//        SecurityBeanEm bondBean = SecurityBeanEm.createStock(bondCode);
+//        String bondCode = "113016"; // 小康转债
+        String bondCode = "123134"; // 卡贝转债
+        SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
         String dateStr = "2022-06-02";
-        SecurityBeanEm bondBean = SecurityBeanEm.createStock(bondCode);
         Console.log(bondBean.getName());
         DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
 
@@ -135,12 +135,12 @@ public class EmChart {
 //        }, true);
 
 //        // 分时成交更新!
-        double timeRate = 5.0;
+        double timeRate = 10;
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
                 List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-                for (int i = 500; i < allFsTransTimeTicks.size(); i++) {
+                for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));
                     Console.log("即将刷新");
@@ -821,15 +821,18 @@ public class EmChart {
 //            frame.setContentPane(chartPanel);
 
             JPanel panelRight = new JPanel();
-            panelRight.setPreferredSize(new Dimension(500, 1024));
+            panelRight.setPreferredSize(new Dimension(323, 1024));
 
             ManipulateLogPanel displayForLog = new ManipulateLogPanel();
             logTextPane = displayForLog.getLogTextPane(); // 操作.
-            logTextPane.setBackground(Color.red);
+            logTextPane.setBackground(new Color(0, 0, 0));
 
             panelRight.setLayout(new BorderLayout());
             jScrollPane = new JScrollPane(logTextPane);
-            jScrollPane.getViewport().setBackground(Color.red);
+            jScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            BasicScrollBarUIS
+                    .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+//            jScrollPane.getViewport().setBackground(Color.red);
             panelRight.add(jScrollPane, BorderLayout.CENTER);
 
 
@@ -852,9 +855,19 @@ public class EmChart {
          *
          * @param fsTransRow
          */
+        private String lastShowFsTransTick = null; // 保留已经put过的最后一条时间, 保证不连续put相同tick
+        DecimalFormat df2 = new DecimalFormat("#########.00");
+        DecimalFormat df3 = new DecimalFormat("#########.000");
+        Double prePrice0 = null; // 保留上一次价格, 当前价格与之比较, 显示向上向下箭头!
+
         public void put(List<Object> fsTransRow) {
             // 1.4项数据解析
             String timeTick = fsTransRow.get(3).toString();
+            if (timeTick.equals(lastShowFsTransTick)) {
+                return;
+            }
+            lastShowFsTransTick = timeTick;
+
             Double price = Double.valueOf(fsTransRow.get(4).toString());
             int amountRate = 1;
             if (beanEm.isBond()) {
@@ -866,9 +879,11 @@ public class EmChart {
             Integer bs = Integer.valueOf(fsTransRow.get(6).toString());
 
             // 2.白色时间
-            Font font = new Font("Consolas", Font.BOLD, 14);
+            Font font = new Font("Consolas", Font.PLAIN, 18); // 字符同宽
+//            Font font = new Font("微软雅黑", Font.PLAIN, 18);
             StyleContext sc = StyleContext.getDefaultStyleContext();
-            AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, Color.white);
+            AttributeSet aset = sc
+                    .addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, new Color(192, 192, 192));
             aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
             aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
             aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
@@ -882,23 +897,96 @@ public class EmChart {
             }
             logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
 
-            // 2.成交额信息
-            String priceInfo = StrUtil.padPre(price.toString(), 10, " ");
-            Font font2 = new Font("Consolas", Font.BOLD, 14);
-            Color color0 = Color.white;
-            if (price > preClose) {
-                color0 = Color.red;
-            } else if (price < preClose) {
-                color0 = Color.green;
+            // 2.价格信息
+            String priceInfo;
+            if (beanEm.isShenBond()) {
+                priceInfo = StrUtil.padPre(df3.format(price), 9, " ");
+            } else {
+                priceInfo = StrUtil.padPre(df2.format(price), 9, " ");
             }
-            aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground,color0);
-            aset = sc.addAttribute(aset, StyleConstants.Family, font2.getFamily());
-            aset = sc.addAttribute(aset, StyleConstants.FontSize, font2.getSize());
-            aset = sc.addAttribute(aset, StyleConstants.Bold, font2.isBold());
-            aset = sc.addAttribute(aset, StyleConstants.Italic, font2.isItalic());
+            Color color0 = new Color(192, 192, 192);
+            if (price > preClose) {
+                color0 = new Color(255, 50, 50);
+                if (prePrice0 != null && prePrice0 != 0) {
+                    if (price / prePrice0 - 1 >= 0.004) { // 大增
+                        color0 = new Color(243, 0, 102);
+                    }
+                }
+            } else if (price < preClose) {
+                color0 = new Color(0, 230, 0);
+                if (prePrice0 != null && prePrice0 != 0) {
+                    if (price / prePrice0 - 1 <= -0.004) { // 大降低
+                        color0 = new Color(2, 42, 217);
+                    }
+                }
+            }
+            aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color0);
+            aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
+            aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
+            aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
+            aset = sc.addAttribute(aset, StyleConstants.Italic, font.isItalic());
+
             try {
                 Document document = logTextPane.getDocument();
                 document.insertString(document.getLength(), priceInfo, aset);
+            } catch (BadLocationException e) {
+
+            }
+            logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
+
+            // 2.1. 价格上升或者下降, 箭头信息
+            String arrowStr = "  "; // 默认箭头和颜色
+            Color color2 = new Color(192, 192, 192);
+            if (prePrice0 != null) {
+                if (price > prePrice0) {
+                    arrowStr = " ↑"; // 默认箭头和颜色
+                    color2 = new Color(255, 50, 50);
+                    if (bs == 1) {
+                        color2 = Color.yellow; // 价格提高 , 成交额却是卖方向! 特殊颜色
+                    }
+                } else if (price < prePrice0) {
+                    arrowStr = " ↓"; // 默认箭头和颜色
+                    color2 = new Color(0, 230, 0);
+                    if (bs == 2) {
+                        color2 = Color.yellow; // 同上
+                    }
+                }
+            }
+
+
+            prePrice0 = price; // 保留
+            aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color2);
+            aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
+            aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
+            aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
+            aset = sc.addAttribute(aset, StyleConstants.Italic, font.isItalic());
+
+            try {
+                Document document = logTextPane.getDocument();
+                document.insertString(document.getLength(), arrowStr, aset);
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+            logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
+
+            // 3.成交额信息
+            String amountInfo = StrUtil.padPre(CommonUtil.formatNumberWithWan(amount), 10, " ");
+            Color color3 = new Color(192, 192, 192);
+            if (bs == 2) {
+                color3 = new Color(255, 50, 50);
+            } else if (bs == 1) {
+                color3 = new Color(0, 230, 0);
+            }
+            aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color3);
+            aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
+            aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
+            aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
+            aset = sc.addAttribute(aset, StyleConstants.Italic, font.isItalic());
+
+
+            try {
+                Document document = logTextPane.getDocument();
+                document.insertString(document.getLength(), amountInfo + "\n", aset);
             } catch (BadLocationException e) {
 
             }
