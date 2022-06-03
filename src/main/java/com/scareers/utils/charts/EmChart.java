@@ -5,8 +5,10 @@ import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
@@ -50,7 +52,7 @@ import java.util.*;
  * @author: admin
  * @date: 2022/4/5/005-00:48:19
  */
-public class ThsChart {
+public class EmChart {
     /*
     k线常量
      */
@@ -89,7 +91,23 @@ public class ThsChart {
     public static final int weight2OfTwoPlotOfFs = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
+        String bondCode = "113016"; // 小康
+        String dateStr = "2022-06-01";
+        SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
+
+
+        DataFrame<Object> fsTransDf = EastMoneyDbApi
+                .getFsTransByDateAndQuoteId(dateStr, bondBean.getQuoteId());
+        DataFrame<Object> fsDf = EastMoneyDbApi
+                .getFs1MByDateAndQuoteId(dateStr, bondBean.getQuoteId());
+
+        Console.log(fsTransDf);
+        Console.log(fsDf);
+
+
+
 //        kLineDemo();
 //
         fsDemo();
@@ -217,12 +235,12 @@ public class ThsChart {
     ) {
 
         // 1.时间列以及4箱数据列;
-        java.util.List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, dateTimeColName);
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, dateTimeColName);
 
-        java.util.List<Double> opens = DataFrameS.getColAsDoubleList(dataFrame, openColName);
-        java.util.List<Double> closes = DataFrameS.getColAsDoubleList(dataFrame, closeColName);
-        java.util.List<Double> highs = DataFrameS.getColAsDoubleList(dataFrame, highColName);
-        java.util.List<Double> lows = DataFrameS.getColAsDoubleList(dataFrame, lowColName);
+        List<Double> opens = DataFrameS.getColAsDoubleList(dataFrame, openColName);
+        List<Double> closes = DataFrameS.getColAsDoubleList(dataFrame, closeColName);
+        List<Double> highs = DataFrameS.getColAsDoubleList(dataFrame, highColName);
+        List<Double> lows = DataFrameS.getColAsDoubleList(dataFrame, lowColName);
         // 2.以第一个close为基准, 其他值转换为百分比
         Double stdPrice = closes.get(0);
 
@@ -442,11 +460,7 @@ public class ThsChart {
 
 
     /**
-     * 同花顺分时图, 非k线图; 坐标轴使用 涨跌幅百分比 坐标
-     * 时间	      价格	      成交额	   均价	     成交量
-     * 0	09:30	1361.471	70277980 	6.485	10836443
-     * 1	09:31	1355.017	274092870	5.562	51076425
-     * 2	09:32	1354.467	201235350	5.913	30360420
+     * 东财同花顺分时图 -- 使用东财数据库形式, 相关列名称为:
      *
      * @param dataFrame
      * @param preClose

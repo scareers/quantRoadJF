@@ -12,9 +12,11 @@ import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import lombok.SneakyThrows;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
@@ -93,10 +95,9 @@ public class ChartUtil {
 //                KLineYType.PERCENT);
 //        showChartSimple(chart);
 
-        demoOfXYPlotAndShiZiAndDynamicData();
+        //demoOfXYPlotAndShiZiAndDynamicData();
+
     }
-
-
 
 
     public static void demoOfXYPlotAndShiZiAndDynamicData() {
@@ -250,13 +251,13 @@ public class ChartUtil {
      * @return
      */
     private static JFreeChart createKlineCore(DataFrame<Object> dataFrame, Double stdValue, String title,
-                                                  String dateTimeColName,
-                                                  String openColName,
-                                                  String closeColName,
-                                                  String highColName,
-                                                  String lowColName,
-                                                  String volColName,
-                                                  KLineYType kLineYType) {
+                                              String dateTimeColName,
+                                              String openColName,
+                                              String closeColName,
+                                              String highColName,
+                                              String lowColName,
+                                              String volColName,
+                                              KLineYType kLineYType) {
         // 是否确定需要百分比化
         boolean percentizeFlag = kLineYType == KLineYType.PERCENT && stdValue != null && !stdValue.equals(0.0);
         List<DateTime> timeTicks = DataFrameS.getColAsDateList(dataFrame, dateTimeColName);
@@ -418,6 +419,7 @@ public class ChartUtil {
      * //         *     	      日期	      开盘	      最高	      最低	      收盘	        成交量	              成交额
      * //         *    0	20070831	976.728 	1032.163	940.157 	1017.768	1787555400 	32589345000.000
      * //         *    1	20070928	1028.107	1123.050	1004.033	1113.713	2044824800 	39127837000.000
+     *
      * @param dataFrame
      * @param preClose
      * @param title
@@ -425,7 +427,7 @@ public class ChartUtil {
      * @return
      */
     public static JFreeChart createKLineOfThs(DataFrame<Object> dataFrame, Double preClose,
-                                                 String title, KLineYType kLineYType) {
+                                              String title, KLineYType kLineYType) {
         return createKlineCore(dataFrame, preClose, title, "日期", "开盘", "收盘", "最高", "最低", "成交量", kLineYType);
     }
 
@@ -578,7 +580,6 @@ public class ChartUtil {
         combineddomainxyplot.setGap(10);//设置两个图形区域对象之间的间隔空间
         return new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, combineddomainxyplot, false);
     }
-
 
 
     /**

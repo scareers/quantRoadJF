@@ -12,6 +12,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.annotations.CanCache;
@@ -77,11 +78,14 @@ public class EmQuoteApi {
 //        Console.log(getLatestQuoteOfBeanList(SecurityBeanEm.createStockList(Arrays.asList("000001", "000002"))));
 
 //        Console.log(getFs1MToday(SecurityBeanEm.createStock("000001"), 3, 5000, false));
-        DataFrame<Object> bondsDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
-        Console.log(bondsDf);
-        List<String> codes = DataFrameS.getColAsStringList(bondsDf, "资产代码");
-        List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(codes, true);
-        Console.log(bondList.size());
+//        DataFrame<Object> bondsDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+//        Console.log(bondsDf);
+//        List<String> codes = DataFrameS.getColAsStringList(bondsDf, "资产代码");
+//        List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(codes, true);
+//        Console.log(bondList.size());
+
+        DataFrame<Object> newestFs1M = getNewestFs1M(SecurityBeanEm.createBond("113025"), 3000, 3);
+        Console.log(newestFs1M);
 
 
 //        DataFrame<Object> bkMembers = getBkMembersQuote(SecurityBeanEm.createBK("医药商业"), 3000, 3);
@@ -1178,8 +1182,54 @@ public class EmQuoteApi {
     }
 
     /**
-     * 获取板块 所有成分股的行情. 两个api可用
+     * 东财行情页面, 分时图显示, 用的最多五天的分时数据, 比常规的k线数据, 多出了 均价 一列! 其余列k线api均有;
+     * // 爬虫将访问2个api, 并依据时间列, 拼接两个df 以便结合均价.
+     * --> 本api 默认访问1天的, 且从结果json中, 提取到 prePrice即昨收价, 也保存成列! 昨收列整列数据将相同
+     * --> 本api 的行, 同 同花顺, 从9:30开始, 共计 241行
      *
+     * @param bean
+     * @param timeout
+     * @param retry
+     * @return
+     * @cols 日期       开盘	   收盘	   最高	   最低	  成交量	        成交额	    均价	昨收	  资产代码	资产名称
+     */
+    public static DataFrame<Object> getNewestFs1M(SecurityBeanEm bean, int timeout,
+                                                  int retry) {
+        // String url = "https://push2his.eastmoney.com/api/qt/stock/kline/get"; 普通k线
+        String url = "http://push2his.eastmoney.com/api/qt/stock/trends2/get";
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("fields1", "f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13");
+        params.put("fields2", "f51,f52,f53,f54,f55,f56,f57,f58");
+        params.put("ut", "fa5fd1943c7b386f172d6893dbfba10b");
+        params.put("ndays", "1"); // 天数, 最多5
+        params.put("iscr", "0");
+        params.put("secid", bean.getQuoteId());
+        params.put("cb", "jQuery112402244901968973796_" + (System.currentTimeMillis() - 1));
+        params.put("_", System.currentTimeMillis());
+
+        String response;
+        try {
+            response = getAsStrUseHutool(url, params, timeout, retry);
+        } catch (Exception e) {
+            return null;
+        }
+
+        response = response.substring(response.indexOf("(") + 1, response.lastIndexOf(")"));
+        DataFrame<Object> dfTemp = jsonStrToDf(response, null, null,
+                Arrays.asList("日期", "开盘", "收盘", "最高", "最低", "成交量", "成交额", "均价"),
+                Arrays.asList("data", "trends"), String.class, Arrays.asList(),
+                Arrays.asList());
+        JSONObject jsonObject = JSONUtilS.parseObj(response);
+        Double aDouble = jsonObject.getJSONObject("data").getDouble("prePrice");
+        dfTemp = dfTemp.add("昨收", values -> aDouble);
+        dfTemp = dfTemp.add(STR_SEC_CODE, values -> bean.getSecCode());
+        dfTemp = dfTemp.add(STR_SEC_NAME, values -> bean.getName());
+        return dfTemp;
+    }
+
+    /**
+     * 获取板块 所有成分股的行情. 两个api可用
+     * <p>
      * 1.数据中心的api, 限制了单页数量, 不采用
      * http://47.push2.eastmoney.com/api/qt/clist/get?cb=jQuery112406750128890784384_1645773481750&pn=2&pz=20&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=b:BK0917+f:!50&fields=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f13,f14,f15,f16,f17,f18,f20,f21,f23,f24,f25,f22,f11,f62,f128,f136,f115,f152,f45&_=1645773481759
      * 2.单板块行情页面的成员列表, 默认每页8个, 数据字段很少, 实测每页数量可以很多, 且字段可以等同于上一api, 因此采用此api

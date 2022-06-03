@@ -29,6 +29,7 @@ import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildBeanListFr
 public class EastMoneyDbApi {
     public static Connection connection = ConnectionFactory.getConnLocalEastmoney();
     public static Connection connectionFsTrans = ConnectionFactory.getConnLocalFSTransactionFromEastmoney();
+    public static Connection connectionFs1M = ConnectionFactory.getConnLocalFS1MFromEastmoney();
     private static Cache<String, Boolean> isTradeDateCache = CacheUtil.newLRUCache(2048);
     private static Pattern stdDatePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}"); // 标准的日期表达式
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
@@ -201,6 +202,18 @@ public class EastMoneyDbApi {
         DataFrame<Object> dataFrame;
         try {
             dataFrame = DataFrame.readSql(connectionFsTrans, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        return dataFrame;
+    }
+
+    public static DataFrame<Object> getFs1MByDateAndQuoteId(String date, String quoteId) {
+        String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connectionFs1M, sql);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
