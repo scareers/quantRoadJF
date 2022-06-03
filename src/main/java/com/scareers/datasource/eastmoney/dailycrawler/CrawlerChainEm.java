@@ -3,11 +3,13 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.BkListEm;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexListEm;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.StockListEm;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDatesEm;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm2;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransDataEm;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.log.LogUtil;
@@ -61,10 +63,11 @@ public class CrawlerChainEm {
 
             crawlerChainEm.addSynCrawler(new StockListEm());
             crawlerChainEm.addSynCrawler(new IndexListEm());
-//            crawlerChainEm.addSynCrawler(new BkListEm());
+            crawlerChainEm.addSynCrawler(new BkListEm());
             crawlerChainEm.addSynCrawler(new TradeDatesEm());
 
             crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+            crawlerChainEm.addFrontCrawlers(new Fs1MDataEm2());
             crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         }
@@ -75,6 +78,7 @@ public class CrawlerChainEm {
 //        crawlerChainEm.addSynCrawler(new TradeDatesEm());
 //
 //        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
+//        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm2());
 //        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
         crawlerChainEm.run();
