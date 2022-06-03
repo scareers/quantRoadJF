@@ -106,7 +106,6 @@ public class EmChart {
         DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
 
         dynamicChart.setFilterTimeTick("13:53"); // 设置筛选时间
-        dynamicChart.updateFsDfShow(); // 并更新显示df
         dynamicChart.initChart(); // 重绘图表
 
         dynamicChart.showChartSimple(); // 显示
@@ -177,11 +176,6 @@ public class EmChart {
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
-
-            // 所有日期列表;传递给监听器,设置横轴marker
-            columnsExcludeDate = new HashSet<>(fsDfV2Df.columns());
-            columnsExcludeDate.remove("date");
-            updateFsDfShow(); // 初始化显示df, 使用改参数将仅有列, 无数据
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
         }
 
@@ -190,56 +184,6 @@ public class EmChart {
             this.filterTimeTick = timeTick;
             filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
         }
-
-        /**
-         * 给定筛选时间 例如 09:31,常态完整df,  更新fsDfV2DfShow属性;
-         *
-         * @param timeTick 形如 09:31 的时间tick, 它将从完整数据, 筛选 日期+时间 <= 该tick的所有数据; 其后数据均为null(除日期列)!
-         */
-        private void updateFsDfShow() {
-            if (fsDfV2DfShow == null) { // 首次更新, 复制全列名和date列全部, 其余值默认null
-                fsDfV2DfShow = new DataFrame<>(CommonUtil.range(fsDfV2Df.length()), fsDfV2Df.columns());
-                for (int i = 0; i < fsDfV2Df.length(); i++) {
-                    fsDfV2DfShow.set(i, "date", fsDfV2Df.get(i, "date"));
-                    for (Object o : columnsExcludeDate) {
-                        fsDfV2DfShow.set(i, o, null); // 全null
-                    }
-                }
-                return; // 首次无需更新数据
-            }
-            String filterTimeTick = this.dateStr + " " + this.filterTimeTick;
-            boolean afterShouldNull = false; // flag表示 后面的全部应当null, 当第一次找到该null时, 设置为true,执行简便逻辑
-            for (int i = 0; i < fsDfV2Df.length(); i++) {
-                Object closeTemp = fsDfV2DfShow.get(i, "close");
-                if (afterShouldNull) {
-                    if (closeTemp != null) { // 改行更新过, 应当全部设置null
-                        for (Object o : columnsExcludeDate) {
-                            fsDfV2DfShow.set(i, o, null); // 设置null
-                        }
-                    }
-                    continue;
-                }
-
-                String timeTick0 = fsDfV2Df.get(i, "date").toString();
-                if (timeTick0.compareTo(filterTimeTick) <= 0) {
-                    // 复制单行所有数据, 这里通过判定 close 是否有数据, 有则表示不需要更新, 无则更新
-                    if (closeTemp == null) { // 该行未更新过 且需要更新
-                        for (Object o : columnsExcludeDate) {
-                            fsDfV2DfShow.set(i, o, fsDfV2Df.get(i, o)); // 复制数据
-                        }
-                    }
-                } else {
-                    afterShouldNull = true; // 设置flag, 但本次还是应当设置一下, 后面的将不再判定
-                    // 除去 date列外, 值全部设置null
-                    if (closeTemp != null) { // 改行更新过, 应当全部设置null
-                        for (Object o : columnsExcludeDate) {
-                            fsDfV2DfShow.set(i, o, null); // 设置null
-                        }
-                    }
-                }
-            }
-        }
-
 
         /*
          图表相关属性
@@ -364,7 +308,7 @@ public class EmChart {
                         Double.valueOf(df1.format(preClose + range))); // 设置y轴数据范围
                 y1Axis.setNumberFormatOverride(df1);
                 y1Axis.centerRange(preClose);
-                NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 10));
+                NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
                 y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
 
                 // 6.y2轴, 类似, 双颜色区分. 百分比显示 -- 涨跌幅轴
@@ -381,7 +325,7 @@ public class EmChart {
                 DecimalFormat df2 = new DecimalFormat("#0.00%");
                 df2.setRoundingMode(RoundingMode.FLOOR);
                 y2Axis.setNumberFormatOverride(df2);
-                NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 10));
+                NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
                 y2Axis.setTickUnit(numberTickUnit2);
 
                 // 7. 图1: 价格图 -- 3条序列.
