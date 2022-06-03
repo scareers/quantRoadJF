@@ -210,7 +210,18 @@ public class EmChart {
 
         // 价格图折线渲染器
         XYLineAndShapeRenderer lineAndShapeRenderer = buildPlot1LineRenderer();
-        DateAxis domainAxis = initDomainDateTimeAxis();
+        // 时间x轴
+        DateAxis domainAxis;
+        // y轴1--价格轴
+        NumberAxisYSupportTickToPreClose y1Axis = new NumberAxisYSupportTickToPreClose();
+        // y轴2--涨跌幅轴
+        NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+        // 价格图
+        XYPlot plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
+        // 成交量图柱状渲染器
+        XYBarRenderer barRenderer;
+        // 成交量图 y轴
+        NumberAxis y3Axis = new NumberAxis();
 
         // 价格上下限, 依然随着filter而可能改变, 带默认值 ,init中会初始化
         double priceLow;
@@ -272,7 +283,10 @@ public class EmChart {
 
             // 2.2.序列加载数据
             updateThreeSeriesData();
-            initDomainDateTimeAxis(); //
+
+            initDomainDateTimeAxis(); // x时间轴初始化
+
+            initY1AxisOfPrice();
 
 
             try {
@@ -305,98 +319,22 @@ public class EmChart {
 
 
                 // 5.y1轴 -- 数字轴 -- 自定义类, 实现以昨收盘价为中心描写刻度数据 -- 价格轴
-                NumberAxisYSupportTickToPreClose y1Axis = new NumberAxisYSupportTickToPreClose();
-                y1Axis.setAutoRange(false); //不采用自动设置数据范围
-                y1Axis.setLabel(String.valueOf(preClose)); // 标记
-                y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
-                double t = preClose - priceLow;
-                double t1 = priceHigh - preClose;
-                t = Math.abs(t);
-                t1 = Math.abs(t1);
-                double range = t1 > t ? t1 : t; // 计算涨跌最大幅度
-                DecimalFormat df1 = new DecimalFormat("#0.00");
-                df1.setRoundingMode(RoundingMode.CEILING); // 向下或上舍入模式, 原实现是floor
 
-                // 5.1. 设置range
-                y1Axis.setRange(Double.valueOf(df1.format(preClose - range)),
-                        Double.valueOf(df1.format(preClose + range))); // 设置y轴数据范围
-                y1Axis.setNumberFormatOverride(df1);
-                y1Axis.centerRange(preClose);
-                NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
-                y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
+                initY1AxisOfPrice();
 
                 // 6.y2轴, 类似, 双颜色区分. 百分比显示 -- 涨跌幅轴
-                NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-                y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
-                y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
-                t = (priceLow - preClose) / preClose;
-                t1 = (priceHigh - preClose) / preClose;
-                t = Math.abs(t);
-                t1 = Math.abs(t1);
-                range = t1 > t ? t1 : t;
-                y2Axis.setRange(-range, range);//设置y轴数据范围
-                y2Axis.setTickLabelPaint(Color.red);
-                DecimalFormat df2 = new DecimalFormat("#0.00%");
-                df2.setRoundingMode(RoundingMode.FLOOR);
-                y2Axis.setNumberFormatOverride(df2);
-                NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
-                y2Axis.setTickUnit(numberTickUnit2);
+                initY2AxisOfChgPct();
 
-                // 7. 图1: 价格图 -- 3条序列.
-                //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
-                //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
-                XYPlot plot1 = new XYPlot(lineSeriesCollection, domainAxis, null, lineAndShapeRenderer);
-                plot1.setBackgroundPaint(bgColorFs);// 设置曲线图背景色
-                plot1.setDomainGridlinesVisible(false);// 不显示网格
-                plot1.setRangeGridlinePaint(preCloseColorFs);// 设置间距格线颜色为红色, 同昨收颜色
-                plot1.setRangeAxis(0, y1Axis);
-                plot1.setRangeAxis(1, y2Axis); //两条y轴
+                // 7.
+                initPlot1();
 
 
                 // 8.(图2)成交量柱状图渲染器
-                List<Double> finalPrices = prices;
-                XYBarRenderer barRenderer = new XYBarRenderer() {
-                    private static final long serialVersionUID = 1L;// 为了避免出现警告消息，特设定此值
-
-                    @Override
-                    public Paint getItemPaint(int i, int j) { // 匿名内部类用来处理当日的成交量柱形图的颜色与K线图的颜色保持一致
-                        try {
-                            if (j == 0) {
-                                if (finalPrices.get(j) > preClose) {
-                                    return upColorFs;
-                                } else if (finalPrices.get(j) < preClose) {
-                                    return downColorFs;
-                                } else {
-                                    return equalColorFs;
-                                }
-                            } else {
-                                if (finalPrices.get(j) > finalPrices.get(j - 1)) {
-                                    return upColorFs;
-                                } else if (finalPrices.get(j) < finalPrices.get(j - 1)) {
-                                    return downColorFs;
-                                } else {
-                                    return equalColorFs;
-                                }
-                            }
-                        } catch (Exception e) { // 当数据存在null时可正常~
-                            return equalColorFs;
-                        }
-                    }
-                };
-                barRenderer.setDrawBarOutline(true);//设置显示边框线
-                barRenderer.setBarPainter(new StandardXYBarPainter());//取消渐变效果
-                barRenderer.setMargin(0.5);//设置柱形图之间的间隔
-                barRenderer.setDrawBarOutline(false);
-                barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
-                barRenderer.setShadowVisible(false);//设置没有阴影
+                initBarRenderer();
 
 
                 // 9. 成交量图 y轴 单纯数据轴
-                NumberAxis y3Axis = new NumberAxis();// 设置Y轴，为数值,后面的设置，参考上面的y轴设置
-                y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
-                y3Axis.setAutoRange(true);//设置采用自动设置时间范围
-                y3Axis.setTickLabelPaint(volTickLabelPaint);//设置y轴刻度值颜色
-                y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
+                initY3AxisForVol();
 
                 // 10.plot2-- 成交量图, 这里不设置x轴，将与plot共用x轴
                 XYPlot plot2 = new XYPlot(barSeriesCollection, null, y3Axis, barRenderer);
@@ -423,6 +361,103 @@ public class EmChart {
                 e.printStackTrace();
             }
 
+        }
+
+        public void initY3AxisForVol() {
+            y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
+            y3Axis.setAutoRange(true);//设置采用自动设置时间范围
+            y3Axis.setTickLabelPaint(volTickLabelPaint);//设置y轴刻度值颜色
+            y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
+        }
+
+        public void initBarRenderer() {
+            barRenderer = new XYBarRenderer() {
+                private static final long serialVersionUID = 1L;// 为了避免出现警告消息，特设定此值
+
+                @Override
+                public Paint getItemPaint(int i, int j) { // 匿名内部类用来处理当日的成交量柱形图的颜色与K线图的颜色保持一致
+                    try {
+                        if (j == 0) {
+                            if (allPrices.get(j) > preClose) {
+                                return upColorFs;
+                            } else if (allPrices.get(j) < preClose) {
+                                return downColorFs;
+                            } else {
+                                return equalColorFs;
+                            }
+                        } else {
+                            if (allPrices.get(j) > allPrices.get(j - 1)) {
+                                return upColorFs;
+                            } else if (allPrices.get(j) < allPrices.get(j - 1)) {
+                                return downColorFs;
+                            } else {
+                                return equalColorFs;
+                            }
+                        }
+                    } catch (Exception e) { // 当数据存在null时可正常~
+                        return equalColorFs;
+                    }
+                }
+            };
+            barRenderer.setDrawBarOutline(true);//设置显示边框线
+            barRenderer.setBarPainter(new StandardXYBarPainter());//取消渐变效果
+            barRenderer.setMargin(0.5);//设置柱形图之间的间隔
+            barRenderer.setDrawBarOutline(false);
+            barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
+            barRenderer.setShadowVisible(false);//设置没有阴影
+        }
+
+        public void initPlot1() {
+            // 7. 图1: 价格图 -- 3条序列.
+            //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
+            //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
+
+            plot1.setBackgroundPaint(bgColorFs);// 设置曲线图背景色
+            plot1.setDomainGridlinesVisible(false);// 不显示网格
+            plot1.setRangeGridlinePaint(preCloseColorFs);// 设置间距格线颜色为红色, 同昨收颜色
+            plot1.setRangeAxis(0, y1Axis);
+            plot1.setRangeAxis(1, y2Axis); //两条y轴
+        }
+
+        public void initY2AxisOfChgPct() {
+            double t;
+            double t1;
+            double range;
+            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            t = (priceLow - preClose) / preClose;
+            t1 = (priceHigh - preClose) / preClose;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            range = t1 > t ? t1 : t;
+            y2Axis.setRange(-range, range);//设置y轴数据范围
+            y2Axis.setTickLabelPaint(Color.red);
+            DecimalFormat df2 = new DecimalFormat("#0.00%");
+            df2.setRoundingMode(RoundingMode.FLOOR);
+            y2Axis.setNumberFormatOverride(df2);
+            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+            y2Axis.setTickUnit(numberTickUnit2);
+        }
+
+        public void initY1AxisOfPrice() {
+            y1Axis.setAutoRange(false); //不采用自动设置数据范围
+            y1Axis.setLabel(String.valueOf(preClose)); // 标记
+            y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            double t = preClose - priceLow;
+            double t1 = priceHigh - preClose;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            double range = t1 > t ? t1 : t; // 计算涨跌最大幅度
+            DecimalFormat df1 = new DecimalFormat("#0.00");
+            df1.setRoundingMode(RoundingMode.CEILING); // 向下或上舍入模式, 原实现是floor
+
+            // 5.1. 设置range
+            y1Axis.setRange(Double.valueOf(df1.format(preClose - range)),
+                    Double.valueOf(df1.format(preClose + range))); // 设置y轴数据范围
+            y1Axis.setNumberFormatOverride(df1);
+            y1Axis.centerRange(preClose);
+            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+            y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
         }
 
         public void initDomainDateTimeAxis() {
