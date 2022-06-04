@@ -4,8 +4,8 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.securitylist.display.SecurityDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
@@ -87,42 +87,96 @@ public class BondGlobalSimulationPanel extends JPanel {
     protected int jListWidth; // 列表宽度, 例如300
     protected MainDisplayWindow mainDisplayWindow; // 主显示区
 
-    JPanel panelLeft; // 左panel, 显示列表和搜索等
+    JPanel panelLeft; // 左panel, 显示列表和搜索等. 列表在下, 各种功能按钮组在上!
     JPanel panelMainForRevise; // 主要的复盘区域panel, 在右
 
     protected BondGlobalSimulationPanel(MainDisplayWindow mainDisplayWindow, int jListWidth) {
         // 异步开始等待某些状态, 并一次或者持续刷新股票列表
         this.jListWidth = jListWidth;
         this.mainDisplayWindow = mainDisplayWindow;
-
-        // 1.布局
         this.setLayout(new BorderLayout()); // border布局, 列表在左, 其余在右; 总宽度为展示区; 列表固定宽
 
-        // 2.JList显示列表
-        jListForBonds = getSecurityEmJList(); // 已经实现自动读取并刷新 securityEmPos 属性
-        this.add(jListWrappedWithJScrollPane(), BorderLayout.WEST); // 添加列表
+        // 1.左panel 初始化和组装
+        buildLeftPanel();
+        this.add(panelLeft, BorderLayout.WEST); // 左
 
-        // 3. 右panel
-        panelMainForRevise = new JPanel();
-        this.add(panelMainForRevise, BorderLayout.CENTER);
+        // 2. 右panel
+        buildMainPanel();
+        this.add(panelMainForRevise, BorderLayout.CENTER); // 中
 
-        // 6.主 展示窗口 添加尺寸改变监听. 改变 jList 和 orderContent尺寸.
+        // 3.主 展示窗口 添加尺寸改变监听. 改变 jList 和 orderContent尺寸.
         this.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                jListForBonds.setBounds(0, 0, jListWidth, getHeight()); // 固定宽默认 300
-                panelMainForRevise.setBounds(jScrollPaneForList.getVerticalScrollBar().getWidth() + jListWidth, 0,
-                        getWidth() - jListWidth - jScrollPaneForList.getVerticalScrollBar().getWidth()
-                        , getHeight()); //
-                // 其余占满
+                panelLeft.setBounds(0, 0, jListWidth, getHeight()); // 固定宽默认 300
+                panelMainForRevise.setBounds(panelLeft.getWidth(), 0,
+                        getWidth() - panelLeft.getWidth()
+                        , getHeight());
                 panelMainForRevise.repaint();
             }
         });
     }
 
+    /**
+     * 主panel
+     */
+    private void buildMainPanel() {
+        panelMainForRevise = new JPanel();
+        JLabel x = new JLabel("测试label");
+        panelMainForRevise.add(x);
+    }
+
+    JPanel functionPanel; // 功能按钮区 在左上
+    JXFindBarS jxFindBarS; // 常规的查找转债列表 -- 查找控件
+
+    /**
+     * 组装左panel
+     * 上功能区, 下列表区!
+     *
+     * @return
+     */
+    private void buildLeftPanel() {
+        panelLeft = new JPanel();
+        panelLeft.setLayout(new BorderLayout());
+        panelLeft.setPreferredSize(new Dimension(jListWidth, 2048));
+
+        // 1.上功能区
+        initFunctionPanel();
+
+        // 2.转债列表
+        jListForBonds = getSecurityEmJList(); // 已经实现自动读取并刷新 securityEmPos 属性
+        initJListWrappedJScrollPane(); // 列表被包裹
+
+        // 3.新panel包裹转债列表, 以及附带的查找框
+        JPanel panelListContainer = new JPanel();
+        panelListContainer.setLayout(new BorderLayout());
+        jxFindBarS = new JXFindBarS(Color.red);
+        panelListContainer.add(jxFindBarS, BorderLayout.NORTH);
+        panelListContainer.add(jScrollPaneForList, BorderLayout.CENTER);
+
+        // 4.最后组装
+        panelLeft.add(functionPanel, BorderLayout.NORTH);
+        panelLeft.add(panelListContainer, BorderLayout.CENTER);
+
+    }
+
+    /**
+     * 功能区初始化
+     */
+    private void initFunctionPanel() {
+        functionPanel = new JPanel();
+        functionPanel.setPreferredSize(new Dimension(jListWidth, 300));
+
+        functionPanel.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
+
+        // @key: 各种功能按钮!
+
+
+    }
+
     JScrollPane jScrollPaneForList;
 
-    private JScrollPane jListWrappedWithJScrollPane() {
+    private void initJListWrappedJScrollPane() {
         jScrollPaneForList = new JScrollPane();
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -130,7 +184,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
-        return jScrollPaneForList;
     }
 
     /**

@@ -340,7 +340,7 @@ public class FuncTreeWindow extends FuncFrameS {
 
     private void changeToBondGlobalSimulationPanel() {
         BondGlobalSimulationPanel
-                .getInstance(this.getMainDisplayWindow(), 300)
+                .getInstance(this.getMainDisplayWindow(), 340)
                 .showInMainDisplayWindow();
     }
 
