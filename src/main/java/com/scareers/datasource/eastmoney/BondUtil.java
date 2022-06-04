@@ -34,23 +34,23 @@ public class BondUtil {
         /*
          * 重大事项带债
          */
-        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
-        for (StockBondBean stockBondBean : temp) {
-            Console.log(stockBondBean.getStockCode());
-        }
+//        List<StockBondBean> temp = getAllStockWithBondWithMajorIssueNow();
+//        for (StockBondBean stockBondBean : temp) {
+//            Console.log(stockBondBean.getStockCode());
+//        }
+//
+//        Console.log("xxxxxxxxxxxxxx");
+//
+//
+//
+//        /*
+//         * 给定转债名称列表, 打印对应股票名称列表
+//         */
+//        printStockNameListOfCareBonds();
 
-        Console.log("xxxxxxxxxxxxxx");
+//        Console.log(getStockCodeWithBondNameFromUseWenCai());
 
-
-
-        /*
-         * 给定转债名称列表, 打印对应股票名称列表
-         */
-        printStockNameListOfCareBonds();
-
-        Console.log(getStockCodeWithBondNameFromUseWenCai());
-
-//        generateCSVForRecite1();
+        generateCSVForRecite1();
     }
 
     /**
@@ -102,7 +102,7 @@ public class BondUtil {
     /**
      * 背诵csv生成
      */
-    public static void generateCSVForRecite1() {
+    public static DataFrame<Object> generateCSVForRecite1() {
         // 1.所有带转债股票代码; 股票代码:转债名称, 这里只用到key
         ConcurrentHashMap<String, String> stockCodeWithBondNameFromUseWenCai = getStockCodeWithBondNameFromUseWenCai();
         String dateStr = DateUtil.format(DateUtil.offset(DateUtil.date(), DateField.DAY_OF_MONTH, -1), "yyyyMMdd"); //
@@ -111,8 +111,7 @@ public class BondUtil {
         // 2. 构建股票代码: 股票背诵字段对象map, 并解析填充
         HashMap<String, StockInfo> stockWithInfoMap = new HashMap<>();
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念;所属行业", WenCaiApi.TypeStr.ASTOCK);
-        Console.log(dataFrame.columns());
-        Console.log();
+//        Console.log(dataFrame.columns());
         // code,股票简称,所属同花顺行业,所属概念,市盈率(pe)[20220524],a股市值(不含限售股)[20220524]  -> 股票基本
         for (int i = 0; i < dataFrame.length(); i++) {
             try {
@@ -129,7 +128,8 @@ public class BondUtil {
 
                 Double pe = null;
                 try {
-                    pe = Double.valueOf(dataFrame.get(i, StrUtil.format("市盈率(pe)[{}]", dateStr)).toString());
+                    pe = Double.valueOf(
+                            dataFrame.get(i, findActualColumnNameByStartsWith(dataFrame, "市盈率(pe)[")).toString());
                 } catch (NumberFormatException e) {
 
                 }
@@ -138,7 +138,7 @@ public class BondUtil {
                 Double marketValue = null;
                 try {
                     marketValue = Double
-                            .valueOf(dataFrame.get(i, StrUtil.format("a股市值(不含限售股)[{}]", dateStr)).toString());
+                            .valueOf(dataFrame.get(i, findActualColumnNameByStartsWith(dataFrame, "a股市值(不含限售股)[")).toString());
                 } catch (NumberFormatException e) {
 
                 }
@@ -156,7 +156,7 @@ public class BondUtil {
         // 3. 转债信息map构造, 需要持有股票 code
         HashMap<String, BondInfo> bondWithInfoMap = new HashMap<>();
         DataFrame<Object> bondDf = WenCaiApi.wenCaiQuery("近20日的区间振幅;债券余额;上市日期;可转债简称", WenCaiApi.TypeStr.BOND);
-        Console.log(bondDf.columns());
+//        Console.log(bondDf.columns());
         // [可转债@债券余额[20220524], 可转债@上市日期, 可转债@正股简称, 可转债@正股代码, 可转债@可转债简称, code, 可转债@区间振幅[20220422-20220524], 可转债@涨跌幅[20220525], market_code, 可转债@可转债代码, 可转债@最新价]
         for (int i = 0; i < bondDf.length(); i++) {
             try {
@@ -177,18 +177,18 @@ public class BondUtil {
                 info.setPrice(price);
 
                 Double latest20DayAmplitude = null;
-                try {
+                try { // 可转债@区间振幅[20220422-20220524]
                     latest20DayAmplitude = Double
-                            .valueOf(bondDf.get(i, "可转债@区间振幅[20220422-20220524]").toString());
+                            .valueOf(bondDf.get(i, findActualColumnNameByStartsWith(bondDf, "可转债@区间振幅[")).toString());
                 } catch (NumberFormatException e) {
 
                 }
 
                 info.setLatest20DayAmplitude(latest20DayAmplitude);
                 Double remainingSize = null;
-                try {
+                try { // 可转债@债券余额[20220524]
                     remainingSize = Double
-                            .valueOf(bondDf.get(i, "可转债@债券余额[20220524]").toString());
+                            .valueOf(bondDf.get(i, findActualColumnNameByStartsWith(bondDf, "可转债@债券余额[")).toString());
                 } catch (NumberFormatException e) {
 
                 }
@@ -238,13 +238,29 @@ public class BondUtil {
             resDf.append(row);
         }
 
-        Console.log(resDf);
         try {
             resDf.writeXls("C:\\Users\\admin\\Desktop\\记忆.xls");
         } catch (IOException e) {
             e.printStackTrace();
         }
+        Console.log(resDf);
+        return resDf;
+    }
 
+    /**
+     * 问财的表头, 常带有动态的日期信息, 本方法, 给定df, 查找其所有列名, 返回第一个 以 某字符串开头的列!
+     *
+     * @return
+     */
+    private static Object findActualColumnNameByStartsWith(DataFrame<Object> dataFrame, String startsWith) {
+        Object res = "";
+        for (Object column : dataFrame.columns()) {
+            if (column.toString().startsWith(startsWith)) {
+                res = column;
+                break;
+            }
+        }
+        return res;
     }
 
     /**

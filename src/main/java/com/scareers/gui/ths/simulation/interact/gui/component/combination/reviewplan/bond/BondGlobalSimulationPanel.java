@@ -169,12 +169,26 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
-     * 功能区上方, 显示 当前选中的bean 的基本信息; 例如概念, 行业,余额等; 类似于背诵信息
+     * 功能区上方, 显示 当前选中的bean 的基本信息; 例如概念, 行业,余额等;  --> 最新背诵信息
+     * 转债代码	转债名称	价格	剩余规模	上市日期	20日振幅	正股代码	正股名称	行业	概念	pe动	流值
+     * 113537	文灿转债	278.03	1.4亿	20190705	40.6	603348	文灿股份	交运设备-汽车零部件-汽车零部件Ⅲ	蔚来汽车概念;新能源汽车;特斯拉	41.8	130.49亿
      */
     public static class SelectBeanDisplayPanel extends DisplayPanel {
+        SecurityBeanEm bondBean;
+
+        public SelectBeanDisplayPanel() {
+            this.setLayout(new BorderLayout());
+
+        }
+
         @Override
         public void update() {
 
+        }
+
+        public void update(SecurityBeanEm beanEm) {
+            this.bondBean = beanEm;
+            this.update();
         }
     }
 
