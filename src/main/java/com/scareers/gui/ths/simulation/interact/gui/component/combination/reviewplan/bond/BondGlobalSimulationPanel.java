@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
@@ -168,6 +169,16 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
+     * 功能区上方, 显示 当前选中的bean 的基本信息; 例如概念, 行业,余额等; 类似于背诵信息
+     */
+    public static class SelectBeanDisplayPanel extends DisplayPanel {
+        @Override
+        public void update() {
+
+        }
+    }
+
+    /**
      * 功能区初始化
      */
     private void initFunctionPanel() {
@@ -175,6 +186,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionPanel.setPreferredSize(new Dimension(jListWidth, 300));
 
         functionPanel.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
+
 
         // @key: 各种功能按钮!
         FuncButton loadBondListButton = ButtonFactory.getButton("刷新列表");
