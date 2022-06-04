@@ -1028,6 +1028,13 @@ public class SecurityBeanEm implements Serializable {
             initThreeTypes(); // 设置3种类型
         }
 
+        public static Vector<SecurityEmPo> fromBeanList(List<SecurityBeanEm> beanEmList) {
+            if (beanEmList == null) {
+                return new Vector<>();
+            }
+            return beanEmList.stream().map(SecurityEmPo::new).collect(Collectors.toCollection(Vector::new));
+        }
+
         private void initThreeTypes() {
             subBeanType = 11;
             if (bean.isStock()) {

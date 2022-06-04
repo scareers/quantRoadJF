@@ -4,8 +4,11 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
@@ -13,10 +16,13 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jdesktop.swingx.JXList;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -83,7 +89,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
-    protected volatile JList<SecurityBeanEm.SecurityEmPo> jListForBonds; //  转债展示列表控件
+    protected volatile JXList jListForBonds; //  转债展示列表控件
     protected int jListWidth; // 列表宽度, 例如300
     protected MainDisplayWindow mainDisplayWindow; // 主显示区
 
@@ -170,6 +176,18 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionPanel.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
 
         // @key: 各种功能按钮!
+        FuncButton loadBondListButton = ButtonFactory.getButton("刷新列表");
+        loadBondListButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public void actionPerformed(ActionEvent e) { // 点击加载或刷新转债列表;
+                List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false);
+                securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
+            }
+        });
+
+
+        functionPanel.add(loadBondListButton);
 
 
     }
@@ -191,13 +209,13 @@ public class BondGlobalSimulationPanel extends JPanel {
      *
      * @return
      */
-    private JList<SecurityBeanEm.SecurityEmPo> getSecurityEmJList() {
+    private JXList getSecurityEmJList() {
         // securityEmPos --> 自行实现逻辑, 改变自身该属性; 则 列表将自动刷新
 
         DefaultListModelS<SecurityBeanEm.SecurityEmPo> model = new DefaultListModelS<>();
         model.flush(securityEmPos); // 刷新一次数据, 首次为空
 
-        JList<SecurityBeanEm.SecurityEmPo> jList = new JList<>(model);
+        JXList jList = new JXList(model);
         jList.setCellRenderer(new SecurityEmListCellRendererS()); // 设置render
         jList.setForeground(COLOR_GRAY_COMMON);
 
@@ -208,6 +226,9 @@ public class BondGlobalSimulationPanel extends JPanel {
             public void run() {
                 while (true) { // 每 100ms 刷新model
                     model.flush(securityEmPos);
+                    if (jListForBonds != null) {
+                        jxFindBarS.setSearchable(jListForBonds.getSearchable());
+                    }
                     Thread.sleep(100);
                 }
             }
@@ -221,7 +242,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                     return;
                 }
                 int index = jList.getSelectedIndex();
-                SecurityBeanEm.SecurityEmPo po = jList.getModel().getElementAt(index);
+                SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
                 openSecurityQuoteUrl(po);
             }
         });
@@ -230,7 +251,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == VK_ENTER) {
                     int index = jList.getSelectedIndex();
-                    SecurityBeanEm.SecurityEmPo po = jList.getModel().getElementAt(index);
+                    SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
                     openSecurityQuoteUrl(po);
                 }
             }
