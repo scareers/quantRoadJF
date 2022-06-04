@@ -90,6 +90,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
+    protected SecurityBeanEm selectedBean = null; // 被选中的转债 东财bean对象
     protected int jListWidth; // 列表宽度, 例如300
     protected MainDisplayWindow mainDisplayWindow; // 主显示区
 
@@ -235,7 +236,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         }, true);
 
         // 双击事件监听, 跳转到东方财富资产行情页面
-        jList.addMouseListener(new MouseAdapter() {
+        jList.addMouseListener(new MouseAdapter() { // 双击打开东财url
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() != 2) { // 非双击
@@ -248,11 +249,11 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
         jList.addKeyListener(new KeyAdapter() {
             @Override
-            public void keyPressed(KeyEvent e) {
+            public void keyPressed(KeyEvent e) { // enter键, 则是更改 selectedBean 对象
                 if (e.getKeyCode() == VK_ENTER) {
                     int index = jList.getSelectedIndex();
                     SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
-                    openSecurityQuoteUrl(po);
+                    selectedBean = po.getBean();
                 }
             }
         });
