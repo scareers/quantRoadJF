@@ -30,9 +30,11 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
+        String s = Character.toString(0x30);
+        Console.log(s);
 
-        DateTime date = DateUtil.date(1646150400);
-        Console.log(date);
+//        DateTime date = DateUtil.date(1646150400);
+//        Console.log(date);
 
 //        Console.log(JSONUtilS.parseObj(
 //                "{\"MsgId\":\"Msg@@XGSG@@2022-03-07 17\",\"PushTime\":1646643751600,\"Type\":5,\"Data\":[{\"securitycode\":\"688282\",\"purchasedate\":\"2022-03-08 00:00:00\",\"subcode\":\"787282\",\"securityshortname\":\"理工导航\",\"issueprice\":\"65.21\",\"peissuea\":\"80.87\",\"wszqjkr\":\"2022-03-10 00:00:00\",\"Url\":\"http://data.eastmoney.com/xg/xg/default.html\"},{\"securitycode\":\"688150\",\"purchasedate\":\"2022-03-08 00:00:00\",\"subcode\":\"787150\",\"securityshortname\":\"莱特光电\",\"issueprice\":\"22.05\",\"peissuea\":\"133.71\",\"wszqjkr\":\"2022-03-10 00:00:00\",\"Url\":\"http://data.eastmoney.com/xg/xg/default.html\"},{\"securitycode\":\"301219\",\"purchasedate\":\"2022-03-08 00:00:00\",\"subcode\":\"301219\",\"securityshortname\":\"腾远钴业\",\"issueprice\":\"173.98\",\"peissuea\":\"63.05\",\"wszqjkr\":\"2022-03-10 00:00:00\",\"Url\":\"http://data.eastmoney.com/xg/xg/default.html\"},{\"securitycode\":\"001308\",\"purchasedate\":\"2022-03-08 00:00:00\",\"subcode\":\"001308\",\"securityshortname\":\"康冠科技\",\"issueprice\":\"48.84\",\"peissuea\":\"22.99\",\"wszqjkr\":\"2022-03-10 00:00:00\",\"Url\":\"http://data.eastmoney.com/xg/xg/default.html\"}],\"ShieldName\":\"新股申购\",\"ShieldKey\":\"5\",\"Stock\":\"\"}"

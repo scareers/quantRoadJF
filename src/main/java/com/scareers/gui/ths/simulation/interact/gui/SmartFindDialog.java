@@ -1,7 +1,9 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.lang.Console;
+import com.scareers.utils.CommonUtil;
 import lombok.Data;
+import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXList;
 
 import javax.swing.*;
@@ -10,6 +12,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.concurrent.TimeoutException;
 
 /**
  * description: 智能查找功能实现, 对话框!
@@ -27,13 +30,21 @@ public class SmartFindDialog extends JDialog {
     // 3.标志进入了单次只能查找模式, 该flag在监听到第一个字母后设置true, 在一次查找退出后, 设置false!
     public static volatile boolean smartFindingEntered = false; // 单例单锁逻辑
 
-    public static SmartFindDialog INSTANCE; // 静态属性单例逻辑
+    private static SmartFindDialog INSTANCE;
+
+    public static SmartFindDialog getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new SmartFindDialog(TraderGui.INSTANCE, "智能查找", false);
+        }
+
+        return INSTANCE;
+    }
 
     /*
     静态数据
      */
     public static int widthDefault0 = 300;
-    public static int heightDefault0 = 400;
+    public static int heightDefault0 = 450;
     public static HashSet<Integer> smartFinderStartKeySet; // A-Z, 0-9; 监听到这些键, 才开启 一次只能查找! 初始化后一般不变
 
     static {
@@ -64,6 +75,7 @@ public class SmartFindDialog extends JDialog {
         findInput.setText("测试内容");
         findInput.setPreferredSize(new Dimension(widthDefault0, 40));
         findResList = new JXList();
+        findResList.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
         contentPanel.add(findInput, BorderLayout.NORTH);
         contentPanel.add(findResList, BorderLayout.CENTER);
@@ -95,6 +107,20 @@ public class SmartFindDialog extends JDialog {
         smartFinderStartKeySet = new HashSet<>(keys);
     }
 
+    /**
+     * 重写隐藏出现方法, 将合理设置 智能查找模式flag; 更加健壮
+     *
+     * @param b
+     */
+    @Override
+    public void setVisible(boolean b) {
+        super.setVisible(b);
+        if (b) {
+            smartFindingEntered = true;
+        } else {
+            smartFindingEntered = false;
+        }
+    }
 
     /**
      * @key3 : 全局唯一智能查找器, 在不同的功能区情况下, 请自行刷新 查找 Map! 一律返回查找结果 Object 类型;
@@ -103,13 +129,16 @@ public class SmartFindDialog extends JDialog {
      */
     public static void addGlobalSmartFinder() {
         // 1.控件初始化, 使用 对话框, + 内部 Panel
-
-
-        // 添加全局查找
+        SmartFindDialog.getInstance(); // 初始化单例! 自行保证此前 TraderGui的单例已经创建!
+        INSTANCE.resetLocation(); // 设置位置
+        INSTANCE.setVisible(true);
+        INSTANCE.setVisible(false);
+        // 添加全局查找逻辑
         KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
             @Override
             public synchronized boolean postProcessKeyEvent(KeyEvent e) {
+                INSTANCE.resetLocation(); // 设置位置
                 // 1.需要开启智能查找模式设置下生效!
                 if (!smartFinderMode) {
                     return true;
@@ -133,14 +162,37 @@ public class SmartFindDialog extends JDialog {
                 }
 
                 // 5. 进入或者维持智能查找模式! -- 因为各种输入框, 也会除非本回调, 因此进入只能查找模式后, 不继续监听!
-                if (smartFindingEntered) {
-                    Console.log("此前已经进入查找模式, 需要退出才能再次进入!");
-                } else { // 首次按下字母数字键, 进入智能查找模式! 设置flag!
+                if (!smartFindingEntered) { // 此前非智能搜索模式, 则进入, 否则无视掉, 再按键则输入内容到查找框!!
+                    if (INSTANCE.isVisible()) { // 对话框可见时, 意外进入, 此时无视;
+                        return true;
+                    }
+
+                    // 查找框确定了搜索结果后, 应当退出本模式!
+                    // 1.进入智能查找模式 flag
                     smartFindingEntered = true;
-                    JOptionPane.showMessageDialog(null, "按键进入智能查找模式: " + KeyEvent.VK_ENTER);
+                    // 2. 此前的按键, 转换为单字符串
+                    String s = Character.toString(e.getKeyCode()); // 按键字符串, 0-9, 大写 A-Z
+                    INSTANCE.findInput.setText(s);
+
+                    // 3. 设置对话框可见
+                    INSTANCE.setVisible(true); // 可见
+                    // 等待对话框显示
+                    try {
+                        CommonUtil.waitUtil(() -> INSTANCE.isVisible(), 100, 1, null, false);
+                    } catch (TimeoutException | InterruptedException ex) {
+//                        ex.printStackTrace();
+                        INSTANCE.setVisible(true);
+                    }
+
+                    // 4. 设置输入框, 刚刚按下的按键, 且获取focus! 等待获取成功!
+                    INSTANCE.findInput.requestFocus();
+                    try {
+                        CommonUtil.waitUtil(() -> INSTANCE.findInput.hasFocus(), 100, 1, null, false);
+                    } catch (TimeoutException | InterruptedException ex) {
+//                        ex.printStackTrace();
+                        INSTANCE.findInput.requestFocus();
+                    }
                 }
-
-
                 return true;
             }
         });
