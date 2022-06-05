@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.simple;
 
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 
 import javax.swing.*;
