@@ -11,6 +11,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -34,9 +35,11 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
@@ -179,10 +182,35 @@ public class BondGlobalSimulationPanel extends JPanel {
         panelMainForRevise.add(functionContainerMain, BorderLayout.NORTH);
     }
 
+    // 主功能区相关 -- 主要实现 虚拟时间, 以便复盘, 以及开始,暂停,重置,复盘起始时间设定等功能; 达成仿真
+    JTextField jTextFieldOfReviseStartDatetime; // 设置显示复盘开始日期和时间! 时间选择器
+    DateTimePicker dateTimePickerOfReviseStartDatetime; // 与jTextFieldOfReviseStartDatetime结合达成时间选择功能
+    DateTime reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00"); // 默认的复盘开始时间
+    // 单秒全序列: 复盘过程中, 可能出现的所有虚拟 时刻.复盘开始后, 遍历此序列, 选择第一个不小于reviseStartDatetime的开始;仅仅时分秒有效
+    List<String> allFsTransTimeTicks; // 仅仅包含时分秒的标准时间
+
+
     /**
      * 主功能区组件添加, 添加到 functionContainerMain, 该panel为左浮动布局
      */
     private void addMainFunctions() {
+        // 1. 初始化复盘功能 相关属性
+        // 1.1. 复盘开始时间 时间选择器!
+        jTextFieldOfReviseStartDatetime = new JTextField("复盘开始时间");
+        dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
+        dateTimePickerOfReviseStartDatetime.setEnable(true).setSelect(reviseStartDatetime) // 默认值
+                .changeDateEvent(new Consumer<DateTimePicker>() {
+                    @Override
+                    public void accept(DateTimePicker o) { // 选择后回调, 它仅仅会自动修改注册组件的文字, 以及内部date
+                        // 也修改静态属性!
+                        reviseStartDatetime = DateUtil.parseTime(dateTimePickerOfReviseStartDatetime.getSelect());
+                    }
+                }).register(jTextFieldOfReviseStartDatetime);
+
+        // 1.2. 所有可能的时间. 时分秒
+        allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeStrListHms(false);
+
+
         // 4.主功能区!
         FuncButton flushFs = ButtonFactory.getButton("刷新分时");
 

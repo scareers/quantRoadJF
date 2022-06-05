@@ -496,6 +496,21 @@ public class CommonUtil {
         return res;
     }
 
+    /**
+     * 仅仅包含时分秒的 字符串 列表形式
+     *
+     * @param hasPreOpenBid
+     * @return
+     */
+    public static List<String> generateMarketOpenTimeStrListHms(boolean hasPreOpenBid) {
+        List<DateTime> res = generateMarketOpenTimeListHms(hasPreOpenBid);
+        List<String> res2 = new ArrayList<>();
+        for (DateTime re : res) {
+            res2.add(DateUtil.format(re, DatePattern.NORM_TIME_PATTERN));
+        }
+        return res2;
+    }
+
     private static final Log log = LogUtil.getLogger();
 
     /**
