@@ -120,7 +120,11 @@ public class BondGlobalSimulationPanel extends JPanel {
         crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
         panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
         JScrollPane jScrollPaneForTickLog = dynamicChart.getJScrollPaneForTickLog();
-        jScrollPaneForTickLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, 2048)); // 容器同宽
+        panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, panelMainForRevise.getHeight()));
+        jScrollPaneForTickLog
+                .setPreferredSize(new Dimension(tick3sLogPanelWidth, panelOfTick3sLog.getHeight())); // 容器同宽
+        jScrollPaneForTickLog.setLocation(0, 0);
+        jScrollPaneForTickLog.setBorder(null);
         panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
     }
 
@@ -158,19 +162,21 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认;但更新chart时应当刷新
                 .addChartMouseListener(crossLineListenerForFsXYPlot);
         panelOfTick3sLog = new JPanel();  // tick显示
-        panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, 2048));
+        panelOfTick3sLog.setLayout(new BorderLayout());
         JLabel tempLabel = new JLabel("暂无数据");
+        tempLabel.setPreferredSize(new Dimension(tick3sLogPanelWidth, 1024));
         tempLabel.setBackground(Color.black);
         tempLabel.setForeground(Color.red);
-        panelOfTick3sLog.add(tempLabel, BorderLayout.CENTER); // 更新具体转债将被替换
+        panelOfTick3sLog.add(tempLabel, BorderLayout.CENTER);
+
         // 2.1. 加入两大组件
         fsMainPanel.add(chartPanel, BorderLayout.CENTER);
         fsMainPanel.add(panelOfTick3sLog, BorderLayout.EAST);
 
 
         // 3.组装
-        panelMainForRevise.add(functionContainerMain, BorderLayout.NORTH);
         panelMainForRevise.add(fsMainPanel, BorderLayout.CENTER);
+        panelMainForRevise.add(functionContainerMain, BorderLayout.NORTH);
     }
 
     /**
@@ -179,10 +185,10 @@ public class BondGlobalSimulationPanel extends JPanel {
     private void addMainFunctions() {
         // 4.主功能区!
         FuncButton flushFs = ButtonFactory.getButton("刷新分时");
+
         flushFs.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateFsDisplay();
 
                 double timeRate = 5;
                 ThreadUtil.execAsync(new Runnable() {
@@ -459,6 +465,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
+        updateFsDisplay(); // 自动改变分时图显示
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {
