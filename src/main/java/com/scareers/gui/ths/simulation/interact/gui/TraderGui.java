@@ -313,7 +313,7 @@ public class TraderGui extends JFrame {
     public static HashSet<Integer> smartFinderStartKeySet; // A-Z, 0-9; 监听到这些键, 才开启 一次只能查找! 初始化后一般不变
     // 标志进入了单次只能查找模式, 该flag在监听到第一个字母后设置true, 在一次查找退出后, 设置false!
     public static volatile boolean smartFindingEntered = false; // 单例单锁逻辑
-
+    public static SmartFindDialog smartFindDialog; // 静态属性单例逻辑
 
     /**
      * @key3 : 全局唯一智能查找器, 在不同的功能区情况下, 请自行刷新 查找 Map! 一律返回查找结果 Object 类型;
@@ -321,9 +321,8 @@ public class TraderGui extends JFrame {
      * 全局只能查找器, 类似于同花顺 智能查找!
      */
     public void addGlobalSmartFinder() {
-        /*
-        e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0  某个键是按下状态!
-         */
+        // 1.控件初始化, 使用 对话框, + 内部 Panel
+
 
         initSmartFinderStartKeySet();
         // 添加全局查找
