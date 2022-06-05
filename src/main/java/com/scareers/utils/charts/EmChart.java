@@ -908,10 +908,18 @@ public class EmChart {
         // 标准是否为第一次调用 put; 若是, 将读取历史n条数据, 先插入; 否则仅插入单条数据 见 redundancyPutDataAmount
         private boolean firstPutting = true;
 
-
+        /**
+         * tick数据插入组件; 新增功能, 首次可多添加n条历史数据! 具体逻辑见 putCore
+         *
+         * @param fsTransIndexShould
+         */
         public void put(int fsTransIndexShould) {
             List<Object> fsTransRow = fsTransDf.row(fsTransIndexShould);
+            putCore(fsTransRow);
 
+        }
+
+        public void putCore(List<Object> fsTransRow) {
             // 1.4项数据解析
             String timeTick = fsTransRow.get(3).toString();
             if (timeTick.equals(lastShowFsTransTick)) {
@@ -1042,7 +1050,6 @@ public class EmChart {
 
             }
             logTextPane.setCaretPosition(logTextPane.getDocument().getLength());
-
         }
     }
 
