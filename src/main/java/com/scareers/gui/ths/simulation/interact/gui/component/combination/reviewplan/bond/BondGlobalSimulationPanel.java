@@ -12,6 +12,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
@@ -106,6 +107,22 @@ public class BondGlobalSimulationPanel extends JPanel {
                         getWidth() - panelLeft.getWidth()
                         , getHeight());
                 panelMainForRevise.repaint();
+            }
+        });
+
+        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+        manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
+            @Override
+            public boolean postProcessKeyEvent(KeyEvent e) {
+                if (e.getID() != KeyEvent.KEY_PRESSED) { // 需要按下事件, 否则一次按放回触发两次
+                    return true;
+                }
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    Console.log("全局监听到 enter");
+                }
+
+
+                return true;
             }
         });
     }
