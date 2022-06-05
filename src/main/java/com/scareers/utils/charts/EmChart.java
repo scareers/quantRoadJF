@@ -926,17 +926,22 @@ public class EmChart {
 
             List<Object> fsTransRow = fsTransDf.row(fsTransIndexShould);
             putCore(fsTransRow);
-
         }
 
+        /**
+         * 将单行tick数, 打印
+         *
+         * @param fsTransRow
+         */
         public void putCore(List<Object> fsTransRow) {
-            // 1.4项数据解析
+            // 1. 保证不put相同行数据
             String timeTick = fsTransRow.get(3).toString();
             if (timeTick.equals(lastShowFsTransTick)) {
                 return;
             }
             lastShowFsTransTick = timeTick;
 
+            // 2.价格数据 --
             Double price = Double.valueOf(fsTransRow.get(4).toString());
             int amountRate = 1;
             if (beanEm.isBond()) {
