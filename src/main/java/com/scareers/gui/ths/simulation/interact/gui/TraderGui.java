@@ -8,15 +8,15 @@ import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
-import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.notify.EmPcNewsNotify;
-import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.EmPcNewsNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
@@ -29,13 +29,9 @@ import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.JavaBean;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Hashtable;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 
 
@@ -234,6 +230,8 @@ public class TraderGui extends JFrame {
      * 主窗口打开回调, 非子控件相关的其他部分
      */
     private void whenWindowOpened() {
+        SmartFindDialog.addGlobalSmartFinder(); // 窗口打开后, 首先添加只能查找框, 不可见
+
         ThreadUtil.execAsync(() -> {
             try {
                 this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
@@ -303,90 +301,12 @@ public class TraderGui extends JFrame {
 
     }
 
-    /*
-    智能查找功能!
-     */
-
-    // 标志智能查找模式; 在该模式开始时, 一下按键监听生效, 否则不生效
-    public static volatile boolean smartFinderMode = true; // 可通过修改此值, 关闭只能查找概念
-    public static volatile Hashtable<String, Object> findingMap = new Hashtable<>(); // 查找map; 切换功能应当清空它, 并填充它;
-    public static HashSet<Integer> smartFinderStartKeySet; // A-Z, 0-9; 监听到这些键, 才开启 一次只能查找! 初始化后一般不变
-    // 标志进入了单次只能查找模式, 该flag在监听到第一个字母后设置true, 在一次查找退出后, 设置false!
-    public static volatile boolean smartFindingEntered = false; // 单例单锁逻辑
-    public static SmartFindDialog smartFindDialog; // 静态属性单例逻辑
-
-    /**
-     * @key3 : 全局唯一智能查找器, 在不同的功能区情况下, 请自行刷新 查找 Map! 一律返回查找结果 Object 类型;
-     * 不同功能gui下, 显然返回结果可能不同 !
-     * 全局只能查找器, 类似于同花顺 智能查找!
-     */
-    public void addGlobalSmartFinder() {
-        // 1.控件初始化, 使用 对话框, + 内部 Panel
-
-
-        initSmartFinderStartKeySet();
-        // 添加全局查找
-        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-        manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
-            @Override
-            public synchronized boolean postProcessKeyEvent(KeyEvent e) {
-                // 1.需要开启智能查找模式设置下生效!
-                if (!smartFinderMode) {
-                    return true;
-                }
-                // 2.只监控按下事件, 无视释放事件
-                if (e.getID() != KeyEvent.KEY_PRESSED) { // 需要按下事件, 否则一次按放回触发两次;
-                    return true;
-                }
-                // 3. 3大组合键  任意按下状态, 也不会进入智能查找模式
-                if (
-                        (e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0
-                                || (e.getModifiersEx() & KeyEvent.SHIFT_DOWN_MASK) != 0
-                                || (e.getModifiersEx() & KeyEvent.ALT_DOWN_MASK) != 0
-
-                ) {
-                    return true;
-                }
-                // 4. 如果非 26 + 10 字符, 无视掉!
-                if (!smartFinderStartKeySet.contains(e.getKeyCode())) {
-                    return true;
-                }
-
-                // 5. 进入或者维持智能查找模式! -- 因为各种输入框, 也会除非本回调, 因此进入只能查找模式后, 不继续监听!
-                if (smartFindingEntered) {
-                    Console.log("此前已经进入查找模式, 需要退出才能再次进入!");
-                } else { // 首次按下字母数字键, 进入智能查找模式! 设置flag!
-                    smartFindingEntered = true;
-                    JOptionPane.showMessageDialog(null, "按键进入智能查找模式: " + KeyEvent.VK_ENTER);
-                }
-
-
-                return true;
-            }
-        });
-    }
-
-    /**
-     * 可作为只能查找开始一次查找的键 集合;  A-Z + 0-9; 其他键不可作为智能查找初始! 且不可组合键
-     */
-    public static void initSmartFinderStartKeySet() {
-        java.util.List<Integer> keys = new ArrayList<>();
-        for (int i = 0x41; i <= 0x5A; i++) { // A-Z, 无小写!
-            keys.add(i);
-        }
-        for (int i = 0x30; i <= 0x39; i++) { // 0-9
-            keys.add(i);
-        }
-
-        smartFinderStartKeySet = new HashSet<>(keys);
-    }
 
     FuncTreeWindow funcTreeWindow;
     // AnalyzeRealtimeWindow analyzeRealtimeWindow;
     static volatile Trader trader;
 
     private void addListeners() {
-        addGlobalSmartFinder(); // 首先添加全局只能查找器监控对象!
         TraderGui mainWindow = this;
         // 打开后启动交易程序
         this.addWindowListener(new WindowAdapter() {
