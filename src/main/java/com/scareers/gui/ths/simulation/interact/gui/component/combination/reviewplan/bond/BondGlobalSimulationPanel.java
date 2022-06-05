@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
@@ -9,7 +10,6 @@ import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
@@ -17,7 +17,6 @@ import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
-import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChart;
@@ -35,14 +34,11 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
-import static com.scareers.utils.charts.EmChart.getCrossLineListenerForFsXYPlot;
-import static java.awt.event.KeyEvent.VK_ENTER;
 
 /**
  * description: 转债全市场(全局)复盘panel;
@@ -67,6 +63,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
     protected SecurityBeanEm selectedBean = null; // 被选中的转债 东财bean对象
+    protected SecurityBeanEm preChangedSelectedBean = null; // 此前被选中,且更新过fs图对象, 当新的等于它时, 将不重新实例化动态图表对象
     protected int jListWidth; // 列表宽度, 例如300
     protected MainDisplayWindow mainDisplayWindow; // 主显示区
 
@@ -110,32 +107,21 @@ public class BondGlobalSimulationPanel extends JPanel {
      * 它要求 selectedBean 已设置不为 null;
      */
     public void updateFsDisplay() {
-        if (selectedBean == null) {
-            return;
+        if (selectedBean == null || this.selectedBean.equals(this.preChangedSelectedBean)) {
+            Console.log("xx");
+            return; // 为空或者未改变, 不会重新实例化 动态分时图表 对象
         }
-
         // 1.实例化动态图表
         dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getDateStr());
-
-        //        double timeRate = 10;
-//        ThreadUtil.execAsync(new Runnable() {
-//            @Override
-//            public void run() {
-//                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-//                for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
-//                    Date tick = allFsTransTimeTicks.get(i);
-//                    ThreadUtil.sleep((long) (1000 / timeRate));
-//                    Console.log("即将刷新");
-//                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
-//                }
-//            }
-//        }, true);
-        dynamicChart.updateChartFsTrans(DateUtil.parse("09:35:00"));
+        preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
 
         // 3. 更新chart对象, 刷新!
         chartPanel.setChart(dynamicChart.getChart());
-        crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks());
-        panelOfTick3sLog.add(dynamicChart.getJScrollPaneForTickLog(), BorderLayout.CENTER);
+        crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
+        panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
+        JScrollPane jScrollPaneForTickLog = dynamicChart.getJScrollPaneForTickLog();
+        jScrollPaneForTickLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, 2048)); // 容器同宽
+        panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
     }
 
     public String getDateStr() {
@@ -197,6 +183,20 @@ public class BondGlobalSimulationPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 updateFsDisplay();
+
+                double timeRate = 5;
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+                        for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
+                            DateTime tick = allFsTransTimeTicks.get(i);
+                            ThreadUtil.sleep((long) (1000 / timeRate));
+                            Console.log("即将刷新");
+                            dynamicChart.updateChartFsTrans(tick); // 重绘图表
+                        }
+                    }
+                }, true);
             }
         });
 
@@ -434,23 +434,13 @@ public class BondGlobalSimulationPanel extends JPanel {
                 openSecurityQuoteUrl(po);
             }
         });
-        jList.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) { // enter键, 则是更改 selectedBean 对象
-                if (e.getKeyCode() == VK_ENTER) {
-                    int index = jList.getSelectedIndex();
-                    SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
-                    selectedBean = po.getBean();
-                }
-            }
-        });
 
         jList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 int index = jList.getSelectedIndex(); // 选中切换
                 SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
-                selectedBean = po.getBean();
+                setSelectedBean(po.getBean());
                 bondInfoPanel.update(selectedBean);
             }
         });
@@ -460,6 +450,15 @@ public class BondGlobalSimulationPanel extends JPanel {
         jList.setBackground(COLOR_THEME_MAIN);
         jList.setBorder(null);
         return jList;
+    }
+
+    /**
+     * 更新选中bean , 请调用方法, 同步设置pre的方式, 因控件事件触发, 而不合适, preSelectedBean的语义已经修改
+     *
+     * @param selectedBean
+     */
+    public void setSelectedBean(SecurityBeanEm bean) {
+        this.selectedBean = bean;
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {

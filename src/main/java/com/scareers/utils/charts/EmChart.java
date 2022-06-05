@@ -139,7 +139,7 @@ public class EmChart {
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
-                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+                List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
                 for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));

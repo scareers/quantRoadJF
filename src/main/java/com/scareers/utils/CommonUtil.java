@@ -471,8 +471,8 @@ public class CommonUtil {
      *
      * @return
      */
-    public static List<Date> generateMarketOpenTimeListHms(boolean hasPreOpenBid) {
-        List<Date> res = new ArrayList<>();
+    public static List<DateTime> generateMarketOpenTimeListHms(boolean hasPreOpenBid) {
+        List<DateTime> res = new ArrayList<>();
 
         if (hasPreOpenBid) {
             DateRange range0 = DateUtil.range( // 首尾均包含!
