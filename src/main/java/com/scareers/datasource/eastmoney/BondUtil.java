@@ -103,7 +103,7 @@ public class BondUtil {
      * 背诵csv生成
      */
     public static DataFrame<Object> generateCSVForRecite1() {
-        CommonUtil.notifyCommon("开始生成最新转债背诵内容");
+        CommonUtil.notifyKey("开始生成最新转债背诵内容");
         // 1.所有带转债股票代码; 股票代码:转债名称, 这里只用到key
         ConcurrentHashMap<String, String> stockCodeWithBondNameFromUseWenCai = getStockCodeWithBondNameFromUseWenCai();
         String dateStr = DateUtil.format(DateUtil.offset(DateUtil.date(), DateField.DAY_OF_MONTH, -1), "yyyyMMdd"); //
@@ -246,7 +246,7 @@ public class BondUtil {
             e.printStackTrace();
         }
         Console.log(resDf);
-        CommonUtil.notifyCommon("完成生成最新转债背诵内容");
+        CommonUtil.notifyKey("完成生成最新转债背诵内容");
         return resDf;
     }
 

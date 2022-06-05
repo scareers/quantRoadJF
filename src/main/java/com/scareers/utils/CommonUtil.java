@@ -11,11 +11,13 @@ import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 
@@ -506,6 +508,11 @@ public class CommonUtil {
 
     public static void notifyError(String content) {
         log.error(content);
-        ManiLog.put(content);
+        ManiLog.put(content, Color.red);
+    }
+
+    public static void notifyKey(String content) {
+        log.warn(content);
+        ManiLog.put(content, Color.yellow);
     }
 }

@@ -149,7 +149,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 3.组装
         panelMainForRevise.add(functionContainer, BorderLayout.NORTH);
-        panelMainForRevise.add(functionContainer, BorderLayout.NORTH);
+        panelMainForRevise.add(new JLabel("测试"), BorderLayout.CENTER);
     }
 
     JPanel functionPanel; // 功能按钮区 在左上
