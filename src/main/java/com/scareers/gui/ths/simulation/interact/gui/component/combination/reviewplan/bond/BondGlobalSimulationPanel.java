@@ -19,6 +19,7 @@ import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChart;
 import com.scareers.utils.charts.EmChart.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.log.LogUtil;
@@ -102,7 +103,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
     ChartPanel chartPanel; // 更新时: 仅需要更新 内部chart对象;
     JPanel panelOfTick3sLog; // 更新时: 仅需将新 dynamicChart 的log组件, add到其center即可
-
+    CrossLineListenerForFsXYPlot crossLineListenerForFsXYPlot; // 监听器, 更新时, 需要更新其时间列表,否则可能出现问题
 
     /**
      * 更新分时图显示 主 区; 它读取自身属性, selectedBean, 以及设置区设置的 日期 ! 实例化 DynamicEmFs1MV2ChartForRevise 对象
@@ -133,6 +134,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 3. 更新chart对象, 刷新!
         chartPanel.setChart(dynamicChart.getChart());
+        crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks());
         panelOfTick3sLog.add(dynamicChart.getJScrollPaneForTickLog(), BorderLayout.CENTER);
     }
 
@@ -165,8 +167,10 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel.setMouseZoomable(false);
         chartPanel.setRangeZoomable(false);
         chartPanel.setDomainZoomable(false);
-        chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认
-                .addChartMouseListener(getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false)));
+        crossLineListenerForFsXYPlot =
+                EmChart.getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false));
+        chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认;但更新chart时应当刷新
+                .addChartMouseListener(crossLineListenerForFsXYPlot);
         panelOfTick3sLog = new JPanel();  // tick显示
         panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, 2048));
         JLabel tempLabel = new JLabel("暂无数据");
@@ -189,7 +193,15 @@ public class BondGlobalSimulationPanel extends JPanel {
     private void addMainFunctions() {
         // 4.主功能区!
         FuncButton flushFs = ButtonFactory.getButton("刷新分时");
+        flushFs.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateFsDisplay();
+            }
+        });
 
+
+        functionContainerMain.add(flushFs);
     }
 
     JPanel functionPanel; // 功能按钮区 在左上

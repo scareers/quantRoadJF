@@ -50,11 +50,14 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
     List<DateTime> timeTicks;
     int xAmount;
 
-    public CrossLineListenerForFsXYPlot(List<DateTime> timeTicks) {
-        // 给定日期列表!, 设置x轴竖线marker
+    public void setTimeTicks(List<DateTime> timeTicks) {
         this.timeTicks = timeTicks;
         this.xAmount = timeTicks.size();
+    }
 
+    public CrossLineListenerForFsXYPlot(List<DateTime> timeTicks) {
+        // 给定日期列表!, 设置x轴竖线marker
+        setTimeTicks(timeTicks);
 
         BasicStroke basicStroke = new BasicStroke(1);
         // 1.x竖线 唯一
