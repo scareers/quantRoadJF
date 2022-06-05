@@ -38,6 +38,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,8 +66,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         return INSTANCE;
     }
 
-    public static final int tick3sLogPanelWidth = 323; // 3stick数据显示组件宽度
-    public static final double timeRateDefault = 10.0; // 默认复盘时间倍率
+    public static final int tick3sLogPanelWidth = DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
+    public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -177,7 +178,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel.setMouseZoomable(false);
         chartPanel.setRangeZoomable(false);
         chartPanel.setDomainZoomable(false);
-        chartPanel.setMouseZoomable(false,false);
+        chartPanel.setMouseZoomable(false, false);
         chartPanel.setMouseWheelEnabled(false);
         crossLineListenerForFsXYPlot =
                 EmChart.getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false));
@@ -252,7 +253,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         jTextFieldOfReviseStartDatetime.setBackground(Color.black);
         jTextFieldOfReviseStartDatetime.setForeground(Color.yellow);
         jTextFieldOfReviseStartDatetime.setCaretColor(Color.red);
-        jTextFieldOfReviseStartDatetime.setPreferredSize(new Dimension(110, 40));
+        jTextFieldOfReviseStartDatetime.setPreferredSize(new Dimension(130, 40));
 
         dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
         dateTimePickerOfReviseStartDatetime.setEnable(true).setSelect(reviseStartDatetime) // 默认值
@@ -308,8 +309,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                 // 1.更新对象! 将读取 年月日 日期设定; 且强制更新,使用新日期设置
                 updateFsDisplay(true);
 
-                // 2.读取时间流速设定
-                double timeRate = getReviseTimeRateSetting();
+                // 2.读取时间流速设定, -- @update: 已经改为实时读取
+                // double timeRate = getReviseTimeRateSetting();
 
                 // 3.读取开始的 时分秒 tick 设置!
                 String startTickHms = getReviseDateStrSettingHMS();
@@ -355,7 +356,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                             dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
 
-                            ThreadUtil.sleep((long) (1000 / timeRate)); // 因为循环是1s的;
+                            ThreadUtil.sleep((long) (1000 / getReviseTimeRateSetting())); // 因为循环是1s的;
                         }
                         reviseRunning = false; // 非运行状态
                     }
@@ -415,8 +416,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                     // @key3: 复盘逻辑:
                     // 1.更新对象! 将读取 年月日 日期设定; 且强制更新,使用新日期设置
                     updateFsDisplay(true);
-                    // 2.读取时间流速设定
-                    double timeRate = getReviseTimeRateSetting();
+                    // 2.读取时间流速设定, -- @update: 已经改为实时读取
+                    // double timeRate = getReviseTimeRateSetting();
                     // 3.读取开始的 时分秒 tick 设置!
                     String startTickHms = getReviseRestartTickFromLabel();
 
@@ -462,7 +463,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                                 dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
 
-                                ThreadUtil.sleep((long) (1000 / timeRate)); // 因为循环是1s的;
+                                ThreadUtil.sleep((long) (1000 / getReviseTimeRateSetting())); // 因为循环是1s的;
                             }
                             reviseRunning = false; // 非运行状态
                         }
@@ -584,7 +585,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             this.add(industryInfoLabel);
             this.add(conceptInfoLabel);
 
-            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
+            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 100) {
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
@@ -683,8 +684,23 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();
-        buttonContainer.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
+        buttonContainer.setLayout(new GridLayout(2, 4, -1, -1)); // 网格布局按钮
 
+        // 2.1. 8个点击改变复盘开始时间的按钮; 仅改变时分秒
+        List<String> changeReviseStartTimeButtonTexts = Arrays
+                .asList("9:30:00", "10:00:00", "10:30:00", "11:00:00", "13:00:00", "13:30:00", "14:00:00", "14:30:00");
+        for (String text : changeReviseStartTimeButtonTexts) {
+            FuncButton changeReviseStartTimeButton = getChangeReviseStartTimeButton(text);
+            buttonContainer.add(changeReviseStartTimeButton);
+        }
+
+        // 2.2. 4个点击改变复盘时间倍率的按钮
+        List<String> changeReviseTimeRateButtonTexts = Arrays
+                .asList("1", "3", "4", "5");
+        for (String text : changeReviseStartTimeButtonTexts) {
+            FuncButton button = getChangeReviseTimeRateButton(text);
+            buttonContainer.add(button);
+        }
 
         // @key: 各种功能按钮!
         FuncButton loadBondListButton = ButtonFactory.getButton("刷新列表");
@@ -698,9 +714,50 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
 
 
-        buttonContainer.add(loadBondListButton);
         functionPanel.add(buttonContainer, BorderLayout.CENTER);
     }
+
+    /**
+     * 一类按钮: 点击改变复盘开始时间(仅仅时分秒) 到按钮文字那么多
+     *
+     * @param tickHms
+     * @return
+     */
+    public FuncButton getChangeReviseStartTimeButton(String tickHms) {
+        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(tickHms);
+        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                // 重设复盘开始时间!
+                reviseStartDatetime = DateUtil.parse(DateUtil.format(reviseStartDatetime,
+                        DatePattern.NORM_DATE_PATTERN + " " + tickHms)); // 变量更新
+                jTextFieldOfReviseStartDatetime // 文本框更新
+                        .setText(DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATETIME_PATTERN));
+                dateTimePickerOfReviseStartDatetime.setSelect(reviseStartDatetime);// 改变选中
+            }
+        });
+        return changeReviseStartTimeButton;
+    }
+
+    /**
+     * 一类按钮: 点击改变 复盘时间倍率 到按钮文字那么多 -- 要求参数可解析为double
+     *
+     * @param tickHms
+     * @return
+     */
+    public FuncButton getChangeReviseTimeRateButton(String timeRate) {
+        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(timeRate);
+        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                jTextFieldOfTimeRate.setText(timeRate);
+            }
+        });
+        return changeReviseStartTimeButton;
+    }
+
 
     JScrollPane jScrollPaneForList;
 

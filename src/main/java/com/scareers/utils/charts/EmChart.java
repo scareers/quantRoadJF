@@ -135,7 +135,7 @@ public class EmChart {
 //        }, true);
 
 //        // 分时成交更新!
-        double timeRate = 10;
+        double timeRate = 5;
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
@@ -166,6 +166,7 @@ public class EmChart {
     public static class DynamicEmFs1MV2ChartForRevise {
         public static double redundancyPriceRangePercent = 0.002; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
         public static int redundancyPutDataAmount = 20; // 首次put时, 多添加历史n条数据
+        public static int tickLogPanelWidthDefault = 402; // tick打印面板的总宽度,含滚动条
 
         // 基本属性
 
@@ -865,7 +866,7 @@ public class EmChart {
 //            frame.setContentPane(chartPanel);
 
             JPanel panelRight = new JPanel();
-            panelRight.setPreferredSize(new Dimension(323, 1024));
+            panelRight.setPreferredSize(new Dimension(tickLogPanelWidthDefault, 1024));
 
             ManipulateLogPanel displayForLog = new ManipulateLogPanel();
             logTextPane = displayForLog.getLogTextPane(); // 操作.
@@ -903,6 +904,7 @@ public class EmChart {
         private String lastShowFsTransTick = null; // 保留已经put过的最后一条时间, 保证不连续put相同tick
         DecimalFormat df2 = new DecimalFormat("#########.00");
         DecimalFormat df3 = new DecimalFormat("#########.000");
+        DecimalFormat dfOfChgPct = new DecimalFormat("####0.00%");
         Double prePrice0 = null; // 保留上一次价格, 当前价格与之比较, 显示向上向下箭头!
 
         // 标准是否为第一次调用 put; 若是, 将读取历史n条数据, 先插入; 否则仅插入单条数据 见 redundancyPutDataAmount
@@ -941,9 +943,9 @@ public class EmChart {
             }
             lastShowFsTransTick = timeTick;
 
-            // 2.价格数据 --
+            // 2.数据项解析
             Double price = Double.valueOf(fsTransRow.get(4).toString());
-            int amountRate = 1;
+            int amountRate = 1; // 计算成交额时, 倍率; 即 成交量 * 价格 * 每手数量
             if (beanEm.isBond()) {
                 amountRate = 10;
             } else if (beanEm.isStock()) {
@@ -952,9 +954,8 @@ public class EmChart {
             Double amount = Double.parseDouble(fsTransRow.get(5).toString()) * price * amountRate; // 成交额
             Integer bs = Integer.valueOf(fsTransRow.get(6).toString());
 
-            // 2.白色时间
+            // 3.时间数据 打印
             Font font = new Font("Consolas", Font.PLAIN, 18); // 字符同宽
-//            Font font = new Font("微软雅黑", Font.PLAIN, 18);
             StyleContext sc = StyleContext.getDefaultStyleContext();
             AttributeSet aset = sc
                     .addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, new Color(192, 192, 192));
@@ -974,26 +975,30 @@ public class EmChart {
             // 2.价格信息
             String priceInfo;
             if (beanEm.isShenBond()) {
-                priceInfo = StrUtil.padPre(df3.format(price), 9, " ");
+                priceInfo = StrUtil.padPre(df3.format(price), 9, " "); // 深债价格3为小数
             } else {
                 priceInfo = StrUtil.padPre(df2.format(price), 9, " ");
             }
+            // 2.1. 涨跌幅信息
+            double chgPct = price / preClose - 1;
+            String chgPctInfo = StrUtil.padPre(dfOfChgPct.format(chgPct), 6, " ");
+            priceInfo = priceInfo + "[" + chgPctInfo + "]";
+
             Color color0 = new Color(192, 192, 192);
             if (price > preClose) {
                 color0 = new Color(255, 50, 50);
-                if (prePrice0 != null && prePrice0 != 0) {
-                    if (price / prePrice0 - 1 >= 0.004) { // 大增
-                        color0 = new Color(243, 0, 102);
-                    }
-                }
+
             } else if (price < preClose) {
                 color0 = new Color(0, 230, 0);
-                if (prePrice0 != null && prePrice0 != 0) {
-                    if (price / prePrice0 - 1 <= -0.004) { // 大降低
-                        color0 = new Color(2, 42, 217);
-                    }
+            }
+            if (prePrice0 != null && prePrice0 != 0) {
+                if ((price - prePrice0) / preClose >= 0.0035) { // 涨跌幅大增
+                    color0 = new Color(229, 11, 222);
+                } else if ((price - prePrice0) / preClose <= -0.0035) {// 大降低
+                    color0 = new Color(0, 100, 0);
                 }
             }
+
             aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, color0);
             aset = sc.addAttribute(aset, StyleConstants.Family, font.getFamily());
             aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
@@ -1056,8 +1061,6 @@ public class EmChart {
             aset = sc.addAttribute(aset, StyleConstants.FontSize, font.getSize());
             aset = sc.addAttribute(aset, StyleConstants.Bold, font.isBold());
             aset = sc.addAttribute(aset, StyleConstants.Italic, font.isItalic());
-
-
             try {
                 Document document = logTextPane.getDocument();
                 document.insertString(document.getLength(), amountInfo + "\n", aset);
