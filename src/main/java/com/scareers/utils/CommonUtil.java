@@ -6,6 +6,8 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
+import cn.hutool.log.Log;
+import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
 
@@ -488,5 +490,22 @@ public class CommonUtil {
         range1.forEach(res::add);
         range2.forEach(res::add);
         return res;
+    }
+
+    private static final Log log = LogUtil.getLogger();
+
+    /**
+     * 提示消息. 将打印log, 以及显示在 ManiLog, 适配gui
+     *
+     * @param content
+     */
+    public static void notifyCommon(String content) {
+        log.info(content);
+        ManiLog.put(content);
+    }
+
+    public static void notifyError(String content) {
+        log.error(content);
+        ManiLog.put(content);
     }
 }
