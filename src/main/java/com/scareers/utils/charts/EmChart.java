@@ -164,7 +164,8 @@ public class EmChart {
     @Data
     @NoArgsConstructor
     public static class DynamicEmFs1MV2ChartForRevise {
-        private double redundancyPriceRangePercent = 0.002; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
+        public static double redundancyPriceRangePercent = 0.002; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
+        public static int redundancyPutDataAmount = 20; // 首次put时, 多添加历史n条数据
 
         // 基本属性
 
@@ -903,6 +904,10 @@ public class EmChart {
         DecimalFormat df2 = new DecimalFormat("#########.00");
         DecimalFormat df3 = new DecimalFormat("#########.000");
         Double prePrice0 = null; // 保留上一次价格, 当前价格与之比较, 显示向上向下箭头!
+
+        // 标准是否为第一次调用 put; 若是, 将读取历史n条数据, 先插入; 否则仅插入单条数据 见 redundancyPutDataAmount
+        private boolean firstPutting = true;
+
 
         public void put(int fsTransIndexShould) {
             List<Object> fsTransRow = fsTransDf.row(fsTransIndexShould);
