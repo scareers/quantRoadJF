@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
@@ -13,18 +14,23 @@ import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
+import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXList;
 
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static java.awt.event.KeyEvent.VK_ENTER;
@@ -126,12 +132,14 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
-     * 主panel
+     * 主panel -- 对控制复盘的按钮, 还是应当放在本panel 最上方, 以便控制
      */
     private void buildMainPanel() {
         panelMainForRevise = new JPanel();
         JLabel x = new JLabel("测试label");
         panelMainForRevise.add(x);
+
+
     }
 
     JPanel functionPanel; // 功能按钮区 在左上
@@ -168,22 +176,104 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     }
 
+
     /**
      * 功能区上方, 显示 当前选中的bean 的基本信息; 例如概念, 行业,余额等;  --> 最新背诵信息
      * 转债代码	转债名称	价格	剩余规模	上市日期	20日振幅	正股代码	正股名称	行业	概念	pe动	流值
      * 113537	文灿转债	278.03	1.4亿	20190705	40.6	603348	文灿股份	交运设备-汽车零部件-汽车零部件Ⅲ	蔚来汽车概念;新能源汽车;特斯拉	41.8	130.49亿
      */
     public static class SelectBeanDisplayPanel extends DisplayPanel {
+        public static DataFrame<Object> allBondInfoDfForRevise = null; // 背诵字段df; 仅载入一次
+        public static ConcurrentHashMap<String, List<Object>> allBondInfoForReviseMap = new ConcurrentHashMap<>(); //
+
         SecurityBeanEm bondBean;
 
-        public SelectBeanDisplayPanel() {
-            this.setLayout(new BorderLayout());
+        JLabel bondInfoLabel = getCommonLabel();
+        JLabel stockInfoLabel = getCommonLabel();
+        JLabel industryInfoLabel = getCommonLabel();
+        JLabel conceptInfoLabel = getCommonLabel();
 
+        public SelectBeanDisplayPanel() {
+            this.setLayout(new GridLayout(4, 1, -1, -1)); // 4行1列;
+            this.add(bondInfoLabel);
+            this.add(stockInfoLabel);
+            this.add(industryInfoLabel);
+            this.add(conceptInfoLabel);
+
+            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        allBondInfoDfForRevise = BondUtil.generateCSVForRecite1();
+                        if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
+                            return;
+                        }
+                        // 载入到map里面, key为转债代码, value 为df单行!, 带有这种代码列, 因此注意索引!
+                        for (int i = 0; i < allBondInfoDfForRevise.length(); i++) {
+                            allBondInfoForReviseMap.put(allBondInfoDfForRevise.get(i, 0).toString(),
+                                    allBondInfoDfForRevise.row(i));
+                        }
+                    }
+                }, true);
+            }
         }
+
+        public static JLabel getCommonLabel() {
+            JLabel jLabel = new JLabel();
+            jLabel.setForeground(Color.red);
+            jLabel.setBackground(Color.black);
+            return jLabel;
+        }
+
+        /**
+         * 给定df一行, 给定索引列表, 创建显示内容, 使用 / 间隔, 且null显示null
+         *
+         * @param objects
+         * @param indexes
+         * @return
+         */
+        public static String buildStrForLabelShow(List<Object> objects, List<Integer> indexes) {
+            StringBuilder stringBuilder = new StringBuilder("");
+            for (Integer index : indexes) {
+                stringBuilder.append(" / "); // 最后去除
+                Object o = objects.get(index);
+                if (o == null) {
+                    stringBuilder.append("null");
+                } else {
+                    stringBuilder.append(o.toString());
+                }
+            }
+            return StrUtil.sub(stringBuilder.toString(), 3, stringBuilder.length());
+        }
+
 
         @Override
         public void update() {
+            if (this.bondBean == null) {
+                return;
+            }
+            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
+                return; // 要有全数据
+            }
+            String bondCode = bondBean.getSecCode();
+            // 转债代码	转债名称	价格	剩余规模	上市日期	20日振幅	正股代码	正股名称	行业	概念	pe动	流值
+            List<Object> infos = allBondInfoForReviseMap.get(bondCode);
+            String s = buildStrForLabelShow(infos, Arrays.asList(0, 1, 2, 3));
+            bondInfoLabel.setText(s);
+            bondInfoLabel.setToolTipText(s);
 
+            s = buildStrForLabelShow(infos, Arrays.asList(6, 7, 10, 11));
+            stockInfoLabel.setText(s);
+            stockInfoLabel.setToolTipText(s);
+
+            s = buildStrForLabelShow(infos, Arrays.asList(8, 4, 5));
+            industryInfoLabel.setText(s);
+            industryInfoLabel.setToolTipText(s);
+
+            s = buildStrForLabelShow(infos, Arrays.asList(9));
+            conceptInfoLabel.setText(s);
+            conceptInfoLabel.setToolTipText(s);
+            // conceptInfoLabel.setText(infos.get(9).toString());
         }
 
         public void update(SecurityBeanEm beanEm) {
@@ -192,14 +282,24 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
+    SelectBeanDisplayPanel bondInfoPanel;
+
     /**
      * 功能区初始化
      */
     private void initFunctionPanel() {
         functionPanel = new JPanel();
         functionPanel.setPreferredSize(new Dimension(jListWidth, 300));
+        functionPanel.setLayout(new BorderLayout());
 
-        functionPanel.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
+        // 1.转债信息显示
+        bondInfoPanel = new SelectBeanDisplayPanel();
+        bondInfoPanel.setPreferredSize(new Dimension(jListWidth, 100));
+        functionPanel.add(bondInfoPanel, BorderLayout.NORTH);
+
+        // 2.功能按钮列表
+        JPanel buttonContainer = new JPanel();
+        buttonContainer.setLayout(new GridLayout(2, 2, -1, -1)); // 网格布局按钮
 
 
         // @key: 各种功能按钮!
@@ -214,9 +314,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
 
 
-        functionPanel.add(loadBondListButton);
-
-
+        buttonContainer.add(loadBondListButton);
+        functionPanel.add(buttonContainer, BorderLayout.CENTER);
     }
 
     JScrollPane jScrollPaneForList;
@@ -281,6 +380,16 @@ public class BondGlobalSimulationPanel extends JPanel {
                     SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
                     selectedBean = po.getBean();
                 }
+            }
+        });
+
+        jList.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                int index = jList.getSelectedIndex(); // 选中切换
+                SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
+                selectedBean = po.getBean();
+                bondInfoPanel.update(selectedBean);
             }
         });
 
