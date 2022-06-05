@@ -914,6 +914,16 @@ public class EmChart {
          * @param fsTransIndexShould
          */
         public void put(int fsTransIndexShould) {
+            if (firstPutting) {
+                DataFrame<Object> sliceDf = fsTransDf
+                        .slice(Math.max(0, fsTransIndexShould - redundancyPutDataAmount), fsTransIndexShould);
+                // 筛选合适的历史数据df; 循环调用
+                for (int i = 0; i < sliceDf.length(); i++) {
+                    putCore(sliceDf.row(i));
+                }
+                firstPutting = false; // 修改flag
+            }
+
             List<Object> fsTransRow = fsTransDf.row(fsTransIndexShould);
             putCore(fsTransRow);
 
