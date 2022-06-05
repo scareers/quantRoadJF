@@ -210,6 +210,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 1.2. 所有可能的时间. 时分秒
         allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeStrListHms(false);
 
+        // 1.3.
+
 
         // 4.主功能区!
         FuncButton flushFs = ButtonFactory.getButton("刷新分时");
