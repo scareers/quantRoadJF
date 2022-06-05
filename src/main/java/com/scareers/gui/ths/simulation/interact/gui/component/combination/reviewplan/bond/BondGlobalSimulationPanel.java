@@ -136,8 +136,9 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     private void buildMainPanel() {
         panelMainForRevise = new JPanel();
-        JLabel x = new JLabel("测试label");
-        panelMainForRevise.add(x);
+        panelMainForRevise.setLayout(new BorderLayout());
+
+        // 1.复盘,分时图,等相关功能区
 
 
     }
