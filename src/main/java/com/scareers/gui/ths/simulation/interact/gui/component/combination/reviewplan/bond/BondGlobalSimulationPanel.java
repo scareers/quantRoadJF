@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
@@ -35,10 +36,11 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -109,13 +111,20 @@ public class BondGlobalSimulationPanel extends JPanel {
      * 更新分时图显示 主 区; 它读取自身属性, selectedBean, 以及设置区设置的 日期 ! 实例化 DynamicEmFs1MV2ChartForRevise 对象
      * 它要求 selectedBean 已设置不为 null;
      */
-    public void updateFsDisplay() {
-        if (selectedBean == null || this.selectedBean.equals(this.preChangedSelectedBean)) {
-            Console.log("xx");
+    public void updateFsDisplay(boolean forceCreateDynamicChart) {
+        if (selectedBean == null) {
             return; // 为空或者未改变, 不会重新实例化 动态分时图表 对象
         }
+        // 可强制重新创建 DynamicEmFs1MV2ChartForRevise 对象, 将读取新的selectedBean和 日期设置
+        if (!forceCreateDynamicChart) {
+            // 不强制时, 才使用对比机制, 可能无需新建对象; 但同样 DateStr 不会修改; 在开始和重启时, 显然需要重新读取
+            if (this.selectedBean.equals(this.preChangedSelectedBean)) {
+                return;
+            }
+        }
+
         // 1.实例化动态图表
-        dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getDateStr());
+        dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getReviseDateStrSettingYMD());
         preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
 
         // 3. 更新chart对象, 刷新!
@@ -131,9 +140,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
     }
 
-    public String getDateStr() {
-        return "2022-06-02"; // 读取设定的日期, 分时图显示
-    }
 
     JPanel functionContainerMain;
 
@@ -188,6 +194,17 @@ public class BondGlobalSimulationPanel extends JPanel {
     DateTime reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00"); // 默认的复盘开始时间
     // 单秒全序列: 复盘过程中, 可能出现的所有虚拟 时刻.复盘开始后, 遍历此序列, 选择第一个不小于reviseStartDatetime的开始;仅仅时分秒有效
     List<String> allFsTransTimeTicks; // 仅仅包含时分秒的标准时间
+    JLabel labelOfRealTimeSimulationTime; // 仿真的 "实时时间"; 只显示时分秒, 年月日从reviseStartDatetime去看
+    JTextField jTextFieldOfTimeRate; // 复盘时, 时间流速倍率, 无视了程序执行时间, 仅仅控制 sleep 的时间! 将解析text为double
+
+    private volatile boolean reviseRunning = false; // 标志复盘是否进行中, 将其手动设置为false, 可以停止进行中的循环
+    // 该值为true时, 点击重启才有效;
+    private volatile boolean revisePausing = false; // 标志复盘是否暂停中; 当暂停时, 理论上running应当为 true
+
+    // 功能按钮
+    FuncButton startReviseButton; // 开始按钮
+    FuncButton stopReviseButton; // 停止按钮
+    FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
 
 
     /**
@@ -210,34 +227,238 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 1.2. 所有可能的时间. 时分秒
         allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeStrListHms(false);
 
-        // 1.3.
+        // 1.3. 仿真 实时时间显示label! 不可编辑,固定 HH:mm:ss 格式
+        labelOfRealTimeSimulationTime = new JLabel();
+        labelOfRealTimeSimulationTime.setForeground(Color.yellow);
+        labelOfRealTimeSimulationTime.setBackground(Color.black);
+        labelOfRealTimeSimulationTime.setText("00:00:00"); // 初始!
 
+        // 1.4. 时间流速倍率, 默认 1.0
+        jTextFieldOfTimeRate = new JTextField("1.0");
 
-        // 4.主功能区!
-        FuncButton flushFs = ButtonFactory.getButton("刷新分时");
-
-        flushFs.addActionListener(new ActionListener() {
+        // 2.主功能区!
+        // 2.1. 时间选择器, 操作可绝对开始时间 reviseStartDatetime;
+        // 2.2. 静态仿真实时时间显示label
+        // 2.3. 开始复盘按钮: 开始复盘,读取reviseStartDatetime设置; 若当前正在运行, 则先停止再直接运行!
+        startReviseButton = ButtonFactory.getButton("开始"); //
+        startReviseButton.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public synchronized void actionPerformed(ActionEvent e) { // 同步
+                if (reviseRunning) { // 正在运行中, 则点击停止按钮, 并且等待 flag, 真正停止下来
+                    CommonUtil.notifyError("复盘进行中, 停止后才可开始!");
+                    return;
+                }
 
-                double timeRate = 5;
+                if (revisePausing) {
+                    CommonUtil.notifyError("复盘暂停中, 请点击重启!");
+                    return;
+                }
+
+
+                // 此时 reviseRunning 必然为 false, 正式执行 -- 开始复盘
+                // @key3: 复盘逻辑:
+                // 1.更新对象! 将读取 年月日 日期设定; 且强制更新,使用新日期设置
+                updateFsDisplay(true);
+
+                // 2.读取时间流速设定
+                double timeRate = getReviseTimeRateSetting();
+
+                // 3.读取开始的 时分秒 tick 设置!
+                String startTickHms = getReviseDateStrSettingHMS();
+
+                // 4.在 allFsTransTimeTicks 所有时间tick中, 筛选>= 开始tick的子列表, 以便遍历!
+                int startIndex = allFsTransTimeTicks.indexOf(startTickHms);
+                if (startIndex == -1) {
+                    startIndex = 0; // 当没有找到, 则从0开始!
+                }
+
+                // 5.开始循环遍历 tick, 执行更新! 期间将 检测 pause flag, 有可能被暂停!
+                // @noti: 暂停机制, 本质上也是break了循环 而停止; 只是保留 labelOfRealTimeSimulationTime 值, 以便重启!
+                // @noti: 停止机制, 则 会将 labelOfRealTimeSimulationTime 设置为 00:00:00, 不可重启!
+                int finalStartIndex = startIndex;
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
-                        List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-                        for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
-                            DateTime tick = allFsTransTimeTicks.get(i);
-                            ThreadUtil.sleep((long) (1000 / timeRate));
-                            Console.log("即将刷新");
-                            dynamicChart.updateChartFsTrans(tick); // 重绘图表
+                        // 死循环开始执行!
+                        // 0.真正逻辑上开始, 设置 flag
+                        reviseRunning = true;
+                        revisePausing = false;
+                        for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
+                            if (!reviseRunning) { // 被停止
+                                labelOfRealTimeSimulationTime.setText("00:00:00");
+                                reviseRunning = false; // 保证有效
+                                CommonUtil.notifyCommon("复盘已停止");
+                                break; // 被停止, 则立即停止循环!
+                            }
+
+                            if (revisePausing) { // 被暂停
+                                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
+                                revisePausing = true; // 保证有效
+                                CommonUtil.notifyCommon("复盘已暂停");
+                                break; // 被停止也终止循环, 等待重启!
+                            }
+
+                            String tick = allFsTransTimeTicks.get(i);
+                            labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
+                            dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
+
+                            ThreadUtil.sleep((long) (1000 / timeRate)); // 因为循环是1s的;
                         }
+                        reviseRunning = false; // 非运行状态
                     }
                 }, true);
             }
         });
 
+        // 2.4. 停止按钮
+        stopReviseButton = ButtonFactory.getButton("停止");
+        stopReviseButton.addActionListener(new ActionListener() {
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                labelOfRealTimeSimulationTime.setText("00:00:00");
+                reviseRunning = false; // 将停止 start后 的线程中的循环
+                revisePausing = false; // 暂停flag也将恢复!
+            }
+        });
 
-        functionContainerMain.add(flushFs);
+        // 2.5. 暂停按钮
+        pauseRebootReviseButton = ButtonFactory.getButton("暂停"); // 默认暂停!
+        pauseRebootReviseButton.addActionListener(new ActionListener() {
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                String text = pauseRebootReviseButton.getText();
+                if ("暂停".equals(text)) {// 执行暂停功能
+                    revisePausing = true; // 暂停, 正在执行的将停止, 但保留进度
+                    try {
+                        CommonUtil.waitUtil(new BooleanSupplier() {
+                            @Override
+                            public boolean getAsBoolean() {
+                                return reviseRunning == false; // 等待确实停止了下来
+                            }
+                        }, Integer.MAX_VALUE, 1, null, false);
+                    } catch (TimeoutException | InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                    pauseRebootReviseButton.setText("重启"); // 变换状态!
+                } else if ("重启".equals(text)) { // 执行重启功能! 它与开始功能的差别在于, 开始tick从 label读取, 而非设置读取
+                    if (reviseRunning) { // 正在运行中, 不可重启
+                        CommonUtil.notifyError("复盘进行中, 停止后才可重启!");
+                        return;
+                    }
+                    if (!revisePausing) {
+                        CommonUtil.notifyError("复盘未暂停, 不可重启!");
+                        return;
+                    }
+
+                    // 此时 reviseRunning 必然为 false, 且revisePausing 为true *************
+                    // @key3: 复盘逻辑:
+                    // 1.更新对象! 将读取 年月日 日期设定; 且强制更新,使用新日期设置
+                    updateFsDisplay(true);
+                    // 2.读取时间流速设定
+                    double timeRate = getReviseTimeRateSetting();
+                    // 3.读取开始的 时分秒 tick 设置!
+                    String startTickHms = getReviseRestartTickFromLabel();
+
+                    // 4.在 allFsTransTimeTicks 所有时间tick中, 筛选>= 开始tick的子列表, 以便遍历!
+                    int startIndex = allFsTransTimeTicks.indexOf(startTickHms);
+                    if (startIndex == -1) {
+                        startIndex = 0; // 当没有找到, 则从0开始!
+                    }
+
+                    // 5.开始循环遍历 tick, 执行更新! 期间将 检测 pause flag, 有可能被暂停!
+                    // @noti: 暂停机制, 本质上也是break了循环 而停止; 只是保留 labelOfRealTimeSimulationTime 值, 以便重启!
+                    // @noti: 停止机制, 则 会将 labelOfRealTimeSimulationTime 设置为 00:00:00, 不可重启!
+                    int finalStartIndex = startIndex;
+                    ThreadUtil.execAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            // 死循环开始执行!
+                            // 0.真正逻辑上开始, 设置 flag
+                            reviseRunning = true;
+                            revisePausing = false; // 重设暂停flag
+                            pauseRebootReviseButton.setText("暂停"); // 变换状态!
+
+                            for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
+                                if (!reviseRunning) { // 被停止
+                                    labelOfRealTimeSimulationTime.setText("00:00:00");
+                                    reviseRunning = false; // 保证有效
+                                    CommonUtil.notifyCommon("复盘已停止");
+                                    break; // 被停止, 则立即停止循环!
+                                }
+
+                                if (revisePausing) { // 被暂停
+                                    // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
+                                    revisePausing = true; // 保证有效
+                                    CommonUtil.notifyCommon("复盘已暂停");
+                                    break; // 被停止也终止循环, 等待重启!
+                                }
+
+                                String tick = allFsTransTimeTicks.get(i);
+                                labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
+                                dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
+
+                                ThreadUtil.sleep((long) (1000 / timeRate)); // 因为循环是1s的;
+                            }
+                            reviseRunning = false; // 非运行状态
+                        }
+                    }, true);
+
+                }// 其他不执行, 一般不可能
+            }
+        });
+
+        // 3.全部组件添加
+        functionContainerMain.add(jTextFieldOfReviseStartDatetime);
+        functionContainerMain.add(labelOfRealTimeSimulationTime);
+        functionContainerMain.add(jTextFieldOfTimeRate);
+        functionContainerMain.add(startReviseButton);
+        functionContainerMain.add(stopReviseButton);
+        functionContainerMain.add(pauseRebootReviseButton);
+
+
+    }
+
+    public String getReviseDateStrSettingYMD() { // 复盘日期设定 -- 年月日
+        try {
+            return DateUtil.format(DateUtil.parse(jTextFieldOfReviseStartDatetime.getText()),
+                    DatePattern.NORM_DATE_PATTERN); // 读取最新设定的 年月日 日期
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 复盘日期失败, 默认返回今日");
+            return DateUtil.today();
+        }
+    }
+
+    public String getReviseDateStrSettingHMS() { // 复盘开始tick设定 -- 时分秒
+        try {
+            return DateUtil.format(DateUtil.parse(jTextFieldOfReviseStartDatetime.getText()),
+                    DatePattern.NORM_TIME_PATTERN); // 读取最新设定的 年月日 日期
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 复盘开始tick失败, 默认返回 09:30:00");
+            return "09:30:00";
+        }
+    }
+
+    public String getReviseRestartTickFromLabel() { // 重启复盘时, 应当从label读取tick, 失败则 9:30:00
+        try {
+            return DateUtil.format(DateUtil.parse(labelOfRealTimeSimulationTime.getText()),
+                    DatePattern.NORM_TIME_PATTERN); // 读取当前被暂停时label的时间
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 复盘暂停重启tick失败, 默认返回 09:30:00");
+            return "09:30:00";
+        }
+    }
+
+    public double getReviseTimeRateSetting() { // 复盘时间流速倍率, 错误将返回 1.0
+        double v = 1.0;
+        try {
+            v = Double.parseDouble(jTextFieldOfTimeRate.getText());
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 时间流速倍率失败, 默认返回 1.0");
+        }
+        if (v <= 0.1) { // 倍率不能太小; 显然也不能为0
+            return 1.0;
+        }
+        return v;
     }
 
     JPanel functionPanel; // 功能按钮区 在左上
@@ -495,7 +716,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
-        updateFsDisplay(); // 自动改变分时图显示
+        updateFsDisplay(false); // 自动改变分时图显示, 不强制
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {
