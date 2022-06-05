@@ -110,21 +110,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             }
         });
 
-        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-        manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
-            @Override
-            public boolean postProcessKeyEvent(KeyEvent e) {
-                if (e.getID() != KeyEvent.KEY_PRESSED) { // 需要按下事件, 否则一次按放回触发两次
-                    return true;
-                }
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    Console.log("全局监听到 enter");
-                }
 
-
-                return true;
-            }
-        });
     }
 
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
