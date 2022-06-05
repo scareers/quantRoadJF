@@ -177,6 +177,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel.setMouseZoomable(false);
         chartPanel.setRangeZoomable(false);
         chartPanel.setDomainZoomable(false);
+        chartPanel.setMouseZoomable(false,false);
+        chartPanel.setMouseWheelEnabled(false);
         crossLineListenerForFsXYPlot =
                 EmChart.getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false));
         chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认;但更新chart时应当刷新
@@ -325,6 +327,10 @@ public class BondGlobalSimulationPanel extends JPanel {
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
+                        if (dynamicChart == null) {
+                            return;
+                        }
+
                         // 死循环开始执行!
                         // 0.真正逻辑上开始, 设置 flag
                         reviseRunning = true;
@@ -427,6 +433,10 @@ public class BondGlobalSimulationPanel extends JPanel {
                     ThreadUtil.execAsync(new Runnable() {
                         @Override
                         public void run() {
+                            if (dynamicChart == null) {
+                                return;
+                            }
+
                             // 死循环开始执行!
                             // 0.真正逻辑上开始, 设置 flag
                             reviseRunning = true;
