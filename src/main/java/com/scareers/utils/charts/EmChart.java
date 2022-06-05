@@ -201,16 +201,40 @@ public class EmChart {
 
         /**
          * 构造器
+         * 参数可null, 则需要主动调用 init方法, 传递非null参数
          *
          * @param securityBeanEm
          * @param dateStr
          */
         public DynamicEmFs1MV2ChartForRevise(SecurityBeanEm beanEm, String dateStr) {
+            init(beanEm, dateStr);
+        }
+
+        public void init(SecurityBeanEm beanEm, String dateStr) {
             this.beanEm = beanEm;
             this.dateStr = dateStr;
 
+            if (beanEm == null || dateStr == null) {
+                return;
+            }
             initDataAndAttrs(); // 自动初始化数据 以及 相关字段
             initChart(); // 初始化图表相关所有对象
+
+            initTick3sLogPanel();
+        }
+
+        /**
+         * 3秒tick数据显示区; jScrollPaneForTickLog 将被加入显示区右侧
+         */
+        public void initTick3sLogPanel() {
+            ManipulateLogPanel displayForLog = new ManipulateLogPanel();
+            logTextPane = displayForLog.getLogTextPane(); // 3stick显示框对象!
+            logTextPane.setBackground(new Color(0, 0, 0));
+            jScrollPaneForTickLog = new JScrollPane(logTextPane);
+            jScrollPaneForTickLog.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            BasicScrollBarUIS
+                    .replaceScrollBarUI(jScrollPaneForTickLog, COLOR_THEME_TITLE,
+                            COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
         }
 
         /**
@@ -419,6 +443,9 @@ public class EmChart {
          * 筛选更新图表, 将只更新数据序列, 上下界等 动态属性!
          */
         public void updateChart() {
+            if (this.beanEm == null || this.dateStr == null) {
+                return;
+            }
             // 1.刷新价格上下限 -- 可无
             updatePriceLowAndHigh();
             // 2.更新两个y轴的上下界!
@@ -430,6 +457,9 @@ public class EmChart {
         }
 
         public void updateChart(String timeTick) {
+            if (this.beanEm == null || this.dateStr == null) {
+                return;
+            }
             boolean b = this.setFilterTimeTick(timeTick);
             if (b) {
                 // 1.刷新价格上下限 -- 可无
@@ -446,6 +476,9 @@ public class EmChart {
         }
 
         public void updateChart(Date date) {
+            if (this.beanEm == null || this.dateStr == null) {
+                return;
+            }
             boolean b = this.setFilterTimeTick(date);
             if (b) {
                 // 1.刷新价格上下限 -- 可无
@@ -474,6 +507,10 @@ public class EmChart {
          * @param date
          */
         public void updateChartFsTrans(Date date) {
+            if (this.beanEm == null || this.dateStr == null) {
+                return;
+            }
+
             // 1.整秒数
 //            updateChart(date); // 将完美更新整数秒
             boolean b = this.setFilterTimeTick(date);
@@ -828,12 +865,13 @@ public class EmChart {
             logTextPane.setBackground(new Color(0, 0, 0));
 
             panelRight.setLayout(new BorderLayout());
-            jScrollPane = new JScrollPane(logTextPane);
-            jScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            jScrollPaneForTickLog = new JScrollPane(logTextPane);
+            jScrollPaneForTickLog.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
             BasicScrollBarUIS
-                    .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+                    .replaceScrollBarUI(jScrollPaneForTickLog, COLOR_THEME_TITLE,
+                            COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
 //            jScrollPane.getViewport().setBackground(Color.red);
-            panelRight.add(jScrollPane, BorderLayout.CENTER);
+            panelRight.add(jScrollPaneForTickLog, BorderLayout.CENTER);
 
 
             frame.add(panelRight, BorderLayout.EAST);
@@ -845,7 +883,7 @@ public class EmChart {
             frame.setVisible(true);
         }
 
-        JScrollPane jScrollPane; // 滚动包裹
+        JScrollPane jScrollPaneForTickLog; // 滚动包裹
         JTextPane logTextPane;
 
         /**

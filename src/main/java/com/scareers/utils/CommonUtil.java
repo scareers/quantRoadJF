@@ -37,7 +37,8 @@ public class CommonUtil {
 //        openUrlWithDefaultBrowser("https://www.baidu.com");
 
 //        Console.log(stdOfListNumberUseLoop(Arrays.asList(1, 2, 3)));
-        List<Date> dates = generateMarketOpenTimeListHms(false);
+        List<DateTime> dates = generateMarketOpenTimeListHm(false);
+        Console.log(dates.size());
         for (Date date : dates) {
             Console.log(date);
         }
@@ -437,9 +438,10 @@ public class CommonUtil {
      * 参数可控制是否生成 盘前竞价时段
      *
      * @return
+     * @noti : 东财标准分时图241条, 默认不包含集合竞价, 包含 9:30, 不包含 13:00
      */
-    public static List<Date> generateMarketOpenTimeListHm(boolean hasPreOpenBid) {
-        List<Date> res = new ArrayList<>();
+    public static List<DateTime> generateMarketOpenTimeListHm(boolean hasPreOpenBid) {
+        List<DateTime> res = new ArrayList<>();
 
         if (hasPreOpenBid) {
             DateRange range0 = DateUtil.range( // 首尾均包含!
@@ -454,7 +456,7 @@ public class CommonUtil {
                 DateUtil.parse("11:30:00"),
                 DateField.MINUTE);
         DateRange range2 = DateUtil.range( // 首尾均包含!
-                DateUtil.parse("13:00:00"),
+                DateUtil.parse("13:01:00"),
                 DateUtil.parse("15:00:00"),
                 DateField.MINUTE);
 

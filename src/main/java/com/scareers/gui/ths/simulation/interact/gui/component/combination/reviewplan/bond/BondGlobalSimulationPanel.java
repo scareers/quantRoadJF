@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -7,6 +9,7 @@ import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
@@ -16,11 +19,14 @@ import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.charts.EmChart;
+import com.scareers.utils.charts.EmChart.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXList;
+import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -28,11 +34,13 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.utils.charts.EmChart.getCrossLineListenerForFsXYPlot;
 import static java.awt.event.KeyEvent.VK_ENTER;
 
 /**
@@ -53,47 +61,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         return INSTANCE;
     }
 
-    /**
-     * JFrame frame = new JFrame("temp");
-     * <p>
-     * ChartPanel chartPanel = new ChartPanel(chart);
-     * <p>
-     * <p>
-     * // 大小
-     * chartPanel.setPreferredSize(new Dimension(1200, 800));
-     * chartPanel.setMouseZoomable(false);
-     * chartPanel.setRangeZoomable(false);
-     * chartPanel.setDomainZoomable(false);
-     * <p>
-     * chartPanel.addChartMouseListener(getCrossLineListenerForFsXYPlot(allFsTimeTicks));
-     * <p>
-     * frame.setLayout(new BorderLayout());
-     * //            frame.setContentPane(chartPanel);
-     * <p>
-     * JPanel panelRight = new JPanel();
-     * panelRight.setPreferredSize(new Dimension(323, 1024));
-     * <p>
-     * ManipulateLogPanel displayForLog = new ManipulateLogPanel();
-     * logTextPane = displayForLog.getLogTextPane(); // 操作.
-     * logTextPane.setBackground(new Color(0, 0, 0));
-     * <p>
-     * panelRight.setLayout(new BorderLayout());
-     * jScrollPane = new JScrollPane(logTextPane);
-     * jScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-     * BasicScrollBarUIS
-     * .replaceScrollBarUI(jScrollPane, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
-     * //            jScrollPane.getViewport().setBackground(Color.red);
-     * panelRight.add(jScrollPane, BorderLayout.CENTER);
-     * <p>
-     * <p>
-     * frame.add(panelRight, BorderLayout.EAST);
-     * frame.add(chartPanel, BorderLayout.CENTER);
-     * <p>
-     * <p>
-     * frame.pack(); // 显示.
-     * // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
-     * frame.setVisible(true);
-     */
+    public static final int tick3sLogPanelWidth = 323; // 3stick数据显示组件宽度
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -131,6 +99,49 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
     }
 
+    DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
+    ChartPanel chartPanel; // 更新时: 仅需要更新 内部chart对象;
+    JPanel panelOfTick3sLog; // 更新时: 仅需将新 dynamicChart 的log组件, add到其center即可
+
+
+    /**
+     * 更新分时图显示 主 区; 它读取自身属性, selectedBean, 以及设置区设置的 日期 ! 实例化 DynamicEmFs1MV2ChartForRevise 对象
+     * 它要求 selectedBean 已设置不为 null;
+     */
+    public void updateFsDisplay() {
+        if (selectedBean == null) {
+            return;
+        }
+
+        // 1.实例化动态图表
+        dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getDateStr());
+
+        //        double timeRate = 10;
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                List<Date> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+//                for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
+//                    Date tick = allFsTransTimeTicks.get(i);
+//                    ThreadUtil.sleep((long) (1000 / timeRate));
+//                    Console.log("即将刷新");
+//                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
+//                }
+//            }
+//        }, true);
+        dynamicChart.updateChartFsTrans(DateUtil.parse("09:35:00"));
+
+        // 3. 更新chart对象, 刷新!
+        chartPanel.setChart(dynamicChart.getChart());
+        panelOfTick3sLog.add(dynamicChart.getJScrollPaneForTickLog(), BorderLayout.CENTER);
+    }
+
+    public String getDateStr() {
+        return "2022-06-02"; // 读取设定的日期, 分时图显示
+    }
+
+    JPanel functionContainerMain;
+
     /**
      * 主panel -- 对控制复盘的按钮, 还是应当放在本panel 最上方, 以便控制
      */
@@ -139,17 +150,46 @@ public class BondGlobalSimulationPanel extends JPanel {
         panelMainForRevise.setLayout(new BorderLayout());
 
         // 1.复盘,分时图,等相关功能区
-        JPanel functionContainer = new JPanel();
-        functionContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
-        functionContainer.setPreferredSize(new Dimension(2048, 50));
-        functionContainer.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+        functionContainerMain = new JPanel();
+        functionContainerMain.setLayout(new FlowLayout(FlowLayout.LEFT));
+        functionContainerMain.setPreferredSize(new Dimension(2048, 50));
+        functionContainerMain.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+        addMainFunctions(); // 主功能区按钮
 
         // 2.分时图(或未来k线)显示区
+        JPanel fsMainPanel = new JPanel(); // fs和tick容器
+        fsMainPanel.setLayout(new BorderLayout());
+
+        chartPanel = new ChartPanel(null); // 图表
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMouseZoomable(false);
+        chartPanel.setRangeZoomable(false);
+        chartPanel.setDomainZoomable(false);
+        chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认
+                .addChartMouseListener(getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false)));
+        panelOfTick3sLog = new JPanel();  // tick显示
+        panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, 2048));
+        JLabel tempLabel = new JLabel("暂无数据");
+        tempLabel.setBackground(Color.black);
+        tempLabel.setForeground(Color.red);
+        panelOfTick3sLog.add(tempLabel, BorderLayout.CENTER); // 更新具体转债将被替换
+        // 2.1. 加入两大组件
+        fsMainPanel.add(chartPanel, BorderLayout.CENTER);
+        fsMainPanel.add(panelOfTick3sLog, BorderLayout.EAST);
 
 
         // 3.组装
-        panelMainForRevise.add(functionContainer, BorderLayout.NORTH);
-        panelMainForRevise.add(new JLabel("测试"), BorderLayout.CENTER);
+        panelMainForRevise.add(functionContainerMain, BorderLayout.NORTH);
+        panelMainForRevise.add(fsMainPanel, BorderLayout.CENTER);
+    }
+
+    /**
+     * 主功能区组件添加, 添加到 functionContainerMain, 该panel为左浮动布局
+     */
+    private void addMainFunctions() {
+        // 4.主功能区!
+        FuncButton flushFs = ButtonFactory.getButton("刷新分时");
+
     }
 
     JPanel functionPanel; // 功能按钮区 在左上
