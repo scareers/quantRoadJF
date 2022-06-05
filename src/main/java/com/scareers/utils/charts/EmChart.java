@@ -247,8 +247,8 @@ public class EmChart {
             this.fsTransDf = EastMoneyDbApi
                     .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
 
-            Console.log(fsDfV2Df);
-            Console.log(fsTransDf);
+//            Console.log(fsDfV2Df);
+//            Console.log(fsTransDf);
 
 
             // 2. 4项数据完整列表

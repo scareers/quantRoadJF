@@ -19,6 +19,7 @@ import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChart;
@@ -35,6 +36,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
@@ -64,6 +66,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     public static final int tick3sLogPanelWidth = 323; // 3stick数据显示组件宽度
+    public static final double timeRateDefault = 10.0; // 默认复盘时间倍率
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -124,7 +127,12 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 1.实例化动态图表
-        dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getReviseDateStrSettingYMD());
+        try {
+            dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getReviseDateStrSettingYMD());
+        } catch (Exception e) {
+            CommonUtil.notifyError("实例化动态图表对象失败, 疑似复盘日期设置错误");
+            return;
+        }
         preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
 
         // 3. 更新chart对象, 刷新!
@@ -191,7 +199,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     // 主功能区相关 -- 主要实现 虚拟时间, 以便复盘, 以及开始,暂停,重置,复盘起始时间设定等功能; 达成仿真
     JTextField jTextFieldOfReviseStartDatetime; // 设置显示复盘开始日期和时间! 时间选择器
     DateTimePicker dateTimePickerOfReviseStartDatetime; // 与jTextFieldOfReviseStartDatetime结合达成时间选择功能
-    DateTime reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00"); // 默认的复盘开始时间
+    DateTime reviseStartDatetime; // 默认的复盘开始时间
     // 单秒全序列: 复盘过程中, 可能出现的所有虚拟 时刻.复盘开始后, 遍历此序列, 选择第一个不小于reviseStartDatetime的开始;仅仅时分秒有效
     List<String> allFsTransTimeTicks; // 仅仅包含时分秒的标准时间
     JLabel labelOfRealTimeSimulationTime; // 仿真的 "实时时间"; 只显示时分秒, 年月日从reviseStartDatetime去看
@@ -212,6 +220,24 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     private void addMainFunctions() {
         // 1. 初始化复盘功能 相关属性
+        // 1.0. 默认的复盘开始时间: >15点,今天是交易日,就今天, 否则都上一天!
+        try {
+            if (DateUtil.hour(DateUtil.date(), true) >= 15) {
+                if (EastMoneyDbApi.isTradeDate(DateUtil.today())) {
+                    reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00");
+                } else {
+                    reviseStartDatetime = DateUtil
+                            .parse(EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1) + " " +
+                                    "09:30:00");
+                }
+            } else {
+                reviseStartDatetime = DateUtil
+                        .parse(EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1) + " " +
+                                "09:30:00");
+            }
+        } catch (SQLException e) {
+            reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00");
+        }
         // 1.1. 复盘开始时间 时间选择器!
         jTextFieldOfReviseStartDatetime = new JTextField("复盘开始时间");
         dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
@@ -220,12 +246,13 @@ public class BondGlobalSimulationPanel extends JPanel {
                     @Override
                     public void accept(DateTimePicker o) { // 选择后回调, 它仅仅会自动修改注册组件的文字, 以及内部date
                         // 也修改静态属性!
-                        reviseStartDatetime = DateUtil.parseTime(dateTimePickerOfReviseStartDatetime.getSelect());
+                        reviseStartDatetime = DateUtil.parse(dateTimePickerOfReviseStartDatetime.getSelect());
                     }
                 }).register(jTextFieldOfReviseStartDatetime);
 
         // 1.2. 所有可能的时间. 时分秒
         allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeStrListHms(false);
+
 
         // 1.3. 仿真 实时时间显示label! 不可编辑,固定 HH:mm:ss 格式
         labelOfRealTimeSimulationTime = new JLabel();
@@ -234,7 +261,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         labelOfRealTimeSimulationTime.setText("00:00:00"); // 初始!
 
         // 1.4. 时间流速倍率, 默认 1.0
-        jTextFieldOfTimeRate = new JTextField("1.0");
+        jTextFieldOfTimeRate = new JTextField(String.valueOf(timeRateDefault));
 
         // 2.主功能区!
         // 2.1. 时间选择器, 操作可绝对开始时间 reviseStartDatetime;
@@ -283,6 +310,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                         // 0.真正逻辑上开始, 设置 flag
                         reviseRunning = true;
                         revisePausing = false;
+                        CommonUtil.notifyKey("复盘即将开始");
                         for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
                             if (!reviseRunning) { // 被停止
                                 labelOfRealTimeSimulationTime.setText("00:00:00");
@@ -318,6 +346,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 labelOfRealTimeSimulationTime.setText("00:00:00");
                 reviseRunning = false; // 将停止 start后 的线程中的循环
                 revisePausing = false; // 暂停flag也将恢复!
+                pauseRebootReviseButton.setText("暂停"); // 强制暂停按钮恢复暂停状态
             }
         });
 
@@ -328,6 +357,11 @@ public class BondGlobalSimulationPanel extends JPanel {
             public synchronized void actionPerformed(ActionEvent e) {
                 String text = pauseRebootReviseButton.getText();
                 if ("暂停".equals(text)) {// 执行暂停功能
+                    if (!reviseRunning) {
+                        CommonUtil.notifyError("复盘尚未进行, 不可暂停!");
+                        return;
+                    }
+
                     revisePausing = true; // 暂停, 正在执行的将停止, 但保留进度
                     try {
                         CommonUtil.waitUtil(new BooleanSupplier() {
@@ -377,7 +411,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             reviseRunning = true;
                             revisePausing = false; // 重设暂停flag
                             pauseRebootReviseButton.setText("暂停"); // 变换状态!
-
+                            CommonUtil.notifyKey("复盘即将重启");
                             for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
                                 if (!reviseRunning) { // 被停止
                                     labelOfRealTimeSimulationTime.setText("00:00:00");
@@ -449,14 +483,14 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     public double getReviseTimeRateSetting() { // 复盘时间流速倍率, 错误将返回 1.0
-        double v = 1.0;
+        double v = timeRateDefault;
         try {
             v = Double.parseDouble(jTextFieldOfTimeRate.getText());
         } catch (Exception e) {
-            CommonUtil.notifyError("复盘程序读取 时间流速倍率失败, 默认返回 1.0");
+            CommonUtil.notifyError("复盘程序读取 时间流速倍率失败, 默认返回 " + timeRateDefault);
         }
         if (v <= 0.1) { // 倍率不能太小; 显然也不能为0
-            return 1.0;
+            return timeRateDefault;
         }
         return v;
     }
