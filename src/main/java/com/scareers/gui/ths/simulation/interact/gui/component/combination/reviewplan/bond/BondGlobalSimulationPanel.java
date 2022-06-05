@@ -161,7 +161,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 1.复盘,分时图,等相关功能区
         functionContainerMain = new JPanel();
         functionContainerMain.setLayout(new FlowLayout(FlowLayout.LEFT));
-        functionContainerMain.setPreferredSize(new Dimension(2048, 50));
+        functionContainerMain.setPreferredSize(new Dimension(2048, 40));
         functionContainerMain.setBorder(BorderFactory.createLineBorder(Color.black, 1));
         addMainFunctions(); // 主功能区按钮
 
