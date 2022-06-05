@@ -10,6 +10,8 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
+import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
@@ -19,6 +21,7 @@ import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
@@ -37,14 +40,13 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Date;
+import java.util.*;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
@@ -68,6 +70,8 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     public static final int tick3sLogPanelWidth = DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
     public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
+    // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
+    public static final boolean bondListUseRealTimeWenCai = false;
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -547,6 +551,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 2.转债列表
         jListForBonds = getSecurityEmJList(); // 已经实现自动读取并刷新 securityEmPos 属性
         initJListWrappedJScrollPane(); // 列表被包裹
+        flushBondListCare(); // 刷新一次列表, 该方法已经异步
 
         // 3.新panel包裹转债列表, 以及附带的查找框
         JPanel panelListContainer = new JPanel();
@@ -674,7 +679,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     private void initFunctionPanel() {
         functionPanel = new JPanel();
-        functionPanel.setPreferredSize(new Dimension(jListWidth, 300));
+        functionPanel.setPreferredSize(new Dimension(jListWidth, 200));
         functionPanel.setLayout(new BorderLayout());
 
         // 1.转债信息显示
@@ -684,7 +689,9 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();
-        buttonContainer.setLayout(new GridLayout(2, 4, -1, -1)); // 网格布局按钮
+        buttonContainer.setLayout(new GridLayout(4, 4, 0, 0)); // 网格布局按钮
+        buttonContainer.setBackground(Color.black);
+        buttonContainer.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
         // 2.1. 8个点击改变复盘开始时间的按钮; 仅改变时分秒
         List<String> changeReviseStartTimeButtonTexts = Arrays
@@ -696,25 +703,82 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.2. 4个点击改变复盘时间倍率的按钮
         List<String> changeReviseTimeRateButtonTexts = Arrays
-                .asList("1", "3", "4", "5");
-        for (String text : changeReviseStartTimeButtonTexts) {
+                .asList("1", "3", "5", "10");
+        for (String text : changeReviseTimeRateButtonTexts) {
             FuncButton button = getChangeReviseTimeRateButton(text);
             buttonContainer.add(button);
         }
 
-        // @key: 各种功能按钮!
+        // 2.3.@key: 各种功能按钮!
         FuncButton loadBondListButton = ButtonFactory.getButton("刷新列表");
-        loadBondListButton.addActionListener(new ActionListener() {
-            @SneakyThrows
-            @Override
-            public void actionPerformed(ActionEvent e) { // 点击加载或刷新转债列表;
-                List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false);
-                securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
-            }
+        loadBondListButton.addActionListener(e -> { // 点击加载或刷新转债列表;
+            flushBondListCare(); // 已经实现了新建线程执行
         });
+        buttonContainer.add(loadBondListButton);
 
 
         functionPanel.add(buttonContainer, BorderLayout.CENTER);
+    }
+
+    /**
+     * 刷新转债列表方法; 列表组件实例化时将调用一次; 也是刷新列表按钮回调函数
+     *
+     * @throws Exception
+     */
+    public void flushBondListCare() {
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    List<String> allBondCodes = null;
+                    if (bondListUseRealTimeWenCai) {
+                        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("成交额从大到小排名", WenCaiApi.TypeStr.BOND);
+                        allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
+                    }
+                    if (allBondCodes == null || allBondCodes.size() < 100) { // 失败或者设置就使用数据库
+                        String dateStr = DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATE_PATTERN);
+                        allBondCodes = EastMoneyDbApi.getAllBondCodeByDateStr(
+                                dateStr);
+
+                        if (allBondCodes == null || allBondCodes.size() < 50) {
+                            // 运行爬虫也是今日的了
+                            log.warn("数据库获取转债代码列表失败: {} [建议运行爬虫 BondListEm] ; 将访问最新实时转债列表", dateStr);
+                            try {
+                                DataFrame<Object> bondDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+                                allBondCodes = DataFrameS.getColAsStringList(bondDf, "资产代码");
+                            } catch (Exception e) {
+                                CommonUtil.notifyError("访问最新实时转债代码列表依然失败, 更新转债列表失败");
+                            }
+                        }
+                    }
+                    if (allBondCodes == null || allBondCodes.size() < 100) {
+                        CommonUtil.notifyError("转债代码列表获取失败, 更新转债列表失败");
+                        return;
+                    }
+                    allBondCodes = allBondCodes.stream().filter(Objects::nonNull)
+                            .collect(Collectors.toList()); // 不可null
+                    List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(allBondCodes, false);
+                    // bondList 无序, 将其按照 原来的allBondCodes 排序
+                    HashMap<String, SecurityBeanEm> map = new HashMap<>();
+                    for (SecurityBeanEm beanEm : bondList) {
+                        map.put(beanEm.getSecCode(), beanEm);
+                    }
+
+                    List<SecurityBeanEm> bondListOrdered = new ArrayList<>();
+                    for (String allBondCode : allBondCodes) {
+                        SecurityBeanEm beanEm = map.get(allBondCode);
+                        if (beanEm != null) {
+                            bondListOrdered.add(beanEm);
+                        }
+                    }
+
+
+                    securityEmPos = SecurityEmPo.fromBeanList(bondListOrdered); // 更新
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, true);
     }
 
     /**
@@ -725,6 +789,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public FuncButton getChangeReviseStartTimeButton(String tickHms) {
         FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(tickHms);
+        changeReviseStartTimeButton.setForeground(Color.red);
         changeReviseStartTimeButton.addActionListener(new ActionListener() {
             @SneakyThrows
             @Override
@@ -747,15 +812,16 @@ public class BondGlobalSimulationPanel extends JPanel {
      * @return
      */
     public FuncButton getChangeReviseTimeRateButton(String timeRate) {
-        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(timeRate);
-        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+        FuncButton button = ButtonFactory.getButton(timeRate);
+        button.setForeground(Color.yellow);
+        button.addActionListener(new ActionListener() {
             @SneakyThrows
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
                 jTextFieldOfTimeRate.setText(timeRate);
             }
         });
-        return changeReviseStartTimeButton;
+        return button;
     }
 
 

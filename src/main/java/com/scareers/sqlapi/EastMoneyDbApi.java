@@ -50,9 +50,11 @@ public class EastMoneyDbApi {
 //        Console.log(getPreNTradeDateStrict(DateUtil.today(), 3));
 //        Console.log(getPreNTradeDateStrict("20220318", -2));
 
-        HashSet<String> allBkNameByDate = getAllBkNameByDateRange("2022-05-10", "2022-05-16");
-        Console.log(allBkNameByDate);
-        Console.log(allBkNameByDate.size());
+//        HashSet<String> allBkNameByDate = getAllBkNameByDateRange("2022-05-10", "2022-05-16");
+//        Console.log(allBkNameByDate);
+//        Console.log(allBkNameByDate.size());
+
+        Console.log(getBondRecordAmountByDateStr("2022-06-02"));
     }
 
 
@@ -151,10 +153,55 @@ public class EastMoneyDbApi {
                 return null; // 索引越界
             }
         }
-
-
     }
 
+    /*
+    转债列表
+     */
+
+    /**
+     * 给定日期字符串, 返回当日有多少条记录在数据库; 如果>0表示爬虫爬过, 不再重复
+     *
+     * @param dateStr
+     * @return
+     */
+    public static Integer getBondRecordAmountByDateStr(String dateStr) {
+        String sql = StrUtil.format("select count(*) from bond_list where dateStr='{}'", dateStr);
+        DataFrame<Object> dataFrame = null;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return Integer.parseInt(dataFrame.get(0, 0).toString());
+    }
+
+    /**
+     * 给定日期字符串, 返回有记录的, 所有转债 代码名称! 可能null
+     *
+     * @param dateStr
+     * @return
+     */
+    public static List<String> getAllBondCodeByDateStr(String dateStr) {
+        String sql = StrUtil.format("select secCode from bond_list where dateStr='{}'", dateStr);
+        DataFrame<Object> dataFrame = null;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        // 主动去重, 不使用hs, 保持顺序
+        List<String> secCodes = DataFrameS.getColAsStringList(dataFrame, "secCode");
+        List<String> res = new ArrayList<>();
+        HashSet<String> forOrder = new HashSet<>();
+        for (String secCode : secCodes) {
+            if (!forOrder.contains(secCode)) {
+                res.add(secCode); // 达成去重
+            }
+            forOrder.add(secCode);
+        }
+        return res;
+    }
 
     /**
      * 资讯表: simple_new,

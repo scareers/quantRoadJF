@@ -3,10 +3,7 @@ package com.scareers.datasource.eastmoney.dailycrawler;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.BkListEm;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.IndexListEm;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.StockListEm;
-import com.scareers.datasource.eastmoney.dailycrawler.commons.TradeDatesEm;
+import com.scareers.datasource.eastmoney.dailycrawler.commons.*;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm2;
@@ -62,6 +59,7 @@ public class CrawlerChainEm {
             // 3点以后抓
 
             crawlerChainEm.addSynCrawler(new StockListEm());
+            crawlerChainEm.addSynCrawler(new BondListEm());
             crawlerChainEm.addSynCrawler(new IndexListEm());
             crawlerChainEm.addSynCrawler(new BkListEm());
             crawlerChainEm.addSynCrawler(new TradeDatesEm());
@@ -73,6 +71,7 @@ public class CrawlerChainEm {
         }
 //
 //        crawlerChainEm.addSynCrawler(new StockListEm());
+//        crawlerChainEm.addSynCrawler(new BondListEm());
 //        crawlerChainEm.addSynCrawler(new IndexListEm());
 //        crawlerChainEm.addSynCrawler(new BkListEm());
 //        crawlerChainEm.addSynCrawler(new TradeDatesEm());

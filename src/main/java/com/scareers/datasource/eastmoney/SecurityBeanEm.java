@@ -1102,9 +1102,13 @@ public class SecurityBeanEm implements Serializable {
             builder.append(secCode);
             builder.append(".");
             builder.append(market.toString());
-            builder.append(" ["); // 简单形式
-            builder.append(name); // 简单形式
-            builder.append("]"); // 简单形式
+            if (bean.isBond()) { // 转债带颜色
+                addCommentCore(builder, "red", name);
+            } else { // 其他显示put名字
+                builder.append(" ["); // 简单形式
+                builder.append(name); // 简单形式
+                builder.append("]"); // 简单形式
+            }
 
             addCommentAccordingBeanType(builder); // 添加类型附加说明
 
