@@ -140,7 +140,7 @@ public class EmChart {
             @Override
             public void run() {
                 List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-                for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
+                for (int i = 200; i < allFsTransTimeTicks.size(); i++) {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));
                     Console.log("即将刷新");
@@ -164,6 +164,8 @@ public class EmChart {
     @Data
     @NoArgsConstructor
     public static class DynamicEmFs1MV2ChartForRevise {
+        private double redundancyPriceRangePercent = 0.002; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
+
         // 基本属性
 
         SecurityBeanEm beanEm; // 东财资产对象
@@ -179,6 +181,7 @@ public class EmChart {
         List<String> allFsDateStr; // 分时tick 字符串形式, 方便查找筛选
         List<Double> allPrices;
         // @todo: bugfix-- 实在找不出来原因
+        // @todo: bugfix -- 已经解决: 因为使用 subList, 然后向子列表添加了数据项, 导致原列表也添加了元素; 应当新建列表对象添加
         // 备份 allPrices; 可能因为 allPrices 参与了Bar渲染器, 导致 allPrices会被 莫名修改? 因此使用备份,使得分时成交模式,能正确访问前一分钟收盘价
         // @noti: allPrices用于更新priceLow和High, allPricesTemp用于更新序列数据,allPricesTemp2用于成交量颜色
         List<Double> allPricesTemp;
@@ -393,7 +396,11 @@ public class EmChart {
             Minute tick = new Minute(allFsTimeTicks.get(filterIndex + 1));
             seriesOfFsPrice.addOrUpdate(tick, fsTransPrice); // 价格和成交量, 更新为给定参数
             seriesOfVol.addOrUpdate(tick, alreadySureVol); //
-            seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(filterIndex)); // 均价更新为同前1均价, 单纯为了好看
+            try {
+                seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(filterIndex)); // 均价更新为同前1均价, 单纯为了好看
+            } catch (Exception e) {
+                // 11:30 - 13:00 filterINdex为-1, 出错
+            }
         }
 
         /**
@@ -543,7 +550,7 @@ public class EmChart {
                 }
             }
             if (fsTransIndexShould == null) {
-                log.warn("未找到本分钟内,有分时成交数据: {}", timeTickStr);
+                //log.warn("未找到本分钟内,有分时成交数据: {}", timeTickStr);
                 return;
             }
 
@@ -584,7 +591,7 @@ public class EmChart {
 //                    newestPrice);
 
 
-            put(fsTransDf.row(fsTransIndexShould));
+            put(fsTransIndexShould);
         }
 
 
@@ -785,29 +792,29 @@ public class EmChart {
             return lineAndShapeRenderer;
         }
 
+
         /**
          * 刷新价格上下限, 注意, 需要新的上下限, 绝对值> 原来的上下限, 才更新; 即上下限只会变大, 不会变小!
+         * 这里简单使用一个多余出来的涨跌幅, 例如千分之5; --> redundancyPriceRangePercent 静态属性控制
          *
          * @return
          */
         public void updatePriceLowAndHigh() {
-            if (filterIndex == preFilterIndex) {
-                return; // 未更新筛选, 则上下界不变; 因此注意 两者默认值不一样;
-            }
+
             // 价格都是正数, 注意了!, 更高更低才更新
             List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
             try {
                 double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
-                if (Math.abs(priceHigh0) > Math.abs(priceHigh)) {
-                    priceHigh = priceHigh0;
+                if (Math.abs(priceHigh0 * (1 + redundancyPriceRangePercent)) > Math.abs(priceHigh)) {
+                    priceHigh = priceHigh0 * (1 + redundancyPriceRangePercent); // 更高
                 }
             } catch (Exception e) {
                 return;
             }
             try {
                 double priceLow0 = CommonUtil.minOfListDouble(prices);
-                if (Math.abs(priceLow0) < Math.abs(priceLow)) {
-                    priceLow = priceLow0;
+                if (Math.abs(priceLow0 * (1 - redundancyPriceRangePercent)) < Math.abs(priceLow)) {
+                    priceLow = priceLow0 * (1 - redundancyPriceRangePercent); // 更低!
                 }
             } catch (Exception e) {
             }
@@ -815,25 +822,24 @@ public class EmChart {
 
         /**
          * 分时成交更新时, 刷新最高最低; 它需要提供最新 price
+         *
+         * @key3 bugfix: 此处愿实现, 项prices添加了一项数据, 导致了错误; 应当新建列表, 而非直接向子列表添加数据!
          */
         public void updatePriceLowAndHighFsTrans(double price) {
-            if (filterIndex == preFilterIndex) {
-                return; // 未更新筛选, 则上下界不变; 因此注意 两者默认值不一样;
-            }
-            List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
+            List<Double> prices = new ArrayList<>(allPrices.subList(0, filterIndex + 1)); // 显示数据, 使用 filterIndex 直接索引
             prices.add(price); // 假装加入, 且同样受到 大的更大,小的更小的限制
             try {
                 double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
-                if (Math.abs(priceHigh0) > Math.abs(priceHigh)) {
-                    priceHigh = priceHigh0;
+                if (Math.abs(priceHigh0 * (1 + redundancyPriceRangePercent)) > Math.abs(priceHigh)) {
+                    priceHigh = priceHigh0 * (1 + redundancyPriceRangePercent);
                 }
             } catch (Exception e) {
                 return;
             }
             try {
                 double priceLow0 = CommonUtil.minOfListDouble(prices);
-                if (Math.abs(priceLow0) < Math.abs(priceLow)) {
-                    priceLow = priceLow0;
+                if (Math.abs(priceLow0 * (1 - redundancyPriceRangePercent)) < Math.abs(priceLow)) {
+                    priceLow = priceLow0 * (1 - redundancyPriceRangePercent);
                 }
             } catch (Exception e) {
             }
@@ -898,7 +904,9 @@ public class EmChart {
         DecimalFormat df3 = new DecimalFormat("#########.000");
         Double prePrice0 = null; // 保留上一次价格, 当前价格与之比较, 显示向上向下箭头!
 
-        public void put(List<Object> fsTransRow) {
+        public void put(int fsTransIndexShould) {
+            List<Object> fsTransRow = fsTransDf.row(fsTransIndexShould);
+
             // 1.4项数据解析
             String timeTick = fsTransRow.get(3).toString();
             if (timeTick.equals(lastShowFsTransTick)) {
