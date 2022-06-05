@@ -146,6 +146,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         jScrollPaneForTickLog.setLocation(0, 0);
         jScrollPaneForTickLog.setBorder(null);
         panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
+        chartPanel.repaint();
+        chartPanel.updateUI();
     }
 
 
@@ -163,6 +165,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionContainerMain.setLayout(new FlowLayout(FlowLayout.LEFT));
         functionContainerMain.setPreferredSize(new Dimension(2048, 40));
         functionContainerMain.setBorder(BorderFactory.createLineBorder(Color.black, 1));
+        functionContainerMain.setBackground(Color.black);
         addMainFunctions(); // 主功能区按钮
 
         // 2.分时图(或未来k线)显示区
@@ -187,6 +190,9 @@ public class BondGlobalSimulationPanel extends JPanel {
         panelOfTick3sLog.add(tempLabel, BorderLayout.CENTER);
 
         // 2.1. 加入两大组件
+        chartPanel.setBackground(Color.black);
+        panelOfTick3sLog.setBackground(Color.black);
+        fsMainPanel.setBackground(Color.black);
         fsMainPanel.add(chartPanel, BorderLayout.CENTER);
         fsMainPanel.add(panelOfTick3sLog, BorderLayout.EAST);
 
@@ -240,6 +246,12 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
         // 1.1. 复盘开始时间 时间选择器!
         jTextFieldOfReviseStartDatetime = new JTextField("复盘开始时间");
+        jTextFieldOfReviseStartDatetime.setBorder(null);
+        jTextFieldOfReviseStartDatetime.setBackground(Color.black);
+        jTextFieldOfReviseStartDatetime.setForeground(Color.yellow);
+        jTextFieldOfReviseStartDatetime.setCaretColor(Color.red);
+        jTextFieldOfReviseStartDatetime.setPreferredSize(new Dimension(110, 40));
+
         dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
         dateTimePickerOfReviseStartDatetime.setEnable(true).setSelect(reviseStartDatetime) // 默认值
                 .changeDateEvent(new Consumer<DateTimePicker>() {
@@ -256,18 +268,25 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 1.3. 仿真 实时时间显示label! 不可编辑,固定 HH:mm:ss 格式
         labelOfRealTimeSimulationTime = new JLabel();
-        labelOfRealTimeSimulationTime.setForeground(Color.yellow);
+        labelOfRealTimeSimulationTime.setForeground(Color.green);
+        labelOfRealTimeSimulationTime.setPreferredSize(new Dimension(60, 40));
         labelOfRealTimeSimulationTime.setBackground(Color.black);
         labelOfRealTimeSimulationTime.setText("00:00:00"); // 初始!
 
         // 1.4. 时间流速倍率, 默认 1.0
         jTextFieldOfTimeRate = new JTextField(String.valueOf(timeRateDefault));
+        jTextFieldOfTimeRate.setBackground(Color.black);
+        jTextFieldOfTimeRate.setBorder(null);
+        jTextFieldOfTimeRate.setForeground(Color.yellow);
+        jTextFieldOfTimeRate.setPreferredSize(new Dimension(35, 40));
+        jTextFieldOfTimeRate.setCaretColor(Color.red);
 
         // 2.主功能区!
         // 2.1. 时间选择器, 操作可绝对开始时间 reviseStartDatetime;
         // 2.2. 静态仿真实时时间显示label
         // 2.3. 开始复盘按钮: 开始复盘,读取reviseStartDatetime设置; 若当前正在运行, 则先停止再直接运行!
         startReviseButton = ButtonFactory.getButton("开始"); //
+        startReviseButton.setForeground(Color.yellow);
         startReviseButton.addActionListener(new ActionListener() {
             @Override
             public synchronized void actionPerformed(ActionEvent e) { // 同步
@@ -340,6 +359,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.4. 停止按钮
         stopReviseButton = ButtonFactory.getButton("停止");
+        stopReviseButton.setForeground(Color.RED);
         stopReviseButton.addActionListener(new ActionListener() {
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
@@ -352,6 +372,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.5. 暂停按钮
         pauseRebootReviseButton = ButtonFactory.getButton("暂停"); // 默认暂停!
+        pauseRebootReviseButton.setForeground(Color.pink);
         pauseRebootReviseButton.addActionListener(new ActionListener() {
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
