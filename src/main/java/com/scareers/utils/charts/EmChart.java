@@ -512,7 +512,7 @@ public class EmChart {
             }
 
             // 1.整秒数
-//            updateChart(date); // 将完美更新整数秒
+            updateChart(date); // 将完美更新整数秒
             boolean b = this.setFilterTimeTick(date);
 
             if (!b) {
