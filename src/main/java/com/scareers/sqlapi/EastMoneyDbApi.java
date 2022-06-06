@@ -40,6 +40,8 @@ public class EastMoneyDbApi {
             .newLRUCache(512); // 字段顺序同爬虫
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdRawCache = CacheUtil
             .newLRUCache(512); // 字段顺序数据表原始
+    private static Cache<String, DataFrame<Object>> fs1MV2ByDateAndQuoteIdRawCache = CacheUtil
+            .newLRUCache(512); // 字段顺序数据表原始
 
     public static void main(String[] args) throws Exception {
 
@@ -392,14 +394,22 @@ public class EastMoneyDbApi {
      * @return
      */
     public static DataFrame<Object> getFs1MV2ByDateAndQuoteId(String date, String quoteId) {
+        String cacheKey = date + quoteId;
+        DataFrame<Object> res = fs1MV2ByDateAndQuoteIdRawCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
         String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date + "_v2", quoteId);
         DataFrame<Object> dataFrame;
+        // fs1MV2ByDateAndQuoteIdRawCache
         try {
             dataFrame = DataFrame.readSql(connectionFs1M, sql);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
+        fs1MV2ByDateAndQuoteIdRawCache.put(cacheKey, res);
         return dataFrame;
     }
 

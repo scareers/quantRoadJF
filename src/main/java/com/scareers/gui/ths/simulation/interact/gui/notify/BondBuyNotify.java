@@ -198,7 +198,7 @@ public class BondBuyNotify {
 
                 ThreadUtil.sleep(100); // 延迟多一点
                 // @diff: 1.需要 复盘程序对象, 是 running 状态, 才进行本次循环; 暂停以及停止时, 都暂停!!
-                if (!reviseProcessActualRunning()) { // 停止或者暂停状态, 都不继续
+                if (!reviseProcessActualRunning()) { // 停止或者暂停状态, 下次大循环, 但不break停止播报
                     continue;
                 }
 
@@ -217,7 +217,9 @@ public class BondBuyNotify {
                     if (!broadcastRunning) { // 被停止
                         break;
                     }
-
+                    if (!reviseProcessActualRunning()) { // 停止或者暂停状态, 都不继续
+                        break;
+                    }
 
                     if (excludeBonds.contains(stockBondBean.getBondCode())) {
                         continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
@@ -649,7 +651,7 @@ public class BondBuyNotify {
                                 .collect(Collectors.toList())));
 
                 if (loadFsToCacheAfterBondPoolInitReviseEnvironment) {
-                    CommonUtil.notifyKey("模拟环境: 初始一次性载入转债池全部 分时成交数据");
+                    CommonUtil.notifyKey("模拟环境: 初始一次性载入转债池全部 分时/分时成交数据");
                     ThreadUtil.execAsync(new Runnable() {
                         @Override
                         public void run() {
@@ -662,6 +664,7 @@ public class BondBuyNotify {
                                     EastMoneyDbApi.getFsTransByDateAndQuoteIdS(getReviseDateStr(), beanEm.getQuoteId());
                                 }
                             } catch (Exception e) {
+                                e.printStackTrace();
                             }
 
                         }

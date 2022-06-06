@@ -153,7 +153,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel.setChart(dynamicChart.getChart());
         crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
         panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
-        JScrollPane jScrollPaneForTickLog = dynamicChart.getJScrollPaneForTickLog();
+        JScrollPane jScrollPaneForTickLog = DynamicEmFs1MV2ChartForRevise.getJScrollPaneForTickLog();
         panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, panelMainForRevise.getHeight()));
         jScrollPaneForTickLog
                 .setPreferredSize(new Dimension(tick3sLogPanelWidth, panelOfTick3sLog.getHeight())); // 容器同宽

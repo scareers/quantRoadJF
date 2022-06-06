@@ -232,14 +232,19 @@ public class EmChart {
          * 3秒tick数据显示区; jScrollPaneForTickLog 将被加入显示区右侧
          */
         public void initTick3sLogPanel() {
-            ManipulateLogPanel displayForLog = new ManipulateLogPanel();
-            logTextPane = displayForLog.getLogTextPane(); // 3stick显示框对象!
-            logTextPane.setBackground(new Color(0, 0, 0));
-            jScrollPaneForTickLog = new JScrollPane(logTextPane);
-            jScrollPaneForTickLog.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-            BasicScrollBarUIS
-                    .replaceScrollBarUI(jScrollPaneForTickLog, COLOR_THEME_TITLE,
-                            COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+            if (logTextPane == null) { // 全实例共用一个logPane; 只初始化一次
+                ManipulateLogPanel displayForLog = new ManipulateLogPanel();
+                logTextPane = displayForLog.getLogTextPane(); // 3stick显示框对象!
+                logTextPane.setBackground(new Color(0, 0, 0));
+                jScrollPaneForTickLog = new JScrollPane(logTextPane);
+                jScrollPaneForTickLog.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+                BasicScrollBarUIS
+                        .replaceScrollBarUI(jScrollPaneForTickLog, COLOR_THEME_TITLE,
+                                COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+            }
+
+            logTextPane.setText(""); // 新建新的实例,都要清空静态属性log,
+            firstPutting = true;
         }
 
         /**
@@ -896,8 +901,24 @@ public class EmChart {
             frame.setVisible(true);
         }
 
-        JScrollPane jScrollPaneForTickLog; // 滚动包裹
-        JTextPane logTextPane;
+        public static JScrollPane jScrollPaneForTickLog; // 滚动包裹
+        public static JTextPane logTextPane;
+
+        public static JTextPane getLogTextPane() {
+            return logTextPane;
+        }
+
+        public static void setLogTextPane(JTextPane logTextPane) {
+            DynamicEmFs1MV2ChartForRevise.logTextPane = logTextPane;
+        }
+
+        public static JScrollPane getJScrollPaneForTickLog() {
+            return jScrollPaneForTickLog;
+        }
+
+        public static void setJScrollPaneForTickLog(JScrollPane jScrollPaneForTickLog) {
+            DynamicEmFs1MV2ChartForRevise.jScrollPaneForTickLog = jScrollPaneForTickLog;
+        }
 
         /**
          * 单条分时成交数据 显示
