@@ -19,6 +19,7 @@ import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -204,7 +205,7 @@ public class TraderGui extends JFrame {
         );
         startMenu.add(bondTtsItem);
 
-        JMenuItem bondTtsItem2 = new JMenuItem("正股巨量买入提示可转债");
+        JMenuItem bondTtsItem2 = new JMenuItem("转债播报程序实盘启动");
         bondTtsItem2.addActionListener(
                 new ActionListener() {
                     @Override
@@ -224,6 +225,25 @@ public class TraderGui extends JFrame {
                 }
         );
         startMenu.add(bondTtsItem2);
+        JMenuItem bondTtsItem3 = new JMenuItem("转债播报程序停止!");
+        bondTtsItem3.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    BondBuyNotify.stopBroadcast();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem3);
 
 
         startMenu.add(new JMenuItem("备用"));

@@ -766,8 +766,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    BondBuyNotify.broadcastRunning = false;
-                    CommonUtil.notifyKey("将软停止播报程序 ----->");
+                    BondBuyNotify.stopBroadcast();
                 }
             }, true);
         });

@@ -62,6 +62,11 @@ public class BondBuyNotify {
 
     public static volatile boolean broadcastRunning = false; // 可控制播报程序停止(跳出主循环) 和 运行主循环(需要调用方法
 
+    public static void stopBroadcast() {
+        BondBuyNotify.broadcastRunning = false;
+        CommonUtil.notifyKey("将软停止播报程序 ----->");
+    }
+
     public static void main1() {
         if (broadcastRunning) {
             notifyInfoError("播报程序运行中, 不可重复启动! 需要停止后才可启动");
