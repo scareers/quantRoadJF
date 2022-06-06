@@ -348,7 +348,7 @@ public class SecurityBeanEm implements Serializable {
     }
 
 
-    private static final int retry = 4; // 查询时3次
+    private static final int retry = 1; // 查询时3次
 
     String secCode;
     Integer market; // 0 深市,  1 沪市.   北交所目前数量少, 算 0.    板块为 90?
