@@ -60,10 +60,18 @@ public class BondBuyNotify {
     // ---------> 偏实盘环境
     // ---------> 偏复盘环境
 
+    public static volatile boolean broadcastRunning = false; // 可控制播报程序停止(跳出主循环) 和 运行主循环(需要调用方法
 
     public static void main1() {
+        if (broadcastRunning) {
+            notifyInfoError("播报程序运行中, 不可重复启动! 需要停止后才可启动");
+            return;
+        }
+
+
         if (isActualTradingEnvironment()) { // 实盘环境!
             CommonUtil.notifyKey("播报程序启动, 环境: 实盘环境");
+            broadcastRunning = true; // 启动flag
 
             // 1.准备步骤
             // 1.1.开始更新监控转债列表任务 -- 子线程死循环, 不能再次调用
@@ -90,9 +98,17 @@ public class BondBuyNotify {
 //        algorithmChain.add(new ChgPctAlgorithm());
 
             while (true) {
+                if (!broadcastRunning) { // 被停止
+                    break;
+                }
                 ThreadUtil.sleep(50);
                 // Console.log(bondPoolSet.size()); // 检测死循环是否进行中
                 for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
+                    if (!broadcastRunning) { // 跳出内层循环后, 下次外层循环检测到, 真正停止
+                        break;
+                    }
+
+
                     if (excludeBonds.contains(stockBondBean.getBondCode())) {
                         continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
                     }
@@ -117,8 +133,11 @@ public class BondBuyNotify {
                     }
                 }
             }
+            broadcastRunning = false; // 停止flag
         } else if (isReviseEnvironment()) { // 多数同实盘, 不同之处将会标记!
             CommonUtil.notifyKey("播报程序启动, 环境: 复盘环境");
+            broadcastRunning = true; // 启动flag
+
             startUpdateBondListTask(false);
             try {
                 SecurityBeanEm.createBondList(
@@ -135,7 +154,17 @@ public class BondBuyNotify {
 
             String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
             while (true) {
-                // @diff: 不同之处在于, 可能需要刷新静态数据池!
+                if (!broadcastRunning) { // 被停止
+                    break;
+                }
+
+                ThreadUtil.sleep(100); // 延迟多一点
+                // @diff: 1.需要 复盘程序对象, 是 running 状态, 才进行本次循环; 暂停以及停止时, 都暂停!!
+                if (!reviseProcessActualRunning()) { // 停止或者暂停状态, 都不继续
+                    continue;
+                }
+
+                // @diff: 2.需要刷新静态数据池!
                 String reviseDateStr = getReviseDateStr();
                 if (reviseDateStr == null || !reviseDateStr.equals(preDateStrSetting)) { // 复盘日期改变, 应当刷新静态数据, 已经fs数据池!
                     CommonUtil.notifyKey("复盘日期更改, 需要刷新静态数据池");
@@ -148,9 +177,13 @@ public class BondBuyNotify {
                 }
 
 
-                ThreadUtil.sleep(100); // 延迟多一点
                 // Console.log(bondPoolSet.size()); // 检测死循环是否进行中
                 for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
+                    if (!broadcastRunning) { // 被停止
+                        break;
+                    }
+
+
                     if (excludeBonds.contains(stockBondBean.getBondCode())) {
                         continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
                     }
@@ -175,6 +208,7 @@ public class BondBuyNotify {
                     }
                 }
             }
+            broadcastRunning = false; // 停止flag
         }
 
 
@@ -1033,5 +1067,15 @@ public class BondBuyNotify {
      */
     public static DateTime getReviseSimulationCurrentTime() { // 实时获取复盘 虚拟的 当前时间!
         return BondGlobalSimulationPanel.getInstance().getReviseSimulationCurrentTime();
+    }
+
+    /**
+     * 判定复盘程序是否 running 它需要 running为true, 且 pause 不为 true; 即暂停也不行
+     *
+     * @return
+     */
+    public static boolean reviseProcessActualRunning() {
+        return BondGlobalSimulationPanel.getInstance().isReviseRunning() && !BondGlobalSimulationPanel.getInstance()
+                .isRevisePausing();
     }
 }
