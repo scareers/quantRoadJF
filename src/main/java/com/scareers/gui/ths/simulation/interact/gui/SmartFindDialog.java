@@ -1,11 +1,11 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
-import cn.hutool.core.lang.Console;
-import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.utils.CommonUtil;
 import lombok.Data;
-import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXList;
 
 import javax.swing.*;
@@ -14,16 +14,18 @@ import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import java.awt.*;
-import java.awt.event.*;
-import java.beans.JavaBean;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Hashtable;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
+
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 
 /**
  * description: 智能查找功能实现, 对话框!
  * 对话框单例; 设置在静态属性
+ * // @key3: 进入智能查找模式后, focus一直在查找框里面!!! 结果选择也是查找框监听 上下箭头 切换结果列表的选择;
+ * 且enter键, 将当前列表选择 作为 选择结果 !!!
  *
  * @author: admin
  * @date: 2022/6/6/006-06:58:36
@@ -34,6 +36,7 @@ public class SmartFindDialog extends JDialog {
     public static volatile boolean smartFinderMode = true; // 可通过修改此值, 关闭只能查找概念
     // 2.查找map; 切换功能应当清空它, 并填充它;
     public static volatile Hashtable<String, Object> findingMap = new Hashtable<>();
+    // value实际类型不固定, 例如 SecurityEmPoForSmartFind
     // 3.标志进入了单次只能查找模式, 该flag在监听到第一个字母后设置true, 在一次查找退出后, 设置false!
     public static volatile boolean smartFindingEntered = false; // 单例单锁逻辑
 
@@ -71,15 +74,6 @@ public class SmartFindDialog extends JDialog {
 
         initContentPanel();
         this.setContentPane(contentPanel);
-        SmartFindDialog dialogX = this;
-//        this.addKeyListener(new KeyAdapter() {
-//            @Override
-//            public void keyPressed(KeyEvent e) {
-//                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-//                    dialogX.setVisible(false);
-//                }
-//            }
-//        });
     }
 
     public static class FinderInput extends JTextField implements DocumentListener {
@@ -117,18 +111,37 @@ public class SmartFindDialog extends JDialog {
         }
     }
 
+    /**
+     * 执行查找, 更新结果列表
+     *
+     * @param text
+     */
     public void doFind(String text) {
-        // findingMap.put("abc", "xyz");
 
-        // 1. 根据text, 拿到 Object 列表, 作为查找结果, 这里简单写
+        // 1. 查找结果列表
         ArrayList<Object> findRes = new ArrayList<>();
-        int resAmount = RandomUtil.randomInt(5, 10);
-        for (int i = 0; i < resAmount; i++) {
-            findRes.add(RandomUtil.randomDouble()); // 对象为double, 测试
+
+        // 2. 查找逻辑, 每当有一种类型的 东西, 被put到 map里面, 都自行实现 对应的查找逻辑
+        Collection<Object> values = findingMap.values();
+        for (Object value : values) {
+            if (value instanceof SecurityBeanEm.SecurityEmPoForSmartFind) {
+
+            }
         }
 
-        // 2.把新的查找结果, 显示到 结果显示列表!
 
+        // 2.把新的查找结果, 显示到 结果显示列表!
+        model.flush(findRes);
+        findResList.setSelectedIndex(0);
+    }
+
+    /**
+     * --> 确认查找结果
+     * 对查找结果, 查找框按下enter, 表示选中当前的 选择结果!
+     */
+    public void confirmFindResult(Object findResult) {
+        CommonUtil.notifyError("查找结果" + findResult);
+        this.setVisible(false); // 自动退出
     }
 
     public void initContentPanel() {
@@ -147,17 +160,94 @@ public class SmartFindDialog extends JDialog {
                     if (INSTANCE != null) {
                         INSTANCE.setVisible(false); // 将自动退出查找模式
                     }
+                } else if (e.getKeyCode() == KeyEvent.VK_UP) {
+                    if (INSTANCE != null) {
+                        int selectedIndex = findResList.getSelectedIndex(); // 当前选择index
+                        int elementCount = findResList.getElementCount(); // 总数
+                        if (selectedIndex == 0 || selectedIndex == -1) {
+                            findResList.setSelectedIndex(elementCount - 1); // 未选中时或第一个时, 按下上, 跳到最后
+                            return;
+                        }
+                        findResList.setSelectedIndex(selectedIndex - 1);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+                    if (INSTANCE != null) {
+                        int selectedIndex = findResList.getSelectedIndex(); // 当前选择index
+                        int elementCount = findResList.getElementCount(); // 总数
+                        if (selectedIndex == elementCount - 1 || selectedIndex == -1) {
+                            findResList.setSelectedIndex(0); // 未选中时或第一个时, 按下上, 跳到最后
+                            return;
+                        }
+                        findResList.setSelectedIndex(selectedIndex + 1);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_ENTER) { // 确定选择!
+                    if (INSTANCE != null) {
+                        Object selectedValue = findResList.getSelectedValue();
+                        if (selectedValue != null) {
+                            confirmFindResult(selectedValue); // 执行确认查找结果
+                        }
+                    }
                 }
             }
         });
 
 
-        findResList = new JXList();
+        findResList = buildResList();
+        initJListWrappedJScrollPane();
         findResList.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
         contentPanel.add(findInput, BorderLayout.NORTH);
         contentPanel.add(findResList, BorderLayout.CENTER);
     }
+
+    JScrollPane jScrollPaneForList;
+
+    private void initJListWrappedJScrollPane() {
+        jScrollPaneForList = new JScrollPane();
+        jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForList.setViewportView(findResList); // 滚动包裹转债列表
+        jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+    }
+
+    DefaultListModelS2<Object> model;
+
+    /**
+     * 资产列表控件. 可重写
+     *
+     * @return
+     */
+    private JXList buildResList() {
+        // securityEmPos --> 自行实现逻辑, 改变自身该属性; 则 列表将自动刷新
+        model = new DefaultListModelS2<>();
+        model.flush(Collections.emptyList());
+        JXList jList = new JXList(model);
+        jList.setCellRenderer(new ResCellRendererS()); // 设置render
+        jList.setForeground(COLOR_GRAY_COMMON);
+
+        jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+        jList.setBackground(COLOR_THEME_MAIN);
+        jList.setBorder(null);
+        return jList;
+    }
+
+    /**
+     * description: 结果列表显示 单元素显示渲染器
+     *
+     * @author: admin
+     * @date: 2022/1/18/018-11:19:31
+     */
+    public class ResCellRendererS extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
+                                                      boolean cellHasFocus) {
+            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            return label;
+        }
+    }
+
 
     /**
      * 重置位置, 将自身放在父亲右下角!

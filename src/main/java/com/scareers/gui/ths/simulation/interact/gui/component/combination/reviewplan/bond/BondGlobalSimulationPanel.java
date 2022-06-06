@@ -12,6 +12,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
+import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
@@ -774,8 +775,12 @@ public class BondGlobalSimulationPanel extends JPanel {
                             bondListOrdered.add(beanEm);
                         }
                     }
-
-
+                    for (SecurityBeanEm beanEm : bondListOrdered) {
+                        String pinYin = beanEm.getPinYin();
+                        if (pinYin != null) {
+                            SmartFindDialog.findingMap.put(pinYin, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
+                        }
+                    }
                     securityEmPos = SecurityEmPo.fromBeanList(bondListOrdered); // 更新
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -826,7 +831,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
         return button;
     }
-
 
     JScrollPane jScrollPaneForList;
 

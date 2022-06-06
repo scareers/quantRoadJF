@@ -1175,4 +1175,72 @@ public class SecurityBeanEm implements Serializable {
             return JSONUtilS.toJsonPrettyStr(bean.getConvertRawJsonObject());
         }
     }
+
+    /**
+     * PO 展示对象. -- 智能查找时
+     * 方便GUI展示, 持有简单字段 -- 东财,同花顺都一样的, 展示 : 代码 -- 名称 -- 类型
+     * 实现 toString 以便gui展示.
+     * toToolTip 展示提示
+     */
+    @Setter
+    @Getter
+    public static class SecurityEmPoForSmartFind {
+        private static final long serialVersionUID = 7832100546L;
+        public static final int nameShowLength = 10; // 等宽字体, 字符数量, 后pad 空格
+        public static final int codeShowLength = 10; // 等宽字体, 字符数量, 后pad 空格
+        public static final int typeShowLength = 8; // 等宽字体, 字符数量, 后pad 空格, hutool的pad实现, 会从后截取, 自行修改为截取前面的
+
+        String secCode;
+        // {"QuotationCodeTable":{"Data":[{"Code":"000001","Name":"平安银行","PinYin":"PAYH","ID":"0000012","JYS":"6","Classify":"AStock","MarketType":"2","SecurityTypeName":"深A","SecurityType":"2","MktNum":"0","TypeUS":"6","QuoteID":"0.000001","UnifiedCode":"000001","InnerCode":"15855238340410"}],"Status":0,"Message":"成功","TotalPage":7,"TotalCount":7,"PageIndex":1,"PageSize":1,"Keyword":"000001","RelatedWord":"","SourceName":"QuotationCodeTable","SourceId":14,"ScrollId":""}}
+        String name;
+        String securityTypeName;
+        SecurityBeanEm bean;
+
+        public SecurityEmPoForSmartFind(SecurityBeanEm securityBeanEm) {
+            this.secCode = securityBeanEm.getSecCode();
+            this.name = securityBeanEm.getName();
+            this.bean = securityBeanEm;
+            this.securityTypeName = bean.getSecurityTypeName();
+        }
+
+        public static Vector<SecurityEmPoForSmartFind> fromBeanList(List<SecurityBeanEm> beanEmList) {
+            if (beanEmList == null) {
+                return new Vector<>();
+            }
+            return beanEmList.stream().map(SecurityEmPoForSmartFind::new).collect(Collectors.toCollection(Vector::new));
+        }
+
+
+        /**
+         * 因为给查找列表结果 显示; 该列表注意设置字体, 为等宽字体;
+         * 设置  代码/名称/类型, 三者固定 后pad为 等宽 !!!! 不使用 html
+         *
+         * @return
+         */
+        @Override
+        public String toString() { // 显示 代码.市场[中文名称]
+            StringBuilder builder = new StringBuilder();
+
+            addAttr(builder, secCode, codeShowLength);
+            addAttr(builder, name, nameShowLength);
+            addAttr(builder, securityTypeName, typeShowLength);
+
+            return builder.toString();
+        }
+
+        public void addAttr(StringBuilder builder, String attr, int shouldLength) {
+            String resStr = attr;
+            if (attr == null) {
+                resStr = "null";
+            }
+            if (resStr.length() > shouldLength) {
+                resStr = resStr.substring(0, shouldLength);
+            }
+            builder.append(StrUtil.padAfter(resStr, shouldLength, " "));
+        }
+
+        public String toToolTip() { // 提示文字, 显示
+            return JSONUtilS.toJsonPrettyStr(bean.getConvertRawJsonObject());
+        }
+    }
 }
