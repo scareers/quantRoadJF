@@ -19,6 +19,7 @@ import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -62,6 +63,8 @@ public class BondBuyNotify {
 
     public static void main1() {
         if (isActualTradingEnvironment()) { // 实盘环境!
+            CommonUtil.notifyKey("播报程序启动, 环境: 实盘环境");
+
             // 1.准备步骤
             // 1.1.开始更新监控转债列表任务 -- 子线程死循环, 不能再次调用
             startUpdateBondListTask(false);
@@ -115,6 +118,7 @@ public class BondBuyNotify {
                 }
             }
         } else if (isReviseEnvironment()) { // 多数同实盘, 不同之处将会标记!
+            CommonUtil.notifyKey("播报程序启动, 环境: 复盘环境");
             startUpdateBondListTask(false);
             try {
                 SecurityBeanEm.createBondList(
@@ -129,13 +133,18 @@ public class BondBuyNotify {
             algorithmChain.add(new SingleAmountAlgorithm());
 //        algorithmChain.add(new ChgPctAlgorithm());
 
-            String dateStr = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
+            String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
             while (true) {
+                // @diff: 不同之处在于, 可能需要刷新静态数据池!
                 String reviseDateStr = getReviseDateStr();
-                if (reviseDateStr == null || !reviseDateStr.equals(dateStr)) { // 复盘日期改变, 应当刷新静态数据, 已经fs数据池!
-                    // 刷新数据池
+                if (reviseDateStr == null || !reviseDateStr.equals(preDateStrSetting)) { // 复盘日期改变, 应当刷新静态数据, 已经fs数据池!
+                    CommonUtil.notifyKey("复盘日期更改, 需要刷新静态数据池");
+                    // 刷新静态数据池!
+                    StaticData.forceFlushAllStaticData();
 
-                    dateStr = reviseDateStr;
+                    // @noti: 动态数据因为动态读取 复盘日期设定, 访问数据库(带缓存), 因此无需在此刷新
+
+                    preDateStrSetting = reviseDateStr; // 保留改变
                 }
 
 
