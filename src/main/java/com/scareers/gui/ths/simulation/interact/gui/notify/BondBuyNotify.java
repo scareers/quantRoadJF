@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -27,6 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.awt.*;
 import java.util.List;
@@ -121,6 +123,7 @@ public class BondBuyNotify {
             algorithmChain.add(new SingleAmountAlgorithm());
 //        algorithmChain.add(new ChgPctAlgorithm());
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 实盘环境");
+
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;
@@ -179,6 +182,7 @@ public class BondBuyNotify {
             String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
 
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 复盘环境");
+            Console.log(bondPoolSet);
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;
@@ -254,10 +258,16 @@ public class BondBuyNotify {
      * 子线程死循环, 遍历消息队列, 取优先级最高消息, 播报消息!
      * 会检测消息是否过期 !
      */
+    public static volatile boolean startedNotifyMessages = false; // 标志是否已经开启消息消费队列
+
     public static void startNotifyMessages() {
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
+                if (startedNotifyMessages) {
+                    return;
+                }
+                startedNotifyMessages = true;
                 log.info("开始访问消息队列, 播报消息!");
                 while (true) {
                     NotifyMessage message = null;
@@ -462,6 +472,7 @@ public class BondBuyNotify {
                     log.error("获取东财全部转债实时截面数据错误, 无法更新昨收价map");
                     return;
                 }
+                bondPreCloseMap.clear();
                 for (int i = 0; i < realtimeQuotesOfBond.length(); i++) {
                     try {
                         bondPreCloseMap.put(
@@ -482,7 +493,7 @@ public class BondBuyNotify {
                 if (allStockWithBond == null) {
                     allStockWithBond = getAllStockWithBond();
                 }
-
+                bondPreCloseMap.clear();
                 for (StockBondBean stockBondBean : allStockWithBond) {
                     if (excludeBonds.contains(stockBondBean.getBondCode())) {
                         continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
@@ -504,12 +515,20 @@ public class BondBuyNotify {
         /**
          * 总入口, 刷新所有静态数据项 -- 子线程 -- 1分钟更新 -- 各方法自行区分环境!
          */
+        public static boolean loopStarted = false; // 保证静态数据更新死循环, 仅仅启动一次!
+
         public static void startFlushAllStaticData() {
+            if (loopStarted) {
+                return;
+            }
+            loopStarted = true;
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
                     while (true) { //
-                        forceFlushAllStaticData();
+                        if (broadcastRunning) {
+                            forceFlushAllStaticData();
+                        }
                         ThreadUtil.sleep(60 * 1000);
                     }
                 }

@@ -45,7 +45,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
 
         // sec_code	market	time_tick	price	 vol	bs, 使用顺序
         // 1.找到 分钟 tick点;
-        String timeTickLast = fsTransData.get(fsTransData.length() - 1, 2).toString();
+        String timeTickLast = fsTransData.get(fsTransData.length() - 1, "time_tick").toString();
         DateTime lastTime = DateUtil.parse(timeTickLast);
         // 时间窗口开始时间,包含
         DateTime windowStartTime = DateUtil.offset(lastTime, DateField.SECOND, -1 * (periodSeconds + 3)); // 已经+3,排除自身
