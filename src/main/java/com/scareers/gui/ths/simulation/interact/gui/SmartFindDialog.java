@@ -1,7 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
-import cn.hutool.core.util.RandomUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPoForSmartFind;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.utils.CommonUtil;
@@ -36,7 +36,10 @@ public class SmartFindDialog extends JDialog {
     public static volatile boolean smartFinderMode = true; // 可通过修改此值, 关闭只能查找概念
     // 2.查找map; 切换功能应当清空它, 并填充它;
     public static volatile Hashtable<String, Object> findingMap = new Hashtable<>();
+    public static volatile Hashtable<Class, FindResultCallback> findResultCallbackMap = new Hashtable<>(); // 回调map
+
     // value实际类型不固定, 例如 SecurityEmPoForSmartFind
+    public static final int findResMaxAmount = 20; // 单次查找结果上限
     // 3.标志进入了单次只能查找模式, 该flag在监听到第一个字母后设置true, 在一次查找退出后, 设置false!
     public static volatile boolean smartFindingEntered = false; // 单例单锁逻辑
 
@@ -58,7 +61,8 @@ public class SmartFindDialog extends JDialog {
     public static HashSet<Integer> smartFinderStartKeySet; // A-Z, 0-9; 监听到这些键, 才开启 一次只能查找! 初始化后一般不变
 
     static {
-        initSmartFinderStartKeySet();
+        initSmartFinderStartKeySet(); //
+        initFindResultCallbackMap(); // 查找结果回调 处理对象 填充
     }
 
     TraderGui parentS; // 自定义属性, 不使用父类 owner属性
@@ -117,22 +121,43 @@ public class SmartFindDialog extends JDialog {
      * @param text
      */
     public void doFind(String text) {
-
         // 1. 查找结果列表
         ArrayList<Object> findRes = new ArrayList<>();
 
+        // todo: @key3: 每当一种新类型put到map, 自行实现对应查找逻辑!
         // 2. 查找逻辑, 每当有一种类型的 东西, 被put到 map里面, 都自行实现 对应的查找逻辑
         Collection<Object> values = findingMap.values();
         for (Object value : values) {
-            if (value instanceof SecurityBeanEm.SecurityEmPoForSmartFind) {
+            if (findRes.size() > findResMaxAmount) {
+                break; // 查找结果上限, 以免循环次数太多
+            }
 
+            if (value instanceof SecurityEmPoForSmartFind) {
+                SecurityEmPoForSmartFind po = (SecurityEmPoForSmartFind) value;
+                SecurityBeanEm bean = po.getBean();
+                // 1.检测拼音
+                if (bean.getPinYin().toUpperCase().contains(text.toUpperCase())) {
+                    findRes.add(po);
+                } else if (bean.getSecCode().contains(text)) {
+                    findRes.add(po);
+                }
             }
         }
 
-
+        // 查找结果
+        // Console.log(findRes);
         // 2.把新的查找结果, 显示到 结果显示列表!
         model.flush(findRes);
         findResList.setSelectedIndex(0);
+    }
+
+    /**
+     * 查找结果的回调函数, 处理查找确定下来的结果;
+     * 对于同一种类型, 常态处理过程相近;  但gui可能处于不同界面功能, 则需要判定, 给出不同的逻辑; 由方法自行实现!
+     * 例如: 当gui切换功能界面时, 修改一个 状态变量; --> TraderGui.FunctionGuiCurrent
+     */
+    public static abstract class FindResultCallback {
+        public abstract void handleFindResult(Object findResult);
     }
 
     /**
@@ -140,7 +165,16 @@ public class SmartFindDialog extends JDialog {
      * 对查找结果, 查找框按下enter, 表示选中当前的 选择结果!
      */
     public void confirmFindResult(Object findResult) {
-        CommonUtil.notifyError("查找结果" + findResult);
+        // todo: 针对不同的对象, 均需要不同的回调处理
+        if (findResult instanceof SecurityEmPoForSmartFind) {
+            FindResultCallback callback = findResultCallbackMap.get(SecurityEmPoForSmartFind.class);
+            if (callback != null) {
+                callback.handleFindResult(findResult);
+            }
+        }
+
+        // CommonUtil.notifyError("查找结果: " + findResult);
+        // x. 最终都要退出
         this.setVisible(false); // 自动退出
     }
 
@@ -362,6 +396,31 @@ public class SmartFindDialog extends JDialog {
                     }
                 }
                 return true;
+            }
+        });
+    }
+
+
+    /**
+     * 初始化填充 一些常用默认的 类型, 的查找结果, 的回调函数!
+     * 也可以动态 put 添加
+     */
+    private static void initFindResultCallbackMap() {
+        findResultCallbackMap.put(SecurityEmPoForSmartFind.class, new FindResultCallback() {
+            @Override
+            public void handleFindResult(Object findResult) {
+                if (!(findResult instanceof SecurityEmPoForSmartFind)) {
+                    return;
+                }
+                if (TraderGui.INSTANCE == null) {
+                    return;
+                }
+                // 1.拿到对应类型的结果
+                SecurityEmPoForSmartFind findRes = (SecurityEmPoForSmartFind) findResult;
+                if (TraderGui.INSTANCE.getFunctionGuiCurrent().equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
+                    // 当前功能状态是 转债复盘
+
+                }
             }
         });
     }

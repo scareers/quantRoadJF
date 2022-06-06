@@ -20,6 +20,7 @@ import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
 import com.scareers.utils.log.LogUtil;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
@@ -50,6 +51,7 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * @see CorePanel
  */
 @Setter
+@Getter
 public class TraderGui extends JFrame {
     public static TraderGui INSTANCE;
 
@@ -99,6 +101,16 @@ public class TraderGui extends JFrame {
         initTrayIcon();
     }
 
+    /**
+     * 语义上, 表示gui当前处于 什么功能的 界面gui之下;;
+     * 标志了gui状态
+     * 当前仅仅用于 只能搜索时, 对同类型查找结果, 在 gui处于不同界面时, 可能应该有不同的 执行逻辑
+     */
+    public static enum FunctionGuiCurrent {
+        BOND_REVISE // 转债复盘界面
+    }
+
+    FunctionGuiCurrent functionGuiCurrent = null;
 
     public void init() {
         this.setLayout(new BorderLayout());
