@@ -4,6 +4,7 @@ import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.Cached;
@@ -37,6 +38,7 @@ public class EastMoneyDbApi {
             3600 * 1000); // 某个日期的上n个交易日?
     private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
     private static Cache<String, HashMap<String, Double>> allPreCloseByDateCache = CacheUtil.newLRUCache(32);
+    private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdCache = CacheUtil.newLRUCache(512);
 
     public static void main(String[] args) throws Exception {
 
@@ -57,7 +59,18 @@ public class EastMoneyDbApi {
 //        Console.log(allBkNameByDate.size());
 
 //        Console.log(getBondRecordAmountByDateStr("2022-06-02"));
-        Console.log(getAllPreCloseByDate("2022-06-02"));
+//        Console.log(getAllPreCloseByDate("2022-06-02"));
+
+//        TimeInterval timer = DateUtil.timer();
+//        timer.start();
+//        DataFrame<Object> fsTransByDateAndQuoteId = getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
+//        Console.log(timer.intervalRestart());
+//        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
+//        Console.log(timer.intervalRestart());
+//        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
+//        Console.log(timer.intervalRestart());
+//        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
+//        Console.log(timer.intervalRestart());
 
     }
 
@@ -290,6 +303,12 @@ public class EastMoneyDbApi {
      * @return
      */
     public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId, boolean excludeBid) {
+        String cacheKey = StrUtil.format("{}__{}__{}", date, quoteId, excludeBid);
+        DataFrame<Object> res = fsTransByDateAndQuoteIdCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
         String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
         if (excludeBid) {
             sql = StrUtil.format("select * from `{}` where quoteId='{}' and time_tick>='09:30:00'", date, quoteId);
@@ -301,6 +320,7 @@ public class EastMoneyDbApi {
             e.printStackTrace();
             return null;
         }
+        fsTransByDateAndQuoteIdCache.put(cacheKey, dataFrame);
         return dataFrame;
     }
 

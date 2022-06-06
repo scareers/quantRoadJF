@@ -34,7 +34,7 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
     @Override
     public BondBuyNotify.NotifyMessage describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
                                                 StockBondBean stockBondBean) {
-        DataFrame<Object> fsTransData = this.getFsTransDfOfBond(null, bondBean);
+        DataFrame<Object> fsTransData = this.getFsTransDfOfBond(bondBean);
         if (fsTransData == null || fsTransData.length() == 0) {
             return null; // 暂无无分时成交数据
         }

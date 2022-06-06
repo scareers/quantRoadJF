@@ -1,10 +1,8 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
@@ -254,22 +252,57 @@ public class BondBuyNotify {
         public abstract NotifyMessage describe(SecurityBeanEm bondBean, SecurityBeanEm stockBean,
                                                StockBondBean stockBondBean);
 
-        /*
-        默认实现的一些方法
-         */
 
-        // 复盘时的数据池! 在主循环死循环中, 将每外层循环检测 复盘日期是否改变, 改变了应当 重新载入 fs/fs成交/静态数据!!
+        // 分时成交数据, 数据库列,重命名为与 实时爬虫列名称相同!
+        public static Map<Object, Object> fsTransDbColAdaptationMap = new HashMap<>();
+        // @key: 因为实时爬虫获取到 数据, 会比真实时间, 一般都有 0.x秒延迟, 因此我们复盘程序, 筛选时间应该设置一定延迟, 达到等价实盘
+        // @key: 建议设置1 或者0, (因为复盘程序不含毫秒, 因此只能精确到秒)
+        public static int simulationDataFromDbDelaySecond = 1;
 
+        static {
+            intiFsTransDbColAdaptationMap(); // 分时成交数据库与实时爬虫 列名相同, 不再需要适配!
+        }
+
+        private static void intiFsTransDbColAdaptationMap() {
+            fsTransDbColAdaptationMap.putAll(Dict.create()
+                    .set("test", "test")
+            );
+        }
 
         // 1.正股和转债的分时和分时成交数据获取默认方法, 从爬虫获取
         // @noti: 未来复盘实现, 需要重写方法, 才数据库读取数据;  默认实现未使用到 current 参数, 因为获取最新全部数据
-        public DataFrame<Object> getFsTransDfOfBond(Date current, SecurityBeanEm bondBean) {
+        public DataFrame<Object> getFsTransDfOfBond(SecurityBeanEm bondBean) {
             if (isActualTradingEnvironment()) {
                 return FsTransactionFetcher.getFsTransData(bondBean);
             } else if (isReviseEnvironment()) {
-                DataFrame<Object> fsTransByDateAndQuoteId = EastMoneyDbApi
+                DataFrame<Object> fsTransDf = EastMoneyDbApi
                         .getFsTransByDateAndQuoteId(getReviseDateStr(), bondBean.getQuoteId()); // 已经缓存
+                // 实时数据字段列: 需要重命名匹配: sec_code	 market	time_tick	price	 vol	bs
+                // 数据库均包含这些列!!!!!!! 且名称相同, 无需适配
+                // fsTransDf = fsTransDf.rename(fsTransDbColAdaptationMap);
+                // 需要筛选!
+                DateTime current = getReviseSimulationCurrentTime();
+                // 在某个时间只能获取到 前一秒以前的数据, 模拟实盘爬虫的数据延迟! 可设定
+                DateTime filterTime = DateUtil.offset(current, DateField.SECOND, -simulationDataFromDbDelaySecond);
+                String filterTick = DateUtil.format(filterTime, DatePattern.NORM_TIME_PATTERN);
+                // 使用遍历查找, 更加快速, 这里不用 filter了
+                int shouldIndex = -1;
+                for (int i = 0; i < fsTransDf.length(); i++) {
+                    String tick = fsTransDf.get(i, "time_tick").toString();
+                    if (tick.compareTo(filterTick) <= 0) {
+                        shouldIndex = 0;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (shouldIndex == -1) { // 时间没到, 没数据
+                    return new DataFrame<Object>(fsTransDf.columns());
+                } else {
+                    return fsTransDf.slice(0, shouldIndex + 1);
+                }
             }
+            return null;
         }
 
         // 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	资产代码	资产名称
