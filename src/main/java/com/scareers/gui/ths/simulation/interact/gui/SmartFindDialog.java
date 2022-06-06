@@ -1,14 +1,21 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.scareers.utils.CommonUtil;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXList;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import java.awt.*;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
+import java.beans.JavaBean;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -53,7 +60,7 @@ public class SmartFindDialog extends JDialog {
 
     TraderGui parentS; // 自定义属性, 不使用父类 owner属性
     JPanel contentPanel;
-    JTextField findInput; // 查找内容输入框!
+    FinderInput findInput; // 查找内容输入框!
     JXList findResList; // 显示瞬间的查找结果, 并默认选中第一项, 并且监听 enter键, 确定选择
 
     public SmartFindDialog(TraderGui parent, String title, boolean modal) {
@@ -64,16 +71,86 @@ public class SmartFindDialog extends JDialog {
 
         initContentPanel();
         this.setContentPane(contentPanel);
+        SmartFindDialog dialogX = this;
+//        this.addKeyListener(new KeyAdapter() {
+//            @Override
+//            public void keyPressed(KeyEvent e) {
+//                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+//                    dialogX.setVisible(false);
+//                }
+//            }
+//        });
     }
 
+    public static class FinderInput extends JTextField implements DocumentListener {
+        @Override
+        public void insertUpdate(DocumentEvent e) {
+            textChange(e); // 插入和删除, 都调用相同回调
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e) {
+            textChange(e);
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e) {
+
+        }
+
+        // 文本大写
+        @Override
+        public void setText(String text) {
+            super.setText(text.toUpperCase());
+        }
+
+        public void textChange(DocumentEvent e) {
+            Document document = e.getDocument();
+            try {
+                String text = document.getText(0, document.getLength());
+                if (INSTANCE != null) {
+                    INSTANCE.doFind(text);
+                }
+            } catch (BadLocationException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public void doFind(String text) {
+        // findingMap.put("abc", "xyz");
+
+        // 1. 根据text, 拿到 Object 列表, 作为查找结果, 这里简单写
+        ArrayList<Object> findRes = new ArrayList<>();
+        int resAmount = RandomUtil.randomInt(5, 10);
+        for (int i = 0; i < resAmount; i++) {
+            findRes.add(RandomUtil.randomDouble()); // 对象为double, 测试
+        }
+
+
+    }
 
     public void initContentPanel() {
         contentPanel = new JPanel();
         contentPanel.setLayout(new BorderLayout());
 
-        findInput = new JTextField();
+        // 1.查找框, 设置文档变化监听
+        findInput = new FinderInput();
+        findInput.getDocument().addDocumentListener(findInput);
         findInput.setText("测试内容");
         findInput.setPreferredSize(new Dimension(widthDefault0, 40));
+        findInput.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    if (INSTANCE != null) {
+                        INSTANCE.setVisible(false); // 将自动退出查找模式
+                    }
+                }
+            }
+        });
+
+
         findResList = new JXList();
         findResList.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
