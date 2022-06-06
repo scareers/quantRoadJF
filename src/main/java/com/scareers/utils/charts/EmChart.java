@@ -318,7 +318,12 @@ public class EmChart {
             if ("15:00".compareTo(filterTimeTick) < 0) {
                 return false; // 超过3点无视
             }
-            filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
+            // @noti: 解决 分时成交有 13:00:xx, 但分时没有的问题, 强制修复bug;
+            if ("13:00".compareTo(filterTimeTick) == 0) { //  因为分时去掉了 13:00; fs成交却有
+                filterIndex = 120; // 一半?
+            } else { // 常态!
+                filterIndex = this.allFsDateStr.indexOf(this.dateStr + " " + this.filterTimeTick); // 修改index
+            }
             return true;
         }
 

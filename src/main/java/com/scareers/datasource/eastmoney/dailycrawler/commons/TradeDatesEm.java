@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney.dailycrawler.commons;
 
 import cn.hutool.core.date.*;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
@@ -79,6 +80,7 @@ public class TradeDatesEm extends CrawlerEm {
         // 2.获取未来的日期
         // [结束日期, 节日描述, 休市市场, 开始日期, 未知]
         DataFrame<Object> futureDatesDf = EmDataApi.getFutureMarketCloseDates(3000, 3);
+        // Console.log(futureDatesDf);
         if (futureDatesDf == null) {
             success = false;
             logApiError("东财休市安排数据");

@@ -488,14 +488,15 @@ public class EmDataApi {
     }
 
     private static void initFutureMarketCloseDatesFields() {
+        // @update: 该api字段修改为大写字母
         FutureMarketCloseDatesFieldsMap.putAll(Dict.create()
-                .set("edate", "结束日期") // 包括
-                .set("holiday", "节日描述") //
-                .set("mkt", "休市市场")
-                .set("sdate", "开始日期") // 包括
-                .set("xs", "未知") // 未知字段, 常为空
+                .set("EDATE", "结束日期") // 包括
+                .set("HOLIDAY", "节日描述") //
+                .set("MKT", "休市市场")
+                .set("SDATE", "开始日期") // 包括
+                .set("XS", "未知") // 未知字段, 常为空
         );
-        FutureMarketCloseDatesFields = Arrays.asList("edate", "holiday", "mkt", "sdate", "xs");
+        FutureMarketCloseDatesFields = Arrays.asList("EDATE", "HOLIDAY", "MKT", "SDATE", "XS");
 
     }
 

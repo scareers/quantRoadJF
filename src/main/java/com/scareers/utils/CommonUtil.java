@@ -487,7 +487,7 @@ public class CommonUtil {
                 DateUtil.parse("11:30:00"),
                 DateField.SECOND);
         DateRange range2 = DateUtil.range( // 首尾均包含!
-                DateUtil.parse("13:00:00"),
+                DateUtil.parse("13:00:00"),      // @noti: 这里也要 01才行
                 DateUtil.parse("15:00:00"),
                 DateField.SECOND);
 
