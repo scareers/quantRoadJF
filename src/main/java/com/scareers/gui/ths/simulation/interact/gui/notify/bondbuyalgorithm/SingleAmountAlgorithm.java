@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
@@ -12,7 +13,9 @@ import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * description: 单笔tick, 的成交额, 比前n秒内的成交额均值, 大幅放大! 代表了 拉升初始 或者 下杀   第一个tick的可能性!
@@ -43,7 +46,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
             return null; // 暂无无分时成交数据
         }
 
-        // sec_code	market	time_tick	price	 vol	bs, 使用顺序
+        // sec_code	market	time_tick	price	 vol	bs, 使用顺序 --> 复盘的数据库api, 也需要保证前n列, 是这些!!
         // 1.找到 分钟 tick点;
         String timeTickLast = fsTransData.get(fsTransData.length() - 1, "time_tick").toString();
         DateTime lastTime = DateUtil.parse(timeTickLast);
@@ -75,7 +78,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
                 return s.compareTo(startTime) >= 0; // 包含了最后一个tick, 需要注意
             }
         });
-
+        // Console.log(effectDf);
 
         if (effectDf.length() - 1 < (periodSeconds / 6)) { // 起码有一半数据, 6s一个
             return null;

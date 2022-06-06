@@ -14,7 +14,7 @@ import joinery.DataFrame;
 
 import java.util.*;
 
-import static com.scareers.sqlapi.EastMoneyDbApi.getFsTransByDateAndQuoteId;
+import static com.scareers.sqlapi.EastMoneyDbApi.getFsTransByDateAndQuoteIdS;
 
 /**
  * description: 读取分时成交, 筛选其中的典型成交量(即成交量-平均成交量>标准差*某倍数), 分类这些典型成交量, 买盘和买盘比例情况
@@ -165,7 +165,7 @@ public class FsTransTypicalBsSelector extends StockSelector {
      */
     public static double typicalVolBsRateFactor(String date, SecurityBeanEm bean, double typicalStdRate) {
         String quoteId = bean.getQuoteId();
-        DataFrame<Object> dfFs = getFsTransByDateAndQuoteId(date, quoteId);
+        DataFrame<Object> dfFs = EastMoneyDbApi.getFsTransByDateAndQuoteId(date, quoteId);
 
         List<Long> volList = DataFrameS.getColAsLongList(dfFs, "vol");
         List<Double> priceList = DataFrameS.getColAsDoubleList(dfFs, "price");

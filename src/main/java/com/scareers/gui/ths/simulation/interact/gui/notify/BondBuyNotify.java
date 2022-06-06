@@ -2,7 +2,6 @@ package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -28,7 +27,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.awt.*;
 import java.util.List;
@@ -182,7 +180,9 @@ public class BondBuyNotify {
             String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
 
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 复盘环境");
-            Console.log(bondPoolSet);
+            // Console.log(bondPoolSet);
+            String reviseDateStr = getReviseDateStr();
+
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;
@@ -195,14 +195,11 @@ public class BondBuyNotify {
                 }
 
                 // @diff: 2.需要刷新静态数据池!
-                String reviseDateStr = getReviseDateStr();
                 if (reviseDateStr == null || !reviseDateStr.equals(preDateStrSetting)) { // 复盘日期改变, 应当刷新静态数据, 已经fs数据池!
                     CommonUtil.notifyKey("复盘日期更改, 需要刷新静态数据池");
                     // 刷新静态数据池!
                     StaticData.forceFlushAllStaticData();
-
                     // @noti: 动态数据因为动态读取 复盘日期设定, 访问数据库(带缓存), 因此无需在此刷新
-
                     preDateStrSetting = reviseDateStr; // 保留改变
                 }
 
@@ -350,12 +347,13 @@ public class BondBuyNotify {
 
         // 1.正股和转债的分时和分时成交数据获取默认方法, 从爬虫获取
         // @noti: 未来复盘实现, 需要重写方法, 才数据库读取数据;  默认实现未使用到 current 参数, 因为获取最新全部数据
+        // @key3: 实盘和复盘, fs成交数据, 列索引也要保持一直;  数据库api  的sql语句, 已经保证了!!!
         public DataFrame<Object> getFsTransDfOfBond(SecurityBeanEm bondBean) {
             if (isActualTradingEnvironment()) {
                 return FsTransactionFetcher.getFsTransData(bondBean);
             } else if (isReviseEnvironment()) {
                 DataFrame<Object> fsTransDf = EastMoneyDbApi
-                        .getFsTransByDateAndQuoteId(getReviseDateStr(), bondBean.getQuoteId()); // 已经缓存
+                        .getFsTransByDateAndQuoteIdS(getReviseDateStr(), bondBean.getQuoteId()); // 已经缓存
                 // 实时数据字段列: 需要重命名匹配: sec_code	 market	time_tick	price	 vol	bs
                 // 数据库均包含这些列!!!!!!! 且名称相同, 无需适配
                 // fsTransDf = fsTransDf.rename(fsTransDbColAdaptationMap);
@@ -369,14 +367,14 @@ public class BondBuyNotify {
                 for (int i = 0; i < fsTransDf.length(); i++) {
                     String tick = fsTransDf.get(i, "time_tick").toString();
                     if (tick.compareTo(filterTick) <= 0) {
-                        shouldIndex = 0;
+                        shouldIndex = i;
                     } else {
                         break;
                     }
                 }
 
                 if (shouldIndex == -1) { // 时间没到, 没数据
-                    return new DataFrame<Object>(fsTransDf.columns());
+                    return new DataFrame<>(fsTransDf.columns());
                 } else {
                     return fsTransDf.slice(0, shouldIndex + 1);
                 }

@@ -4,8 +4,6 @@ import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.Cached;
 import com.scareers.annotations.TimeoutCache;
@@ -38,7 +36,10 @@ public class EastMoneyDbApi {
             3600 * 1000); // 某个日期的上n个交易日?
     private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
     private static Cache<String, HashMap<String, Double>> allPreCloseByDateCache = CacheUtil.newLRUCache(32);
-    private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdCache = CacheUtil.newLRUCache(512);
+    private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdXCache = CacheUtil
+            .newLRUCache(512); // 字段顺序同爬虫
+    private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdRawCache = CacheUtil
+            .newLRUCache(512); // 字段顺序数据表原始
 
     public static void main(String[] args) throws Exception {
 
@@ -289,9 +290,10 @@ public class EastMoneyDbApi {
      * @param date
      * @param quoteId
      * @return
+     * @key3 : 为了保证与爬虫的df 数据列顺序一样, 这里显式固定了返回的列顺序
      */
-    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId) {
-        return getFsTransByDateAndQuoteId(date, quoteId, false);
+    public static DataFrame<Object> getFsTransByDateAndQuoteIdS(String date, String quoteId) {
+        return getFsTransByDateAndQuoteIdS(date, quoteId, false);
     }
 
     /**
@@ -301,17 +303,21 @@ public class EastMoneyDbApi {
      * @param date
      * @param quoteId
      * @return
+     * @key3 : 为了保证与爬虫的df 数据列顺序一样, 这里显式固定了返回的列顺序
      */
-    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId, boolean excludeBid) {
+    public static DataFrame<Object> getFsTransByDateAndQuoteIdS(String date, String quoteId, boolean excludeBid) {
         String cacheKey = StrUtil.format("{}__{}__{}", date, quoteId, excludeBid);
-        DataFrame<Object> res = fsTransByDateAndQuoteIdCache.get(cacheKey);
+        DataFrame<Object> res = fsTransByDateAndQuoteIdXCache.get(cacheKey);
         if (res != null) {
             return res;
         }
 
-        String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date, quoteId);
+        String sql = StrUtil.format("select sec_code,market,time_tick,price,vol,bs,id,secName,quoteId from `{}` where" +
+                " quoteId='{}'", date, quoteId);
         if (excludeBid) {
-            sql = StrUtil.format("select * from `{}` where quoteId='{}' and time_tick>='09:30:00'", date, quoteId);
+            sql = StrUtil
+                    .format("select sec_code,market,time_tick,price,vol,bs,id,secName,quoteId from `{}` where quoteId='{}' and time_tick>='09:30:00'",
+                            date, quoteId);
         }
         DataFrame<Object> dataFrame;
         try {
@@ -320,7 +326,42 @@ public class EastMoneyDbApi {
             e.printStackTrace();
             return null;
         }
-        fsTransByDateAndQuoteIdCache.put(cacheKey, dataFrame);
+        fsTransByDateAndQuoteIdXCache.put(cacheKey, dataFrame);
+        return dataFrame;
+    }
+
+    /**
+     * @key3 : 数据库中原序
+     */
+    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId) {
+        return getFsTransByDateAndQuoteId(date, quoteId, false);
+    }
+
+    /**
+     * @key3 : 数据库中原序
+     */
+    public static DataFrame<Object> getFsTransByDateAndQuoteId(String date, String quoteId, boolean excludeBid) {
+        String cacheKey = StrUtil.format("{}__{}__{}", date, quoteId, excludeBid);
+        DataFrame<Object> res = fsTransByDateAndQuoteIdRawCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        String sql = StrUtil.format("select * from `{}` where" +
+                " quoteId='{}'", date, quoteId);
+        if (excludeBid) {
+            sql = StrUtil
+                    .format("select * from `{}` where quoteId='{}' and time_tick>='09:30:00'",
+                            date, quoteId);
+        }
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connectionFsTrans, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        fsTransByDateAndQuoteIdRawCache.put(cacheKey, dataFrame);
         return dataFrame;
     }
 
