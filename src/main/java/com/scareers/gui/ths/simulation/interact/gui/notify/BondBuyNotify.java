@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +67,23 @@ public class BondBuyNotify {
     public static void stopBroadcast() {
         BondBuyNotify.broadcastRunning = false;
         CommonUtil.notifyKey("将软停止播报程序 ----->");
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    CommonUtil.waitUtil(new BooleanSupplier() {
+                        @Override
+                        public boolean getAsBoolean() {
+                            return !broadcastRunning;
+                        }
+                    }, 1000, 1, null, false);
+                    CommonUtil.notifyKey("播报程序停止成功");
+                } catch (TimeoutException | InterruptedException e) {
+                    e.printStackTrace();
+                    return;
+                }
+            }
+        });
     }
 
     public static void main1() {
@@ -139,7 +158,7 @@ public class BondBuyNotify {
                 }
             }
             broadcastRunning = false; // 停止flag
-            CommonUtil.notifyKey("播报程序停止成功, 环境: 实盘环境");
+
         } else if (isReviseEnvironment()) { // 多数同实盘, 不同之处将会标记!
             CommonUtil.notifyKey("播报程序启动, 环境: 复盘环境");
             broadcastRunning = true; // 启动flag
@@ -216,7 +235,6 @@ public class BondBuyNotify {
                 }
             }
             broadcastRunning = false; // 停止flag
-            CommonUtil.notifyKey("播报程序停止成功, 环境: 复盘环境");
         }
 
 
