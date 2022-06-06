@@ -258,10 +258,18 @@ public class BondBuyNotify {
         默认实现的一些方法
          */
 
+        // 复盘时的数据池! 在主循环死循环中, 将每外层循环检测 复盘日期是否改变, 改变了应当 重新载入 fs/fs成交/静态数据!!
+
+
         // 1.正股和转债的分时和分时成交数据获取默认方法, 从爬虫获取
         // @noti: 未来复盘实现, 需要重写方法, 才数据库读取数据;  默认实现未使用到 current 参数, 因为获取最新全部数据
         public DataFrame<Object> getFsTransDfOfBond(Date current, SecurityBeanEm bondBean) {
-            return FsTransactionFetcher.getFsTransData(bondBean);
+            if (isActualTradingEnvironment()) {
+                return FsTransactionFetcher.getFsTransData(bondBean);
+            } else if (isReviseEnvironment()) {
+                DataFrame<Object> fsTransByDateAndQuoteId = EastMoneyDbApi
+                        .getFsTransByDateAndQuoteId(getReviseDateStr(), bondBean.getQuoteId()); // 已经缓存
+            }
         }
 
         // 日期 开盘	收盘 最高	最低	成交量	成交额	    振幅 涨跌幅	涨跌额  换手率	资产代码	资产名称
