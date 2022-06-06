@@ -21,6 +21,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
+import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
 import com.scareers.pandasdummy.DataFrameS;
@@ -737,10 +738,41 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 2.3.@key: 各种功能按钮!
+        // 2.3.1: 主动刷新转债列表 (已经有线程自动刷新)
         FuncButton loadBondListButton = ButtonFactory.getButton("刷新列表");
         loadBondListButton.addActionListener(e -> { // 点击加载或刷新转债列表;
             flushBondListCare(); // 已经实现了新建线程执行
         });
+
+
+        // ---> 播报开启按钮 以及 停止按钮;
+        // 2.3.2. 播报开启按钮
+        FuncButton broadcastProcessStartButton = ButtonFactory.getButton("开启播报");
+        broadcastProcessStartButton.addActionListener(e -> { // 点击加载或刷新转债列表;
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    BondBuyNotify.changeEnvironmentToActualTrading(); // 模拟环境!
+                    BondBuyNotify.main1(); // 播报程序启动; 主死循环会检测停止 flag; 重复点击将打印错误log
+                }
+            }, true);
+        });
+
+        // 2.3.2. 播报停止按钮 , 设置flag, 将会软停止播报主循环
+        FuncButton broadcastProcessStopButton = ButtonFactory.getButton("开启播报");
+        broadcastProcessStopButton.addActionListener(e -> { // 点击加载或刷新转债列表;
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    BondBuyNotify.broadcastRunning = false;
+                    CommonUtil.notifyKey("将软停止播报程序 ----->");
+                }
+            }, true);
+        });
+
+        // 按钮添加
+        buttonContainer.add(broadcastProcessStartButton);
+        buttonContainer.add(broadcastProcessStopButton);
         buttonContainer.add(loadBondListButton);
 
 
