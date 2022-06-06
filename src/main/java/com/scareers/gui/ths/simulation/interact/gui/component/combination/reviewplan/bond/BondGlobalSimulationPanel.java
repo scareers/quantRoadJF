@@ -792,7 +792,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 try {
                     List<String> allBondCodes = null;
                     if (bondListUseRealTimeWenCai) {
-                        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("成交额从大到小排名", WenCaiApi.TypeStr.BOND);
+                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(400);
                         allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
                     }
                     if (allBondCodes == null || allBondCodes.size() < 100) { // 失败或者设置就使用数据库
@@ -817,33 +817,24 @@ public class BondGlobalSimulationPanel extends JPanel {
                     }
                     allBondCodes = allBondCodes.stream().filter(Objects::nonNull)
                             .collect(Collectors.toList()); // 不可null
-                    List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(allBondCodes, false);
+                    List<SecurityBeanEm> bondList = SecurityBeanEm.createBondListOrdered(allBondCodes, false);
                     // bondList 无序, 将其按照 原来的allBondCodes 排序
-                    HashMap<String, SecurityBeanEm> map = new HashMap<>();
-                    for (SecurityBeanEm beanEm : bondList) {
-                        map.put(beanEm.getSecCode(), beanEm);
-                    }
-
-                    List<SecurityBeanEm> bondListOrdered = new ArrayList<>();
-                    for (String allBondCode : allBondCodes) {
-                        SecurityBeanEm beanEm = map.get(allBondCode);
-                        if (beanEm != null) {
-                            bondListOrdered.add(beanEm);
-                        }
-                    }
-                    for (SecurityBeanEm beanEm : bondListOrdered) {
-                        String quoteId = beanEm.getQuoteId();
-                        if (quoteId != null) {
-                            SmartFindDialog.findingMap
-                                    .put(quoteId, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
-                        }
-                    }
-                    securityEmPos = SecurityEmPo.fromBeanList(bondListOrdered); // 更新
+                    securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }, true);
+    }
+
+    /**
+     * 手动给定转债列表来刷新
+     *
+     * @param bondList
+     */
+    public void flushBondListAs(List<SecurityBeanEm> bondList) {
+        Console.log(bondList);
+        securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
     }
 
     /**
@@ -923,10 +914,11 @@ public class BondGlobalSimulationPanel extends JPanel {
             public void run() {
                 while (true) { // 每 100ms 刷新model
                     model.flush(securityEmPos);
+
                     if (jListForBonds != null) {
                         jxFindBarS.setSearchable(jListForBonds.getSearchable());
                     }
-                    Thread.sleep(100);
+                    Thread.sleep(10000);
                 }
             }
         }, true);

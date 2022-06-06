@@ -475,4 +475,57 @@ public class BondUtil {
 
         return res;
     }
+
+
+    /**
+     * 问财转债成交额排名无效; 自写逻辑实现排名
+     * 排序后, 成交额列, 重命名为 amountS
+     *
+     * @param preN
+     * @return
+     * @bugfix: 注意, 一定要 dataFrame=dataFrame.resetIndex(); 否则使用 fori 访问元素, 将按照原顺序
+     */
+    public static DataFrame<Object> getVolTopNBondDf(int preN) {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前" + preN,
+                0, WenCaiApi.TypeStr.BOND);
+
+        // 成交额列
+        if (dataFrame != null) {
+
+            int amountColIndex = -1;
+            ArrayList<Object> cols = new ArrayList<>(dataFrame.columns());
+            for (int i = 0; i < cols.size(); i++) {
+                if (cols.get(i).toString().startsWith("可转债@成交额[")) {
+                    amountColIndex = i;
+                    break;
+                }
+            }
+            if (amountColIndex != -1) { //排序
+                int finalAmountColIndex = amountColIndex;
+                dataFrame = dataFrame.sortBy(new Comparator<List<Object>>() {
+                    @Override
+                    public int compare(List<Object> o1, List<Object> o2) {
+                        try {
+                            Double amount1 = Double.valueOf(o1.get(finalAmountColIndex).toString());
+                            Double amount2 = Double.valueOf(o2.get(finalAmountColIndex).toString());
+                            if (amount1 > amount2) {
+                                return -1;
+                            } else if (amount1 < amount2) {
+                                return 1;  // 倒序
+                            } else {
+                                return 0;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return 0;
+                        }
+                    }
+                });
+                dataFrame = dataFrame.rename(cols.get(amountColIndex), "amountS");
+                dataFrame = dataFrame.resetIndex();
+            }
+        }
+        return dataFrame;
+    }
+
 }

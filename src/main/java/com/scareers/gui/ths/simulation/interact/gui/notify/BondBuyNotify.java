@@ -7,6 +7,7 @@ import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
@@ -50,9 +51,12 @@ import java.util.stream.Collectors;
  */
 public class BondBuyNotify {
     public static void main(String[] args) throws Exception {
-        main1();
+//        main1();
 
-
+        List<StockBondBean> volTopNStockWithBond = getVolTopNStockWithBond(20);
+        for (StockBondBean stockBondBean : volTopNStockWithBond) {
+            Console.log(stockBondBean.getBondName());
+        }
     }
 
     /*
@@ -626,10 +630,22 @@ public class BondBuyNotify {
             }
              */
 
-            List<StockBondBean> volTopNStockWithBond = getVolTopNStockWithBond(150);
-            bondPoolSet.clear();
-            bondPoolSet.addAll(volTopNStockWithBond);
-            CommonUtil.notifyKey(StrUtil.format("当前转债池数量: {}", bondPoolSet.size()));
+            // 问财实时成交额
+            try {
+                List<StockBondBean> volTopNStockWithBond = getVolTopNStockWithBond(150);
+                bondPoolSet.clear();
+                bondPoolSet.addAll(volTopNStockWithBond);
+                CommonUtil.notifyKey(StrUtil.format("当前转债池数量: {} [{}]...", bondPoolSet.size(),
+                        volTopNStockWithBond.subList(0, 10).stream().map(StockBondBean::getBondName)
+                                .collect(Collectors.toList())));
+
+                BondGlobalSimulationPanel.getInstance().flushBondListAs(SecurityBeanEm.createBondListOrdered(
+                        volTopNStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
+                        false
+                ));
+            } catch (Exception e) {
+
+            }
 
         }
     }
@@ -795,10 +811,7 @@ public class BondBuyNotify {
      * @return
      */
     public static List<StockBondBean> getVolTop60StockWithBond() {
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前60",
-                0, WenCaiApi.TypeStr.BOND);
-        ThreadUtil.sleep(100);
-        return parseStockBondBeanList(dataFrame);
+        return getVolTopNStockWithBond(60);
     }
 
     /**
@@ -808,8 +821,7 @@ public class BondBuyNotify {
      * @return
      */
     public static List<StockBondBean> getVolTopNStockWithBond(int preN) {
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前" + preN,
-                0, WenCaiApi.TypeStr.BOND);
+        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(preN);
         ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
     }
@@ -839,6 +851,7 @@ public class BondBuyNotify {
             notifyInfoError("注意, 问财api访问转债列表, 解析结果为空列表");
             return stockBondBeanList;
         }
+
         for (int i = 0; i < dataFrame.length(); i++) {
             try {
                 stockBondBeanList.add(new StockBondBean(
@@ -849,6 +862,7 @@ public class BondBuyNotify {
                         -1
                 ));
             } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return stockBondBeanList;

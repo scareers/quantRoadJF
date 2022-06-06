@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.model;
 
+import cn.hutool.core.lang.Console;
 import com.alee.laf.list.ListDataAdapter;
 import oshi.hardware.platform.mac.MacDisplay;
 

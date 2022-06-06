@@ -301,6 +301,28 @@ public class SecurityBeanEm implements Serializable {
     }
 
     /**
+     * 按序创建转债对象列表; 先调用常规方法, 加入缓存后, 再遍历创建, 加入最终结果保证了有序
+     *
+     * @param queryConditionList
+     * @param logError
+     * @return
+     * @throws Exception
+     */
+    public static List<SecurityBeanEm> createBondListOrdered(List<String> queryConditionList, boolean logError)
+            throws Exception {
+        createBondList(queryConditionList, logError); // 普通方法将加入缓存
+        List<SecurityBeanEm> res = new ArrayList<>();
+        for (String s : queryConditionList) {
+            try {
+                res.add(SecurityBeanEm.createBond(s)); // 按序创建, 读取缓存; 失败无视
+            } catch (Exception e) {
+
+            }
+        }
+        return res;
+    }
+
+    /**
      * @param queryConditionList
      * @return
      * @throws Exception
