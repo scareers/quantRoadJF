@@ -27,7 +27,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  * 对话框单例; 设置在静态属性
  * // @key3: 进入智能查找模式后, focus一直在查找框里面!!! 结果选择也是查找框监听 上下箭头 切换结果列表的选择;
  * 且enter键, 将当前列表选择 作为 选择结果 !!!
- * -------------------------> @key3:
+ * -------------------------> @key3::
  * 添加查找类整个流程:
  * 1.确定要加入 查找map的 PO 对象, 实现合适的 toString方法(被列表展示); // 例如资产,功能等
  * 2.将对象加入 findingMap, 注意, key 需要保证唯一, 否则不同的对象将被覆盖!!! 功能可以 "功能_功能名称" 加前缀作为key; 资产用quoteId
