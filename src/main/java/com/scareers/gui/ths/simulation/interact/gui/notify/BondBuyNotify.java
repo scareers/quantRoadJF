@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
@@ -11,11 +12,15 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.SingleAmountAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
+import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -60,12 +65,18 @@ public class BondBuyNotify {
     public static void main1() {
         if (isActualTradingEnvironment()) { // 实盘环境!
             // 1.准备步骤
-            // 1.1.开始更新监控转债列表任务
+            // 1.1.开始更新监控转债列表任务 -- 子线程死循环, 不能再次调用
             startUpdateBondListTask(false);
-            // 1.2.开始消费消息队列
+            try {
+                SecurityBeanEm.createBondList(
+                        allStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()), false);
+            } catch (Exception e) {
+                // 单次初始化所有转债对象; 目的上是加入缓存, 以便未来
+            }
+            // 1.2.开始消费消息队列 -- 均调用一次开启消费; 注意, 过期时间判定, 当前时间调用静态方法 getCurrentMills, 不再调用System的
             startNotifyMessages();
             // 1.3.静态数据更新
-            StaticData.startFlushAllStaticData();
+            StaticData.startFlushAllStaticData(); // 复盘的 可强制调用刷新一下, 尤其是更新了日期以后!
 
             // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
             FsTransactionFetcher fsTransactionFetcher =
@@ -138,7 +149,7 @@ public class BondBuyNotify {
                     }
                     // 获取最高优先级消息
                     if (message != null) {
-                        if (!message.isExpired(System.currentTimeMillis())) { // 消息未过期;
+                        if (!message.isExpired(getCurrentMills())) { // 消息未过期;
                             notifyInfoCommon(message.getInfoLong());
                             Tts.playSound(message.getInfoShort(), true);
                         } else { // 已过期消息, 将仅仅 醒目log一下
@@ -274,28 +285,52 @@ public class BondBuyNotify {
      */
     public static class StaticData {
         // 转债相关
-        // 转债昨日收盘价map, key为转债简单6位代码!!!
+        // 转债昨日收盘价map, key为quoteId
         public static ConcurrentHashMap<String, Double> bondPreCloseMap = new ConcurrentHashMap<>();
+        public static HashMap<String, Double> allPreCloseByDate = null; // 复盘时读取所有昨收需要. 仅载入一次 ; key为quoteid
 
         /**
          * 刷新转债昨收map
          */
         public static void flushBondPreCloseMap() {
-            DataFrame<Object> realtimeQuotesOfBond = EmConvertibleBondApi.getRealtimeQuotes();
-            // 资产代码 和 昨收 两列
-            if (realtimeQuotesOfBond == null || realtimeQuotesOfBond.length() == 0) {
-                log.error("获取东财全部转债实时截面数据错误, 无法更新昨收价map");
-                return;
-            }
-            for (int i = 0; i < realtimeQuotesOfBond.length(); i++) {
-                try {
-                    bondPreCloseMap.put(
-                            realtimeQuotesOfBond.get(i, "资产代码").toString(),
-                            Double.valueOf(realtimeQuotesOfBond.get(i, "昨收").toString())
-                    );
-                } catch (Exception e) {
-                    log.warn("获取昨收失败: {} -- {}", realtimeQuotesOfBond.get(i, "资产代码"), realtimeQuotesOfBond.get(i,
-                            "资产名称"));
+            if (isActualTradingEnvironment()) { // 实盘将读取东财实时转债列表
+                DataFrame<Object> realtimeQuotesOfBond = EmConvertibleBondApi.getRealtimeQuotes();
+                // 资产代码 和 昨收 两列
+                if (realtimeQuotesOfBond == null || realtimeQuotesOfBond.length() == 0) {
+                    log.error("获取东财全部转债实时截面数据错误, 无法更新昨收价map");
+                    return;
+                }
+                for (int i = 0; i < realtimeQuotesOfBond.length(); i++) {
+                    try {
+                        bondPreCloseMap.put(
+                                realtimeQuotesOfBond.get(i, "资产代码").toString(),
+                                Double.valueOf(realtimeQuotesOfBond.get(i, "昨收").toString())
+                        );
+                    } catch (Exception e) {
+                        log.warn("获取昨收失败: {} -- {}", realtimeQuotesOfBond.get(i, "资产代码"), realtimeQuotesOfBond.get(i,
+                                "资产名称"));
+                    }
+                }
+            } else if (isReviseEnvironment()) { // 复盘环境, 需要最新的 日期设置!
+                // 已经缓存, 可以多次调用 , 例如复盘日期改变后!
+                allPreCloseByDate =
+                        EastMoneyDbApi
+                                .getAllPreCloseByDate(EastMoneyDbApi.getPreNTradeDateStrict(getReviseDateStr(), 1));
+
+                if (allStockWithBond == null) {
+                    allStockWithBond = getAllStockWithBond();
+                }
+
+                for (StockBondBean stockBondBean : allStockWithBond) {
+                    if (excludeBonds.contains(stockBondBean.getBondCode())) {
+                        continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
+                    }
+                    try {
+                        SecurityBeanEm bond = SecurityBeanEm.createBond(stockBondBean.getBondCode());
+                        bondPreCloseMap.put(stockBondBean.getBondCode(), allPreCloseByDate.get(bond.getQuoteId()));
+                    } catch (Exception e) {
+
+                    }
                 }
             }
         }
@@ -305,21 +340,23 @@ public class BondBuyNotify {
          */
 
         /**
-         * 总入口, 刷新所有静态数据项 -- 子线程
+         * 总入口, 刷新所有静态数据项 -- 子线程 -- 1分钟更新 -- 各方法自行区分环境!
          */
         public static void startFlushAllStaticData() {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    while (true) {
-                        flushBondPreCloseMap();
-
+                    while (true) { //
+                        forceFlushAllStaticData();
                         ThreadUtil.sleep(60 * 1000);
                     }
                 }
             }, true);
         }
 
+        public static void forceFlushAllStaticData() {
+            flushBondPreCloseMap();
+        }
 
     }
 
@@ -353,6 +390,7 @@ public class BondBuyNotify {
      * 转债列表更新任务, 单线程执行; 注意主线程别结束
      * 实盘: 调用 updateBondListAndPushToCrawlerPool() 更新相关转债池
      * 复盘: 转债池相同, 但一次载入, 随后不变!
+     * --> 实盘环境仅仅需要启动时调用一次; 复盘环境, 可随时调用, 都会最新设置初始化转债池,且除了第一次一般完成极快
      */
     public static void startUpdateBondListTask(boolean addStockToPool) {
         if (isActualTradingEnvironment()) {
@@ -379,10 +417,37 @@ public class BondBuyNotify {
                 }
             }, true);
         } else if (isReviseEnvironment()) {
-
+            // 复盘环境, 仅需要填充 转债池即可! 需要 StockBondBean 对象列表, 因此,
+            // 先从问财访问所有转债, 转换为 StockBondBean 对象, 再访问东财历史数据, 因为默认顺序是成交额排序,
+            // 取成交额前 150 名, 最终放入转债池!
+            // --> 只需要执行一次, 不需要子线程死循环更新
+            // --> 其他列表均为空, 未初始化!
+            if (allStockWithBond == null || allStockWithBond.size() < 100) {
+                allStockWithBond = getAllStockWithBond(); // 问财实时全部,}
+            }
+            List<String> allBondCodeFromDb = EastMoneyDbApi.getAllBondCodeByDateStr(getReviseDateStr()); // 东财成交额排序
+            if (allBondCodeFromDb == null || allBondCodeFromDb.size() < 100) {
+                allBondCodeFromDb = EastMoneyDbApi.getAllBondCodeByDateStr(DateUtil.today()); // 失败则今天,需要今天爬虫已经执行
+            }
+            if (allBondCodeFromDb == null) { // 实在不行, 再访问东财实时数据列表
+                DataFrame<Object> bondDf = EmQuoteApi.getRealtimeQuotes(Arrays.asList("可转债"));
+                allBondCodeFromDb = DataFrameS.getColAsStringList(bondDf, "资产代码");
+            }
+            HashSet<String> selectBondCodes = new HashSet<>(allBondCodeFromDb.subList(0, reviseBondPoolSize));
+            bondPoolSet.clear();
+            for (StockBondBean stockBondBean : allStockWithBond) {
+                if (selectBondCodes.contains(stockBondBean.getBondCode())) {
+                    bondPoolSet.add(stockBondBean);
+                }
+            }
         }
     }
 
+    // 共用, 问财实时全部转债 列表!  复盘时仅初始化一次即可
+    public static List<StockBondBean> allStockWithBond = null;
+
+    // 复盘相关
+    public static final int reviseBondPoolSize = 150; // 东财爬虫成交额排名前150, 构造复牌时转债池
 
     /**
      * 更新转债列表, 并且将资产添加到 爬虫将要爬取的资产池; -- 核心方法
@@ -399,7 +464,7 @@ public class BondBuyNotify {
         // 1.更新全部转债, 每10分钟更新一次. 且要求新数据行数 > 老数据行数*0.8; 有效更新
         if (allBondsUpdateTime == null || DateUtil
                 .between(allBondsUpdateTime, DateUtil.date(), DateUnit.MINUTE) >= 10) {
-            List<StockBondBean> allStockWithBond = getAllStockWithBond();
+            allStockWithBond = getAllStockWithBond(); //
             if (allStockWithBond.size() >= allBonds.size() * 0.8) {
                 allBonds = allStockWithBond; // 更新
             } else {
@@ -826,4 +891,45 @@ public class BondBuyNotify {
         return environment.equals(Environment.ACTUAL_TRADING);
     }
 
+    /*
+    当前时间
+     */
+
+    /**
+     * 获取当前时间戳! 实盘环境 与 复盘环境不同!
+     *
+     * @return
+     */
+    public static long getCurrentMills() {
+        if (isReviseEnvironment()) {
+            return getReviseSimulationCurrentTime().getTime(); // Date.getTime 就是时间戳
+        } else if (isActualTradingEnvironment()) {
+            return System.currentTimeMillis();
+        } else {
+            notifyInfoError("环境设置错误, 无法判定当前时间戳");
+            return System.currentTimeMillis();
+        }
+    }
+
+    /*
+     * 复盘相关, 简单方法
+     */
+
+    /**
+     * 复盘日期, 读取复盘gui实例的设置控件!
+     *
+     * @return
+     */
+    public static String getReviseDateStr() {
+        return BondGlobalSimulationPanel.getInstance().getReviseDateStrSettingYMD();
+    }
+
+    /**
+     * 复盘虚拟当前时间!
+     *
+     * @return
+     */
+    public static DateTime getReviseSimulationCurrentTime() { // 实时获取复盘 虚拟的 当前时间!
+        return BondGlobalSimulationPanel.getInstance().getReviseSimulationCurrentTime();
+    }
 }

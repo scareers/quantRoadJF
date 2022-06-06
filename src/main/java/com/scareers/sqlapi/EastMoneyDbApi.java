@@ -6,6 +6,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.annotations.Cached;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.pandasdummy.DataFrameS;
@@ -35,6 +36,7 @@ public class EastMoneyDbApi {
     public static Cache<String, String> preNTradeDateStrictCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 某个日期的上n个交易日?
     private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
+    private static Cache<String, HashMap<String, Double>> allPreCloseByDateCache = CacheUtil.newLRUCache(32);
 
     public static void main(String[] args) throws Exception {
 
@@ -54,7 +56,9 @@ public class EastMoneyDbApi {
 //        Console.log(allBkNameByDate);
 //        Console.log(allBkNameByDate.size());
 
-        Console.log(getBondRecordAmountByDateStr("2022-06-02"));
+//        Console.log(getBondRecordAmountByDateStr("2022-06-02"));
+        Console.log(getAllPreCloseByDate("2022-06-02"));
+
     }
 
 
@@ -200,6 +204,50 @@ public class EastMoneyDbApi {
             }
             forOrder.add(secCode);
         }
+        return res;
+    }
+
+    //    select count(*)
+//    from `2022-06-06` `2022-06-062`
+//    where date = '2022-06-06 15:00';
+
+    /**
+     * 给定日期, 获取全资产收盘价 Map; 返回值 key为 quoteId
+     * 从 1分钟fs图数据库获取
+     *
+     * @param dateStr
+     * @return
+     */
+    @Cached
+    public static HashMap<String, Double> getAllPreCloseByDate(String dateStr) {
+        String sql = StrUtil.format("select quoteId,close from `{}` where date = '{} 15:00'", dateStr, dateStr);
+        DataFrame<Object> dataFrame = null;
+
+        HashMap<String, Double> res = allPreCloseByDateCache.get(dateStr);
+        if (res != null) {
+            return res;
+        } else {
+            res = new HashMap<>(); // 初始化
+        }
+        try {
+            dataFrame = DataFrame.readSql(connectionFs1M, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        if (dataFrame != null) {
+            for (int i = 0; i < dataFrame.length(); i++) {
+                Object quoteId = dataFrame.get(i, 0);
+                Object close = dataFrame.get(i, 1);
+
+                try {
+                    res.put(quoteId.toString(), Double.valueOf(close.toString()));
+                } catch (NumberFormatException e) {
+
+                }
+            }
+        }
+        allPreCloseByDateCache.put(dateStr, res);
         return res;
     }
 

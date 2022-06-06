@@ -516,6 +516,16 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
+    public String getReviseDateStrSettingYMDHMS() { // 复盘开始tick设定 -- 年月日 时分秒
+        try {
+            return DateUtil.format(DateUtil.parse(jTextFieldOfReviseStartDatetime.getText()),
+                    DatePattern.NORM_DATETIME_PATTERN); // 读取最新设定的 年月日 日期
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 复盘开始tick失败, 默认返回 今日 09:30:00");
+            return DateUtil.today() + " 09:30:00";
+        }
+    }
+
     public String getReviseRestartTickFromLabel() { // 重启复盘时, 应当从label读取tick, 失败则 9:30:00
         try {
             return DateUtil.format(DateUtil.parse(labelOfRealTimeSimulationTime.getText()),
@@ -523,6 +533,15 @@ public class BondGlobalSimulationPanel extends JPanel {
         } catch (Exception e) {
             CommonUtil.notifyError("复盘程序读取 复盘暂停重启tick失败, 默认返回 09:30:00");
             return "09:30:00";
+        }
+    }
+
+    public DateTime getReviseSimulationCurrentTime() { // 实时获取复盘 虚拟的 当前时间!
+        try {
+            return DateUtil.parse(labelOfRealTimeSimulationTime.getText()); // 读取当前label的时间
+        } catch (Exception e) {
+            CommonUtil.notifyError("复盘程序读取 虚拟当前时间失败,返回此刻但无逻辑意义");
+            return DateUtil.date();
         }
     }
 
@@ -782,7 +801,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                     for (SecurityBeanEm beanEm : bondListOrdered) {
                         String quoteId = beanEm.getQuoteId();
                         if (quoteId != null) {
-                            SmartFindDialog.findingMap.put(quoteId, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
+                            SmartFindDialog.findingMap
+                                    .put(quoteId, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
                         }
                     }
                     securityEmPos = SecurityEmPo.fromBeanList(bondListOrdered); // 更新

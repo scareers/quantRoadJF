@@ -6,6 +6,7 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.dailycrawler.CrawlerEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 
@@ -80,7 +81,22 @@ public class BondListEm extends CrawlerEm {
 
     @Override
     protected void runCore() {
-        String today = DateUtil.today();
+        String today = DateUtil.today(); // today 作为实际意义上的今天, 注意逻辑!
+        try {
+            if (EastMoneyDbApi.isTradeDate(today)) {
+                if (DateUtil.hour(DateUtil.date(), true) >= 15) {
+                    today = DateUtil.today();
+                } else {
+                    today = EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
+                }
+            } else {
+                today = EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
         Integer bondRecordAmountByDateStr = getBondRecordAmountByDateStr(today);
         if (bondRecordAmountByDateStr != null && bondRecordAmountByDateStr > 100) {
             log.info("今日 bond_list 已经有记录, 不再爬取");

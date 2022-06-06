@@ -145,7 +145,7 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
         res.setInfoLong(infoLong);
         res.setPriority(priorityDefault);
         res.setExpireMills(expireMillsDefault);
-        res.setGenerateMills(System.currentTimeMillis());
+        res.setGenerateMills(BondBuyNotify.getCurrentMills());
 
         return res;
     }
