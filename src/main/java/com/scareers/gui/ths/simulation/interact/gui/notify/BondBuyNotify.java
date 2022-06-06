@@ -1011,6 +1011,10 @@ public class BondBuyNotify {
      */
     private static volatile Environment environment = Environment.ACTUAL_TRADING; // 默认即实盘,复盘一般需要主动调用一下
 
+    /**
+     * @key3 : 因为停止flag, 启动停止机制的问题, 菜单启动为实盘环境, 复盘界面按钮启动为复盘环境(停止按钮也可停止实盘播报)!
+     * 且两者不会冲突 !! 当一个启动了, 另一个不允许成功启动
+     */
     public static void changeEnvironmentToRevise() {
         environment = Environment.REVISE; // 默认即实盘
     }

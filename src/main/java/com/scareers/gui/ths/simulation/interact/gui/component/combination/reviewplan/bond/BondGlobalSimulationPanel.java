@@ -752,7 +752,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    BondBuyNotify.changeEnvironmentToActualTrading(); // 模拟环境!
+                    BondBuyNotify.changeEnvironmentToRevise(); // 模拟环境!
                     BondBuyNotify.main1(); // 播报程序启动; 主死循环会检测停止 flag; 重复点击将打印错误log
                 }
             }, true);

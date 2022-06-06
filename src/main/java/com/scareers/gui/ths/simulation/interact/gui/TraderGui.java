@@ -213,13 +213,11 @@ public class TraderGui extends JFrame {
                             @Override
                             public void run() {
                                 try {
+                                    BondBuyNotify.changeEnvironmentToActualTrading(); // 实盘环境
                                     BondBuyNotify.main1();
                                 } catch (Exception ex) {
                                     ex.printStackTrace();
                                 }
-//                                while (true) {
-//
-//                                }
                             }
                         }, true);
                     }
