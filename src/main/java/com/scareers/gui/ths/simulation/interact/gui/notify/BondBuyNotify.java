@@ -96,7 +96,7 @@ public class BondBuyNotify {
             List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
             algorithmChain.add(new SingleAmountAlgorithm());
 //        algorithmChain.add(new ChgPctAlgorithm());
-
+            CommonUtil.notifyKey("播报程序进入主循环, 环境: 实盘环境");
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;
@@ -134,6 +134,7 @@ public class BondBuyNotify {
                 }
             }
             broadcastRunning = false; // 停止flag
+            CommonUtil.notifyKey("播报程序停止成功, 环境: 实盘环境");
         } else if (isReviseEnvironment()) { // 多数同实盘, 不同之处将会标记!
             CommonUtil.notifyKey("播报程序启动, 环境: 复盘环境");
             broadcastRunning = true; // 启动flag
@@ -151,8 +152,9 @@ public class BondBuyNotify {
             List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
             algorithmChain.add(new SingleAmountAlgorithm());
 //        algorithmChain.add(new ChgPctAlgorithm());
-
             String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
+
+            CommonUtil.notifyKey("播报程序进入主循环, 环境: 复盘环境");
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;
@@ -209,6 +211,7 @@ public class BondBuyNotify {
                 }
             }
             broadcastRunning = false; // 停止flag
+            CommonUtil.notifyKey("播报程序停止成功, 环境: 复盘环境");
         }
 
 

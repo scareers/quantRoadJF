@@ -748,6 +748,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         // ---> 播报开启按钮 以及 停止按钮;
         // 2.3.2. 播报开启按钮
         FuncButton broadcastProcessStartButton = ButtonFactory.getButton("开启播报");
+        broadcastProcessStartButton.setForeground(Color.orange);
         broadcastProcessStartButton.addActionListener(e -> { // 点击加载或刷新转债列表;
             ThreadUtil.execAsync(new Runnable() {
                 @Override
@@ -759,7 +760,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
 
         // 2.3.2. 播报停止按钮 , 设置flag, 将会软停止播报主循环
-        FuncButton broadcastProcessStopButton = ButtonFactory.getButton("开启播报");
+        FuncButton broadcastProcessStopButton = ButtonFactory.getButton("停止播报");
+        broadcastProcessStopButton.setForeground(Color.red);
         broadcastProcessStopButton.addActionListener(e -> { // 点击加载或刷新转债列表;
             ThreadUtil.execAsync(new Runnable() {
                 @Override
