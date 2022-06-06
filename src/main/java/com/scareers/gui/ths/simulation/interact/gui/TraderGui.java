@@ -51,7 +51,6 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * @see CorePanel
  */
 @Setter
-@Getter
 public class TraderGui extends JFrame {
     public static TraderGui INSTANCE;
 
@@ -110,7 +109,7 @@ public class TraderGui extends JFrame {
         BOND_REVISE // 转债复盘界面
     }
 
-    FunctionGuiCurrent functionGuiCurrent = null;
+    public FunctionGuiCurrent functionGuiCurrent = null; // getter不好意思, 直接public了
 
     public void init() {
         this.setLayout(new BorderLayout());

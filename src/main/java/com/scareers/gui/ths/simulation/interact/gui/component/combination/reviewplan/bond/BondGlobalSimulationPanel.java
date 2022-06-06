@@ -70,6 +70,10 @@ public class BondGlobalSimulationPanel extends JPanel {
         return INSTANCE;
     }
 
+    public static BondGlobalSimulationPanel getInstance() {
+        return INSTANCE;
+    }
+
     public static final int tick3sLogPanelWidth = DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
     public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
@@ -776,9 +780,9 @@ public class BondGlobalSimulationPanel extends JPanel {
                         }
                     }
                     for (SecurityBeanEm beanEm : bondListOrdered) {
-                        String pinYin = beanEm.getPinYin();
-                        if (pinYin != null) {
-                            SmartFindDialog.findingMap.put(pinYin, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
+                        String quoteId = beanEm.getQuoteId();
+                        if (quoteId != null) {
+                            SmartFindDialog.findingMap.put(quoteId, new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
                         }
                     }
                     securityEmPos = SecurityEmPo.fromBeanList(bondListOrdered); // 更新
@@ -893,7 +897,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                 int index = jList.getSelectedIndex(); // 选中切换
                 SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
                 setSelectedBean(po.getBean());
-                bondInfoPanel.update(selectedBean);
             }
         });
 
@@ -911,6 +914,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
+        bondInfoPanel.update(selectedBean); // 信息也要更改
         updateFsDisplay(false); // 自动改变分时图显示, 不强制
     }
 

@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui;
 
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPoForSmartFind;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.utils.CommonUtil;
@@ -26,6 +27,15 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*
  * 对话框单例; 设置在静态属性
  * // @key3: 进入智能查找模式后, focus一直在查找框里面!!! 结果选择也是查找框监听 上下箭头 切换结果列表的选择;
  * 且enter键, 将当前列表选择 作为 选择结果 !!!
+ * -------------------------> @key3:
+ * 添加查找类整个流程:
+ * 1.确定要加入 查找map的 PO 对象, 实现合适的 toString方法(被列表展示); // 例如资产,功能等
+ * 2.将对象加入 findingMap, 注意, key 需要保证唯一, 否则不同的对象将被覆盖!!! 功能可以 "功能_功能名称" 加前缀作为key; 资产用quoteId
+ * 3.搜索本类todo, 需要 对 PO 类, 实现其查找逻辑, 判定类型...
+ * 4.在initFindResultCallbackMap() 或者 动态调用 findResultCallbackMap.put() , 添加对于不同的类, 的查找结果的回调
+ * 5.FindResultCallback 为查找结果回调接口; 对同类型对象, 因gui处于不同功能界面, 可能需要不同的响应逻辑, 使用 TraderGui.FunctionGuiCurrent 区分
+ * 因此, 切换功能时, 至少应当将 TraderGui.FunctionGuiCurrent==null, 随后设置为新的值!  // 目前仅转债复盘设置了, 其他懒得加代码
+ * ------------------------->
  *
  * @author: admin
  * @date: 2022/6/6/006-06:58:36
@@ -417,9 +427,12 @@ public class SmartFindDialog extends JDialog {
                 }
                 // 1.拿到对应类型的结果
                 SecurityEmPoForSmartFind findRes = (SecurityEmPoForSmartFind) findResult;
-                if (TraderGui.INSTANCE.getFunctionGuiCurrent().equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
+                if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
                     // 当前功能状态是 转债复盘
-
+                    BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                    if (instance != null) {
+                        instance.setSelectedBean(findRes.getBean());
+                    }
                 }
             }
         });
