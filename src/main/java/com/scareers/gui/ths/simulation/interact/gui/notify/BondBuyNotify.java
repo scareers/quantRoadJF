@@ -116,6 +116,58 @@ public class BondBuyNotify {
                     }
                 }
             }
+        } else if (isReviseEnvironment()) { // 多数同实盘, 不同之处将会标记!
+            startUpdateBondListTask(false);
+            try {
+                SecurityBeanEm.createBondList(
+                        allStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()), false);
+            } catch (Exception e) {
+            }
+            startNotifyMessages();
+            StaticData.startFlushAllStaticData();
+
+            // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
+            List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
+            algorithmChain.add(new SingleAmountAlgorithm());
+//        algorithmChain.add(new ChgPctAlgorithm());
+
+            String dateStr = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
+            while (true) {
+                String reviseDateStr = getReviseDateStr();
+                if (reviseDateStr == null || !reviseDateStr.equals(dateStr)) { // 复盘日期改变, 应当刷新静态数据, 已经fs数据池!
+                    // 刷新数据池
+
+                    dateStr = reviseDateStr;
+                }
+
+
+                ThreadUtil.sleep(100); // 延迟多一点
+                // Console.log(bondPoolSet.size()); // 检测死循环是否进行中
+                for (StockBondBean stockBondBean : new HashSet<>(bondPoolSet)) {
+                    if (excludeBonds.contains(stockBondBean.getBondCode())) {
+                        continue; // 不能在排除列表中; 可手动设置排除转债, 以及一些创建东财bean失败的; 因为问财结果不保证转债当前可交易
+                    }
+                    SecurityBeanEm bondBean;
+                    try {
+                        bondBean = SecurityBeanEm.createBond(stockBondBean.getBondCode());
+                    } catch (Exception e) {
+                        excludeBonds.add(stockBondBean.getBondCode());
+                        continue;
+                    }
+
+                    // 算法链遍历
+                    NotifyMessage message = null;
+                    for (BondStateAlgorithm algorithm : algorithmChain) {
+                        message = algorithm.describe(bondBean, null, null);
+                        if (message != null) { // 取最前方算法的非null结果
+                            break;
+                        }
+                    }
+                    if (message != null) { // 可能算法链遍历完成, 也没有结果
+                        messageQueue.put(message);
+                    }
+                }
+            }
         }
 
 
