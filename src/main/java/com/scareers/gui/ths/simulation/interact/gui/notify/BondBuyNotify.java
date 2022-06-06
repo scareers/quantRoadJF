@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.notify;
 
 import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -181,6 +182,7 @@ public class BondBuyNotify {
 
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 复盘环境");
             // Console.log(bondPoolSet);
+
             String reviseDateStr = getReviseDateStr();
 
             while (true) {
@@ -597,13 +599,16 @@ public class BondBuyNotify {
             }, true);
         } else if (isReviseEnvironment()) {
             // 复盘环境, 仅需要填充 转债池即可! 需要 StockBondBean 对象列表, 因此,
-            // 先从问财访问所有转债, 转换为 StockBondBean 对象, 再访问东财历史数据, 因为默认顺序是成交额排序,
-            // 取成交额前 150 名, 最终放入转债池!
+            // 先从问财访问所有转债, 转换为 StockBondBean 对象
+            // 再取问财实时成交额前 150 名, 最终放入转债池!
             // --> 只需要执行一次, 不需要子线程死循环更新
             // --> 其他列表均为空, 未初始化!
+
             if (allStockWithBond == null || allStockWithBond.size() < 100) {
                 allStockWithBond = getAllStockWithBond(); // 问财实时全部,}
             }
+            /* 数据库的东财列表获取前50
+
             List<String> allBondCodeFromDb = EastMoneyDbApi.getAllBondCodeByDateStr(getReviseDateStr()); // 东财成交额排序
             if (allBondCodeFromDb == null || allBondCodeFromDb.size() < 100) {
                 allBondCodeFromDb = EastMoneyDbApi.getAllBondCodeByDateStr(DateUtil.today()); // 失败则今天,需要今天爬虫已经执行
@@ -619,6 +624,13 @@ public class BondBuyNotify {
                     bondPoolSet.add(stockBondBean);
                 }
             }
+             */
+
+            List<StockBondBean> volTopNStockWithBond = getVolTopNStockWithBond(150);
+            bondPoolSet.clear();
+            bondPoolSet.addAll(volTopNStockWithBond);
+            CommonUtil.notifyKey(StrUtil.format("当前转债池数量: {}", bondPoolSet.size()));
+
         }
     }
 
@@ -784,6 +796,19 @@ public class BondBuyNotify {
      */
     public static List<StockBondBean> getVolTop60StockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前60",
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+    /**
+     * 获取当前成交额前n ; 问财实时数据
+     *
+     * @param preN
+     * @return
+     */
+    public static List<StockBondBean> getVolTopNStockWithBond(int preN) {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前" + preN,
                 0, WenCaiApi.TypeStr.BOND);
         ThreadUtil.sleep(100);
         return parseStockBondBeanList(dataFrame);
