@@ -127,6 +127,7 @@ public class SmartFindDialog extends JDialog {
             findRes.add(RandomUtil.randomDouble()); // 对象为double, 测试
         }
 
+        // 2.把新的查找结果, 显示到 结果显示列表!
 
     }
 
