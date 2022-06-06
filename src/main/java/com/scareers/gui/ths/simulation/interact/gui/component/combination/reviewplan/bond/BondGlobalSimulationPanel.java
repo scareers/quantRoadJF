@@ -78,7 +78,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final int tick3sLogPanelWidth = DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
     public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
-    public static final boolean bondListUseRealTimeWenCai = false;
+    public static final boolean bondListUseRealTimeWenCai = true;
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -819,7 +819,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             .collect(Collectors.toList()); // 不可null
                     List<SecurityBeanEm> bondList = SecurityBeanEm.createBondListOrdered(allBondCodes, false);
                     // bondList 无序, 将其按照 原来的allBondCodes 排序
-                    securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
+                    flushBondListAs(bondList);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -828,12 +828,15 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
-     * 手动给定转债列表来刷新
+     * 手动给定转债列表来刷新; 并且将查找信息 加入只能查找map中
      *
      * @param bondList
      */
     public void flushBondListAs(List<SecurityBeanEm> bondList) {
-        Console.log(bondList);
+        for (SecurityBeanEm beanEm : bondList) {
+            SmartFindDialog.findingMap.put(beanEm.getQuoteId(),
+                    new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
+        }
         securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
     }
 

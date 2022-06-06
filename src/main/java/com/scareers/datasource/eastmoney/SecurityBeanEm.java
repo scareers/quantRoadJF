@@ -314,7 +314,7 @@ public class SecurityBeanEm implements Serializable {
         List<SecurityBeanEm> res = new ArrayList<>();
         for (String s : queryConditionList) {
             try {
-                res.add(SecurityBeanEm.createBond(s)); // 按序创建, 读取缓存; 失败无视
+                res.add(SecurityBeanEm.createBond(s,logError)); // 按序创建, 读取缓存; 失败无视
             } catch (Exception e) {
 
             }
@@ -438,16 +438,29 @@ public class SecurityBeanEm implements Serializable {
         checkQueryResults();
     }
 
+    private SecurityBeanEm(String queryCondition, boolean logError) {
+        this.queryCondition = queryCondition;
+        checkQueryResults(logError);
+    }
+
     private void checkQueryResults() { // 死循环查询 3 次
+        checkQueryResults(true);
+    }
+
+    private void checkQueryResults(boolean logError) { // 死循环查询 3 次
         int retry_ = 0;
         while (queryResults == null) {
             try {
                 this.queryResults = querySecurityId(queryCondition);
             } catch (Exception e) {
-                log.warn("new EmSecurityBean warning: new时查询失败, 将重试");
+                if (logError) {
+                    log.warn("new EmSecurityBean warning: new时查询失败, 将重试, 条件: " + queryResults);
+                }
             }
             if (retry_ >= retry) {
-                log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败");
+                if (logError) {
+                    log.error("new EmSecurityBean fail: new时查询失败超过重试次数, 视为失败, 条件: " + queryResults);
+                }
                 break;
             }
             retry_++;
@@ -900,12 +913,16 @@ public class SecurityBeanEm implements Serializable {
     }
 
     public static SecurityBeanEm createBond(String queryCondition) throws Exception {
+        return createBond(queryCondition, false);
+    }
+
+    public static SecurityBeanEm createBond(String queryCondition, boolean logError) throws Exception {
         String cacheKey = queryCondition + "__bond";
         SecurityBeanEm res = beanPool.get(cacheKey);
         if (res != null) {
             return res;
         }
-        res = new SecurityBeanEm(queryCondition).convertToBond();
+        res = new SecurityBeanEm(queryCondition, logError).convertToBond();
         beanPool.put(cacheKey, res);
         return res;
     }

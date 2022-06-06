@@ -638,11 +638,11 @@ public class BondBuyNotify {
                 CommonUtil.notifyKey(StrUtil.format("当前转债池数量: {} [{}]...", bondPoolSet.size(),
                         volTopNStockWithBond.subList(0, 10).stream().map(StockBondBean::getBondName)
                                 .collect(Collectors.toList())));
-
-                BondGlobalSimulationPanel.getInstance().flushBondListAs(SecurityBeanEm.createBondListOrdered(
-                        volTopNStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
-                        false
-                ));
+                // 不刷新到
+//                BondGlobalSimulationPanel.getInstance().flushBondListAs(SecurityBeanEm.createBondListOrdered(
+//                        volTopNStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
+//                        false
+//                ));
             } catch (Exception e) {
 
             }
@@ -862,7 +862,7 @@ public class BondBuyNotify {
                         -1
                 ));
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
         return stockBondBeanList;
