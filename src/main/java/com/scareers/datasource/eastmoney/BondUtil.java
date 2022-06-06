@@ -487,7 +487,7 @@ public class BondUtil {
      */
     public static DataFrame<Object> getVolTopNBondDf(int preN) {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债成交额从大到小排名前" + preN,
-                0, WenCaiApi.TypeStr.BOND);
+                1, WenCaiApi.TypeStr.BOND);
 
         // 成交额列
         if (dataFrame != null) {
@@ -505,6 +505,12 @@ public class BondUtil {
                 dataFrame = dataFrame.sortBy(new Comparator<List<Object>>() {
                     @Override
                     public int compare(List<Object> o1, List<Object> o2) {
+                        if (o1.get(finalAmountColIndex) == null) {
+                            return 1;
+                        }
+                        if (o2.get(finalAmountColIndex) == null) {
+                            return 1;
+                        }
                         try {
                             Double amount1 = Double.valueOf(o1.get(finalAmountColIndex).toString());
                             Double amount2 = Double.valueOf(o2.get(finalAmountColIndex).toString());
@@ -516,7 +522,6 @@ public class BondUtil {
                                 return 0;
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
                             return 0;
                         }
                     }

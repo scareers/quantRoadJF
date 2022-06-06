@@ -792,8 +792,13 @@ public class BondGlobalSimulationPanel extends JPanel {
                 try {
                     List<String> allBondCodes = null;
                     if (bondListUseRealTimeWenCai) {
-                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(400);
-                        allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
+                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(1000);
+                        try {
+                            allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            return;
+                        }
                     }
                     if (allBondCodes == null || allBondCodes.size() < 100) { // 失败或者设置就使用数据库
                         String dateStr = DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATE_PATTERN);

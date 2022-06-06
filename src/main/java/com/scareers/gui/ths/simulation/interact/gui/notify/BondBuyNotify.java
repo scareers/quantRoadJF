@@ -67,7 +67,9 @@ public class BondBuyNotify {
     // ---------> 偏实盘环境
     // ---------> 偏复盘环境
 
+    public static boolean loadFsToCacheAfterBondPoolInitReviseEnvironment = true; // 重要设置: 复盘环境下, 强制将转债池全部分时成交数据载入缓存
     public static volatile boolean broadcastRunning = false; // 可控制播报程序停止(跳出主循环) 和 运行主循环(需要调用方法
+
 
     public static void stopBroadcast() {
         BondBuyNotify.broadcastRunning = false;
@@ -571,6 +573,7 @@ public class BondBuyNotify {
 
     public static long sleepOfUpdateBondListPerLoop = 10 * 1000; // 转债列表更新sleep
 
+
     /**
      * 转债列表更新任务, 单线程执行; 注意主线程别结束
      * 实盘: 调用 updateBondListAndPushToCrawlerPool() 更新相关转债池
@@ -611,6 +614,10 @@ public class BondBuyNotify {
             if (allStockWithBond == null || allStockWithBond.size() < 100) {
                 allStockWithBond = getAllStockWithBond(); // 问财实时全部,}
             }
+
+
+
+
             /* 数据库的东财列表获取前50
 
             List<String> allBondCodeFromDb = EastMoneyDbApi.getAllBondCodeByDateStr(getReviseDateStr()); // 东财成交额排序
@@ -635,9 +642,31 @@ public class BondBuyNotify {
                 List<StockBondBean> volTopNStockWithBond = getVolTopNStockWithBond(150);
                 bondPoolSet.clear();
                 bondPoolSet.addAll(volTopNStockWithBond);
+
+
                 CommonUtil.notifyKey(StrUtil.format("当前转债池数量: {} [{}]...", bondPoolSet.size(),
                         volTopNStockWithBond.subList(0, 10).stream().map(StockBondBean::getBondName)
                                 .collect(Collectors.toList())));
+
+                if (loadFsToCacheAfterBondPoolInitReviseEnvironment) {
+                    CommonUtil.notifyKey("模拟环境: 初始一次性载入转债池全部 分时成交数据");
+                    ThreadUtil.execAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<String> collect = bondPoolSet.stream().map(StockBondBean::getBondCode)
+                                    .collect(Collectors.toList());
+                            try {
+                                List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(collect, false);
+                                for (SecurityBeanEm beanEm : bondList) {
+                                    EastMoneyDbApi.getFsTransByDateAndQuoteId(getReviseDateStr(), beanEm.getQuoteId());
+                                    EastMoneyDbApi.getFsTransByDateAndQuoteIdS(getReviseDateStr(), beanEm.getQuoteId());
+                                }
+                            } catch (Exception e) {
+                            }
+
+                        }
+                    }, true);
+                }
                 // 不刷新到
 //                BondGlobalSimulationPanel.getInstance().flushBondListAs(SecurityBeanEm.createBondListOrdered(
 //                        volTopNStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
