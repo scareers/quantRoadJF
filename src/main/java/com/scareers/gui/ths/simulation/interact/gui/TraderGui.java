@@ -266,10 +266,15 @@ public class TraderGui extends JFrame {
                 this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
                 this.getCorePanel().flushAllFuncFrameBounds(); // 实测必须,否则主内容左侧无法正确初始化
                 ThreadUtil.sleep(200);
-                this.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
-                this.getCorePanel().getBottomLeftButtonList().get(1).doClick(); // 操作日志框显示
-//                        mainWindow.getCorePanel().getRightTopButtonList().get(0).doClick() ;
-                this.getCorePanel().getLeftTopButtonList().get(0).doClick();
+                if (autoOpenLogsWindow) {
+                    this.getCorePanel().getBottomLeftButtonList().get(0).doClick(); // 日志框显示
+                }
+                if (autoOpenManiLogsWindow) {
+                    this.getCorePanel().getBottomLeftButtonList().get(1).doClick(); // 操作日志框显示
+                }
+                if (autoOpenFuncTree) {
+                    this.getCorePanel().getLeftTopButtonList().get(0).doClick();
+                }
 
                 if (autoStartTrader) {
                     Trader.getAndStartInstance();

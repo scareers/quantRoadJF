@@ -1,5 +1,9 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPoForSmartFind;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
@@ -229,9 +233,8 @@ public class SmartFindDialog extends JDialog {
                         Object selectedValue = findResList.getSelectedValue();
                         if (selectedValue != null) {
                             confirmFindResult(selectedValue); // 执行确认查找结果
-                        } else {
-                            INSTANCE.setVisible(false); // 没有查找结果, 按下enter, 类似于esc
                         }
+                        INSTANCE.setVisible(false); // 没有查找结果, 按下enter, 类似于esc
                     }
                 }
             }
@@ -392,7 +395,7 @@ public class SmartFindDialog extends JDialog {
                     INSTANCE.setVisible(true); // 可见
                     // 等待对话框显示
                     try {
-                        CommonUtil.waitUtil(() -> INSTANCE.isVisible(), 100, 1, null, false);
+                        CommonUtil.waitUtil(() -> INSTANCE.isVisible(), 2, 1, null, false);
                     } catch (TimeoutException | InterruptedException ex) {
 //                        ex.printStackTrace();
                         INSTANCE.setVisible(true);
@@ -401,7 +404,7 @@ public class SmartFindDialog extends JDialog {
                     // 4. 设置输入框, 刚刚按下的按键, 且获取focus! 等待获取成功!
                     INSTANCE.findInput.requestFocus();
                     try {
-                        CommonUtil.waitUtil(() -> INSTANCE.findInput.hasFocus(), 100, 1, null, false);
+                        CommonUtil.waitUtil(() -> INSTANCE.findInput.hasFocus(), 2, 1, null, false);
                     } catch (TimeoutException | InterruptedException ex) {
 //                        ex.printStackTrace();
                         INSTANCE.findInput.requestFocus();
