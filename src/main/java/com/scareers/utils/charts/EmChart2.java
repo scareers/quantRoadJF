@@ -55,6 +55,7 @@ import java.math.RoundingMode;
 import java.text.*;
 import java.util.List;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_SCROLL_BAR_THUMB;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
@@ -119,7 +120,7 @@ public class EmChart2 {
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
         String dateStr = "2022-06-02";
         Console.log(bondBean.getName());
-        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr);
+        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr, null, null);
 
 
         // 简单的分时图更新:
@@ -185,8 +186,8 @@ public class EmChart2 {
         // @key: 将指数和正股的价格, 线转换为自身涨跌幅, 再 (等价转换为使用转债 preClose )为基准的价格, 才能放进一个chart
         DataFrame<Object> fsDfV2DfOfIndex; //
         DataFrame<Object> fsTransDfOfIndex; //
-        DataFrame<Object> fsDfV2DfOfStock; //
-        DataFrame<Object> fsTransDfOfStock; //
+        DataFrame<Object> fsDfV2DfOfStock; // --> 仅转换了close 列
+        DataFrame<Object> fsTransDfOfStock; //  --> 转换了price列
 
         // 4项数据完整列表
         List<DateTime> allFsTimeTicks; // 分时tick, 日期对象形式
@@ -201,9 +202,16 @@ public class EmChart2 {
 
         List<Double> allAvgPrices;
         List<Double> allVols;
+        List<Double> allPricesOfIndex;
+        List<Double> allPricesOfStock;
 
         List<String> allFsTransTimeTicks; // 所有分时成交的时间tick, 方便查找
         HashMap<String, Integer> allFsTransTimeTicksMap = new HashMap<>(); // 所有分时成交的时间tick,以及对应的索引, 方便查询, 以免遍历查询,太伤
+        // @add:
+        List<String> allFsTransTimeTicksOfIndex;
+        HashMap<String, Integer> allFsTransTimeTicksMapOfIndex = new HashMap<>();
+        List<String> allFsTransTimeTicksOfStock;
+        HashMap<String, Integer> allFsTransTimeTicksMapOfStock = new HashMap<>();
 
         Double preClose; // 自动解析
         private Double preCloseOfIndex;
@@ -269,19 +277,23 @@ public class EmChart2 {
                     .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗少
             this.fsTransDf = EastMoneyDbApi
                     .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗多
-            this.fsDfV2DfOfIndex = EastMoneyDbApi
-                    .getFs1MV2ByDateAndQuoteId(dateStr, indexBean.getQuoteId()); // 主要时间消耗少
-            this.fsTransDfOfIndex = EastMoneyDbApi
-                    .getFsTransByDateAndQuoteId(dateStr, indexBean.getQuoteId()); // 主要时间消耗多
-            this.fsDfV2DfOfStock = EastMoneyDbApi
-                    .getFs1MV2ByDateAndQuoteId(dateStr, stockBean.getQuoteId()); // 主要时间消耗少
-            this.fsTransDfOfStock = EastMoneyDbApi
-                    .getFsTransByDateAndQuoteId(dateStr, stockBean.getQuoteId()); // 主要时间消耗多
-
             // 1.2. 昨收 -- index/stock 的 close 和price, 将被用来缩放, 以便放在同一chart
             this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
+
+            this.fsDfV2DfOfIndex = EastMoneyDbApi
+                    .getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(dateStr, indexBean.getQuoteId(), preClose); // 主要时间消耗少
             this.preCloseOfIndex = Double.valueOf(fsDfV2DfOfIndex.get(0, "preClose").toString());
+            this.fsTransDfOfIndex = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteIdSAdapted(dateStr, indexBean.getQuoteId(), false, preCloseOfIndex,
+                            preClose); //
+            // 主要时间消耗多
+            this.fsDfV2DfOfStock = EastMoneyDbApi
+                    .getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(dateStr, stockBean.getQuoteId(), preClose); // 主要时间消耗少
             this.preCloseOfStock = Double.valueOf(fsDfV2DfOfStock.get(0, "preClose").toString());
+            this.fsTransDfOfStock = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteIdSAdapted(dateStr, stockBean.getQuoteId(), false, preCloseOfStock,
+                            preClose);
+
 
             // 2. 4项数据完整列表
             this.allFsTimeTicks = DataFrameS.getColAsDateList(fsDfV2Df, "date"); // Date形式, 241个tick
@@ -292,23 +304,45 @@ public class EmChart2 {
             this.allPricesTemp2 = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close")); // 备份2,用于成交量颜色
 
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
-            // @add: 指数和正股只需要 等价price放入同一chart; 性质上几乎等同于 avgPrice 均价线
+            // @add: 指数和正股只需要 等价price放入同一chart; 性质上几乎等同于 avgPrice 均价线; + 分时成交tick变化
+            this.allPricesOfIndex = DataFrameS.getColAsDoubleList(fsDfV2DfOfIndex, "close");
+            this.allPricesOfStock = DataFrameS.getColAsDoubleList(fsDfV2DfOfStock, "close");
 
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
-
 
             // 3.分时成交时间戳列表
             this.allFsTransTimeTicks = DataFrameS.getColAsStringList(fsTransDf, "time_tick"); // 时分秒
             for (int i = 0; i < allFsTransTimeTicks.size(); i++) {
                 allFsTransTimeTicksMap.put(allFsTransTimeTicks.get(i), i);
             }
-
+            // 3.1. 同样, 指数和正股的tick和索引, 也保存一下! 只需要注意访问价格从 转换后的价格列表访问即可
+            this.allFsTransTimeTicksOfIndex = DataFrameS.getColAsStringList(fsTransDfOfIndex, "time_tick"); // 时分秒
+            for (int i = 0; i < allFsTransTimeTicksOfIndex.size(); i++) {
+                allFsTransTimeTicksMapOfIndex.put(allFsTransTimeTicksOfIndex.get(i), i);
+            }
+            this.allFsTransTimeTicksOfStock = DataFrameS.getColAsStringList(fsTransDfOfStock, "time_tick"); // 时分秒
+            for (int i = 0; i < allFsTransTimeTicksOfStock.size(); i++) {
+                allFsTransTimeTicksMapOfStock.put(allFsTransTimeTicksOfStock.get(i), i);
+            }
 
             todayDummy = allFsTimeTicks.get(0); // 虚假的今天
 
-            fsTransNewestPrice = preClose;
+            fsTransNewestPrice = preClose; // 默认初始价格
             priceLow = preClose * 0.99; // 默认图表价格下限
-            priceHigh = preClose * 1.01; // 默认图表价格下限
+            priceHigh = preClose * 1.01; // 默认图表价格下限  // 指数和正股的 "价格"列, 已经适配了!
+        }
+
+        /**
+         * @param rawPrices
+         * @param selfPreClose
+         * @param referPreClose
+         * @return
+         * @key3 : 极少的静态方法之一; 给定指数或者股票原始价格列表, 给定其昨收, 并给定转债昨收;
+         * 将 原始价格, 转换为 能够放进同一 chart 的 对应价格; 保留涨跌幅的 一致!!
+         */
+        public static List<Double> convertPriceForInSameChart(List<Double> rawPrices, double selfPreClose,
+                                                              double referPreClose) {
+            return rawPrices.stream().map(value -> value / selfPreClose * referPreClose).collect(Collectors.toList());
         }
 
         private static final Log log = LogUtil.getLogger();

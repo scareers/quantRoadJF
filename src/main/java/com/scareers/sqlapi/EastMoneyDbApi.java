@@ -15,6 +15,7 @@ import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
+import org.checkerframework.checker.units.qual.C;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -313,6 +314,7 @@ public class EastMoneyDbApi {
      * @return
      * @key3 : 为了保证与爬虫的df 数据列顺序一样, 这里显式固定了返回的列顺序
      */
+    @Cached
     public static DataFrame<Object> getFsTransByDateAndQuoteIdS(String date, String quoteId, boolean excludeBid) {
         String cacheKey = StrUtil.format("{}__{}__{}", date, quoteId, excludeBid);
         DataFrame<Object> res = fsTransByDateAndQuoteIdXCache.get(cacheKey);
@@ -335,6 +337,31 @@ public class EastMoneyDbApi {
         }
         if (res != null) {
             fsTransByDateAndQuoteIdXCache.put(cacheKey, res);
+        }
+        return res;
+    }
+
+    /**
+     * 分时成交数据, 适配一下preClose, 使得不同资产可依据涨跌幅, 放进一个chart里面!!, 列顺序同爬虫数据列
+     *
+     * @param date
+     * @param quoteId
+     * @param selfPreClose  分时成交不自带自身的昨收, 因此需要传递!
+     * @param adaptPreClose 适配的目标昨收; 例如转债为主的chart图表, 将指数价格转换放进去, 则需要将指数价格转换, 算法简单
+     * @return
+     * @key3 : 因为转债有太多只了, 如果将结果缓存, 则指数对于多只转债, 结果太多了, 不缓存; 每次均读取原始数据, 重新计算
+     */
+    public static DataFrame<Object> getFsTransByDateAndQuoteIdSAdapted(String date, String quoteId,
+                                                                       boolean excludeBid, double selfPreClose,
+                                                                       double adaptPreClose) {
+        //        // fsTransByDateAndQuoteIdXAdaptedCache
+
+        DataFrame<Object> res = DataFrameS.copy(getFsTransByDateAndQuoteIdS(date, quoteId, excludeBid));
+        if (res != null) { // 其他列不变, 只需要改变 price列; 索引是 3;
+            for (int i = 0; i < res.length(); i++) {
+                Double price = Double.valueOf(res.get(i, "price").toString());
+                res.set(i, "price", price / selfPreClose * adaptPreClose);
+            }
         }
         return res;
     }
@@ -418,6 +445,26 @@ public class EastMoneyDbApi {
         }
         if (res != null) {
             fs1MV2ByDateAndQuoteIdRawCache.put(cacheKey, res);
+        }
+        return res;
+    }
+
+    /**
+     * 分时1分钟v2, 自带有自身preClose, 所以只需要提供 需要适配的价格即可; 仅仅适配close价格!
+     *
+     * @param date
+     * @param quoteId
+     * @return
+     */
+    public static DataFrame<Object> getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(String date, String quoteId,
+                                                                              double adaptPreClose) {
+        DataFrame<Object> res = DataFrameS.copy(getFs1MV2ByDateAndQuoteId(date, quoteId));
+        if (res != null) {
+            Double selfPreClose = Double.valueOf(res.get(0, "preClose").toString());
+            for (int i = 0; i < res.length(); i++) {
+                Double price = Double.valueOf(res.get(i, "close").toString());
+                res.set(i, "close", price / selfPreClose * adaptPreClose);
+            }
         }
         return res;
     }

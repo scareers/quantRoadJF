@@ -3,7 +3,6 @@ package com.scareers.pandasdummy;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import cn.hutool.log.LogFactory;
@@ -339,6 +338,22 @@ public class DataFrameS<V> extends joinery.DataFrame<V> {
         return res;
     }
 
+    /**
+     * 数据复制, 本身算是浅复制, 也能应对多数情况了 --> 行号已经重置标准
+     *
+     * @param rawDf
+     * @return
+     */
+    public static DataFrame<Object> copy(DataFrame<Object> rawDf) {
+        if (rawDf == null) {
+            return null;
+        }
+        DataFrame<Object> res = new DataFrame<>(rawDf.columns());
+        for (int i = 0; i < rawDf.length(); i++) {
+            res.append(rawDf.row(i));
+        }
+        return res.resetIndex();
+    }
 }
 
 
