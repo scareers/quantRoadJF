@@ -460,17 +460,30 @@ public class EmChart2 {
          * 更新数据到下一个tick显示, 此时已经保证必有下一tick; 且整数分钟部分已经更新, 只需要更新多出来的1分钟的tick
          *
          * @update : 添加了2个参数, 即 指数和正股的最新分时成交价格
+         * @noti : 价格都可能null, 注意判定
          */
-        private void updateThreeSeriesDataFsTrans(Double fsTransPrice, Double alreadySureVol,
+        private void updateThreeSeriesDataFsTrans(Double fsTransPrice, double alreadySureVol,
                                                   Double fsTransPriceOfIndex, Double fsTransPriceOfStock
         ) {
-            Minute tick = new Minute(allFsTimeTicks.get(filterIndex + 1));
-            seriesOfFsPrice.addOrUpdate(tick, fsTransPrice); // 价格和成交量, 更新为给定参数
+            if (filterIndex + 1 >= allFsTimeTicks.size()) {
+                return; // 已经没有下一tick可以更新, 收盘了
+            }
+            Minute tick = new Minute(allFsTimeTicks.get(filterIndex + 1)); // 新价格更新到下一tick
+            if (fsTransPrice != null) {
+                seriesOfFsPrice.addOrUpdate(tick, fsTransPrice); // 价格和成交量, 更新为给定参数
+            }
             seriesOfVol.addOrUpdate(tick, alreadySureVol); //
+            if (fsTransPriceOfIndex != null) {
+                seriesOfFsPriceOfIndex.addOrUpdate(tick, fsTransPriceOfIndex); // 价格和成交量, 更新为给定参数
+            }
+            if (fsTransPriceOfStock != null) {
+                seriesOfFsPriceOfStock.addOrUpdate(tick, fsTransPriceOfStock); // 价格和成交量, 更新为给定参数
+            }
+
             try {
                 seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(filterIndex)); // 均价更新为同前1均价, 单纯为了好看
             } catch (Exception e) {
-                // 11:30 - 13:00 filterINdex为-1, 出错
+                // 11:30 - 13:00 filterINdex为-1, 出错 ; 出错无视
             }
         }
 
@@ -606,7 +619,7 @@ public class EmChart2 {
             if (newestPrice != null) {
                 fsTransNewestPrice = newestPrice; // 成交量颜色控制!
             }
-            Double volSumOfBond = getVolSumOfCurrentInOneMinute(date, timeTickStr);
+            double volSumOfBond = getVolSumOfCurrentInOneMinute(date, timeTickStr);
 
 
             // 4.更新! 此时必有下一分钟的 tick
@@ -621,7 +634,7 @@ public class EmChart2 {
 
             // 4.2. 实时部分, 更新 各种分时成交最新价, 到下一个tick!
             // @noti: 增加线时, 要实时动态更新, 需要改写本方法, 添加新的参数, 即新线的最新价格!
-            updateThreeSeriesDataFsTrans(newestPrice, volSumOfBond);
+            updateThreeSeriesDataFsTrans(newestPrice, volSumOfBond, newestPriceOfIndex, newestPriceOfStock);
 
             // 5. 有数据打印分时tick信息到logPanel
             if (fsTransIndexShouldOfBond != null) {
@@ -651,7 +664,11 @@ public class EmChart2 {
                 }
             });
             // 已出现的成交量之和!
-            return CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
+            try {
+                return CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
+            } catch (Exception e) {
+                return 0.0; // 出错返回0
+            }
         }
 
         /**
