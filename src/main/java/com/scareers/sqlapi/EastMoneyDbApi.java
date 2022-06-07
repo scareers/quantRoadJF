@@ -486,13 +486,13 @@ public class EastMoneyDbApi {
     }
 
     /**
-     * 载入 FS1Mv2 和 两类 fs成交数据 到缓存! 耗时可能较久; 建议异步调用
+     * 载入 FS1Mv2 和 两类 fs成交数据 到缓存! 耗时可能较久; 建议异步调用; 给定转债bean, 会自动获取对应大指数和股票bean, 载入数据
      */
     public static volatile boolean loading = false; // 专门适配的flag ; 类似加锁执行效果, 且多线程不阻塞
 
     public static void loadFs1MAndFsTransDataToCache(List<SecurityBeanEm> beanList, String dateStr) {
         if (loading) {
-            CommonUtil.notifyCommon("正在载入中, 不可重复载入");
+            CommonUtil.notifyCommon("分时数据载入缓存: 正在载入中, 不可重复载入");
             return; // 正在载入
         }
         loading = true; // 载入
