@@ -97,6 +97,8 @@ public class EmChart2 {
     public static Color volTickLabelPaint = Color.red; // 成交量y轴tick文字
     // 分时价格线和均线
     public static Color priceColorFs = Color.white;
+    public static Color priceColorFsOfIndex = Color.white; // 指数分时线颜色 -- 紫色
+    public static Color priceColorFsOfStock = Color.white; // 正股分时颜色 -- 蓝色 , 都抄同花顺
     public static Color avgPriceColorFs = new Color(240, 248, 136);
     public static Color preCloseColorFs = new Color(128, 0, 0);
     public static Color bgColorFs = new Color(7, 7, 7);
