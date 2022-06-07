@@ -402,6 +402,10 @@ public class EmChart2 {
         TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection(); // 成交量数据的集合
         // 4大数据序列, 更新数据, 调用 add 或者 delete方法. 前3者时间戳需要一致更新
         TimeSeries seriesOfFsPrice = new TimeSeries("分时数据");
+        // @add. 新增指数和正股价格线 序列 -- 同样241
+        TimeSeries seriesOfFsPriceOfIndex = new TimeSeries("指数分时数据");
+        TimeSeries seriesOfFsPriceOfStock = new TimeSeries("正股分时数据");
+
         TimeSeries seriesOfAvgPrice = new TimeSeries("均价");
         TimeSeries seriesOfVol = new TimeSeries("成交量");
         TimeSeries seriesOfPreClose = new TimeSeries("昨日收盘价");
@@ -485,13 +489,18 @@ public class EmChart2 {
         private void initChart() {
             // 1.将4序列加入 2 序列集合 -- 执行一次
             lineSeriesCollection.addSeries(seriesOfFsPrice);
+            // 1.1. 新增了2个序列 -- 指数和正股的 价格线(动态)
+            lineSeriesCollection.addSeries(seriesOfFsPriceOfIndex);
+            lineSeriesCollection.addSeries(seriesOfFsPriceOfStock); // 默认初始化, 未添加数据罢了!
             lineSeriesCollection.addSeries(seriesOfAvgPrice);
             lineSeriesCollection.addSeries(seriesOfPreClose);
+
             // 2.昨收序列首次加载后将不再更新
             Date today = allFsTimeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
             seriesOfPreClose.add(new Day(today), preClose);
             seriesOfPreClose.add(new Day(DateUtil.offsetDay(today, 1)), preClose);
             barSeriesCollection.addSeries(seriesOfVol);
+
             // 3.序列加载数据
             updateThreeSeriesData();
 
