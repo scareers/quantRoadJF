@@ -360,8 +360,7 @@ public class EastMoneyDbApi {
         if (res != null) { // 其他列不变, 只需要改变 price列; 索引是 3;
             for (int i = 0; i < res.length(); i++) {
                 Double price = Double.valueOf(res.get(i, "price").toString());
-//                res.set(i, "price", price / selfPreClose * adaptPreClose);
-                res.set(i, "price", adaptPreClose * (1 + (price / selfPreClose - 1)));
+                res.set(i, "price", price / selfPreClose * adaptPreClose);
             }
         }
         return res;
@@ -464,8 +463,7 @@ public class EastMoneyDbApi {
             Double selfPreClose = Double.valueOf(res.get(0, "preClose").toString());
             for (int i = 0; i < res.length(); i++) {
                 Double price = Double.valueOf(res.get(i, "close").toString());
-//                res.set(i, "close", price / selfPreClose * adaptPreClose);
-                res.set(i, "close", adaptPreClose * (1 + (price / selfPreClose - 1)));
+                res.set(i, "close", price / selfPreClose * adaptPreClose);
             }
         }
         return res;

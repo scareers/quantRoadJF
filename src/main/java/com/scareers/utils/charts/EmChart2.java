@@ -126,7 +126,7 @@ public class EmChart2 {
             @Override
             public void run() {
                 List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-                for (int i = 200; i < allFsTransTimeTicks.size(); i++) {
+                for (int i = 1000; i < allFsTransTimeTicks.size(); i++) {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));
                     Console.log("即将刷新");
