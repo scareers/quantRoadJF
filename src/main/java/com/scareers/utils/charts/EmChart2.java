@@ -570,70 +570,84 @@ public class EmChart2 {
                 // 1.刷新价格上下限 -- 可无
             }
             String timeTickStr = DateUtil.format(date, "HH:mm:ss");
-            if (timeTickStr.compareTo("15:00:00") > 0) {
+            if (timeTickStr.compareTo("15:00:00") > 0) { // @update: 原来有 ==
                 return; // 3点后不再更新
             }
 
-            // 2.首先查找fs成交数据对应合适的索引 -- 不超过给定的日期的最后一条数据, 要求 30s内
+            // 2.首先查找fs成交数据对应合适的索引 -- 不超过给定的日期的最后一条数据, 要求 本分钟内的!
+            Integer fsTransIndexShouldOfBond = getMaxExistsTimeTickIndexInOneMinute(date, timeTickStr,
+                    allFsTransTimeTicksMap);
+            Integer fsTransIndexShouldOfIndex = getMaxExistsTimeTickIndexInOneMinute(date, timeTickStr,
+                    allFsTransTimeTicksMapOfIndex);
+            Integer fsTransIndexShouldOfStock = getMaxExistsTimeTickIndexInOneMinute(date, timeTickStr,
+                    allFsTransTimeTicksMapOfStock);
+            if (fsTransIndexShouldOfBond != null) {
+                // 3.数据解析
+                // 3.1. 计算最新价格
+                double newestPrice = Double
+                        .parseDouble(fsTransDf.get(fsTransIndexShouldOfBond, "price").toString()); // 最新价格
+                fsTransNewestPrice = newestPrice;
+                String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
+                // 3.2. 计算最新的该分钟当前已出现的成交量之和
+                DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
+                    @Override
+                    public Boolean apply(List<Object> value) {
+                        String timeTick = value.get(3).toString();
+                        if (timeTick.compareTo(lowTimeLimit) >= 0 && timeTick.compareTo(timeTickStr) <= 0) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+                Double volSum = CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
+
+                // 4.更新! 此时必有下一分钟的 tick
+                // 4.1. 先更新整数分钟, 比起直接调用 updateChart的整数分钟更新, 用最新数据更新了上下限的刷新
+                updatePriceLowAndHighFsTrans(newestPrice);
+                // 同样更新两个y轴的上下界!
+                updateY1AxisRange();
+                updateY2AxisRange();
+                // 序列数据在更新上下界后更新; ---  即整数部分
+                updateFiveSeriesData();
+                // 4.2. 实时部分, 更新到下一个tick
+                updateThreeSeriesDataFsTrans(newestPrice, volSum);
+                put(fsTransIndexShouldOfBond);
+            }
+
+
+        }
+
+        /**
+         * 核心方法之一, 给定date, timeTickStr为最大时刻, 找到在本分钟内, 最新的一条数据, 所对应的 在分时成交df中的 索引! 无返回null
+         * 索引查找使用 map查找; 实例化时 索引map已经构建好了!
+         *
+         * @param date
+         * @param timeTickStr
+         * @param tickToIndexMap
+         * @return
+         */
+        public Integer getMaxExistsTimeTickIndexInOneMinute(Date date, String timeTickStr,
+                                                            HashMap<String, Integer> tickToIndexMap) {
             Integer fsTransIndexShould = null;
             DateTime date0 = DateUtil.parse(timeTickStr);
-            String foundTick = null;
-            while (DateUtil.format(date0, "HH:mm:ss").compareTo(DateUtil.format(date, "HH:mm" + ":00")) >= 0) {
+            String formatLimitTick = DateUtil.format(date, "HH:mm" + ":00");
+            while (true) {
+                if (!(DateUtil.format(date0, "HH:mm:ss").compareTo(formatLimitTick) >= 0)) {
+                    break;
+                }
                 // 需要找本分钟内的
                 String tick = DateUtil.format(date0, "HH:mm:ss");
-                Integer index0 = allFsTransTimeTicksMap.get(tick);
+                Integer index0 = tickToIndexMap.get(tick);
                 if (index0 != null) { // 找到了, 则退出
                     fsTransIndexShould = index0;
-                    foundTick = tick;
                     break;
                 } else {
                     // 没有找到, 则 往前一秒!
                     date0 = DateUtil.offset(date0, DateField.SECOND, -1);
                 }
             }
-            if (fsTransIndexShould == null) {
-                //log.warn("未找到本分钟内,有分时成交数据: {}", timeTickStr);
-                return;
-            }
-
-            // 3.数据解析
-            // 3.1. 计算最新价格
-            double newestPrice = Double.parseDouble(fsTransDf.get(fsTransIndexShould, "price").toString()); // 最新价格
-            fsTransNewestPrice = newestPrice;
-            String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
-            // 3.2. 计算最新的该分钟当前已出现的成交量之和
-            DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
-                @Override
-                public Boolean apply(List<Object> value) {
-                    String timeTick = value.get(3).toString();
-                    if (timeTick.compareTo(lowTimeLimit) >= 0 && timeTick.compareTo(timeTickStr) <= 0) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            });
-            Double volSum = CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
-
-            // 4.更新! 此时必有下一分钟的 tick
-            // 4.1. 先更新整数分钟, 比起直接调用 updateChart的整数分钟更新, 用最新数据更新了上下限的刷新
-            updatePriceLowAndHighFsTrans(newestPrice);
-            // 同样更新两个y轴的上下界!
-            updateY1AxisRange();
-            updateY2AxisRange();
-            // 序列数据在更新上下界后更新; ---  即整数部分
-            updateFiveSeriesData();
-            // 4.2. 实时部分, 更新到下一个tick
-            updateThreeSeriesDataFsTrans(newestPrice, volSum);
-
-            // todo: bug需要修复: 按照原来设置, 应当 allPrices.get(filterIndex), 但不知为何, allPrices 数据会被改变!
-            // todo: 因此, 被迫使用了双份数据, allPricesTemp 是深备份的原始 allPrices, 直接从df获取;
-            // todo: 可能因为 allPrices
-//            Console.log("{}[{}] -- {}[{}]", allFsDateStr.get(filterIndex),allPricesTemp.get(filterIndex), foundTick,
-//                    newestPrice);
-
-
-            put(fsTransIndexShould);
+            return fsTransIndexShould;
         }
 
 
