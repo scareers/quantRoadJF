@@ -457,10 +457,13 @@ public class EmChart2 {
         }
 
         /**
-         * // todo --> 主函数修改
          * 更新数据到下一个tick显示, 此时已经保证必有下一tick; 且整数分钟部分已经更新, 只需要更新多出来的1分钟的tick
+         *
+         * @update : 添加了2个参数, 即 指数和正股的最新分时成交价格
          */
-        private void updateThreeSeriesDataFsTrans(double fsTransPrice, double alreadySureVol) {
+        private void updateThreeSeriesDataFsTrans(Double fsTransPrice, Double alreadySureVol,
+                                                  Double fsTransPriceOfIndex, Double fsTransPriceOfStock
+        ) {
             Minute tick = new Minute(allFsTimeTicks.get(filterIndex + 1));
             seriesOfFsPrice.addOrUpdate(tick, fsTransPrice); // 价格和成交量, 更新为给定参数
             seriesOfVol.addOrUpdate(tick, alreadySureVol); //
@@ -581,42 +584,74 @@ public class EmChart2 {
                     allFsTransTimeTicksMapOfIndex);
             Integer fsTransIndexShouldOfStock = getMaxExistsTimeTickIndexInOneMinute(date, timeTickStr,
                     allFsTransTimeTicksMapOfStock);
-            if (fsTransIndexShouldOfBond != null) {
-                // 3.数据解析
-                // 3.1. 计算最新价格
-                double newestPrice = Double
-                        .parseDouble(fsTransDf.get(fsTransIndexShouldOfBond, "price").toString()); // 最新价格
-                fsTransNewestPrice = newestPrice; // 成交量颜色控制!
-                String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
-                // 3.2. 计算最新的该分钟当前已出现的成交量之和
-                DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
-                    @Override
-                    public Boolean apply(List<Object> value) {
-                        String timeTick = value.get(3).toString();
-                        if (timeTick.compareTo(lowTimeLimit) >= 0 && timeTick.compareTo(timeTickStr) <= 0) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                });
-                // 已出现的成交量之和!
-                Double volSum = CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
 
-                // 4.更新! 此时必有下一分钟的 tick
-                // 4.1. 先更新整数分钟, 比起直接调用 updateChart的整数分钟更新, 用最新数据更新了上下限的刷新
-                updatePriceLowAndHighFsTrans(newestPrice);
-                // 同样更新两个y轴的上下界!
-                updateY1AxisRange();
-                updateY2AxisRange();
-                // 序列数据在更新上下界后更新; ---  即整数部分
-                updateFiveSeriesData();
-                // 4.2. 实时部分, 更新到下一个tick
-                updateThreeSeriesDataFsTrans(newestPrice, volSum);
-                put(fsTransIndexShouldOfBond);
+            // 3.计算最新价格, 注意可能null
+            Double newestPrice = null;
+            if (fsTransIndexShouldOfBond != null) {
+                newestPrice = Double.parseDouble(fsTransDf.get(fsTransIndexShouldOfBond, "price").toString()); // 转债最新价格
+            }
+            Double newestPriceOfIndex = null;
+            if (fsTransIndexShouldOfIndex != null) {
+                newestPriceOfIndex = Double
+                        .parseDouble(fsTransDfOfIndex.get(fsTransIndexShouldOfIndex, "price").toString()); // 指数最新价格
+            }
+            Double newestPriceOfStock = null;
+            if (fsTransIndexShouldOfStock != null) {
+                newestPriceOfStock =
+                        Double.parseDouble(fsTransDfOfStock.get(fsTransIndexShouldOfStock, "price").toString());
+                // 正股最新价格
             }
 
+            // 3.1. 转债已出现的单分钟内成交量总和, 和最新价格
+            if (newestPrice != null) {
+                fsTransNewestPrice = newestPrice; // 成交量颜色控制!
+            }
+            Double volSumOfBond = getVolSumOfCurrentInOneMinute(date, timeTickStr);
 
+
+            // 4.更新! 此时必有下一分钟的 tick
+            // 4.1. 先更新整数分钟, 比起直接调用 updateChart的整数分钟更新, 用最新数据更新了上下限的刷新
+            updatePriceLowAndHighFsTrans(Arrays.asList(newestPrice, newestPriceOfIndex, newestPriceOfStock));
+            // 同样更新两个y轴的上下界!
+            updateY1AxisRange();
+            updateY2AxisRange();
+
+            // 序列数据在更新上下界后更新; ---  即整数部分
+            updateFiveSeriesData();
+
+            // 4.2. 实时部分, 更新 各种分时成交最新价, 到下一个tick!
+            // @noti: 增加线时, 要实时动态更新, 需要改写本方法, 添加新的参数, 即新线的最新价格!
+            updateThreeSeriesDataFsTrans(newestPrice, volSumOfBond);
+
+            // 5. 有数据打印分时tick信息到logPanel
+            if (fsTransIndexShouldOfBond != null) {
+                put(fsTransIndexShouldOfBond);
+            }
+        }
+
+        /**
+         * 计算本分钟内, 转债已有成交额综合
+         *
+         * @param date
+         * @param timeTickStr
+         * @return
+         */
+        public Double getVolSumOfCurrentInOneMinute(Date date, String timeTickStr) {
+            String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
+            // 3.2. 计算最新的该分钟当前已出现的成交量之和
+            DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
+                @Override
+                public Boolean apply(List<Object> value) {
+                    String timeTick = value.get(3).toString();
+                    if (timeTick.compareTo(lowTimeLimit) >= 0 && timeTick.compareTo(timeTickStr) <= 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            });
+            // 已出现的成交量之和!
+            return CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
         }
 
         /**
@@ -884,11 +919,14 @@ public class EmChart2 {
         /**
          * 分时成交更新时, 刷新最高最低; 它需要提供最新 price
          *
+         * @param seriesPricesWhoDiffYAxisRange 那些线的价格(已经适配后的), 可能影响到 y轴最大最小区间的; 当前是转债/指数/正股 价格, 因此3项!
          * @key3 bugfix: 此处愿实现, 项prices添加了一项数据, 导致了错误; 应当新建列表, 而非直接向子列表添加数据!
          */
-        public void updatePriceLowAndHighFsTrans(double price) {
+        public void updatePriceLowAndHighFsTrans(List<Double> seriesPricesWhoDiffYAxisRange) {
             List<Double> prices = new ArrayList<>(allPrices.subList(0, filterIndex + 1)); // 显示数据, 使用 filterIndex 直接索引
-            prices.add(price); // 假装加入, 且同样受到 大的更大,小的更小的限制
+            prices.addAll(allPricesOfIndex.subList(0, filterIndex + 1)); // 适配过的, 直接加入即可
+            prices.addAll(allPricesOfStock.subList(0, filterIndex + 1));
+            prices.addAll(seriesPricesWhoDiffYAxisRange); // 假装加入, 且同样受到 大的更大,小的更小的限制
             try {
                 double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
                 if (Math.abs(priceHigh0 * (1 + redundancyPriceRangePercent)) > Math.abs(priceHigh)) {
