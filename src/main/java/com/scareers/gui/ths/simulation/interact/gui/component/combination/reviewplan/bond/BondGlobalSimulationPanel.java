@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -124,10 +125,13 @@ public class BondGlobalSimulationPanel extends JPanel {
     JPanel panelOfTick3sLog; // 更新时: 仅需将新 dynamicChart 的log组件, add到其center即可
     CrossLineListenerForFsXYPlot crossLineListenerForFsXYPlot; // 监听器, 更新时, 需要更新其时间列表,否则可能出现问题
 
+    private boolean firstAddLogPanel = true; // 首次添加log到右panel
+
     /**
      * 更新分时图显示 主 区; 它读取自身属性, selectedBean, 以及设置区设置的 日期 ! 实例化 DynamicEmFs1MV2ChartForRevise 对象
      * 它要求 selectedBean 已设置不为 null;
      */
+
     public void updateFsDisplay(boolean forceCreateDynamicChart) {
         if (selectedBean == null) {
             return; // 为空或者未改变, 不会重新实例化 动态分时图表 对象
@@ -150,18 +154,26 @@ public class BondGlobalSimulationPanel extends JPanel {
         preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
 
         // 3. 更新chart对象, 刷新!
-        chartPanel.setChart(dynamicChart.getChart());
         crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
-        panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
-        JScrollPane jScrollPaneForTickLog = DynamicEmFs1MV2ChartForRevise.getJScrollPaneForTickLog();
-        panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, panelMainForRevise.getHeight()));
-        jScrollPaneForTickLog
-                .setPreferredSize(new Dimension(tick3sLogPanelWidth, panelOfTick3sLog.getHeight())); // 容器同宽
-        jScrollPaneForTickLog.setLocation(0, 0);
-        jScrollPaneForTickLog.setBorder(null);
-        panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
+        chartPanel.setChart(dynamicChart.getChart());
         chartPanel.repaint();
         chartPanel.updateUI();
+        if (firstAddLogPanel) {
+            try {
+                panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
+                JScrollPane jScrollPaneForTickLog = DynamicEmFs1MV2ChartForRevise.getJScrollPaneForTickLog();
+                panelOfTick3sLog.setPreferredSize(new Dimension(tick3sLogPanelWidth, panelMainForRevise.getHeight()));
+                jScrollPaneForTickLog
+                        .setPreferredSize(new Dimension(tick3sLogPanelWidth, panelOfTick3sLog.getHeight())); // 容器同宽
+                jScrollPaneForTickLog.setLocation(0, 0);
+                jScrollPaneForTickLog.setBorder(null);
+                panelOfTick3sLog.add(jScrollPaneForTickLog, BorderLayout.CENTER);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return;
+            }
+            firstAddLogPanel = false; // 首次添加panel
+        }
     }
 
 
@@ -792,7 +804,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 try {
                     List<String> allBondCodes = null;
                     if (bondListUseRealTimeWenCai) {
-                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(1000);
+                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(200);
                         try {
                             allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
                         } catch (Exception e) {
@@ -967,8 +979,11 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
-        bondInfoPanel.update(selectedBean); // 信息也要更改
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
         updateFsDisplay(false); // 自动改变分时图显示, 不强制
+        Console.log(timer.intervalRestart());
+        bondInfoPanel.update(selectedBean); // 信息也要更改
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {

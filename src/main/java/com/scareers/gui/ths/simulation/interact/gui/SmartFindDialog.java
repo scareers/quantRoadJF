@@ -229,6 +229,8 @@ public class SmartFindDialog extends JDialog {
                         Object selectedValue = findResList.getSelectedValue();
                         if (selectedValue != null) {
                             confirmFindResult(selectedValue); // 执行确认查找结果
+                        } else {
+                            INSTANCE.setVisible(false); // 没有查找结果, 按下enter, 类似于esc
                         }
                     }
                 }

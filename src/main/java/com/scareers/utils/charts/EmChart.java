@@ -242,8 +242,6 @@ public class EmChart {
                         .replaceScrollBarUI(jScrollPaneForTickLog, COLOR_THEME_TITLE,
                                 COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
             }
-
-            logTextPane.setText(""); // 新建新的实例,都要清空静态属性log,
             firstPutting = true;
         }
 
@@ -943,6 +941,7 @@ public class EmChart {
          */
         public void put(int fsTransIndexShould) {
             if (firstPutting) {
+                logTextPane.setText(""); // 新建新的实例,都要清空静态属性log,
                 DataFrame<Object> sliceDf = fsTransDf
                         .slice(Math.max(0, fsTransIndexShould - redundancyPutDataAmount), fsTransIndexShould);
                 // 筛选合适的历史数据df; 循环调用

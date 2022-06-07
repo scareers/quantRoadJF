@@ -374,44 +374,48 @@ public class NewConceptDiscover {
      * @key3 本方法, 历史数据使用爬虫的数据库数据, 而 今日比昨日则使用 问财最新数据的概念列表;
      * 另有爬取"近期重要事件"的方法, 则可保证绝对最新: 爬取网页版的 "公司大事-近期重要事件"
      */
-    @SneakyThrows
     public static HashMap<String, List<String>> calcThsNewConceptRecent(int preDayAmount) {
-        int days = Math.min(20, preDayAmount);
-        String today = DateUtil.today();
-        List<String> dateStrList = new ArrayList<>(); // 应当判定的日期列表, 才早到晚, 已经按序
-        for (int i = days; i >= 0; i--) { // 已经包含了today
-            dateStrList.add(EastMoneyDbApi.getPreNTradeDateStrict(today, i));
-        }
+        try {
+            int days = Math.min(20, preDayAmount);
+            String today = DateUtil.today();
+            List<String> dateStrList = new ArrayList<>(); // 应当判定的日期列表, 才早到晚, 已经按序
+            for (int i = days; i >= 0; i--) { // 已经包含了today
+                dateStrList.add(EastMoneyDbApi.getPreNTradeDateStrict(today, i));
+            }
 
-        HashMap<String, List<String>> res = new HashMap<>();
-        if (dateStrList.size() < 2) {
-            return res;
-        }
+            HashMap<String, List<String>> res = new HashMap<>();
+            if (dateStrList.size() < 2) {
+                return res;
+            }
 
-        for (int i = 0; i < dateStrList.size() - 2; i++) {      // -2 是因为不计算 上一交易日和此刻最新, 逻辑后面实现
-            HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(i));
-            HashSet<String> set2 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(i + 1));
+            for (int i = 0; i < dateStrList.size() - 2; i++) {      // -2 是因为不计算 上一交易日和此刻最新, 逻辑后面实现
+                HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(i));
+                HashSet<String> set2 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(i + 1));
+                HashSet<String> newConcepts = CommonUtil.subtractionOfSet(set2, set1);
+                if (newConcepts.size() > 0) {
+                    res.put(dateStrList.get(i + 1), new ArrayList<>(newConcepts));
+                }
+            }
+
+            // 访问问财最新数据计算, 今日和上一交易日最新概念
+            HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(dateStrList.size() - 2)); // 上一
+            DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念",1,WenCaiApi.TypeStr.ASTOCK);
+
+            List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "所属概念");// 分号分割
+            HashSet<String> set2 = new HashSet<>(); // 此刻最新
+            for (String s : conceptCol) {
+                set2.addAll(StrUtil.split(s, ";"));
+            }
             HashSet<String> newConcepts = CommonUtil.subtractionOfSet(set2, set1);
             if (newConcepts.size() > 0) {
-                res.put(dateStrList.get(i + 1), new ArrayList<>(newConcepts));
+                res.put(today, new ArrayList<>(newConcepts));
             }
-        }
 
-        // 访问问财最新数据计算, 今日和上一交易日最新概念
-        HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(dateStrList.size() - 2)); // 上一
-        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念",1,WenCaiApi.TypeStr.ASTOCK);
-
-        List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "所属概念");// 分号分割
-        HashSet<String> set2 = new HashSet<>(); // 此刻最新
-        for (String s : conceptCol) {
-            set2.addAll(StrUtil.split(s, ";"));
+            return res;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new HashMap<>();
         }
-        HashSet<String> newConcepts = CommonUtil.subtractionOfSet(set2, set1);
-        if (newConcepts.size() > 0) {
-            res.put(today, new ArrayList<>(newConcepts));
-        }
-
-        return res;
     }
 
     /**

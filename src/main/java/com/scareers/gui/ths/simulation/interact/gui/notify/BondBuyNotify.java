@@ -16,6 +16,7 @@ import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
+import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgPctAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.SingleAmountAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
@@ -126,7 +127,7 @@ public class BondBuyNotify {
 
             List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
             algorithmChain.add(new SingleAmountAlgorithm());
-//        algorithmChain.add(new ChgPctAlgorithm());
+//            algorithmChain.add(new ChgPctAlgorithm());
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 实盘环境");
 
             while (true) {
@@ -182,8 +183,8 @@ public class BondBuyNotify {
 
             // 2.开启爬虫, 待首次转债列表更新完, 会自动获取数据
             List<BondStateAlgorithm> algorithmChain = new ArrayList<>();
-            algorithmChain.add(new SingleAmountAlgorithm());
-//        algorithmChain.add(new ChgPctAlgorithm());
+//            algorithmChain.add(new SingleAmountAlgorithm());
+            algorithmChain.add(new ChgPctAlgorithm());
             String preDateStrSetting = getReviseDateStr(); // 首次的设置日期, 可能会改变, 每轮都需要检测
 
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 复盘环境");
