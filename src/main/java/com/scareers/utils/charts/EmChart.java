@@ -945,6 +945,7 @@ public class EmChart {
                 DataFrame<Object> sliceDf = fsTransDf
                         .slice(Math.max(0, fsTransIndexShould - redundancyPutDataAmount), fsTransIndexShould);
                 // 筛选合适的历史数据df; 循环调用
+                // @speed: 20次插入常态耗时 1-2 ms
                 for (int i = 0; i < sliceDf.length(); i++) {
                     putCore(sliceDf.row(i));
                 }
