@@ -442,8 +442,10 @@ public class EmChart2 {
                 return; // 未重新筛选
             }
             if (filterIndex <= -1) {
-                // 此时应当清空3大序列, 算是特殊情况
+                // 此时应当清空5大序列, 算是特殊情况
                 seriesOfFsPrice.clear();
+                seriesOfFsPriceOfIndex.clear();
+                seriesOfFsPriceOfStock.clear();
                 seriesOfVol.clear();
                 seriesOfAvgPrice.clear();
                 return;
@@ -454,12 +456,16 @@ public class EmChart2 {
                 for (int i = preFilterIndex + 1; i < filterIndex + 1; i++) {
                     Minute tick = new Minute(allFsTimeTicks.get(i));
                     seriesOfFsPrice.addOrUpdate(tick, allPricesTemp.get(i));
+                    seriesOfFsPriceOfIndex.addOrUpdate(tick, allPricesOfIndex.get(i)); // @add
+                    seriesOfFsPriceOfStock.addOrUpdate(tick, allPricesOfStock.get(i)); // @add
                     seriesOfVol.addOrUpdate(tick, allVols.get(i)); // 使用分钟, 成交量会更宽一些
                     seriesOfAvgPrice.addOrUpdate(tick, allAvgPrices.get(i)); // 使用分钟, 成交量会更宽一些
                 }
             } else if (filterIndex < preFilterIndex) {// 应删除数据
                 // 注意, 该方法 前后都包括, 因此.
                 seriesOfFsPrice.delete(filterIndex + 1, preFilterIndex);
+                seriesOfFsPriceOfIndex.delete(filterIndex + 1, preFilterIndex);
+                seriesOfFsPriceOfStock.delete(filterIndex + 1, preFilterIndex);
                 seriesOfVol.delete(filterIndex + 1, preFilterIndex);
                 seriesOfAvgPrice.delete(filterIndex + 1, preFilterIndex);
             } // 相等则不变
