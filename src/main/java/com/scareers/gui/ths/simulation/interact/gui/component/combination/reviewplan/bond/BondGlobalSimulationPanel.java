@@ -35,6 +35,7 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 import org.jdesktop.swingx.JXList;
 import org.jfree.chart.ChartPanel;
 
@@ -129,6 +130,68 @@ public class BondGlobalSimulationPanel extends JPanel {
         }, true);
 
 
+    }
+
+    /**
+     * 复盘期间, 给定转债列表, 给定 日期和时间, 生成 转债"实时"数据截面列表df, 被table展示
+     * 模拟实盘下, 点击全债券列表的展示页面, 对整个市场有个宏观展示
+     * 当前仅展示 涨幅(很好计算) 和 当前总成交额(需要分时成交求和, 计算量稍大)
+     *
+     * @param bondList
+     * @return
+     */
+    public static DataFrame<Object> getReviseTimeBondListOverviewDataDf(List<SecurityBeanEm> bondList, String date,
+                                                                        String timeTick) {
+        HashMap<SecurityBeanEm, Double> chgPctRealTime = new HashMap<>(); // 涨跌幅
+        HashMap<SecurityBeanEm, Double> amountRealTime = new HashMap<>(); // 成交额
+        for (SecurityBeanEm bondBean : bondList) {
+            // 1.昨收, 计算涨跌幅
+            Double preClose = EastMoneyDbApi.getPreCloseOf(date, bondBean.getQuoteId());
+            if (preClose == null) {
+                continue;
+            }
+            // 2.分时成交
+            DataFrame<Object> fsTransDf = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteIdS(date, bondBean.getQuoteId(), false);
+            if (fsTransDf == null) {
+                continue;
+            }
+            // 3. 筛选有效分时成交! time_tick 列
+            int shouldIndex = -1;
+            for (int i = 0; i < fsTransDf.size(); i++) {
+                String timeTick1 = fsTransDf.get(i, "time_tick").toString();
+                if (timeTick1.compareTo(timeTick) <= 0) {
+                    shouldIndex = i; // 找到截断索引
+                } else {
+                    break;
+                }
+            }
+
+            if (shouldIndex == -1) {
+                continue; // 筛选不到
+            }
+            DataFrame<Object> effectDf = fsTransDf.slice(0, Math.min(shouldIndex + 1, fsTransDf.length()));
+
+            // 4.涨跌幅很好计算
+            Double newestPrice = Double.valueOf(effectDf.get(effectDf.length() - 1, "price").toString());
+            chgPctRealTime.put(bondBean, newestPrice / preClose - 1);
+
+            // 5.总计成交额, 需要强行计算! price 和 vol 列, vol手数 需要转换为 张数, *10
+            int volRate = bondBean.isBond() ? 10 : 100;
+            List<Double> tickAmountList = new ArrayList<>();
+            for (int i = 0; i < effectDf.length(); i++) {
+                Object price = effectDf.get(i, "price");
+                Object vol = effectDf.get(i, "vol");
+                tickAmountList.add(Double.parseDouble(price.toString()) * Double.parseDouble(vol.toString()) * volRate);
+            }
+            amountRealTime.put(bondBean, CommonUtil.sumOfListNumberUseLoop(tickAmountList));
+        }
+
+        // 构建结果df!
+
+
+
+        return null;
     }
 
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象

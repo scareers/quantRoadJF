@@ -54,6 +54,8 @@ public class EastMoneyDbApi {
             .newLRUCache(1024); // 字段顺序数据表原始
     private static Cache<String, DataFrame<Object>> fs1MV2ByDateAndQuoteIdAdaptedCache = CacheUtil
             .newLRUCache(2048); // 字段顺序数据表原始
+    private static Cache<String, Double> fs1MV2PreCloseCache = CacheUtil
+            .newLRUCache(2048); // 字段顺序数据表原始
 
     public static void main(String[] args) throws Exception {
 
@@ -486,6 +488,40 @@ public class EastMoneyDbApi {
             fs1MV2ByDateAndQuoteIdAdaptedCache.put(cacheKey, res);
         }
         return res;
+    }
+
+    /**
+     * 给定日期 和 quoteId, 查询 preClose; 从 fs1m v2表中, 访问 preClose列!!, limit1即可
+     *
+     * @return
+     */
+    public static Double getPreCloseOf(String dateStr, String quoteId) {
+        String cacheKey = dateStr + quoteId;
+        Double res = fs1MV2PreCloseCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        String sql = StrUtil.format("select preClose from `{}` where quoteId='{}' limit 1", dateStr + "_v2", quoteId);
+        DataFrame<Object> dfTemp = null;
+        try {
+            dfTemp = DataFrame.readSql(connectionFs1M, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (dfTemp == null) {
+            return null;
+        }
+        try {
+            res = Double.valueOf(dfTemp.get(0, 0).toString());
+        } catch (NumberFormatException e) {
+
+        }
+        if (res != null) {
+            fs1MV2PreCloseCache.put(cacheKey, res);
+        }
+        return res; // 依然可能null
     }
 
     /**
