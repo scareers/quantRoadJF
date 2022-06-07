@@ -885,11 +885,13 @@ public class EmChart2 {
          * 这里简单使用一个多余出来的涨跌幅, 例如千分之5; --> redundancyPriceRangePercent 静态属性控制
          *
          * @return
+         * @update 新增了两条线, 但是, 所用价格已经适配过, 这里把适配后的价格, 一起加入, 计算最大最小值即可!
          */
         public void updatePriceLowAndHigh() {
-
             // 价格都是正数, 注意了!, 更高更低才更新
-            List<Double> prices = allPrices.subList(0, filterIndex + 1); // 显示数据, 使用 filterIndex 直接索引
+            List<Double> prices = new ArrayList<>(allPrices.subList(0, filterIndex + 1)); // 显示数据, 使用 filterIndex 直接索引
+            prices.addAll(allPricesOfIndex.subList(0, filterIndex + 1)); // 适配过的, 直接加入即可
+            prices.addAll(allPricesOfStock.subList(0, filterIndex + 1));
             try {
                 double priceHigh0 = CommonUtil.maxOfListDouble(prices); // 当数据全部为null时, 将出错, 而默认使用涨跌停;否则正常
                 if (Math.abs(priceHigh0 * (1 + redundancyPriceRangePercent)) > Math.abs(priceHigh)) {
