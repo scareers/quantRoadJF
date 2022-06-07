@@ -3,6 +3,7 @@ package com.scareers.datasource.eastmoney;
 import cn.hutool.core.date.*;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.datacenter.EmDataApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
@@ -20,6 +21,9 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify.notifyInfoError;
 
 /**
  * description: 可转债相关api
@@ -52,6 +56,61 @@ public class BondUtil {
 
         generateCSVForRecite1();
     }
+
+    /**
+     * 静态属性, key为东财转债bean, value为对应正股bean, 和大指数bean; 请调用两个静态get方法
+     * getStockBeanByBond / getIndexBeanByBond 访问map
+     */
+    private static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToStockBeanMap = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToIndexBeanMap = new ConcurrentHashMap<>();
+
+    /**
+     * @key1 全部载入刷新   转债-正股/指数两个map; 以供快速访问东财bean的关联关系! 一般只需调用一次!
+     */
+    public static void flushBondToStockAndIndexMap() {
+        List<StockBondBean> allStockWithBond = getAllStockWithBond(); // 问财当前所有转债
+        // 1.首先解析全部转债和股票, 本质是载入缓存
+        try {
+            SecurityBeanEm
+                    .createBondList(
+                            allStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
+                            false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            SecurityBeanEm
+                    .createStockList(
+                            allStockWithBond.stream().map(StockBondBean::getStockCode).collect(Collectors.toList()),
+                            false, false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 2.遍历创建, 此时除了那些创建失败的, 都能读取缓存创建, 极快!
+        for (StockBondBean bean : allStockWithBond) {
+            try {
+                SecurityBeanEm bond = SecurityBeanEm.createBond(bean.getBondCode());
+                SecurityBeanEm stock = SecurityBeanEm.createStock(bean.getStockCode());
+                SecurityBeanEm index = bean.getBondCode().startsWith("11") ? SecurityBeanEm
+                        .getShangZhengZhiShu() : SecurityBeanEm.getShenZhengChengZhi();
+                bondToStockBeanMap.put(bond, stock);
+                bondToIndexBeanMap.put(bond, index);
+            } catch (Exception e) {
+
+            }
+
+        }
+    }
+
+    public static SecurityBeanEm getStockBeanByBond(SecurityBeanEm bondBean) {
+        return bondToStockBeanMap.get(bondBean);
+    }
+
+    public static SecurityBeanEm getIndexBeanByBond(SecurityBeanEm bondBean) {
+        return bondToIndexBeanMap.get(bondBean);
+    }
+
 
     /**
      * 背诵时股票信息, 维护字段
@@ -459,8 +518,6 @@ public class BondUtil {
                 WenCaiApi.TypeStr.BOND);
         ConcurrentHashMap<String, String> res = new ConcurrentHashMap<>();
         for (int i = 0; i < dataFrame.length(); i++) {
-
-
             try {
                 res.put(
                         dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
@@ -476,6 +533,109 @@ public class BondUtil {
         return res;
     }
 
+    /*
+    使用问财的一些实用的 获取转债列表的方法
+     */
+
+    /**
+     * 获取所有转债, 并转换为 StockBondBean 列表
+     *
+     * @return
+     */
+    public static List<StockBondBean> getAllStockWithBond() {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称",
+                0, WenCaiApi.TypeStr.BOND); // 全部转债
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+
+    /**
+     * 获取当前 规模最小30
+     *
+     * @return
+     */
+    public static List<StockBondBean> getScaleLast30StockWithBond() {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债债券余额从小到大排名前30",
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+    /**
+     * 获取当前涨幅后30
+     *
+     * @return
+     */
+    public static List<StockBondBean> getChgPctLast30StockWithBond() {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债涨跌幅从小到大排名前30",
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+    /**
+     * 获取当前涨幅前30
+     *
+     * @return
+     */
+    public static List<StockBondBean> getChgPctTop30StockWithBond() {
+        DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("可转债涨跌幅从大到小排名前30",
+                0, WenCaiApi.TypeStr.BOND);
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+    /**
+     * 获取当前成交额前60
+     *
+     * @return
+     */
+    public static List<StockBondBean> getVolTop60StockWithBond() {
+        return getVolTopNStockWithBond(60);
+    }
+
+    /**
+     * 获取当前成交额前n ; 问财实时数据
+     *
+     * @param preN
+     * @return
+     */
+    public static List<StockBondBean> getVolTopNStockWithBond(int preN) {
+        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(preN);
+        ThreadUtil.sleep(100);
+        return parseStockBondBeanList(dataFrame);
+    }
+
+
+    /**
+     * 解析问财结果
+     *
+     * @param dataFrame
+     * @return
+     */
+    private static List<StockBondBean> parseStockBondBeanList(DataFrame<Object> dataFrame) {
+        List<StockBondBean> stockBondBeanList = new ArrayList<>();
+        if (dataFrame == null) {
+            notifyInfoError("注意, 问财api访问转债列表, 解析结果为空列表");
+            return stockBondBeanList;
+        }
+
+        for (int i = 0; i < dataFrame.length(); i++) {
+            try {
+                stockBondBeanList.add(new StockBondBean(
+                        dataFrame.get(i, "可转债@正股简称").toString(),
+                        dataFrame.get(i, "可转债@正股代码").toString().substring(0, 6),
+                        dataFrame.get(i, "可转债@可转债简称").toString(),
+                        dataFrame.get(i, "code").toString(),
+                        -1
+                ));
+            } catch (Exception e) {
+//                e.printStackTrace();
+            }
+        }
+        return stockBondBeanList;
+    }
 
     /**
      * 问财转债成交额排名无效; 自写逻辑实现排名

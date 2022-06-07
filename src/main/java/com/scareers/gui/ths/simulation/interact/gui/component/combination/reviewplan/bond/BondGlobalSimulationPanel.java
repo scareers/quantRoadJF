@@ -810,7 +810,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 try {
                     List<String> allBondCodes = null;
                     if (bondListUseRealTimeWenCai) {
-                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(200);
+                        DataFrame<Object> dataFrame = BondUtil.getVolTopNBondDf(200); // 限制200, 否则太多
                         try {
                             allBondCodes = DataFrameS.getColAsStringList(dataFrame, "code");
                         } catch (Exception e) {
