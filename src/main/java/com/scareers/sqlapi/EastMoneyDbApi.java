@@ -7,7 +7,9 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.Cached;
 import com.scareers.annotations.TimeoutCache;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.selfdb.ConnectionFactory;
+import com.scareers.gui.ths.simulation.rabbitmq.ProducerSimple;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import joinery.DataFrame;
@@ -37,11 +39,11 @@ public class EastMoneyDbApi {
     private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
     private static Cache<String, HashMap<String, Double>> allPreCloseByDateCache = CacheUtil.newLRUCache(32);
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdXCache = CacheUtil
-            .newLRUCache(512); // 字段顺序同爬虫
+            .newLRUCache(1024); // 字段顺序同爬虫
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdRawCache = CacheUtil
-            .newLRUCache(512); // 字段顺序数据表原始
+            .newLRUCache(1024); // 字段顺序数据表原始
     private static Cache<String, DataFrame<Object>> fs1MV2ByDateAndQuoteIdRawCache = CacheUtil
-            .newLRUCache(512); // 字段顺序数据表原始
+            .newLRUCache(1024); // 字段顺序数据表原始
 
     public static void main(String[] args) throws Exception {
 
@@ -75,6 +77,8 @@ public class EastMoneyDbApi {
 //        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
 //        Console.log(timer.intervalRestart());
 
+        loadFs1MAndFsTransDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
+                "2022-06-02");
     }
 
 
@@ -411,6 +415,27 @@ public class EastMoneyDbApi {
         }
         fs1MV2ByDateAndQuoteIdRawCache.put(cacheKey, res);
         return dataFrame;
+    }
+
+    /**
+     * 载入 FS1Mv2 和 两类 fs成交数据 到缓存! 耗时可能较久; 建议异步调用
+     */
+    public static volatile boolean loading = true; // 专门适配的flag ; 类似加锁执行效果, 且多线程不阻塞
+
+    public static void loadFs1MAndFsTransDataToCache(List<SecurityBeanEm> beanList, String dateStr) {
+        if (loading) {
+            return; // 正在载入
+        }
+        loading = true; // 载入
+        try {
+            for (SecurityBeanEm beanEm : beanList) {
+                EastMoneyDbApi.getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                EastMoneyDbApi.getFsTransByDateAndQuoteIdS(dateStr, beanEm.getQuoteId());
+                EastMoneyDbApi.getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

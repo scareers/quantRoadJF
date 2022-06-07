@@ -12,7 +12,6 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
 import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
@@ -20,7 +19,6 @@ import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgP
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.SingleAmountAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.gui.ths.simulation.trader.StockBondBean;
-import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.ai.tts.Tts;
@@ -660,10 +658,8 @@ public class BondBuyNotify {
                                     .collect(Collectors.toList());
                             try {
                                 List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(collect, false);
-                                for (SecurityBeanEm beanEm : bondList) {
-                                    EastMoneyDbApi.getFsTransByDateAndQuoteId(getReviseDateStr(), beanEm.getQuoteId());
-                                    EastMoneyDbApi.getFsTransByDateAndQuoteIdS(getReviseDateStr(), beanEm.getQuoteId());
-                                }
+                                EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStr());
+                                CommonUtil.notifyKey("模拟环境: 初始一次性载入转债池全部 分时/分时成交数据: 完成载入");
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -682,6 +678,7 @@ public class BondBuyNotify {
 
         }
     }
+
 
     // 共用, 问财实时全部转债 列表!  复盘时仅初始化一次即可
     public static List<StockBondBean> allStockWithBond = null;

@@ -80,6 +80,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
     public static final boolean bondListUseRealTimeWenCai = true;
+    public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
     protected volatile JXList jListForBonds; //  转债展示列表控件
@@ -143,9 +144,9 @@ public class BondGlobalSimulationPanel extends JPanel {
                 return;
             }
         }
-
         // 1.实例化动态图表
         try {
+            // 实例化最消耗时间
             dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getReviseDateStrSettingYMD());
         } catch (Exception e) {
             CommonUtil.notifyError("实例化动态图表对象失败, 疑似复盘日期设置错误");
@@ -855,6 +856,15 @@ public class BondGlobalSimulationPanel extends JPanel {
                     new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
         }
         securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
+        if (loadAllFsDataFromDbWhenFlushBondList) { // 设置项: 是否载入数据到缓存; 异步执行
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStrSettingYMD());
+                    CommonUtil.notifyKey("已完成载入转债列表的分时数据等到缓存");
+                }
+            }, true);
+        }
     }
 
     /**
@@ -957,9 +967,15 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
 
         jList.addListSelectionListener(new ListSelectionListener() {
+            private volatile int preIndex = -2; // 解决切换一次, 回调两次的问题; 记录preIndex, 相等则无视
+
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 int index = jList.getSelectedIndex(); // 选中切换
+                if (preIndex == index) {
+                    return;
+                }
+                preIndex = index; // 不相等
                 SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
                 setSelectedBean(po.getBean());
             }
@@ -979,10 +995,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
-        TimeInterval timer = DateUtil.timer();
-        timer.start();
-        updateFsDisplay(false); // 自动改变分时图显示, 不强制
-        Console.log(timer.intervalRestart());
+        updateFsDisplay(false); // 自动改变分时图显示, 不强制 首次18ms, 后面3ms
         bondInfoPanel.update(selectedBean); // 信息也要更改
     }
 
