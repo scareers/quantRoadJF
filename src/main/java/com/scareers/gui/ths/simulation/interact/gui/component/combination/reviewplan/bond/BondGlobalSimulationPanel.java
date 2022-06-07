@@ -93,6 +93,15 @@ public class BondGlobalSimulationPanel extends JPanel {
     JPanel panelLeft; // 左panel, 显示列表和搜索等. 列表在下, 各种功能按钮组在上!
     JPanel panelMainForRevise; // 主要的复盘区域panel, 在右
 
+    @SneakyThrows
+    public static void main(String[] args) {
+        DataFrame<Object> res = getReviseTimeBondListOverviewDataDf(
+                SecurityBeanEm.createBondList(Arrays.asList("小康转债", "盘龙转债"), true),
+                "2022-06-07",
+                "10:00:00");
+        Console.log(res);
+    }
+
     protected BondGlobalSimulationPanel(MainDisplayWindow mainDisplayWindow, int jListWidth) {
         // 异步开始等待某些状态, 并一次或者持续刷新股票列表
         this.jListWidth = jListWidth;
@@ -198,10 +207,8 @@ public class BondGlobalSimulationPanel extends JPanel {
             res.append(row);
         }
 
-        // 2. 无需排序, 自行使用 JXTable 的排序功能!
-
-
-        return null;
+        // 2. 无需排序, 自行使用 JXTable 的排序功能! 但转换为数字排序, 是需要重新一下排序逻辑的, 默认按照字符串排序
+        return res;
     }
 
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
