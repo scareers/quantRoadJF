@@ -1,7 +1,6 @@
 package com.scareers.utils.charts;
 
 import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
@@ -9,12 +8,10 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
@@ -25,32 +22,17 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.StandardXYBarPainter;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.chart.title.TextTitle;
-import org.jfree.chart.title.Title;
 import org.jfree.data.time.Day;
 import org.jfree.data.time.Minute;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
-import org.jfree.data.time.ohlc.OHLCSeries;
-import org.jfree.data.time.ohlc.OHLCSeriesCollection;
-import org.jfree.data.xy.OHLCDataset;
-import org.jfree.data.xy.XYDataset;
-import org.jfree.text.TextUtilities;
-import org.jfree.ui.ApplicationFrame;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.RectangleInsets;
-import org.jfree.ui.TextAnchor;
 
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Line2D;
-import java.awt.geom.Rectangle2D;
 import java.math.RoundingMode;
 import java.text.*;
 import java.util.List;
@@ -438,9 +420,9 @@ public class EmChart2 {
 
 
         /**
-         * 依据当前筛选值, 更新3大数据序列的数据;  昨收不用更新
+         * 依据当前筛选值, 更新5大数据序列的数据;  昨收不用更新
          */
-        private void updateThreeSeriesData() {
+        private void updateFiveSeriesData() {
             if (filterIndex == preFilterIndex) {
                 return; // 未重新筛选
             }
@@ -475,6 +457,7 @@ public class EmChart2 {
         }
 
         /**
+         * // todo --> 主函数修改
          * 更新数据到下一个tick显示, 此时已经保证必有下一tick; 且整数分钟部分已经更新, 只需要更新多出来的1分钟的tick
          */
         private void updateThreeSeriesDataFsTrans(double fsTransPrice, double alreadySureVol) {
@@ -511,7 +494,7 @@ public class EmChart2 {
             barSeriesCollection.addSeries(seriesOfVol);
 
             // 3.序列加载数据
-            updateThreeSeriesData();
+            updateFiveSeriesData();
 
             // 4.刷新价格上下限 -- 可无
             updatePriceLowAndHigh();
@@ -540,39 +523,6 @@ public class EmChart2 {
         /**
          * 筛选更新图表, 将只更新数据序列, 上下界等 动态属性!
          */
-        public void updateChart() {
-            if (this.beanEm == null || this.dateStr == null) {
-                return;
-            }
-            // 1.刷新价格上下限 -- 可无
-            updatePriceLowAndHigh();
-            // 2.更新两个y轴的上下界!
-            updateY1AxisRange();
-            updateY2AxisRange();
-
-            // 3.序列数据在更新上下界后更新
-            updateThreeSeriesData();
-        }
-
-        public void updateChart(String timeTick) {
-            if (this.beanEm == null || this.dateStr == null) {
-                return;
-            }
-            boolean b = this.setFilterTimeTick(timeTick);
-            if (b) {
-                // 1.刷新价格上下限 -- 可无
-                updatePriceLowAndHigh();
-                // 2.更新两个y轴的上下界!
-                updateY1AxisRange();
-                updateY2AxisRange();
-
-                // 3.序列数据在更新上下界后更新
-                updateThreeSeriesData();
-            } else {
-                log.error("设置筛选tick失败, 无法更新图表");
-            }
-        }
-
         public void updateChart(Date date) {
             if (this.beanEm == null || this.dateStr == null) {
                 return;
@@ -585,7 +535,7 @@ public class EmChart2 {
                 updateY1AxisRange();
                 updateY2AxisRange();
                 // 3.序列数据在更新上下界后更新
-                updateThreeSeriesData();
+                updateFiveSeriesData();
             } else {
                 log.error("设置筛选tick失败, 无法更新图表");
             }
@@ -671,7 +621,7 @@ public class EmChart2 {
             updateY1AxisRange();
             updateY2AxisRange();
             // 序列数据在更新上下界后更新; ---  即整数部分
-            updateThreeSeriesData();
+            updateFiveSeriesData();
             // 4.2. 实时部分, 更新到下一个tick
             updateThreeSeriesDataFsTrans(newestPrice, volSum);
 
