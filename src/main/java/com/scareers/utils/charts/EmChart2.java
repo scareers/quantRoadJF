@@ -97,8 +97,9 @@ public class EmChart2 {
     public static Color volTickLabelPaint = Color.red; // 成交量y轴tick文字
     // 分时价格线和均线
     public static Color priceColorFs = Color.white;
-    public static Color priceColorFsOfIndex = Color.white; // 指数分时线颜色 -- 紫色
-    public static Color priceColorFsOfStock = Color.white; // 正股分时颜色 -- 蓝色 , 都抄同花顺
+    public static Color priceColorFsOfIndex = new Color(255, 128, 255); // 指数分时线颜色 -- 紫色
+    public static Color priceColorFsOfStock = new Color(44, 157, 199);
+    ; // 正股分时颜色 -- 蓝色 , 都抄同花顺
     public static Color avgPriceColorFs = new Color(240, 248, 136);
     public static Color preCloseColorFs = new Color(128, 0, 0);
     public static Color bgColorFs = new Color(7, 7, 7);
@@ -497,11 +498,11 @@ public class EmChart2 {
         private void initChart() {
             // 1.将4序列加入 2 序列集合 -- 执行一次
             lineSeriesCollection.addSeries(seriesOfFsPrice);
-            // 1.1. 新增了2个序列 -- 指数和正股的 价格线(动态)
-            lineSeriesCollection.addSeries(seriesOfFsPriceOfIndex);
-            lineSeriesCollection.addSeries(seriesOfFsPriceOfStock); // 默认初始化, 未添加数据罢了!
             lineSeriesCollection.addSeries(seriesOfAvgPrice);
             lineSeriesCollection.addSeries(seriesOfPreClose);
+            // 1.1. 新增了2个序列 -- 指数和正股的 价格线(动态) -- 注意顺序为 3,4
+            lineSeriesCollection.addSeries(seriesOfFsPriceOfIndex);
+            lineSeriesCollection.addSeries(seriesOfFsPriceOfStock); // 默认初始化, 未添加数据罢了!
 
             // 2.昨收序列首次加载后将不再更新
             Date today = allFsTimeTicks.get(0); // 无视哪一天, 不重要, 就取解析结果第一个即可;
@@ -873,9 +874,13 @@ public class EmChart2 {
             lineAndShapeRenderer.setSeriesPaint(0, priceColorFs); // 设置价格颜色
             lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
             lineAndShapeRenderer.setSeriesPaint(2, preCloseColorFs);
+            lineAndShapeRenderer.setSeriesPaint(3, priceColorFsOfIndex);
+            lineAndShapeRenderer.setSeriesPaint(4, priceColorFsOfStock);
             lineAndShapeRenderer.setSeriesStroke(0, new BasicStroke(0.6f));
             lineAndShapeRenderer.setSeriesStroke(1, new BasicStroke(0.6f));
             lineAndShapeRenderer.setSeriesStroke(2, new BasicStroke(2));
+            lineAndShapeRenderer.setSeriesStroke(3, new BasicStroke(0.6f));
+            lineAndShapeRenderer.setSeriesStroke(4, new BasicStroke(0.6f));
             lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
             return lineAndShapeRenderer;
         }
