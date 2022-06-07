@@ -513,12 +513,13 @@ public class EmChart2 {
             // 4.刷新价格上下限 -- 可无
             updatePriceLowAndHigh();
 
-            // 5.x时间轴初始化
+            // 5.x时间轴初始化      // @add: 5/6/7 不变
             initDomainDateTimeAxis();
             // 6.y1轴 -- 数字轴 -- 自定义类, 实现以昨收盘价为中心描写刻度数据 -- 价格轴
             initY1AxisOfPrice();
             // 7.y2轴, 类似, 双颜色区分. 百分比显示 -- 涨跌幅轴
             initY2AxisOfChgPct();
+
             // 8.plot1 对象创建
             initPlot1();
 
@@ -806,8 +807,6 @@ public class EmChart2 {
             y1Axis.setLabel(String.valueOf(preClose)); // 标记
             y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
             y1Axis.centerRange(preClose);
-
-
             updateY1AxisRange(); // 首次更新y1轴range; chart更新时可单独调用
         }
 
