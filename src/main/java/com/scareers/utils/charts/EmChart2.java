@@ -183,6 +183,10 @@ public class EmChart2 {
         DataFrame<Object> fsTransDf; // 东财分时成交! 这些数据本质上并不绘图, 用于动态更新最后一根图! -- 完整
         // @add: 对应4df, 东财数据库api实现对应api; 因价格被放进一个图中, 因此本质是求 展示涨跌幅;
         // @key: 将指数和正股的价格, 线转换为自身涨跌幅, 再 (等价转换为使用转债 preClose )为基准的价格, 才能放进一个chart
+        DataFrame<Object> fsDfV2DfOfIndex; //
+        DataFrame<Object> fsTransDfOfIndex; //
+        DataFrame<Object> fsDfV2DfOfStock; //
+        DataFrame<Object> fsTransDfOfStock; //
 
         // 4项数据完整列表
         List<DateTime> allFsTimeTicks; // 分时tick, 日期对象形式
@@ -202,6 +206,8 @@ public class EmChart2 {
         HashMap<String, Integer> allFsTransTimeTicksMap = new HashMap<>(); // 所有分时成交的时间tick,以及对应的索引, 方便查询, 以免遍历查询,太伤
 
         Double preClose; // 自动解析
+        private Double preCloseOfIndex;
+        private Double preCloseOfStock;
 
 
         // 核心属性
@@ -228,10 +234,6 @@ public class EmChart2 {
             this.dateStr = dateStr;
             this.indexBean = indexBean;
             this.stockBean = stockBean;
-
-            if (beanEm == null || dateStr == null) {  // 指数,正股bean可 null
-                return;
-            }
 
             initDataAndAttrs(); // 自动初始化数据 以及 相关字段 // 主要时间消耗
 
@@ -267,15 +269,31 @@ public class EmChart2 {
                     .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗少
             this.fsTransDf = EastMoneyDbApi
                     .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗多
+            this.fsDfV2DfOfIndex = EastMoneyDbApi
+                    .getFs1MV2ByDateAndQuoteId(dateStr, indexBean.getQuoteId()); // 主要时间消耗少
+            this.fsTransDfOfIndex = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteId(dateStr, indexBean.getQuoteId()); // 主要时间消耗多
+            this.fsDfV2DfOfStock = EastMoneyDbApi
+                    .getFs1MV2ByDateAndQuoteId(dateStr, stockBean.getQuoteId()); // 主要时间消耗少
+            this.fsTransDfOfStock = EastMoneyDbApi
+                    .getFsTransByDateAndQuoteId(dateStr, stockBean.getQuoteId()); // 主要时间消耗多
 
+            // 1.2. 昨收 -- index/stock 的 close 和price, 将被用来缩放, 以便放在同一chart
+            this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
+            this.preCloseOfIndex = Double.valueOf(fsDfV2DfOfIndex.get(0, "preClose").toString());
+            this.preCloseOfStock = Double.valueOf(fsDfV2DfOfStock.get(0, "preClose").toString());
 
             // 2. 4项数据完整列表
-            this.allFsTimeTicks = DataFrameS.getColAsDateList(fsDfV2Df, "date");
-            this.allFsDateStr = DataFrameS.getColAsStringList(fsDfV2Df, "date");
+            this.allFsTimeTicks = DataFrameS.getColAsDateList(fsDfV2Df, "date"); // Date形式, 241个tick
+            this.allFsDateStr = DataFrameS.getColAsStringList(fsDfV2Df, "date"); // 字符串形式
+
             this.allPrices = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close"));
             this.allPricesTemp = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close")); // 备份
             this.allPricesTemp2 = new ArrayList<>(DataFrameS.getColAsDoubleList(fsDfV2Df, "close")); // 备份2,用于成交量颜色
+
             this.allAvgPrices = DataFrameS.getColAsDoubleList(fsDfV2Df, "avgPrice");
+            // @add: 指数和正股只需要 等价price放入同一chart; 性质上几乎等同于 avgPrice 均价线
+
             this.allVols = DataFrameS.getColAsDoubleList(fsDfV2Df, "vol");
 
 
@@ -287,7 +305,7 @@ public class EmChart2 {
 
 
             todayDummy = allFsTimeTicks.get(0); // 虚假的今天
-            this.preClose = Double.valueOf(fsDfV2Df.get(0, "preClose").toString());
+
             fsTransNewestPrice = preClose;
             priceLow = preClose * 0.99; // 默认图表价格下限
             priceHigh = preClose * 1.01; // 默认图表价格下限
