@@ -1,9 +1,6 @@
 package com.scareers.utils.charts;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateRange;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -222,7 +219,9 @@ public class EmChart {
             if (beanEm == null || dateStr == null) {
                 return;
             }
-            initDataAndAttrs(); // 自动初始化数据 以及 相关字段
+
+            initDataAndAttrs(); // 自动初始化数据 以及 相关字段 // 主要时间消耗
+
             initChart(); // 初始化图表相关所有对象
 
             initTick3sLogPanel();
@@ -250,10 +249,11 @@ public class EmChart {
          */
         public void initDataAndAttrs() {
             // 1.数据库两项df
+
             this.fsDfV2Df = EastMoneyDbApi
-                    .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                    .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗少
             this.fsTransDf = EastMoneyDbApi
-                    .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                    .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId()); // 主要时间消耗多 --
 
 //            Console.log(fsDfV2Df);
 //            Console.log(fsTransDf);

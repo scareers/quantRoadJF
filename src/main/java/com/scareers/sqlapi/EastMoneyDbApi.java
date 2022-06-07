@@ -12,6 +12,7 @@ import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.rabbitmq.ProducerSimple;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
+import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
 
@@ -38,6 +39,7 @@ public class EastMoneyDbApi {
             3600 * 1000); // 某个日期的上n个交易日?
     private static Cache<String, HashSet<String>> allConceptNameByDateCache = CacheUtil.newLRUCache(256, 60);
     private static Cache<String, HashMap<String, Double>> allPreCloseByDateCache = CacheUtil.newLRUCache(32);
+    // 使用lru缓存,载入后, 首次读取, 将会比较慢; 影响gui体验; 这里直接使用hashMap, 但无法限制容量, 注意!
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdXCache = CacheUtil
             .newLRUCache(1024); // 字段顺序同爬虫
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdRawCache = CacheUtil
@@ -325,15 +327,16 @@ public class EastMoneyDbApi {
                     .format("select sec_code,market,time_tick,price,vol,bs,id,secName,quoteId from `{}` where quoteId='{}' and time_tick>='09:30:00'",
                             date, quoteId);
         }
-        DataFrame<Object> dataFrame;
         try {
-            dataFrame = DataFrame.readSql(connectionFsTrans, sql);
+            res = DataFrame.readSql(connectionFsTrans, sql);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        fsTransByDateAndQuoteIdXCache.put(cacheKey, dataFrame);
-        return dataFrame;
+        if (res != null) {
+            fsTransByDateAndQuoteIdXCache.put(cacheKey, res);
+        }
+        return res;
     }
 
     /**
@@ -360,15 +363,16 @@ public class EastMoneyDbApi {
                     .format("select * from `{}` where quoteId='{}' and time_tick>='09:30:00'",
                             date, quoteId);
         }
-        DataFrame<Object> dataFrame;
         try {
-            dataFrame = DataFrame.readSql(connectionFsTrans, sql);
+            res = DataFrame.readSql(connectionFsTrans, sql);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        fsTransByDateAndQuoteIdRawCache.put(cacheKey, dataFrame);
-        return dataFrame;
+        if (res != null) {
+            fsTransByDateAndQuoteIdRawCache.put(cacheKey, res);
+        }
+        return res;
     }
 
     /**
@@ -405,37 +409,42 @@ public class EastMoneyDbApi {
         }
 
         String sql = StrUtil.format("select * from `{}` where quoteId='{}'", date + "_v2", quoteId);
-        DataFrame<Object> dataFrame;
         // fs1MV2ByDateAndQuoteIdRawCache
         try {
-            dataFrame = DataFrame.readSql(connectionFs1M, sql);
+            res = DataFrame.readSql(connectionFs1M, sql);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
         }
-        fs1MV2ByDateAndQuoteIdRawCache.put(cacheKey, res);
-        return dataFrame;
+        if (res != null) {
+            fs1MV2ByDateAndQuoteIdRawCache.put(cacheKey, res);
+        }
+        return res;
     }
 
     /**
      * 载入 FS1Mv2 和 两类 fs成交数据 到缓存! 耗时可能较久; 建议异步调用
      */
-    public static volatile boolean loading = true; // 专门适配的flag ; 类似加锁执行效果, 且多线程不阻塞
+    public static volatile boolean loading = false; // 专门适配的flag ; 类似加锁执行效果, 且多线程不阻塞
 
     public static void loadFs1MAndFsTransDataToCache(List<SecurityBeanEm> beanList, String dateStr) {
         if (loading) {
+            CommonUtil.notifyCommon("正在载入中, 不可重复载入");
             return; // 正在载入
         }
         loading = true; // 载入
         try {
             for (SecurityBeanEm beanEm : beanList) {
-                EastMoneyDbApi.getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
-                EastMoneyDbApi.getFsTransByDateAndQuoteIdS(dateStr, beanEm.getQuoteId());
-                EastMoneyDbApi.getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                DataFrame<Object> dfTemp = EastMoneyDbApi
+                        .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                dfTemp = EastMoneyDbApi.getFsTransByDateAndQuoteIdS(dateStr, beanEm.getQuoteId());
+                dfTemp = EastMoneyDbApi.getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+        loading = false;
     }
 
 

@@ -147,14 +147,19 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 1.实例化动态图表
         try {
             // 实例化最消耗时间
-            dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, getReviseDateStrSettingYMD());
+            String reviseDateStrSettingYMD = getReviseDateStrSettingYMD();
+//            TimeInterval timer = DateUtil.timer();
+//            timer.start();
+            dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, reviseDateStrSettingYMD);
+//            Console.log(timer.intervalRestart()); // @key: 当前优化到 1-2 ms 级别
         } catch (Exception e) {
+            e.printStackTrace();
             CommonUtil.notifyError("实例化动态图表对象失败, 疑似复盘日期设置错误");
             return;
         }
         preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
 
-        // 3. 更新chart对象, 刷新!
+        // 3. 更新chart对象, 刷新! // 后面常态逻辑也优化到了 0-1毫秒级别
         crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
         chartPanel.setChart(dynamicChart.getChart());
         chartPanel.repaint();
@@ -995,6 +1000,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public void setSelectedBean(SecurityBeanEm bean) {
         this.selectedBean = bean;
+        // @speed: 已经优化到 2-4 ms 级别
         updateFsDisplay(false); // 自动改变分时图显示, 不强制 首次18ms, 后面3ms
         bondInfoPanel.update(selectedBean); // 信息也要更改
     }
