@@ -541,7 +541,7 @@ public class EmChart2 {
             }
         }
 
-        private double fsTransNewestPrice; // 暂存分时成交最新价格
+        private double fsTransNewestPrice; // 暂存分时成交最新价格, 仅仅用于设置 成交量的颜色
 
         /**
          * 针对分时成交3s的更新!
@@ -586,7 +586,7 @@ public class EmChart2 {
                 // 3.1. 计算最新价格
                 double newestPrice = Double
                         .parseDouble(fsTransDf.get(fsTransIndexShouldOfBond, "price").toString()); // 最新价格
-                fsTransNewestPrice = newestPrice;
+                fsTransNewestPrice = newestPrice; // 成交量颜色控制!
                 String lowTimeLimit = DateUtil.format(date, "HH:mm") + ":00"; // 成交额计算下限时间, >=此时间
                 // 3.2. 计算最新的该分钟当前已出现的成交量之和
                 DataFrame<Object> selectDf = fsTransDf.select(new DataFrame.Predicate<Object>() {
@@ -600,6 +600,7 @@ public class EmChart2 {
                         }
                     }
                 });
+                // 已出现的成交量之和!
                 Double volSum = CommonUtil.sumOfListNumber(DataFrameS.getColAsDoubleList(selectDf, "vol"));
 
                 // 4.更新! 此时必有下一分钟的 tick
