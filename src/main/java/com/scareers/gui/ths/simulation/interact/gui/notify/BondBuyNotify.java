@@ -659,7 +659,6 @@ public class BondBuyNotify {
                             try {
                                 List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(collect, false);
                                 EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStr());
-                                CommonUtil.notifyKey("模拟环境: 初始一次性载入转债池全部 分时/分时成交数据: 完成载入");
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }

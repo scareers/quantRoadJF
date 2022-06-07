@@ -4,9 +4,11 @@ import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.Cached;
 import com.scareers.annotations.TimeoutCache;
+import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.selfdb.ConnectionFactory;
 import com.scareers.gui.ths.simulation.rabbitmq.ProducerSimple;
@@ -20,6 +22,7 @@ import org.checkerframework.checker.units.qual.C;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildBeanListFromDfWithId;
@@ -502,12 +505,91 @@ public class EastMoneyDbApi {
                         .getFsTransByDateAndQuoteId(dateStr, beanEm.getQuoteId());
                 dfTemp = EastMoneyDbApi.getFsTransByDateAndQuoteIdS(dateStr, beanEm.getQuoteId());
                 dfTemp = EastMoneyDbApi.getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
-
             }
+            // 正股和两指数载入! -->
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    BondUtil.flushBondToStockAndIndexMap(); // 其他线程已经启动,则直接完成, 不消耗太多时间!
+                }
+            }, true);
+            CommonUtil.waitUtil(new BooleanSupplier() {
+                @Override
+                public boolean getAsBoolean() {
+                    return BondUtil.bondToStockBeanMap.size() > 300 && !BondUtil.flushingMap; // 有结果且刷新完成
+                }
+            }, Integer.MAX_VALUE, 1, "全转债-股票映射刷新完毕", true);
+            // 载入缓存 正股指数 fs 和fs成交  (已适配价格)
+            for (SecurityBeanEm beanEm : beanList) {
+                DataFrame<Object> fs1M = EastMoneyDbApi
+                        .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                if (fs1M == null) {
+                    continue;
+                }
+
+
+                SecurityBeanEm stock = BondUtil.getStockBeanByBond(beanEm);
+                SecurityBeanEm index = BondUtil.getIndexBeanByBond(beanEm);
+
+                Double preCloseOfBond = null;
+                try {
+                    preCloseOfBond = Double.valueOf(fs1M.get(0, "preClose").toString());
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+                if (preCloseOfBond == null) {
+                    continue;
+                }
+
+                if (stock != null) {
+                    EastMoneyDbApi.getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(dateStr, stock.getQuoteId(),
+                            preCloseOfBond);
+
+                    DataFrame<Object> stockFs1MRawDf = EastMoneyDbApi
+                            .getFs1MV2ByDateAndQuoteId(dateStr, stock.getQuoteId());
+                    if (stockFs1MRawDf != null && stockFs1MRawDf.length() > 0) {
+                        Double preCloseOfStock = null;
+                        try {
+                            preCloseOfStock = Double.valueOf(stockFs1MRawDf.get(0, "preClose").toString());
+                        } catch (NumberFormatException e) {
+
+                        }
+                        if (preCloseOfStock != null) {
+                            EastMoneyDbApi.getFsTransByDateAndQuoteIdSAdapted(dateStr, stock.getQuoteId(), false,
+                                    preCloseOfStock, preCloseOfBond);
+                        }
+                    }
+
+                }
+                if (index != null) {
+                    EastMoneyDbApi.getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(dateStr, index.getQuoteId(),
+                            preCloseOfBond); // fs1m载入
+
+                    DataFrame<Object> indexFs1MRawDf = EastMoneyDbApi
+                            .getFs1MV2ByDateAndQuoteId(dateStr, index.getQuoteId());
+                    if (indexFs1MRawDf != null && indexFs1MRawDf.length() > 0) {
+                        Double preCloseOfIndex = null;
+                        try {
+                            preCloseOfIndex = Double.valueOf(indexFs1MRawDf.get(0, "preClose").toString());
+                        } catch (NumberFormatException e) {
+
+                        }
+                        if (preCloseOfIndex != null) {
+                            EastMoneyDbApi.getFsTransByDateAndQuoteIdSAdapted(dateStr, index.getQuoteId(), false,
+                                    preCloseOfIndex, preCloseOfBond);
+                        }
+                    }
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+            CommonUtil.notifyError("载入转债/正股/指数的分时数据等到缓存 失败");
+            loading = false;
+            return;
         }
         loading = false;
+        CommonUtil.notifyKey("已完成载入转债列表的分时数据等到缓存");
     }
 
 

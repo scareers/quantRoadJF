@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify.notifyInfoError;
@@ -70,8 +72,9 @@ public class BondUtil {
      * 静态属性, key为东财转债bean, value为对应正股bean, 和大指数bean; 请调用两个静态get方法
      * getStockBeanByBond / getIndexBeanByBond 访问map
      */
-    private static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToStockBeanMap = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToIndexBeanMap = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToStockBeanMap = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<SecurityBeanEm, SecurityBeanEm> bondToIndexBeanMap = new ConcurrentHashMap<>();
+    public static CopyOnWriteArraySet<StockBondBean> allBondStockBean = new CopyOnWriteArraySet<>(); // 所有转债集合
 
     /**
      * @key1 全部载入刷新   转债-正股/指数两个map; 以供快速访问东财bean的关联关系! 一般只需调用一次!
@@ -91,7 +94,12 @@ public class BondUtil {
 
         CommonUtil.notifyKey("开始刷新 全转债 -- 正股/指数 Map");
         List<StockBondBean> allStockWithBond = getAllStockWithBond(); // 问财当前所有转债
+        if (allStockWithBond == null) {
+            CommonUtil.notifyKey("获取全 转债正股bean 失败");
+            return false;
+        }
         // 1.首先解析全部转债和股票, 本质是载入缓存
+        allBondStockBean.addAll(allStockWithBond); // 加入缓存!
 
         List<StockBondBean> effectBeans = new ArrayList<>(); // 初步判定有效的
         for (StockBondBean bean : allStockWithBond) {
@@ -147,6 +155,21 @@ public class BondUtil {
 
     public static SecurityBeanEm getIndexBeanByBond(SecurityBeanEm bondBean) {
         return bondToIndexBeanMap.get(bondBean);
+    }
+
+    public static String getStockCodeOfBond(SecurityBeanEm bondBean) {
+        String res = null;
+        if (allBondStockBean.size() == 0) {
+            allBondStockBean.addAll(getAllStockWithBond());
+        }
+
+        for (StockBondBean bean : allBondStockBean) {
+            if (bean.getBondCode().equals(bondBean.getSecCode())) {
+                res = bean.getStockCode();
+                break;
+            }
+        }
+        return res;
     }
 
 

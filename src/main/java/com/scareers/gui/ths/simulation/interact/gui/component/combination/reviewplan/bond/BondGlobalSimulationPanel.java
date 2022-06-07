@@ -160,7 +160,17 @@ public class BondGlobalSimulationPanel extends JPanel {
         SecurityBeanEm stock = BondUtil.getStockBeanByBond(selectedBean);
         SecurityBeanEm index = BondUtil.getIndexBeanByBond(selectedBean);
         if (stock == null || index == null) {
-            CommonUtil.notifyError("转债对应的 正股/指数 bean为null, 可尝试刷新 债股映射后稍等重试");
+            // CommonUtil.notifyError("转债对应的 正股/指数 bean为null, 尝试访问网络直接获取");
+            try {
+                stock = SecurityBeanEm.createStock(BondUtil.getStockCodeOfBond(selectedBean), true);
+                index = selectedBean.getSecCode().startsWith("11") ? SecurityBeanEm
+                        .getShangZhengZhiShu() : SecurityBeanEm.getShenZhengChengZhi();
+            } catch (Exception e) {
+
+            }
+        }
+        if (stock == null || index == null) {
+            CommonUtil.notifyError("转债对应的 正股/指数 bean为null, 可尝试刷新 债股映射后稍等重试; 返回");
             return;
         }
         try {
@@ -273,9 +283,9 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     private void addMainFunctions() {
         // 1. 初始化复盘功能 相关属性
-        // 1.0. 默认的复盘开始时间: >15点,今天是交易日,就今天, 否则都上一天!
+        // 1.0. 默认的复盘开始时间: >16点,今天是交易日,就今天, 否则都上一天! 给爬虫一个小时!
         try {
-            if (DateUtil.hour(DateUtil.date(), true) >= 15) {
+            if (DateUtil.hour(DateUtil.date(), true) >= 16) {
                 if (EastMoneyDbApi.isTradeDate(DateUtil.today())) {
                     reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00");
                 } else {
@@ -891,7 +901,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 @Override
                 public void run() {
                     EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStrSettingYMD());
-                    CommonUtil.notifyKey("已完成载入转债列表的分时数据等到缓存");
+
                 }
             }, true);
         }
