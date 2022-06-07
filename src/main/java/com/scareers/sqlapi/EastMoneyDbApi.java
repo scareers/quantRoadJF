@@ -43,10 +43,14 @@ public class EastMoneyDbApi {
     // 使用lru缓存,载入后, 首次读取, 将会比较慢; 影响gui体验; 这里直接使用hashMap, 但无法限制容量, 注意!
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdXCache = CacheUtil
             .newLRUCache(1024); // 字段顺序同爬虫
+    private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdXAdaptedCache = CacheUtil
+            .newLRUCache(2048); // 字段顺序同爬虫
     private static Cache<String, DataFrame<Object>> fsTransByDateAndQuoteIdRawCache = CacheUtil
             .newLRUCache(1024); // 字段顺序数据表原始
     private static Cache<String, DataFrame<Object>> fs1MV2ByDateAndQuoteIdRawCache = CacheUtil
             .newLRUCache(1024); // 字段顺序数据表原始
+    private static Cache<String, DataFrame<Object>> fs1MV2ByDateAndQuoteIdAdaptedCache = CacheUtil
+            .newLRUCache(2048); // 字段顺序数据表原始
 
     public static void main(String[] args) throws Exception {
 
@@ -355,13 +359,18 @@ public class EastMoneyDbApi {
                                                                        boolean excludeBid, double selfPreClose,
                                                                        double adaptPreClose) {
         //        // fsTransByDateAndQuoteIdXAdaptedCache
-
-        DataFrame<Object> res = DataFrameS.copy(getFsTransByDateAndQuoteIdS(date, quoteId, excludeBid));
+        String cacheKey = StrUtil.format("{}_{}_{}_{}_{}", date, quoteId, excludeBid, selfPreClose, adaptPreClose);
+        DataFrame<Object> res = fsTransByDateAndQuoteIdXAdaptedCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+        res = DataFrameS.copy(getFsTransByDateAndQuoteIdS(date, quoteId, excludeBid)); // 复制了
         if (res != null) { // 其他列不变, 只需要改变 price列; 索引是 3;
             for (int i = 0; i < res.length(); i++) {
                 Double price = Double.valueOf(res.get(i, "price").toString());
                 res.set(i, "price", price / selfPreClose * adaptPreClose);
             }
+            fsTransByDateAndQuoteIdXAdaptedCache.put(cacheKey, res);
         }
         return res;
     }
@@ -458,13 +467,20 @@ public class EastMoneyDbApi {
      */
     public static DataFrame<Object> getFs1MV2ByDateAndQuoteIdAdaptedOnlyClose(String date, String quoteId,
                                                                               double adaptPreClose) {
-        DataFrame<Object> res = DataFrameS.copy(getFs1MV2ByDateAndQuoteId(date, quoteId));
+        String cacheKey = StrUtil.format("{}_{}_{}", date, quoteId, adaptPreClose);
+        DataFrame<Object> res = fs1MV2ByDateAndQuoteIdAdaptedCache.get(cacheKey);
+        if (res != null) {
+            return res;
+        }
+
+        res = DataFrameS.copy(getFs1MV2ByDateAndQuoteId(date, quoteId));
         if (res != null) {
             Double selfPreClose = Double.valueOf(res.get(0, "preClose").toString());
             for (int i = 0; i < res.length(); i++) {
                 Double price = Double.valueOf(res.get(i, "close").toString());
                 res.set(i, "close", price / selfPreClose * adaptPreClose);
             }
+            fs1MV2ByDateAndQuoteIdAdaptedCache.put(cacheKey, res);
         }
         return res;
     }
