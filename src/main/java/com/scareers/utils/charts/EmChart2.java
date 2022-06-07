@@ -97,15 +97,14 @@ public class EmChart2 {
 //        kLineDemo();
 //
 //        fsV2Demo();
-
-//        String bondCode = "002761"; // 浙江建投
-//        SecurityBeanEm bondBean = SecurityBeanEm.createStock(bondCode);
-//        String bondCode = "113016"; // 小康转债
-        String bondCode = "123134"; // 卡贝转债
+        String bondCode = "123134"; // 卡倍转债
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
-        String dateStr = "2022-06-02";
+        String dateStr = "2022-06-06";
         Console.log(bondBean.getName());
-        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr, null, null);
+        SecurityBeanEm indexBean = SecurityBeanEm.getShangZhengZhiShu();
+        SecurityBeanEm stockBean = SecurityBeanEm.createStock("300863");//卡倍忆
+        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean, dateStr, indexBean,
+                stockBean);
 
 
         // 简单的分时图更新:
@@ -315,19 +314,6 @@ public class EmChart2 {
             fsTransNewestPrice = preClose; // 默认初始分时成交价格, 显然是不对的
             priceLow = preClose * 0.99; // 默认图表价格下限
             priceHigh = preClose * 1.01; // 默认图表价格下限  // 指数和正股的 "价格"列, 已经适配了!
-        }
-
-        /**
-         * @param rawPrices
-         * @param selfPreClose
-         * @param referPreClose
-         * @return
-         * @key3 : 极少的静态方法之一; 给定指数或者股票原始价格列表, 给定其昨收, 并给定转债昨收;
-         * 将 原始价格, 转换为 能够放进同一 chart 的 对应价格; 保留涨跌幅的 一致!!
-         */
-        public static List<Double> convertPriceForInSameChart(List<Double> rawPrices, double selfPreClose,
-                                                              double referPreClose) {
-            return rawPrices.stream().map(value -> value / selfPreClose * referPreClose).collect(Collectors.toList());
         }
 
         private static final Log log = LogUtil.getLogger();
@@ -889,6 +875,8 @@ public class EmChart2 {
             lineAndShapeRenderer.setBaseItemLabelsVisible(true);
             lineAndShapeRenderer.setSeriesShapesVisible(0, false); //设置不显示数据点模型
             lineAndShapeRenderer.setSeriesShapesVisible(1, false);
+            lineAndShapeRenderer.setSeriesShapesVisible(3, false); //设置不显示数据点模型
+            lineAndShapeRenderer.setSeriesShapesVisible(4, false);
             lineAndShapeRenderer.setSeriesPaint(0, priceColorFs); // 设置价格颜色
             lineAndShapeRenderer.setSeriesPaint(1, avgPriceColorFs);
             lineAndShapeRenderer.setSeriesPaint(2, preCloseColorFs);
