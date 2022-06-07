@@ -187,8 +187,18 @@ public class BondGlobalSimulationPanel extends JPanel {
             amountRealTime.put(bondBean, CommonUtil.sumOfListNumberUseLoop(tickAmountList));
         }
 
-        // 构建结果df!
+        // 1.构建结果df! 列简单: 代码,名称, 涨跌幅, 当前总成交额!
+        DataFrame<Object> res = new DataFrame<Object>(Arrays.asList("代码", "名称", "涨跌幅", "成交额"));
+        for (SecurityBeanEm beanEm : bondList) {
+            List<Object> row = new ArrayList<>();
+            row.add(beanEm.getSecCode());
+            row.add(beanEm.getName());
+            row.add(chgPctRealTime.get(beanEm));
+            row.add(amountRealTime.get(beanEm)); // 涨跌幅成交额都可能是 null, 但保证需要所有转债;
+            res.append(row);
+        }
 
+        // 2. 无需排序, 自行使用 JXTable 的排序功能!
 
 
         return null;
