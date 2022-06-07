@@ -3,7 +3,6 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -12,9 +11,7 @@ import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
-import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
-import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
@@ -35,8 +32,8 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.functors.FalsePredicate;
 import org.jdesktop.swingx.JXList;
+import org.jdesktop.swingx.JXTable;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
@@ -84,7 +81,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
 
     protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
-    protected volatile JXList jListForBonds; //  转债展示列表控件
+    protected volatile JXTable jXTableForBonds; //  转债展示列表控件
     protected SecurityBeanEm selectedBean = null; // 被选中的转债 东财bean对象
     protected SecurityBeanEm preChangedSelectedBean = null; // 此前被选中,且更新过fs图对象, 当新的等于它时, 将不重新实例化动态图表对象
     protected int jListWidth; // 列表宽度, 例如300
@@ -698,7 +695,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         initFunctionPanel();
 
         // 2.转债列表
-        jListForBonds = getSecurityEmJList(); // 已经实现自动读取并刷新 securityEmPos 属性
+        jXTableForBonds = getSecurityEmJXTable(); // 已经实现自动读取并刷新 securityEmPos 属性
         initJListWrappedJScrollPane(); // 列表被包裹
         flushBondListCare(); // 刷新一次列表, 该方法已经异步
 
@@ -1036,7 +1033,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         jScrollPaneForList = new JScrollPane();
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jScrollPaneForList.setViewportView(jListForBonds); // 滚动包裹转债列表
+        jScrollPaneForList.setViewportView(jXTableForBonds); // 滚动包裹转债列表
         jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
@@ -1047,7 +1044,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      *
      * @return
      */
-    private JXList getSecurityEmJList() {
+    private JXTable getSecurityEmJXTable() {
         // securityEmPos --> 自行实现逻辑, 改变自身该属性; 则 列表将自动刷新
 
         DefaultListModelS<SecurityBeanEm.SecurityEmPo> model = new DefaultListModelS<>();
@@ -1065,8 +1062,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                 while (true) { // 每 100ms 刷新model
                     model.flush(securityEmPos);
 
-                    if (jListForBonds != null) {
-                        jxFindBarS.setSearchable(jListForBonds.getSearchable());
+                    if (jXTableForBonds != null) {
+                        jxFindBarS.setSearchable(jXTableForBonds.getSearchable());
                     }
                     Thread.sleep(10000);
                 }
