@@ -118,6 +118,16 @@ public class BondGlobalSimulationPanel extends JPanel {
             }
         });
 
+        // 4.需要异步调用 BondUtil, 初始化 转债-- 正股/指数 两大map, 方便查询, 以调用 自定义动态图表类 的构造器!!
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (!BondUtil.flushBondToStockAndIndexMap()) { // 自动刷新, 只要填充超过200, 就视为成功
+                    ThreadUtil.sleep(5000); // 间隔5s
+                }
+            }
+        }, true);
+
 
     }
 
@@ -144,17 +154,20 @@ public class BondGlobalSimulationPanel extends JPanel {
                 return;
             }
         }
-        // 1.实例化动态图表
+        // 1.实例化动态图表 -- 实例化最消耗时间
+        String reviseDateStrSettingYMD = getReviseDateStrSettingYMD();
+        // @key: 当前优化到 1-2 ms 级别
+        SecurityBeanEm stock = BondUtil.getStockBeanByBond(selectedBean);
+        SecurityBeanEm index = BondUtil.getIndexBeanByBond(selectedBean);
+        if (stock == null || index == null) {
+            CommonUtil.notifyError("转债对应的 正股/指数 bean为null, 可尝试刷新 债股映射后稍等重试");
+            return;
+        }
         try {
-            // 实例化最消耗时间
-            String reviseDateStrSettingYMD = getReviseDateStrSettingYMD();
-//            TimeInterval timer = DateUtil.timer();
-//            timer.start();
-            dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, reviseDateStrSettingYMD);
-//            Console.log(timer.intervalRestart()); // @key: 当前优化到 1-2 ms 级别
+            dynamicChart = new DynamicEmFs1MV2ChartForRevise(selectedBean, reviseDateStrSettingYMD, index, stock);
         } catch (Exception e) {
             e.printStackTrace();
-            CommonUtil.notifyError("实例化动态图表对象失败, 疑似复盘日期设置错误");
+            CommonUtil.notifyError("实例化动态图表对象失败, 请检查构造器参数");
             return;
         }
         preChangedSelectedBean = this.selectedBean; // 更新了图表对象时, 才更新
@@ -777,7 +790,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             }, true);
         });
 
-        // 2.3.2. 播报停止按钮 , 设置flag, 将会软停止播报主循环
+        // 2.3.3. 播报停止按钮 , 设置flag, 将会软停止播报主循环
         FuncButton broadcastProcessStopButton = ButtonFactory.getButton("停止播报");
         broadcastProcessStopButton.setForeground(Color.red);
         broadcastProcessStopButton.addActionListener(e -> { // 点击加载或刷新转债列表;
@@ -789,10 +802,22 @@ public class BondGlobalSimulationPanel extends JPanel {
             }, true);
         });
 
+        //  2.3.3. 可手动刷新 转债 -- 正股/指数 map; 方便查询
+        FuncButton flushBondToStockAndIndexMapButton = ButtonFactory.getButton("刷新债股字典");
+        flushBondToStockAndIndexMapButton.addActionListener(e -> { // 点击加载或刷新转债列表;
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    BondUtil.flushBondToStockAndIndexMap();
+                }
+            }, true);
+        });
+
         // 按钮添加
         buttonContainer.add(broadcastProcessStartButton);
         buttonContainer.add(broadcastProcessStopButton);
         buttonContainer.add(loadBondListButton);
+        buttonContainer.add(flushBondToStockAndIndexMapButton);
 
 
         functionPanel.add(buttonContainer, BorderLayout.CENTER);

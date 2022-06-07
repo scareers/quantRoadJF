@@ -54,7 +54,16 @@ public class BondUtil {
 
 //        Console.log(getStockCodeWithBondNameFromUseWenCai());
 
-        generateCSVForRecite1();
+//        generateCSVForRecite1();
+
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        boolean b = flushBondToStockAndIndexMap();
+        Console.log(timer.intervalRestart());
+        b = flushBondToStockAndIndexMap();
+        Console.log(timer.intervalRestart());
+        Console.log(b);
+
     }
 
     /**
@@ -66,14 +75,35 @@ public class BondUtil {
 
     /**
      * @key1 全部载入刷新   转债-正股/指数两个map; 以供快速访问东财bean的关联关系! 一般只需调用一次!
+     * 返回值在map填充数量 >200 时返回; 一定逻辑上代码解析成功
+     * @timecomsume : 已经筛选过了有效的转债; 即最新价不为空的; 消耗时间约 45 秒; 很长;
+     * 第二次因为大部分bean有缓存, 大约一次问财时间不到1s
      */
-    public static void flushBondToStockAndIndexMap() {
+    public static volatile boolean flushingMap = false; // 标志正在刷新, 不重复刷新
+
+    public static boolean flushBondToStockAndIndexMap() {
+        if (flushingMap) {
+            CommonUtil.notifyError("正在刷新 全转债 -- 正股/指数 Map; 不可重复调用");
+            return false;
+        }
+
+        flushingMap = true;
+
+        CommonUtil.notifyKey("开始刷新 全转债 -- 正股/指数 Map");
         List<StockBondBean> allStockWithBond = getAllStockWithBond(); // 问财当前所有转债
         // 1.首先解析全部转债和股票, 本质是载入缓存
+
+        List<StockBondBean> effectBeans = new ArrayList<>(); // 初步判定有效的
+        for (StockBondBean bean : allStockWithBond) {
+            if (bean.getBondCode() != null && bean.getBondName() != null && bean.getStockCode() != null && bean
+                    .getStockName() != null) {
+                effectBeans.add(bean);
+            }
+        }
         try {
             SecurityBeanEm
                     .createBondList(
-                            allStockWithBond.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
+                            effectBeans.stream().map(StockBondBean::getBondCode).collect(Collectors.toList()),
                             false);
         } catch (Exception e) {
             e.printStackTrace();
@@ -81,14 +111,14 @@ public class BondUtil {
         try {
             SecurityBeanEm
                     .createStockList(
-                            allStockWithBond.stream().map(StockBondBean::getStockCode).collect(Collectors.toList()),
+                            effectBeans.stream().map(StockBondBean::getStockCode).collect(Collectors.toList()),
                             false, false);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // 2.遍历创建, 此时除了那些创建失败的, 都能读取缓存创建, 极快!
-        for (StockBondBean bean : allStockWithBond) {
+        for (StockBondBean bean : effectBeans) {
             try {
                 SecurityBeanEm bond = SecurityBeanEm.createBond(bean.getBondCode());
                 SecurityBeanEm stock = SecurityBeanEm.createStock(bean.getStockCode());
@@ -99,7 +129,15 @@ public class BondUtil {
             } catch (Exception e) {
 
             }
+        }
 
+        flushingMap = false; // 可再次调用
+        if (bondToStockBeanMap.size() > 300) { // 表示成功
+            CommonUtil.notifyKey("刷新 全转债 -- 正股/指数 Map: 成功");
+            return true;
+        } else {
+            CommonUtil.notifyKey("刷新 全转债 -- 正股/指数 Map: 失败");
+            return false;
         }
     }
 
@@ -545,8 +583,28 @@ public class BondUtil {
     public static List<StockBondBean> getAllStockWithBond() {
         DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("正股代码;正股简称",
                 0, WenCaiApi.TypeStr.BOND); // 全部转债
-        ThreadUtil.sleep(100);
-        return parseStockBondBeanList(dataFrame);
+
+        if (dataFrame == null) {
+            return null;
+        }
+        // 筛选   可转债@最新价  非空的, 作为有效的转债!!!
+        DataFrame<Object> res = new DataFrame<Object>(dataFrame.columns());
+        for (int i = 0; i < dataFrame.length(); i++) {
+            Object o = dataFrame.get(i, "可转债@最新价");
+            if (o == null) {
+                continue;
+            }
+            Double price = null;
+            try {
+                price = Double.parseDouble(o.toString());
+            } catch (NumberFormatException e) {
+
+            }
+            if (price != null) {
+                res.append(dataFrame.row(i));
+            }
+        }
+        return parseStockBondBeanList(res.resetIndex());
     }
 
 
