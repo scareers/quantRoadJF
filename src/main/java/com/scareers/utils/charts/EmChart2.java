@@ -553,6 +553,7 @@ public class EmChart2 {
          * 而 均价的话, 则复制 前一个分钟的 均价, 而不用未来数据, 这样保持3数据序列一样长!
          *
          * @param date
+         * @update: 增加了指数和正股价格线 且实时变化
          */
         public void updateChartFsTrans(Date date) {
             if (this.beanEm == null || this.dateStr == null) {
@@ -569,7 +570,7 @@ public class EmChart2 {
                 // 1.刷新价格上下限 -- 可无
             }
             String timeTickStr = DateUtil.format(date, "HH:mm:ss");
-            if (timeTickStr.compareTo("15:00:00") >= 0) {
+            if (timeTickStr.compareTo("15:00:00") > 0) {
                 return; // 3点后不再更新
             }
 
