@@ -47,11 +47,15 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
     protected ValueMarkerS markerYForPricePlot; // 横线可能两个. 只显示1个
     protected ValueMarkerS markerYForVolPlot;
 
+    CrossLineXIndexChangeCallback xIndexChangeCallback=null;
+
     List<DateTime> timeTicks;
     int xAmount;
 
     public void reportXIndex(int currentXIndex) {
-
+        if (xIndexChangeCallback != null) {
+            xIndexChangeCallback.call(currentXIndex);
+        }
     }
 
     public void setTimeTicks(List<DateTime> timeTicks) {

@@ -50,13 +50,17 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
     List<DateTime> timeTicks;
     int xAmount;
 
+    CrossLineXIndexChangeCallback xIndexChangeCallback = null;
+
     public void setTimeTicks(List<DateTime> timeTicks) {
         this.timeTicks = timeTicks;
         this.xAmount = timeTicks.size();
     }
 
-    public void reportXIndex(int currentXIndex){
-
+    public void reportXIndex(int currentXIndex) {
+        if (xIndexChangeCallback != null) {
+            xIndexChangeCallback.call(currentXIndex);
+        }
     }
 
     public CrossLineListenerForFsXYPlot(List<DateTime> timeTicks) {
