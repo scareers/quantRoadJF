@@ -138,22 +138,40 @@ public class EmChartKLine {
         String title;
         Double preClose;
 
+        int kLineAmountHope;
 
         public DynamicEmKLineChartForRevise(SecurityBeanEm beanEm, String todayStr, int kLineAmountHope) {
             this.beanEm = beanEm;
             this.todayStr = todayStr;
+            this.kLineAmountHope = kLineAmountHope;
             this.today = DateUtil.parse(todayStr); // 日期对象
             this.title = beanEm.getName();
 
             // 1.访问网络, 获取昨日及之前的k线数据, 可能耗时, 建议本对象实例化时, 在子线程进行 !!
             // 有缓存不消耗时间, 获取 n个交易日之前那个交易日, 以 访问网络查询api
+            init();
+        }
+
+        /**
+         * 尝试初始化, 如果访问k线数据失败, (为null), 则不会初始化chart对象;
+         * 在 update时, 将再次检测!! 如果再初始化失败, 将给出提示信息
+         */
+        public void init() {
+            tryInitHistoryKlineDf(); // 尝试网络api访问历史k线, 可能失败
+            if (klineDfBeforeToday != null) {
+                initAllData(todayStr);
+                initChart();
+            }
+        }
+
+        public void tryInitHistoryKlineDf() {
             String dateStart = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, kLineAmountHope);
             String yesterday = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, 1); // 获取昨日前的
             klineDfBeforeToday = EmQuoteApi
                     .getQuoteHistorySingle(true, beanEm, dateStart, yesterday, "101", "1", 1, 4000);
-            Console.log(klineDfBeforeToday);
-            // todo: df访问失败null处理
+        }
 
+        public void initAllData(String todayStr) {
             // 初始化6项数据, 历史;
             allDateStr = DataFrameS.getColAsStringList(klineDfBeforeToday, "日期");
             allDateTime = DataFrameS.getColAsDateList(klineDfBeforeToday, "日期");
@@ -164,7 +182,6 @@ public class EmChartKLine {
             allAmount = DataFrameS.getColAsDoubleList(klineDfBeforeToday, "成交额");
 
             // 初始化今日5项数据, 默认使用 昨收!
-            assert klineDfBeforeToday != null;
             preClose = Double.valueOf(klineDfBeforeToday.get(klineDfBeforeToday.length() - 1, "收盘").toString());
             open = preClose;
             high = preClose;
@@ -180,8 +197,6 @@ public class EmChartKLine {
             allLow.add(low);
             allClose.add(close);
             allAmount.add(amount);
-
-            initChart();
         }
 
         /**
@@ -198,6 +213,14 @@ public class EmChartKLine {
                                      Double lowTodayCurrent,
                                      Double closeTodayCurrent,
                                      Double amountTodayCurrent) {
+            if (klineDfBeforeToday == null) { // 检测初始化成功
+                init();
+            }
+            if (klineDfBeforeToday == null) {// 再次检测初始化成功, 失败则提示并返回, 更新失败!
+                CommonUtil.notifyError("DynamicEmKLineChartForRevise 初始化失败;一般因为历史k线数据df获取失败;更新失败");
+                return;
+            }
+
             // 1.数据列表, 更新最后一个数据, 为给定今日最新数据
             allOpen.set(allOpen.size() - 1, openTodayCurrent);
             allHigh.set(allHigh.size() - 1, highTodayCurrent);
