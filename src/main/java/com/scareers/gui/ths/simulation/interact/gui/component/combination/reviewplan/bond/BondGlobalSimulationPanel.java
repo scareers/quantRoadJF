@@ -171,7 +171,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
             // @update: 需要>=9:30:00, 否则竞价的全部进去了, 不合事实
             int shouldStartIndex = -1;
-            for (int i = 0; i < fsTransDf.size(); i++) {
+            for (int i = 0; i < fsTransDf.length(); i++) {
                 String timeTick1 = fsTransDf.get(i, "time_tick").toString();
                 if (timeTick1.compareTo("09:29:30") > 0) {
                     break; // 不要>=, 本索引包含, 将包含 09:30:00 这个tick;
@@ -185,7 +185,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
             // 3. 筛选有效分时成交! time_tick 列
             int shouldIndex = -1;
-            for (int i = 0; i < fsTransDf.size(); i++) {
+            for (int i = 0; i < fsTransDf.length(); i++) {
                 String timeTick1 = fsTransDf.get(i, "time_tick").toString();
                 if (timeTick1.compareTo(timeTick) <= 0) {
                     shouldIndex = i; // 找到截断索引
@@ -193,7 +193,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                     break;
                 }
             }
-
             if (shouldIndex == -1) {
                 continue; // 筛选不到
             }
@@ -232,7 +231,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 2. 无需排序, 自行使用 JXTable 的排序功能! 但转换为数字排序, 是需要重新一下排序逻辑的, 默认按照字符串排序
-        Console.log(res.toString(10));
+        //Console.log(res.toString(10));
         return res;
     }
 
@@ -538,6 +537,11 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.5. 暂停按钮
         pauseRebootReviseButton = ButtonFactory.getButton("暂停"); // 默认暂停!
+//给刷新按钮绑定F5快捷键
+        this.pauseRebootReviseButton.registerKeyboardAction(e -> pauseRebootReviseButton.doClick(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_P, KeyEvent.CTRL_DOWN_MASK),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+//                JComponent.WHEN_IN_FOCUSED_WINDOW);
         pauseRebootReviseButton.setForeground(Color.pink);
         pauseRebootReviseButton.addActionListener(new ActionListener() {
             @Override
@@ -1074,6 +1078,9 @@ public class BondGlobalSimulationPanel extends JPanel {
      * 转债 涨跌幅列, 的表格 render --> 主要是 text 显示改变
      */
     public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
+        public static Font font1 = new Font("微软雅黑", Font.PLAIN, 18);
+        public static Font font2 = new Font("楷体", Font.BOLD, 18);
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                        boolean hasFocus, int row, int column) {
@@ -1086,6 +1093,13 @@ public class BondGlobalSimulationPanel extends JPanel {
                 this.setForeground(Color.red);
                 if (value != null) {
                     this.setText(value.toString());
+                }
+                if (column == 0 || column == 1) {
+                    this.setHorizontalAlignment(SwingConstants.CENTER);
+                    this.setFont(font1);
+                } else {
+                    this.setHorizontalAlignment(SwingConstants.RIGHT);
+                    this.setFont(font2);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1130,7 +1144,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 // 例如null, 可能转换失败, 很正常!
             }
             if (amount != null) { // 转换为涨跌幅成功, 则格式化显示!
-                super.setText(CommonUtil.formatNumberWithSuitable(amount));
+                super.setText(CommonUtil.formatNumberWithSuitable(amount, 1));
             } else {
                 super.setText(text);
             }
@@ -1187,9 +1201,22 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 3.切换选择的回调绑定
         jXTableForBonds.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            private volatile int preIndex = -2;
+
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 int row = jXTableForBonds.getSelectedRow();
+                if (row == -1) {
+                    return;
+                }
+
+                row = jXTableForBonds.convertRowIndexToModel(row);
+                if (row == preIndex) {
+                    return;
+                }
+
+                preIndex = row;
+
                 String bondCode = null;
                 try {
                     bondCode = model.getValueAt(row, 0).toString();
@@ -1211,7 +1238,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
         initJTableStyle();
         setTableColCellRenders(); // 设置显示render
-
+        jXTableForBonds.setGridColor(Color.black); // 不显示网格
         // 持续刷新列表, 100 ms一次. securityEmPos 应该为持续变化
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
@@ -1229,6 +1256,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                     ThreadUtil.sleep(1000); // 每秒刷新!
                 }
             }
+
         }, true);
     }
 

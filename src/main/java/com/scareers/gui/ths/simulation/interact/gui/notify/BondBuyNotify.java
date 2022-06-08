@@ -276,7 +276,16 @@ public class BondBuyNotify {
                 startedNotifyMessages = true;
                 log.info("开始访问消息队列, 播报消息!");
                 while (true) {
+                    if (isReviseEnvironment()) {
+                        if (BondGlobalSimulationPanel.getInstance() != null) {
+                            if (!BondGlobalSimulationPanel.getInstance().isReviseRunning()) {
+                                ThreadUtil.sleep(100);
+                                continue; // 复盘环境下, 如果非running状态, 睡眠返回, 不读取消息播报!
+                            }
+                        }
+                    }
                     NotifyMessage message = null;
+
                     try {
                         message = messageQueue.take();
                     } catch (InterruptedException e) {

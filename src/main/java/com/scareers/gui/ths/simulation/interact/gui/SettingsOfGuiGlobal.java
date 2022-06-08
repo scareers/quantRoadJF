@@ -64,7 +64,7 @@ public class SettingsOfGuiGlobal {
     public static Integer layerOfObjectsTree = 100; // 低
 
     // 4.全局快捷键设置  ks: key shortcut
-    public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_O, KeyEvent.CTRL_DOWN_MASK);
+    public static final KeyStroke OBJECT_TREE_KS = KeyStroke.getKeyStroke(KeyEvent.VK_Z, KeyEvent.CTRL_DOWN_MASK);
 
     // 5.程序启动后, 自动启动小程序设置
     public static boolean autoStartTrader = false; // 设置是否自动启动Trader自动交易

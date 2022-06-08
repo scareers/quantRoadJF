@@ -7,6 +7,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.mail.MailUtil;
 import cn.hutool.log.Log;
+import com.alee.utils.swing.Scale;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
@@ -380,17 +381,22 @@ public class CommonUtil {
         return o.toString();
     }
 
+
+    public static String formatNumberWithYi(Number value) {
+        return formatNumberWithYi(value, 2);
+    }
+
     /**
      * 将数字, 转换为 "1.23亿" 文字
      *
      * @param value
      * @return
      */
-    public static String formatNumberWithYi(Number value) {
+    public static String formatNumberWithYi(Number value, int scale) {
         if (value == null) {
             return "null";
         }
-        return roundHalfUP(value.doubleValue() / 100000000, 2) + "亿";
+        return roundHalfUP(value.doubleValue() / 100000000, scale) + "亿";
     }
 
     /**
@@ -400,10 +406,14 @@ public class CommonUtil {
      * @return
      */
     public static String formatNumberWithWan(Number value) {
+        return formatNumberWithWan(value, 2);
+    }
+
+    public static String formatNumberWithWan(Number value, int scale) {
         if (value == null) {
             return "null";
         }
-        return roundHalfUP(value.doubleValue() / 10000, 2) + "万";
+        return roundHalfUP(value.doubleValue() / 10000, scale) + "万";
     }
 
     /**
@@ -414,22 +424,29 @@ public class CommonUtil {
      * @return
      */
     public static String formatNumberWithSuitable(Number value, double divide) {
+        return formatNumberWithSuitable(value, divide, 2);
+    }
+
+    public static String formatNumberWithSuitable(Number value, double divide, int scale) {
         if (value == null) {
             return "null";
         }
         value = value.doubleValue() / divide;
         if (Math.abs(value.doubleValue()) < 10000) {
-            return Double.valueOf(roundHalfUP(value.doubleValue(), 2)).toString();
+            return Double.valueOf(roundHalfUP(value.doubleValue(), scale)).toString();
         } else if (Math.abs(value.doubleValue()) < 100000000) {
-            return formatNumberWithWan(value);
+            return formatNumberWithWan(value, scale);
         } else {
-            return formatNumberWithYi(value);
+            return formatNumberWithYi(value, scale);
         }
-
     }
 
     public static String formatNumberWithSuitable(Number value) {
         return formatNumberWithSuitable(value, 1.0);
+    }
+
+    public static String formatNumberWithSuitable(Number value, int scale) {
+        return formatNumberWithSuitable(value, 1.0, scale);
     }
 
 
