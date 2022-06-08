@@ -25,7 +25,9 @@ import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYP
  * @date: 2022/4/5/005-06:30:09
  */
 public class EmKLineDisplayPanel extends DisplayPanel {
-    DataFrame<Object> thsFsDf;
+    DataFrame<Object> emKLineDf;
+
+
     String title = "暂无标题";
 
     JFreeChart chart;
@@ -49,7 +51,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
      * @param preClose
      */
     public void update(DataFrame<Object> thsFsDf, String title) {
-        this.thsFsDf = thsFsDf;
+        this.emKLineDf = thsFsDf;
         if (!StrUtil.isBlank(title)) {
             this.title = title;
         }
@@ -58,11 +60,11 @@ public class EmKLineDisplayPanel extends DisplayPanel {
 
     @Override
     public void update() {
-        if (this.thsFsDf == null || this.thsFsDf.length() == 0) {
+        if (this.emKLineDf == null || this.emKLineDf.length() == 0) {
             return;
         }
-        List<DateTime> timeTicks = DataFrameS.getColAsDateList(thsFsDf, "日期"); // 日期列表;传递给监听器,设置横轴marker
-        chart = ThsChart.createKLineOfThs(thsFsDf, title);
+        List<DateTime> timeTicks = DataFrameS.getColAsDateList(emKLineDf, "日期"); // 日期列表;传递给监听器,设置横轴marker
+        chart = ThsChart.createKLineOfThs(emKLineDf, title);
         if (chartPanel == null) {
             chartPanel = new ChartPanel(this.chart);
             chartPanel.setMouseZoomable(false);
