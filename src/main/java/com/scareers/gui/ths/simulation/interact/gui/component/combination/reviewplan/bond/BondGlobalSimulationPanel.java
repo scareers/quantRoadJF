@@ -85,6 +85,8 @@ public class BondGlobalSimulationPanel extends JPanel {
     // 电脑配置越高, 应当越接近1
     public static final double codeExecLossRateWhenSimulation = 0.95;
     public static final int kLineAmountHope = 100; // k线图希望的数量
+    // 今天多少点钟后, 复盘默认日期设置为今天(一般这时爬虫运行过了,数据库有数据了) , 否则设置默认复盘日期为上一交易日
+    public static final int afterTodayNHDefaultDateAsToday = 20;
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -481,7 +483,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 1. 初始化复盘功能 相关属性
         // 1.0. 默认的复盘开始时间: >16点,今天是交易日,就今天, 否则都上一天! 给爬虫一个小时!
         try {
-            if (DateUtil.hour(DateUtil.date(), true) >= 16) {
+            if (DateUtil.hour(DateUtil.date(), true) >= afterTodayNHDefaultDateAsToday) {
                 if (EastMoneyDbApi.isTradeDate(DateUtil.today())) {
                     reviseStartDatetime = DateUtil.parse(DateUtil.today() + " 09:30:00");
                 } else {
