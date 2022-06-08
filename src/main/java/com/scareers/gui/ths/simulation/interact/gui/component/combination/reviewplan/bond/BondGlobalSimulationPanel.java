@@ -25,6 +25,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
+import com.scareers.utils.charts.EmChartKLine;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -45,8 +46,7 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -84,6 +84,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     // 主循环sleep1秒, 因为代码执行耗时, 实际是1.0xx秒, 为了更加接近实盘, 稍微减少sleep时间, 此倍率应当 <1, 但不宜过小,
     // 电脑配置越高, 应当越接近1
     public static final double codeExecLossRateWhenSimulation = 0.95;
+    public static final int kLineAmountHope = 100; // k线图希望的数量
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -420,6 +421,9 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
 
+    ThreadPoolExecutor poolExecutorForKLineUpdate = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
+
     /**
      * 主功能区组件添加, 添加到 functionContainerMain, 该panel为左浮动布局
      */
@@ -551,6 +555,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             String tick = allFsTransTimeTicks.get(i);
                             labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                             dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
+                            flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
 
                             ThreadUtil
                                     .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
@@ -665,7 +670,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 String tick = allFsTransTimeTicks.get(i);
                                 labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                                 dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
-
+                                flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
                                 ThreadUtil
                                         .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
                             }
@@ -692,6 +697,17 @@ public class BondGlobalSimulationPanel extends JPanel {
         buttonCollapsibleKLinePanel.setForeground(Color.red);
         functionContainerMain.add(buttonCollapsibleKLinePanel);
 
+    }
+
+    public void flushKlineWhenBondNotChangeAsync() {
+        poolExecutorForKLineUpdate.submit(new Runnable() {
+            @Override
+            public void run() {
+                DataFrame<Object> todayFs1MDfV2 = dynamicChart.getFsDfV2Df();
+
+                dailyKLineDisplayPanel.getDynamicKLineChart().updateTodayKline();
+            }
+        });
     }
 
     public String getReviseDateStrSettingYMD() { // 复盘日期设定 -- 年月日
@@ -1446,7 +1462,20 @@ public class BondGlobalSimulationPanel extends JPanel {
         this.selectedBean = bean;
         // @speed: 已经优化到 2-4 ms 级别
         updateFsDisplay(false); // 自动改变分时图显示, 不强制 首次18ms, 后面3ms
+        updateKlineDisplayAsync(); // 异步更新k线显示 --> 即更换转债
         bondInfoPanel.update(selectedBean); // 信息也要更改
+    }
+
+    public void updateKlineDisplayAsync() {
+        poolExecutorForKLineUpdate.submit(new Runnable() { // 更新k线图全体
+            @Override
+            public void run() {
+                EmChartKLine.DynamicEmKLineChartForRevise dynamicKlineChart =
+                        new EmChartKLine.DynamicEmKLineChartForRevise(selectedBean, getReviseDateStrSettingYMD(),
+                                kLineAmountHope);
+                dailyKLineDisplayPanel.update(dynamicKlineChart);
+            }
+        });
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {

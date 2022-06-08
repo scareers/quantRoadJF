@@ -22,7 +22,6 @@ import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYP
 @Data
 public class EmKLineDisplayPanel extends DisplayPanel {
     public static final int preferHeight = 300;
-
     // 切换转债时, 应当更新本属性为新的实例; 单转债刷新过程, 则调用 其 updateKLine(...) 方法
     EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart;
     ChartPanel chartPanel;
