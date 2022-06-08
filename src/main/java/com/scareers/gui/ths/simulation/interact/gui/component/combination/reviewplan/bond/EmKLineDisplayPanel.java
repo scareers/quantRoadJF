@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.utils.charts.CrossLineListenerForKLineXYPlot;
+import com.scareers.utils.charts.CrossLineXIndexChangeCallback;
 import com.scareers.utils.charts.EmChartKLine;
 import lombok.Data;
 import org.jfree.chart.ChartPanel;
@@ -63,6 +64,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                 chartPanel.setDomainZoomable(false);
                 crossLineListenerForKLineXYPlot0 =
                         EmChartKLine.getCrossLineListenerForKLineXYPlot(this.dynamicKLineChart.getAllDateTime());
+                crossLineListenerForKLineXYPlot0.setXIndexChangeCallback(buildCrossLineXChangeCallback());
                 chartPanel
                         .addChartMouseListener(
                                 crossLineListenerForKLineXYPlot0);
@@ -80,5 +82,14 @@ public class EmKLineDisplayPanel extends DisplayPanel {
             crossLineListenerForKLineXYPlot0.setTimeTicks(this.dynamicKLineChart.getAllDateTime());
             chartPanel.setChart(dynamicKLineChart.getChart());
         }
+    }
+
+    /**
+     * 十字线x 索引改变回调
+     *
+     * @return
+     */
+    public CrossLineXIndexChangeCallback buildCrossLineXChangeCallback() {
+        return null;
     }
 }
