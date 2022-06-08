@@ -84,7 +84,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     // 主循环sleep1秒, 因为代码执行耗时, 实际是1.0xx秒, 为了更加接近实盘, 稍微减少sleep时间, 此倍率应当 <1, 但不宜过小,
     // 电脑配置越高, 应当越接近1
     public static final double codeExecLossRateWhenSimulation = 0.95;
-    public static final int kLineAmountHope = 100; // k线图希望的数量
+    public static final int kLineAmountHope = 150; // k线图希望的数量
     // 今天多少点钟后, 复盘默认日期设置为今天(一般这时爬虫运行过了,数据库有数据了) , 否则设置默认复盘日期为上一交易日
     public static final int afterTodayNHDefaultDateAsToday = 20;
 
@@ -785,8 +785,8 @@ public class BondGlobalSimulationPanel extends JPanel {
             return DateUtil.format(DateUtil.parse(jTextFieldOfReviseStartDatetime.getText()),
                     DatePattern.NORM_DATE_PATTERN); // 读取最新设定的 年月日 日期
         } catch (Exception e) {
-            CommonUtil.notifyError("复盘程序读取 复盘日期失败, 默认返回今日");
-            return DateUtil.today();
+            CommonUtil.notifyError("复盘程序读取 复盘日期失败, 默认返回上一交易日");
+            return EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
         }
     }
 

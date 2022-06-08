@@ -139,6 +139,11 @@ public class EmChartKLine {
         Double preClose;
 
         int kLineAmountHope;
+        volatile boolean inited = false; // 是否成功初始化?
+
+        public boolean isInited() {
+            return this.klineDfBeforeToday != null;
+        }
 
         public DynamicEmKLineChartForRevise(SecurityBeanEm beanEm, String todayStr, int kLineAmountHope) {
             this.beanEm = beanEm;

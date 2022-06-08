@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.utils.charts.CrossLineListenerForKLineXYPlot;
 import com.scareers.utils.charts.EmChartKLine;
 import lombok.Data;
 import org.jfree.chart.ChartPanel;
@@ -45,22 +46,26 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         this.update();
     }
 
+    CrossLineListenerForKLineXYPlot crossLineListenerForKLineXYPlot0;
+
     /**
      * 本质上是更新整个图表对象, 而非刷新图表对象
      */
     @Override
     public void update() {
         if (chartPanel == null) {
-            if (this.dynamicKLineChart != null) { // 首次初始化
+            if (this.dynamicKLineChart != null && this.dynamicKLineChart.isInited()) { // 首次初始化
                 chartPanel = new ChartPanel(this.dynamicKLineChart.getChart());
                 // 大小
-                chartPanel.setPreferredSize(new Dimension(preferHeight, preferHeight));
+//                chartPanel.setPreferredSize(new Dimension(preferHeight, preferHeight));
                 chartPanel.setMouseZoomable(false);
                 chartPanel.setRangeZoomable(false);
                 chartPanel.setDomainZoomable(false);
+                crossLineListenerForKLineXYPlot0 =
+                        EmChartKLine.getCrossLineListenerForKLineXYPlot(this.dynamicKLineChart.getAllDateTime());
                 chartPanel
                         .addChartMouseListener(
-                                getCrossLineListenerForKLineXYPlot(this.dynamicKLineChart.getAllDateTime()));
+                                crossLineListenerForKLineXYPlot0);
                 this.removeAll();
                 this.add(chartPanel, BorderLayout.CENTER);
                 chartPanel.setVisible(true);
@@ -70,7 +75,9 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         }
 
         // 此后更新
-        if (this.dynamicKLineChart != null) {
+        if (this.dynamicKLineChart != null && this.dynamicKLineChart.isInited()) {
+            // 需要设置新的时间tick, 保证十字线正常!
+            crossLineListenerForKLineXYPlot0.setTimeTicks(this.dynamicKLineChart.getAllDateTime());
             chartPanel.setChart(dynamicKLineChart.getChart());
         }
     }
