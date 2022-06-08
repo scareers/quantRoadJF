@@ -83,6 +83,36 @@ public class EmChartKLine {
         kLineDemo();
     }
 
+    /**
+     * 东财k线图, 动态
+     * 本质上, 需要昨日及之前的k线数据, + 今日的 几项价格数据!  --> 使用成交额
+     * 实现上更加简单;
+     * 核心 update(..) 方法, 需要提供今日 5项数据 (开盘,至今最高,至今最低,至今价格) +成交额
+     */
+    public static class DynamicEmKLineChartForRevise {
+        DataFrame<Object> klineDfBeforeToday; // 今日之前的k线数据, 使用东财 k线api! 直接从网络访问,带缓存.
+        SecurityBeanEm beanEm;
+
+        // 此前k线数据!
+        List<String> allFsDateStrHistory; // 日期字符串形式
+        List<DateTime> allFsTimeTicksHistory; // 6项核心数据!
+        List<Double> allOpenHistory;
+        List<Double> allHighHistory;
+        List<Double> allLowHistory;
+        List<Double> allCloseHistory;
+        List<Double> allAmountHistory; // 成交额
+
+        // 今日最新数据! -- 单项
+        DateTime today;
+        Double open;
+        Double close;
+        Double high;
+        Double low;
+        Double amount;
+
+
+    }
+
     private static void kLineDemo() throws Exception {
         DataFrame<Object> klineDf = EmQuoteApi
                 .getQuoteHistorySingle(true, SecurityBeanEm.createBond("小康转债"), "20220101", "20220607", "101", "1",
