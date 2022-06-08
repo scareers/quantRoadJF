@@ -5,6 +5,8 @@ import cn.hutool.core.date.DateRange;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.pandasdummy.DataFrameS;
@@ -21,7 +23,6 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.StandardXYBarPainter;
 import org.jfree.chart.renderer.xy.XYBarRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.title.Title;
 import org.jfree.data.time.Day;
@@ -81,6 +82,23 @@ public class EmChartKLine {
     public static void main(String[] args) {
         SecurityBeanEm beanEm = SecurityBeanEm.createBond("小康转债");
         DynamicEmKLineChartForRevise dynamicKlineChart = new DynamicEmKLineChartForRevise(beanEm, "2022-06-07", 100);
+
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    ThreadUtil.sleep(1000);
+                    dynamicKlineChart.updateTodayKline(
+                            516.0,
+                            RandomUtil.randomDouble(590, 650),
+                            RandomUtil.randomDouble(480, 515),
+                            RandomUtil.randomDouble(520, 580),
+                            RandomUtil.randomDouble(17789525504.0 / 1.5, 17789525504.0 * 2)
+
+                    );
+                }
+            }
+        }, true);
         dynamicKlineChart.showSimple();
     }
 
@@ -133,6 +151,7 @@ public class EmChartKLine {
             String yesterday = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, 1); // 获取昨日前的
             klineDfBeforeToday = EmQuoteApi
                     .getQuoteHistorySingle(true, beanEm, dateStart, yesterday, "101", "1", 1, 4000);
+            Console.log(klineDfBeforeToday);
             // todo: df访问失败null处理
 
             // 初始化6项数据, 历史;
@@ -174,11 +193,11 @@ public class EmChartKLine {
          * @param close
          * @param amount
          */
-        public void updateWith(Double openTodayCurrent,
-                               Double highTodayCurrent,
-                               Double lowTodayCurrent,
-                               Double closeTodayCurrent,
-                               Double amountTodayCurrent) {
+        public void updateTodayKline(Double openTodayCurrent,
+                                     Double highTodayCurrent,
+                                     Double lowTodayCurrent,
+                                     Double closeTodayCurrent,
+                                     Double amountTodayCurrent) {
             // 1.数据列表, 更新最后一个数据, 为给定今日最新数据
             allOpen.set(allOpen.size() - 1, openTodayCurrent);
             allHigh.set(allHigh.size() - 1, highTodayCurrent);
@@ -188,10 +207,20 @@ public class EmChartKLine {
 
             // 2.刷新 价格和成交量 最大值
             updatePriceLowAndHigh();
-            updateAmountMax();
+            // updateAmountMax(); // 成交额已经采用自动设置range
             // 3.更新两y轴的 range!
+            flushY1AxisRange();
+            flushY2AxisRange();
 
+            // 4. 更新5项数据, 到对应的序列, 最后一个值!!
+            Day todayTick = new Day(allDateTime.get(allDateTime.size() - 1));
+            seriesOfFourPrice.remove(seriesOfFourPrice.getItemCount() - 1); // 先删除后增加!
+            seriesOfFourPrice.add(todayTick, openTodayCurrent,
+                    highTodayCurrent,
+                    lowTodayCurrent, closeTodayCurrent);
 
+            // 5.更新今日成交额
+            seriesOfVol.addOrUpdate(todayTick, amountTodayCurrent);
         }
 
         public void showSimple() {
@@ -227,6 +256,8 @@ public class EmChartKLine {
         XYPlot plot2;
         CombinedDomainXYPlot combineddomainxyplot;
 
+        Double stdPrice;
+
         // 价格上下限, 依然随着filter而可能改变, 带默认值 ,init中会初始化
         double priceLow;
         double priceHigh;
@@ -234,12 +265,12 @@ public class EmChartKLine {
 
         private void initChart() {
             // 1.以第一个close为基准, 其他值转换为百分比
-            Double stdPrice = allClose.get(0);
+            stdPrice = allClose.get(0);
 
             // 2.最高最低价格, 限制y range
             updatePriceLowAndHigh();
             // 3.最高成交额也更新
-            updateAmountMax();
+            // updateAmountMax(); // --> 已经采用自动设置range
             // 4.价格序列填充数据
             initPriceSeries();
             // 5.成交量序列
@@ -250,9 +281,9 @@ public class EmChartKLine {
             initXAxisOfDate();
             // 9. k线Y轴 价格轴; 左右两边tick, 左价格, 右百分比
             // 9.1.左价格轴
-            initY1AxisOfPrice(stdPrice);
+            initY1AxisOfPrice();
             // 9.2. 右百分比轴
-            initY2AsisOfPercent(stdPrice);
+            initY2AxisOfPercent();
             // 10. 图表1实例化 -- k线图
             initPlot1();
 
@@ -294,8 +325,8 @@ public class EmChartKLine {
 
         private void initYAxisOfAmount() {
             y3AxisOfAmount = new NumberAxis();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-            y3AxisOfAmount.setAutoRange(false);
-            y3AxisOfAmount.setRange(0, amountMax * 1.05); // 从0开始显示
+            y3AxisOfAmount.setAutoRange(true);     // @key: 也自动改变range, 就不手动设置了, 降低复杂性
+            // y3AxisOfAmount.setRange(0, amountMax * 1.05); // 从0开始显示
             y3AxisOfAmount.setTickUnit(new NumberTickUnit((amountMax * 1.05) / 5)); // 单位, 需要与范围匹配
             y3AxisOfAmount.setTickLabelPaint(Color.red);
             y3AxisOfAmount.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
@@ -335,43 +366,54 @@ public class EmChartKLine {
             plot1.setRangeAxis(1, y2Axis); // 左右两个tick
         }
 
-        private void initY2AsisOfPercent(Double stdPrice) {
-            double t;
-            double t1;
-            double range;
+        private void initY2AxisOfPercent() {
             y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
             y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
             y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            y2Axis.setTickLabelPaint(Color.red);
+            DecimalFormat df2 = new DecimalFormat("##0.00%");
+            df2.setRoundingMode(RoundingMode.FLOOR);
+            y2Axis.setNumberFormatOverride(df2);
+
+            flushY2AxisRange();
+        }
+
+        private void flushY2AxisRange() {
+            double t;
+            double t1;
+            double range;
             t = (priceLow - stdPrice) / stdPrice;
             t1 = (priceHigh - stdPrice) / stdPrice;
             t = Math.abs(t);
             t1 = Math.abs(t1);
             range = t1 > t ? t1 : t;
             y2Axis.setRange(-range, range);//设置y轴数据范围
-            y2Axis.setTickLabelPaint(Color.red);
-            DecimalFormat df2 = new DecimalFormat("##0.00%");
-            df2.setRoundingMode(RoundingMode.FLOOR);
-            y2Axis.setNumberFormatOverride(df2);
             NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
             y2Axis.setTickUnit(numberTickUnit2);
         }
 
-        private void initY1AxisOfPrice(Double stdPrice) {
+        DecimalFormat df1 = new DecimalFormat("#0.00");
+
+        private void initY1AxisOfPrice() {
             y1Axis = new NumberAxisYSupportTickToPreClose();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
             y1Axis.setAutoRange(false);//设置不采用自动设置数据范围
             y1Axis.setLabel(String.valueOf(stdPrice));
             y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            y1Axis.setNumberFormatOverride(df1);
+            y1Axis.centerRange(stdPrice);
+
+            flushY1AxisRange();
+        }
+
+        private void flushY1AxisRange() {
             double t = stdPrice - priceLow;
             double t1 = priceHigh - stdPrice;
             t = Math.abs(t);
             t1 = Math.abs(t1);
             double range = t1 > t ? t1 : t;//计算涨跌最大幅度
-            DecimalFormat df1 = new DecimalFormat("#0.00");
             df1.setRoundingMode(RoundingMode.FLOOR);
             y1Axis.setRange(Double.valueOf(df1.format(stdPrice - range)),
                     Double.valueOf(df1.format(stdPrice + range)));//设置y轴数据范围
-            y1Axis.setNumberFormatOverride(df1);
-            y1Axis.centerRange(stdPrice);
             NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
             y1Axis.setTickUnit(numberTickUnit);
         }

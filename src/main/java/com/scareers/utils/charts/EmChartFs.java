@@ -148,6 +148,7 @@ public class EmChartFs {
      * 2.且需要提供分时成交数据, 以便模拟实盘的动态变化!
      * 3.将chart绘制逻辑实现为单个方法, 相关组件对象 保存为 属性! 以便动态修改
      * 4.数据从数据库获得!
+     * 5.@noti: 成交量的y轴, 自动设置的 range; 无需计算
      */
     @Data
     @NoArgsConstructor
