@@ -184,6 +184,54 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
+     * //@key: 重要方法, 给定完整的 fs成交Df, 给定两个常态时间tick字符串, 返回 介于两个tick之间的部分df,
+     * 新建的df对象; 且两个tick都可能包括(如果恰好有数据的话)!
+     *
+     * @param fsTransDfFull
+     * @param startTick
+     * @param endTick
+     * @return
+     */
+    public static DataFrame<Object> getEffectDfByTickRange(DataFrame<Object> fsTransDfFull, String startTick,
+                                                           String endTick) {
+        if (fsTransDfFull == null) {
+            return null;
+        }
+        // @update: 需要>=9:30:00, 否则竞价的全部进去了, 不合事实
+        int shouldStartIndex = -1;
+        for (int i = 0; i < fsTransDfFull.length(); i++) {
+            String timeTick1 = fsTransDfFull.get(i, "time_tick").toString();
+            if (timeTick1.compareTo(startTick) > 0) {
+                break; // 不要>=, 本索引包含, 将包含 09:30:00 这个tick;
+            } else {
+                shouldStartIndex = i; // 本质上, 会包含 <=9:30:00 的第一个tick, 符合事实!
+            }
+        }
+        if (shouldStartIndex == -1) {
+            return null;
+        }
+
+        // 3. 筛选有效分时成交! time_tick 列
+        int shouldIndex = -1;
+        for (int i = 0; i < fsTransDfFull.length(); i++) {
+            String timeTick1 = fsTransDfFull.get(i, "time_tick").toString();
+            if (timeTick1.compareTo(endTick) <= 0) {
+                shouldIndex = i; // 找到截断索引
+            } else {
+                break;
+            }
+        }
+        if (shouldIndex == -1) {
+            return null; // 筛选不到
+        }
+        if (shouldStartIndex > shouldIndex) { // 例如时间< 9:30时, 将会
+            return null;
+        }
+        return DataFrameS.copy(fsTransDfFull
+                .slice(shouldStartIndex, Math.min(shouldIndex + 1, fsTransDfFull.length())));
+    }
+
+    /**
      * 复盘期间, 给定转债列表, 给定 日期和时间, 生成 转债"实时"数据截面列表df, 被table展示
      * 模拟实盘下, 点击全债券列表的展示页面, 对整个市场有个宏观展示
      * 当前仅展示 涨幅(很好计算) 和 当前总成交额(需要分时成交求和, 计算量稍大)
@@ -208,54 +256,16 @@ public class BondGlobalSimulationPanel extends JPanel {
                 continue;
             }
 
-            // @update: 需要>=9:30:00, 否则竞价的全部进去了, 不合事实
-            int shouldStartIndex = -1;
-            for (int i = 0; i < fsTransDf.length(); i++) {
-                String timeTick1 = fsTransDf.get(i, "time_tick").toString();
-                if (timeTick1.compareTo("09:29:30") > 0) {
-                    break; // 不要>=, 本索引包含, 将包含 09:30:00 这个tick;
-                } else {
-                    shouldStartIndex = i; // 本质上, 会包含 <=9:30:00 的第一个tick, 符合事实!
-                }
-            }
-            if (shouldStartIndex == -1) {
-                continue; // 筛选不到
-            }
-
-            // 3. 筛选有效分时成交! time_tick 列
-            int shouldIndex = -1;
-            for (int i = 0; i < fsTransDf.length(); i++) {
-                String timeTick1 = fsTransDf.get(i, "time_tick").toString();
-                if (timeTick1.compareTo(timeTick) <= 0) {
-                    shouldIndex = i; // 找到截断索引
-                } else {
-                    break;
-                }
-            }
-            if (shouldIndex == -1) {
-                continue; // 筛选不到
-            }
-            if (shouldStartIndex > shouldIndex) { // 例如时间< 9:30时, 将会
+            DataFrame<Object> effectDf = getEffectDfByTickRange(fsTransDf, "09:29:59", timeTick);
+            if (effectDf == null || effectDf.length() == 0) {
                 continue;
             }
-            DataFrame<Object> effectDf = fsTransDf
-                    .slice(shouldStartIndex, Math.min(shouldIndex + 1, fsTransDf.length()));
-            effectDf = effectDf.resetIndex();
-
-
             // 4.涨跌幅很好计算
             Double newestPrice = Double.valueOf(effectDf.get(effectDf.length() - 1, "price").toString());
             chgPctRealTime.put(bondBean, newestPrice / preClose - 1);
 
             // 5.总计成交额, 需要强行计算! price 和 vol 列, vol手数 需要转换为 张数, *10
-            int volRate = bondBean.isBond() ? 10 : 100;
-            List<Double> tickAmountList = new ArrayList<>();
-            for (int i = 0; i < effectDf.length(); i++) {
-                Object price = effectDf.get(i, "price");
-                Object vol = effectDf.get(i, "vol");
-                tickAmountList.add(Double.parseDouble(price.toString()) * Double.parseDouble(vol.toString()) * volRate);
-            }
-            amountRealTime.put(bondBean, CommonUtil.sumOfListNumberUseLoop(tickAmountList));
+            amountRealTime.put(bondBean, getAmountOfEffectDf(bondBean, effectDf));
         }
 
         // 1.构建结果df! 列简单: 代码,名称, 涨跌幅, 当前总成交额!
@@ -272,6 +282,46 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 2. 无需排序, 自行使用 JXTable 的排序功能! 但转换为数字排序, 是需要重新一下排序逻辑的, 默认按照字符串排序
         //Console.log(res.toString(10));
         return res;
+    }
+
+    /*
+    对分时成交df, 的筛选, 然后求 最新价, 最高,最低, 总成交额 的简单方法
+     */
+
+    /**
+     * 求筛选出的部分分时成交df, 的总计成交量
+     *
+     * @param bondBean
+     * @param effectDf
+     * @return
+     */
+    public static Double getAmountOfEffectDf(SecurityBeanEm bondBean, DataFrame<Object> effectDf) {
+        int volRate = bondBean.isBond() ? 10 : 100;
+        List<Double> tickAmountList = new ArrayList<>();
+        for (int i = 0; i < effectDf.length(); i++) {
+            Object price = effectDf.get(i, "price");
+            Object vol = effectDf.get(i, "vol");
+            tickAmountList.add(Double.parseDouble(price.toString()) * Double.parseDouble(vol.toString()) * volRate);
+        }
+        return CommonUtil.sumOfListNumberUseLoop(tickAmountList);
+    }
+
+    /**
+     * 求筛选出的部分分时成交df, 的 阶段性最大价格
+     *
+     * @param effectDf
+     * @return
+     */
+    public static Double getHighOfEffectDf(DataFrame<Object> effectDf) {
+        return CommonUtil.maxOfListDouble(DataFrameS.getColAsDoubleList(effectDf, "price"));
+    }
+
+    public static Double getLowOfEffectDf(DataFrame<Object> effectDf) {
+        return CommonUtil.minOfListDouble(DataFrameS.getColAsDoubleList(effectDf, "price"));
+    }
+
+    public static Double getCloseOfEffectDf(DataFrame<Object> effectDf) {
+        return Double.valueOf(effectDf.get(effectDf.length() - 1, "price").toString());
     }
 
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
@@ -703,12 +753,30 @@ public class BondGlobalSimulationPanel extends JPanel {
         poolExecutorForKLineUpdate.submit(new Runnable() {
             @Override
             public void run() {
-                DataFrame<Object> todayFs1MDfV2 = dynamicChart.getFsDfV2Df();
-
-                dailyKLineDisplayPanel.getDynamicKLineChart().updateTodayKline();
+                try {
+                    DataFrame<Object> todayFs1MDfV2 = dynamicChart.getFsDfV2Df();
+                    Double open = Double.valueOf(todayFs1MDfV2.get(0, "open").toString()); // 实时读取今日开盘价
+                    // 今日目前最高, 最低, 收盘, 都需要筛选分时成交df, 以便获取!
+                    DataFrame<Object> fsTransDf = dynamicChart.getFsTransDf();
+                    String currentTick = "09:30:00";
+                    if (labelOfRealTimeSimulationTime != null) {
+                        currentTick = labelOfRealTimeSimulationTime.getText();
+                    }
+                    DataFrame<Object> effectDf = getEffectDfByTickRange(fsTransDf, "09:29:59", currentTick);
+                    Double amount = getAmountOfEffectDf(selectedBean, effectDf);
+                    Double close = getCloseOfEffectDf(effectDf);
+                    Double high = getHighOfEffectDf(effectDf);
+                    Double low = getLowOfEffectDf(effectDf);
+                    dailyKLineDisplayPanel.getDynamicKLineChart().updateTodayKline(open, high, low, close, amount);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                    CommonUtil.notifyError(
+                            "刷新今日单条K线失败! 当前转债: " + (selectedBean != null ? selectedBean.getName() : "null"));
+                }
             }
         });
     }
+
 
     public String getReviseDateStrSettingYMD() { // 复盘日期设定 -- 年月日
         try {
@@ -1076,7 +1144,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStrSettingYMD());
+                    EastMoneyDbApi.loadFs1MAndFsTransAndKLineDataToCache(bondList, getReviseDateStrSettingYMD());
                 }
             }, true);
         }

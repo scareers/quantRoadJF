@@ -10,14 +10,13 @@ import com.scareers.annotations.Cached;
 import com.scareers.annotations.TimeoutCache;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.datasource.selfdb.ConnectionFactory;
-import com.scareers.gui.ths.simulation.rabbitmq.ProducerSimple;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
 import lombok.SneakyThrows;
-import org.checkerframework.checker.units.qual.C;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -25,6 +24,7 @@ import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel.kLineAmountHope;
 import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildBeanListFromDfWithId;
 
 /**
@@ -89,7 +89,7 @@ public class EastMoneyDbApi {
 //        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
 //        Console.log(timer.intervalRestart());
 
-        loadFs1MAndFsTransDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
+        loadFs1MAndFsTransAndKLineDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
                 "2022-06-02");
     }
 
@@ -529,7 +529,7 @@ public class EastMoneyDbApi {
      */
     public static volatile boolean loading = false; // 专门适配的flag ; 类似加锁执行效果, 且多线程不阻塞
 
-    public static void loadFs1MAndFsTransDataToCache(List<SecurityBeanEm> beanList, String dateStr) {
+    public static void loadFs1MAndFsTransAndKLineDataToCache(List<SecurityBeanEm> beanList, String dateStr) {
         if (loading) {
             CommonUtil.notifyCommon("分时数据载入缓存: 正在载入中, 不可重复载入");
             return; // 正在载入
@@ -617,6 +617,14 @@ public class EastMoneyDbApi {
                     }
                 }
             }
+
+            // @update: 还要使用东财api,  从网络而非数据库访问历史k线!!
+            String dateStart = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, kLineAmountHope);
+            String yesterday = EastMoneyDbApi.getPreNTradeDateStrict(dateStr, 1); // 获取昨日前的
+            EmQuoteApi.getQuoteHistoryBatch(beanList, dateStart, yesterday, "101", "1", 1, 4000, true);
+            // @noti: 调用参数同 k线动态图表的构造器里面的调用方式, 以免参数不同缓存读不到
+//            klineDfBeforeToday = EmQuoteApi
+//                    .getQuoteHistorySingle(true, beanEm, dateStart, yesterday, "101", "1", 1, 4000);
 
         } catch (Exception e) {
             e.printStackTrace();

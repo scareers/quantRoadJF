@@ -667,7 +667,7 @@ public class BondBuyNotify {
                                     .collect(Collectors.toList());
                             try {
                                 List<SecurityBeanEm> bondList = SecurityBeanEm.createBondList(collect, false);
-                                EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStr());
+                                EastMoneyDbApi.loadFs1MAndFsTransAndKLineDataToCache(bondList, getReviseDateStr());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
