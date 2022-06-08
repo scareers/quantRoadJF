@@ -168,6 +168,21 @@ public class BondGlobalSimulationPanel extends JPanel {
             if (fsTransDf == null) {
                 continue;
             }
+
+            // @update: 需要>=9:30:00, 否则竞价的全部进去了, 不合事实
+            int shouldStartIndex = -1;
+            for (int i = 0; i < fsTransDf.size(); i++) {
+                String timeTick1 = fsTransDf.get(i, "time_tick").toString();
+                if (timeTick1.compareTo("09:29:30") > 0) {
+                    break; // 不要>=, 本索引包含, 将包含 09:30:00 这个tick;
+                } else {
+                    shouldStartIndex = i; // 本质上, 会包含 <=9:30:00 的第一个tick, 符合事实!
+                }
+            }
+            if (shouldStartIndex == -1) {
+                continue; // 筛选不到
+            }
+
             // 3. 筛选有效分时成交! time_tick 列
             int shouldIndex = -1;
             for (int i = 0; i < fsTransDf.size(); i++) {
@@ -182,7 +197,13 @@ public class BondGlobalSimulationPanel extends JPanel {
             if (shouldIndex == -1) {
                 continue; // 筛选不到
             }
-            DataFrame<Object> effectDf = fsTransDf.slice(0, Math.min(shouldIndex + 1, fsTransDf.length()));
+            if (shouldStartIndex > shouldIndex) { // 例如时间< 9:30时, 将会
+                continue;
+            }
+            DataFrame<Object> effectDf = fsTransDf
+                    .slice(shouldStartIndex, Math.min(shouldIndex + 1, fsTransDf.length()));
+            effectDf = effectDf.resetIndex();
+
 
             // 4.涨跌幅很好计算
             Double newestPrice = Double.valueOf(effectDf.get(effectDf.length() - 1, "price").toString());
@@ -211,6 +232,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 2. 无需排序, 自行使用 JXTable 的排序功能! 但转换为数字排序, 是需要重新一下排序逻辑的, 默认按照字符串排序
+        Console.log(res.toString(10));
         return res;
     }
 
