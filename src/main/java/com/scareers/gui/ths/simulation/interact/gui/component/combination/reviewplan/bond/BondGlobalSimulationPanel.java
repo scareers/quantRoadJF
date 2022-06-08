@@ -18,10 +18,8 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePic
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.JXFindBarS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
-import com.scareers.gui.ths.simulation.interact.gui.ui.renderer.SecurityEmListCellRendererS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
@@ -32,16 +30,18 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.jdesktop.swingx.JXList;
 import org.jdesktop.swingx.JXTable;
 import org.jfree.chart.ChartPanel;
 
+import javax.accessibility.AccessibleContext;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,8 +79,9 @@ public class BondGlobalSimulationPanel extends JPanel {
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
     public static final boolean bondListUseRealTimeWenCai = true;
     public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
+    public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额");
 
-    protected volatile Vector<SecurityBeanEm.SecurityEmPo> securityEmPos = new Vector<>(); // 转债列表对象
+    protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
     protected SecurityBeanEm selectedBean = null; // 被选中的转债 东财bean对象
     protected SecurityBeanEm preChangedSelectedBean = null; // 此前被选中,且更新过fs图对象, 当新的等于它时, 将不重新实例化动态图表对象
@@ -194,7 +195,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 1.构建结果df! 列简单: 代码,名称, 涨跌幅, 当前总成交额!
-        DataFrame<Object> res = new DataFrame<Object>(Arrays.asList("代码", "名称", "涨跌幅", "成交额"));
+        DataFrame<Object> res = new DataFrame<>(bondTableColNames);
         for (SecurityBeanEm beanEm : bondList) {
             List<Object> row = new ArrayList<>();
             row.add(beanEm.getSecCode());
@@ -695,14 +696,16 @@ public class BondGlobalSimulationPanel extends JPanel {
         initFunctionPanel();
 
         // 2.转债列表
-        jXTableForBonds = getSecurityEmJXTable(); // 已经实现自动读取并刷新 securityEmPos 属性
-        initJListWrappedJScrollPane(); // 列表被包裹
+        initSecurityEmJXTable(); // 已经实现自动读取并刷新 securityEmPos 属性
         flushBondListCare(); // 刷新一次列表, 该方法已经异步
 
         // 3.新panel包裹转债列表, 以及附带的查找框
         JPanel panelListContainer = new JPanel();
         panelListContainer.setLayout(new BorderLayout());
         jxFindBarS = new JXFindBarS(Color.red);
+        if (jXTableForBonds != null) {
+            jxFindBarS.setSearchable(jXTableForBonds.getSearchable());
+        }
         panelListContainer.add(jxFindBarS, BorderLayout.NORTH);
         panelListContainer.add(jScrollPaneForList, BorderLayout.CENTER);
 
@@ -968,17 +971,18 @@ public class BondGlobalSimulationPanel extends JPanel {
      * @param bondList
      */
     public void flushBondListAs(List<SecurityBeanEm> bondList) {
-        for (SecurityBeanEm beanEm : bondList) {
+        for (SecurityBeanEm beanEm : bondList) { // 智能查找map加入数据
             SmartFindDialog.findingMap.put(beanEm.getQuoteId(),
                     new SecurityBeanEm.SecurityEmPoForSmartFind(beanEm));
         }
-        securityEmPos = SecurityEmPo.fromBeanList(bondList); // 更新
+        if (bondList != null) {
+            this.bondBeanList = bondList; // 更新列表
+        }
         if (loadAllFsDataFromDbWhenFlushBondList) { // 设置项: 是否载入数据到缓存; 异步执行
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
                     EastMoneyDbApi.loadFs1MAndFsTransDataToCache(bondList, getReviseDateStrSettingYMD());
-
                 }
             }, true);
         }
@@ -1029,7 +1033,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     JScrollPane jScrollPaneForList;
 
-    private void initJListWrappedJScrollPane() {
+    private void initJTableWrappedJScrollPane() {
         jScrollPaneForList = new JScrollPane();
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -1040,70 +1044,269 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
+     * 转债 涨跌幅列, 的表格 render --> 主要是 text 显示改变
+     */
+    public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            if (isSelected) {
+                this.setBackground(new Color(64, 0, 128)); // 同花顺
+            }
+            // @key: 需要把视图的 row 转换为 模型里面真实的row, 得到真正的数据! 有 行列号, 转换为view/model中 4大方法
+            row = table.convertRowIndexToModel(row); // 在model中的真实 row
+            DefaultTableModel model = (DefaultTableModel) table.getModel();
+            double accordingValue = Double.parseDouble(model.getDataVector().get(row).get(2).toString()); // 涨跌幅数据!
+            if (accordingValue < 0.0) {
+                setForeground(Color.green); // 根据涨跌幅设置 文字颜色
+            } else if (accordingValue > 0.0) {
+                setForeground(Color.red);
+            } else {
+                setForeground(Color.white);
+            }
+            return this;
+        }
+    }
+
+    /**
+     * 涨跌幅列渲染器, 只能用在涨跌幅列; 将格式化 文字显示
+     */
+    public static class TableCellRendererForBondTableForChgPct extends TableCellRendererForBondTable {
+        public static DecimalFormat dfOfChgPct = new DecimalFormat("####0.00%");
+
+        @Override
+        public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
+            Double price = null;
+            try {
+                price = Double.valueOf(text);
+            } catch (NumberFormatException e) {
+                // 例如null, 可能转换失败, 很正常!
+            }
+            if (price != null) { // 转换为涨跌幅成功, 则格式化显示!
+                super.setText(dfOfChgPct.format(price));
+            } else {
+                super.setText(text);
+            }
+        }
+    }
+
+    /**
+     * 成交额列渲染器, 只能用在成交额列; 将把数字转换为 万/亿后缀显示!
+     */
+    public static class TableCellRendererForBondTableForAmountCurrent extends TableCellRendererForBondTable {
+        @Override
+        public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
+            Double amount = null;
+            try {
+                amount = Double.valueOf(text);
+            } catch (NumberFormatException e) {
+                // 例如null, 可能转换失败, 很正常!
+            }
+            if (amount != null) { // 转换为涨跌幅成功, 则格式化显示!
+                super.setText(CommonUtil.formatNumberWithSuitable(amount));
+            } else {
+                super.setText(text);
+            }
+        }
+    }
+
+    /**
+     * 设置表格各列的 cellRender
+     */
+    private void setTableColCellRenders() {
+        jXTableForBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable());
+        jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
+        jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForChgPct());
+        jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForAmountCurrent());
+    }
+
+    /**
      * 资产列表控件. 可重写
      *
      * @return
      */
-    private JXTable getSecurityEmJXTable() {
-        // securityEmPos --> 自行实现逻辑, 改变自身该属性; 则 列表将自动刷新
+    private void initSecurityEmJXTable() {
+        // 1.构造model
+        Vector<Vector<Object>> datas = new Vector<>(); // 空数据, 仅提供列信息
+        Vector<Object> cols = new Vector<>(bondTableColNames);
+        DefaultTableModel model = new DefaultTableModel(datas, cols) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // 不可编辑!
+            }
 
-        DefaultListModelS<SecurityBeanEm.SecurityEmPo> model = new DefaultListModelS<>();
-        model.flush(securityEmPos); // 刷新一次数据, 首次为空
+            @Override
+            public Class getColumnClass(int column) { // 返回列值得类型, 使得能够按照数据排序, 否则默认按照字符串排序
+                if (column == 0 || column == 1) { // 名称代码
+                    return String.class;
+                } else if (column == 2 || column == 3) { // 涨跌幅成交额
+                    return Double.class;
+                } else {
+                    return Object.class;
+                }
+            }
+        };
 
-        JXList jList = new JXList(model);
-        jList.setCellRenderer(new SecurityEmListCellRendererS()); // 设置render
-        jList.setForeground(COLOR_GRAY_COMMON);
+        // 2.实例化table, 设置model
+        jXTableForBonds = new JXTable();
+        jXTableForBonds.setSortOrder("涨跌幅", SortOrder.DESCENDING);
+        jXTableForBonds.setModel(model);
+        removeEnterKeyDefaultAction(jXTableForBonds); // 按下enter不下移, 默认行为
+        // 3.切换选择的回调绑定
+        jXTableForBonds.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                int row = jXTableForBonds.getSelectedRow();
+                String bondCode = null;
+                try {
+                    bondCode = model.getValueAt(row, 0).toString();
+                } catch (Exception ex) {
+                    return; // 行数底层实现有bug
+                }
+                try {
+                    SecurityBeanEm bond = SecurityBeanEm.createBond(bondCode);
+                    setSelectedBean(bond);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    CommonUtil.notifyError("表格切换选中行,回调函数执行失败");
+                }
+            }
+        });
+        fitTableColumns(jXTableForBonds);
+        if (jxFindBarS != null) { // 双边都有判定设置
+            jxFindBarS.setSearchable(this.jXTableForBonds.getSearchable());
+        }
+        initJTableStyle();
 
         // 持续刷新列表, 100 ms一次. securityEmPos 应该为持续变化
         ThreadUtil.execAsync(new Runnable() {
             @SneakyThrows
             @Override
             public void run() {
-                while (true) { // 每 100ms 刷新model
-                    model.flush(securityEmPos);
-
-                    if (jXTableForBonds != null) {
-                        jxFindBarS.setSearchable(jXTableForBonds.getSearchable());
-                    }
-                    Thread.sleep(10000);
+                while (true) { // 不断更新表格内容!
+                    DataFrame<Object> newDataDf = getReviseTimeBondListOverviewDataDf(
+                            bondBeanList, getReviseDateStrSettingYMD(),
+                            getReviseDateStrSettingHMS());
+                    fullFlushBondListTable(newDataDf);
+                    ThreadUtil.sleep(1000); // 每秒刷新!
                 }
             }
         }, true);
-
-        // 双击事件监听, 跳转到东方财富资产行情页面
-        jList.addMouseListener(new MouseAdapter() { // 双击打开东财url
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() != 2) { // 非双击
-                    return;
-                }
-                int index = jList.getSelectedIndex();
-                SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
-                openSecurityQuoteUrl(po);
-            }
-        });
-
-        jList.addListSelectionListener(new ListSelectionListener() {
-            private volatile int preIndex = -2; // 解决切换一次, 回调两次的问题; 记录preIndex, 相等则无视
-
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                int index = jList.getSelectedIndex(); // 选中切换
-                if (preIndex == index) {
-                    return;
-                }
-                preIndex = index; // 不相等
-                SecurityBeanEm.SecurityEmPo po = (SecurityEmPo) jList.getModel().getElementAt(index);
-                setSelectedBean(po.getBean());
-            }
-        });
-
-        jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
-        jList.setPreferredSize(new Dimension(jListWidth, 10000));
-        jList.setBackground(COLOR_THEME_MAIN);
-        jList.setBorder(null);
-        return jList;
     }
+
+    private void removeEnterKeyDefaultAction(JXTable jxTable) {
+        ActionMap am = jxTable.getActionMap();
+        am.getParent().remove("selectNextRowCell"); // 取消默认的: 按下回车键将移动到下一行
+        jxTable.setActionMap(am);
+    }
+
+
+    /**
+     * 设置转债列表表格样式
+     */
+    private void initJTableStyle() {
+        // 1.表头框颜色和背景色
+        jXTableForBonds.getTableHeader().setBackground(Color.BLACK);
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
+        cellRenderer.setBackground(COLOR_LIST_BK_EM);
+        cellRenderer.setForeground(Color.white);
+//        cellRenderer.setForeground(COLOR_LIST_HEADER_FORE_EM);
+        TableColumnModel columnModel = jXTableForBonds.getTableHeader().getColumnModel();
+        for (int i = 0; i < columnModel.getColumnCount(); i++) {
+            //i是表头的列
+            TableColumn column = jXTableForBonds.getTableHeader().getColumnModel().getColumn(i);
+            column.setHeaderRenderer(cellRenderer);
+            //表头文字居中
+            cellRenderer.setHorizontalAlignment(DefaultTableCellRenderer.CENTER);
+        }
+
+        // 2.表格自身文字颜色和背景色
+//        jXTableForBonds.setForeground(COLOR_LIST_FLAT_EM);
+        jXTableForBonds.setBackground(COLOR_LIST_BK_EM);
+
+//        // 3.名称列红色
+//        DefaultTableCellRenderer cellRendererOfTitle = new DefaultTableCellRenderer();
+//        cellRendererOfTitle.setForeground(COLOR_LIST_RAISE_EM);
+//        jXTableForBonds.getColumn("名称").setCellRenderer(cellRendererOfTitle);
+
+        // 4. 单行高 和字体
+        jXTableForBonds.setRowHeight(30);
+        jXTableForBonds.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+
+        // 5.单选,大小,无边框, 加放入滚动
+        jXTableForBonds.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+        jXTableForBonds.setPreferredSize(new Dimension(jListWidth, 10000));
+        jXTableForBonds.setBorder(null);
+        initJTableWrappedJScrollPane(); // 表格被包裹
+    }
+
+
+    /**
+     * 全量刷新逻辑
+     *
+     * @param fullDf
+     * @param model
+     */
+    protected void fullFlushBondListTable(DataFrame<Object> newestDf) {
+        DefaultTableModel model = (DefaultTableModel) jXTableForBonds.getModel();
+        Vector<Vector> oldDatas = model.getDataVector();
+        Vector<Vector> newDatas = new Vector<>();
+        for (int i = 0; i < newestDf.length(); i++) {
+            newDatas.add(new Vector<>(newestDf.row(i)));
+        }
+
+        // 将自动增减行, 若新数据行少, 则多的行不会显示, 但本身存在
+        model.setRowCount(newDatas.size());
+        for (int i = 0; i < Math.min(oldDatas.size(), newDatas.size()); i++) {
+            for (int j = 0; j < model.getColumnCount(); j++) {
+                Object o = newDatas.get(i).get(j);
+                if (o != null) {
+                    if (!o.equals(oldDatas.get(i).get(j))) {
+                        model.setValueAt(newDatas.get(i).get(j), i, j);
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * 表格列宽自适应
+     *
+     * @param myTable
+     */
+    protected void fitTableColumns(JTable myTable) {
+        JTableHeader header = myTable.getTableHeader();
+        int rowCount = myTable.getRowCount();
+
+        Enumeration columns = myTable.getColumnModel().getColumns();
+
+        int dummyIndex = 0;
+        while (columns.hasMoreElements()) {
+            TableColumn column = (TableColumn) columns.nextElement();
+            int col = header.getColumnModel().getColumnIndex(column.getIdentifier());
+            int width = (int) myTable.getTableHeader().getDefaultRenderer()
+                    .getTableCellRendererComponent(myTable, column.getIdentifier()
+                            , false, false, -1, col).getPreferredSize().getWidth();
+            for (int row = 0; row < rowCount; row++) {
+                int preferedWidth = (int) myTable.getCellRenderer(row, col).getTableCellRendererComponent(myTable,
+                        myTable.getValueAt(row, col), false, false, row, col).getPreferredSize().getWidth();
+                width = Math.max(width, preferedWidth);
+            }
+            header.setResizingColumn(column); // 此行很重要
+
+            int actualWidth = width + myTable.getIntercellSpacing().width + 2;
+            actualWidth = Math.min(700, actualWidth); // 单列最大宽度
+            column.setWidth(actualWidth); // 多5
+//            break; // 仅第一列日期. 其他的平均
+
+            if (dummyIndex > -1) {
+                column.setWidth(80); //  每行宽度
+            }
+            dummyIndex++;
+        }
+    }
+
 
     /**
      * 更新选中bean , 请调用方法, 同步设置pre的方式, 因控件事件触发, 而不合适, preSelectedBean的语义已经修改
