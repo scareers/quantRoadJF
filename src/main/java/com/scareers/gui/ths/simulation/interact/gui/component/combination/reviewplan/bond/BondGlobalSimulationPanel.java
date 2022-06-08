@@ -6,6 +6,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
@@ -590,49 +591,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                         revisePausing = false;
                         CommonUtil.notifyKey("复盘即将开始");
 
-                        TimeInterval timer = DateUtil.timer();
-                        timer.start(); // 自适应 代码执行时间损失, 自动调节修正sleep时间, 以逼近理论值!
-                        for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
-                            if (!reviseRunning) { // 被停止
-                                labelOfRealTimeSimulationTime.setText("00:00:00");
-                                reviseRunning = false; // 保证有效
-                                CommonUtil.notifyCommon("复盘已停止");
-                                break; // 被停止, 则立即停止循环!
-                            }
-
-                            if (revisePausing) { // 被暂停
-                                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
-                                revisePausing = true; // 保证有效
-                                CommonUtil.notifyCommon("复盘已暂停");
-                                break; // 被停止也终止循环, 等待重启!
-                            }
-                            // @update: 使用timer, 自动适应调整sleep毫秒数量, 以便符合设置的逻辑耗时!
-                            double reviseTimeRateSetting = getReviseTimeRateSetting(); // 当前倍率
-                            long shouldConsume = (long) (1000.0 / reviseTimeRateSetting); // 应当总消耗
-                            long actualSleep = shouldConsume - codeExecLossSleepFixSimulation; // 本次循环将实际sleep的
-
-
-                            String tick = allFsTransTimeTicks.get(i);
-                            labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
-                            dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
-                            flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
-
-                            ThreadUtil.sleep(actualSleep); // 实际sleep
-                            long actualConsume = timer.intervalRestart(); // 这是实际消耗的! 我的目标是 shouldConsume
-                            // @key: 修正静态属性设置!
-                            if (actualConsume > shouldConsume) {
-                                // 当实际消耗>应当消耗, 代表着实际sleep大了,我们应当减小, 因此需要增大 设置值;
-                                codeExecLossSleepFixSimulation =
-                                        codeExecLossSleepFixSimulation + (actualConsume - shouldConsume);
-                            } else if (actualConsume < shouldConsume) {
-                                // 当实际消耗<应当消耗, 代表实际sleep小了, 我们应当增大实际sleep, 应减小设置值, 等式后面为负数, 等式合理
-                                // @noti: 可见两个等式是一样的
-                                codeExecLossSleepFixSimulation =
-                                        codeExecLossSleepFixSimulation + (actualConsume - shouldConsume);
-                            }
-                            codeExecLossSleepFixSimulation = Math.max(0, codeExecLossSleepFixSimulation); // 至少为0
-                            codeExecLossSleepFixSimulation = Math.min(20, codeExecLossSleepFixSimulation); // 最多20
-                        }
+                        startReviseMainLoop(finalStartIndex);
                         reviseRunning = false; // 非运行状态
                     }
                 }, true);
@@ -724,50 +683,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             revisePausing = false; // 重设暂停flag
                             pauseRebootReviseButton.setText("暂停"); // 变换状态!
                             CommonUtil.notifyKey("复盘即将重启");
-                            TimeInterval timer = DateUtil.timer();
-                            timer.start();
-                            for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
-                                if (!reviseRunning) { // 被停止
-                                    labelOfRealTimeSimulationTime.setText("00:00:00");
-                                    reviseRunning = false; // 保证有效
-                                    CommonUtil.notifyCommon("复盘已停止");
-                                    break; // 被停止, 则立即停止循环!
-                                }
-
-                                if (revisePausing) { // 被暂停
-                                    // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
-                                    revisePausing = true; // 保证有效
-                                    CommonUtil.notifyCommon("复盘已暂停");
-                                    break; // 被停止也终止循环, 等待重启!
-                                }
-                                // @update: 使用timer, 自动适应调整sleep毫秒数量, 以便符合设置的逻辑耗时!
-                                double reviseTimeRateSetting = getReviseTimeRateSetting(); // 当前倍率
-                                long shouldConsume = (long) (1000.0 / reviseTimeRateSetting); // 应当总消耗
-                                long actualSleep = shouldConsume - codeExecLossSleepFixSimulation; // 本次循环将实际sleep的
-
-
-                                String tick = allFsTransTimeTicks.get(i);
-                                labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
-                                dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
-                                flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
-
-                                ThreadUtil.sleep(actualSleep); // 实际sleep
-                                long actualConsume = timer.intervalRestart(); // 这是实际消耗的! 我的目标是 shouldConsume
-                                // @key: 修正静态属性设置!
-                                if (actualConsume > shouldConsume) {
-                                    // 当实际消耗>应当消耗, 代表着实际sleep大了,我们应当减小, 因此需要增大 设置值;
-                                    codeExecLossSleepFixSimulation =
-                                            codeExecLossSleepFixSimulation + (actualConsume - shouldConsume);
-                                } else if (actualConsume < shouldConsume) {
-                                    // 当实际消耗<应当消耗, 代表实际sleep小了, 我们应当增大实际sleep, 应减小设置值, 等式后面为负数, 等式合理
-                                    // @noti: 可见两个等式是一样的
-                                    codeExecLossSleepFixSimulation =
-                                            codeExecLossSleepFixSimulation + (actualConsume - shouldConsume);
-                                }
-                                codeExecLossSleepFixSimulation = Math.max(0, codeExecLossSleepFixSimulation); // 至少为0
-                                codeExecLossSleepFixSimulation = Math.min(20, codeExecLossSleepFixSimulation); // 最多20
-
-                            }
+                            startReviseMainLoop(finalStartIndex);
                             reviseRunning = false; // 非运行状态
                         }
                     }, true);
@@ -791,6 +707,84 @@ public class BondGlobalSimulationPanel extends JPanel {
         buttonCollapsibleKLinePanel.setForeground(Color.red);
         functionContainerMain.add(buttonCollapsibleKLinePanel);
 
+    }
+
+    /**
+     * sleep衰减设置值队列, 求平均值, 去掉最大和最小
+     * 仅一次循环求3值, 尽量最快速度! 不调用常规api
+     *
+     * @param deque
+     * @return
+     */
+    public static long getTheAvgOfDequeExcludeMaxAndMin(ArrayDeque<Long> deque) {
+        if (deque.size() < 3) {
+            return deque.getLast();
+        }
+        long sum = 0;
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+        for (Long value : deque) {
+            sum = sum + value;
+            if (value < min) {
+                min = value;
+            }
+            if (value > max) {
+                max = value;
+            }
+        }
+        // 默认四舍五入
+        return NumberUtil.round((sum - min - max) * 1.0 / (deque.size() - 2), 0).longValue();
+    }
+
+
+    public void startReviseMainLoop(int finalStartIndex) {
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+        // 实现自动调整sleep时间衰减设置(主要解决非sleep代码执行耗时的问题);
+        // 因为倍率可能变化, 这里保留设置值的队列! 去最大和最小求平均; 而不保留耗时队列
+        ArrayDeque<Long> sleepReduceSettingValueDeque = new ArrayDeque<>(20);
+        sleepReduceSettingValueDeque.add(codeExecLossSleepFixSimulation);
+
+        for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
+            if (!reviseRunning) { // 被停止
+                labelOfRealTimeSimulationTime.setText("00:00:00");
+                reviseRunning = false; // 保证有效
+                CommonUtil.notifyCommon("复盘已停止");
+                break; // 被停止, 则立即停止循环!
+            }
+
+            if (revisePausing) { // 被暂停
+                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
+                revisePausing = true; // 保证有效
+                CommonUtil.notifyCommon("复盘已暂停");
+                break; // 被停止也终止循环, 等待重启!
+            }
+            // @update: 使用timer, 自动适应调整sleep毫秒数量, 以便符合设置的逻辑耗时!
+            double reviseTimeRateSetting = getReviseTimeRateSetting(); // 当前倍率
+            long shouldConsume = (long) (1000.0 / reviseTimeRateSetting); // 应当总消耗
+            long tempSettingValue = getTheAvgOfDequeExcludeMaxAndMin(sleepReduceSettingValueDeque);
+            long actualSleep = shouldConsume - tempSettingValue; // 本次循环将实际sleep的
+
+            String tick = allFsTransTimeTicks.get(i);
+            labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
+            dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
+            flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
+
+            ThreadUtil.sleep(actualSleep); // 实际执行sleep
+
+            long actualConsume = timer.intervalRestart(); // 这是实际消耗的! 我的目标是 shouldConsume
+            // @key: 调整理论应当sleep的值, 无论应当增大还是减少,该等式成立 !!! 之后加入队列, 进入下一次计算权重
+            tempSettingValue = tempSettingValue + (actualConsume - shouldConsume);
+            if (tempSettingValue < -5) { // 强制修正值为 -5 到 30
+                tempSettingValue = -5;
+            }
+            if (tempSettingValue > 30) {
+                tempSettingValue = 30;
+            }
+            sleepReduceSettingValueDeque.add(tempSettingValue); // 添加新值, 下次将其加入权重计算新的设置值
+
+            // Console.log(actualConsume);
+        }
     }
 
     public void flushKlineWhenBondNotChangeAsync() {
