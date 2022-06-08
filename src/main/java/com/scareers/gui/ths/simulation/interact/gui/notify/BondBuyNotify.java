@@ -278,7 +278,8 @@ public class BondBuyNotify {
                     if (isReviseEnvironment()) {
                         if (BondGlobalSimulationPanel.getInstance() != null) {
                             if (!BondGlobalSimulationPanel.getInstance().isReviseRunning()) {
-                                ThreadUtil.sleep(100);
+                                messageQueue.clear(); // 清除所有积累消息
+                                ThreadUtil.sleep(10);
                                 continue; // 复盘环境下, 如果非running状态, 睡眠返回, 不读取消息播报!
                             }
                         }
@@ -294,7 +295,7 @@ public class BondBuyNotify {
                     if (message != null) {
                         if (!message.isExpired(getCurrentMills())) { // 消息未过期;
                             notifyInfoCommon(message.getInfoLong());
-                            Tts.playSound(message.getInfoShort(), true);
+                            Tts.playSound(message.getInfoShort(), false); // 纺织堆积!
                         } else { // 已过期消息, 将仅仅 醒目log一下
                             notifyInfoError("过期消息: " + message.getInfoLong());
                         }

@@ -9,10 +9,11 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPo;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsFsDisplayPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsKLineDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
@@ -30,14 +31,12 @@ import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
-import org.jdesktop.swingx.decorator.Highlighter;
-import org.jdesktop.swingx.decorator.HighlighterFactory;
 import org.jdesktop.swingx.decorator.PatternPredicate;
 import org.jfree.chart.ChartPanel;
 
-import javax.accessibility.AccessibleContext;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -46,13 +45,12 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -85,6 +83,9 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final boolean bondListUseRealTimeWenCai = true;
     public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
     public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额");
+    // 主循环sleep1秒, 因为代码执行耗时, 实际是1.0xx秒, 为了更加接近实盘, 稍微减少sleep时间, 此倍率应当 <1, 但不宜过小,
+    // 电脑配置越高, 应当越接近1
+    public static final double codeExecLossRateWhenSimulation = 0.95;
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -115,9 +116,19 @@ public class BondGlobalSimulationPanel extends JPanel {
         buildLeftPanel();
         this.add(panelLeft, BorderLayout.WEST); // 左
 
+        // @update: 使用折叠面板, 放k线图, 放在分时的上方! 新增临时面板
         // 2. 右panel
+        initKlineDisplayPanel();
         buildMainPanel();
-        this.add(panelMainForRevise, BorderLayout.CENTER); // 中
+        buttonCollapsibleKLinePanel // 按钮绑定折叠
+                .setAction(klineCollapsiblePane.getActionMap().get(JXCollapsiblePane.TOGGLE_ACTION));
+        buttonCollapsibleKLinePanel.setText("折叠k线");
+
+        JPanel panelTemp = new JPanel(); // 总容器, 上为新增k线折叠面板, 下为原分时图主面板
+        panelTemp.setLayout(new BorderLayout());
+        panelTemp.add(klineCollapsiblePane, BorderLayout.NORTH); // 可折叠展示k线, 放在南边
+        panelTemp.add(panelMainForRevise, BorderLayout.CENTER);
+        this.add(panelTemp, BorderLayout.CENTER); // 中
 
         // 3.主 展示窗口 添加尺寸改变监听. 改变 jList 和 orderContent尺寸.
         this.mainDisplayWindow.addComponentListener(new ComponentAdapter() {
@@ -142,6 +153,44 @@ public class BondGlobalSimulationPanel extends JPanel {
         }, true);
 
 
+    }
+
+    protected JXCollapsiblePane klineCollapsiblePane; // k线图折叠面板对象
+    protected JPanel klineDisplayContainerPanel; // k线图容器
+    ThsFsDisplayPanel fsDisplayPanel; // 分时图
+    ThsKLineDisplayPanel dailyKLineDisplayPanel; // 日k线
+    ThsKLineDisplayPanel weeklyKLineDisplayPanel; // 周k线
+    ThsKLineDisplayPanel monthlyKLineDisplayPanel; // 月k线
+
+    private void initKlineDisplayPanel() {
+//        // 包装一下, 将按钮放于表格上方
+//        JPanel panelTemp = new JPanel();
+//        panelTemp.setLayout(new BorderLayout());
+//        panelTemp.add(klineCollapsiblePane, BorderLayout.SOUTH); // 可折叠展示k线, 放在南边
+
+
+        klineCollapsiblePane = new JXCollapsiblePane();
+        klineCollapsiblePane.setAnimated(true);
+        klineCollapsiblePane.setLayout(new BorderLayout());
+
+        klineDisplayContainerPanel = new JPanel();
+        klineDisplayContainerPanel.setLayout(new GridLayout(1, 4, -1, -1)); // 4份 k线
+        // 4大k线
+        fsDisplayPanel = new ThsFsDisplayPanel();
+        fsDisplayPanel.setPreferredSize(new Dimension(300, 300));
+        dailyKLineDisplayPanel = new ThsKLineDisplayPanel();
+        weeklyKLineDisplayPanel = new ThsKLineDisplayPanel();
+        monthlyKLineDisplayPanel = new ThsKLineDisplayPanel();
+
+
+        klineDisplayContainerPanel.add(fsDisplayPanel);
+        klineDisplayContainerPanel.add(dailyKLineDisplayPanel);
+        klineDisplayContainerPanel.add(weeklyKLineDisplayPanel);
+        klineDisplayContainerPanel.add(monthlyKLineDisplayPanel);
+
+        klineCollapsiblePane.add("Center", klineDisplayContainerPanel);
+        klineCollapsiblePane.setAnimated(true);
+        klineCollapsiblePane.setCollapsed(false); // 默认展开
     }
 
     /**
@@ -380,7 +429,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton startReviseButton; // 开始按钮
     FuncButton stopReviseButton; // 停止按钮
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
-
+    FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
 
     /**
      * 主功能区组件添加, 添加到 functionContainerMain, 该panel为左浮动布局
@@ -514,7 +563,9 @@ public class BondGlobalSimulationPanel extends JPanel {
                             labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                             dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
 
-                            ThreadUtil.sleep((long) (1000 / getReviseTimeRateSetting())); // 因为循环是1s的;
+                            ThreadUtil
+                                    .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
+                            // * 0.95, 是因为程序执行代码耗时损失, 如果sleep1秒, 实际感受是 1.xx秒,因为代码执行耗时;
                         }
                         reviseRunning = false; // 非运行状态
                     }
@@ -626,7 +677,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
                                 dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
 
-                                ThreadUtil.sleep((long) (1000 / getReviseTimeRateSetting())); // 因为循环是1s的;
+                                ThreadUtil
+                                        .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
                             }
                             reviseRunning = false; // 非运行状态
                         }
@@ -644,6 +696,12 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionContainerMain.add(stopReviseButton);
         functionContainerMain.add(pauseRebootReviseButton);
 
+
+        // @update: 折叠面板 按钮关闭
+        buttonCollapsibleKLinePanel = ButtonFactory.getButton("折叠k线");
+        buttonCollapsibleKLinePanel.setText("资讯面总结");
+        buttonCollapsibleKLinePanel.setForeground(Color.red);
+        functionContainerMain.add(buttonCollapsibleKLinePanel);
 
     }
 
