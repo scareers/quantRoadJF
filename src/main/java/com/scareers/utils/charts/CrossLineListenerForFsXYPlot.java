@@ -110,6 +110,8 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         markerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
     }
 
+    private volatile int preXIndex = -1; // 假设的前1 x的索引位置, 索引位置变了, 才调用回调
+
     @Override
     public void chartMouseMoved(ChartMouseEvent event) {
         // 1.只监听 CombinedDomainXYPlot/XYPlot 上的鼠标移动, 其他类型无视;
@@ -168,7 +170,10 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
 //            markerX.setValue(DateUtil.offsetSecond(dateTime, 0).getTime());
             markerX.setValue(dateTime.getTime());
             markerX.setLabel(DateUtil.format(dateTime, "HH:mm"));
-            reportXIndex(index);
+            if (index != preXIndex) {
+                reportXIndex(index);
+                preXIndex = index;
+            }
             // 更新markerX
             pricePlot.removeDomainMarker(markerX);
             volPlot.removeDomainMarker(markerX);

@@ -47,7 +47,7 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
     protected ValueMarkerS markerYForPricePlot; // 横线可能两个. 只显示1个
     protected ValueMarkerS markerYForVolPlot;
 
-    CrossLineXIndexChangeCallback xIndexChangeCallback=null;
+    CrossLineXIndexChangeCallback xIndexChangeCallback = null;
 
     List<DateTime> timeTicks;
     int xAmount;
@@ -111,6 +111,8 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
         markerX.setLabelTextAnchor(TextAnchor.TOP_LEFT);
     }
 
+    private volatile int preXIndex = -1; // 假设的前1 x的索引位置, 索引位置变了, 才调用回调
+
     @Override
     public void chartMouseMoved(ChartMouseEvent event) {
         // 1.只监听 CombinedDomainXYPlot/XYPlot 上的鼠标移动, 其他类型无视;
@@ -163,7 +165,10 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
             // @key3: 因为k线画法, x时间的图画在x后; 这里我们加12小时, 刚好在每个k线图中间; 否则在k线开始
             markerX.setValue(DateUtil.offsetHour(dateTime, 12).getTime());
             markerX.setLabel(DateUtil.format(dateTime, "MM-dd"));
-            reportXIndex(index);
+            if (index != preXIndex) {
+                reportXIndex(index);
+                preXIndex = index;
+            }
             // 更新markerX
             pricePlot.removeDomainMarker(markerX);
             volPlot.removeDomainMarker(markerX);
