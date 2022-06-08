@@ -61,7 +61,7 @@ public class EmQuoteApi {
     public static final List<String> fSTransactionCols = Arrays.asList("sec_code", "market", "time_tick", "price",
             "vol", "bs"); // 分时成交数据列名称
 
-    public static Cache<String, DataFrame<Object>> quoteHistorySingleCache = CacheUtil.newLRUCache(1024,
+    public static Cache<String, DataFrame<Object>> quoteHistorySingleCache = CacheUtil.newLRUCache(2048,
             4 * 3600 * 1000); // 历史k线,分时图等
     public static Cache<String, List<Double>> stockPriceLimitCache = CacheUtil.newLRUCache(1024,
             3600 * 1000); // 个股今日涨跌停
