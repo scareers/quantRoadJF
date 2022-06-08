@@ -18,7 +18,7 @@ import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYP
 
 /**
  * description: 使用东财数据的 K线显示面板
- * 核心为多参数 update() 方法; 本质上, 需要提供 昨日及之前的 k线数据, 以及 "今日当前" 的 4项数据 !!
+ * 核心为多参数 update() 方法; 本质上, 需要提供 昨日及之前的 k线数据, 以及 "今日当前" 的 4项数据 !! 先更新过去完整数据, 再更新今日数据
  * update()方法需要更新 df, preClose,title
  *
  * @author: admin
