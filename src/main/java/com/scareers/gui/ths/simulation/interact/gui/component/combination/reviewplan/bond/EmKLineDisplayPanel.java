@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForKLineXYPlot;
@@ -10,7 +11,6 @@ import lombok.Data;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
@@ -26,7 +26,12 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
 @Data
 public class EmKLineDisplayPanel extends DisplayPanel {
     public static final int preferHeight = 300;
-    public static final int infoPanelWidth = 50; // 信息显示panel宽度
+    public static final int infoPanelWidth = 80; // 信息显示panel宽度
+    public static final Color infoLabelColor = new Color(192, 192, 192); // 文字颜色, 偏灰白, 同 同花顺
+    public static final Color upColor = new Color(255, 50, 50); // 上升红色
+    public static final Color downColor = new Color(0, 230, 0); // 下跌绿色
+    public static final Color commonColor = new Color(2, 226, 244); // 振幅成交额换手蓝色!
+
     // 切换转债时, 应当更新本属性为新的实例; 单转债刷新过程, 则调用 其 updateKLine(...) 方法
     EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart;
     ChartPanel chartPanel;
@@ -35,24 +40,24 @@ public class EmKLineDisplayPanel extends DisplayPanel {
     JPanel jPanelOfCurrentKLineInfo;
 
     // 9项数据!
-    JLabel labelOfDate = getCommonLabel("日期");
-    JLabel labelOfDateValue = getCommonLabel();
-    JLabel labelOfChgPct = getCommonLabel("涨跌幅");
-    JLabel labelOfChgPctValue = getCommonLabel();
-    JLabel labelOfAmplitude = getCommonLabel("振幅");
-    JLabel labelOfAmplitudeValue = getCommonLabel();
-    JLabel labelOfOpen = getCommonLabel("开盘");
-    JLabel labelOfOpenValue = getCommonLabel();
-    JLabel labelOfHigh = getCommonLabel("最高");
-    JLabel labelOfHighValue = getCommonLabel();
-    JLabel labelOfLow = getCommonLabel("最低");
-    JLabel labelOfLowValue = getCommonLabel();
-    JLabel labelOfClose = getCommonLabel("收盘");
-    JLabel labelOfCloseValue = getCommonLabel();
-    JLabel labelOfAmount = getCommonLabel("成交额");
-    JLabel labelOfAmountValue = getCommonLabel();
-    JLabel labelOfTurnover = getCommonLabel("换手率");
-    JLabel labelOfTurnoverValue = getCommonLabel();
+    JLabel labelOfDate = getCommonLabel("日期", infoLabelColor);
+    JLabel labelOfDateValue = getCommonLabel(infoLabelColor);
+    JLabel labelOfOpen = getCommonLabel("开盘", infoLabelColor);
+    JLabel labelOfOpenValue = getCommonLabel(upColor);
+    JLabel labelOfHigh = getCommonLabel("最高", infoLabelColor);
+    JLabel labelOfHighValue = getCommonLabel(upColor);
+    JLabel labelOfLow = getCommonLabel("最低", infoLabelColor);
+    JLabel labelOfLowValue = getCommonLabel(upColor);
+    JLabel labelOfClose = getCommonLabel("收盘", infoLabelColor);
+    JLabel labelOfCloseValue = getCommonLabel(upColor);
+    JLabel labelOfChgPct = getCommonLabel("涨跌幅", infoLabelColor);
+    JLabel labelOfChgPctValue = getCommonLabel(upColor);
+    JLabel labelOfAmplitude = getCommonLabel("振幅", infoLabelColor);
+    JLabel labelOfAmplitudeValue = getCommonLabel(commonColor);
+    JLabel labelOfAmount = getCommonLabel("成交额", infoLabelColor);
+    JLabel labelOfAmountValue = getCommonLabel(commonColor);
+    JLabel labelOfTurnover = getCommonLabel("换手率", infoLabelColor);
+    JLabel labelOfTurnoverValue = getCommonLabel(commonColor);
 
     public EmKLineDisplayPanel() {
         this.setLayout(new BorderLayout());
@@ -61,26 +66,56 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         jLabel.setForeground(Color.red);
         jLabel.setBackground(COLOR_THEME_MINOR);
         this.add(jLabel, BorderLayout.CENTER);
+        initJPanelOfCurrentKLineInfo();
+    }
 
+    /**
+     * k线具体数据显示panel
+     */
+    public void initJPanelOfCurrentKLineInfo() {
         // 原始api的列有这些! 都可以显示
         // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
         jPanelOfCurrentKLineInfo = new JPanel(); // 配合十字线, 显示当前那根k线的信息.
         jPanelOfCurrentKLineInfo.setPreferredSize(new Dimension(infoPanelWidth, 4096));
-        JLabel jLabel2 = new JLabel("我是信息");
-        jPanelOfCurrentKLineInfo.setLayout(new BorderLayout());
-        jPanelOfCurrentKLineInfo.add(jLabel2, BorderLayout.CENTER);
+        jPanelOfCurrentKLineInfo.setLayout(new GridLayout(18, 1, -1, -1));
+
+        jPanelOfCurrentKLineInfo.add(labelOfDate);
+        jPanelOfCurrentKLineInfo.add(labelOfDateValue);
+        jPanelOfCurrentKLineInfo.add(labelOfOpen);
+        jPanelOfCurrentKLineInfo.add(labelOfOpenValue);
+        jPanelOfCurrentKLineInfo.add(labelOfHigh);
+        jPanelOfCurrentKLineInfo.add(labelOfHighValue);
+        jPanelOfCurrentKLineInfo.add(labelOfLow);
+        jPanelOfCurrentKLineInfo.add(labelOfLowValue);
+        jPanelOfCurrentKLineInfo.add(labelOfClose);
+        jPanelOfCurrentKLineInfo.add(labelOfCloseValue);
+        jPanelOfCurrentKLineInfo.add(labelOfChgPct);
+        jPanelOfCurrentKLineInfo.add(labelOfChgPctValue);
+        jPanelOfCurrentKLineInfo.add(labelOfAmplitude);
+        jPanelOfCurrentKLineInfo.add(labelOfAmplitudeValue);
+        jPanelOfCurrentKLineInfo.add(labelOfAmount);
+        jPanelOfCurrentKLineInfo.add(labelOfAmountValue);
+        jPanelOfCurrentKLineInfo.add(labelOfTurnover);
+        jPanelOfCurrentKLineInfo.add(labelOfTurnoverValue);
+
+        jPanelOfCurrentKLineInfo.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+        jPanelOfCurrentKLineInfo.setBackground(Color.black);
+
         this.add(jPanelOfCurrentKLineInfo, BorderLayout.EAST);
-
-
+        this.setBackground(Color.black);
     }
 
-    public static JLabel getCommonLabel() {
-        return getCommonLabel("");
+
+    public static JLabel getCommonLabel(Color foreGroundColor) {
+        return getCommonLabel("", foreGroundColor);
     }
 
-    public static JLabel getCommonLabel(String text) {
+    public static JLabel getCommonLabel(String text, Color foreGroundColor) {
         JLabel jlabel = new JLabel();
         jlabel.setText(text);
+        jlabel.setHorizontalAlignment(SwingConstants.CENTER); // 居中对齐
+        jlabel.setBackground(Color.black);
+        jlabel.setForeground(foreGroundColor);
         return jlabel;
     }
 
@@ -142,11 +177,51 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                 if (dynamicKLineChart == null || !dynamicKLineChart.isInited()) {
                     return; // 需要动态图表已经初始化, 即有数据!
                 }
+                //         // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                 DataFrame<Object> klineDfBeforeToday = dynamicKLineChart.getKlineDfBeforeToday();
-                if (newIndex < klineDfBeforeToday.length()) {
-                    CommonUtil.notifyKey(klineDfBeforeToday.row(newIndex).toString());
+                if (newIndex < klineDfBeforeToday.length() && newIndex > 0) { // 常态
+                    // 9项数据
+                    String date = StrUtil.replace(klineDfBeforeToday.get(newIndex, "日期").toString(), "-", "");
+                    labelOfDateValue.setText(date);
+                    Double preClose = Double.valueOf(klineDfBeforeToday.get(newIndex - 1, "收盘").toString());
+
+                    Double open = Double.valueOf(klineDfBeforeToday.get(newIndex, "开盘").toString());
+                    setTextColorByZero(labelOfOpenValue, open, preClose);
+                    Double high = Double.valueOf(klineDfBeforeToday.get(newIndex, "最高").toString());
+                    setTextColorByZero(labelOfHighValue, high, preClose);
+                    Double low = Double.valueOf(klineDfBeforeToday.get(newIndex, "最低").toString());
+                    setTextColorByZero(labelOfLowValue, low, preClose);
+                    Double close = Double.valueOf(klineDfBeforeToday.get(newIndex, "收盘").toString());
+                    setTextColorByZero(labelOfCloseValue, close, preClose);
+                    Double chgPct = Double.valueOf(klineDfBeforeToday.get(newIndex, "涨跌幅").toString());
+                    setTextColorByZero(labelOfChgPctValue, chgPct, 0.0);
+                    labelOfChgPctValue.setText(labelOfChgPctValue.getText() + "%");
+
+                    Double amount = Double.valueOf(klineDfBeforeToday.get(newIndex, "成交额").toString());
+                    labelOfAmountValue.setText(CommonUtil.formatNumberWithSuitable(amount,1));
+                    Double amplitude = Double.valueOf(klineDfBeforeToday.get(newIndex, "振幅").toString());
+                    labelOfAmplitudeValue.setText(amplitude.toString() + "%");
+                    Double turnover = Double.valueOf(klineDfBeforeToday.get(newIndex, "换手率").toString());
+                    labelOfTurnoverValue.setText(turnover.toString() + "%");
+
+
                 }
             }
         };
+    }
+
+    public static void setTextColorByZero(JLabel label, Double value, Double compareValue) {
+        if (value == null) {
+            label.setText("");
+            return;
+        }
+        label.setText(value.toString());
+        if (value > compareValue) {
+            label.setForeground(upColor);
+        } else if (value < compareValue) {
+            label.setForeground(downColor);
+        } else {
+            label.setForeground(Color.white);
+        }
     }
 }

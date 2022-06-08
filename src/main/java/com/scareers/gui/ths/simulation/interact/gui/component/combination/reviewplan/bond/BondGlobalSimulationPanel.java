@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -83,7 +84,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额");
     // 主循环sleep1秒, 因为代码执行耗时, 实际是1.0xx秒, 为了更加接近实盘, 稍微减少sleep时间, 此倍率应当 <1, 但不宜过小,
     // 电脑配置越高, 应当越接近1
-    public static final double codeExecLossRateWhenSimulation = 0.95;
+    public static final double codeExecLossRateWhenSimulation = 0.997;
     public static final int kLineAmountHope = 150; // k线图希望的数量
     // 今天多少点钟后, 复盘默认日期设置为今天(一般这时爬虫运行过了,数据库有数据了) , 否则设置默认复盘日期为上一交易日
     public static final int afterTodayNHDefaultDateAsToday = 20;
@@ -589,6 +590,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                         reviseRunning = true;
                         revisePausing = false;
                         CommonUtil.notifyKey("复盘即将开始");
+                        TimeInterval timer = DateUtil.timer();
+                        timer.start();
                         for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
                             if (!reviseRunning) { // 被停止
                                 labelOfRealTimeSimulationTime.setText("00:00:00");
@@ -612,6 +615,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                             ThreadUtil
                                     .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
                             // * 0.95, 是因为程序执行代码耗时损失, 如果sleep1秒, 实际感受是 1.xx秒,因为代码执行耗时;
+                            // @todo: 这里可以自己看下 1秒消耗多少时间, 然后设置倍率
+//                            Console.log(timer.intervalRestart());
                         }
                         reviseRunning = false; // 非运行状态
                     }
@@ -725,6 +730,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
                                 ThreadUtil
                                         .sleep((long) (1000.0 / getReviseTimeRateSetting() * codeExecLossRateWhenSimulation)); // 因为循环是1s的;
+
+
                             }
                             reviseRunning = false; // 非运行状态
                         }
