@@ -388,9 +388,9 @@ public class EmChartFs {
         // 时间x轴
         DateAxis domainAxis;
         // y轴1--价格轴
-        EmChartFs.NumberAxisYSupportTickToPreClose y1Axis = new EmChartFs.NumberAxisYSupportTickToPreClose();
+        NumberAxisYSupportTickToPreClose y1Axis = new NumberAxisYSupportTickToPreClose();
         // y轴2--涨跌幅轴
-        EmChartFs.NumberAxisYSupportTickMultiColor y2Axis = new EmChartFs.NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+        NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
         // 价格图
         XYPlot plot1;
         // 成交量图柱状渲染器
