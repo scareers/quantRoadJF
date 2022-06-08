@@ -165,6 +165,14 @@ public class EmChartKLine {
         //图表相关属性
 
         JFreeChart chart; // 图表对象
+        OHLCSeriesCollection seriesCollection;
+        OHLCSeries seriesOfFourPrice = new OHLCSeries(""); // 开，高，低，收, 四项数据
+        TimeSeriesCollection timeSeriesCollection;
+        TimeSeries seriesOfVol;
+        CandlestickRenderer candlestickRender;
+        DateAxis xAxisOfDate;
+        NumberAxisYSupportTickToPreClose y1Axis; // 左价格
+        NumberAxisYSupportTickMultiColor y2Axis; // 右百分比
 
         // 两大序列集合
         TimeSeriesCollection lineSeriesCollection = new TimeSeriesCollection(); // 均价,价格,昨收 3序列集合
@@ -210,134 +218,29 @@ public class EmChartKLine {
             // 3.最高成交额也更新
             updateAmountMax();
 
-            // 4.价格和成交量最高最低值, 以确定坐标轴范围
-            double amountMax = CommonUtil.maxOfListDouble(allAmount); // 成交量最高
-            // double volMin = CommonUtil.minOfListDouble(vols); //成交量最低
+            // 4.价格序列填充数据
+            initPriceSeries();
 
-            OHLCSeries seriesOfFourPrice = new OHLCSeries(""); // 开，高，低，收, 四项数据
-            // 5. 4项价格数据序列, 注意, 时间单位是 Day! 因为日k线
-            for (int i = 0; i < allDateTimeHistory.size(); i++) { // 以时间遍历, 添加四项价格
-                seriesOfFourPrice
-                        .add(new Day(allDateTimeHistory.get(i)), allOpen.get(i), allHigh.get(i), allLOw.get(i),
-                                allClose.get(i));
-            }
-            final OHLCSeriesCollection seriesCollection = new OHLCSeriesCollection();
-            seriesCollection.addSeries(seriesOfFourPrice); // 数据集
+            // 5.成交量序列
+            initAmountSeries();
 
-            // 6.成交量序列
-            TimeSeries seriesOfVol = new TimeSeries(""); // 对应时间成交量数据
-            for (int i = 0; i < allDateTimeHistory.size(); i++) {
-                seriesOfVol.add(new Day(allDateTimeHistory.get(i)), allAmount.get(i));
-            }
-            TimeSeriesCollection timeSeriesCollection = new TimeSeriesCollection(); // 保留成交量数据的集合
-            timeSeriesCollection.addSeries(seriesOfVol);
-
-            // 7. 设置K线图的渲染器
-            final CandlestickRenderer candlestickRender = new CandlestickRenderer() {
-                @Override
-                public Paint getItemPaint(int row, int column) {
-
-                    //determine up or down candle
-                    XYDataset dataset = getPlot().getDataset();
-                    OHLCDataset highLowData = (OHLCDataset) dataset;
-                    int series = row, item = column;
-                    Number yOpen = highLowData.getOpen(series, item);
-                    Number yClose = highLowData.getClose(series, item);
-                    boolean isUpCandle = yClose.doubleValue() > yOpen.doubleValue();
-
-                    //return the same color as that used to fill the candle
-                    if (isUpCandle) {
-                        return getUpPaint();
-                    } else {
-                        return getDownPaint();
-                    }
-                }
-            };
-            candlestickRender.setUseOutlinePaint(true); // 设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
-            candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);// 设置如何对K线图的宽度进行设定
-            candlestickRender.setAutoWidthGap(0.5);//设置各个K线图之间的间隔: 例如0.001
-            candlestickRender.setAutoWidthFactor(0.2);//
-            candlestickRender.setCandleWidth(-1);//
-
-            candlestickRender.setUpPaint(upColorKLine);//设置股票上涨的K线图颜色
-            candlestickRender.setDownPaint(downColorKLine);//设置股票下跌的K线图颜色
-            candlestickRender.setUseOutlinePaint(false);
+            // 6. 设置K线图的渲染器
+            initPriceCandlestickRender();
 
 
-            // 8.日期轴唯一横轴: DateAxis, 设置日期范围; end需要多一天
-            DateAxis x1Axis = new DateAxis(); // 设置x轴，也就是时间轴
-            x1Axis.setAutoRange(false); // 不采用自动设置时间范围, 自行计算
-            try {
-                // 设置时间范围，注意时间的最大值要比已有的时间最大值要多一天; 使用 offset方法
-                DateTime lastDateTime = allDateTimeHistory.get(allDateTimeHistory.size() - 1);
-                x1Axis.setRange(allDateTimeHistory.get(0), DateUtil.offset(lastDateTime,
-                        DateField.DAY_OF_MONTH, 1));
-            } catch (Exception e) {
-                x1Axis.setAutoRange(true);
-                e.printStackTrace();
-            }
-            // 9. 日起轴设定时间线, 使用 SegmentedTimeline 可排除某些日期!
-            SegmentedTimeline timeline = SegmentedTimeline.newMondayThroughFridayTimeline();
-            DateRange dateRangeAll = DateUtil.range(allDateTimeHistory.get(0),
-                    allDateTimeHistory.get(allDateTimeHistory.size() - 1), DateField.DAY_OF_MONTH); // 日期range;
-            HashSet<DateTime> timeTickSet = new HashSet<>(allDateTimeHistory);
-            for (DateTime dateTime : dateRangeAll) {
-                if (!timeTickSet.contains(dateTime)) { // 相当于仅保留 数据中存在的日期, 其他全部排除掉
-                    timeline.addException(dateTime);
-                }
-            }
-            x1Axis.setTimeline(timeline);//设置时间线显示的规则，用这个方法就摒除掉了周六和周日这些没有交易的日期(很多人都不知道有此方法)，使图形看上去连续
+            // 8.日期轴唯一横轴: DateAxis, 设置日期范围; 时间线属性等
+            initXAxisOfDate();
 
-            // 10.日期x轴其他设置
-            x1Axis.setAutoTickUnitSelection(false); //设置不采用自动选择刻度值
-            x1Axis.setTickMarkPosition(DateTickMarkPosition.MIDDLE); //设置标记的位置
-            x1Axis.setStandardTickUnits(DateAxis.createStandardDateTickUnits()); // 设置标准的时间刻度单位
-            x1Axis.setTickUnit(new DateTickUnit(DateTickUnitType.DAY, 30)); // 设置时间刻度的间隔，一般以周为单位
-            x1Axis.setDateFormatOverride(new SimpleDateFormat("MM-dd"));//设置显示时间的格式
-
-            // 11. k线Y轴 价格轴; 左右两边tick, 左价格, 右百分比
-            // 设置k线图y轴参数
-            NumberAxisYSupportTickToPreClose y1Axis = new NumberAxisYSupportTickToPreClose();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-            y1Axis.setAutoRange(false);//设置不采用自动设置数据范围
-            y1Axis.setLabel(String.valueOf(stdPrice));
-            y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
-            double t = stdPrice - priceLow;
-            double t1 = priceHigh - stdPrice;
-            t = Math.abs(t);
-            t1 = Math.abs(t1);
-            double range = t1 > t ? t1 : t;//计算涨跌最大幅度
-            DecimalFormat df1 = new DecimalFormat("#0.00");
-            df1.setRoundingMode(RoundingMode.FLOOR);
-
-
-            y1Axis.setRange(Double.valueOf(df1.format(stdPrice - range)),
-                    Double.valueOf(df1.format(stdPrice + range)));//设置y轴数据范围
-            y1Axis.setNumberFormatOverride(df1);
-            y1Axis.centerRange(stdPrice);
-            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
-            y1Axis.setTickUnit(numberTickUnit);
-            NumberAxisYSupportTickMultiColor y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
-            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
-
-
-            t = (priceLow - stdPrice) / stdPrice;
-            t1 = (priceHigh - stdPrice) / stdPrice;
-            t = Math.abs(t);
-            t1 = Math.abs(t1);
-            range = t1 > t ? t1 : t;
-            y2Axis.setRange(-range, range);//设置y轴数据范围
-            y2Axis.setTickLabelPaint(Color.red);
-            DecimalFormat df2 = new DecimalFormat("##0.00%");
-            df2.setRoundingMode(RoundingMode.FLOOR);
-            y2Axis.setNumberFormatOverride(df2);
-            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
-            y2Axis.setTickUnit(numberTickUnit2);
+            // 9. k线Y轴 价格轴; 左右两边tick, 左价格, 右百分比
+            // 9.1.左价格轴
+            initY1AxisOfPrice(stdPrice);
+            // 9.2. 右百分比轴
+            initY2AsisOfPercent(stdPrice);
 
             //12. 图表1实例化 -- k线图
             //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
             //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
-            XYPlot plot1 = new XYPlot(seriesCollection, x1Axis, null, candlestickRender);
+            XYPlot plot1 = new XYPlot(seriesCollection, xAxisOfDate, null, candlestickRender);
             plot1.setBackgroundPaint(bgColorFs);//设置曲线图背景色
             plot1.setDomainGridlinesVisible(false);//不显示网格
             plot1.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
@@ -382,7 +285,7 @@ public class EmChartKLine {
             plot2.setDomainGridlinesVisible(false);
 
             // 16. 共享x轴的图表: 将添加2个图表
-            CombinedDomainXYPlot combineddomainxyplot = new CombinedDomainXYPlot(x1Axis);//建立一个恰当的联合图形区域对象，以x轴为共享轴
+            CombinedDomainXYPlot combineddomainxyplot = new CombinedDomainXYPlot(xAxisOfDate);//建立一个恰当的联合图形区域对象，以x轴为共享轴
             combineddomainxyplot.add(plot1, weight1OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
             combineddomainxyplot.add(plot2, weight2OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域1/3
             combineddomainxyplot.setGap(gapOfTwoPlotOfKLine);//设置两个图形区域对象之间的间隔空间
@@ -398,6 +301,131 @@ public class EmChartKLine {
                             Title.DEFAULT_POSITION,
                             Title.DEFAULT_HORIZONTAL_ALIGNMENT,
                             Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+        }
+
+        private void initY2AsisOfPercent(Double stdPrice) {
+            double t;
+            double t1;
+            double range;
+            y2Axis = new NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y2Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y2Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            t = (priceLow - stdPrice) / stdPrice;
+            t1 = (priceHigh - stdPrice) / stdPrice;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            range = t1 > t ? t1 : t;
+            y2Axis.setRange(-range, range);//设置y轴数据范围
+            y2Axis.setTickLabelPaint(Color.red);
+            DecimalFormat df2 = new DecimalFormat("##0.00%");
+            df2.setRoundingMode(RoundingMode.FLOOR);
+            y2Axis.setNumberFormatOverride(df2);
+            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+            y2Axis.setTickUnit(numberTickUnit2);
+        }
+
+        private void initY1AxisOfPrice(Double stdPrice) {
+            y1Axis = new NumberAxisYSupportTickToPreClose();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y1Axis.setAutoRange(false);//设置不采用自动设置数据范围
+            y1Axis.setLabel(String.valueOf(stdPrice));
+            y1Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));
+            double t = stdPrice - priceLow;
+            double t1 = priceHigh - stdPrice;
+            t = Math.abs(t);
+            t1 = Math.abs(t1);
+            double range = t1 > t ? t1 : t;//计算涨跌最大幅度
+            DecimalFormat df1 = new DecimalFormat("#0.00");
+            df1.setRoundingMode(RoundingMode.FLOOR);
+            y1Axis.setRange(Double.valueOf(df1.format(stdPrice - range)),
+                    Double.valueOf(df1.format(stdPrice + range)));//设置y轴数据范围
+            y1Axis.setNumberFormatOverride(df1);
+            y1Axis.centerRange(stdPrice);
+            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+            y1Axis.setTickUnit(numberTickUnit);
+        }
+
+        private void initXAxisOfDate() {
+            xAxisOfDate = new DateAxis(); // 设置x轴，也就是时间轴
+            xAxisOfDate.setAutoRange(false); // 不采用自动设置时间范围, 自行计算
+            try {
+                // 设置时间范围，注意时间的最大值要比已有的时间最大值要多一天; 使用 offset方法
+                DateTime lastDateTime = allDateTime.get(allDateTime.size() - 1);
+                xAxisOfDate.setRange(allDateTime.get(0), DateUtil.offset(lastDateTime,
+                        DateField.DAY_OF_MONTH, 1));
+            } catch (Exception e) {
+                xAxisOfDate.setAutoRange(true);
+            }
+            // 9. 日起轴设定时间线, 使用 SegmentedTimeline 可排除某些日期!
+            SegmentedTimeline timeline = SegmentedTimeline.newMondayThroughFridayTimeline();
+            DateRange dateRangeAll = DateUtil.range(allDateTime.get(0),
+                    allDateTime.get(allDateTime.size() - 1), DateField.DAY_OF_MONTH); // 日期range;
+            HashSet<DateTime> timeTickSet = new HashSet<>(allDateTime);
+            for (DateTime dateTime : dateRangeAll) {
+                if (!timeTickSet.contains(dateTime)) { // 相当于仅保留 数据中存在的日期, 其他全部排除掉
+                    timeline.addException(dateTime);
+                }
+            }
+            xAxisOfDate.setTimeline(timeline);//设置时间线显示的规则，用这个方法就摒除掉了周六和周日这些没有交易的日期(很多人都不知道有此方法)，使图形看上去连续
+
+            // 10.日期x轴其他设置
+            xAxisOfDate.setAutoTickUnitSelection(false); //设置不采用自动选择刻度值
+            xAxisOfDate.setTickMarkPosition(DateTickMarkPosition.MIDDLE); //设置标记的位置
+            xAxisOfDate.setStandardTickUnits(DateAxis.createStandardDateTickUnits()); // 设置标准的时间刻度单位
+            xAxisOfDate.setTickUnit(new DateTickUnit(DateTickUnitType.DAY, 30)); // 设置时间刻度的间隔，一般以周为单位
+            xAxisOfDate.setDateFormatOverride(new SimpleDateFormat("MM-dd"));//设置显示时间的格式
+        }
+
+        private void initPriceCandlestickRender() {
+            candlestickRender = new CandlestickRenderer() {
+                @Override
+                public Paint getItemPaint(int row, int column) {
+
+                    //determine up or down candle
+                    XYDataset dataset = getPlot().getDataset();
+                    OHLCDataset highLowData = (OHLCDataset) dataset;
+                    int series = row, item = column;
+                    Number yOpen = highLowData.getOpen(series, item);
+                    Number yClose = highLowData.getClose(series, item);
+                    boolean isUpCandle = yClose.doubleValue() > yOpen.doubleValue();
+
+                    //return the same color as that used to fill the candle
+                    if (isUpCandle) {
+                        return getUpPaint();
+                    } else {
+                        return getDownPaint();
+                    }
+                }
+            };
+            candlestickRender.setUseOutlinePaint(true); // 设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
+            candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);// 设置如何对K线图的宽度进行设定
+            candlestickRender.setAutoWidthGap(0.5);//设置各个K线图之间的间隔: 例如0.001
+            candlestickRender.setAutoWidthFactor(0.2);//
+            candlestickRender.setCandleWidth(-1);//
+
+            candlestickRender.setUpPaint(upColorKLine);//设置股票上涨的K线图颜色
+            candlestickRender.setDownPaint(downColorKLine);//设置股票下跌的K线图颜色
+            candlestickRender.setUseOutlinePaint(false);
+        }
+
+        private void initAmountSeries() {
+            seriesOfVol = new TimeSeries(""); // 对应时间成交量数据
+            for (int i = 0; i < allDateTime.size(); i++) {
+                seriesOfVol.add(new Day(allDateTime.get(i)), allAmount.get(i));
+            }
+            timeSeriesCollection = new TimeSeriesCollection(); // 保留成交量数据的集合
+            timeSeriesCollection.addSeries(seriesOfVol);
+        }
+
+        private void initPriceSeries() {
+            seriesOfFourPrice = new OHLCSeries(""); // 开，高，低，收, 四项数据
+            // 5. 4项价格数据序列, 注意, 时间单位是 Day! 因为日k线
+            for (int i = 0; i < allDateTime.size(); i++) { // 以时间遍历, 添加四项价格
+                seriesOfFourPrice
+                        .add(new Day(allDateTime.get(i)), allOpen.get(i), allHigh.get(i), allLow.get(i),
+                                allClose.get(i));
+            }
+            seriesCollection = new OHLCSeriesCollection();
+            seriesCollection.addSeries(seriesOfFourPrice); // 数据集
         }
 
 
