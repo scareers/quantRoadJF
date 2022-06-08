@@ -189,6 +189,7 @@ public class EmChartKLine {
             // 2.刷新 价格和成交量 最大值
             updatePriceLowAndHigh();
             updateAmountMax();
+            // 3.更新两y轴的 range!
 
 
         }
