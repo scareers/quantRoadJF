@@ -157,10 +157,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     protected JXCollapsiblePane klineCollapsiblePane; // k线图折叠面板对象
     protected JPanel klineDisplayContainerPanel; // k线图容器
-    ThsFsDisplayPanel fsDisplayPanel; // 分时图
-    ThsKLineDisplayPanel dailyKLineDisplayPanel; // 日k线
-    ThsKLineDisplayPanel weeklyKLineDisplayPanel; // 周k线
-    ThsKLineDisplayPanel monthlyKLineDisplayPanel; // 月k线
+    EmKLineDisplayPanel dailyKLineDisplayPanel; // 日k线
 
     private void initKlineDisplayPanel() {
 //        // 包装一下, 将按钮放于表格上方
@@ -173,20 +170,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         klineCollapsiblePane.setAnimated(true);
         klineCollapsiblePane.setLayout(new BorderLayout());
 
-        klineDisplayContainerPanel = new JPanel();
-        klineDisplayContainerPanel.setLayout(new GridLayout(1, 4, -1, -1)); // 4份 k线
+        klineDisplayContainerPanel = new JPanel(); // 方便添加其他k线, 目前虽然只有日k线
+        klineDisplayContainerPanel.setLayout(new GridLayout(1, 1, -1, -1)); // 4份 k线
         // 4大k线
-        fsDisplayPanel = new ThsFsDisplayPanel();
-        fsDisplayPanel.setPreferredSize(new Dimension(300, 300));
-        dailyKLineDisplayPanel = new ThsKLineDisplayPanel();
-        weeklyKLineDisplayPanel = new ThsKLineDisplayPanel();
-        monthlyKLineDisplayPanel = new ThsKLineDisplayPanel();
+        dailyKLineDisplayPanel = new EmKLineDisplayPanel();
+        dailyKLineDisplayPanel.setPreferredSize(new Dimension(300, 300));
 
 
-        klineDisplayContainerPanel.add(fsDisplayPanel);
         klineDisplayContainerPanel.add(dailyKLineDisplayPanel);
-        klineDisplayContainerPanel.add(weeklyKLineDisplayPanel);
-        klineDisplayContainerPanel.add(monthlyKLineDisplayPanel);
 
         klineCollapsiblePane.add("Center", klineDisplayContainerPanel);
         klineCollapsiblePane.setAnimated(true);
