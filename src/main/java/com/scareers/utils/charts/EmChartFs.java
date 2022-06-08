@@ -808,7 +808,7 @@ public class EmChartFs {
             t1 = Math.abs(t1);
             range = t1 > t ? t1 : t;
             y2Axis.setRange(-range, range);//设置y轴数据范围
-            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7.0));
             y2Axis.setTickUnit(numberTickUnit2);
         }
 
@@ -832,7 +832,7 @@ public class EmChartFs {
             double range = t1 > t ? t1 : t; // 计算涨跌最大幅度
             y1Axis.setRange(Double.valueOf(df1.format(preClose - range)),
                     Double.valueOf(df1.format(preClose + range))); // 设置y轴数据范围
-            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7.0));
             y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
         }
 

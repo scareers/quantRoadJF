@@ -183,6 +183,9 @@ public class EmChartKLine {
 
             // 初始化今日5项数据, 默认使用 昨收!
             preClose = Double.valueOf(klineDfBeforeToday.get(klineDfBeforeToday.length() - 1, "收盘").toString());
+            priceLow = preClose;
+            priceHigh = preClose; // 默认使用昨收, 在第一次更新后会正常
+
             open = preClose;
             high = preClose;
             low = preClose;
@@ -409,9 +412,9 @@ public class EmChartKLine {
             t1 = (priceHigh - stdPrice) / stdPrice;
             t = Math.abs(t);
             t1 = Math.abs(t1);
-            range = t1 > t ? t1 : t;
+            range = Math.max(t1, t);
             y2Axis.setRange(-range, range);//设置y轴数据范围
-            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7));
+            NumberTickUnit numberTickUnit2 = new NumberTickUnit(Math.abs(range / 7.0));
             y2Axis.setTickUnit(numberTickUnit2);
         }
 
@@ -433,11 +436,11 @@ public class EmChartKLine {
             double t1 = priceHigh - stdPrice;
             t = Math.abs(t);
             t1 = Math.abs(t1);
-            double range = t1 > t ? t1 : t;//计算涨跌最大幅度
-            df1.setRoundingMode(RoundingMode.FLOOR);
-            y1Axis.setRange(Double.valueOf(df1.format(stdPrice - range)),
-                    Double.valueOf(df1.format(stdPrice + range)));//设置y轴数据范围
-            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7));
+            double range = Math.max(t1, t);//计算涨跌最大幅度
+            df1.setRoundingMode(RoundingMode.CEILING);
+            y1Axis.setRange(Double.parseDouble(df1.format(stdPrice - range)),
+                    Double.parseDouble(df1.format(stdPrice + range)));//设置y轴数据范围
+            NumberTickUnit numberTickUnit = new NumberTickUnit(Math.abs(range / 7.0));
             y1Axis.setTickUnit(numberTickUnit);
         }
 
@@ -536,7 +539,7 @@ public class EmChartKLine {
                     priceHigh = priceHigh0 * (1 + redundancyPriceRangePercent); // 更高
                 }
             } catch (Exception e) {
-                return;
+                e.printStackTrace();
             }
             try {
                 double priceLow0 = CommonUtil.minOfListDouble(allLow);
@@ -544,10 +547,13 @@ public class EmChartKLine {
                     priceLow = priceLow0 * (1 - redundancyPriceRangePercent); // 更低!
                 }
             } catch (Exception e) {
+                e.printStackTrace();
             }
+//            Console.log(priceLow);
+//            Console.log(priceHigh);
         }
 
-        public void updateAmountMax() {
+        public void updateAmountMax() { // 已经自动, 因此.
             Double aDouble = CommonUtil.maxOfListDouble(allAmount);
             if (aDouble > amountMax) {
                 amountMax = aDouble;
