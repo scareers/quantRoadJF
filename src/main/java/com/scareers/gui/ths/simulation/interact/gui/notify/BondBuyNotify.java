@@ -13,7 +13,6 @@ import com.scareers.datasource.eastmoney.SecurityPool;
 import com.scareers.datasource.eastmoney.fetcher.FsFetcher;
 import com.scareers.datasource.eastmoney.fetcher.FsTransactionFetcher;
 import com.scareers.datasource.eastmoney.quotecenter.bond.EmConvertibleBondApi;
-import com.scareers.datasource.ths.wencai.WenCaiApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.ChgPctAlgorithm;
 import com.scareers.gui.ths.simulation.interact.gui.notify.bondbuyalgorithm.SingleAmountAlgorithm;
