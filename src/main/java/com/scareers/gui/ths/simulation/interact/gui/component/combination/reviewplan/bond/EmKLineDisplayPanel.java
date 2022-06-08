@@ -1,17 +1,12 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.utils.charts.ThsChart;
-import joinery.DataFrame;
+import com.scareers.utils.charts.EmChartKLine;
+import lombok.Data;
 import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYPlot;
@@ -24,58 +19,60 @@ import static com.scareers.utils.charts.ThsChart.getCrossLineListenerForKLineXYP
  * @author: admin
  * @date: 2022/4/5/005-06:30:09
  */
+@Data
 public class EmKLineDisplayPanel extends DisplayPanel {
-    DataFrame<Object> emKLineDf;
+    public static final int preferHeight = 300;
 
-
-    String title = "暂无标题";
-
-    JFreeChart chart;
+    // 切换转债时, 应当更新本属性为新的实例; 单转债刷新过程, 则调用 其 updateKLine(...) 方法
+    EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart;
     ChartPanel chartPanel;
 
     public EmKLineDisplayPanel() {
         this.setLayout(new BorderLayout());
         JLabel jLabel = new JLabel("暂无k线数据");
+        jLabel.setPreferredSize(new Dimension(preferHeight, preferHeight));
         jLabel.setForeground(Color.red);
         jLabel.setBackground(COLOR_THEME_MINOR);
         this.add(jLabel, BorderLayout.CENTER);
+    }
 
+    /**
+     * 本质上是更新整个图表对象, 而非刷新图表对象
+     *
+     * @noti : 调用方负责实例化动态图表 的逻辑;
+     */
+    public void update(EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart) {
+        this.dynamicKLineChart = dynamicKLineChart; // 更新动态chart对象!
         this.update();
     }
 
     /**
-     * 调用
-     *
-     * @param thsFsDf
-     * @param title
-     * @param preClose
+     * 本质上是更新整个图表对象, 而非刷新图表对象
      */
-    public void update(DataFrame<Object> thsFsDf, String title) {
-        this.emKLineDf = thsFsDf;
-        if (!StrUtil.isBlank(title)) {
-            this.title = title;
-        }
-        this.update();
-    }
-
     @Override
     public void update() {
-        if (this.emKLineDf == null || this.emKLineDf.length() == 0) {
-            return;
-        }
-        List<DateTime> timeTicks = DataFrameS.getColAsDateList(emKLineDf, "日期"); // 日期列表;传递给监听器,设置横轴marker
-        chart = ThsChart.createKLineOfThs(emKLineDf, title);
         if (chartPanel == null) {
-            chartPanel = new ChartPanel(this.chart);
-            chartPanel.setMouseZoomable(false);
-            chartPanel.setRangeZoomable(false);
-            chartPanel.setDomainZoomable(false);
-            chartPanel.addChartMouseListener(getCrossLineListenerForKLineXYPlot(timeTicks));
-            this.removeAll();
-            this.add(chartPanel, BorderLayout.CENTER);
+            if (this.dynamicKLineChart != null) { // 首次初始化
+                chartPanel = new ChartPanel(this.dynamicKLineChart.getChart());
+                // 大小
+                chartPanel.setPreferredSize(new Dimension(preferHeight, preferHeight));
+                chartPanel.setMouseZoomable(false);
+                chartPanel.setRangeZoomable(false);
+                chartPanel.setDomainZoomable(false);
+                chartPanel
+                        .addChartMouseListener(
+                                getCrossLineListenerForKLineXYPlot(this.dynamicKLineChart.getAllDateTime()));
+                this.removeAll();
+                this.add(chartPanel, BorderLayout.CENTER);
+                chartPanel.setVisible(true);
+            } else {
+                return;
+            }
         }
-        chartPanel.setVisible(false);
-        chartPanel.setChart(chart); // 更新显示
-        chartPanel.setVisible(true);
+
+        // 此后更新
+        if (this.dynamicKLineChart != null) {
+            chartPanel.setChart(dynamicKLineChart.getChart());
+        }
     }
 }
