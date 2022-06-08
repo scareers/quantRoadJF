@@ -30,6 +30,7 @@ import static com.scareers.utils.charts.ThsChart.*;
  * @author: admin
  * @date: 2022/2/24/024-17:39:46
  */
+
 @Setter
 @Getter
 public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
@@ -49,10 +50,18 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
     List<DateTime> timeTicks;
     int xAmount;
 
-    public CrossLineListenerForKLineXYPlot(List<DateTime> timeTicks) {
-        // 给定日期列表!, 设置x轴竖线marker
+    public void reportXIndex(int currentXIndex) {
+
+    }
+
+    public void setTimeTicks(List<DateTime> timeTicks) {
         this.timeTicks = timeTicks;
         this.xAmount = timeTicks.size();
+    }
+
+    public CrossLineListenerForKLineXYPlot(List<DateTime> timeTicks) {
+        // 给定日期列表!, 设置x轴竖线marker
+        setTimeTicks(timeTicks);
 
 
         BasicStroke basicStroke = new BasicStroke(1);
@@ -150,6 +159,7 @@ public class CrossLineListenerForKLineXYPlot implements ChartMouseListener {
             // @key3: 因为k线画法, x时间的图画在x后; 这里我们加12小时, 刚好在每个k线图中间; 否则在k线开始
             markerX.setValue(DateUtil.offsetHour(dateTime, 12).getTime());
             markerX.setLabel(DateUtil.format(dateTime, "MM-dd"));
+            reportXIndex(index);
             // 更新markerX
             pricePlot.removeDomainMarker(markerX);
             volPlot.removeDomainMarker(markerX);

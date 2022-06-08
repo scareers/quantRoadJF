@@ -774,6 +774,9 @@ public class EmChartFs {
             barRenderer.setDrawBarOutline(false);
             barRenderer.setSeriesVisibleInLegend(false);//设置不显示legend（数据颜色提示)
             barRenderer.setShadowVisible(false);//设置没有阴影
+
+            // 解决十字线竖线, 价格图和成交量图 都线居中的问题!
+            barRenderer.setBarAlignmentFactor(0.5);
         }
 
         public void initPlot1() {
@@ -891,6 +894,7 @@ public class EmChartFs {
             lineAndShapeRenderer.setSeriesStroke(3, new BasicStroke(0.6f));
             lineAndShapeRenderer.setSeriesStroke(4, new BasicStroke(0.6f));
             lineAndShapeRenderer.setBaseSeriesVisibleInLegend(false);
+
             return lineAndShapeRenderer;
         }
 

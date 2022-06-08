@@ -93,7 +93,7 @@ public class EmChartKLine {
                             RandomUtil.randomDouble(590, 650),
                             RandomUtil.randomDouble(480, 515),
                             RandomUtil.randomDouble(520, 580),
-                            RandomUtil.randomDouble(17789525504.0 / 1.5, 17789525504.0 * 2)
+                            RandomUtil.randomDouble(17789525504.0 / 2, 17789525504.0 * 2)
 
                     );
                 }

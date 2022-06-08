@@ -55,6 +55,10 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         this.xAmount = timeTicks.size();
     }
 
+    public void reportXIndex(int currentXIndex){
+
+    }
+
     public CrossLineListenerForFsXYPlot(List<DateTime> timeTicks) {
         // 给定日期列表!, 设置x轴竖线marker
         setTimeTicks(timeTicks);
@@ -152,8 +156,15 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         int index = (int) CommonUtil.roundHalfUP((1 - percentX) * xAmount, 0) - 1;
         if (index >= 0 && index < timeTicks.size()) {
             DateTime dateTime = timeTicks.get(index);
+            // @key: 这里同样右移30s, 分时图tick1分钟, 恰好在中间\
+            // todo: 价格和成交量的错位还是没有解决
+            // @todo: 根本原因: 分时图是折线图, 它的标准tick, 价格线对应的是一个点, 是"tick支配的起点", 而成交量每根线是个"区域"
+            // 如果要把线放在成交量区域的中心, 需要+30s, 但必然错过了折线的起点!
+            // @bugfix: 已经解决: barRenderer.setBarAlignmentFactor(0.5); 可设置柱状图画的位置.
+//            markerX.setValue(DateUtil.offsetSecond(dateTime, 0).getTime());
             markerX.setValue(dateTime.getTime());
             markerX.setLabel(DateUtil.format(dateTime, "HH:mm"));
+            reportXIndex(index);
             // 更新markerX
             pricePlot.removeDomainMarker(markerX);
             volPlot.removeDomainMarker(markerX);
