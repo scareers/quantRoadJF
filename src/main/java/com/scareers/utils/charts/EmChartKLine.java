@@ -11,6 +11,7 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
+import lombok.Data;
 import lombok.SneakyThrows;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -78,7 +79,9 @@ public class EmChartKLine {
 
     @SneakyThrows
     public static void main(String[] args) {
-        kLineDemo();
+        SecurityBeanEm beanEm = SecurityBeanEm.createBond("小康转债");
+        DynamicEmKLineChartForRevise dynamicKlineChart = new DynamicEmKLineChartForRevise(beanEm, "2022-06-07", 100);
+        dynamicKlineChart.showSimple();
     }
 
     /**
@@ -89,8 +92,8 @@ public class EmChartKLine {
      * --> 静态属性设置读取 此前多少天的数据, 将调用东财日期api, 取到 n个交易日之前, 那个交易日的日期 !
      * --> 静态设置
      */
+    @Data
     public static class DynamicEmKLineChartForRevise {
-        public static final int kLineAmount = 50; // 获取多少条k线数据?? 遇到停牌数据会少, 很正常!! 不解决少的问题! 又不是lastN api
         public static final double redundancyPriceRangePercent = 0.005;
 
         DataFrame<Object> klineDfBeforeToday; // 今日之前的k线数据, 使用东财 k线api! 直接从网络访问,带缓存.
@@ -118,7 +121,7 @@ public class EmChartKLine {
         Double preClose;
 
 
-        public DynamicEmKLineChartForRevise(SecurityBeanEm beanEm, String todayStr) {
+        public DynamicEmKLineChartForRevise(SecurityBeanEm beanEm, String todayStr, int kLineAmountHope) {
             this.beanEm = beanEm;
             this.todayStr = todayStr;
             this.today = DateUtil.parse(todayStr); // 日期对象
@@ -126,7 +129,7 @@ public class EmChartKLine {
 
             // 1.访问网络, 获取昨日及之前的k线数据, 可能耗时, 建议本对象实例化时, 在子线程进行 !!
             // 有缓存不消耗时间, 获取 n个交易日之前那个交易日, 以 访问网络查询api
-            String dateStart = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, kLineAmount);
+            String dateStart = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, kLineAmountHope);
             String yesterday = EastMoneyDbApi.getPreNTradeDateStrict(todayStr, 1); // 获取昨日前的
             klineDfBeforeToday = EmQuoteApi
                     .getQuoteHistorySingle(true, beanEm, dateStart, yesterday, "101", "1", 1, 4000);
@@ -159,6 +162,50 @@ public class EmChartKLine {
             allClose.add(close);
             allAmount.add(amount);
 
+            initChart();
+        }
+
+        /**
+         * // @key3: 核心方法, 需要提供 "今日" 的最新5项基本数据, 然后将 5项数据, 更新chart中最后一条k线; 即刷新
+         *
+         * @param open
+         * @param high
+         * @param low
+         * @param close
+         * @param amount
+         */
+        public void updateWith(Double openTodayCurrent,
+                               Double highTodayCurrent,
+                               Double lowTodayCurrent,
+                               Double closeTodayCurrent,
+                               Double amountTodayCurrent) {
+            // 1.数据列表, 更新最后一个数据, 为给定今日最新数据
+            allOpen.set(allOpen.size() - 1, openTodayCurrent);
+            allHigh.set(allHigh.size() - 1, highTodayCurrent);
+            allLow.set(allLow.size() - 1, lowTodayCurrent);
+            allClose.set(allClose.size() - 1, closeTodayCurrent);
+            allAmount.set(allAmount.size() - 1, amountTodayCurrent);
+
+            // 2.刷新 价格和成交量 最大值
+            updatePriceLowAndHigh();
+            updateAmountMax();
+
+
+        }
+
+        public void showSimple() {
+            ApplicationFrame frame = new ApplicationFrame("temp");
+            ChartPanel chartPanel = new ChartPanel(this.getChart());
+            // 大小
+            chartPanel.setPreferredSize(new Dimension(1200, 800));
+            chartPanel.setMouseZoomable(false);
+            chartPanel.setRangeZoomable(false);
+            chartPanel.setDomainZoomable(false);
+            chartPanel.addChartMouseListener(getCrossLineListenerForKLineXYPlot(this.getAllDateTime()));
+            frame.setContentPane(chartPanel);
+            frame.pack(); // 显示.
+            // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+            frame.setVisible(true);
         }
 
 
@@ -173,35 +220,11 @@ public class EmChartKLine {
         DateAxis xAxisOfDate;
         NumberAxisYSupportTickToPreClose y1Axis; // 左价格
         NumberAxisYSupportTickMultiColor y2Axis; // 右百分比
-
-        // 两大序列集合
-        TimeSeriesCollection lineSeriesCollection = new TimeSeriesCollection(); // 均价,价格,昨收 3序列集合
-        TimeSeriesCollection barSeriesCollection = new TimeSeriesCollection(); // 成交量数据的集合
-        // 4大数据序列, 更新数据, 调用 add 或者 delete方法. 前3者时间戳需要一致更新
-        TimeSeries seriesOfFsPrice = new TimeSeries("分时数据");
-        // @add. 新增指数和正股价格线 序列 -- 同样241
-        TimeSeries seriesOfFsPriceOfIndex = new TimeSeries("指数分时数据");
-        TimeSeries seriesOfFsPriceOfStock = new TimeSeries("正股分时数据");
-
-        TimeSeries seriesOfAvgPrice = new TimeSeries("均价");
-        TimeSeries seriesOfVol = new TimeSeries("成交量");
-        TimeSeries seriesOfPreClose = new TimeSeries("昨日收盘价");
-
-        // 价格图折线渲染器
-        XYLineAndShapeRenderer lineAndShapeRenderer = buildPlot1LineRenderer();
-        // 时间x轴
-        DateAxis domainAxis;
-        // y轴1--价格轴
-        EmChartFs.NumberAxisYSupportTickToPreClose y1Axis = new EmChartFs.NumberAxisYSupportTickToPreClose();
-        // y轴2--涨跌幅轴
-        EmChartFs.NumberAxisYSupportTickMultiColor y2Axis = new EmChartFs.NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-        // 价格图
         XYPlot plot1;
-        // 成交量图柱状渲染器
-        XYBarRenderer barRenderer;
-        // 成交量图 y轴
-        NumberAxis y3Axis = new NumberAxis();
-        XYPlot plot2; // 成交量图
+        XYBarRenderer xyBarRender; // 成交额渲染器
+        NumberAxis y3AxisOfAmount;
+        XYPlot plot2;
+        CombinedDomainXYPlot combineddomainxyplot;
 
         // 价格上下限, 依然随着filter而可能改变, 带默认值 ,init中会初始化
         double priceLow;
@@ -214,41 +237,71 @@ public class EmChartKLine {
 
             // 2.最高最低价格, 限制y range
             updatePriceLowAndHigh();
-
             // 3.最高成交额也更新
             updateAmountMax();
-
             // 4.价格序列填充数据
             initPriceSeries();
-
             // 5.成交量序列
             initAmountSeries();
-
             // 6. 设置K线图的渲染器
             initPriceCandlestickRender();
-
-
             // 8.日期轴唯一横轴: DateAxis, 设置日期范围; 时间线属性等
             initXAxisOfDate();
-
             // 9. k线Y轴 价格轴; 左右两边tick, 左价格, 右百分比
             // 9.1.左价格轴
             initY1AxisOfPrice(stdPrice);
             // 9.2. 右百分比轴
             initY2AsisOfPercent(stdPrice);
+            // 10. 图表1实例化 -- k线图
+            initPlot1();
 
-            //12. 图表1实例化 -- k线图
-            //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
-            //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
-            XYPlot plot1 = new XYPlot(seriesCollection, xAxisOfDate, null, candlestickRender);
-            plot1.setBackgroundPaint(bgColorFs);//设置曲线图背景色
-            plot1.setDomainGridlinesVisible(false);//不显示网格
-            plot1.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
-            plot1.setRangeAxis(0, y1Axis);
-            plot1.setRangeAxis(1, y2Axis); // 左右两个tick
+            // 11. 成交额渲染器
+            initAmountBarRender();
+            // 12. 成交额y轴
+            initYAxisOfAmount();
+            // 13. 成交额图
+            initPlot2();
 
-            // 13. 成交量渲染器
-            XYBarRenderer xyBarRender = new XYBarRenderer() {
+            // 16. 最后步骤: 共享x轴的图表: 将添加2个图表
+            initPlotFinal();
+        }
+
+        private void initPlotFinal() {
+            combineddomainxyplot = new CombinedDomainXYPlot(xAxisOfDate);//建立一个恰当的联合图形区域对象，以x轴为共享轴
+            combineddomainxyplot.add(plot1, weight1OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
+            combineddomainxyplot.add(plot2, weight2OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域1/3
+            combineddomainxyplot.setGap(gapOfTwoPlotOfKLine);//设置两个图形区域对象之间的间隔空间
+
+            chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, combineddomainxyplot, false);
+            plot1.setBackgroundPaint(bgColorKLine);
+            plot2.setBackgroundPaint(bgColorKLine);
+            combineddomainxyplot.setBackgroundPaint(bgColorKLine);
+            chart.setBackgroundPaint(bgColorKLine);
+            chart.setTitle(
+                    new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
+                            Title.DEFAULT_POSITION,
+                            Title.DEFAULT_HORIZONTAL_ALIGNMENT,
+                            Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+        }
+
+        private void initPlot2() {
+            // 13. 成交量图表
+            //建立第二个画图区域对象，主要此时的x轴设为了null值，因为要与第一个画图区域对象共享x轴
+            plot2 = new XYPlot(timeSeriesCollection, null, y3AxisOfAmount, xyBarRender);
+            plot2.setDomainGridlinesVisible(false);
+        }
+
+        private void initYAxisOfAmount() {
+            y3AxisOfAmount = new NumberAxis();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+            y3AxisOfAmount.setAutoRange(false);
+            y3AxisOfAmount.setRange(0, amountMax * 1.05); // 从0开始显示
+            y3AxisOfAmount.setTickUnit(new NumberTickUnit((amountMax * 1.05) / 5)); // 单位, 需要与范围匹配
+            y3AxisOfAmount.setTickLabelPaint(Color.red);
+            y3AxisOfAmount.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
+        }
+
+        private void initAmountBarRender() {
+            xyBarRender = new XYBarRenderer() {
                 private static final long serialVersionUID = 1L;// 为了避免出现警告消息，特设定此值
 
                 @Override
@@ -268,39 +321,17 @@ public class EmChartKLine {
             xyBarRender.setMargin(0.25);// 设置柱形图之间的间隔
             xyBarRender.setShadowVisible(false); // 不显示阴影
             xyBarRender.setDrawBarOutline(false);
+        }
 
-
-            // 14. 成交量y轴
-            NumberAxis y3Axis = new NumberAxis();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
-            y3Axis.setAutoRange(false);
-            y3Axis.setRange(0, amountMax * 1.05); // 从0开始显示
-            y3Axis.setTickUnit(new NumberTickUnit((amountMax * 1.05) / 5)); // 单位, 需要与范围匹配
-            y3Axis.setTickLabelPaint(Color.red);
-            y3Axis.setNumberFormatOverride(new NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
-
-
-            // 15. 成交量图表
-            //建立第二个画图区域对象，主要此时的x轴设为了null值，因为要与第一个画图区域对象共享x轴
-            XYPlot plot2 = new XYPlot(timeSeriesCollection, null, y3Axis, xyBarRender);
-            plot2.setDomainGridlinesVisible(false);
-
-            // 16. 共享x轴的图表: 将添加2个图表
-            CombinedDomainXYPlot combineddomainxyplot = new CombinedDomainXYPlot(xAxisOfDate);//建立一个恰当的联合图形区域对象，以x轴为共享轴
-            combineddomainxyplot.add(plot1, weight1OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域2/3
-            combineddomainxyplot.add(plot2, weight2OfTwoPlotOfKLine);//添加图形区域对象，后面的数字是计算这个区域对象应该占据多大的区域1/3
-            combineddomainxyplot.setGap(gapOfTwoPlotOfKLine);//设置两个图形区域对象之间的间隔空间
-
-
-            JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, combineddomainxyplot, false);
-            plot1.setBackgroundPaint(bgColorKLine);
-            plot2.setBackgroundPaint(bgColorKLine);
-            combineddomainxyplot.setBackgroundPaint(bgColorKLine);
-            chart.setBackgroundPaint(bgColorKLine);
-            chart.setTitle(
-                    new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
-                            Title.DEFAULT_POSITION,
-                            Title.DEFAULT_HORIZONTAL_ALIGNMENT,
-                            Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+        private void initPlot1() {
+            //生成画图细节 第一个和最后一个参数这里需要设置为null，否则画板加载不同类型的数据时会有类型错误异常
+            //可能是因为初始化时，构造器内会把统一数据集合设置为传参的数据集类型，画图器可能也是同样一个道理
+            plot1 = new XYPlot(seriesCollection, xAxisOfDate, null, candlestickRender);
+            plot1.setBackgroundPaint(bgColorFs);//设置曲线图背景色
+            plot1.setDomainGridlinesVisible(false);//不显示网格
+            plot1.setRangeGridlinePaint(preCloseColorFs);//设置间距格线颜色为红色, 同昨收颜色
+            plot1.setRangeAxis(0, y1Axis);
+            plot1.setRangeAxis(1, y2Axis); // 左右两个tick
         }
 
         private void initY2AsisOfPercent(Double stdPrice) {
