@@ -12,8 +12,6 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsFsDisplayPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.ThsKLineDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
@@ -25,8 +23,8 @@ import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
-import com.scareers.utils.charts.EmChart;
-import com.scareers.utils.charts.EmChart.DynamicEmFs1MV2ChartForRevise;
+import com.scareers.utils.charts.EmChartFs;
+import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -379,7 +377,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         chartPanel.setMouseZoomable(false, false);
         chartPanel.setMouseWheelEnabled(false);
         crossLineListenerForFsXYPlot =
-                EmChart.getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false));
+                EmChartFs.getCrossLineListenerForFsXYPlot(CommonUtil.generateMarketOpenTimeListHm(false));
         chartPanel // 注意, 必须要求 东财1分钟分时图, 241 行; 即使用 v2 版本的东财api; 同同花顺默认;但更新chart时应当刷新
                 .addChartMouseListener(crossLineListenerForFsXYPlot);
         panelOfTick3sLog = new JPanel();  // tick显示

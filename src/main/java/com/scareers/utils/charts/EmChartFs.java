@@ -1,6 +1,9 @@
 package com.scareers.utils.charts;
 
-import cn.hutool.core.date.*;
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DateRange;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -63,7 +66,7 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * @author: admin
  * @date: 2022/4/5/005-00:48:19
  */
-public class EmChart {
+public class EmChartFs {
     /*
     k线常量
      */
@@ -116,7 +119,7 @@ public class EmChart {
         Console.log(bondBean.getName());
         SecurityBeanEm indexBean = SecurityBeanEm.getShangZhengZhiShu();
         SecurityBeanEm stockBean = SecurityBeanEm.createStock("300863");//卡倍忆
-        EmChart2.DynamicEmFs1MV2ChartForRevise dynamicChart = new EmChart2.DynamicEmFs1MV2ChartForRevise(bondBean,
+        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean,
                 dateStr, indexBean,
                 stockBean);
 
@@ -385,9 +388,9 @@ public class EmChart {
         // 时间x轴
         DateAxis domainAxis;
         // y轴1--价格轴
-        EmChart.NumberAxisYSupportTickToPreClose y1Axis = new EmChart.NumberAxisYSupportTickToPreClose();
+        EmChartFs.NumberAxisYSupportTickToPreClose y1Axis = new EmChartFs.NumberAxisYSupportTickToPreClose();
         // y轴2--涨跌幅轴
-        EmChart.NumberAxisYSupportTickMultiColor y2Axis = new EmChart.NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
+        EmChartFs.NumberAxisYSupportTickMultiColor y2Axis = new EmChartFs.NumberAxisYSupportTickMultiColor();//设置Y轴，为数值,后面的设置，参考上面的y轴设置
         // 价格图
         XYPlot plot1;
         // 成交量图柱状渲染器
@@ -719,7 +722,7 @@ public class EmChart {
             y3Axis.setLabelFont(new Font("微软雅黑", Font.BOLD, 12));//设置y轴字体
             y3Axis.setAutoRange(true);//设置采用自动设置时间范围
             y3Axis.setTickLabelPaint(volTickLabelPaint);//设置y轴刻度值颜色
-            y3Axis.setNumberFormatOverride(new EmChart.NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
+            y3Axis.setNumberFormatOverride(new EmChartFs.NumberFormatCnForBigNumber()); // 数据轴数据标签的显示格式
         }
 
         public void initBarRenderer() {
@@ -1000,7 +1003,7 @@ public class EmChart {
         }
 
         public static void setLogTextPane(JTextPane logTextPane) {
-            EmChart2.DynamicEmFs1MV2ChartForRevise.logTextPane = logTextPane;
+            DynamicEmFs1MV2ChartForRevise.logTextPane = logTextPane;
         }
 
         public static JScrollPane getJScrollPaneForTickLog() {
@@ -1008,7 +1011,7 @@ public class EmChart {
         }
 
         public static void setJScrollPaneForTickLog(JScrollPane jScrollPaneForTickLog) {
-            EmChart2.DynamicEmFs1MV2ChartForRevise.jScrollPaneForTickLog = jScrollPaneForTickLog;
+            DynamicEmFs1MV2ChartForRevise.jScrollPaneForTickLog = jScrollPaneForTickLog;
         }
 
         /**
