@@ -31,6 +31,10 @@ import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.decorator.ColorHighlighter;
+import org.jdesktop.swingx.decorator.Highlighter;
+import org.jdesktop.swingx.decorator.HighlighterFactory;
+import org.jdesktop.swingx.decorator.PatternPredicate;
 import org.jfree.chart.ChartPanel;
 
 import javax.accessibility.AccessibleContext;
@@ -48,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -406,7 +411,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         labelOfRealTimeSimulationTime.setForeground(Color.green);
         labelOfRealTimeSimulationTime.setPreferredSize(new Dimension(60, 40));
         labelOfRealTimeSimulationTime.setBackground(Color.black);
-        labelOfRealTimeSimulationTime.setText("00:00:00"); // 初始!
+        labelOfRealTimeSimulationTime.setText("09:30:00"); // 初始!
 
         // 1.4. 时间流速倍率, 默认 1.0
         jTextFieldOfTimeRate = new JTextField(String.valueOf(timeRateDefault));
@@ -1050,19 +1055,18 @@ public class BondGlobalSimulationPanel extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                        boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                this.setBackground(new Color(64, 0, 128)); // 同花顺
-            }
-            // @key: 需要把视图的 row 转换为 模型里面真实的row, 得到真正的数据! 有 行列号, 转换为view/model中 4大方法
-            row = table.convertRowIndexToModel(row); // 在model中的真实 row
-            DefaultTableModel model = (DefaultTableModel) table.getModel();
-            double accordingValue = Double.parseDouble(model.getDataVector().get(row).get(2).toString()); // 涨跌幅数据!
-            if (accordingValue < 0.0) {
-                setForeground(Color.green); // 根据涨跌幅设置 文字颜色
-            } else if (accordingValue > 0.0) {
-                setForeground(Color.red);
-            } else {
-                setForeground(Color.white);
+            try {
+                if (isSelected) {
+                    this.setBackground(new Color(64, 0, 128)); // 同花顺
+                } else {
+                    this.setBackground(Color.black); // 同花顺
+                }
+                this.setForeground(Color.red);
+                if (value != null) {
+                    this.setText(value.toString());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return this;
         }
@@ -1083,6 +1087,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 // 例如null, 可能转换失败, 很正常!
             }
             if (price != null) { // 转换为涨跌幅成功, 则格式化显示!
+                // this.setForeground(Color.red); // 全红, 然后用高亮接口, - 开头的 绿色, 实现红绿区分!
                 super.setText(dfOfChgPct.format(price));
             } else {
                 super.setText(text);
@@ -1152,6 +1157,12 @@ public class BondGlobalSimulationPanel extends JPanel {
         jXTableForBonds.setSortOrder("涨跌幅", SortOrder.DESCENDING);
         jXTableForBonds.setModel(model);
         removeEnterKeyDefaultAction(jXTableForBonds); // 按下enter不下移, 默认行为
+
+        PatternPredicate patternPredicate = new PatternPredicate("^-.*", 2);
+        ColorHighlighter redGreenChgPct = new ColorHighlighter(patternPredicate, Color.black,
+                Color.green, new Color(64, 0, 128), Color.green);
+        jXTableForBonds.setHighlighters(redGreenChgPct);
+
         // 3.切换选择的回调绑定
         jXTableForBonds.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
@@ -1177,6 +1188,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             jxFindBarS.setSearchable(this.jXTableForBonds.getSearchable());
         }
         initJTableStyle();
+        setTableColCellRenders(); // 设置显示render
 
         // 持续刷新列表, 100 ms一次. securityEmPos 应该为持续变化
         ThreadUtil.execAsync(new Runnable() {
@@ -1184,9 +1196,13 @@ public class BondGlobalSimulationPanel extends JPanel {
             @Override
             public void run() {
                 while (true) { // 不断更新表格内容!
+                    String currentTick = "09:30:00";
+                    if (labelOfRealTimeSimulationTime != null) {
+                        currentTick = labelOfRealTimeSimulationTime.getText();
+                    }
                     DataFrame<Object> newDataDf = getReviseTimeBondListOverviewDataDf(
-                            bondBeanList, getReviseDateStrSettingYMD(),
-                            getReviseDateStrSettingHMS());
+                            bondBeanList, getReviseDateStrSettingYMD(), currentTick
+                    );
                     fullFlushBondListTable(newDataDf);
                     ThreadUtil.sleep(1000); // 每秒刷新!
                 }
@@ -1222,7 +1238,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.表格自身文字颜色和背景色
 //        jXTableForBonds.setForeground(COLOR_LIST_FLAT_EM);
-        jXTableForBonds.setBackground(COLOR_LIST_BK_EM);
+        jXTableForBonds.setBackground(Color.black);
 
 //        // 3.名称列红色
 //        DefaultTableCellRenderer cellRendererOfTitle = new DefaultTableCellRenderer();
@@ -1248,24 +1264,40 @@ public class BondGlobalSimulationPanel extends JPanel {
      * @param model
      */
     protected void fullFlushBondListTable(DataFrame<Object> newestDf) {
+        int sortedColumnIndex = jXTableForBonds.getSortedColumnIndex(); // 唯一主要的排序列!
+        SortOrder sortOrder = null;
+        if (sortedColumnIndex != -1) {
+            sortOrder = jXTableForBonds.getSortOrder(sortedColumnIndex); // 什么顺序
+        }
+
         DefaultTableModel model = (DefaultTableModel) jXTableForBonds.getModel();
+        // 老数据
         Vector<Vector> oldDatas = model.getDataVector();
+
+        // 新数据
         Vector<Vector> newDatas = new Vector<>();
         for (int i = 0; i < newestDf.length(); i++) {
             newDatas.add(new Vector<>(newestDf.row(i)));
         }
-
-        // 将自动增减行, 若新数据行少, 则多的行不会显示, 但本身存在
+        // 行改变 :将自动增减行, 若新数据行少, 则多的行不会显示, 但本身存在
         model.setRowCount(newDatas.size());
-        for (int i = 0; i < Math.min(oldDatas.size(), newDatas.size()); i++) {
+
+//        model.setDataVector(newDatas, new Vector<>(bondTableColNames));
+
+        for (int i = 0; i < newDatas.size(); i++) {
             for (int j = 0; j < model.getColumnCount(); j++) {
                 Object o = newDatas.get(i).get(j);
                 if (o != null) {
-                    if (!o.equals(oldDatas.get(i).get(j))) {
-                        model.setValueAt(newDatas.get(i).get(j), i, j);
-                    }
+                    model.setValueAt(newDatas.get(i).get(j), i, j);
+                } else {
+                    model.setValueAt(null, i, j);
                 }
             }
+        }
+
+        // 排序恢复!
+        if (sortedColumnIndex != -1) {
+            jXTableForBonds.setSortOrder(sortedColumnIndex, sortOrder);
         }
     }
 
