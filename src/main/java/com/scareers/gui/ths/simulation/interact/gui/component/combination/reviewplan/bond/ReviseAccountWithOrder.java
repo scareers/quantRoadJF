@@ -29,10 +29,21 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "plan_of_industry_and_concept",
-        indexes = {@Index(name = "dateStr_Index", columnList = "dateStr"),
-                @Index(name = "type_Index", columnList = "type")})
+@Table(name = "revise_account_with_order",
+        indexes = {@Index(name = "AStartRealTime_Index", columnList = "AStartRealTime"), // 复盘真实开始时间带毫秒, 唯一确定单个账号!
+                @Index(name = "AReviseStartDateTimeStr_Index", columnList = "AReviseStartDateTimeStr"), // 复盘模拟的开始日期时间
+                @Index(name = "targetCode_Index", columnList = "targetCode"), // 订单相关的 转债代码名称和行情id
+                @Index(name = "targetQuoteId_Index", columnList = "targetQuoteId"),
+                @Index(name = "targetName_Index", columnList = "targetName"),
+        }
+)
 public class ReviseAccountWithOrder {
+    public static void main(String[] args) {
+        ReviseAccountWithOrder x = new ReviseAccountWithOrder();
+        ReviseAccountWithOrderDao.saveOrUpdateBean(x);
+
+    }
+
     @Id
     @GeneratedValue // 默认就是auto
     @Column(name = "id")
