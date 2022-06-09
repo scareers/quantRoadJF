@@ -711,15 +711,15 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     /**
      * sleep衰减设置值队列, 求平均值, 去掉最大和最小
-     * 仅一次循环求3值, 尽量最快速度! 不调用常规api
+     * 仅一次循环求3值, 尽量最快速度! 不调用常规 求和/max/min  api
      *
      * @param deque
      * @return
      */
-    public static long getTheAvgOfDequeExcludeMaxAndMin(ArrayDeque<Long> deque) {
-        if (deque.size() < 3) {
-            return deque.getLast();
-        }
+    private static long getTheAvgOfDequeExcludeMaxAndMin(ArrayDeque<Long> deque) {
+//        if (deque.size() < 3) {
+//            return deque.getLast();
+//        } // 因默认已加入3次默认设置, 不再需要判定
         long sum = 0;
         long min = Long.MAX_VALUE;
         long max = Long.MIN_VALUE;
@@ -736,14 +736,20 @@ public class BondGlobalSimulationPanel extends JPanel {
         return NumberUtil.round((sum - min - max) * 1.0 / (deque.size() - 2), 0).longValue();
     }
 
-
+    /**
+     * 复盘主循环逻辑
+     *
+     * @param finalStartIndex
+     */
     public void startReviseMainLoop(int finalStartIndex) {
         TimeInterval timer = DateUtil.timer();
         timer.start();
         // 实现自动调整sleep时间衰减设置(主要解决非sleep代码执行耗时的问题);
         // 因为倍率可能变化, 这里保留设置值的队列! 去最大和最小求平均; 而不保留耗时队列
         ArrayDeque<Long> sleepReduceSettingValueDeque = new ArrayDeque<>(20);
-        sleepReduceSettingValueDeque.add(codeExecLossSleepFixSimulation);
+        for (int i = 0; i < 3; i++) {
+            sleepReduceSettingValueDeque.add(codeExecLossSleepFixSimulation);
+        }
 
         for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
             if (!reviseRunning) { // 被停止

@@ -229,6 +229,12 @@ public class EmChartKLine {
                 return;
             }
 
+            this.open = openTodayCurrent;
+            this.high = highTodayCurrent;
+            this.low = lowTodayCurrent;
+            this.close = closeTodayCurrent;
+            this.amount = amountTodayCurrent;
+
             // 1.数据列表, 更新最后一个数据, 为给定今日最新数据
             allOpen.set(allOpen.size() - 1, openTodayCurrent);
             allHigh.set(allHigh.size() - 1, highTodayCurrent);

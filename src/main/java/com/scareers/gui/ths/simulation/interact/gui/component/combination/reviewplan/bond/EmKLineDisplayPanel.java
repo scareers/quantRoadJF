@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.utils.CommonUtil;
@@ -179,11 +181,16 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                 }
                 //         // 日期	   开盘	   收盘	   最高	   最低	    成交量	成交额	   振幅	   涨跌幅	   涨跌额	  换手率	  资产代码	资产名称
                 DataFrame<Object> klineDfBeforeToday = dynamicKLineChart.getKlineDfBeforeToday();
-                if (newIndex < klineDfBeforeToday.length() && newIndex > 0) { // 常态
+                if (newIndex < klineDfBeforeToday.length()) { // 常态
                     // 9项数据
                     String date = StrUtil.replace(klineDfBeforeToday.get(newIndex, "日期").toString(), "-", "");
                     labelOfDateValue.setText(date);
-                    Double preClose = Double.valueOf(klineDfBeforeToday.get(newIndex - 1, "收盘").toString());
+
+                    // 昨收, 控制 今日 4个价格的 颜色!
+                    Double preClose = null;
+                    if (newIndex != 0) { // 第一根k线没有昨收, 因此将白色
+                        preClose = Double.valueOf(klineDfBeforeToday.get(newIndex - 1, "收盘").toString());
+                    }
 
                     Double open = Double.valueOf(klineDfBeforeToday.get(newIndex, "开盘").toString());
                     setTextColorByZero(labelOfOpenValue, open, preClose);
@@ -198,13 +205,44 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                     labelOfChgPctValue.setText(labelOfChgPctValue.getText() + "%");
 
                     Double amount = Double.valueOf(klineDfBeforeToday.get(newIndex, "成交额").toString());
-                    labelOfAmountValue.setText(CommonUtil.formatNumberWithSuitable(amount,1));
+                    labelOfAmountValue.setText(CommonUtil.formatNumberWithSuitable(amount, 1));
                     Double amplitude = Double.valueOf(klineDfBeforeToday.get(newIndex, "振幅").toString());
                     labelOfAmplitudeValue.setText(amplitude.toString() + "%");
                     Double turnover = Double.valueOf(klineDfBeforeToday.get(newIndex, "换手率").toString());
                     labelOfTurnoverValue.setText(turnover.toString() + "%");
+                } else { // 最后一天的k线!
+                    // 需要从 dynamicKLineChart 读取属性数据
+                    String date = StrUtil.replace(dynamicKLineChart.getTodayStr(), "-", "");
+                    labelOfDateValue.setText(date);
+                    // 昨收, 控制 今日 4个价格的 颜色!
+                    Double preClose = dynamicKLineChart.getPreClose();
 
+                    Double open = dynamicKLineChart.getOpen();
+                    setTextColorByZero(labelOfOpenValue, open, preClose);
+                    Double high = dynamicKLineChart.getHigh();
+                    setTextColorByZero(labelOfHighValue, high, preClose);
+                    Double low = dynamicKLineChart.getLow();
+                    setTextColorByZero(labelOfLowValue, low, preClose);
+                    Double close = dynamicKLineChart.getClose();
+                    setTextColorByZero(labelOfCloseValue, close, preClose);
+                    Double chgPct = NumberUtil.round((close / preClose - 1) * 100, 2).doubleValue();
+                    setTextColorByZero(labelOfChgPctValue, chgPct, 0.0);
+                    labelOfChgPctValue.setText(labelOfChgPctValue.getText() + "%");
 
+                    Double amount = dynamicKLineChart.getAmount();
+                    labelOfAmountValue.setText(CommonUtil.formatNumberWithSuitable(amount, 1));
+                    Double amplitude = NumberUtil.round((high - low) / preClose * 100, 2).doubleValue();
+                    labelOfAmplitudeValue.setText(amplitude.toString() + "%");
+
+                    // 当前换手率, 对比昨天的成交额 和换手率, 推断计算得来, 视为流通盘不变
+                    Double turnoverYesterday = Double
+                            .valueOf(klineDfBeforeToday.get(klineDfBeforeToday.length() - 1, "换手率").toString());
+                    Double amountYesterday =
+                            Double.valueOf(klineDfBeforeToday.get(klineDfBeforeToday.length() - 1, "成交额").toString());
+                    Double turnover = NumberUtil.round((amount / amountYesterday) * turnoverYesterday, 2)
+                            .doubleValue(); // @noti:
+                    // 推断的, 要求流通盘不变
+                    labelOfTurnoverValue.setText(turnover.toString() + "%");
                 }
             }
         };
@@ -216,6 +254,11 @@ public class EmKLineDisplayPanel extends DisplayPanel {
             return;
         }
         label.setText(value.toString());
+        if (compareValue == null) {
+            label.setForeground(Color.white); // 没有昨收时, 设置白色, 即第一根k线
+            return;
+        }
+
         if (value > compareValue) {
             label.setForeground(upColor);
         } else if (value < compareValue) {
