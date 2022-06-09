@@ -124,6 +124,18 @@ public class BondGlobalSimulationPanel extends JPanel {
         buildMainPanel();
         buttonCollapsibleKLinePanel // 按钮绑定折叠
                 .setAction(klineCollapsiblePane.getActionMap().get(JXCollapsiblePane.TOGGLE_ACTION));
+        EmKLineDisplayPanel.InfoDialog infoDialog = dailyKLineDisplayPanel.getInfoDialog();
+        infoDialog.setVisible(true);
+        buttonCollapsibleKLinePanel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 切换折叠
+//                klineCollapsiblePane.setCollapsed(!klineCollapsiblePane.isCollapsed());
+                EmKLineDisplayPanel.InfoDialog infoDialog = dailyKLineDisplayPanel.getInfoDialog();
+                //infoDialog.setVisible(!infoDialog.isVisible());
+                infoDialog.setVisible(klineCollapsiblePane.isCollapsed());
+            }
+        });
         buttonCollapsibleKLinePanel.setText("折叠k线");
 
         JPanel panelTemp = new JPanel(); // 总容器, 上为新增k线折叠面板, 下为原分时图主面板
@@ -168,9 +180,12 @@ public class BondGlobalSimulationPanel extends JPanel {
 //        panelTemp.add(klineCollapsiblePane, BorderLayout.SOUTH); // 可折叠展示k线, 放在南边
 
 
+        //@key:面板折叠, 需要隐藏掉 k线信息对话框; 在按钮的回调设置
         klineCollapsiblePane = new JXCollapsiblePane();
-        klineCollapsiblePane.setAnimated(true);
+        klineCollapsiblePane.setAnimated(false); // 不慢动作
+//        klineCollapsiblePane.setAnimated(true);
         klineCollapsiblePane.setLayout(new BorderLayout());
+
 
         klineDisplayContainerPanel = new JPanel(); // 方便添加其他k线, 目前虽然只有日k线
         klineDisplayContainerPanel.setLayout(new GridLayout(1, 1, -1, -1)); // 4份 k线

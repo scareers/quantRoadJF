@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.CrossLineListenerForKLineXYPlot;
@@ -14,6 +15,7 @@ import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_MINOR;
 
@@ -28,7 +30,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
 @Data
 public class EmKLineDisplayPanel extends DisplayPanel {
     public static final int preferHeight = 300;
-    public static final int infoPanelWidth = 80; // 信息显示panel宽度
+    public static final int infoPanelWidth = 62; // 信息显示panel宽度, 同花顺62
     public static final Color infoLabelColor = new Color(192, 192, 192); // 文字颜色, 偏灰白, 同 同花顺
     public static final Color upColor = new Color(255, 50, 50); // 上升红色
     public static final Color downColor = new Color(0, 230, 0); // 下跌绿色
@@ -71,6 +73,8 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         initJPanelOfCurrentKLineInfo();
     }
 
+    InfoDialog infoDialog;
+
     /**
      * k线具体数据显示panel
      */
@@ -100,11 +104,105 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         jPanelOfCurrentKLineInfo.add(labelOfTurnover);
         jPanelOfCurrentKLineInfo.add(labelOfTurnoverValue);
 
-        jPanelOfCurrentKLineInfo.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+        // 边框色同 同花顺
+        jPanelOfCurrentKLineInfo.setBorder(BorderFactory.createLineBorder(new Color(176, 3, 0), 1));
         jPanelOfCurrentKLineInfo.setBackground(Color.black);
 
-        this.add(jPanelOfCurrentKLineInfo, BorderLayout.EAST);
+//        this.add(jPanelOfCurrentKLineInfo, BorderLayout.EAST);
+        JLabel tempLabel = new JLabel("");
+        tempLabel.setPreferredSize(new Dimension(infoPanelWidth, 4096));
+        this.add(tempLabel, BorderLayout.EAST);
+
+
         this.setBackground(Color.black);
+
+
+        // 将信息面板放进对话框,
+        infoDialog = new InfoDialog("信息", false, this, new Dimension(infoPanelWidth,
+                preferHeight + 20));
+        infoDialog.setContentPane(jPanelOfCurrentKLineInfo);
+        TraderGui.INSTANCE.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
+                infoDialog.resetLocation();
+            }
+
+            @Override
+            public void componentMoved(ComponentEvent e) {
+                super.componentMoved(e);
+                infoDialog.resetLocation();
+            }
+
+            @Override
+            public void componentShown(ComponentEvent e) {
+                super.componentShown(e);
+                infoDialog.resetLocation();
+            }
+
+            @Override
+            public void componentHidden(ComponentEvent e) {
+                super.componentHidden(e);
+                infoDialog.resetLocation();
+            }
+        });
+    }
+
+    /**
+     * 单根k线具体信息显示对话框! 默认放在右上角;
+     * 初始出现; 点击折叠k线, 会消失, 展示k线又出现
+     * 当主界面变大变小, 将重置位置到右上角
+     *
+     */
+    public static class InfoDialog extends JDialog {
+        volatile Point origin = new Point(0, 0);  //全局的位置变量，用于表示鼠标在窗口上的位置
+        Dimension defaultDimension;
+        JPanel parentPanel;
+
+        public InfoDialog(String title, boolean modal, JPanel parentPanel, Dimension defaultDimension) {
+            super(TraderGui.INSTANCE, title, modal);
+            this.parentPanel = parentPanel;
+            this.defaultDimension = defaultDimension;
+            this.getContentPane().setBackground(Color.black);
+            this.setUndecorated(true);
+            resetLocation();
+            this.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {  //按下(mousePressed 不是点击，而是鼠标被按下没有抬起)
+                    origin.x = e.getX();  //当鼠标按下的时候获得窗口当前的位置
+                    origin.y = e.getY();
+                }
+            });
+            InfoDialog temp = this;
+            this.addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseDragged(MouseEvent e) {  // 拖动(mouseDragged 指的不是鼠标在窗口中移动，而是用鼠标拖动)
+                    Point p = temp.getLocation();  //当 鼠标拖动时获取窗口当前位置
+                    temp.flushLocation(p.x + e.getX() - origin.x, p.y + e.getY() - origin.y);
+                }
+            });
+
+        }
+
+        /**
+         * 重置位置
+         */
+        public void resetLocation() {
+            int x = TraderGui.INSTANCE.getX() +
+                    TraderGui.INSTANCE.getWidth() - TraderGui.INSTANCE.getCorePanel().getRightTools()
+                    .getWidth() - (int) defaultDimension.getWidth()
+                    - 8; // 8为修正值
+            int y = TraderGui.INSTANCE.getY() + 53; // 菜单栏高度+gui标题栏高度大概
+//            flushLocation(parentPanel.getX(), parentPanel.getY());
+            flushLocation(x, y);
+        }
+
+        public void flushLocation(int x, int y) {
+            this.setBounds(x, y, (int) defaultDimension.getWidth(),
+                    (int) defaultDimension.getHeight());
+        }
+
+
     }
 
 
