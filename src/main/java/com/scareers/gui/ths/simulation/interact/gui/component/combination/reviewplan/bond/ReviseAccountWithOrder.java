@@ -127,11 +127,10 @@ public class ReviseAccountWithOrder {
     /*
     订单信息相关!
      */
-    @Column(name = "orderGenerateTime", columnDefinition = "varchar(64)")
-    String orderGenerateTime; // 订单生成时间, 常用于但账户的订单排序, 形式为 HH:mm:ss, 是复盘的虚拟时间
+    @Column(name = "orderGenerateTick", columnDefinition = "varchar(64)")
+    String orderGenerateTick; // 订单生成时间, 常用于但账户的订单排序, 形式为 HH:mm:ss, 是复盘的虚拟时间
     @Column(name = "orderGenerateTimeReal", columnDefinition = "varchar(64)")
     String orderGenerateTimeReal; // 订单生成时间, 真实时间, 带毫秒!
-
     @Column(name = "orderType", columnDefinition = "varchar(8)")
     String orderType; // 需要设定为 buy 或者 sell
     @Column(name = "targetCode", columnDefinition = "varchar(16)")
@@ -140,10 +139,22 @@ public class ReviseAccountWithOrder {
     String targetName; // 目标转债名称
     @Column(name = "targetQuoteId", columnDefinition = "varchar(16)")
     String targetQuoteId; // 目标转债 东财行情id, 方便访问数据库数据
+
+    // 订单 给出的买入卖出价格, 有可能不成交
+    @Column(name = "orderPrice", columnDefinition = "double")
+    Double oderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
+    // @key: 买卖单, 均使用核按钮, 并且以 仓位形式给出! 常态有 1/1,1/2,1/3,1/4 --> 订单需要提供此值, 实际数量由此计算
+    @Column(name = "orderPrice", columnDefinition = "double")
+    Double oderPositionPercent; // 订单仓位
     @Column(name = "amount", columnDefinition = "int")
-    Integer amount; // 转债数量, 整数!, 自行计算合适的数量, 然后设置!
-    @Column(name = "price", columnDefinition = "double")
-    Double price; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
+    Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!!
+
+    // @key: 读取分时成交未来数据, 给出下1/2 tick的实时价格!!!, 将判定其与订单价格的大小, 判定是否能够成交
+    // @key: 当订单生成时, 需要提供 orderGenerateTick ,时分秒, 将以此tick, 自动读取df, 计算 未来的可能成交价格
+    @Column(name = "clinchPriceFuture", columnDefinition = "double")
+    Double clinchPriceFuture;
+    @Column(name = "canClinch")
+    Boolean canClinch = null; // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 判定 是否成交!!
 
 }
 
