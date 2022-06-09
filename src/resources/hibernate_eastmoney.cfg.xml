@@ -26,11 +26,15 @@
         <mapping resource="com/scareers/tools/stockplan/news/bean/NewsFeed.hbm.xml"/>
         <mapping resource="com/scareers/tools/stockplan/news/bean/FourPaperNew.hbm.xml"/>
 
+        <!--        注解实现的类-->
         <mapping class="com.scareers.tools.stockplan.news.bean.NewAspectSummary"/>
         <mapping class="com.scareers.tools.stockplan.indusconcep.bean.IndustryConceptThsOfPlan"/>
         <mapping class="com.scareers.tools.stockplan.stock.bean.StockOfPlan"/>
         <mapping class="com.scareers.tools.stockplan.stock.bean.StockGroupOfPlan"/>
         <mapping class="com.scareers.gui.ths.simulation.trader.StockBondBean"/>
+        <!--        复盘账号订单对象!-->
+        <mapping
+                class="com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder"/>
 
     </session-factory>
 
