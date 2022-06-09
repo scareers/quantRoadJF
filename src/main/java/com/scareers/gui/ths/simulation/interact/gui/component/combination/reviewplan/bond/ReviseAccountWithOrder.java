@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import com.scareers.sqlapi.ThsDbApi;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -49,8 +51,21 @@ public class ReviseAccountWithOrder {
      *
      * @return
      */
-    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart() {
+    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart(String reviseDateStr,
+                                                                           String reviseStartTimeStr) {
+        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        res.setReviseDateStr(reviseDateStr); // 2022-06-06
+        res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
+        res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
+        // 复盘停止时间为null.
 
+        // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
+        String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
+        res.setStartRealTime(currentWitMills);
+        // 停止的真实时间也null
+        res.setGenerateTime(currentWitMills); // 订单生成时间, 也默认设置, 当订单生成时, 将会刷新它!
+
+        return null;
     }
 
     @Id
@@ -74,8 +89,7 @@ public class ReviseAccountWithOrder {
     String startRealTime; // 开始的真实时间; 现实时间 , 标准日期带毫秒
     @Column(name = "AStopRealTime", columnDefinition = "varchar(64)")
     String stopRealTime; // 结束的真实时间; 现实时间, 标准日期带毫秒
-    @Column(name = "AGenerateTime", columnDefinition = "varchar(64)")
-    String generateTime; // 对象生成时间, 常用于排序, 以找到最后一个订单!
+
 
     /*
     账号持仓实时信息相关 -- 资金,持仓
@@ -113,6 +127,11 @@ public class ReviseAccountWithOrder {
     /*
     订单信息相关!
      */
+    @Column(name = "orderGenerateTime", columnDefinition = "varchar(64)")
+    String orderGenerateTime; // 订单生成时间, 常用于但账户的订单排序, 形式为 HH:mm:ss, 是复盘的虚拟时间
+    @Column(name = "orderGenerateTimeReal", columnDefinition = "varchar(64)")
+    String orderGenerateTimeReal; // 订单生成时间, 真实时间, 带毫秒!
+
     @Column(name = "orderType", columnDefinition = "varchar(8)")
     String orderType; // 需要设定为 buy 或者 sell
     @Column(name = "targetCode", columnDefinition = "varchar(16)")
