@@ -72,7 +72,7 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         markerX = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerX.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER); // 标志类型
         markerX.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-        markerX.setPaint(COLOR_CHART_CROSS_LINE_EM); //线条颜色
+        markerX.setPaint(Color.white); //线条颜色
         markerX.setStroke(basicStroke); //粗细
         markerX.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
         markerX.setLabelPaint(Color.red);
@@ -82,7 +82,8 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         markerYForPricePlot = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerYForPricePlot.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
         markerYForPricePlot.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-        markerYForPricePlot.setPaint(COLOR_CHART_CROSS_LINE_EM); //线条颜色
+//        markerYForPricePlot.setPaint(COLOR_CHART_CROSS_LINE_EM); //线条颜色
+        markerYForPricePlot.setPaint(Color.white); //线条颜色
 
         markerYForPricePlot.setStroke(basicStroke); //粗细
         // markerY.setLabel(decimalFormatForPercent.format(markerValueY)); //线条上显示的文本
@@ -95,7 +96,8 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
         markerYForVolPlot = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 昨日收盘
         markerYForVolPlot.setType(ValueMarkerS.Type.MOUSE_CROSS_MARKER);
         markerYForVolPlot.setLabelOffsetType(LengthAdjustmentType.EXPAND);
-        markerYForVolPlot.setPaint(COLOR_CHART_CROSS_LINE_EM); //线条颜色
+        markerYForVolPlot.setPaint(Color.white); //线条颜色
+//        markerYForVolPlot.setPaint(COLOR_CHART_CROSS_LINE_EM); //线条颜色
         markerYForVolPlot.setStroke(basicStroke); //粗细
         // markerY.setLabel(decimalFormatForPercent.format(markerValueY)); //线条上显示的文本
         markerYForVolPlot.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式

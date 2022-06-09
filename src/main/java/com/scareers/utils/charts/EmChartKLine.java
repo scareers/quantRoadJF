@@ -150,7 +150,8 @@ public class EmChartKLine {
             this.todayStr = todayStr;
             this.kLineAmountHope = kLineAmountHope;
             this.today = DateUtil.parse(todayStr); // 日期对象
-            this.title = beanEm.getName();
+//            this.title = beanEm.getName();
+            this.title = null;
 
             // 1.访问网络, 获取昨日及之前的k线数据, 可能耗时, 建议本对象实例化时, 在子线程进行 !!
             // 有缓存不消耗时间, 获取 n个交易日之前那个交易日, 以 访问网络查询api

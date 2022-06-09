@@ -1261,7 +1261,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     public FuncButton getChangeReviseStartTimeButton(String tickHms) {
         FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(tickHms);
-        changeReviseStartTimeButton.setForeground(Color.red);
+        changeReviseStartTimeButton.setForeground(Color.orange);
         changeReviseStartTimeButton.addActionListener(new ActionListener() {
             @SneakyThrows
             @Override
