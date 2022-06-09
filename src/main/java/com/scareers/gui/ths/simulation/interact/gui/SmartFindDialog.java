@@ -364,7 +364,6 @@ public class SmartFindDialog extends JDialog {
                             FuncButton pauseRebootReviseButton = instance.getPauseRebootReviseButton();
                             // 暂停/重启 按钮可见, 就暂停/重启
                             if (pauseRebootReviseButton.isVisible()) {
-                                Console.log("xx");
                                 pauseRebootReviseButton.doClick();
                             }
                         }

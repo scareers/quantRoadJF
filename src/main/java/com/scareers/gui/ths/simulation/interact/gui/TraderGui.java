@@ -262,8 +262,6 @@ public class TraderGui extends JFrame {
     private void whenWindowOpened() {
         SmartFindDialog.addGlobalSmartFinder(); // 窗口打开后, 首先添加只能查找框, 不可见
 
-
-
         ThreadUtil.execAsync(() -> {
             try {
                 this.setExtendedState(JFrame.MAXIMIZED_BOTH); // 最大化
