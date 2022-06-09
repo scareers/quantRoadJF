@@ -3,6 +3,8 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import com.scareers.sqlapi.ThsDbApi;
+import com.scareers.utils.JSONUtilS;
+import com.thoughtworks.qdox.parser.expression.PlusSignDef;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -40,6 +42,18 @@ import java.util.concurrent.ConcurrentHashMap;
         }
 )
 public class ReviseAccountWithOrder {
+    // 属性佣金设置 -- 固定
+    // 1.佣金配置
+    @Column(name = "commissionRateShen", columnDefinition = "double")
+    Double commissionRateShen = 0.00006; // 佣金率, 深市 十万分之6
+    @Column(name = "commissionRateHu", columnDefinition = "double")
+    Double commissionRateHu = 0.000002; // 佣金率, 沪市 百万分之2
+    @Column(name = "commissionMinShen", columnDefinition = "double")
+    Double commissionMinShen = 0.1; // 深市起收 1毛钱
+    @Column(name = "commissionMinHu", columnDefinition = "double")
+    Double commissionMinHu = 0.1; // 沪市起收 1毛钱
+
+
     public static void main(String[] args) {
         ReviseAccountWithOrder x = new ReviseAccountWithOrder();
         ReviseAccountWithOrderDao.saveOrUpdateBean(x);
@@ -47,12 +61,14 @@ public class ReviseAccountWithOrder {
     }
 
     /**
-     * 当正式开始一次复盘时, 会实例化新的 账户对象!! 设置为新的当前账户!
+     * 当正式开始一次复盘时, 会实例化新的 账户对象!! 设置为新的当前账户!!!
      *
      * @return
      */
     public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart(String reviseDateStr,
-                                                                           String reviseStartTimeStr) {
+                                                                           String reviseStartTimeStr,
+                                                                           double initMoney
+    ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
         res.setReviseDateStr(reviseDateStr); // 2022-06-06
         res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
@@ -63,9 +79,13 @@ public class ReviseAccountWithOrder {
         String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
         res.setStartRealTime(currentWitMills);
         // 停止的真实时间也null
-        res.setGenerateTime(currentWitMills); // 订单生成时间, 也默认设置, 当订单生成时, 将会刷新它!
 
-        return null;
+        res.setInitMoney(initMoney); // 初始资金, 不会改变
+        res.setCash(initMoney); // 初始现金
+        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}"
+
+        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
+        return res;
     }
 
     @Id
@@ -95,12 +115,6 @@ public class ReviseAccountWithOrder {
     账号持仓实时信息相关 -- 资金,持仓
      */
 
-    // 1.佣金配置
-    @Column(name = "commissionRate", columnDefinition = "double")
-    Double commissionRateShen = 0.00006; // 佣金率, 深市 十万分之6
-    Double commissionRateHu = 0.000002; // 佣金率, 沪市 百万分之2
-    Double commissionMinShen = 0.1; // 深市起收 1毛钱
-    Double commissionMinHu = 0.1; // 沪市起收 1毛钱
 
     // 2.账号资金资产数据
     @Column(name = "initMoney", columnDefinition = "double")
@@ -122,7 +136,7 @@ public class ReviseAccountWithOrder {
     @Transient
     ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
     @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
-    String bondCostPriceJsonStr = "{}";
+    String bondCostPriceMapJsonStr = "{}";
 
     /*
     订单信息相关!
@@ -144,7 +158,7 @@ public class ReviseAccountWithOrder {
     @Column(name = "orderPrice", columnDefinition = "double")
     Double oderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
     // @key: 买卖单, 均使用核按钮, 并且以 仓位形式给出! 常态有 1/1,1/2,1/3,1/4 --> 订单需要提供此值, 实际数量由此计算
-    @Column(name = "orderPrice", columnDefinition = "double")
+    @Column(name = "oderPositionPercent", columnDefinition = "double")
     Double oderPositionPercent; // 订单仓位
     @Column(name = "amount", columnDefinition = "int")
     Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!!
@@ -154,7 +168,17 @@ public class ReviseAccountWithOrder {
     @Column(name = "clinchPriceFuture", columnDefinition = "double")
     Double clinchPriceFuture;
     @Column(name = "canClinch")
-    Boolean canClinch = null; // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 判定 是否成交!!
+    Boolean canClinch = null; // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 自动判定 是否成交!!
+
+
+    /**
+     * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
+     */
+    public void flushThreeAccountMapJsonStr() {
+        holdBondsMapJsonStr = JSONUtilS.toJsonStr(holdBondsMap);
+        bondProfitMapJsonStr = JSONUtilS.toJsonStr(bondProfitMap);
+        bondCostPriceMapJsonStr = JSONUtilS.toJsonStr(bondCostPriceMap);
+    }
 
 }
 
