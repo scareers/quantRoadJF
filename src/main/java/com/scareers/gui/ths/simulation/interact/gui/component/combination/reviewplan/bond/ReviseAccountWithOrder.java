@@ -44,6 +44,15 @@ public class ReviseAccountWithOrder {
 
     }
 
+    /**
+     * 当正式开始一次复盘时, 会实例化新的 账户对象!! 设置为新的当前账户!
+     *
+     * @return
+     */
+    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart() {
+
+    }
+
     @Id
     @GeneratedValue // 默认就是auto
     @Column(name = "id")
