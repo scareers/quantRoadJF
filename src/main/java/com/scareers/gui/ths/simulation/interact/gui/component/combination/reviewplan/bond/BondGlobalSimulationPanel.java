@@ -1064,9 +1064,17 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();
-        buttonContainer.setLayout(new GridLayout(4, 4, 0, 0)); // 网格布局按钮
+        buttonContainer.setLayout(new GridLayout(5, 4, 0, 0)); // 网格布局按钮
         buttonContainer.setBackground(Color.black);
         buttonContainer.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+
+        // 2.0. 4个点击改变复盘开始 年月日 的按钮
+        List<Integer> changeAmounts = Arrays
+                .asList(1, -1, 3, -3);
+        for (Integer changeAmount : changeAmounts) {
+            FuncButton changeReviseStartDateButton = getChangeReviseStartDateButton(changeAmount);
+            buttonContainer.add(changeReviseStartDateButton);
+        }
 
         // 2.1. 8个点击改变复盘开始时间的按钮; 仅改变时分秒
         List<String> changeReviseStartTimeButtonTexts = Arrays
@@ -1212,6 +1220,37 @@ public class BondGlobalSimulationPanel extends JPanel {
                 }
             }, true);
         }
+    }
+
+    /**
+     * 一类按钮: 点击改变复盘开始日期;  参数表示以当前设置为基点, 往前往后多少个交易日!
+     *
+     * @param tickHms
+     * @return
+     */
+    public FuncButton getChangeReviseStartDateButton(int changeDate) {
+        String text = changeDate < 0 ? "后" : "前";
+        text = text + Math.abs(changeDate);
+
+        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(text);
+        changeReviseStartTimeButton.setForeground(Color.RED);
+        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                String preSetDate = getReviseDateStrSettingYMD();
+                String newSet = EastMoneyDbApi.getPreNTradeDateStrict(preSetDate, changeDate);
+
+
+                // 重设复盘开始时间!
+                reviseStartDatetime = DateUtil.parse(newSet + " " + DateUtil.format(reviseStartDatetime,
+                        DatePattern.NORM_TIME_PATTERN)); // 变量更新
+                jTextFieldOfReviseStartDatetime // 文本框更新
+                        .setText(DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATETIME_PATTERN));
+                dateTimePickerOfReviseStartDatetime.setSelect(reviseStartDatetime);// 改变选中
+            }
+        });
+        return changeReviseStartTimeButton;
     }
 
     /**
