@@ -7,6 +7,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPoForSmartFind;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.utils.CommonUtil;
@@ -355,6 +356,25 @@ public class SmartFindDialog extends JDialog {
         manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
             @Override
             public synchronized boolean postProcessKeyEvent(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE && e.getID()==KeyEvent.KEY_PRESSED) { // 按下空格键
+                    // 1.如果处于复盘界面
+                    if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
+                        BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                        if (instance != null) {
+                            FuncButton pauseRebootReviseButton = instance.getPauseRebootReviseButton();
+                            // 暂停/重启 按钮可见, 就暂停/重启
+                            if (pauseRebootReviseButton.isVisible()) {
+                                Console.log("xx");
+                                pauseRebootReviseButton.doClick();
+                            }
+                        }
+
+                    }
+                }
+
+
+
+
                 INSTANCE.resetLocation(); // 设置位置
                 // 1.需要开启智能查找模式设置下生效!
                 if (!smartFinderMode) {

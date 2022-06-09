@@ -11,6 +11,8 @@ import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import org.jdesktop.swingx.JXButton;
 
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 import java.util.List;
 
 
@@ -32,6 +34,23 @@ public class App {
     public static void main(String[] args) throws Exception {
         String s = Character.toString(0x30);
         Console.log(s);
+
+        JButton btn = new JButton("Test");
+        InputMap im = btn.getInputMap();
+        for (KeyStroke ik : im.allKeys()) {
+            System.out.println(ik + " = " + im.get(ik));
+        }
+
+        Action blankAction = new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+            }
+        };
+
+        ActionMap am = btn.getActionMap();
+        am.put("pressed", blankAction);
+        am.put("released", blankAction);
+
 
 //        DateTime date = DateUtil.date(1646150400);
 //        Console.log(date);

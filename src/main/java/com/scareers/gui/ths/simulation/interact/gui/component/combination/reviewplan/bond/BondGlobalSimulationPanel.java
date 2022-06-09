@@ -85,7 +85,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额");
     // 主循环因代码执行而损耗的时间, 修正每次循环的sleep值, 以符合理论! 将自动调整sleep值! <-- 2毫秒约等于循环的代码执行(排除sleep)时间,
     public static volatile long codeExecLossSleepFixSimulation = 2;
-    public static final int kLineAmountHope = 200; // k线图希望的数量
+    public static final int kLineAmountHope = 170; // k线图希望的数量
     // 今天多少点钟后, 复盘默认日期设置为今天(一般这时爬虫运行过了,数据库有数据了) , 否则设置默认复盘日期为上一交易日
     public static final int afterTodayNHDefaultDateAsToday = 20;
 
@@ -964,14 +964,19 @@ public class BondGlobalSimulationPanel extends JPanel {
                 ThreadUtil.execAsync(new Runnable() {
                     @Override
                     public void run() {
-                        allBondInfoDfForRevise = BondUtil.generateCSVForRecite1();
-                        if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
-                            return;
-                        }
-                        // 载入到map里面, key为转债代码, value 为df单行!, 带有这种代码列, 因此注意索引!
-                        for (int i = 0; i < allBondInfoDfForRevise.length(); i++) {
-                            allBondInfoForReviseMap.put(allBondInfoDfForRevise.get(i, 0).toString(),
-                                    allBondInfoDfForRevise.row(i));
+                        while (true) {
+                            allBondInfoDfForRevise = BondUtil.generateCSVForRecite1(); // 首次
+                            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
+                                ThreadUtil.sleep(30000); // 30秒后再次尝试将
+                                continue; // 失败将重试
+                            }
+                            // 成功则载入然后跳出循环
+                            // 载入到map里面, key为转债代码, value 为df单行!, 带有这种代码列, 因此注意索引!
+                            for (int i = 0; i < allBondInfoDfForRevise.length(); i++) {
+                                allBondInfoForReviseMap.put(allBondInfoDfForRevise.get(i, 0).toString(),
+                                        allBondInfoDfForRevise.row(i));
+                            }
+                            break; //
                         }
                     }
                 }, true);
