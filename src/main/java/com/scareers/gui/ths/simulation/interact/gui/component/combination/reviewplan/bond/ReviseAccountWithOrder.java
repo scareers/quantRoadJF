@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.NumberUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
@@ -12,6 +13,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.math.RoundingMode;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -280,6 +282,12 @@ public class ReviseAccountWithOrder {
 
     @Column(name = "stopAutoOrderFlag")
     Boolean stopAutoOrderFlag = false; // 默认不是收盘自动卖出订单; 在stop复盘时, 自动执行停止卖出订单, 此属性将设置为 true!!!
+    @Column(name = "alreadyCommissionTotal", columnDefinition = "double")
+    Double alreadyCommissionTotal = 0.0; // 已发生手续费总计, 不断添加 新订单的手续费! 精确到分, 向上取整!
+    @Column(name = "commissionSingle", columnDefinition = "double")
+    Double commissionSingle; // 单次佣金
+    @Column(name = "orderFinalClinchDescription", columnDefinition = "longtext")
+    String orderFinalClinchDescription; // 订单执行完成后, 整体描述信息
 
     /**
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
@@ -450,8 +458,31 @@ public class ReviseAccountWithOrder {
                 res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
                 res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
                  */
+
+                // 0.佣金计算和 两个相关属性设定
+                // -- 只在此处计算手续费! 其余地方无视手续费! -- 总资产采用自动刷新模式!
+                double commission; // 手续费计算
+                if (res.targetCode.startsWith("11")) { // 沪债
+                    commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateHu, commissionMinHu);
+                } else {
+                    commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateShen, commissionMinShen);
+                }
+                // --> 佣金精确到分, 向上舍入
+                res.commissionSingle = NumberUtil.round(commission, 2, RoundingMode.CEILING).doubleValue(); // 向上舍入,单次佣金
+                res.alreadyCommissionTotal = // 总发生佣金叠加
+                        NumberUtil.round(res.alreadyCommissionTotal + commissionSingle, 2, RoundingMode.CEILING)
+                                .doubleValue();
+
+
                 // 1.现金减少!
-                res.cash = res.cash - res.clinchPriceFuture * res.amount; // 成交数量*价格, 现金减去
+                // --> 现金精确到分, 向下舍入.
+                res.cash = NumberUtil.round(res.cash - res.clinchPriceFuture * res.amount - res.commissionSingle, 2,
+                        RoundingMode.FLOOR).doubleValue(); //
+                // 成交数量*价格, 现金减去
+
+                // 单债盈利, 不减去手续费, 手续费的减少, 只体现在 现金!
+                // 类似同花顺模拟账号! 总资产也自动使用现金 + 持仓市值,实时变化!
+
                 // 2.转债数量增加!
                 Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
                 res.holdBondsAmountMap.put(res.targetCode, rawAmount + res.amount);
@@ -507,9 +538,9 @@ public class ReviseAccountWithOrder {
 
 
     private void copyTimeAndMoneyAndMapAttrs(ReviseAccountWithOrder res) {
-    /*
-    2.复盘日期时间 和 真实 日期时间: 复制
-     */
+        /*
+        2.复盘日期时间 和 真实 日期时间: 复制
+         */
         res.setReviseDateStr(this.getReviseDateStr()); // 2022-06-06
         res.setReviseStartTimeStr(this.getReviseStartTimeStr()); // 09:30:00
         res.setReviseStartDateTimeStr(this.getReviseStartDateTimeStr()); // 标准的日期时间字符串
@@ -536,6 +567,10 @@ public class ReviseAccountWithOrder {
         res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
 
         res.flushSixAccountMapJsonStr();
+
+        // @add: 已发生手续费 总计; 也需要复制!
+        res.alreadyCommissionTotal = this.alreadyCommissionTotal; // 已发生佣金汇总
+        res.orderFinalClinchDescription = this.orderFinalClinchDescription; // 成交描述
     }
 
     /**
