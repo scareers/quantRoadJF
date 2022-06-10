@@ -211,6 +211,9 @@ public class ReviseAccountWithOrder {
     @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
     String bondCostPriceMapJsonStr = "{}";
 
+    // 自动计算的账户属性!, flushAccount()
+    Double totalAssets = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
+
     /*
     订单信息相关!
      */
@@ -247,6 +250,9 @@ public class ReviseAccountWithOrder {
     @Column(name = "notClinchReason", columnDefinition = "longtext")
     String notClinchReason; // 当执行真实成交, 会对 价格和数量执行实际判定, 是否能够成交, 给出原因描述
 
+    @Column(name = "stopAutoOrderFlag")
+    Boolean stopAutoOrderFlag = false; // 默认不是收盘自动卖出订单; 在stop复盘时, 自动执行停止卖出订单, 此属性将设置为 true!!!
+
     /**
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
      */
@@ -257,11 +263,33 @@ public class ReviseAccountWithOrder {
     }
 
     /**
-     * @return
+     * @return 提交订单, 填充相关订单字段后的 账户订单 对象
      * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
      * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
      */
-    public ReviseAccountWithOrder submitNewOrder() {
+    public ReviseAccountWithOrder submitNewOrder(boolean stopAutoOrderFlag) {
+        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        res.setInnerObjectType(INNER_TYPE_ORDER_SUBMIT);
+        if (stopAutoOrderFlag) {
+            res.setStopAutoOrderFlag(true); // 标志了是 停止阶段的 自动卖出订单!
+        }
+
+        res.setReviseDateStr(this.getReviseDateStr()); // 2022-06-06
+        res.setReviseStartTimeStr(this.getReviseStartTimeStr()); // 09:30:00
+        res.setReviseStartDateTimeStr(this.getReviseStartDateTimeStr()); // 标准的日期时间字符串
+        res.setReviseStopTimeStr(this.getReviseStopTimeStr()); // @key: 通常是 null;
+
+        res.setStartRealTime(this.getStartRealTime());
+        res.setStopRealTime(this.getStopRealTime());
+
+        res.setInitMoney(initMoney);
+        res.setCash(cash);
+
+        res.getHoldBondsMap().putAll(holdBondsMap);
+        res.getBondProfitMap().putAll(bondProfitMap);
+        res.getBondCostPriceMap().putAll(bondCostPriceMap);
+
+
         return null;
     }
 
