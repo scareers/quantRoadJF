@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * // @key3: 成交机制,买卖单给出价格, 读取未来tick价格, 若不合适则无法成交! 视为"自动立即撤单",设置canClinch=false; 而不会修改账户状态!!
  * // @key1: 因hibernate机制, 本质上复盘程序中, 账户状态对象, 会不断是新对象, 以便能够保存新记录到数据库, 而非修改对象属性, 那样只会修改数据库记录,而非增加!
  * // @key: 订单一旦成交, 视为全部成交;
+ * // @key: 仓位, 均使用 "总资产" 的 仓位; 并需要检测 cash 够不够
  * <p>
  * 1.单次开始复盘, 重置账号!!!
  * 2.直到点击停止 ! 账号的状态保存!
@@ -387,7 +388,10 @@ public class ReviseAccountWithOrder {
             res.clinchTimeTickFuture = fsTransDf.get(clinchIndex, "time_tick").toString();
 
             // 依据仓位计算 数量(张数), 精确到 10的倍数, 即一手! 与同花顺相同, 向下取整!!
+            if ("buy".equals(orderType)) {
 
+
+            }
 
 
         }
