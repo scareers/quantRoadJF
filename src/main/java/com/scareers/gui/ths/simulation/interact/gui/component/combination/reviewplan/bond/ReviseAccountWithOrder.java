@@ -8,6 +8,7 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 import lombok.Data;
@@ -310,6 +311,8 @@ public class ReviseAccountWithOrder {
     }
 
     /**
+     * ---------> 返回的是新对象, 填充了订单相关字段, 但没有"执行成交", 即账户相关状态不刷新
+     *
      * @return 提交订单, 填充相关订单字段后的 账户订单 对象
      * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
      * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
@@ -403,18 +406,17 @@ public class ReviseAccountWithOrder {
     }
 
     /**
+     * ----------> 它必须 要求 this.innerObjectType 是 订单提交 之后才行! 否则 提示错误, 并返回null
+     * ----------> 返回新对象, 执行成交判定, 刷新账户状态! (除了总资产, 自行使用子线程刷新! 现金+持仓市值)
      * 实际的成交执行, 主要是 刷新账户相关信息, 主要是修改新的转债数量, 折算成本价(加仓时主要),
      *
-     * @param orderGenerateTick
-     * @param orderType
-     * @param orderBean
-     * @param price
-     * @param positionPercent
-     * @param stopAutoOrderFlag
      * @return
      */
-    public ReviseAccountWithOrder clinchOrderDetermine(
-    ) {
+    public ReviseAccountWithOrder clinchOrderDetermine() {
+        if (!this.innerObjectType.equals(INNER_TYPE_ORDER_SUBMIT)) {
+            CommonUtil.notifyError("致命错误: 复盘账号执行成交判定, 要求账号状态已提交订单!!");
+            return null;
+        }
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
         /*
          * 1. 内部类型, 自设
