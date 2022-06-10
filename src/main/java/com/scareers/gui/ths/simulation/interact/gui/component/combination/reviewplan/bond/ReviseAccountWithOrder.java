@@ -182,29 +182,29 @@ public class ReviseAccountWithOrder {
 
     // @key3: 内部对象类型: 即表示 当前账户订单对象, 是 刚新建, 还是 提交订单时, 还是 执行订单后!
     @Column(name = "innerObjectType", columnDefinition = "varchar(32)")
-    String innerObjectType; // 设置的复盘日期, 年月日
+    volatile String innerObjectType; // 设置的复盘日期, 年月日
 
     @Id
     @GeneratedValue // 默认就是auto
     @Column(name = "id")
-    Long id;
+    volatile Long id;
 
     /*
     账号信息相关-- 复盘时间类, 其中, reviseStopTimeStr 和 stopRealTime 两个停止时间, 同一账号只可能有一条订单记录 同时带有! 且时间最后!
      */
     @Column(name = "AReviseDateStr", columnDefinition = "varchar(32)")
-    String reviseDateStr; // 设置的复盘日期, 年月日
+    volatile String reviseDateStr; // 设置的复盘日期, 年月日
     @Column(name = "AReviseStartTimeStr", columnDefinition = "varchar(32)")
-    String reviseStartTimeStr; // 设置的复盘开始时间! 时分秒
+    volatile String reviseStartTimeStr; // 设置的复盘开始时间! 时分秒
     @Column(name = "AReviseStartDateTimeStr", columnDefinition = "varchar(64)")
-    String reviseStartDateTimeStr; // 设置的复盘开始  年月日+时分秒
+    volatile String reviseStartDateTimeStr; // 设置的复盘开始  年月日+时分秒
     @Column(name = "AReviseStopTimeStr", columnDefinition = "varchar(32)")
-    String reviseStopTimeStr; // 点击停止复盘时, 结算单个账号, 当时的 复盘等价时间! 时分秒
+    volatile String reviseStopTimeStr; // 点击停止复盘时, 结算单个账号, 当时的 复盘等价时间! 时分秒
 
     @Column(name = "AStartRealTime", columnDefinition = "varchar(64)")
-    String startRealTime; // 开始的真实时间; 现实时间 , 标准日期带毫秒
+    volatile String startRealTime; // 开始的真实时间; 现实时间 , 标准日期带毫秒
     @Column(name = "AStopRealTime", columnDefinition = "varchar(64)")
-    String stopRealTime; // 结束的真实时间; 现实时间, 标准日期带毫秒
+    volatile String stopRealTime; // 结束的真实时间; 现实时间, 标准日期带毫秒
 
 
     /*
@@ -213,99 +213,100 @@ public class ReviseAccountWithOrder {
 
     // 2.账号资金资产数据
     @Column(name = "initMoney", columnDefinition = "double")
-    Double initMoney = 10.0 * 10000; // 初始10万资金默认, 可修改
+    volatile Double initMoney = 10.0 * 10000; // 初始10万资金默认, 可修改
     @Column(name = "cash", columnDefinition = "double")
-    Double cash = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
+    volatile Double cash = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
     // 自动计算的账户属性!, flushAccount()
     @Column(name = "totalAssets", columnDefinition = "double")
-    Double totalAssets = 10.0 * 10000;  // 当前总资产 == 现金 + 各个资产数量*价格求和
+    volatile Double totalAssets = 10.0 * 10000;  // 当前总资产 == 现金 + 各个资产数量*价格求和
     @Column(name = "initMoney", columnDefinition = "double")
-    Double currentTotalProfitPercent = 0.0; // 当前总盈利百分比!!! 随着总资产 自动刷新!; 用总资产 和初始资金计算
+    volatile Double currentTotalProfitPercent = 0.0; // 当前总盈利百分比!!! 随着总资产 自动刷新!; 用总资产 和初始资金计算
 
     /*
     单债统计map: 当前持仓数量,成本价,实时价格; 已发生盈利(卖出), 剩余持仓部分盈利百分比, 单债总浮盈!
      */
     // 当前持仓,初始空, key为转债 转债代码, value 为数量!
     @Transient
-    ConcurrentHashMap<String, Integer> holdBondsAmountMap = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Integer> holdBondsAmountMap = new ConcurrentHashMap<>();
     @Column(name = "holdBondsAmountMap", columnDefinition = "longtext")
-    String holdBondsMapJsonStr = "{}"; // 成分股列表json字符串
+    volatile String holdBondsMapJsonStr = "{}"; // 成分股列表json字符串
 
     // 单只资产, 当前的剩余仓位的持仓成本价格(已折算); key为转债代码, value 为当前剩余仓位的持仓成本
     @Transient
-    ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
     @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
-    String bondCostPriceMapJsonStr = "{}";
+    volatile String bondCostPriceMapJsonStr = "{}";
 
     // 持有转债,当前实时价格map; 应当实时刷新;   ----------> 该map也会随着 总资产的刷新, 而刷新最新价格
     @Transient
-    ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
     @Column(name = "holdBondsCurrentPriceMap", columnDefinition = "longtext")
-    String holdBondsCurrentPriceMapJsonStr = "{}"; // 成分股列表json字符串
+    volatile String holdBondsCurrentPriceMapJsonStr = "{}"; // 成分股列表json字符串
 
     // 单只资产, 今日已发生的收益, 元(即不包括当前持仓的浮盈, 实际转换为了钱的收益);
     // key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
     @Transient
-    ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合, 需要加上剩余持仓浮盈
+    volatile ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合,
+    // 需要加上剩余持仓浮盈
     @Column(name = "bondAlreadyProfitMap", columnDefinition = "longtext")
-    String bondAlreadyProfitMapJsonStr = "{}";
+    volatile String bondAlreadyProfitMapJsonStr = "{}";
     // 持有转债, 剩余的数量, 成本价 与 当前价格相比, 赚的比例, 即 当前价格map - 成本价格map! (成本价是折算价)
     @Transient
-    ConcurrentHashMap<String, Double> holdBondsGainPercentMap = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Double> holdBondsGainPercentMap = new ConcurrentHashMap<>();
     @Column(name = "holdBondsGainPercentMap", columnDefinition = "longtext")
-    String holdBondsGainPercentMapJsonStr = "{}";
+    volatile String holdBondsGainPercentMapJsonStr = "{}";
     // 持有转债, 已发生(卖出) 的盈利 + 当前剩余仓位浮盈, 即今日单债总盈利, 浮动!
     @Transient
-    ConcurrentHashMap<String, Double> holdBondsTotalProfitMap = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Double> holdBondsTotalProfitMap = new ConcurrentHashMap<>();
     @Column(name = "holdBondsTotalProfitMap", columnDefinition = "longtext")
-    String holdBondsTotalProfitMapJsonStr = "{}";
+    volatile String holdBondsTotalProfitMapJsonStr = "{}";
 
     /*
     订单信息相关!
      */
     @Column(name = "orderGenerateTick", columnDefinition = "varchar(64)")
-    String orderGenerateTick; // 订单生成时间, 常用于但账户的订单排序, 形式为 HH:mm:ss, 是复盘的虚拟时间
+    volatile String orderGenerateTick; // 订单生成时间, 常用于但账户的订单排序, 形式为 HH:mm:ss, 是复盘的虚拟时间
     @Column(name = "orderGenerateTimeReal", columnDefinition = "varchar(64)")
-    String orderGenerateTimeReal; // 订单生成时间, 真实时间, 带毫秒!
+    volatile String orderGenerateTimeReal; // 订单生成时间, 真实时间, 带毫秒!
     @Column(name = "orderType", columnDefinition = "varchar(8)")
-    String orderType; // 需要设定为 buy 或者 sell
+    volatile String orderType; // 需要设定为 buy 或者 sell
     @Column(name = "targetCode", columnDefinition = "varchar(16)")
-    String targetCode; // 目标转债代码
+    volatile String targetCode; // 目标转债代码
     @Column(name = "targetName", columnDefinition = "varchar(16)")
-    String targetName; // 目标转债名称
+    volatile String targetName; // 目标转债名称
     @Column(name = "targetQuoteId", columnDefinition = "varchar(16)")
-    String targetQuoteId; // 目标转债 东财行情id, 方便访问数据库数据
+    volatile String targetQuoteId; // 目标转债 东财行情id, 方便访问数据库数据
 
     // 订单 给出的买入卖出价格, 有可能不成交
     @Column(name = "orderPrice", columnDefinition = "double")
-    Double orderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
+    volatile Double orderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
     // @key: 买卖单, 均使用核按钮, 并且以 仓位形式给出! 常态有 1/1,1/2,1/3,1/4 --> 订单需要提供此值, 实际数量由此计算
     @Column(name = "oderPositionPercent", columnDefinition = "double")
-    Double orderPositionPercent; // 订单仓位
+    volatile Double orderPositionPercent; // 订单仓位
     @Column(name = "amount", columnDefinition = "int")
-    Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!! 且是 10的倍数(不区分沪深)
+    volatile Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!! 且是 10的倍数(不区分沪深)
 
     // @key: 读取分时成交未来数据, 给出下1/2 tick的实时价格!!!, 将判定其与订单价格的大小, 判定是否能够成交
     // @key: 当订单生成时, 需要提供 orderGenerateTick ,时分秒, 将以此tick, 自动读取df, 计算 未来的可能成交价格
     @Column(name = "clinchPriceFuture", columnDefinition = "double")
-    Double clinchPriceFuture;
+    volatile Double clinchPriceFuture;
     @Column(name = "clinchTimeTickFuture", columnDefinition = "varchar(16)")
-    String clinchTimeTickFuture; // 同理, 自动计算的, 未来可能的成交时间tick,
+    volatile String clinchTimeTickFuture; // 同理, 自动计算的, 未来可能的成交时间tick,
     // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 自动判定 是否成交!!
     // 另外, 如果 amount 计算出来, 为 0 (张), 那么也设置为 无法成交! --> 设置对应的 未成交原因字段!
     @Column(name = "canClinch")
-    Boolean canClinch;
+    volatile Boolean canClinch;
     @Column(name = "notClinchReason", columnDefinition = "longtext")
-    String notClinchReason; // 当执行真实成交, 会对 价格和数量执行实际判定, 是否能够成交, 给出原因描述
+    volatile String notClinchReason; // 当执行真实成交, 会对 价格和数量执行实际判定, 是否能够成交, 给出原因描述
 
     @Column(name = "stopAutoOrderFlag")
-    Boolean stopAutoOrderFlag = false; // 默认不是收盘自动卖出订单; 在stop复盘时, 自动执行停止卖出订单, 此属性将设置为 true!!!
+    volatile Boolean stopAutoOrderFlag = false; // 默认不是收盘自动卖出订单; 在stop复盘时, 自动执行停止卖出订单, 此属性将设置为 true!!!
     @Column(name = "alreadyCommissionTotal", columnDefinition = "double")
-    Double alreadyCommissionTotal = 0.0; // 已发生手续费总计, 不断添加 新订单的手续费! 精确到分, 向上取整!
+    volatile Double alreadyCommissionTotal = 0.0; // 已发生手续费总计, 不断添加 新订单的手续费! 精确到分, 向上取整!
     @Column(name = "commissionSingle", columnDefinition = "double")
-    Double commissionSingle; // 单次佣金
+    volatile Double commissionSingle; // 单次佣金
     @Column(name = "orderFinalClinchDescription", columnDefinition = "longtext")
-    String orderFinalClinchDescription; // 订单执行完成后, 整体描述信息
+    volatile String orderFinalClinchDescription; // 订单执行完成后, 整体描述信息
 
     /**
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
