@@ -113,11 +113,14 @@ public class ReviseAccountWithOrder {
      * 2.复制此前的 账户对象, 的资金 资产 等属性;  无视订单相关属性
      * 3.自动将 "当前所有持仓" 以 当前 复盘tick 所对应的价格, 卖出, 执行全部卖出逻辑, 更新账户资产状态!!
      * --> "模拟全部卖出" 的卖出价格, 为停止时复盘 tick 的下一个tick的价格(同成交机制)
+     * // @key3: 子线程刷新总资产和最新价格map时, 应当判定 ! realLastAccountState.innerObjectType = INNER_TYPE_STOP;
+     * // 且 刷新应当获取锁!
      *
      * @return
      */
     public static ReviseAccountWithOrder dealWithAccountWithOrderWhenReviseStop(
             ReviseAccountWithOrder preAccount, // 停止前最后一个账户状态
+            String reviseDateStr, // 复盘日期
             String stopReviseTick // 停止复盘时, 复盘模拟tick
     ) {
         // 可能会执行结束的 清仓操作, 该对象则会改变, 否则就是参数 preAccount;
@@ -156,11 +159,10 @@ public class ReviseAccountWithOrder {
             }
         }
 
-        // realLastAccountState 不需要保存, 已经保存过了.
-        // todo:
-        return null;
-
-
+        // 最后刷新一下总资产, 最后设置内部状态! 此时已经清仓过了!
+        realLastAccountState.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, stopReviseTick);
+        realLastAccountState.innerObjectType = INNER_TYPE_STOP;
+        return realLastAccountState;
     }
 
 
@@ -216,7 +218,9 @@ public class ReviseAccountWithOrder {
     Double cash = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
     // 自动计算的账户属性!, flushAccount()
     @Column(name = "totalAssets", columnDefinition = "double")
-    Double totalAssets;  // 当前总资产 == 现金 + 各个资产数量*价格求和
+    Double totalAssets = 10.0 * 10000;  // 当前总资产 == 现金 + 各个资产数量*价格求和
+    @Column(name = "initMoney", columnDefinition = "double")
+    Double currentTotalProfitPercent = 0.0; // 当前总盈利百分比!!! 随着总资产 自动刷新!; 用总资产 和初始资金计算
 
     /*
     单债统计map: 当前持仓数量,成本价,实时价格; 已发生盈利(卖出), 剩余持仓部分盈利百分比, 单债总浮盈!
@@ -233,7 +237,7 @@ public class ReviseAccountWithOrder {
     @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
     String bondCostPriceMapJsonStr = "{}";
 
-    // 持有转债,当前实时价格map; 应当实时刷新
+    // 持有转债,当前实时价格map; 应当实时刷新;   ----------> 该map也会随着 总资产的刷新, 而刷新最新价格
     @Transient
     ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
     @Column(name = "holdBondsCurrentPriceMap", columnDefinition = "longtext")
@@ -585,6 +589,49 @@ public class ReviseAccountWithOrder {
         return res;
     }
 
+    /**
+     * 自动刷新当前总资产 和 实时价格 map,  == 当前现金 + 当前持仓转债市值总和
+     * 其中, 现金实时读取 cash; 持仓市值总和, 读取持仓map,
+     * 给定参数 复盘 日期, 当前复盘 tick,
+     * 单只转债: 读取全df, 筛选 当前tick 及之前的最后一个价格, 作为最新价 !!!!!!!
+     * 用最新价 * amount即可得到市值!
+     * 本方法 将使用子线程, 不断调用更新刷新! 而在处理 买单, 卖单时, 并不对 总资产进行修改, 仅修改 现金和持仓相关!!!!!!!
+     * * // @key3: 子线程刷新总资产和最新价格map时, 应当判定 ! realLastAccountState.innerObjectType = INNER_TYPE_STOP;
+     * * // 且 刷新应当获取锁!
+     *
+     * @key3 : 为了防止对象改变, 复盘程序, 对 账户状态的 所有可能赋值改变, 应当加唯一锁!
+     */
+    public void flushHoldBondsCurrentPriceMapAndTotalAssets(String reviseDateStr, String currentReviseTick) {
+        if (this.holdBondsAmountMap.size() == 0) {
+            this.totalAssets = this.cash; // ==现金, 因为计算了手续费, 所以总资产是 准确的 !!!!!!!
+        } else {
+            double totalMarketValue = 0;
+
+
+            for (String bondCode : this.holdBondsAmountMap.keySet()) {
+                SecurityBeanEm bond = null;
+                try {
+                    bond = SecurityBeanEm.createBond(bondCode);
+                } catch (Exception e) {
+                    continue; // 不提示
+                }
+                DataFrame<Object> fsTransDf = EastMoneyDbApi
+                        .getFsTransByDateAndQuoteIdS(reviseDateStr, bond.getQuoteId(), false);
+                if (fsTransDf == null) {
+                    continue;
+                }
+                double newestPrice = calcNewestPriceBeforeTick(fsTransDf, currentReviseTick);
+                this.holdBondsCurrentPriceMap.put(bondCode, newestPrice); // 刷新实时价格map
+
+                double marketValue = this.holdBondsAmountMap.getOrDefault(bondCode, 0) * newestPrice; // 市值
+                totalMarketValue += marketValue;
+            }
+            this.totalAssets = this.cash + totalMarketValue;
+        }
+        this.currentTotalProfitPercent = totalAssets / initMoney - 1; // 当前总盈利百分比刷新, 已经排除过手续费!
+        this.flushSixAccountMapJsonStr();
+    }
+
     private void calcAndUpdateCommission(ReviseAccountWithOrder res) {
         double commission; // 手续费计算
         if (res.targetCode.startsWith("11")) { // 沪债
@@ -676,6 +723,32 @@ public class ReviseAccountWithOrder {
         // 可能为最后一个tick, 因为 已经 > 15:00:00; 也是很可能的;
         // 总之符合逻辑
         return shouldIndex;
+    }
+
+    /**
+     * 给定 分时成交df完整, 和 timeTick, 返回 <=该tick的最新价格!!!!!!!!!!!!
+     * 特殊情况 合理返回 第一个 或者最后一个价格
+     *
+     * @param fsTransDf
+     * @param maxTickForClinch
+     * @return
+     */
+    private static double calcNewestPriceBeforeTick(DataFrame<Object> fsTransDf, String maxTickForClinch) {
+        // 3. 筛选有效分时成交! time_tick 列
+        int shouldIndex = 0; // 如果时间过早, 用第一个竞价tick也勉强符合, 但不够严谨
+        for (int i = 0; i < fsTransDf.length(); i++) {
+            String timeTick1 = fsTransDf.get(i, "time_tick").toString();
+            if (timeTick1.compareTo(maxTickForClinch) > 0) { // 当当前tick>= 参数, 跳出; 符合要求
+                break;
+            } else {
+                shouldIndex = i; // 直接赋值, 当tick <= 给定tick时
+            }
+        }
+        // 可能为0, 即给的参数时间太早了, 还在竞价之前;
+        // 可能为最后一个tick, 因为 已经 > 15:00:00; 也是很可能的;
+        // 总之符合逻辑
+
+        return Double.parseDouble(fsTransDf.get(shouldIndex, "price").toString());
     }
 }
 
