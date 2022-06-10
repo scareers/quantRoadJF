@@ -120,7 +120,8 @@ public class ReviseAccountWithOrder {
             ReviseAccountWithOrder preAccount, // 停止前最后一个账户状态
             String stopReviseTick // 停止复盘时, 复盘模拟tick
     ) {
-        ReviseAccountWithOrder realLastAccountState = preAccount; // 可能会执行结束的 清仓操作, 只是暂存最后一个状态
+        // 可能会执行结束的 清仓操作, 该对象则会改变, 否则就是参数 preAccount;
+        ReviseAccountWithOrder realLastAccountState = preAccount;
 
         // 1.按下停止时, 最后一个 账户状态对象!; 如果一次买卖都没有, 那么订单相关字段是空的;
         // 如果此前执行过订单, 则有 卖出所有持仓的必要性!
@@ -136,19 +137,27 @@ public class ReviseAccountWithOrder {
                         CommonUtil.notifyError("正在执行停止复盘自动卖出持仓转债: 但转债bean创建失败!");
                         continue; //
                     }
-                    ReviseAccountWithOrder tempAccount = preAccount.submitNewOrder(
+                    ReviseAccountWithOrder tempAccount1 = preAccount.submitNewOrder(
                             stopReviseTick,
                             "sell",
                             bond,
                             0.0, // 以0价格卖出, 保证必定卖出, 虽然实盘不是这样的, 但只是为了折算
                             1.0, true
-                    );
+                    ); // 核心方法1, 保存一遍
+                    ReviseAccountWithOrderDao.saveOrUpdateBean(tempAccount1);
 
+                    // 核心方法2, 保存一遍;
+                    ReviseAccountWithOrder tempAccount2 = tempAccount1.clinchOrderDetermine();
+                    ReviseAccountWithOrderDao.saveOrUpdateBean(tempAccount2);
 
+                    // 设置最终状态为
+                    realLastAccountState = tempAccount2;
                 }
             }
-
         }
+
+        // realLastAccountState 不需要保存, 已经保存过了.
+
 
     }
 
