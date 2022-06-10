@@ -49,9 +49,12 @@ public class StockBondBean {
         this.hotRank = hotRank;
     }
 
-    public static SessionFactory sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
+    public static SessionFactory sessionFactory;
 
     public static void saveBean(StockBondBean bean) {
+        if (sessionFactory == null) {
+            sessionFactory = HibernateSessionFactory.getSessionFactoryOfEastMoney();
+        }
         Session session = sessionFactory.openSession();
         Transaction transaction = session.beginTransaction();
         session.saveOrUpdate(bean);

@@ -70,7 +70,7 @@ public class ReviseAccountWithOrder {
 
 
     public static void main(String[] args) {
-        ReviseAccountWithOrder account = initAccountWithOrderWhenRiveStart("2022-06-06", "09:30:00", 100000);
+        ReviseAccountWithOrder account = initAccountWithOrderWhenRiveStart("2022-06-09", "09:30:00", 100000);
         ReviseAccountWithOrderDao.saveOrUpdateBean(account);
 
     }
@@ -219,7 +219,7 @@ public class ReviseAccountWithOrder {
     // 自动计算的账户属性!, flushAccount()
     @Column(name = "totalAssets", columnDefinition = "double")
     volatile Double totalAssets = 10.0 * 10000;  // 当前总资产 == 现金 + 各个资产数量*价格求和
-    @Column(name = "initMoney", columnDefinition = "double")
+    @Column(name = "currentTotalProfitPercent", columnDefinition = "double")
     volatile Double currentTotalProfitPercent = 0.0; // 当前总盈利百分比!!! 随着总资产 自动刷新!; 用总资产 和初始资金计算
 
     /*
