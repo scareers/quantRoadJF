@@ -716,11 +716,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionContainerMain.add(pauseRebootReviseButton);
 
 
-        // @update: 折叠面板 按钮关闭
+        // 4.@update: 折叠面板 按钮关闭
         buttonCollapsibleKLinePanel = ButtonFactory.getButton("折叠k线");
         buttonCollapsibleKLinePanel.setText("资讯面总结");
         buttonCollapsibleKLinePanel.setForeground(Color.red);
         functionContainerMain.add(buttonCollapsibleKLinePanel);
+
+        // 5.模拟账户打开!
+
 
     }
 
