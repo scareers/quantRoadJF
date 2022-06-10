@@ -2,15 +2,11 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
-import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.JSONUtilS;
-import com.thoughtworks.qdox.parser.expression.PlusSignDef;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -194,25 +190,47 @@ public class ReviseAccountWithOrder {
     Double initMoney = 10.0 * 10000; // 初始10万资金默认, 可修改
     @Column(name = "cash", columnDefinition = "double")
     Double cash = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
+    // 自动计算的账户属性!, flushAccount()
+    @Column(name = "totalAssets", columnDefinition = "double")
+    Double totalAssets;  // 当前总资产 == 现金 + 各个资产数量*价格求和
 
+    /*
+    单债统计map: 当前持仓数量,成本价,实时价格; 已发生盈利(卖出), 剩余持仓部分盈利百分比, 单债总浮盈!
+     */
     // 当前持仓,初始空, key为转债 转债代码, value 为数量!
     @Transient
-    ConcurrentHashMap<String, Integer> holdBondsMap = new ConcurrentHashMap<>();
-    @Column(name = "holdBondsMap", columnDefinition = "longtext")
+    ConcurrentHashMap<String, Integer> holdBondsAmountMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsAmountMap", columnDefinition = "longtext")
     String holdBondsMapJsonStr = "{}"; // 成分股列表json字符串
-    // 单只资产, 今日收益, 元; key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
-    @Transient
-    ConcurrentHashMap<String, Double> bondProfitMap = new ConcurrentHashMap<>();
-    @Column(name = "bondProfitMap", columnDefinition = "longtext")
-    String bondProfitMapJsonStr = "{}";
+
     // 单只资产, 当前的剩余仓位的持仓成本价格(已折算); key为转债代码, value 为当前剩余仓位的持仓成本
     @Transient
     ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
     @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
     String bondCostPriceMapJsonStr = "{}";
 
-    // 自动计算的账户属性!, flushAccount()
-    Double totalAssets = 10.0 * 10000;  // 当前现金; 初始需要设置为 initMoney, 随后随着下单, 将自动增减! 持仓也会增减!
+    // 持有转债,当前实时价格map; 应当实时刷新
+    @Transient
+    ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsCurrentPriceMap", columnDefinition = "longtext")
+    String holdBondsCurrentPriceMapJsonStr = "{}"; // 成分股列表json字符串
+
+    // 单只资产, 今日已发生的收益, 元(即不包括当前持仓的浮盈, 实际转换为了钱的收益);
+    // key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
+    @Transient
+    ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合, 需要加上剩余持仓浮盈
+    @Column(name = "bondProfitMap", columnDefinition = "longtext")
+    String bondAlreadyProfitMapJsonStr = "{}";
+    // 持有转债, 剩余的数量, 成本价 与 当前价格相比, 赚的比例, 即 当前价格map - 成本价格map! (成本价是折算价)
+    @Transient
+    ConcurrentHashMap<String, Double> holdBondsGainPercentMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsGainPercentMap", columnDefinition = "longtext")
+    String holdBondsGainPercentMapJsonStr = "{}";
+    // 持有转债, 已发生(卖出) 的盈利 + 当前剩余仓位浮盈, 即今日单债总盈利, 浮动!
+    @Transient
+    ConcurrentHashMap<String, Double> holdBondsTotalProfitMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsTotalProfitMap", columnDefinition = "longtext")
+    String holdBondsTotalProfitMapJsonStr = "{}";
 
     /*
     订单信息相关!
@@ -257,8 +275,8 @@ public class ReviseAccountWithOrder {
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
      */
     public void flushThreeAccountMapJsonStr() {
-        holdBondsMapJsonStr = JSONUtilS.toJsonStr(holdBondsMap);
-        bondProfitMapJsonStr = JSONUtilS.toJsonStr(bondProfitMap);
+        holdBondsMapJsonStr = JSONUtilS.toJsonStr(holdBondsAmountMap);
+        bondProfitMapJsonStr = JSONUtilS.toJsonStr(bondAlreadyProfitMap);
         bondCostPriceMapJsonStr = JSONUtilS.toJsonStr(bondCostPriceMap);
     }
 
@@ -285,8 +303,8 @@ public class ReviseAccountWithOrder {
         res.setInitMoney(initMoney);
         res.setCash(cash);
 
-        res.getHoldBondsMap().putAll(holdBondsMap);
-        res.getBondProfitMap().putAll(bondProfitMap);
+        res.getHoldBondsAmountMap().putAll(holdBondsAmountMap);
+        res.getBondAlreadyProfitMap().putAll(bondAlreadyProfitMap);
         res.getBondCostPriceMap().putAll(bondCostPriceMap);
 
 
