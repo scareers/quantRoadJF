@@ -87,7 +87,7 @@ public class ReviseAccountWithOrder {
         Console.log("10点 全仓买入小康转债尝试: ");
         SecurityBeanEm bond = SecurityBeanEm.createBond("小康转债");
         ReviseAccountWithOrder account2 = account1.submitNewOrder("10:00:00", "buy", bond, 525.0, 1.0, false);
-        account2.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:00:01");
+        account2.flushAccountStateByCurrentTick(reviseDateStr, "10:00:01");
         ReviseAccountWithOrderDao.saveOrUpdateBean(account2);
         Console.log("提交订单后");
         Console.log(account2);
@@ -96,14 +96,14 @@ public class ReviseAccountWithOrder {
         Console.log(StrUtil.repeat('-', 30) + ">");
         ReviseAccountWithOrder account3 = account2.clinchOrderDetermine();
         Console.log("执行订单后");
-        account3.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:00:03");
+        account3.flushAccountStateByCurrentTick(reviseDateStr, "10:00:03");
         ReviseAccountWithOrderDao.saveOrUpdateBean(account3);
         Console.log(account3);
         Console.log();
 
         Console.log(StrUtil.repeat('-', 30) + ">");
         Console.log("时间线来到 10:30-->");
-        account3.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:30:00");
+        account3.flushAccountStateByCurrentTick(reviseDateStr, "10:30:00");
         Console.log(account3);
 
 
@@ -194,7 +194,7 @@ public class ReviseAccountWithOrder {
         }
 
         // 最后刷新一下总资产, 最后设置内部状态! 此时已经清仓过了!
-        realLastAccountState.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, stopReviseTick);
+        realLastAccountState.flushAccountStateByCurrentTick(reviseDateStr, stopReviseTick);
         realLastAccountState.innerObjectType = INNER_TYPE_STOP;
         return realLastAccountState;
     }
@@ -408,23 +408,23 @@ public class ReviseAccountWithOrder {
 
         // 6.1. 访问分时成交df, 并依据延迟成交算法, 得到成交 tick 行;
         DataFrame<Object> fsTransDf = EastMoneyDbApi // 缓存的分时成交df
-                .getFsTransByDateAndQuoteIdS(reviseDateStr, targetQuoteId, false);
+                .getFsTransByDateAndQuoteIdS(res.reviseDateStr, res.targetQuoteId, false);
         DateTime submitTime = DateUtil.parseTime(orderGenerateTick); // 年月日默认 19700101; 只有时分秒有效
         DateTime offset = DateUtil.offset(submitTime, DateField.SECOND, clinchDelaySecond);
         // 找到第一个>=本tick的  有数据的tick, 作为 成交tick!!
         String virtualClinchMinTick = DateUtil.format(offset, DatePattern.NORM_TIME_PATTERN);
-        if (fsTransDf != null) {
+        if (fsTransDf != null && fsTransDf.length() != 0) {
             int clinchIndex = calcShouldClinchDfRowIndex(fsTransDf, virtualClinchMinTick);
             res.clinchPriceFuture = Double.valueOf(fsTransDf.get(clinchIndex, "price").toString());
             res.clinchTimeTickFuture = fsTransDf.get(clinchIndex, "time_tick").toString();
 
             // 依据仓位计算 数量(张数), 精确到 10的倍数, 即一手! 与同花顺相同, 向下取整!!
             if ("buy".equals(orderType)) {
-                double shouldPositionMoney = totalAssets * orderPositionPercent; // 总资产 * 仓位 == 想要买入的现金;
+                double shouldPositionMoney = res.totalAssets * res.orderPositionPercent; // 总资产 * 仓位 == 想要买入的现金;
                 Double shouldHands = shouldPositionMoney / res.orderPrice / 10; // 浮点数的最大手数!
                 int actualHands = shouldHands.intValue(); // 实际订单手数
                 res.amount = actualHands * 10; // 最终订单数量!
-                res.canClinch = clinchPriceFuture <= res.orderPrice; // 需要订单给的价格更大, 才成交, 否则不成交!
+                res.canClinch = res.clinchPriceFuture <= res.orderPrice; // 需要订单给的价格更大, 才成交, 否则不成交!
 
                 if (res.amount <= 0) {
                     res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
@@ -435,9 +435,10 @@ public class ReviseAccountWithOrder {
                 // 否则 notClinchReason == null; 即未初始化!
             } else { // 卖单!
                 Double shouldSellHand =
-                        res.holdBondsAmountMap.getOrDefault(res.targetCode, 0) * 1.0 * positionPercent / 10; // 应当卖出的手数
+                        res.holdBondsAmountMap
+                                .getOrDefault(res.targetCode, 0) * 1.0 * res.orderPositionPercent / 10; // 应当卖出的手数
                 res.amount = shouldSellHand.intValue() * 10; // 应当卖出的数量
-                res.canClinch = clinchPriceFuture >= res.orderPrice; // 成功卖出
+                res.canClinch = res.clinchPriceFuture >= res.orderPrice; // 成功卖出
                 if (res.amount <= 0) {
                     res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
                 }
@@ -633,10 +634,15 @@ public class ReviseAccountWithOrder {
      * 本方法 将使用子线程, 不断调用更新刷新! 而在处理 买单, 卖单时, 并不对 总资产进行修改, 仅修改 现金和持仓相关!!!!!!!
      * * // @key3: 子线程刷新总资产和最新价格map时, 应当判定 ! realLastAccountState.innerObjectType = INNER_TYPE_STOP;
      * * // 且 刷新应当获取锁!
+     * <p>
+     * // @update: 给定未来新的tick后, 首先刷新 持仓转债最新价格, 再计算盈利百分比, 再计算转债当前总盈利, 再计算 总资产.
      *
      * @key3 : 为了防止对象改变, 复盘程序, 对 账户状态的 所有可能赋值改变, 应当加唯一锁!
      */
-    public void flushHoldBondsCurrentPriceMapAndTotalAssets(String reviseDateStr, String currentReviseTick) {
+    public void flushAccountStateByCurrentTick(String reviseDateStr, String currentReviseTick) {
+        /*
+         holdBondsGainPercentMapJsonStr={"113016":0.0}, holdBondsTotalProfitMap={113016=0.0}, holdBondsTotalProfitMapJsonStr={"113016":0.0},
+         */
         if (this.holdBondsAmountMap.size() == 0) {
             this.totalAssets = this.cash; // ==现金, 因为计算了手续费, 所以总资产是 准确的 !!!!!!!
         } else {
@@ -656,7 +662,15 @@ public class ReviseAccountWithOrder {
                     continue;
                 }
                 double newestPrice = calcNewestPriceBeforeTick(fsTransDf, currentReviseTick);
+
+
                 this.holdBondsCurrentPriceMap.put(bondCode, newestPrice); // 刷新实时价格map
+                this.holdBondsTotalProfitMap.put(bondCode, this.bondAlreadyProfitMap.getOrDefault(bondCode, 0.0)
+                                + this.holdBondsAmountMap.getOrDefault(bondCode, 0) * (
+                                newestPrice - this.bondCostPriceMap.get(bondCode)
+                        )
+                );
+
 
                 double marketValue = this.holdBondsAmountMap.getOrDefault(bondCode, 0) * newestPrice; // 市值
                 totalMarketValue += marketValue;
@@ -670,14 +684,14 @@ public class ReviseAccountWithOrder {
     private void calcAndUpdateCommission(ReviseAccountWithOrder res) {
         double commission; // 手续费计算
         if (res.targetCode.startsWith("11")) { // 沪债
-            commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateHu, commissionMinHu);
+            commission = Math.max(res.clinchPriceFuture * res.amount * res.commissionRateHu, res.commissionMinHu);
         } else {
-            commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateShen, commissionMinShen);
+            commission = Math.max(res.clinchPriceFuture * res.amount * res.commissionRateShen, res.commissionMinShen);
         }
         // --> 佣金精确到分, 向上舍入
         res.commissionSingle = NumberUtil.round(commission, 2, RoundingMode.CEILING).doubleValue(); // 向上舍入,单次佣金
         res.alreadyCommissionTotal = // 总发生佣金叠加
-                NumberUtil.round(res.alreadyCommissionTotal + commissionSingle, 2, RoundingMode.CEILING)
+                NumberUtil.round(res.alreadyCommissionTotal + res.commissionSingle, 2, RoundingMode.CEILING)
                         .doubleValue();
     }
 
