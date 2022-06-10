@@ -470,8 +470,12 @@ public class ReviseAccountWithOrder {
                 res.holdBondsCurrentPriceMap.put(res.targetCode, res.clinchPriceFuture);
                 // 6.当前持仓, 的盈利百分比, 用当前价格 / 持仓成本 -1
                 res.holdBondsGainPercentMap
-                        .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode));
+                        .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode) - 1);
                 // 7.单转债总盈利 元 -- 参考值! 用已经实现, + 当前持仓盈利 即可
+                double totalProfit = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0) +
+                        (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.holdBondsAmountMap
+                                .getOrDefault(res.targetCode, 0);
+                holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
 
 
             }
