@@ -358,6 +358,11 @@ public class ReviseAccountWithOrder {
         res.oderPrice = price;
         res.oderPositionPercent = positionPercent;
 
+        /*
+        6.订单提交, 就计算出与成交相关的属性, 但不执行 成交动作, 即不会修改账户状态!
+        即 INNER_TYPE_ORDER_SUBMIT 状态 而非 INNER_TYPE_ORDER_CLINCHED /NOT_CLINCH 状态
+         */
+
         // todo: 自动计算: res.amount = xx
         // todo: res.clinchPriceFuture = xx
         // todo: res.clinchTimeTickFuture = xx
