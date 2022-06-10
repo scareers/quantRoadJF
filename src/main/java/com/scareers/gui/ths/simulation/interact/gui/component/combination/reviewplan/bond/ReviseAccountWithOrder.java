@@ -5,6 +5,7 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
@@ -449,18 +450,12 @@ public class ReviseAccountWithOrder {
             if ("buy".equals(res.orderType)) {
                 // 买单顺利成交!
                 // 1.转债 数量增加, 成本变化!
-                // cash 将会变化; totalAssets 假设瞬间情况下价格变化为0, 本质上成交时刻是不会变化的!!!!!!
-                /*
-                res.holdBondsAmountMap.putAll(holdBondsAmountMap);
-                res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
-                res.bondCostPriceMap.putAll(bondCostPriceMap);
-                res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
-                res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
-                res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
-                 */
+                // cash 将会变化; totalAssets 假设瞬间情况下价格变化为0, 本质上成交瞬间是不会变化的!!!!!!(无视手续费的话)
 
                 // 0.佣金计算和 两个相关属性设定
                 // -- 只在此处计算手续费! 其余地方无视手续费! -- 总资产采用自动刷新模式!
+                // 单债盈利, 不减去手续费, 手续费的减少, 只体现在 现金!
+                // 类似同花顺模拟账号! 总资产也自动使用现金 + 持仓市值,实时变化!
                 double commission; // 手续费计算
                 if (res.targetCode.startsWith("11")) { // 沪债
                     commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateHu, commissionMinHu);
@@ -480,8 +475,6 @@ public class ReviseAccountWithOrder {
                         RoundingMode.FLOOR).doubleValue(); //
                 // 成交数量*价格, 现金减去
 
-                // 单债盈利, 不减去手续费, 手续费的减少, 只体现在 现金!
-                // 类似同花顺模拟账号! 总资产也自动使用现金 + 持仓市值,实时变化!
 
                 // 2.转债数量增加!
                 Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
@@ -506,9 +499,25 @@ public class ReviseAccountWithOrder {
                 double totalProfit = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0) +
                         (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.holdBondsAmountMap
                                 .getOrDefault(res.targetCode, 0);
-                holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
+                res.holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
 
+                // 完成后
+                res.flushSixAccountMapJsonStr(); // 刷新map字段json
 
+                // 8.增加成交描述, 默认是 null
+                res.orderFinalClinchDescription = StrUtil.format("买入订单成功成交: {} - {}: {} * {}; 佣金: {}; 当前剩余现金:{}",
+                        res.targetCode, res.targetName, res.clinchPriceFuture, res.amount, res.getCommissionSingle(),
+                        res.cash);
+
+            } else { // 卖单!
+                                /*
+                res.holdBondsAmountMap.putAll(holdBondsAmountMap);
+                res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
+                res.bondCostPriceMap.putAll(bondCostPriceMap);
+                res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
+                res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
+                res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
+                 */
             }
 
 
@@ -571,6 +580,7 @@ public class ReviseAccountWithOrder {
         // @add: 已发生手续费 总计; 也需要复制!
         res.alreadyCommissionTotal = this.alreadyCommissionTotal; // 已发生佣金汇总
         res.orderFinalClinchDescription = this.orderFinalClinchDescription; // 成交描述
+        res.commissionSingle = this.commissionSingle; // 成交描述
     }
 
     /**
