@@ -256,6 +256,16 @@ public class ReviseAccountWithOrder {
         bondCostPriceMapJsonStr = JSONUtilS.toJsonStr(bondCostPriceMap);
     }
 
+    /**
+     * @return
+     * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
+     * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
+     */
+    public ReviseAccountWithOrder submitNewOrder() {
+        return null;
+    }
+
+
 }
 
 
