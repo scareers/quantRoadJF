@@ -1,9 +1,13 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.JSONUtilS;
+import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -18,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * // @key2: 因新订单生成并保存, 应当保存新的对象, 因此实现 from(ReviseAccountWithOrder oldStare) , 复制初始状态!
  * // @key3: 成交机制,买卖单给出价格, 读取未来tick价格, 若不合适则无法成交! 视为"自动立即撤单",设置canClinch=false; 而不会修改账户状态!!
  * // @key1: 因hibernate机制, 本质上复盘程序中, 账户状态对象, 会不断是新对象, 以便能够保存新记录到数据库, 而非修改对象属性, 那样只会修改数据库记录,而非增加!
+ * // @key: 订单一旦成交, 视为全部成交;
  * <p>
  * 1.单次开始复盘, 重置账号!!!
  * 2.直到点击停止 ! 账号的状态保存!
@@ -56,7 +61,7 @@ public class ReviseAccountWithOrder {
     // @key3: 在分时成交数据中, 读取 >= 延迟后tick 的 第一个tick 的价格, 作为 未来可能成交价!!
     // @key2: 在停止复盘时, 采用的模拟全部卖出机制, 如果时间tick恰好为15:00:00, 将可能没有符合条件的 未来成交tick, 此时则以 当日收盘价, 即强制最后一个tick的价格
     @Column(name = "clinchDelaySecond", columnDefinition = "int")
-    Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适; 本设置很可能影响滑点大小!
+    Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适; 本设置很可能影响滑点大小! ; 负数会向前移动时间, 严禁!!!!!!
 
 
     public static void main(String[] args) {
@@ -363,17 +368,55 @@ public class ReviseAccountWithOrder {
         即 INNER_TYPE_ORDER_SUBMIT 状态 而非 INNER_TYPE_ORDER_CLINCHED /NOT_CLINCH 状态
          */
 
-        // todo: 自动计算: res.amount = xx
         // todo: res.clinchPriceFuture = xx
         // todo: res.clinchTimeTickFuture = xx
+        // todo: 自动计算: res.amount = xx
         // todo: res.canClinch = true? false
         // todo: notClinchReason= "未成交原因?"
 
+        // 6.1. 访问分时成交df, 并依据延迟成交算法, 得到成交 tick 行;
+        DataFrame<Object> fsTransDf = EastMoneyDbApi // 缓存的分时成交df
+                .getFsTransByDateAndQuoteIdS(reviseDateStr, targetQuoteId, false);
+        DateTime submitTime = DateUtil.parseTime(orderGenerateTick); // 年月日默认 19700101; 只有时分秒有效
+        DateTime offset = DateUtil.offset(submitTime, DateField.SECOND, clinchDelaySecond);
+        // 找到第一个>=本tick的  有数据的tick, 作为 成交tick!!
+        String virtualClinchMinTick = DateUtil.format(offset, DatePattern.NORM_TIME_PATTERN);
+        if (fsTransDf != null) {
+            int clinchIndex = calcShouldClinchDfRowIndex(fsTransDf, virtualClinchMinTick);
+            res.clinchPriceFuture = Double.valueOf(fsTransDf.get(clinchIndex, "price").toString());
+            res.clinchTimeTickFuture = fsTransDf.get(clinchIndex, "time_tick").toString();
+
+            // 依据仓位计算 数量(张数), 精确到 10的倍数, 即一手! 与同花顺相同, 向下取整!!
+
+
+
+        }
 
         return null;
     }
 
-
+    /**
+     * 给定完整的分时成交df, 给定一个 最早的成交tick,  找到第一个 >= 该 tick的 行, 作为 备用成交行!
+     * 将保留该行 tick 和 price , 作为成交价格 !
+     *
+     * @param fsTransDf
+     * @param minTickForClinch
+     */
+    public static int calcShouldClinchDfRowIndex(DataFrame<Object> fsTransDf, String minTickForClinch) {
+        // 3. 筛选有效分时成交! time_tick 列
+        int shouldIndex = 0; // 如果时间过早, 用第一个竞价tick也勉强符合, 但不够严谨
+        for (int i = 0; i < fsTransDf.length(); i++) {
+            String timeTick1 = fsTransDf.get(i, "time_tick").toString();
+            shouldIndex = i; // 直接赋值
+            if (timeTick1.compareTo(minTickForClinch) >= 0) { // 当当前tick>= 参数, 跳出; 符合要求
+                break;
+            }
+        }
+        // 可能为0, 即给的参数时间太早了, 还在竞价之前;
+        // 可能为最后一个tick, 因为 已经 > 15:00:00; 也是很可能的;
+        // 总之符合逻辑
+        return shouldIndex;
+    }
 }
 
 
