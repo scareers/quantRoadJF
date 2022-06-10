@@ -21,22 +21,23 @@ import java.math.RoundingMode;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * description: 复盘时模拟账号 + 订单;  账号和订单放入一个表之内, 账号相关列A开头, 订单相关列 O开头
+ * description: 复盘时模拟账号 + 订单;  账号和订单放入一个表之内, 账号相关列A开头,
  * // @key3: 单条记录, 包含了账号全基本信息, 以及账号瞬间的资产状况, 以及单个订单对象!
- * // @key3: 订单保存时, 账号状况是此前状况, 订单保存后, 才成交, 并刷新账户状态
- * 0.@update: 为了应对虚拟账号机制,对复盘开始时间的修改, 必须要求 running=false时才可进行!
- * // @key2: 因新订单生成并保存, 应当保存新的对象, 因此实现 from(ReviseAccountWithOrder oldStare) , 复制初始状态!
+ * // @key3: 订单保存时, 账号状况是此前状况, 订单执行后, 才成交,
+ * 0.@todo: update: 复盘程序: 为了应对虚拟账号机制,对复盘开始时间的修改, 必须要求 running=false 时才可进行! 否则将发生混乱
+ * // @key2: 因新订单生成并保存, 应当保存新的对象, 因此实现 新订单为新对象, 不使用单例模式!
  * // @key3: 成交机制,买卖单给出价格, 读取未来tick价格, 若不合适则无法成交! 视为"自动立即撤单",设置canClinch=false; 而不会修改账户状态!!
  * // @key1: 因hibernate机制, 本质上复盘程序中, 账户状态对象, 会不断是新对象, 以便能够保存新记录到数据库, 而非修改对象属性, 那样只会修改数据库记录,而非增加!
  * // @key: 订单一旦成交, 视为全部成交;
  * // @key: 仓位, 均使用 "总资产" 的 仓位; 并需要检测 cash 够不够
+ * // @key: 仓仓位所需资金超过现金, 使用全部现金
  * <p>
  * 1.单次开始复盘, 重置账号!!!
  * 2.直到点击停止 ! 账号的状态保存!
- * 3.账号名称, 以 当前真实日期时间(开始时间) + 点击开始时, 的 复盘开始时间, 两者结合, 作为唯一ID;;
- * 4.只实现 买/卖功能, 视为下单后必定成交, 无撤单功能!
+ * 3.账号名称, 以 当前真实日期时间(开始时间) 带毫秒  作为唯一ID;;
+ * 4.只实现 买/卖功能, 视为下单后必定成交 或必定不成交, 且一定延迟成交 或者 变相立即撤未成交单, 无明确撤单功能!
  * 5.买卖订单, 均以 仓位 生成订单, 而非数量, 本类实现计算方法!
- * 6.复盘停止时, 默认以收盘价格, 卖出所有转债 !! 并生成最后一批订单;
+ * 6.复盘停止时, 默认以收盘价格, 卖出所有转债 !! 并生成最后一批订单; 卖出价格为停止tick
  *
  * @author: admin
  * @date: 2022/6/9/009-12:52:58
@@ -86,7 +87,8 @@ public class ReviseAccountWithOrder {
         // 10点整, 9好小康成交价在 514 -517之间附近, 多给点 , 到了 10:30, 大概就剩下 505了, 跌了 2%左右
         Console.log("10点 全仓买入小康转债尝试: ");
         SecurityBeanEm bond = SecurityBeanEm.createBond("小康转债");
-        ReviseAccountWithOrder account2 = account1.submitNewOrder("10:00:00", "buy", bond, 525.0, 1.0, false);
+        ReviseAccountWithOrder account2 = account1.submitNewOrder("10:00:00", "buy", bond,
+                525.0, 0.5, false);
         account2.flushAccountStateByCurrentTick(reviseDateStr, "10:00:01");
         ReviseAccountWithOrderDao.saveOrUpdateBean(account2);
         Console.log("提交订单后");
@@ -101,10 +103,51 @@ public class ReviseAccountWithOrder {
         Console.log(account3);
         Console.log();
 
+        Console.log("再次买入 0.25仓位");
+        ReviseAccountWithOrder account4 = account3.submitNewOrder("10:10:00", "buy", bond,
+                520.0, 0.6, false);
+        account4.flushAccountStateByCurrentTick(reviseDateStr, "10:10:01");
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account4);
+        Console.log("提交订单后");
+        Console.log(account4);
+        Console.log();
+
+        Console.log(StrUtil.repeat('-', 30) + ">");
+        ReviseAccountWithOrder account5 = account4.clinchOrderDetermine();
+        Console.log("执行订单后");
+        account5.flushAccountStateByCurrentTick(reviseDateStr, "10:10:03");
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account5);
+        Console.log(account5);
+        Console.log();
+
+
         Console.log(StrUtil.repeat('-', 30) + ">");
         Console.log("时间线来到 10:30-->");
-        account3.flushAccountStateByCurrentTick(reviseDateStr, "10:30:00");
-        Console.log(account3);
+        account5.flushAccountStateByCurrentTick(reviseDateStr, "10:30:00");
+        Console.log(account5);
+
+        Console.log();
+        Console.log("准备卖出!");
+        Console.log("卖出 一半提交订单");
+        ReviseAccountWithOrder account6 = account5.submitNewOrder("11:20:00", "sell", bond,
+                490.0, 0.5, false);
+        account6.flushAccountStateByCurrentTick(reviseDateStr, "11:20:01");
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account6);
+        Console.log(account6);
+
+        ReviseAccountWithOrder account7 = account6.clinchOrderDetermine();
+        Console.log("提交订单后");
+        Console.log(account7);
+
+        Console.log();
+        Console.log("时间来到11:30");
+        account7.flushAccountStateByCurrentTick(reviseDateStr, "11:29:40");
+        Console.log(account7);
+
+        ReviseAccountWithOrder accountEnd = ReviseAccountWithOrder
+                .handleAccountWhenReviseStop(account7, reviseDateStr, "14:50:00");
+        Console.log("停止后");
+        Console.log(accountEnd);
 
 
     }
@@ -152,7 +195,7 @@ public class ReviseAccountWithOrder {
      *
      * @return
      */
-    public static ReviseAccountWithOrder dealWithAccountWithOrderWhenReviseStop(
+    public static ReviseAccountWithOrder handleAccountWhenReviseStop(
             ReviseAccountWithOrder preAccount, // 停止前最后一个账户状态
             String reviseDateStr, // 复盘日期
             String stopReviseTick // 停止复盘时, 复盘模拟tick
@@ -196,6 +239,7 @@ public class ReviseAccountWithOrder {
         // 最后刷新一下总资产, 最后设置内部状态! 此时已经清仓过了!
         realLastAccountState.flushAccountStateByCurrentTick(reviseDateStr, stopReviseTick);
         realLastAccountState.innerObjectType = INNER_TYPE_STOP;
+        realLastAccountState.orderFinalClinchDescription = "复盘停止,账户不再接受订单; 自动全部清仓已完成";
         return realLastAccountState;
     }
 
@@ -420,7 +464,9 @@ public class ReviseAccountWithOrder {
 
             // 依据仓位计算 数量(张数), 精确到 10的倍数, 即一手! 与同花顺相同, 向下取整!!
             if ("buy".equals(orderType)) {
-                double shouldPositionMoney = res.totalAssets * res.orderPositionPercent; // 总资产 * 仓位 == 想要买入的现金;
+                double shouldPositionMoney = Math.min(res.totalAssets * res.orderPositionPercent, res.cash);
+                // 总资产 * 仓位, 但是要 < 现金
+                // 想要买入的现金;
                 Double shouldHands = shouldPositionMoney / res.orderPrice / 10; // 浮点数的最大手数!
                 int actualHands = shouldHands.intValue(); // 实际订单手数
                 res.amount = actualHands * 10; // 最终订单数量!
@@ -453,6 +499,8 @@ public class ReviseAccountWithOrder {
         /*
         7.不会执行成交 动作, 即不修改账号信息
          */
+        res.orderFinalClinchDescription = null; // 提交新订单, 执行描述设置为null, 执行时更新
+        res.commissionSingle = null; // 单次成交佣金需要 成交计算时确定,
         return res;
     }
 
@@ -538,8 +586,10 @@ public class ReviseAccountWithOrder {
                 res.flushSixAccountMapJsonStr(); // 刷新map字段json
 
                 // 8.增加成交描述, 默认是 null
-                res.orderFinalClinchDescription = StrUtil.format("买入订单成功成交: {} - {}: {} * {}; 佣金: {}; 当前剩余现金:{}",
-                        res.targetCode, res.targetName, res.clinchPriceFuture, res.amount, res.getCommissionSingle(),
+                res.orderFinalClinchDescription = StrUtil.format("买入订单成功成交: {} - {}: {} * {} /[仓位:{}]; 佣金: {}; " +
+                                "当前剩余现金:{}",
+                        res.targetCode, res.targetName, res.clinchPriceFuture, res.amount,
+                        NumberUtil.round(res.orderPositionPercent, 3).doubleValue(), res.getCommissionSingle(),
                         res.cash);
 
             } else { // 卖单!
@@ -607,9 +657,11 @@ public class ReviseAccountWithOrder {
                 res.flushSixAccountMapJsonStr(); // 刷新map字段json
 
                 // 8.增加成交描述, 默认是 null
-                res.orderFinalClinchDescription = StrUtil.format("卖出订单成功成交: {} - {}: {} * {}; 佣金: {}; 当前剩余现金:{}",
-                        res.targetCode, res.targetName, res.clinchPriceFuture, res.amount, res.getCommissionSingle(),
-                        res.cash);
+                res.orderFinalClinchDescription = StrUtil
+                        .format("卖出订单成功成交: {} - {}: {} * {} /[仓位:{}]; 佣金: {}; 当前剩余现金:{}",
+                                res.targetCode, res.targetName, res.clinchPriceFuture, res.amount,
+                                NumberUtil.round(res.orderPositionPercent, 3).doubleValue(), res.getCommissionSingle(),
+                                res.cash);
 
                 res.setInnerObjectType(INNER_TYPE_ORDER_CLINCHED); // 成交
             }
@@ -669,7 +721,9 @@ public class ReviseAccountWithOrder {
                                 + this.holdBondsAmountMap.getOrDefault(bondCode, 0) * (
                                 newestPrice - this.bondCostPriceMap.get(bondCode)
                         )
-                );
+                ); // 刷新单只转债 总盈利
+                // 刷新单只转债, 当前持仓部分, 盈利百分比
+                this.holdBondsGainPercentMap.put(bondCode, newestPrice / this.bondCostPriceMap.get(bondCode) - 1);
 
 
                 double marketValue = this.holdBondsAmountMap.getOrDefault(bondCode, 0) * newestPrice; // 市值
