@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
         }
 )
 public class ReviseAccountWithOrder {
-    // 属性佣金设置 -- 固定
+    // 固定属性设置
     // 1.佣金配置
     @Column(name = "commissionRateShen", columnDefinition = "double")
     Double commissionRateShen = 0.00006; // 佣金率, 深市 十万分之6
@@ -108,25 +108,25 @@ public class ReviseAccountWithOrder {
      * @return
      */
     public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStop(ReviseAccountWithOrder preAccount,
-                                                                          String reviseStartTimeStr,
-                                                                          double initMoney
+                                                                          String reviseStopTimeStr
     ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
         res.setInnerObjectType(INNER_TYPE_STOP);
 
-        res.setReviseDateStr(reviseDateStr); // 2022-06-06
-        res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
-        res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
-        // 复盘停止时间为null.
+        res.setReviseDateStr(preAccount.getReviseDateStr()); // 2022-06-06
+        res.setReviseStartTimeStr(preAccount.getReviseStartTimeStr()); // 09:30:00
+        res.setReviseStartDateTimeStr(preAccount.getReviseStartDateTimeStr()); // 标准的日期时间字符串
+        res.setReviseStopTimeStr(reviseStopTimeStr); // @key: 给定停止tick参数, 并设置
 
         // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
+        res.setStartRealTime(preAccount.getStartRealTime());
         String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
-        res.setStartRealTime(currentWitMills);
-        // 停止的真实时间也null
+        res.setStopRealTime(currentWitMills); // @key:实际停止时间!  它与开始, 本质上能确定唯一一次复盘, 但此前保存记录此字段无值!
 
-        res.setInitMoney(initMoney); // 初始资金, 不会改变
-        res.setCash(initMoney); // 初始现金
-        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
+        /*
+        账户资产资金状态 设置: 将会执行 "全部卖出" 逻辑!
+         */
+        // todo!
 
         // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
         return res;
