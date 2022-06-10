@@ -455,7 +455,23 @@ public class ReviseAccountWithOrder {
                 // 2.转债数量增加!
                 Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
                 res.holdBondsAmountMap.put(res.targetCode, rawAmount + res.amount);
-                // 3.
+                // 3.转债已实现盈利不变, 视为瞬间价格并没有变化! 该值变化需要 卖单, 才能确定
+
+                // 4.转债 折算成本, 可能变化!
+                Double rawCostPrice = res.bondCostPriceMap.get(res.targetCode);
+                if (rawCostPrice == null) { // 此前尚未有过持仓
+                    res.bondCostPriceMap.put(res.targetCode, res.clinchPriceFuture); // 以本次买单成交价格作为成本价
+                } else { // 有持仓, 则 用总成本 / 总数量
+                    double newCost =
+                            (rawAmount * rawCostPrice + res.clinchPriceFuture * res.amount) / (res.amount + rawAmount);
+                    res.bondCostPriceMap.put(res.targetCode, newCost);
+                }
+                // 5.转债当前价格: 自动刷新! 暂时瞬间使用成交价格,
+                res.holdBondsCurrentPriceMap.put(res.targetCode, res.clinchPriceFuture);
+                // 6.当前持仓, 的盈利百分比, 用当前价格 / 持仓成本 -1
+                res.holdBondsGainPercentMap
+                        .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode));
+                // 7.单转债总盈利 元 -- 参考值! 用已经实现, + 当前持仓盈利 即可
 
 
             }
