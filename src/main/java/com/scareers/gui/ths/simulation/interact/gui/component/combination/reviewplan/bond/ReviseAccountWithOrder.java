@@ -58,7 +58,7 @@ public class ReviseAccountWithOrder {
     // @key3: 在分时成交数据中, 读取 >= 延迟后tick 的 第一个tick 的价格, 作为 未来可能成交价!!
     // @key2: 在停止复盘时, 采用的模拟全部卖出机制, 如果时间tick恰好为15:00:00, 将可能没有符合条件的 未来成交tick, 此时则以 当日收盘价, 即强制最后一个tick的价格
     @Column(name = "clinchDelaySecond", columnDefinition = "int")
-    Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适
+    Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适; 本设置很可能影响滑点大小!
 
 
     public static void main(String[] args) {
@@ -111,7 +111,7 @@ public class ReviseAccountWithOrder {
                                                                           double initMoney
     ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
-        res.setInnerObjectType(INNER_TYPE_INIT);
+        res.setInnerObjectType(INNER_TYPE_STOP);
 
         res.setReviseDateStr(reviseDateStr); // 2022-06-06
         res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
