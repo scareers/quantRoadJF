@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 0.@update: 为了应对虚拟账号机制,对复盘开始时间的修改, 必须要求 running=false时才可进行!
  * // @key2: 因新订单生成并保存, 应当保存新的对象, 因此实现 from(ReviseAccountWithOrder oldStare) , 复制初始状态!
  * // @key3: 成交机制,买卖单给出价格, 读取未来tick价格, 若不合适则无法成交! 视为"自动立即撤单",设置canClinch=false; 而不会修改账户状态!!
+ * // @key1: 因hibernate机制, 本质上复盘程序中, 账户状态对象, 会不断是新对象, 以便能够保存新记录到数据库, 而非修改对象属性, 那样只会修改数据库记录,而非增加!
  * <p>
  * 1.单次开始复盘, 重置账号!!!
  * 2.直到点击停止 ! 账号的状态保存!
@@ -106,7 +107,7 @@ public class ReviseAccountWithOrder {
      *
      * @return
      */
-    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStop(String reviseDateStr,
+    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStop(ReviseAccountWithOrder preAccount,
                                                                           String reviseStartTimeStr,
                                                                           double initMoney
     ) {
@@ -141,25 +142,7 @@ public class ReviseAccountWithOrder {
      * @param oldAccountState
      * @return
      */
-    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart(ReviseAccountWithOrder oldAccountState) {
-        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
-        res.setReviseDateStr(reviseDateStr); // 2022-06-06
-        res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
-        res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
-        // 复盘停止时间为null.
 
-        // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
-        String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
-        res.setStartRealTime(currentWitMills);
-        // 停止的真实时间也null
-
-        res.setInitMoney(initMoney); // 初始资金, 不会改变
-        res.setCash(initMoney); // 初始现金
-        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
-
-        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
-        return res;
-    }
 
     // 4大内部状态
     public static final String INNER_TYPE_INIT = "复盘开始"; // 复盘开始时初始化, 一次复盘的 源对象!
