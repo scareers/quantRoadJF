@@ -385,8 +385,9 @@ public class ReviseAccountWithOrder {
                 }
                 // 否则 notClinchReason == null; 即未初始化!
             } else { // 卖单!
-                Double shouldSellHand = res.amount * positionPercent / 10; // 应当卖出的手数
-                int shouldSellAmount = shouldSellHand.intValue();
+                Double shouldSellHand =
+                        res.holdBondsAmountMap.getOrDefault(res.targetCode, 0) * 1.0 * positionPercent / 10; // 应当卖出的手数
+                res.amount = shouldSellHand.intValue() * 10; // 应当卖出的数量
                 res.canClinch = clinchPriceFuture >= res.orderPrice; // 成功卖出
                 if (res.amount <= 0) {
                     res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
@@ -422,7 +423,6 @@ public class ReviseAccountWithOrder {
         /*
          * 1. 内部类型, 自设
          */
-//       todo: 最终成交状态 res.setInnerObjectType(INNER_TYPE_ORDER_CLINCHED);
         res.setStopAutoOrderFlag(this.stopAutoOrderFlag); // 是否停止时自动的卖单flag, 复制而来
         /*
         2.复制基本字段
@@ -456,17 +456,7 @@ public class ReviseAccountWithOrder {
                 // -- 只在此处计算手续费! 其余地方无视手续费! -- 总资产采用自动刷新模式!
                 // 单债盈利, 不减去手续费, 手续费的减少, 只体现在 现金!
                 // 类似同花顺模拟账号! 总资产也自动使用现金 + 持仓市值,实时变化!
-                double commission; // 手续费计算
-                if (res.targetCode.startsWith("11")) { // 沪债
-                    commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateHu, commissionMinHu);
-                } else {
-                    commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateShen, commissionMinShen);
-                }
-                // --> 佣金精确到分, 向上舍入
-                res.commissionSingle = NumberUtil.round(commission, 2, RoundingMode.CEILING).doubleValue(); // 向上舍入,单次佣金
-                res.alreadyCommissionTotal = // 总发生佣金叠加
-                        NumberUtil.round(res.alreadyCommissionTotal + commissionSingle, 2, RoundingMode.CEILING)
-                                .doubleValue();
+                calcAndUpdateCommission(res); // 计算手续费, 并更新相关字段
 
 
                 // 1.现金减少!
@@ -510,7 +500,7 @@ public class ReviseAccountWithOrder {
                         res.cash);
 
             } else { // 卖单!
-                                /*
+                /*
                 res.holdBondsAmountMap.putAll(holdBondsAmountMap);
                 res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
                 res.bondCostPriceMap.putAll(bondCostPriceMap);
@@ -518,16 +508,75 @@ public class ReviseAccountWithOrder {
                 res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
                 res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
                  */
+                //0.手续费
+                calcAndUpdateCommission(res); // 计算手续费并更新字段!
+
+                // 1.现金增加!
+                // --> 现金精确到分, 向下舍入.
+                res.cash = NumberUtil.round(res.cash + res.clinchPriceFuture * res.amount - res.commissionSingle, 2,
+                        RoundingMode.FLOOR).doubleValue(); //
+
+                // 2.转债数量减少!
+                Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
+                res.holdBondsAmountMap.put(res.targetCode, rawAmount - res.amount);
+                // 3.转债已实现盈利(元) --> 无视手续费的情况下, 用成交价*数量 - 成本价*数量即可
+                Double rawProfitAlready = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0);
+                double newProfit = (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.amount;
+                // 成本价必定设置过, 不为null, 否则卖单无法执行, 运行不到这里!
+                res.bondAlreadyProfitMap.put(res.targetCode, rawProfitAlready + newProfit);
+
+                // 4.转债 折算成本, 不发生变化! 当 剩余持仓数量为0, 则将成本设置 null!!
+                if (rawAmount - res.amount == 0) {
+                    res.bondCostPriceMap.remove(res.targetCode);
+                }
+                // 5.转债当前价格: 自动刷新! 暂时瞬间使用成交价格  //  5.6.7 同买单
+                res.holdBondsCurrentPriceMap.put(res.targetCode, res.clinchPriceFuture);
+                // 6.当前持仓, 的盈利百分比, 用当前价格 / 持仓成本 -1
+                res.holdBondsGainPercentMap
+                        .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode) - 1);
+                // 7.单转债总盈利 元 -- 参考值! 用已经实现, + 当前持仓盈利 即可
+                double totalProfit = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0) +
+                        (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.holdBondsAmountMap
+                                .getOrDefault(res.targetCode, 0);
+                res.holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
+
+                // 完成后
+                res.flushSixAccountMapJsonStr(); // 刷新map字段json
+
+                // 8.增加成交描述, 默认是 null
+                res.orderFinalClinchDescription = StrUtil.format("卖出订单成功成交: {} - {}: {} * {}; 佣金: {}; 当前剩余现金:{}",
+                        res.targetCode, res.targetName, res.clinchPriceFuture, res.amount, res.getCommissionSingle(),
+                        res.cash);
+
+                res.setInnerObjectType(INNER_TYPE_ORDER_CLINCHED); // 成交
             }
-
-
+        } else {
+            if ("buy".equals(res.orderType)) {
+                res.orderFinalClinchDescription = StrUtil.format("买单执行失败,失败原因: {}", res.notClinchReason);
+            } else {
+                res.orderFinalClinchDescription = StrUtil.format("卖单执行失败,失败原因: {}", res.notClinchReason);
+            }
+            res.setInnerObjectType(INNER_TYPE_ORDER_NOT_CLINCH); // 未成交
         }
         // 未成交, 则不会更新账户状态
-
         return res;
     }
 
-    public void copyOrderBaseAttrAndFiveAutoOrderAttrs(ReviseAccountWithOrder res) {
+    private void calcAndUpdateCommission(ReviseAccountWithOrder res) {
+        double commission; // 手续费计算
+        if (res.targetCode.startsWith("11")) { // 沪债
+            commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateHu, commissionMinHu);
+        } else {
+            commission = Math.max(res.clinchPriceFuture * res.amount * commissionRateShen, commissionMinShen);
+        }
+        // --> 佣金精确到分, 向上舍入
+        res.commissionSingle = NumberUtil.round(commission, 2, RoundingMode.CEILING).doubleValue(); // 向上舍入,单次佣金
+        res.alreadyCommissionTotal = // 总发生佣金叠加
+                NumberUtil.round(res.alreadyCommissionTotal + commissionSingle, 2, RoundingMode.CEILING)
+                        .doubleValue();
+    }
+
+    private void copyOrderBaseAttrAndFiveAutoOrderAttrs(ReviseAccountWithOrder res) {
         res.orderGenerateTick = this.orderGenerateTick; // 复制
         res.orderGenerateTimeReal = this.orderGenerateTimeReal; // 复制
         res.orderType = this.orderType; // buy 还是 sell??? 复制
@@ -590,7 +639,7 @@ public class ReviseAccountWithOrder {
      * @param fsTransDf
      * @param minTickForClinch
      */
-    public static int calcShouldClinchDfRowIndex(DataFrame<Object> fsTransDf, String minTickForClinch) {
+    private static int calcShouldClinchDfRowIndex(DataFrame<Object> fsTransDf, String minTickForClinch) {
         // 3. 筛选有效分时成交! time_tick 列
         int shouldIndex = 0; // 如果时间过早, 用第一个竞价tick也勉强符合, 但不够严谨
         for (int i = 0; i < fsTransDf.length(); i++) {
