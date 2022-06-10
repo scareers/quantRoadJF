@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.utils.JSONUtilS;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -88,6 +89,7 @@ public class ReviseAccountWithOrder {
 
         res.setInitMoney(initMoney); // 初始资金, 不会改变
         res.setCash(initMoney); // 初始现金
+        res.setTotalAssets(initMoney); // 初始总资产, 实时变动
         res.flushSixAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
 
         // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
@@ -184,7 +186,6 @@ public class ReviseAccountWithOrder {
     账号持仓实时信息相关 -- 资金,持仓
      */
 
-
     // 2.账号资金资产数据
     @Column(name = "initMoney", columnDefinition = "double")
     Double initMoney = 10.0 * 10000; // 初始10万资金默认, 可修改
@@ -261,6 +262,8 @@ public class ReviseAccountWithOrder {
     // @key: 当订单生成时, 需要提供 orderGenerateTick ,时分秒, 将以此tick, 自动读取df, 计算 未来的可能成交价格
     @Column(name = "clinchPriceFuture", columnDefinition = "double")
     Double clinchPriceFuture;
+    @Column(name = "clinchTimeTickFuture", columnDefinition = "varchar(16)")
+    String clinchTimeTickFuture; // 同理, 自动计算的, 未来可能的成交时间tick,
     // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 自动判定 是否成交!!
     // 另外, 如果 amount 计算出来, 为 0 (张), 那么也设置为 无法成交! --> 设置对应的 未成交原因字段!
     @Column(name = "canClinch")
@@ -275,6 +278,12 @@ public class ReviseAccountWithOrder {
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
      */
     public void flushSixAccountMapJsonStr() {
+//        holdBondsAmountMap
+//                bondAlreadyProfitMap
+//        bondCostPriceMap
+//                holdBondsCurrentPriceMap
+//        holdBondsGainPercentMap
+//                holdBondsTotalProfitMap
         holdBondsMapJsonStr = JSONUtilS.toJsonStr(holdBondsAmountMap);
         bondAlreadyProfitMapJsonStr = JSONUtilS.toJsonStr(bondAlreadyProfitMap);
         bondCostPriceMapJsonStr = JSONUtilS.toJsonStr(bondCostPriceMap);
@@ -288,27 +297,71 @@ public class ReviseAccountWithOrder {
      * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
      * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
      */
-    public ReviseAccountWithOrder submitNewOrder(boolean stopAutoOrderFlag) {
+    public ReviseAccountWithOrder submitNewOrder(boolean stopAutoOrderFlag,
+                                                 String orderGenerateTick,
+                                                 String orderType,
+                                                 SecurityBeanEm orderBean, // 转债东财bean, 获取转债基本信息!
+                                                 Double price,
+                                                 Double positionPercent,
+                                                 ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        /*
+         * 1. 内部类型, 自设
+         */
         res.setInnerObjectType(INNER_TYPE_ORDER_SUBMIT);
         if (stopAutoOrderFlag) {
-            res.setStopAutoOrderFlag(true); // 标志了是 停止阶段的 自动卖出订单!
+            res.setStopAutoOrderFlag(true); // 标志了是 停止阶段的 自动卖出订单! 否则就是期间的正常 买卖单
         }
 
+        /*
+        2.复盘日期时间 和 真实 日期时间: 复制
+         */
         res.setReviseDateStr(this.getReviseDateStr()); // 2022-06-06
         res.setReviseStartTimeStr(this.getReviseStartTimeStr()); // 09:30:00
         res.setReviseStartDateTimeStr(this.getReviseStartDateTimeStr()); // 标准的日期时间字符串
         res.setReviseStopTimeStr(this.getReviseStopTimeStr()); // @key: 通常是 null;
 
         res.setStartRealTime(this.getStartRealTime());
-        res.setStopRealTime(this.getStopRealTime());
+        res.setStopRealTime(this.getStopRealTime()); // 常常null
 
+        /*
+        3. 账户 3大资金资金数据: 复制
+         */
         res.setInitMoney(initMoney);
         res.setCash(cash);
+        res.setTotalAssets(totalAssets);
 
-        res.getHoldBondsAmountMap().putAll(holdBondsAmountMap);
-        res.getBondAlreadyProfitMap().putAll(bondAlreadyProfitMap);
-        res.getBondCostPriceMap().putAll(bondCostPriceMap);
+        /*
+        4.账户 6大 转债列表映射: 复制, 并初始化 对应JsonStr 属性
+         */
+        res.holdBondsAmountMap.putAll(holdBondsAmountMap);
+        res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
+        res.bondCostPriceMap.putAll(bondCostPriceMap);
+        res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
+        res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
+        res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
+
+        res.flushSixAccountMapJsonStr();
+
+        /*
+        5.订单相关字段:
+         */
+        res.orderGenerateTick = orderGenerateTick; // 参数必须给定
+        res.orderGenerateTimeReal = DateUtil
+                .format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN); // 真实的此刻, 带毫秒
+        res.orderType = orderType; // buy 还是 sell??? 参数给定
+        res.targetCode = orderBean.getSecCode(); // 给定东财bean--> 3属性 参数给定
+        res.targetName = orderBean.getName();
+        res.targetQuoteId = orderBean.getQuoteId();
+
+        res.oderPrice = price;
+        res.oderPositionPercent = positionPercent;
+
+        // todo: 自动计算: res.amount = xx
+        // todo: res.clinchPriceFuture = xx
+        // todo: res.clinchTimeTickFuture = xx
+        // todo: res.canClinch = true? false
+        // todo: notClinchReason= "未成交原因?"
 
 
         return null;
