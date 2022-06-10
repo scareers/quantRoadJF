@@ -13,6 +13,7 @@ import com.scareers.utils.JSONUtilS;
 import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 
 import javax.persistence.*;
 import java.math.RoundingMode;
@@ -69,9 +70,16 @@ public class ReviseAccountWithOrder {
     Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适; 本设置很可能影响滑点大小! ; 负数会向前移动时间, 严禁!!!!!!
 
 
+    @SneakyThrows
     public static void main(String[] args) {
-        ReviseAccountWithOrder account = initAccountWithOrderWhenRiveStart("2022-06-09", "09:30:00", 100000);
-        ReviseAccountWithOrderDao.saveOrUpdateBean(account);
+        ReviseAccountWithOrder account1 = initAccountWithOrderWhenRiveStart("2022-06-09", "09:30:00", 100000);
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
+
+
+        // 10点整, 9好小康成交价在 514 -517之间附近, 多给点
+        SecurityBeanEm bond = SecurityBeanEm.createBond("小康转债");
+        ReviseAccountWithOrder account2 = account1.submitNewOrder("10:00:00", "buy", bond, 525.0, 1.0, false);
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account2);
 
     }
 
