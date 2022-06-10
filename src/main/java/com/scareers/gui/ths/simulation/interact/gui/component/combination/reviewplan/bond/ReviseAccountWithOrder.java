@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -72,14 +73,39 @@ public class ReviseAccountWithOrder {
 
     @SneakyThrows
     public static void main(String[] args) {
-        ReviseAccountWithOrder account1 = initAccountWithOrderWhenRiveStart("2022-06-09", "09:30:00", 100000);
+
+        Console.log(StrUtil.repeat('-', 30) + ">");
+        Console.log("初始化 9号 9:30 开始复盘, 资金10万");
+        String reviseDateStr = "2022-06-09";
+        ReviseAccountWithOrder account1 = initAccountWithOrderWhenRiveStart(reviseDateStr, "09:30:00", 100000);
         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
+        Console.log(account1);
+        Console.log();
 
-
-        // 10点整, 9好小康成交价在 514 -517之间附近, 多给点
+        Console.log(StrUtil.repeat('-', 30) + ">");
+        // 10点整, 9好小康成交价在 514 -517之间附近, 多给点 , 到了 10:30, 大概就剩下 505了, 跌了 2%左右
+        Console.log("10点 全仓买入小康转债尝试: ");
         SecurityBeanEm bond = SecurityBeanEm.createBond("小康转债");
         ReviseAccountWithOrder account2 = account1.submitNewOrder("10:00:00", "buy", bond, 525.0, 1.0, false);
+        account2.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:00:01");
         ReviseAccountWithOrderDao.saveOrUpdateBean(account2);
+        Console.log("提交订单后");
+        Console.log(account2);
+        Console.log();
+
+        Console.log(StrUtil.repeat('-', 30) + ">");
+        ReviseAccountWithOrder account3 = account2.clinchOrderDetermine();
+        Console.log("执行订单后");
+        account3.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:00:03");
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account3);
+        Console.log(account3);
+        Console.log();
+
+        Console.log(StrUtil.repeat('-', 30) + ">");
+        Console.log("时间线来到 10:30-->");
+        account3.flushHoldBondsCurrentPriceMapAndTotalAssets(reviseDateStr, "10:30:00");
+        Console.log(account3);
+
 
     }
 
