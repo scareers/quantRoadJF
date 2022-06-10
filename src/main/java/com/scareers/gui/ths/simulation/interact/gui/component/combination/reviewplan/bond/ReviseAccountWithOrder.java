@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * // @key3: 订单保存时, 账号状况是此前状况, 订单保存后, 才成交, 并刷新账户状态
  * 0.@update: 为了应对虚拟账号机制,对复盘开始时间的修改, 必须要求 running=false时才可进行!
  * // @key2: 因新订单生成并保存, 应当保存新的对象, 因此实现 from(ReviseAccountWithOrder oldStare) , 复制初始状态!
+ * // @key3: 成交机制,买卖单给出价格, 读取未来tick价格, 若不合适则无法成交! 视为"自动立即撤单",设置canClinch=false; 而不会修改账户状态!!
  * <p>
  * 1.单次开始复盘, 重置账号!!!
  * 2.直到点击停止 ! 账号的状态保存!
@@ -52,11 +53,17 @@ public class ReviseAccountWithOrder {
     Double commissionMinShen = 0.1; // 深市起收 1毛钱
     @Column(name = "commissionMinHu", columnDefinition = "double")
     Double commissionMinHu = 0.1; // 沪市起收 1毛钱
+    // 2.成交延迟秒数设置
+    // @key3: 成交机制: 生成订单时, 需要给定当前的复盘模拟时间时分秒 tick; 将此tick+本设置秒数, 得到新的tick;
+    // @key3: 在分时成交数据中, 读取 >= 延迟后tick 的 第一个tick 的价格, 作为 未来可能成交价!!
+    // @key2: 在停止复盘时, 采用的模拟全部卖出机制, 如果时间tick恰好为15:00:00, 将可能没有符合条件的 未来成交tick, 此时则以 当日收盘价, 即强制最后一个tick的价格
+    @Column(name = "clinchDelaySecond", columnDefinition = "int")
+    Integer clinchDelaySecond = 1; // @key3: 建议 1 或者 2 秒; 太长不合适, 0也不合适
 
 
     public static void main(String[] args) {
-        ReviseAccountWithOrder x = new ReviseAccountWithOrder();
-        ReviseAccountWithOrderDao.saveOrUpdateBean(x);
+        ReviseAccountWithOrder account = initAccountWithOrderWhenRiveStart("2022-06-06", "09:30:00", 100000);
+        ReviseAccountWithOrderDao.saveOrUpdateBean(account);
 
     }
 
@@ -70,6 +77,8 @@ public class ReviseAccountWithOrder {
                                                                            double initMoney
     ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        res.setInnerObjectType(INNER_TYPE_INIT);
+
         res.setReviseDateStr(reviseDateStr); // 2022-06-06
         res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
         res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
@@ -82,11 +91,92 @@ public class ReviseAccountWithOrder {
 
         res.setInitMoney(initMoney); // 初始资金, 不会改变
         res.setCash(initMoney); // 初始现金
-        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}"
+        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
 
         // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
         return res;
     }
+
+    /**
+     * 当正式停止一次复盘时, 会实例化新的 账户对象!!
+     * 1.该对象, 设置内部对象类型为停止,
+     * 2.复制此前的 账户对象, 的资金 资产 等属性;  无视订单相关属性
+     * 3.自动将 "当前所有持仓" 以 当前 复盘tick 所对应的价格, 卖出, 执行全部卖出逻辑, 更新账户资产状态!!
+     * --> "模拟全部卖出" 的卖出价格, 为停止时复盘 tick 的下一个tick的价格(同成交机制)
+     *
+     * @return
+     */
+    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStop(String reviseDateStr,
+                                                                          String reviseStartTimeStr,
+                                                                          double initMoney
+    ) {
+        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        res.setInnerObjectType(INNER_TYPE_INIT);
+
+        res.setReviseDateStr(reviseDateStr); // 2022-06-06
+        res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
+        res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
+        // 复盘停止时间为null.
+
+        // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
+        String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
+        res.setStartRealTime(currentWitMills);
+        // 停止的真实时间也null
+
+        res.setInitMoney(initMoney); // 初始资金, 不会改变
+        res.setCash(initMoney); // 初始现金
+        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
+
+        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
+        return res;
+    }
+
+    /**
+     * 提交新的 订单时, 需要新建 ReviseAccountWithOrder 对象;
+     * 返回新的 账户订单对象, 账户相关字段, copy过来, 订单相关字段,设置为 给定的参数!
+     * 返回值是 新的 账户订单 状态对象; 且填充了 订单相关字段, 且自动填充了未来tick作为参考成交价, 且判定是否能成交!
+     * // @key3: 只填充未来tick作为成交参考, 且设置能否成交的flag, 但 不实际执行 "成交动作", 即暂不 更新账户状态
+     * // @key3: 此时, 返回值对象, 的账户状态, 还是 订单提交前的状态 !!! 对象类型标志位 为 1!
+     *
+     * @param oldAccountState
+     * @return
+     */
+    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart(ReviseAccountWithOrder oldAccountState) {
+        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        res.setReviseDateStr(reviseDateStr); // 2022-06-06
+        res.setReviseStartTimeStr(reviseStartTimeStr); // 09:30:00
+        res.setReviseStartDateTimeStr(reviseDateStr + " " + reviseStartTimeStr); // 标准的日期时间字符串
+        // 复盘停止时间为null.
+
+        // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
+        String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
+        res.setStartRealTime(currentWitMills);
+        // 停止的真实时间也null
+
+        res.setInitMoney(initMoney); // 初始资金, 不会改变
+        res.setCash(initMoney); // 初始现金
+        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
+
+        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
+        return res;
+    }
+
+    // 4大内部状态
+    public static final String INNER_TYPE_INIT = "复盘开始"; // 复盘开始时初始化, 一次复盘的 源对象!
+    public static final String INNER_TYPE_ORDER_SUBMIT = "订单提交"; // 订单提交而来, 会读取分时成交数据, 确定未来可能成交价和是否能够成交
+    public static final String INNER_TYPE_ORDER_CLINCHED = "订单成交"; // 实际执行订单, 此时订单已经成交, 且刷新账户资产相关状态
+    public static final String INNER_TYPE_ORDER_NOT_CLINCH = "订单未成交"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+    public static final String INNER_TYPE_STOP = "复盘停止"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+
+
+    public static final String NOT_CLINCH_REASON_BUY__PRICE_FAIL = "买单价格过低"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+    public static final String NOT_CLINCH_REASON_SELL_PRICE_FAIL = "卖单价格过高"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+    public static final String NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL = "买卖单仓位对应数量为0"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+
+
+    // @key3: 内部对象类型: 即表示 当前账户订单对象, 是 刚新建, 还是 提交订单时, 还是 执行订单后!
+    @Column(name = "innerObjectType", columnDefinition = "varchar(32)")
+    String innerObjectType; // 设置的复盘日期, 年月日
 
     @Id
     @GeneratedValue // 默认就是auto
@@ -161,15 +251,18 @@ public class ReviseAccountWithOrder {
     @Column(name = "oderPositionPercent", columnDefinition = "double")
     Double oderPositionPercent; // 订单仓位
     @Column(name = "amount", columnDefinition = "int")
-    Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!!
+    Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!! 且是 10的倍数(不区分沪深)
 
     // @key: 读取分时成交未来数据, 给出下1/2 tick的实时价格!!!, 将判定其与订单价格的大小, 判定是否能够成交
     // @key: 当订单生成时, 需要提供 orderGenerateTick ,时分秒, 将以此tick, 自动读取df, 计算 未来的可能成交价格
     @Column(name = "clinchPriceFuture", columnDefinition = "double")
     Double clinchPriceFuture;
+    // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 自动判定 是否成交!!
+    // 另外, 如果 amount 计算出来, 为 0 (张), 那么也设置为 无法成交! --> 设置对应的 未成交原因字段!
     @Column(name = "canClinch")
-    Boolean canClinch = null; // 当自动计算 未来可能的成交价格后, 将对比订单给的价格, 自动判定 是否成交!!
-
+    Boolean canClinch;
+    @Column(name = "notClinchReason", columnDefinition = "longtext")
+    String notClinchReason; // 当执行真实成交, 会对 价格和数量执行实际判定, 是否能够成交, 给出原因描述
 
     /**
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
