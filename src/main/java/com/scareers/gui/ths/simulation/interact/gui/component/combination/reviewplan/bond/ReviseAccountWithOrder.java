@@ -351,11 +351,7 @@ public class ReviseAccountWithOrder {
         即 INNER_TYPE_ORDER_SUBMIT 状态 而非 INNER_TYPE_ORDER_CLINCHED /NOT_CLINCH 状态
          */
 
-        // todo: res.clinchPriceFuture = xx
-        // todo: res.clinchTimeTickFuture = xx
-        // todo: 自动计算: res.amount = xx
-        // todo: res.canClinch = true? false
-        // todo: notClinchReason= "未成交原因?"
+
 
         // 6.1. 访问分时成交df, 并依据延迟成交算法, 得到成交 tick 行;
         DataFrame<Object> fsTransDf = EastMoneyDbApi // 缓存的分时成交df
@@ -439,11 +435,6 @@ public class ReviseAccountWithOrder {
          */
 
 
-        // todo: res.clinchPriceFuture = xx
-        // todo: res.clinchTimeTickFuture = xx
-        // todo: 自动计算: res.amount = xx
-        // todo: res.canClinch = true? false
-        // todo: notClinchReason= "未成交原因?"
 
         if (notClinchReason == null) { // 不存在未成交原因时, 执行成交, 账户状态变化! // 修改res的属性, 而非this
             // 成交条件: 1. amount>0,且为10整数倍;  2.价格合适能与未来tick匹配成交!
