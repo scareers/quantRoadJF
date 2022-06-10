@@ -375,6 +375,16 @@ public class ReviseAccountWithOrder {
                     res.notClinchReason = NOT_CLINCH_REASON_BUY_PRICE_FAIL;
                 }
                 // 否则 notClinchReason == null; 即未初始化!
+            } else { // 卖单!
+                Double shouldSellHand = res.amount * positionPercent / 10; // 应当卖出的手数
+                int shouldSellAmount = shouldSellHand.intValue();
+                res.canClinch = clinchPriceFuture >= res.orderPrice; // 成功卖出
+                if (res.amount <= 0) {
+                    res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
+                }
+                if (!res.canClinch) { // 不能成交
+                    res.notClinchReason = NOT_CLINCH_REASON_SELL_PRICE_FAIL;
+                }
             }
         } else {
             res.notClinchReason = NOT_CLINCH_REASON_FSTRANS_NOT_EXISTS; // 分时成交数据木有, 无法成交.
@@ -426,10 +436,33 @@ public class ReviseAccountWithOrder {
         // todo: res.canClinch = true? false
         // todo: notClinchReason= "未成交原因?"
 
-        if (notClinchReason == null) { // 不存在未成交原因时, 执行成交, 账户状态变化!
+        if (notClinchReason == null) { // 不存在未成交原因时, 执行成交, 账户状态变化! // 修改res的属性, 而非this
+            // 成交条件: 1. amount>0,且为10整数倍;  2.价格合适能与未来tick匹配成交!
+            if ("buy".equals(res.orderType)) {
+                // 买单顺利成交!
+                // 1.转债 数量增加, 成本变化!
+                // cash 将会变化; totalAssets 假设瞬间情况下价格变化为0, 本质上成交时刻是不会变化的!!!!!!
+                /*
+                res.holdBondsAmountMap.putAll(holdBondsAmountMap);
+                res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
+                res.bondCostPriceMap.putAll(bondCostPriceMap);
+                res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
+                res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
+                res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
+                 */
+                // 1.现金减少!
+                res.cash = res.cash - res.clinchPriceFuture * res.amount; // 成交数量*价格, 现金减去
+                // 2.转债数量增加!
+                Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
+                res.holdBondsAmountMap.put(res.targetCode, rawAmount + res.amount);
+                // 3.
+
+
+            }
 
 
         }
+        // 未成交, 则不会更新账户状态
 
         return res;
     }
