@@ -76,6 +76,7 @@ public class ReviseAccountWithOrder {
 
     /**
      * 当正式开始一次复盘时, 会实例化新的 账户对象!! 设置为新的当前账户!!!
+     * order相关字段均为null(或少数带有默认值)
      *
      * @return
      */
@@ -98,10 +99,10 @@ public class ReviseAccountWithOrder {
 
         res.setInitMoney(initMoney); // 初始资金, 不会改变
         res.setCash(initMoney); // 初始现金
-        res.setTotalAssets(initMoney); // 初始总资产, 实时变动
+        res.setTotalAssets(initMoney); // 初始总资产, 实时变动 ________> @key: 实时刷新
         res.flushSixAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
 
-        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
+        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null(或少数带有默认值)
         return res;
     }
 
@@ -352,7 +353,6 @@ public class ReviseAccountWithOrder {
          */
 
 
-
         // 6.1. 访问分时成交df, 并依据延迟成交算法, 得到成交 tick 行;
         DataFrame<Object> fsTransDf = EastMoneyDbApi // 缓存的分时成交df
                 .getFsTransByDateAndQuoteIdS(reviseDateStr, targetQuoteId, false);
@@ -433,7 +433,6 @@ public class ReviseAccountWithOrder {
         /*
         4.执行成交 动作, @key: 核心步骤
          */
-
 
 
         if (notClinchReason == null) { // 不存在未成交原因时, 执行成交, 账户状态变化! // 修改res的属性, 而非this
