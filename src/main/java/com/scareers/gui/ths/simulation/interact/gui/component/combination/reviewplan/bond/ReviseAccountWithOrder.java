@@ -108,7 +108,7 @@ public class ReviseAccountWithOrder {
     }
 
     /**
-     * 当正式停止一次复盘时, 会实例化新的 账户对象!!
+     * 当正式停止一次复盘时, 返回值
      * 1.该对象, 设置内部对象类型为停止,
      * 2.复制此前的 账户对象, 的资金 资产 等属性;  无视订单相关属性
      * 3.自动将 "当前所有持仓" 以 当前 复盘tick 所对应的价格, 卖出, 执行全部卖出逻辑, 更新账户资产状态!!
@@ -116,41 +116,41 @@ public class ReviseAccountWithOrder {
      *
      * @return
      */
-    public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStop(ReviseAccountWithOrder preAccount,
-                                                                          String reviseStopTimeStr
+    public static ReviseAccountWithOrder dealWithAccountWithOrderWhenReviseStop(
+            ReviseAccountWithOrder preAccount, // 停止前最后一个账户状态
+            String stopReviseTick // 停止复盘时, 复盘模拟tick
     ) {
-        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
-        res.setInnerObjectType(INNER_TYPE_STOP);
+        ReviseAccountWithOrder realLastAccountState = preAccount; // 可能会执行结束的 清仓操作, 只是暂存最后一个状态
 
-        res.setReviseDateStr(preAccount.getReviseDateStr()); // 2022-06-06
-        res.setReviseStartTimeStr(preAccount.getReviseStartTimeStr()); // 09:30:00
-        res.setReviseStartDateTimeStr(preAccount.getReviseStartDateTimeStr()); // 标准的日期时间字符串
-        res.setReviseStopTimeStr(reviseStopTimeStr); // @key: 给定停止tick参数, 并设置
+        // 1.按下停止时, 最后一个 账户状态对象!; 如果一次买卖都没有, 那么订单相关字段是空的;
+        // 如果此前执行过订单, 则有 卖出所有持仓的必要性!
+        if (!preAccount.innerObjectType.equals(INNER_TYPE_INIT)) {
+            // 执行过买卖操作, 需要卖出当前剩余转债!
+            if (!(preAccount.holdBondsAmountMap.size() == 0)) {
+                // 有持仓转债, 在卖出时, 如果剩余数量为0, 会删除掉 key, 因此, 此时必然有 数量不为0的持仓转债!
+                for (String bondCode : preAccount.holdBondsAmountMap.keySet()) { // 遍历转债卖出!
+                    SecurityBeanEm bond = null;
+                    try {
+                        bond = SecurityBeanEm.createBond(bondCode);
+                    } catch (Exception e) {
+                        CommonUtil.notifyError("正在执行停止复盘自动卖出持仓转债: 但转债bean创建失败!");
+                        continue; //
+                    }
+                    ReviseAccountWithOrder tempAccount = preAccount.submitNewOrder(
+                            stopReviseTick,
+                            "sell",
+                            bond,
+                            0.0, // 以0价格卖出, 保证必定卖出, 虽然实盘不是这样的, 但只是为了折算
+                            1.0, true
+                    );
 
-        // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
-        res.setStartRealTime(preAccount.getStartRealTime());
-        String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
-        res.setStopRealTime(currentWitMills); // @key:实际停止时间!  它与开始, 本质上能确定唯一一次复盘, 但此前保存记录此字段无值!
 
-        /*
-        账户资产资金状态 设置: 将会执行 "全部卖出" 逻辑!
-         */
-        // todo!
+                }
+            }
 
-        // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
-        return res;
+        }
+
     }
-
-    /**
-     * 提交新的 订单时, 需要新建 ReviseAccountWithOrder 对象;
-     * 返回新的 账户订单对象, 账户相关字段, copy过来, 订单相关字段,设置为 给定的参数!
-     * 返回值是 新的 账户订单 状态对象; 且填充了 订单相关字段, 且自动填充了未来tick作为参考成交价, 且判定是否能成交!
-     * // @key3: 只填充未来tick作为成交参考, 且设置能否成交的flag, 但 不实际执行 "成交动作", 即暂不 更新账户状态
-     * // @key3: 此时, 返回值对象, 的账户状态, 还是 订单提交前的状态 !!! 对象类型标志位 为 1!
-     *
-     * @param oldAccountState
-     * @return
-     */
 
 
     // 4大内部状态
@@ -510,7 +510,11 @@ public class ReviseAccountWithOrder {
 
                 // 2.转债数量减少!
                 Integer rawAmount = res.holdBondsAmountMap.getOrDefault(res.targetCode, 0);
-                res.holdBondsAmountMap.put(res.targetCode, rawAmount - res.amount);
+                if (rawAmount - res.amount == 0) {
+                    res.holdBondsAmountMap.remove(res.targetCode);
+                } else {
+                    res.holdBondsAmountMap.put(res.targetCode, rawAmount - res.amount);
+                }
                 // 3.转债已实现盈利(元) --> 无视手续费的情况下, 用成交价*数量 - 成本价*数量即可
                 Double rawProfitAlready = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0);
                 double newProfit = (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.amount;
@@ -522,15 +526,31 @@ public class ReviseAccountWithOrder {
                     res.bondCostPriceMap.remove(res.targetCode);
                 }
                 // 5.转债当前价格: 自动刷新! 暂时瞬间使用成交价格  //  5.6.7 同买单
-                res.holdBondsCurrentPriceMap.put(res.targetCode, res.clinchPriceFuture);
+                if (rawAmount - res.amount == 0) {
+                    res.holdBondsCurrentPriceMap.remove(res.targetCode);
+                } else {
+                    res.holdBondsCurrentPriceMap.put(res.targetCode, res.clinchPriceFuture);
+                }
                 // 6.当前持仓, 的盈利百分比, 用当前价格 / 持仓成本 -1
-                res.holdBondsGainPercentMap
-                        .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode) - 1);
+                if (rawAmount - res.amount == 0) {
+                    res.holdBondsGainPercentMap.remove(res.targetCode);
+                } else {
+                    res.holdBondsGainPercentMap
+                            .put(res.targetCode, res.clinchPriceFuture / res.bondCostPriceMap.get(res.targetCode) - 1);
+                }
+
+
                 // 7.单转债总盈利 元 -- 参考值! 用已经实现, + 当前持仓盈利 即可
-                double totalProfit = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0) +
-                        (res.clinchPriceFuture - res.bondCostPriceMap.get(res.targetCode)) * res.holdBondsAmountMap
-                                .getOrDefault(res.targetCode, 0);
-                res.holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
+                if (rawAmount - res.amount == 0) {
+                    res.holdBondsTotalProfitMap
+                            .put(res.targetCode, res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0));
+                } else {
+                    double totalProfit = res.bondAlreadyProfitMap.getOrDefault(res.targetCode, 0.0) +
+                            (res.clinchPriceFuture - res.bondCostPriceMap
+                                    .getOrDefault(res.targetCode, 0.0)) * res.holdBondsAmountMap
+                                    .getOrDefault(res.targetCode, 0); // 无了可正确
+                    res.holdBondsTotalProfitMap.put(res.targetCode, totalProfit);
+                }
 
                 // 完成后
                 res.flushSixAccountMapJsonStr(); // 刷新map字段json
