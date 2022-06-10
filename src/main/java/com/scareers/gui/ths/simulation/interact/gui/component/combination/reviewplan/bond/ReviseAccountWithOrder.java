@@ -88,7 +88,7 @@ public class ReviseAccountWithOrder {
 
         res.setInitMoney(initMoney); // 初始资金, 不会改变
         res.setCash(initMoney); // 初始现金
-        res.flushThreeAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
+        res.flushSixAccountMapJsonStr(); // 初始化为 "{}" // 相关map为空map
 
         // @key: 没有订单, 订单相关所有字段均不需要初始化, 全部null
         return res;
@@ -219,7 +219,7 @@ public class ReviseAccountWithOrder {
     // key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
     @Transient
     ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合, 需要加上剩余持仓浮盈
-    @Column(name = "bondProfitMap", columnDefinition = "longtext")
+    @Column(name = "bondAlreadyProfitMap", columnDefinition = "longtext")
     String bondAlreadyProfitMapJsonStr = "{}";
     // 持有转债, 剩余的数量, 成本价 与 当前价格相比, 赚的比例, 即 当前价格map - 成本价格map! (成本价是折算价)
     @Transient
@@ -274,10 +274,13 @@ public class ReviseAccountWithOrder {
     /**
      * 刷新3个账户资产map的jsonStr 属性, 即设置3大jsonstr属性, 用对应属性的 hm
      */
-    public void flushThreeAccountMapJsonStr() {
+    public void flushSixAccountMapJsonStr() {
         holdBondsMapJsonStr = JSONUtilS.toJsonStr(holdBondsAmountMap);
-        bondProfitMapJsonStr = JSONUtilS.toJsonStr(bondAlreadyProfitMap);
+        bondAlreadyProfitMapJsonStr = JSONUtilS.toJsonStr(bondAlreadyProfitMap);
         bondCostPriceMapJsonStr = JSONUtilS.toJsonStr(bondCostPriceMap);
+        holdBondsCurrentPriceMapJsonStr = JSONUtilS.toJsonStr(holdBondsCurrentPriceMap);
+        holdBondsGainPercentMapJsonStr = JSONUtilS.toJsonStr(holdBondsGainPercentMap);
+        holdBondsTotalProfitMapJsonStr = JSONUtilS.toJsonStr(holdBondsTotalProfitMap);
     }
 
     /**
