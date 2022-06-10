@@ -156,9 +156,10 @@ public class ReviseAccountWithOrder {
     public static final String INNER_TYPE_STOP = "复盘停止"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
 
 
-    public static final String NOT_CLINCH_REASON_BUY__PRICE_FAIL = "买单价格过低"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+    public static final String NOT_CLINCH_REASON_BUY_PRICE_FAIL = "买单价格过低"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
     public static final String NOT_CLINCH_REASON_SELL_PRICE_FAIL = "卖单价格过高"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
     public static final String NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL = "买卖单仓位对应数量为0"; // 实际执行订单, 但因价格问题, 订单未成交! 将设置未成交原因字段
+    public static final String NOT_CLINCH_REASON_FSTRANS_NOT_EXISTS = "买卖单仓位对应数量为0"; // 实际执行订单, 但分时成交df数据没有!
 
 
     // @key3: 内部对象类型: 即表示 当前账户订单对象, 是 刚新建, 还是 提交订单时, 还是 执行订单后!
@@ -257,10 +258,10 @@ public class ReviseAccountWithOrder {
 
     // 订单 给出的买入卖出价格, 有可能不成交
     @Column(name = "orderPrice", columnDefinition = "double")
-    Double oderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
+    Double orderPrice; // 交易价格, 复盘时, 访问"未来数据" 以确定价格! 模拟订单成交了!
     // @key: 买卖单, 均使用核按钮, 并且以 仓位形式给出! 常态有 1/1,1/2,1/3,1/4 --> 订单需要提供此值, 实际数量由此计算
     @Column(name = "oderPositionPercent", columnDefinition = "double")
-    Double oderPositionPercent; // 订单仓位
+    Double orderPositionPercent; // 订单仓位
     @Column(name = "amount", columnDefinition = "int")
     Integer amount; // @key: 订单数量, 张数, 由给定的仓位参数, 而自动计算!!!!!!!!!!! 且是 10的倍数(不区分沪深)
 
@@ -320,35 +321,7 @@ public class ReviseAccountWithOrder {
             res.setStopAutoOrderFlag(true); // 标志了是 停止阶段的 自动卖出订单! 否则就是期间的正常 买卖单
         }
 
-        /*
-        2.复盘日期时间 和 真实 日期时间: 复制
-         */
-        res.setReviseDateStr(this.getReviseDateStr()); // 2022-06-06
-        res.setReviseStartTimeStr(this.getReviseStartTimeStr()); // 09:30:00
-        res.setReviseStartDateTimeStr(this.getReviseStartDateTimeStr()); // 标准的日期时间字符串
-        res.setReviseStopTimeStr(this.getReviseStopTimeStr()); // @key: 通常是 null;
-
-        res.setStartRealTime(this.getStartRealTime());
-        res.setStopRealTime(this.getStopRealTime()); // 常常null
-
-        /*
-        3. 账户 3大资金资金数据: 复制
-         */
-        res.setInitMoney(initMoney);
-        res.setCash(cash);
-        res.setTotalAssets(totalAssets);
-
-        /*
-        4.账户 6大 转债列表映射: 复制, 并初始化 对应JsonStr 属性
-         */
-        res.holdBondsAmountMap.putAll(holdBondsAmountMap);
-        res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
-        res.bondCostPriceMap.putAll(bondCostPriceMap);
-        res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
-        res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
-        res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
-
-        res.flushSixAccountMapJsonStr();
+        copyTimeAndMoneyAndMapAttrs(res); // 复制设置 时间/金钱/6map 等基本字段
 
         /*
         5.订单相关字段:
@@ -361,8 +334,8 @@ public class ReviseAccountWithOrder {
         res.targetName = orderBean.getName();
         res.targetQuoteId = orderBean.getQuoteId();
 
-        res.oderPrice = price;
-        res.oderPositionPercent = positionPercent;
+        res.orderPrice = price;
+        res.orderPositionPercent = positionPercent;
 
         /*
         6.订单提交, 就计算出与成交相关的属性, 但不执行 成交动作, 即不会修改账户状态!
@@ -389,14 +362,127 @@ public class ReviseAccountWithOrder {
 
             // 依据仓位计算 数量(张数), 精确到 10的倍数, 即一手! 与同花顺相同, 向下取整!!
             if ("buy".equals(orderType)) {
+                double shouldPositionMoney = totalAssets * orderPositionPercent; // 总资产 * 仓位 == 想要买入的现金;
+                Double shouldHands = shouldPositionMoney / res.orderPrice / 10; // 浮点数的最大手数!
+                int actualHands = shouldHands.intValue(); // 实际订单手数
+                res.amount = actualHands * 10; // 最终订单数量!
+                res.canClinch = clinchPriceFuture <= res.orderPrice; // 需要订单给的价格更大, 才成交, 否则不成交!
 
-
+                if (res.amount <= 0) {
+                    res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
+                }
+                if (!res.canClinch) { // 不能成交
+                    res.notClinchReason = NOT_CLINCH_REASON_BUY_PRICE_FAIL;
+                }
+                // 否则 notClinchReason == null; 即未初始化!
             }
+        } else {
+            res.notClinchReason = NOT_CLINCH_REASON_FSTRANS_NOT_EXISTS; // 分时成交数据木有, 无法成交.
+        }
+
+        /*
+        7.不会执行成交 动作, 即不修改账号信息
+         */
+        return res;
+    }
+
+    /**
+     * 实际的成交执行, 主要是 刷新账户相关信息, 主要是修改新的转债数量, 折算成本价(加仓时主要),
+     *
+     * @param orderGenerateTick
+     * @param orderType
+     * @param orderBean
+     * @param price
+     * @param positionPercent
+     * @param stopAutoOrderFlag
+     * @return
+     */
+    public ReviseAccountWithOrder clinchOrderDetermine(
+    ) {
+        ReviseAccountWithOrder res = new ReviseAccountWithOrder();
+        /*
+         * 1. 内部类型, 自设
+         */
+//       todo: 最终成交状态 res.setInnerObjectType(INNER_TYPE_ORDER_CLINCHED);
+        res.setStopAutoOrderFlag(this.stopAutoOrderFlag); // 是否停止时自动的卖单flag, 复制而来
+        /*
+        2.复制基本字段
+         */
+        copyTimeAndMoneyAndMapAttrs(res); // 复制设置 时间/金钱/6map 等基本字段
+
+        /*
+        3.复制订单相关字段
+         */
+        copyOrderBaseAttrAndFiveAutoOrderAttrs(res); // 复制订单基本字段, 以及5大已经自动计算了的成交相关属性!
+
+        /*
+        4.执行成交 动作, @key: 核心步骤
+         */
+
+
+        // todo: res.clinchPriceFuture = xx
+        // todo: res.clinchTimeTickFuture = xx
+        // todo: 自动计算: res.amount = xx
+        // todo: res.canClinch = true? false
+        // todo: notClinchReason= "未成交原因?"
+
+        if (notClinchReason == null) { // 不存在未成交原因时, 执行成交, 账户状态变化!
 
 
         }
 
-        return null;
+        return res;
+    }
+
+    public void copyOrderBaseAttrAndFiveAutoOrderAttrs(ReviseAccountWithOrder res) {
+        res.orderGenerateTick = this.orderGenerateTick; // 复制
+        res.orderGenerateTimeReal = this.orderGenerateTimeReal; // 复制
+        res.orderType = this.orderType; // buy 还是 sell??? 复制
+        res.targetCode = this.targetCode;
+        res.targetName = this.targetName;
+        res.targetQuoteId = this.targetQuoteId;
+        res.orderPrice = this.orderPrice;
+        res.orderPositionPercent = this.orderPositionPercent;
+
+
+        res.notClinchReason = this.notClinchReason;
+        res.clinchPriceFuture = this.clinchPriceFuture;
+        res.clinchTimeTickFuture = this.clinchTimeTickFuture;
+        res.amount = this.amount;
+        res.canClinch = this.canClinch;
+    }
+
+
+    private void copyTimeAndMoneyAndMapAttrs(ReviseAccountWithOrder res) {
+    /*
+    2.复盘日期时间 和 真实 日期时间: 复制
+     */
+        res.setReviseDateStr(this.getReviseDateStr()); // 2022-06-06
+        res.setReviseStartTimeStr(this.getReviseStartTimeStr()); // 09:30:00
+        res.setReviseStartDateTimeStr(this.getReviseStartDateTimeStr()); // 标准的日期时间字符串
+        res.setReviseStopTimeStr(this.getReviseStopTimeStr()); // @key: 通常是 null;
+
+        res.setStartRealTime(this.getStartRealTime());
+        res.setStopRealTime(this.getStopRealTime()); // 常常null
+
+        /*
+        3. 账户 3大资金资金数据: 复制
+         */
+        res.setInitMoney(initMoney);
+        res.setCash(cash);
+        res.setTotalAssets(totalAssets);
+
+        /*
+        4.账户 6大 转债列表映射: 复制, 并初始化 对应JsonStr 属性
+         */
+        res.holdBondsAmountMap.putAll(holdBondsAmountMap);
+        res.bondAlreadyProfitMap.putAll(bondAlreadyProfitMap);
+        res.bondCostPriceMap.putAll(bondCostPriceMap);
+        res.holdBondsCurrentPriceMap.putAll(holdBondsCurrentPriceMap);
+        res.holdBondsGainPercentMap.putAll(holdBondsGainPercentMap);
+        res.holdBondsTotalProfitMap.putAll(holdBondsTotalProfitMap);
+
+        res.flushSixAccountMapJsonStr();
     }
 
     /**
