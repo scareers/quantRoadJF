@@ -297,13 +297,14 @@ public class ReviseAccountWithOrder {
      * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
      * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
      */
-    public ReviseAccountWithOrder submitNewOrder(boolean stopAutoOrderFlag,
-                                                 String orderGenerateTick,
-                                                 String orderType,
-                                                 SecurityBeanEm orderBean, // 转债东财bean, 获取转债基本信息!
-                                                 Double price,
-                                                 Double positionPercent,
-                                                 ) {
+    public ReviseAccountWithOrder submitNewOrder(
+            String orderGenerateTick, // 下单的 复盘虚拟tick, 时分秒
+            String orderType, // 类型, buy 或者 sell
+            SecurityBeanEm orderBean, // 转债东财bean, 获取转债基本信息!
+            Double price, // 价格
+            Double positionPercent, // 仓位!
+            boolean stopAutoOrderFlag // 是否为stop时自动生成的卖出订单???
+    ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
         /*
          * 1. 内部类型, 自设
