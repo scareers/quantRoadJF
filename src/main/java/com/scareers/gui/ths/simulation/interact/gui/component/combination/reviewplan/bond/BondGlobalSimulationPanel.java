@@ -90,6 +90,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final int afterTodayNHDefaultDateAsToday = 20;
     public static final double accountInitMoney = 10 * 10000;
     public static final double accountStateFlushSleep = 1500; // 子线程不断刷新账户状态, 时间间隔
+    public static final double buySellPriceBias = 5.0; // 买卖时, 挂单价格, 在最新价格的偏移价格! 元
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -666,11 +667,11 @@ public class BondGlobalSimulationPanel extends JPanel {
 
                 if (account != null) {
                     synchronized (accountLock) {
-                        ReviseAccountWithOrder accountFianl = ReviseAccountWithOrder
+                        ReviseAccountWithOrder accountFinal = ReviseAccountWithOrder
                                 .handleAccountWhenReviseStop(BondGlobalSimulationPanel.this.account,
                                         getReviseDateStrSettingYMD(),
                                         getReviseDateStrSettingHMS());
-                        account = accountFianl;
+                        account = accountFinal;
                     }
                 }
             }
@@ -1123,7 +1124,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();
-        buttonContainer.setLayout(new GridLayout(5, 4, 0, 0)); // 网格布局按钮
+        buttonContainer.setLayout(new GridLayout(7, 4, 0, 0)); // 网格布局按钮
         buttonContainer.setBackground(Color.black);
         buttonContainer.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
@@ -1150,6 +1151,9 @@ public class BondGlobalSimulationPanel extends JPanel {
             FuncButton button = getChangeReviseTimeRateButton(text);
             buttonContainer.add(button);
         }
+
+        // 2.2.1. @add: 4个买入按钮和4个卖出按钮!
+
 
         // 2.3.@key: 各种功能按钮!
         // 2.3.1: 主动刷新转债列表 (已经有线程自动刷新)
@@ -1317,6 +1321,91 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
         return changeReviseStartTimeButton;
     }
+
+    /**
+     * 买入按钮.
+     *
+     * @param denominator 分母, 即 x, 代表 按钮使用的仓位是  1/x
+     * @return
+     */
+    public FuncButton getBuyButton(int denominator) {
+        String text = "买1/" + denominator;
+        FuncButton buyButton = ButtonFactory.getButton(text);
+        buyButton.setForeground(Color.white);
+        buyButton.setBackground(new Color(253, 68, 1)); // 类似核按钮,红背景,白色字
+        buyButton.addActionListener(new ActionListener() {
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                if (!reviseRunning) {
+                    CommonUtil.notifyError("复盘尚未运行,不可买卖");
+                    return;
+                }
+                Double fsTransNewestPrice = dynamicChart.getFsTransNewestPrice();
+                if (fsTransNewestPrice != null) { // 最新价格
+                    if (account != null) {
+                        ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
+                                getReviseDateStrSettingHMS(), "buy", selectedBean,
+                                fsTransNewestPrice + buySellPriceBias, 1.0 / denominator, false);
+                        account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
+                                getReviseDateStrSettingHMS());
+                        ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
+                        ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
+                        account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
+                                getReviseDateStrSettingHMS());
+                        ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
+                        synchronized (accountLock) {
+                            account = account1; // 设置.
+                        }
+                    }
+
+                }
+            }
+        });
+        return buyButton;
+    }
+
+    /**
+     * 卖出按钮.
+     *
+     * @param denominator 分母, 即 x, 代表 按钮使用的仓位是  1/x
+     * @return
+     */
+    public FuncButton getSellButton(int denominator) {
+        String text = "卖1/" + denominator;
+        FuncButton sellButton = ButtonFactory.getButton(text);
+        sellButton.setForeground(Color.red);
+        sellButton.setBackground(new Color(204, 172, 0)); // 类似核按钮,黄背景红字
+        sellButton.addActionListener(new ActionListener() {
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                if (!reviseRunning) {
+                    CommonUtil.notifyError("复盘尚未运行,不可买卖");
+                    return;
+                }
+                Double fsTransNewestPrice = dynamicChart.getFsTransNewestPrice();
+                if (fsTransNewestPrice != null) { // 最新价格
+                    if (account != null) {
+                        ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
+                                getReviseDateStrSettingHMS(), "sell", selectedBean,
+                                fsTransNewestPrice - buySellPriceBias, 1.0 / denominator, false);
+                        account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
+                                getReviseDateStrSettingHMS());
+                        ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
+                        ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
+                        account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
+                                getReviseDateStrSettingHMS());
+                        ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
+                        synchronized (accountLock) {
+                            account = account1; // 设置.
+                        }
+                    }
+
+                }
+            }
+        });
+        return sellButton;
+    }
+
 
     /**
      * 一类按钮: 点击改变复盘开始时间(仅仅时分秒) 到按钮文字那么多

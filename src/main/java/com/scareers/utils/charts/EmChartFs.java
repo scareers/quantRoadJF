@@ -314,7 +314,7 @@ public class EmChartFs {
 
             todayDummy = allFsTimeTicks.get(0); // 虚假的今天
 
-            fsTransNewestPrice = preClose; // 默认初始分时成交价格, 显然是不对的
+            fsTransNewestPrice = null; // 默认初始分时成交价格, 显然是不对的
             priceLow = preClose * 0.99; // 默认图表价格下限
             priceHigh = preClose * 1.01; // 默认图表价格下限  // 指数和正股的 "价格"列, 已经适配了!
         }
@@ -546,7 +546,7 @@ public class EmChartFs {
             }
         }
 
-        private double fsTransNewestPrice; // 暂存分时成交最新价格, 仅仅用于设置 成交量的颜色
+        private Double fsTransNewestPrice; // 暂存分时成交最新价格, 仅仅用于设置 成交量的颜色
 
         /**
          * 针对分时成交3s的更新!
