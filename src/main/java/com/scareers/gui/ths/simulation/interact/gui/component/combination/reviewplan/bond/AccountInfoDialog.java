@@ -26,6 +26,8 @@ public class AccountInfoDialog extends JDialog {
     public static double scale = 0.8; // 对话框, 默认为全屏幕 宽高 的部分; 将居中;
     public static int leftPanelWidth = 350; // 左部分宽度!
     public static boolean modalS = true; // 是否模态
+    public static Color commonLabelBackGroundColor = Color.black; // 常态背景色: 黑色
+    public static Color commonLabelForeGroundColor = Color.white; // 常态字颜色: 白色
 
 
     BondGlobalSimulationPanel parentS;
@@ -94,45 +96,71 @@ public class AccountInfoDialog extends JDialog {
         contentPanelS.add(panelRight, BorderLayout.CENTER);
     }
 
-    JLabel accountBaseInfoLabel = new JLabel();
-    JLabel reviseStartDateTimeStrLabel = new JLabel();
-    JLabel reviseStopTimeStrLabel = new JLabel();
-    JLabel startRealTimeLabel = new JLabel();
-    JLabel stopRealTimeLabel = new JLabel();
-    JLabel accountNameRemarkLabel = new JLabel();
-    JLabel innerObjectTypeLabel = new JLabel();
+    // 6 *2 == 12
+    JLabel reviseStartDateTimeStrLabel = getCommonLabel("复盘日期时间");
+    JLabel reviseStartDateTimeStrValueLabel = getCommonLabelRightAlign();
+    JLabel reviseStopTimeStrLabel = getCommonLabel("复盘结束时间");
+    JLabel reviseStopTimeStrValueLabel = getCommonLabelRightAlign();
+    JLabel startRealTimeLabel = getCommonLabel("开始真实时间");
+    JLabel startRealTimeValueLabel = getCommonLabelRightAlign();
+    JLabel stopRealTimeLabel = getCommonLabel("结束真实时间");
+    JLabel stopRealTimeValueLabel = getCommonLabelRightAlign();
+    JLabel accountNameRemarkLabel = getCommonLabel("备注信息");
+    JLabel accountNameRemarkValueLabel = getCommonLabelRightAlign();
+    JLabel innerObjectTypeLabel = getCommonLabel("内部状态");
+    JLabel innerObjectTypeValueLabel = getCommonLabelRightAlign();
 
-
+    /**
+     * 4 * 3 布局
+     */
     private void initAccountInfoPanel() {
         accountInfoPanel = new JPanel();
 
-        accountBaseInfoLabel.setText("账户基本信息");
-        reviseStartDateTimeStrLabel.setText("复盘日期时间");
-        reviseStopTimeStrLabel.setText("复盘结束时间");
-        startRealTimeLabel.setText("开始真实时间");
-        stopRealTimeLabel.setText("结束真实时间");
-        accountNameRemarkLabel.setText("备注信息");
-        innerObjectTypeLabel.setText("当前内部状态");
-
+        accountInfoPanel.setLayout(new GridLayout(3, 4, 0, 0));
+        accountInfoPanel.add(reviseStartDateTimeStrLabel);
+        accountInfoPanel.add(reviseStartDateTimeStrValueLabel);
+        accountInfoPanel.add(reviseStopTimeStrLabel);
+        accountInfoPanel.add(reviseStopTimeStrValueLabel);
+        accountInfoPanel.add(startRealTimeLabel);
+        accountInfoPanel.add(startRealTimeValueLabel);
+        accountInfoPanel.add(stopRealTimeLabel);
+        accountInfoPanel.add(stopRealTimeValueLabel);
+        accountInfoPanel.add(accountNameRemarkLabel);
+        accountInfoPanel.add(accountNameRemarkValueLabel);
+        accountInfoPanel.add(innerObjectTypeLabel);
+        accountInfoPanel.add(innerObjectTypeValueLabel);
     }
 
+
+    // 9*2 == 18
     JLabel initMoneyLabel = new JLabel();
     JLabel cashLabel = new JLabel();
     JLabel totalAssetsLabel = new JLabel();
     JLabel currentTotalProfitPercentLabel = new JLabel();
     JLabel alreadyCommissionTotalLabel = new JLabel();
+    JLabel alreadyCommissionTotalPercentLabel = new JLabel(); // @key: 非account属性, 总手续费 / 原始总资金 == 手续费占比
+    JLabel currentFloatProfitLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
+    JLabel currentMarketValueLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 现金 == 总市值
+    JLabel currentPositionPercent = new JLabel(); // @key: 非account属性, 用 总市值 /总资产 == 当前持仓 总仓位
 
-    JLabel currentFloatProfitLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 初始资金即可!
-
+    /**
+     * 6 * 3 布局
+     */
     private void initAccountMoneyPanel() {
         accountMoneyPanel = new JPanel();
+        accountMoneyPanel.setLayout(new GridLayout(3, 6, 0, 0));
 
         initMoneyLabel.setText("初始总资金");
-        cashLabel.setText("当前现金");
         totalAssetsLabel.setText("当前总资产"); // 已计算过手续费
+        cashLabel.setText("当前现金");
+
+        currentMarketValueLabel.setText("当前总市值");
         currentFloatProfitLabel.setText("总计浮盈亏"); // 已计算手续费
-        currentTotalProfitPercentLabel.setText("当前总利润百分比"); // 已计算过手续费
         alreadyCommissionTotalLabel.setText("总计手续费");
+
+        currentPositionPercent.setText("当前总仓位");
+        currentTotalProfitPercentLabel.setText("利润百分比"); // 已计算过手续费
+        alreadyCommissionTotalPercentLabel.setText("手续费百分比");
 
     }
 
@@ -148,5 +176,39 @@ public class AccountInfoDialog extends JDialog {
         allOrderPanel = new JPanel();
     }
 
+    public static JLabel getCommonLabel(String text, Color foreColor, boolean leftAlignment) {
+        JLabel jLabel = new JLabel(text);
+        jLabel.setForeground(foreColor);
+        jLabel.setBackground(commonLabelBackGroundColor);
+        if (leftAlignment) {
+            jLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        } else {
+            jLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        }
+        return jLabel;
+    }
 
+    public static JLabel getCommonLabel(String text, Color foreColor) {
+        return getCommonLabel(text, foreColor, true);
+    }
+
+    public static JLabel getCommonLabelRightAlign(String text, Color foreColor) {
+        return getCommonLabel(text, foreColor, false);
+    }
+
+    public static JLabel getCommonLabel(String text) {
+        return getCommonLabel(text, commonLabelForeGroundColor);
+    }
+
+    public static JLabel getCommonLabelRightAlign(String text) {
+        return getCommonLabelRightAlign(text, commonLabelForeGroundColor);
+    }
+
+    public static JLabel getCommonLabel() {
+        return getCommonLabel("");
+    }
+
+    public static JLabel getCommonLabelRightAlign() {
+        return getCommonLabelRightAlign("");
+    }
 }
