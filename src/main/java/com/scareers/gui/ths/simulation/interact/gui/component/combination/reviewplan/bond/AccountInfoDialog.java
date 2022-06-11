@@ -212,13 +212,19 @@ public class AccountInfoDialog extends JDialog {
 
     }
 
+    /**
+     * 使用 表格, 展示当前持仓情况; 主要6大map
+     */
+    private void initAccountHoldBondPanel() {
+        accountHoldBondPanel = new JPanel();
+
+
+    }
+
     private void initAllAccountPanel() {
         allAccountPanel = new JPanel();
     }
 
-    private void initAccountHoldBondPanel() {
-        accountHoldBondPanel = new JPanel();
-    }
 
     private void initAllOrderPanel() {
         allOrderPanel = new JPanel();
