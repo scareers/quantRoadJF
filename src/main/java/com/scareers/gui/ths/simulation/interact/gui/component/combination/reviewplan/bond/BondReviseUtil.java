@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.NumberUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
@@ -9,10 +10,7 @@ import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.EmChartFs;
 import joinery.DataFrame;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 /**
  * description: 重载, 减少主类行数, 降低idea负担
@@ -210,5 +208,29 @@ public class BondReviseUtil {
 
     public static Double getCloseOfEffectDf(DataFrame<Object> effectDf) {
         return Double.valueOf(effectDf.get(effectDf.length() - 1, "price").toString());
+    }
+
+    /**
+     * sleep衰减设置值队列, 求平均值, 去掉最大和最小
+     * 仅一次循环求3值, 尽量最快速度! 不调用常规 求和/max/min  api
+     *
+     * @param deque
+     * @return
+     */
+    public static long getTheAvgOfDequeExcludeMaxAndMin(ArrayDeque<Long> deque) {
+        long sum = 0;
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+        for (Long value : deque) {
+            sum = sum + value;
+            if (value < min) {
+                min = value;
+            }
+            if (value > max) {
+                max = value;
+            }
+        }
+        // 默认四舍五入
+        return NumberUtil.round((sum - min - max) * 1.0 / (deque.size() - 2), 0).longValue();
     }
 }

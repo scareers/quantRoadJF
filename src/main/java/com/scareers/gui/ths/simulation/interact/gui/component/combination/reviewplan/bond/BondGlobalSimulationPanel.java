@@ -186,19 +186,16 @@ public class BondGlobalSimulationPanel extends JPanel {
         klineCollapsiblePane.setCollapsed(false); // 默认展开
     }
 
-
     DynamicEmFs1MV2ChartForRevise dynamicChart; // 随时更新对象
     ChartPanel chartPanel; // 更新时: 仅需要更新 内部chart对象;
     JPanel panelOfTick3sLog; // 更新时: 仅需将新 dynamicChart 的log组件, add到其center即可
     CrossLineListenerForFsXYPlot crossLineListenerForFsXYPlot; // 监听器, 更新时, 需要更新其时间列表,否则可能出现问题
-
     private boolean firstAddLogPanel = true; // 首次添加log到右panel
 
     /**
      * 更新分时图显示 主 区; 它读取自身属性, selectedBean, 以及设置区设置的 日期 ! 实例化 DynamicEmFs1MV2ChartForRevise 对象
      * 它要求 selectedBean 已设置不为 null;
      */
-
     public void updateFsDisplay(boolean forceCreateDynamicChart) {
         if (selectedBean == null) {
             return; // 为空或者未改变, 不会重新实例化 动态分时图表 对象
@@ -260,7 +257,6 @@ public class BondGlobalSimulationPanel extends JPanel {
             firstAddLogPanel = false; // 首次添加panel
         }
     }
-
 
     JPanel functionContainerMain;
 
@@ -639,33 +635,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                 accountInfoDialog.setVisible(true);
             }
         });
-    }
-
-    /**
-     * sleep衰减设置值队列, 求平均值, 去掉最大和最小
-     * 仅一次循环求3值, 尽量最快速度! 不调用常规 求和/max/min  api
-     *
-     * @param deque
-     * @return
-     */
-    private static long getTheAvgOfDequeExcludeMaxAndMin(ArrayDeque<Long> deque) {
-//        if (deque.size() < 3) {
-//            return deque.getLast();
-//        } // 因默认已加入3次默认设置, 不再需要判定
-        long sum = 0;
-        long min = Long.MAX_VALUE;
-        long max = Long.MIN_VALUE;
-        for (Long value : deque) {
-            sum = sum + value;
-            if (value < min) {
-                min = value;
-            }
-            if (value > max) {
-                max = value;
-            }
-        }
-        // 默认四舍五入
-        return NumberUtil.round((sum - min - max) * 1.0 / (deque.size() - 2), 0).longValue();
     }
 
     /**
