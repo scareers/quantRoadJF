@@ -1191,7 +1191,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 notifyOrderClinchResult(notClinchReason, Color.green, "卖出进行中...");
                             }
                         });
-                        CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
                     }
 
                 }
