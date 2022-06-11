@@ -145,8 +145,8 @@ public class EmChartFs {
         float[] dashs = {2, 2}; // 箭头直线部分笔触
         annotation.setArrowStroke(new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dashs, 0));
         annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
-        annotation.setArrowLength(8); // 箭头长度
-        annotation.setLabelOffset(16); // 文字和箭头 头部的距离, 需要和 箭头长度匹配好看
+        annotation.setArrowLength(5); // 箭头长度
+        annotation.setLabelOffset(3); // 文字和箭头 尾部的距离, 需要和 箭头长度匹配好看
 //        annotation.setTextAnchor(TextAnchor.BASELINE_CENTER); // 文字位置
         annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER); // 文字位置
 
@@ -178,7 +178,7 @@ public class EmChartFs {
     @Data
     @NoArgsConstructor
     public static class DynamicEmFs1MV2ChartForRevise {
-        public static double redundancyPriceRangePercent = 0.002; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
+        public static double redundancyPriceRangePercent = 0.01; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
         public static int redundancyPutDataAmount = 20; // 首次put时, 多添加历史n条数据
         public static int tickLogPanelWidthDefault = 402; // tick打印面板的总宽度,含滚动条
 
@@ -702,7 +702,7 @@ public class EmChartFs {
         }
 
         List<XYPointerAnnotation> xYPointerAnnotations = new ArrayList<>();
-        public static Font annotationFont = new Font("楷体", Font.PLAIN, 14);
+        public static Font annotationFont = new Font("楷体", Font.BOLD, 12);
         public static float[] dashs = {2, 2}; // 箭头直线部分笔触
         public static Stroke annotationArrowStroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
                 10,
@@ -714,7 +714,6 @@ public class EmChartFs {
          * @param bsPoints
          */
         public void tryFlushBSPoints(List<BuySellPointRecord> bsPoints) {
-
             for (XYPointerAnnotation xYPointerAnnotation : xYPointerAnnotations) {
                 plot1.removeAnnotation(xYPointerAnnotation);
             }
@@ -742,12 +741,13 @@ public class EmChartFs {
                 XYPointerAnnotation annotation = new XYPointerAnnotation(text, x, y, angle);
                 annotation.setPaint(textColor);  // 文字颜色
                 annotation.setArrowPaint(textColor); // 整个箭头颜色, 同文字
-                float[] dashs = {2, 2}; // 箭头直线部分笔触
                 annotation.setArrowStroke(annotationArrowStroke); // 箭头直线部分笔触
                 annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
-                annotation.setArrowLength(12); // 箭头长度
-                annotation.setLabelOffset(14); // 文字和箭头 头部的距离, 需要和 箭头长度匹配好看
+                annotation.setArrowLength(8); // 箭头长度
+                annotation.setLabelOffset(15); // 文字和箭头 尾部的距离, 需要和 箭头长度匹配好看
                 annotation.setTextAnchor(textAnchor); // 文字位置
+
+                xYPointerAnnotations.add(annotation);
             }
 
             for (XYPointerAnnotation xYPointerAnnotation : xYPointerAnnotations) {

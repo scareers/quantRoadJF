@@ -252,7 +252,7 @@ public class ReviseAccountWithOrder {
 
         // 1.按下停止时, 最后一个 账户状态对象!; 如果一次买卖都没有, 那么订单相关字段是空的;
         // 如果此前执行过订单, 则有 卖出所有持仓的必要性!
-        if (!preAccount.innerObjectType.equals(INNER_TYPE_INIT)) {
+        if (preAccount.innerObjectType != null && !preAccount.innerObjectType.equals(INNER_TYPE_INIT)) {
             // 执行过买卖操作, 需要卖出当前剩余转债!
             if (!(preAccount.holdBondsAmountMap.size() == 0)) {
                 // 有持仓转债, 在卖出时, 如果剩余数量为0, 会删除掉 key, 因此, 此时必然有 数量不为0的持仓转债!
