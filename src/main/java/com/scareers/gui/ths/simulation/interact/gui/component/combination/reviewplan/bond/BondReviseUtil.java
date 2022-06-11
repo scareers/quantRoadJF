@@ -467,7 +467,7 @@ public class BondReviseUtil {
                 } else {
                     this.setBackground(Color.black); // 同花顺
                 }
-                this.setForeground(Color.green);
+                this.setForeground(Color.white);
                 if (value != null) {
                     this.setText(value.toString());
                 }

@@ -1425,10 +1425,15 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
-    public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称
+    public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称 使用白色
+    public static Color amountForeColor = new Color(2, 226, 224); // 文字颜色 : 成交额
+    public static Color upForeColor = new Color(255, 50, 50); // 向上的红色 : 涨跌幅
+    public static Color downForeColor = new Color(0, 230, 0); // 向下的绿色: 涨跌幅
+    public static Color selectedBackColor = new Color(64, 0, 128); // 选中时背景色
+    public static Color holdBondForeColor = new Color(206, 14, 95); // 持仓的文字颜色: 代码和名称!
 
     /**
-     * 默认设置是: 全背景黑色, 全字体绿色, 选中背景 深蓝!
+     * 默认设置是: 全背景黑色, 全字体 白色, 选中背景 深蓝!
      * 高亮对象均在此基础上更改
      * 转债列表高亮设置
      */
