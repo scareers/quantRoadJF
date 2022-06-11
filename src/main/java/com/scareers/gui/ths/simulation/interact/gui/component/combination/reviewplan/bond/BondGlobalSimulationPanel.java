@@ -677,7 +677,9 @@ public class BondGlobalSimulationPanel extends JPanel {
 
             String tick = allFsTransTimeTicks.get(i);
             labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
-            dynamicChart.updateChartFsTrans(DateUtil.parse(tick)); // 重绘图表
+            // 尝试从账户获取持仓成本价!(折算过的), 画持仓线
+            dynamicChart.updateChartFsTrans(DateUtil.parse(tick),
+                    account.getBondCostPriceMap().get(selectedBean.getSecCode())); // 重绘图表
             flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
 
             ThreadUtil.sleep(actualSleep); // 实际执行sleep

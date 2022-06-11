@@ -129,7 +129,7 @@ public class EmChartFs {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));
                     Console.log("即将刷新");
-                    dynamicChart.updateChartFsTrans(tick); // 重绘图表
+                    dynamicChart.updateChartFsTrans(tick, dynamicChart.preClose * 1.01); // 重绘图表
                 }
             }
         }, true);
@@ -232,6 +232,9 @@ public class EmChartFs {
             initChart(); // 初始化图表相关所有对象
 
             initTick3sLogPanel();
+
+            // @add: 持仓成本线
+            initCostPriceMarker();
         }
 
         /**
@@ -320,7 +323,7 @@ public class EmChartFs {
         protected ValueMarkerS markerYForCostPrice; // 持仓成本线!
 
         private void initCostPriceMarker() {
-            float[] dashs = {10, 2, 5, 2};
+            float[] dashs = {12, 4, 9, 3};
             BasicStroke basicStroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dashs,
                     0);
 
@@ -336,19 +339,7 @@ public class EmChartFs {
             markerYForCostPrice.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
             // markerY.setLabel(decimalFormatForPercent.format(markerValueY)); // 线条上显示的文本
 
-            /*
-                        pricePlot.removeRangeMarker(markerYForPricePlot);
-            markerYForPricePlot.setValue(markerValueY);
-            // 2.label设置, 我们使用百分比, 它需要读取纵坐标2
-            ValueAxis rangeAxis2 = pricePlot.getRangeAxis(1); // 我们获取百分比价格, 而非数值价格
-            Range range2 = rangeAxis2.getRange();
-            Double markerValueY2 =
-                    range2.getUpperBound() - range2
-                            .getLength() * (topToBottomPercent / pricePlotPercent); // 同百分比取得marker位置
-            markerYForPricePlot.setLabel(getMarkerYLabel(markerValueY2));
-            pricePlot.addRangeMarker(markerYForPricePlot);
 
-             */
         }
 
 
@@ -591,7 +582,7 @@ public class EmChartFs {
          * @param date
          * @update: 增加了指数和正股价格线 且实时变化
          */
-        public void updateChartFsTrans(Date date) {
+        public void updateChartFsTrans(Date date, Double costPriceMaybe) {
             if (this.beanEm == null || this.dateStr == null) {
                 return;
             }
@@ -656,10 +647,28 @@ public class EmChartFs {
             // @noti: 增加线时, 要实时动态更新, 需要改写本方法, 添加新的参数, 即新线的最新价格!
             updateThreeSeriesDataFsTrans(newestPrice, volSumOfBond, newestPriceOfIndex, newestPriceOfStock);
 
+            // 4.3. @add: 持仓线更新
+            tryFlushCostPriceMarker(costPriceMaybe);
+
             // 5. 有数据打印分时tick信息到logPanel
             if (fsTransIndexShouldOfBond != null) {
                 put(fsTransIndexShouldOfBond);
             }
+        }
+
+        /**
+         * 更新时, 也要尝试刷新 成本价格线; 使用 rangeMarker实现
+         *
+         * @param costPriceMaybe
+         */
+        private void tryFlushCostPriceMarker(Double costPriceMaybe) {
+            plot1.removeRangeMarker(markerYForCostPrice);
+            if (costPriceMaybe != null) {
+                markerYForCostPrice.setValue(costPriceMaybe);
+                markerYForCostPrice.setLabel(dfOfChgPct.format(costPriceMaybe / preClose - 1));
+                plot1.addRangeMarker(markerYForCostPrice);
+            }
+
         }
 
         /**
