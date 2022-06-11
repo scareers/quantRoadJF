@@ -366,75 +366,10 @@ public class SmartFindDialog extends JDialog {
         manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
             @Override
             public synchronized boolean postProcessKeyEvent(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE && e.getID() == KeyEvent.KEY_PRESSED) { // 按下空格键
-                    // 1.如果处于复盘界面
-                    if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
-                        BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
-                        if (instance != null) {
-                            FuncButton pauseRebootReviseButton = instance.getPauseRebootReviseButton();
-                            // 暂停/重启 按钮可见, 就暂停/重启
-                            if (pauseRebootReviseButton.isVisible()) {
-                                pauseRebootReviseButton.doClick();
-                            }
-                        }
-
-                    }
-                } // 按下空格, 复盘界面暂停实现
-
-                if (e.getKeyCode() == KeyEvent.VK_ENTER && e.getID() == KeyEvent.KEY_PRESSED) {
-                    if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
-                        BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
-                        if (instance != null) {
-                            EmKLineDisplayPanel dailyKLineDisplayPanel = instance.getDailyKLineDisplayPanel();
-                            if (dailyKLineDisplayPanel != null) {
-                                int crossLineIndex = dailyKLineDisplayPanel.getCrossLineIndex();
-                                if (crossLineIndex != -1) { // 索引正常, 读取日期, 显示 分时图
-                                    EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart = dailyKLineDisplayPanel
-                                            .getDynamicKLineChart();
-                                    if (dynamicKLineChart != null && dynamicKLineChart.isInited()) {
-                                        //
-                                        List<String> allDateStr = dynamicKLineChart.getAllDateStr();
-                                        if (crossLineIndex >= 0 && crossLineIndex <= allDateStr.size()) {
-                                            String dateStr = allDateStr.get(crossLineIndex); // 终于拿到了日期;
-                                            // 对话框, 显示k线
-                                            SecurityBeanEm beanEm = dynamicKLineChart.getBeanEm();
-                                            DataFrame<Object> fs1mDf = null;
-                                            try {
-                                                fs1mDf = EastMoneyDbApi // 分时图数据拿到了
-                                                        .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
-                                            } catch (Exception ex) {
-                                                ex.printStackTrace();
-                                                CommonUtil.notifyError("分时1Mv2数据获取失败, 2022-06-02以后才有数据!");
-                                            }
-                                            if (fs1mDf != null) {
-                                                JFreeChart chart = EmChartFs.createFs1MV2OfEm(fs1mDf, "", true);
-                                                JDialog dialog = new JDialog(TraderGui.INSTANCE,
-                                                        beanEm.getName() + ": " + dateStr, true);
-                                                dialog.setSize(new Dimension(1200, 800)); // 不能是prefersize,需要size
-                                                ChartPanel chartPanel = new ChartPanel(chart);
-                                                // 大小
-                                                chartPanel.setPreferredSize(new Dimension(1200, 800));
-                                                chartPanel.setMouseZoomable(false);
-                                                chartPanel.setRangeZoomable(false);
-                                                chartPanel.setDomainZoomable(false);
-                                                List<DateTime> timeTicks = DataFrameS
-                                                        .getColAsDateList(fs1mDf, "date"); // 日期列表;传递给监听器,设置横轴marker
-                                                chartPanel.addChartMouseListener(
-                                                        EmChartFs.getCrossLineListenerForFsXYPlot(timeTicks));
-
-                                                dialog.setContentPane(chartPanel);
-                                                dialog.setLocationRelativeTo(TraderGui.INSTANCE);
-                                                dialog.setVisible(true);
-                                            }
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
-
-                    }
-                }
+                GuiGlobalKeyListener.tryPauseRevise(e);
+                GuiGlobalKeyListener.tryOpenFs1mV2OnReviseDailyKline(e);
+                GuiGlobalKeyListener.tryReviseBuyButton(e);
+                GuiGlobalKeyListener.tryReviseSellButton(e);
 
 
                 INSTANCE.resetLocation(); // 设置位置

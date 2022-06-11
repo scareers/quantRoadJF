@@ -696,17 +696,22 @@ public class BondGlobalSimulationPanel extends JPanel {
                     }
 
                     revisePausing = true; // 暂停, 正在执行的将停止, 但保留进度
-                    try {
-                        CommonUtil.waitUtil(new BooleanSupplier() {
-                            @Override
-                            public boolean getAsBoolean() {
-                                return reviseRunning == false; // 等待确实停止了下来
+                    ThreadUtil.execAsync(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                CommonUtil.waitUtil(new BooleanSupplier() {
+                                    @Override
+                                    public boolean getAsBoolean() {
+                                        return reviseRunning == false; // 等待确实停止了下来
+                                    }
+                                }, Integer.MAX_VALUE, 1, null, false);
+                            } catch (TimeoutException | InterruptedException ex) {
+                                ex.printStackTrace();
                             }
-                        }, Integer.MAX_VALUE, 1, null, false);
-                    } catch (TimeoutException | InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                    pauseRebootReviseButton.setText("重启"); // 变换状态!
+                            pauseRebootReviseButton.setText("重启"); // 变换状态!
+                        }
+                    }, true);
                 } else if ("重启".equals(text)) { // 执行重启功能! 它与开始功能的差别在于, 开始tick从 label读取, 而非设置读取
                     if (reviseRunning) { // 正在运行中, 不可重启
                         CommonUtil.notifyError("复盘进行中, 停止后才可重启!");
@@ -1170,6 +1175,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.2.1. @add: 4个买入按钮和4个卖出按钮!
         buy1Button = getBuyButton(1);
+
         buy2Button = getBuyButton(2);
         buy3Button = getBuyButton(3);
         buy4Button = getBuyButton(4);
@@ -1177,14 +1183,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         sell2Button = getSellButton(2);
         sell3Button = getSellButton(3);
         sell4Button = getSellButton(4);
-        buttonContainer.add(buy1Button);
-        buttonContainer.add(buy2Button);
-        buttonContainer.add(buy3Button);
-        buttonContainer.add(buy4Button);
         buttonContainer.add(sell1Button);
         buttonContainer.add(sell2Button);
         buttonContainer.add(sell3Button);
         buttonContainer.add(sell4Button);
+        buttonContainer.add(buy1Button);
+        buttonContainer.add(buy2Button);
+        buttonContainer.add(buy3Button);
+        buttonContainer.add(buy4Button);
 
 
         // 2.3.@key: 各种功能按钮!
