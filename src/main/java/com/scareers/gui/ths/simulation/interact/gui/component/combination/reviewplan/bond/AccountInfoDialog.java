@@ -115,8 +115,8 @@ public class AccountInfoDialog extends JDialog {
      */
     private void initAccountInfoPanel() {
         accountInfoPanel = new JPanel();
-
         accountInfoPanel.setLayout(new GridLayout(2, 6, 0, 0));
+
         accountInfoPanel.add(startRealTimeLabel);
         accountInfoPanel.add(startRealTimeValueLabel);
         accountInfoPanel.add(stopRealTimeLabel);
@@ -134,14 +134,23 @@ public class AccountInfoDialog extends JDialog {
 
     // 9*2 == 18
     JLabel initMoneyLabel = getCommonLabel("初始总资金");
+    JLabel initMoneyValueLabel = getCommonLabelRightAlign();
     JLabel cashLabel = getCommonLabel("当前现金");
+    JLabel cashValueLabel = getCommonLabelRightAlign();
     JLabel totalAssetsLabel = getCommonLabel("当前总资产");
+    JLabel totalAssetsValueLabel = getCommonLabelRightAlign();
     JLabel currentMarketValueLabel = getCommonLabel("当前总市值");
+    JLabel currentMarketValueValueLabel = getCommonLabelRightAlign();
     JLabel currentFloatProfitLabel = getCommonLabel("总计浮盈亏");
+    JLabel currentFloatProfitValueLabel = getCommonLabelRightAlign();
     JLabel alreadyCommissionTotalLabel = getCommonLabel("总计手续费"); // @key: 非account属性, 总手续费 / 原始总资金 == 手续费占比
-    JLabel currentPositionPercent = getCommonLabel("当前总仓位"); // @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
+    JLabel alreadyCommissionTotalValueLabel = getCommonLabelRightAlign(); // @key: 非account属性, 总手续费 / 原始总资金 == 手续费占比
+    JLabel currentPositionPercentLabel = getCommonLabel("当前总仓位"); // @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
+    JLabel currentPositionPercentValueLabel = getCommonLabelRightAlign();// @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
     JLabel currentTotalProfitPercentLabel = getCommonLabel("利润百分比"); // @key: 非account属性, 用 总资产 - 现金 == 总市值
+    JLabel currentTotalProfitPercentValueLabel = getCommonLabelRightAlign();// @key: 非account属性, 用 总资产 - 现金 == 总市值
     JLabel alreadyCommissionTotalPercentLabel = getCommonLabel("手续费百分比"); // @key: 非account属性, 用 总市值 /总资产 == 当前持仓 总仓位
+    JLabel alreadyCommissionTotalPercentValueLabel = getCommonLabelRightAlign();// @key: 非account属性, 用 总市值 /总资产 == 当前持仓 总仓位
 
     /**
      * 6 * 3 布局
@@ -158,7 +167,7 @@ public class AccountInfoDialog extends JDialog {
         currentFloatProfitLabel.setText("总计浮盈亏"); // 已计算手续费
         alreadyCommissionTotalLabel.setText("总计手续费");
 
-        currentPositionPercent.setText("当前总仓位");
+        currentPositionPercentLabel.setText("当前总仓位");
         currentTotalProfitPercentLabel.setText("利润百分比"); // 已计算过手续费
         alreadyCommissionTotalPercentLabel.setText("手续费百分比");
 
