@@ -159,17 +159,24 @@ public class AccountInfoDialog extends JDialog {
         accountMoneyPanel = new JPanel();
         accountMoneyPanel.setLayout(new GridLayout(3, 6, 0, 0));
 
-        initMoneyLabel.setText("初始总资金");
-        cashLabel.setText("当前现金");
-        totalAssetsLabel.setText("当前总资产"); // 已计算过手续费
-
-        currentMarketValueLabel.setText("当前总市值");
-        currentFloatProfitLabel.setText("总计浮盈亏"); // 已计算手续费
-        alreadyCommissionTotalLabel.setText("总计手续费");
-
-        currentPositionPercentLabel.setText("当前总仓位");
-        currentTotalProfitPercentLabel.setText("利润百分比"); // 已计算过手续费
-        alreadyCommissionTotalPercentLabel.setText("手续费百分比");
+        accountMoneyPanel.add(initMoneyLabel);
+        accountMoneyPanel.add(initMoneyValueLabel);
+        accountMoneyPanel.add(cashLabel);
+        accountMoneyPanel.add(cashValueLabel);
+        accountMoneyPanel.add(totalAssetsLabel);
+        accountMoneyPanel.add(totalAssetsValueLabel);
+        accountMoneyPanel.add(currentMarketValueLabel);
+        accountMoneyPanel.add(currentMarketValueValueLabel);
+        accountMoneyPanel.add(currentFloatProfitLabel);
+        accountMoneyPanel.add(currentFloatProfitValueLabel);
+        accountMoneyPanel.add(alreadyCommissionTotalLabel);
+        accountMoneyPanel.add(alreadyCommissionTotalValueLabel);
+        accountMoneyPanel.add(currentPositionPercentLabel);
+        accountMoneyPanel.add(currentPositionPercentValueLabel);
+        accountMoneyPanel.add(currentTotalProfitPercentLabel);
+        accountMoneyPanel.add(currentTotalProfitPercentValueLabel);
+        accountMoneyPanel.add(alreadyCommissionTotalPercentLabel);
+        accountMoneyPanel.add(alreadyCommissionTotalPercentValueLabel);
 
     }
 
