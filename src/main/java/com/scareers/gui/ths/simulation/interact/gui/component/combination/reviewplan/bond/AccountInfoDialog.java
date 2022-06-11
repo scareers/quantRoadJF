@@ -97,51 +97,51 @@ public class AccountInfoDialog extends JDialog {
     }
 
     // 6 *2 == 12
-    JLabel reviseStartDateTimeStrLabel = getCommonLabel("复盘日期时间");
-    JLabel reviseStartDateTimeStrValueLabel = getCommonLabelRightAlign();
-    JLabel reviseStopTimeStrLabel = getCommonLabel("复盘结束时间");
-    JLabel reviseStopTimeStrValueLabel = getCommonLabelRightAlign();
     JLabel startRealTimeLabel = getCommonLabel("开始真实时间");
     JLabel startRealTimeValueLabel = getCommonLabelRightAlign();
     JLabel stopRealTimeLabel = getCommonLabel("结束真实时间");
     JLabel stopRealTimeValueLabel = getCommonLabelRightAlign();
     JLabel accountNameRemarkLabel = getCommonLabel("备注信息");
     JLabel accountNameRemarkValueLabel = getCommonLabelRightAlign();
+    JLabel reviseStartDateTimeStrLabel = getCommonLabel("复盘日期时间");
+    JLabel reviseStartDateTimeStrValueLabel = getCommonLabelRightAlign();
+    JLabel reviseStopTimeStrLabel = getCommonLabel("复盘结束时间");
+    JLabel reviseStopTimeStrValueLabel = getCommonLabelRightAlign();
     JLabel innerObjectTypeLabel = getCommonLabel("内部状态");
     JLabel innerObjectTypeValueLabel = getCommonLabelRightAlign();
 
     /**
-     * 4 * 3 布局
+     * 6 * 2 布局
      */
     private void initAccountInfoPanel() {
         accountInfoPanel = new JPanel();
 
-        accountInfoPanel.setLayout(new GridLayout(3, 4, 0, 0));
-        accountInfoPanel.add(reviseStartDateTimeStrLabel);
-        accountInfoPanel.add(reviseStartDateTimeStrValueLabel);
-        accountInfoPanel.add(reviseStopTimeStrLabel);
-        accountInfoPanel.add(reviseStopTimeStrValueLabel);
+        accountInfoPanel.setLayout(new GridLayout(2, 6, 0, 0));
         accountInfoPanel.add(startRealTimeLabel);
         accountInfoPanel.add(startRealTimeValueLabel);
         accountInfoPanel.add(stopRealTimeLabel);
         accountInfoPanel.add(stopRealTimeValueLabel);
         accountInfoPanel.add(accountNameRemarkLabel);
         accountInfoPanel.add(accountNameRemarkValueLabel);
+        accountInfoPanel.add(reviseStartDateTimeStrLabel);
+        accountInfoPanel.add(reviseStartDateTimeStrValueLabel);
+        accountInfoPanel.add(reviseStopTimeStrLabel);
+        accountInfoPanel.add(reviseStopTimeStrValueLabel);
         accountInfoPanel.add(innerObjectTypeLabel);
         accountInfoPanel.add(innerObjectTypeValueLabel);
     }
 
 
     // 9*2 == 18
-    JLabel initMoneyLabel = new JLabel();
-    JLabel cashLabel = new JLabel();
-    JLabel totalAssetsLabel = new JLabel();
-    JLabel currentTotalProfitPercentLabel = new JLabel();
-    JLabel alreadyCommissionTotalLabel = new JLabel();
-    JLabel alreadyCommissionTotalPercentLabel = new JLabel(); // @key: 非account属性, 总手续费 / 原始总资金 == 手续费占比
-    JLabel currentFloatProfitLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
-    JLabel currentMarketValueLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 现金 == 总市值
-    JLabel currentPositionPercent = new JLabel(); // @key: 非account属性, 用 总市值 /总资产 == 当前持仓 总仓位
+    JLabel initMoneyLabel = getCommonLabel("初始总资金");
+    JLabel cashLabel = getCommonLabel("当前现金");
+    JLabel totalAssetsLabel = getCommonLabel("当前总资产");
+    JLabel currentMarketValueLabel = getCommonLabel("当前总市值");
+    JLabel currentFloatProfitLabel = getCommonLabel("总计浮盈亏");
+    JLabel alreadyCommissionTotalLabel = getCommonLabel("总计手续费"); // @key: 非account属性, 总手续费 / 原始总资金 == 手续费占比
+    JLabel currentPositionPercent = getCommonLabel("当前总仓位"); // @key: 非account属性, 用 总资产 - 初始资金即可! == 盈利
+    JLabel currentTotalProfitPercentLabel = getCommonLabel("利润百分比"); // @key: 非account属性, 用 总资产 - 现金 == 总市值
+    JLabel alreadyCommissionTotalPercentLabel = getCommonLabel("手续费百分比"); // @key: 非account属性, 用 总市值 /总资产 == 当前持仓 总仓位
 
     /**
      * 6 * 3 布局
@@ -151,8 +151,8 @@ public class AccountInfoDialog extends JDialog {
         accountMoneyPanel.setLayout(new GridLayout(3, 6, 0, 0));
 
         initMoneyLabel.setText("初始总资金");
-        totalAssetsLabel.setText("当前总资产"); // 已计算过手续费
         cashLabel.setText("当前现金");
+        totalAssetsLabel.setText("当前总资产"); // 已计算过手续费
 
         currentMarketValueLabel.setText("当前总市值");
         currentFloatProfitLabel.setText("总计浮盈亏"); // 已计算手续费
