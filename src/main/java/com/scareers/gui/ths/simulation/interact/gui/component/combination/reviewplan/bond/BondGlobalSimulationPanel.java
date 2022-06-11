@@ -27,6 +27,7 @@ import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.charts.EmChartKLine;
 import com.scareers.utils.log.LogUtil;
+import io.netty.util.internal.NativeLibraryLoader;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -481,6 +482,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             CommonUtil.notifyKey("账户已经重新初始化");
                         }
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account); // 首次保存!
+                        ReviseAccountWithOrder.BSPointSavingMap.clear(); // @add: 晴空此前买卖点!
                         revisePausing = false;
                         CommonUtil.notifyKey("复盘开始");
 
@@ -678,8 +680,11 @@ public class BondGlobalSimulationPanel extends JPanel {
             String tick = allFsTransTimeTicks.get(i);
             labelOfRealTimeSimulationTime.setText(tick); // 更新tick显示label
             // 尝试从账户获取持仓成本价!(折算过的), 画持仓线
-            dynamicChart.updateChartFsTrans(DateUtil.parse(tick),
-                    account.getBondCostPriceMap().get(selectedBean.getSecCode())); // 重绘图表
+            Double costPriceMaybe = null;
+            if (account != null && selectedBean != null) {
+                costPriceMaybe = account.getBondCostPriceMap().get(selectedBean.getSecCode());
+            }
+            dynamicChart.updateChartFsTrans(DateUtil.parse(tick), costPriceMaybe, null); // 重绘图表
             flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
 
             ThreadUtil.sleep(actualSleep); // 实际执行sleep
@@ -1114,7 +1119,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                     if (account != null) {
                         ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
                                 getReviseSimulationCurrentTimeStr(), "buy", selectedBean,
-                                fsTransNewestPrice + buySellPriceBias, 1.0 / denominator, false);
+                                fsTransNewestPrice + buySellPriceBias, denominator, false);
                         account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
                                 getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
@@ -1188,7 +1193,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                     if (account != null) {
                         ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
                                 getReviseSimulationCurrentTimeStr(), "sell", selectedBean,
-                                fsTransNewestPrice - buySellPriceBias, 1.0 / denominator, false);
+                                fsTransNewestPrice - buySellPriceBias, denominator, false);
                         account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
                                 getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account0);

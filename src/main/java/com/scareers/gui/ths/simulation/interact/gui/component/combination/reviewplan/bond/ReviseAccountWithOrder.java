@@ -18,7 +18,10 @@ import lombok.SneakyThrows;
 
 import javax.persistence.*;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * description: 复盘时模拟账号 + 订单;  账号和订单放入一个表之内, 账号相关列A开头,
@@ -54,6 +57,35 @@ import java.util.concurrent.ConcurrentHashMap;
         }
 )
 public class ReviseAccountWithOrder {
+    /**
+     * 买卖点记录
+     */
+    @Data
+    @NoArgsConstructor
+    public static class BuySellPointRecord {
+        String bs; // buy 或者 sell --> 重要, 决定 B 还是 S
+        int positionDenominator; // 仓位分母  --> 重要, 决定 B1 的1
+        int amount; // 具体数量 --> 随便
+        Double clinchPrice; // 成交价格!  --> 重要, 决定 y
+        String clinchTick; // 成交时间 时分秒 tick!        --> 重要, 决定x
+        String bondCode; // 转债代码 --> 作为map 的key
+    }
+
+    // @add: 买卖点记录map, 唯一; 在每次复盘开始时, 将清空!!! 以便新的订单重新填充
+    // 只记录成交成功的订单; key为 转债代码; value为买卖点列表;
+    public static ConcurrentHashMap<String, List<BuySellPointRecord>> BSPointSavingMap = new ConcurrentHashMap<>();
+
+    /**
+     * 买卖点加入 静态属性map, 以记录! 一般都是按照时间先后顺序
+     *
+     * @param bsPoint
+     */
+    public static void putBsPointRecord(BuySellPointRecord bsPoint) {
+        BSPointSavingMap.putIfAbsent(bsPoint.bondCode, new CopyOnWriteArrayList<>()); // 线程安全
+        BSPointSavingMap.get(bsPoint.bondCode).add(bsPoint);
+    }
+
+
     // 固定属性设置
     // 1.佣金配置
     @Column(name = "commissionRateShen", columnDefinition = "double")
@@ -410,6 +442,22 @@ public class ReviseAccountWithOrder {
         holdBondsTotalProfitMapJsonStr = JSONUtilS.toJsonStr(holdBondsTotalProfitMap);
     }
 
+    @Transient
+    int positionDenominator = 0; // 不保留到数据库, 仓位分母; 即 1/n 的n; 默认0, 将在调用submitNewOrder, 被设置保存
+
+    public ReviseAccountWithOrder submitNewOrder(
+            String orderGenerateTick, // 下单的 复盘虚拟tick, 时分秒
+            String orderType, // 类型, buy 或者 sell
+            SecurityBeanEm orderBean, // 转债东财bean, 获取转债基本信息!
+            Double price, // 价格
+            int positionDenominator, // 仓位分母!
+            boolean stopAutoOrderFlag // 是否为stop时自动生成的卖出订单???
+    ) {
+        this.positionDenominator = positionDenominator;
+        return submitNewOrder(orderGenerateTick, orderType, orderBean, price, 1.0 / positionDenominator,
+                stopAutoOrderFlag);
+    }
+
     /**
      * ---------> 返回的是新对象, 填充了订单相关字段, 但没有"执行成交", 即账户相关状态不刷新
      *
@@ -417,7 +465,7 @@ public class ReviseAccountWithOrder {
      * @key3 以this当前账户的状态, 新建对象, 复制账户状态后(不复制订单相关属性),
      * 使用参数, 执行提交订单逻辑, 但不 执行成交判定和 更新账户状态 !!!
      */
-    public ReviseAccountWithOrder submitNewOrder(
+    private ReviseAccountWithOrder submitNewOrder(
             String orderGenerateTick, // 下单的 复盘虚拟tick, 时分秒
             String orderType, // 类型, buy 或者 sell
             SecurityBeanEm orderBean, // 转债东财bean, 获取转债基本信息!
@@ -425,6 +473,11 @@ public class ReviseAccountWithOrder {
             Double positionPercent, // 仓位!
             boolean stopAutoOrderFlag // 是否为stop时自动生成的卖出订单???
     ) {
+        // 将四舍五入计算该值 -- 仓位变为 1/n 的等价的n; 不一定准确!!
+        if (this.positionDenominator == 0) {
+            this.positionDenominator = NumberUtil.round(1.0 / positionPercent, 0).intValue();
+        }
+
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
         /*
          * 1. 内部类型, 自设
@@ -681,8 +734,24 @@ public class ReviseAccountWithOrder {
                 res.orderFinalClinchDescription = StrUtil.format("卖单执行失败,失败原因: {}", res.notClinchReason);
             }
             res.setInnerObjectType(INNER_TYPE_ORDER_NOT_CLINCH); // 未成交
+        } // 未成交, 则不会更新账户状态
+
+        // @add: 对于所有成交订单, 记录 B1-B4, S1-S4, 以及未来成交的时间tick, 记录到买卖点map; 方便fs图显示BS点!
+        // 买卖点map, 在 每次开始复盘时, 将会重置为空
+        if (res.notClinchReason == null) { // 真正成交了 --> 保留买卖点!
+            BuySellPointRecord bsPoint = new BuySellPointRecord();
+            bsPoint.bs = res.orderType;
+            bsPoint.positionDenominator = res.positionDenominator;
+            bsPoint.amount = res.amount;
+            bsPoint.clinchPrice = res.clinchPriceFuture;
+            bsPoint.clinchTick = res.clinchTimeTickFuture;
+            bsPoint.bondCode = res.targetCode;
+
+            putBsPointRecord(bsPoint);
+
         }
-        // 未成交, 则不会更新账户状态
+
+
         return res;
     }
 
@@ -813,6 +882,9 @@ public class ReviseAccountWithOrder {
         res.alreadyCommissionTotal = this.alreadyCommissionTotal; // 已发生佣金汇总
         res.orderFinalClinchDescription = this.orderFinalClinchDescription; // 成交描述
         res.commissionSingle = this.commissionSingle; // 成交描述
+
+        // @add: 仓位 等价 1/n 的分母
+        res.positionDenominator = this.positionDenominator; // 一般不为0
     }
 
     /**

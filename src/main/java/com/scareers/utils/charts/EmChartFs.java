@@ -11,6 +11,8 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder.BuySellPointRecord;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
@@ -22,6 +24,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
@@ -129,14 +132,33 @@ public class EmChartFs {
                     Date tick = allFsTransTimeTicks.get(i);
                     ThreadUtil.sleep((long) (1000 / timeRate));
                     Console.log("即将刷新");
-                    dynamicChart.updateChartFsTrans(tick, dynamicChart.preClose * 1.01); // 重绘图表
+                    dynamicChart.updateChartFsTrans(tick, dynamicChart.preClose * 1.01, null); // 重绘图表
                 }
             }
         }, true);
 
 
+        long timeX = getTimeX(dynamicChart.todayDummy, 9, 35, 30);
+        double y = 460.0;
+
+        XYTextAnnotation xyTextAnnotation = new XYTextAnnotation("B", timeX, y);
+        xyTextAnnotation.setPaint(Color.white);
+
         dynamicChart.showChartSimple(); // 显示
+
+        dynamicChart.plot1.addAnnotation(xyTextAnnotation);
         waitForever();
+    }
+
+    private static long getTimeX(Date today, int hour, int minute, int second) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(today);
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, second);
+        calendar.set(Calendar.MILLISECOND, 50);
+        Date time = calendar.getTime();
+        return time.getTime(); // 时间戳!
     }
 
     /**
@@ -323,7 +345,7 @@ public class EmChartFs {
         protected ValueMarkerS markerYForCostPrice; // 持仓成本线!
 
         private void initCostPriceMarker() {
-            float[] dashs = {12, 4, 9, 3};
+            float[] dashs = {2, 3};
             BasicStroke basicStroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dashs,
                     0);
 
@@ -334,12 +356,10 @@ public class EmChartFs {
             markerYForCostPrice.setPaint(Color.red); //线条颜色
             markerYForCostPrice.setStroke(basicStroke);
             markerYForCostPrice.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
-            markerYForCostPrice.setLabelPaint(Color.red);
+            markerYForCostPrice.setLabelPaint(new Color(255, 143, 0)); // 同花顺
             markerYForCostPrice.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
             markerYForCostPrice.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
             // markerY.setLabel(decimalFormatForPercent.format(markerValueY)); // 线条上显示的文本
-
-
         }
 
 
@@ -582,7 +602,8 @@ public class EmChartFs {
          * @param date
          * @update: 增加了指数和正股价格线 且实时变化
          */
-        public void updateChartFsTrans(Date date, Double costPriceMaybe) {
+        public void updateChartFsTrans(Date date, Double costPriceMaybe,
+                                       List<BuySellPointRecord> bsPoints) {
             if (this.beanEm == null || this.dateStr == null) {
                 return;
             }
@@ -650,6 +671,9 @@ public class EmChartFs {
             // 4.3. @add: 持仓线更新
             tryFlushCostPriceMarker(costPriceMaybe);
 
+            // 4.4. @add: 买卖点更新
+            tryFlushBSPoints(bsPoints);
+
             // 5. 有数据打印分时tick信息到logPanel
             if (fsTransIndexShouldOfBond != null) {
                 put(fsTransIndexShouldOfBond);
@@ -668,6 +692,10 @@ public class EmChartFs {
                 markerYForCostPrice.setLabel(dfOfChgPct.format(costPriceMaybe / preClose - 1));
                 plot1.addRangeMarker(markerYForCostPrice);
             }
+
+        }
+
+        public void tryFlushBSPoints(List<BuySellPointRecord> bsPoints) {
 
         }
 
@@ -879,6 +907,10 @@ public class EmChartFs {
             y1Axis.setTickUnit(numberTickUnit); // 设置显示多少个tick,越多越密集
         }
 
+        /**
+         * 给定 分钟tick, 转换为 时间x轴中的值, 能够用来显示 XYTextAnnotation
+         */
+        // todo
         public void initDomainDateTimeAxis() {
             // 5.1. 设置时间范围，注意，最大和最小时间设置时需要+ - 。否则时间刻度无法显示
             domainAxis = new DateAxis();

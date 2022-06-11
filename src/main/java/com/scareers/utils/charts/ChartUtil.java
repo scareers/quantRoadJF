@@ -21,6 +21,8 @@ import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.TextAnnotation;
+import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
 import org.jfree.chart.labels.XYToolTipGenerator;
@@ -96,6 +98,7 @@ public class ChartUtil {
 //        showChartSimple(chart);
 
         demoOfXYPlotAndShiZiAndDynamicData();
+//        TextAnnotation
 
     }
 
@@ -148,6 +151,10 @@ public class ChartUtil {
 
         ApplicationFrame frame = new ApplicationFrame("temp");
         ChartPanel chartPanel = new ChartPanel(chart);
+
+        XYTextAnnotation annotation = new XYTextAnnotation("测试", 10,0.8);
+        plot.addAnnotation(annotation);
+
         // 大小
         chartPanel.setPreferredSize(new java.awt.Dimension(1200, 1000));
 
@@ -158,6 +165,8 @@ public class ChartUtil {
         frame.pack(); // 显示.
         // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
         frame.setVisible(true);
+
+
     }
 
     /**
