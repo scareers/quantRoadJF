@@ -26,6 +26,7 @@ import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.charts.EmChartKLine;
 import com.scareers.utils.log.LogUtil;
+import eu.verdelhan.ta4j.indicators.volume.PVIIndicator;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -33,6 +34,7 @@ import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
 import org.jdesktop.swingx.decorator.HighlightPredicate;
+import org.jdesktop.swingx.decorator.HighlightPredicate.ColumnHighlightPredicate;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
@@ -47,10 +49,7 @@ import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -349,6 +348,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             account.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
                                     getReviseSimulationCurrentTimeStr());
                         }
+                        holdBondHighLighterPredicate.addHoldBondCodes(account.getHoldBondsAmountMap().keySet());
                     }
                     ThreadUtil.sleep(accountStateFlushSleep); // 1.5s
                 }
@@ -1376,13 +1376,16 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
-     * 本行的 转债代码, 在给定集合之中 的 高亮条件
+     * 本行的 转债代码 和转债名称, 在给定集合之中, 则高亮它们; 用于当前持仓债!
+     * 与同花顺相同, 只要是曾经持仓过的, 都加入, 即使已经全部卖出了!
      */
-    public static class ContainsHighLighterPredicate implements HighlightPredicate {
-        private volatile HashSet<String> bondCodes;
+    public static class HoldBondHighLighterPredicate implements HighlightPredicate {
+        private volatile CopyOnWriteArraySet<String> bondCodes = new CopyOnWriteArraySet<>();
 
-        public ContainsHighLighterPredicate(HashSet<String> bondCodes) {
-            this.bondCodes = bondCodes;
+        public HoldBondHighLighterPredicate(Collection<String> initCodes) {
+            if (initCodes != null) {
+                this.bondCodes.addAll(initCodes);
+            }
         }
 
         @Override
@@ -1392,17 +1395,27 @@ public class BondGlobalSimulationPanel extends JPanel {
                 return false;
             }
             if (bondCodes.contains(value.toString())) {
-                return true;
+                if (adapter.column == 0 || adapter.column == 1) { // 只对代码和名称改颜色
+                    return true;
+                }
             }
             return false;
+        }
+
+        public void addHoldBondCode(String newHoldBondCode) {
+            this.bondCodes.add(newHoldBondCode);
+        }
+
+        public void addHoldBondCodes(Collection<String> newHoldBondCodes) {
+            this.bondCodes.addAll(newHoldBondCodes);
         }
     }
 
     /**
-     * 本行的 涨跌幅数值, >0.0
+     * 本行的 涨跌幅数值, >0.0 , 涨跌幅文字将红色
      */
-    public static class ChgPctBtHighLighterPredicate implements HighlightPredicate {
-        public ChgPctBtHighLighterPredicate() {
+    public static class ChgPctGt0HighLighterPredicate implements HighlightPredicate {
+        public ChgPctGt0HighLighterPredicate() {
         }
 
         @Override
@@ -1417,11 +1430,36 @@ public class BondGlobalSimulationPanel extends JPanel {
             } catch (Exception e) {
                 return false;
             }
-            if (v > 0) {
+            if (v > 0 && adapter.column == 2) { // 只改变涨跌幅列
                 return true;
-            } else {
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 本行的 涨跌幅数值, <0.0 , 涨跌幅文字将绿色
+     */
+    public static class ChgPctLt0HighLighterPredicate implements HighlightPredicate {
+        public ChgPctLt0HighLighterPredicate() {
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(2); // 涨跌幅
+            if (value == null) {
                 return false;
             }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v < 0 && adapter.column == 2) { // 只改变涨跌幅列
+                return true;
+            }
+            return false;
         }
     }
 
@@ -1432,24 +1470,39 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static Color selectedBackColor = new Color(64, 0, 128); // 选中时背景色
     public static Color holdBondForeColor = new Color(206, 14, 95); // 持仓的文字颜色: 代码和名称!
 
+    HoldBondHighLighterPredicate holdBondHighLighterPredicate;
+    ColorHighlighter holdBondHighlighter;
+
     /**
      * 默认设置是: 全背景黑色, 全字体 白色, 选中背景 深蓝!
      * 高亮对象均在此基础上更改
      * 转债列表高亮设置
      */
     private void addTableHighlighters() {
-//        PatternPredicate patternPredicate = new PatternPredicate("^-.*", 2);
-        ChgPctBtHighLighterPredicate chgPctBtHighLighterPredicate = new ChgPctBtHighLighterPredicate();
-        ColorHighlighter redGreenChgPct = new ColorHighlighter(chgPctBtHighLighterPredicate, Color.black,
-                Color.red, new Color(64, 0, 128), Color.red);
+        // 1.成交额列蓝色
+        ColumnHighlightPredicate columnHighlightPredicate = new ColumnHighlightPredicate(3);
+        ColorHighlighter amountColForeHighlighter = new ColorHighlighter(columnHighlightPredicate, null,
+                amountForeColor, null, amountForeColor);
 
+        // 2.涨跌幅>0 则文字 偏红色 , <0, 则偏绿色
+        ChgPctGt0HighLighterPredicate chgPctGt0HighLighterPredicate = new ChgPctGt0HighLighterPredicate();
+        ColorHighlighter chgPctGt0Highlighter = new ColorHighlighter(chgPctGt0HighLighterPredicate, null,
+                upForeColor, null, upForeColor);
+        ChgPctLt0HighLighterPredicate chgPctLt0HighLighterPredicate = new ChgPctLt0HighLighterPredicate();
+        ColorHighlighter chgPctLt0Highlighter = new ColorHighlighter(chgPctLt0HighLighterPredicate, null,
+                downForeColor, null, downForeColor);
 
-        HashSet<String> x = new HashSet<>(Arrays.asList("113016"));
+        // 3.持仓转债 代码和名称 变深红 , 两者均为属性, 为了实时修改!
+        holdBondHighLighterPredicate = new HoldBondHighLighterPredicate(null);
+        holdBondHighlighter = new ColorHighlighter(holdBondHighLighterPredicate, null,
+                holdBondForeColor, null, holdBondForeColor);
 
-        ContainsHighLighterPredicate predicate = new ContainsHighLighterPredicate(x);
-        ColorHighlighter yellowHoldBondHighlighter = new ColorHighlighter(predicate, Color.black,
-                Color.yellow, new Color(64, 0, 128), Color.green);
-        jXTableForBonds.setHighlighters(redGreenChgPct, yellowHoldBondHighlighter);
+        jXTableForBonds.setHighlighters(
+                amountColForeHighlighter,
+                chgPctGt0Highlighter,
+                chgPctLt0Highlighter,
+                holdBondHighlighter
+        );
 
     }
 
