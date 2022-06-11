@@ -19,6 +19,7 @@ public class ValueMarkerS extends ValueMarker {
         MOUSE_CROSS_MARKER, // 代表鼠标十字星的marker
         CURRENT_PRICE, // 代表当前价格含义的marker
         OTHER, // 其他
+        HOLD_COST, // 持仓成本线
     }
 
     Type type;

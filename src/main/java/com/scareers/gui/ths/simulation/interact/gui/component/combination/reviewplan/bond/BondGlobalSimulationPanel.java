@@ -1494,12 +1494,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         for (int i = 0; i < newDatas.size(); i++) {
             for (int j = 0; j < model.getColumnCount(); j++) {
-                Object o = newDatas.get(i).get(j);
-                if (o != null) {
-                    model.setValueAt(newDatas.get(i).get(j), i, j);
-                } else {
-                    model.setValueAt(null, i, j);
-                }
+                model.setValueAt(newDatas.get(i).get(j), i, j);
             }
         }
 

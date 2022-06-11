@@ -2,11 +2,13 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
+import joinery.DataFrame;
 import lombok.Getter;
 import lombok.Setter;
 import org.jdesktop.swingx.JXTable;
@@ -17,8 +19,10 @@ import javax.persistence.Transient;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
+import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -228,41 +232,6 @@ public class AccountInfoDialog extends JDialog {
 
     }
 
-    @Transient
-    volatile ConcurrentHashMap<String, Integer> holdBondsAmountMap = new ConcurrentHashMap<>();
-    @Column(name = "holdBondsAmountMap", columnDefinition = "longtext")
-    volatile String holdBondsMapJsonStr = "{}"; // 成分股列表json字符串
-
-    // 单只资产, 当前的剩余仓位的持仓成本价格(已折算); key为转债代码, value 为当前剩余仓位的持仓成本
-    @Transient
-    volatile ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
-    @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
-    volatile String bondCostPriceMapJsonStr = "{}";
-
-    // 持有转债,当前实时价格map; 应当实时刷新;   ----------> 该map也会随着 总资产的刷新, 而刷新最新价格
-    @Transient
-    volatile ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
-    @Column(name = "holdBondsCurrentPriceMap", columnDefinition = "longtext")
-    volatile String holdBondsCurrentPriceMapJsonStr = "{}"; // 成分股列表json字符串
-
-    // 单只资产, 今日已发生的收益, 元(即不包括当前持仓的浮盈, 实际转换为了钱的收益);
-    // key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
-    @Transient
-    volatile ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合,
-    // 需要加上剩余持仓浮盈
-    @Column(name = "bondAlreadyProfitMap", columnDefinition = "longtext")
-    volatile String bondAlreadyProfitMapJsonStr = "{}";
-    // 持有转债, 剩余的数量, 成本价 与 当前价格相比, 赚的比例, 即 当前价格map - 成本价格map! (成本价是折算价)
-    @Transient
-    volatile ConcurrentHashMap<String, Double> holdBondsGainPercentMap = new ConcurrentHashMap<>();
-    @Column(name = "holdBondsGainPercentMap", columnDefinition = "longtext")
-    volatile String holdBondsGainPercentMapJsonStr = "{}";
-    // 持有转债, 已发生(卖出) 的盈利 + 当前剩余仓位浮盈, 即今日单债总盈利, 浮动!
-    @Transient
-    volatile ConcurrentHashMap<String, Double> holdBondsTotalProfitMap = new ConcurrentHashMap<>();
-    @Column(name = "holdBondsTotalProfitMap", columnDefinition = "longtext")
-    volatile String holdBondsTotalProfitMapJsonStr = "{}";
-
 
     /**
      * 使用 表格, 展示当前持仓情况; 主要6大map
@@ -293,6 +262,8 @@ public class AccountInfoDialog extends JDialog {
 
     protected volatile JXTable jXTableForHoldBonds; //  转债展示列表控件
 
+    DefaultTableModel holdBondsModel;
+
     /**
      * 资产列表控件. 可重写
      *
@@ -303,7 +274,7 @@ public class AccountInfoDialog extends JDialog {
         // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
         Vector<Vector<Object>> datas = new Vector<>(); // 空数据, 仅提供列信息
         Vector<Object> cols = new Vector<>(bondTableColNames);
-        DefaultTableModel model = new DefaultTableModel(datas, cols) {
+        holdBondsModel = new DefaultTableModel(datas, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false; // 不可编辑!
@@ -325,7 +296,7 @@ public class AccountInfoDialog extends JDialog {
         jXTableForHoldBonds = new JXTable();
         // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
         jXTableForHoldBonds.setSortOrder("涨跌幅", SortOrder.DESCENDING);
-        jXTableForHoldBonds.setModel(model);
+        jXTableForHoldBonds.setModel(holdBondsModel);
         removeEnterKeyDefaultAction(jXTableForHoldBonds); // 按下enter不下移, 默认行为
         addTableHighlighters(); // 高亮
         jXTableForHoldBonds.setSortOrder(6, SortOrder.DESCENDING); // 默认当前持仓部分, 盈利百分比倒序
@@ -548,12 +519,67 @@ public class AccountInfoDialog extends JDialog {
         }
 
         // 尝试刷新持仓转债表格
-        tryFlushJxTableForHoldBonds();
+        tryFlushJxTableForHoldBonds(account);
     }
 
-    private void tryFlushJxTableForHoldBonds() {
+    private void tryFlushJxTableForHoldBonds(ReviseAccountWithOrder account) {
         // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
-        // todo
+        // 0.排序保存
+        int sortedColumnIndex = jXTableForHoldBonds.getSortedColumnIndex(); // 唯一主要的排序列!
+        SortOrder sortOrder = null;
+        if (sortedColumnIndex != -1) {
+            sortOrder = jXTableForHoldBonds.getSortOrder(sortedColumnIndex); // 什么顺序
+        }
+
+
+        // 1.访问全部转债
+        HashSet<String> allBonds = new HashSet<>(account.getHoldBondsAmountMap().keySet());
+        allBonds.addAll(account.getBondCostPriceMap().keySet());
+        allBonds.addAll(account.getHoldBondsCurrentPriceMap().keySet());
+        allBonds.addAll(account.getBondAlreadyProfitMap().keySet());
+        allBonds.addAll(account.getHoldBondsGainPercentMap().keySet());
+        allBonds.addAll(account.getHoldBondsTotalProfitMap().keySet());
+
+        // 2.构造结果数组
+        Vector<Vector> datas = new Vector<>();
+        for (String bond : allBonds) {
+            String name = null;
+            try {
+                name = SecurityBeanEm.createBond(bond).getName();
+            } catch (Exception e) {
+
+            }
+
+            Integer amount = account.getHoldBondsAmountMap().getOrDefault(bond, 0);
+            Double cost = account.getBondCostPriceMap().getOrDefault(bond, 0.0);
+            Double currentPrice = account.getHoldBondsCurrentPriceMap().getOrDefault(bond, 0.0);
+            Double alreadyProfit = account.getBondAlreadyProfitMap().getOrDefault(bond, 0.0);
+            Double holdGainPercent = account.getHoldBondsGainPercentMap().getOrDefault(bond, 0.0);
+            Double totalProfit = account.getHoldBondsTotalProfitMap().getOrDefault(bond, 0.0);
+            Double marketValue = amount * currentPrice;
+            Double position = marketValue / account.getTotalAssets();
+
+            List<Object> row = Arrays
+                    .asList(bond, name, amount, cost, currentPrice, alreadyProfit, holdGainPercent, totalProfit,
+                            marketValue,
+                            position);
+            datas.add(new Vector(row));
+        }
+        // 3.新行数
+        holdBondsModel.setRowCount(datas.size());
+        // 4.遍历赋值
+        for (int i = 0; i < datas.size(); i++) {
+            for (int j = 0; j < holdBondsModel.getColumnCount(); j++) {
+                holdBondsModel.setValueAt(datas.get(i).get(j), i, j);
+            }
+        }
+
+
+        // 5.排序恢复!
+        if (sortedColumnIndex != -1) {
+            jXTableForHoldBonds.setSortOrder(sortedColumnIndex, sortOrder);
+        }
+
     }
 
     /**

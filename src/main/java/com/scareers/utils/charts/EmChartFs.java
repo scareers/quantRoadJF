@@ -40,10 +40,7 @@ import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import org.jfree.data.xy.OHLCDataset;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.text.TextUtilities;
-import org.jfree.ui.ApplicationFrame;
-import org.jfree.ui.RectangleEdge;
-import org.jfree.ui.RectangleInsets;
-import org.jfree.ui.TextAnchor;
+import org.jfree.ui.*;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -320,6 +317,40 @@ public class EmChartFs {
         }
 
         private static final Log log = LogUtil.getLogger();
+        protected ValueMarkerS markerYForCostPrice; // 持仓成本线!
+
+        private void initCostPriceMarker() {
+            float[] dashs = {10, 2, 5, 2};
+            BasicStroke basicStroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10.0f, dashs,
+                    0);
+
+            // 2.价格图的ymarker横线
+            markerYForCostPrice = new ValueMarkerS(Double.MIN_VALUE); // 水平线的值, 初始化为最小值, 不会显示
+            markerYForCostPrice.setType(ValueMarkerS.Type.HOLD_COST);
+            markerYForCostPrice.setLabelOffsetType(LengthAdjustmentType.EXPAND);
+            markerYForCostPrice.setPaint(Color.red); //线条颜色
+            markerYForCostPrice.setStroke(basicStroke);
+            markerYForCostPrice.setLabelFont(new Font("SansSerif", 0, 10)); //文本格式
+            markerYForCostPrice.setLabelPaint(Color.red);
+            markerYForCostPrice.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+            markerYForCostPrice.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
+            // markerY.setLabel(decimalFormatForPercent.format(markerValueY)); // 线条上显示的文本
+
+            /*
+                        pricePlot.removeRangeMarker(markerYForPricePlot);
+            markerYForPricePlot.setValue(markerValueY);
+            // 2.label设置, 我们使用百分比, 它需要读取纵坐标2
+            ValueAxis rangeAxis2 = pricePlot.getRangeAxis(1); // 我们获取百分比价格, 而非数值价格
+            Range range2 = rangeAxis2.getRange();
+            Double markerValueY2 =
+                    range2.getUpperBound() - range2
+                            .getLength() * (topToBottomPercent / pricePlotPercent); // 同百分比取得marker位置
+            markerYForPricePlot.setLabel(getMarkerYLabel(markerValueY2));
+            pricePlot.addRangeMarker(markerYForPricePlot);
+
+             */
+        }
+
 
         /**
          * 执行筛选, 核心方法, 参数正确设置返回true
