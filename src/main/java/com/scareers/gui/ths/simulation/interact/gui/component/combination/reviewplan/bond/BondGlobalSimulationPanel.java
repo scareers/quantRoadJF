@@ -78,7 +78,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     public static final int tick3sLogPanelWidth = DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
-    public static final double timeRateDefault = 3.0; // 默认复盘时间倍率
+    public static final double timeRateDefault = 1.0; // 默认复盘时间倍率
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
     public static final boolean bondListUseRealTimeWenCai = true;
     public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
@@ -491,7 +491,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton stopReviseButton; // 停止按钮
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
-    FuncButton openAccountButton; // 关闭k线折叠面板
+    FuncButton openAccountButton; // 打开账户
 
     volatile ReviseAccountWithOrder account; // 账户对象, 点击开始按钮首次实例化! 见开始按钮的回调
     final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁
@@ -511,7 +511,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                     if (account != null) {
                         synchronized (accountLock) { // 加锁刷新! 需要保证该方法执行快速!
                             account.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
-                                    getReviseDateStrSettingHMS());
+                                    getReviseSimulationCurrentTimeStr());
                         }
                     }
                     ThreadUtil.sleep(accountStateFlushSleep); // 1.5s
@@ -670,7 +670,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                         ReviseAccountWithOrder accountFinal = ReviseAccountWithOrder
                                 .handleAccountWhenReviseStop(BondGlobalSimulationPanel.this.account,
                                         getReviseDateStrSettingYMD(),
-                                        getReviseDateStrSettingHMS());
+                                        getReviseSimulationCurrentTimeStr());
                         account = accountFinal;
                     }
                 }
@@ -946,6 +946,10 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
+    public String getReviseSimulationCurrentTimeStr() { // 实时获取复盘 虚拟的 当前时间! 字符串形式
+        return labelOfRealTimeSimulationTime.getText();
+    }
+
     public double getReviseTimeRateSetting() { // 复盘时间流速倍率, 错误将返回 1.0
         double v = timeRateDefault;
         try {
@@ -1109,6 +1113,18 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     SelectBeanDisplayPanel bondInfoPanel;
 
+    /*
+    8个买卖按钮
+     */
+    FuncButton buy1Button;
+    FuncButton buy2Button;
+    FuncButton buy3Button;
+    FuncButton buy4Button;
+    FuncButton sell1Button;
+    FuncButton sell2Button;
+    FuncButton sell3Button;
+    FuncButton sell4Button;
+
     /**
      * 功能区初始化
      */
@@ -1153,6 +1169,22 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 2.2.1. @add: 4个买入按钮和4个卖出按钮!
+        buy1Button = getBuyButton(1);
+        buy2Button = getBuyButton(2);
+        buy3Button = getBuyButton(3);
+        buy4Button = getBuyButton(4);
+        sell1Button = getSellButton(1);
+        sell2Button = getSellButton(2);
+        sell3Button = getSellButton(3);
+        sell4Button = getSellButton(4);
+        buttonContainer.add(buy1Button);
+        buttonContainer.add(buy2Button);
+        buttonContainer.add(buy3Button);
+        buttonContainer.add(buy4Button);
+        buttonContainer.add(sell1Button);
+        buttonContainer.add(sell2Button);
+        buttonContainer.add(sell3Button);
+        buttonContainer.add(sell4Button);
 
 
         // 2.3.@key: 各种功能按钮!
@@ -1344,18 +1376,19 @@ public class BondGlobalSimulationPanel extends JPanel {
                 if (fsTransNewestPrice != null) { // 最新价格
                     if (account != null) {
                         ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
-                                getReviseDateStrSettingHMS(), "buy", selectedBean,
+                                getReviseSimulationCurrentTimeStr(), "buy", selectedBean,
                                 fsTransNewestPrice + buySellPriceBias, 1.0 / denominator, false);
                         account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
-                                getReviseDateStrSettingHMS());
+                                getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
                         ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
                         account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
-                                getReviseDateStrSettingHMS());
+                                getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
                         synchronized (accountLock) {
                             account = account1; // 设置.
                         }
+                        CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
                     }
 
                 }
@@ -1386,18 +1419,19 @@ public class BondGlobalSimulationPanel extends JPanel {
                 if (fsTransNewestPrice != null) { // 最新价格
                     if (account != null) {
                         ReviseAccountWithOrder account0 = BondGlobalSimulationPanel.this.account.submitNewOrder(
-                                getReviseDateStrSettingHMS(), "sell", selectedBean,
+                                getReviseSimulationCurrentTimeStr(), "sell", selectedBean,
                                 fsTransNewestPrice - buySellPriceBias, 1.0 / denominator, false);
                         account0.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
-                                getReviseDateStrSettingHMS());
+                                getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
                         ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
                         account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
-                                getReviseDateStrSettingHMS());
+                                getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
                         synchronized (accountLock) {
                             account = account1; // 设置.
                         }
+                        CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
                     }
 
                 }

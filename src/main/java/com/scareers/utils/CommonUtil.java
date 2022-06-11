@@ -550,5 +550,10 @@ public class CommonUtil {
         ManiLog.put(content, Color.yellow);
     }
 
+    public static void notifyInfo(String content) {
+        log.info(content);
+        ManiLog.put(content, Color.pink);
+    }
+
 
 }

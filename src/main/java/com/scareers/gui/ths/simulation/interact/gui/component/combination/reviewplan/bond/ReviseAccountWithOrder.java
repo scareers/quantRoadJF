@@ -485,10 +485,13 @@ public class ReviseAccountWithOrder {
                                 .getOrDefault(res.targetCode, 0) * 1.0 * res.orderPositionPercent / 10; // 应当卖出的手数
                 res.amount = shouldSellHand.intValue() * 10; // 应当卖出的数量
                 res.canClinch = res.clinchPriceFuture >= res.orderPrice; // 成功卖出
+
                 if (res.amount <= 0) {
                     res.notClinchReason = NOT_CLINCH_REASON_AMOUNT_ZERO_FAIL; // 为0, 失败原因; 其实是下单失败
                 }
                 if (!res.canClinch) { // 不能成交
+//                    Console.log("{} >= {}", res.clinchPriceFuture, res.orderPrice);
+//                    Console.log(res.clinchPriceFuture, res.clinchTimeTickFuture);
                     res.notClinchReason = NOT_CLINCH_REASON_SELL_PRICE_FAIL;
                 }
             }
