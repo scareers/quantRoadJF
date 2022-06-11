@@ -8,7 +8,6 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.ths.wencai.WenCaiDataApi;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.log.ManipulateLogPanel;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder.BuySellPointRecord;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
@@ -21,6 +20,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.annotations.XYPointerAnnotation;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
@@ -136,14 +136,23 @@ public class EmChartFs {
 
 
         long timeX = getTimeX(dynamicChart.todayDummy, 9, 35, 30);
-        double y = 460.0;
+        double y = 450.0;
 
-        XYTextAnnotation xyTextAnnotation = new XYTextAnnotation("B", timeX, y);
-        xyTextAnnotation.setPaint(Color.white);
+        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, Math.PI * 1.5);
+//        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, 3.1415 / 2);
+        annotation.setPaint(Color.white);  // 文字颜色
+        annotation.setArrowPaint(Color.yellow); // 整个箭头颜色
+        float[] dashs = {2, 2}; // 箭头直线部分笔触
+        annotation.setArrowStroke(new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dashs, 0));
+        annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
+        annotation.setArrowLength(8); // 箭头长度
+        annotation.setLabelOffset(16); // 文字和箭头 头部的距离, 需要和 箭头长度匹配好看
+//        annotation.setTextAnchor(TextAnchor.BASELINE_CENTER); // 文字位置
+        annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER); // 文字位置
 
         dynamicChart.showChartSimple(); // 显示
 
-        dynamicChart.plot1.addAnnotation(xyTextAnnotation);
+        dynamicChart.plot1.addAnnotation(annotation);
         waitForever();
     }
 
@@ -692,13 +701,12 @@ public class EmChartFs {
 
         }
 
-        List<XYTextAnnotation> xyTextAnnotations = new ArrayList<>();
-        // 例如y轴上限的涨跌幅是 15%此刻; 则买卖点显示的y值 == 成交价 + 15% * 本设置值!;  (或减法)
-        // 就是说BS点显示要高一点; 本设置越大, 越高于成交价!
-        // @ 当价格低于昨收, BS显示在上方一点, 否则显示在下方一点
-        public static double bsPointShowBiasOfY = 0.2;
-        public static Font annotationFont = new Font("楷体", Font.BOLD, 18);
-
+        List<XYPointerAnnotation> xYPointerAnnotations = new ArrayList<>();
+        public static Font annotationFont = new Font("楷体", Font.PLAIN, 14);
+        public static float[] dashs = {2, 2}; // 箭头直线部分笔触
+        public static Stroke annotationArrowStroke = new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND,
+                10,
+                dashs, 0);
 
         /**
          * bsPoints 是已经按照成交tick 升序排列;
@@ -706,37 +714,44 @@ public class EmChartFs {
          * @param bsPoints
          */
         public void tryFlushBSPoints(List<BuySellPointRecord> bsPoints) {
-            for (XYTextAnnotation xyTextAnnotation : xyTextAnnotations) {
-                plot1.removeAnnotation(xyTextAnnotation);
+
+            for (XYPointerAnnotation xYPointerAnnotation : xYPointerAnnotations) {
+                plot1.removeAnnotation(xYPointerAnnotation);
             }
-            xyTextAnnotations.clear(); // 清除原来买卖点
+            xYPointerAnnotations.clear(); // 清除原来买卖点
             if (bsPoints == null) {
                 return;
             }
-            double r1 = Math.abs(priceHigh - preClose);
-            double r2 = Math.abs(priceLow - preClose);
-            double maxRange = r1 > r2 ? r1 : r2;
-            double maxPercent = maxRange / preClose;  // 这是坐标y轴的, 百分比上下界! 买卖点显示, 应该是成交价 +一定程度偏离!
-
             for (BuySellPointRecord bsPoint : bsPoints) {
                 // 1.正常文字, 即 B1-B4, S1-S4
                 String text = ("buy".equals(bsPoint.getBs()) ? "B" : "S") + bsPoint.getPositionDenominator();
-                Double clinchPrice = bsPoint.getClinchPrice();
-                double y;
-                if (clinchPrice > preClose) {
-                    y = clinchPrice - preClose * maxPercent * bsPointShowBiasOfY;
-                } else {
-                    y = clinchPrice + preClose * maxPercent * bsPointShowBiasOfY;
-                }
+                double y = bsPoint.getClinchPrice();
                 long x = convertTickToAnnotationXValue(bsPoint.getClinchTick());
-
-                XYTextAnnotation xyTextAnnotation = new XYTextAnnotation(text, x, y);
-                xyTextAnnotation.setPaint("buy".equals(bsPoint.getBs()) ? Color.red : Color.green);
-                xyTextAnnotation.setFont(annotationFont);
-                xyTextAnnotations.add(xyTextAnnotation);
+                double angle;
+                Color textColor;
+                TextAnchor textAnchor;
+                if (text.startsWith("B")) {
+                    angle = Math.PI * 0.5; // 向上箭头买
+                    textColor = Color.red;
+                    textAnchor = TextAnchor.BOTTOM_CENTER;
+                } else {
+                    angle = Math.PI * 1.5;
+                    textColor = Color.green;
+                    textAnchor = TextAnchor.TOP_CENTER;
+                }
+                XYPointerAnnotation annotation = new XYPointerAnnotation(text, x, y, angle);
+                annotation.setPaint(textColor);  // 文字颜色
+                annotation.setArrowPaint(textColor); // 整个箭头颜色, 同文字
+                float[] dashs = {2, 2}; // 箭头直线部分笔触
+                annotation.setArrowStroke(annotationArrowStroke); // 箭头直线部分笔触
+                annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
+                annotation.setArrowLength(12); // 箭头长度
+                annotation.setLabelOffset(14); // 文字和箭头 头部的距离, 需要和 箭头长度匹配好看
+                annotation.setTextAnchor(textAnchor); // 文字位置
             }
-            for (XYTextAnnotation xyTextAnnotation : xyTextAnnotations) {
-                plot1.addAnnotation(xyTextAnnotation, true);
+
+            for (XYPointerAnnotation xYPointerAnnotation : xYPointerAnnotations) {
+                plot1.addAnnotation(xYPointerAnnotation, true);
             }
         }
 
