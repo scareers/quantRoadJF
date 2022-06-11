@@ -9,6 +9,7 @@ import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
@@ -261,7 +262,7 @@ public class TraderGui extends JFrame {
      */
     private void whenWindowOpened() {
         SmartFindDialog.addGlobalSmartFinder(); // 窗口打开后, 首先添加只能查找框, 不可见
-        BondGlobalSimulationPanel.initNuclearKeyBoardSettingForRevise(); // 更改核按钮配置到复盘
+        BondReviseUtil.initNuclearKeyBoardSettingForRevise(); // 更改核按钮配置到复盘
 
         ThreadUtil.execAsync(() -> {
             try {
@@ -471,7 +472,7 @@ public class TraderGui extends JFrame {
                         "是否关闭程序",
                         JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
-                    BondGlobalSimulationPanel.recoverNuclearKeyBoardSettingToThs(); // 恢复核按钮配置
+                    BondReviseUtil.recoverNuclearKeyBoardSettingToThs(); // 恢复核按钮配置
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
                     if (Trader.getInstance() != null) {
                         Trader.getInstance().stopTrade();

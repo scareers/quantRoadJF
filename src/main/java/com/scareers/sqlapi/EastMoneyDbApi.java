@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
-import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel.kLineAmountHope;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.kLineAmountHope;
 import static com.scareers.tools.stockplan.news.bean.SimpleNewEm.buildBeanListFromDfWithId;
 
 /**

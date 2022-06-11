@@ -4,18 +4,13 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
@@ -26,7 +21,6 @@ import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
-import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
@@ -39,27 +33,31 @@ import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
 import org.jdesktop.swingx.decorator.HighlightPredicate;
-import org.jdesktop.swingx.decorator.PatternPredicate;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
-import static com.scareers.utils.CommonUtil.waitForever;
 import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.*;
+import static com.scareers.utils.CommonUtil.waitForever;
 
 /**
  * description: 转债全市场(全局)复盘panel;
@@ -827,116 +825,6 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
 
-    /**
-     * 功能区上方, 显示 当前选中的bean 的基本信息; 例如概念, 行业,余额等;  --> 最新背诵信息
-     * 转债代码	转债名称	价格	剩余规模	上市日期	20日振幅	正股代码	正股名称	行业	概念	pe动	流值
-     * 113537	文灿转债	278.03	1.4亿	20190705	40.6	603348	文灿股份	交运设备-汽车零部件-汽车零部件Ⅲ	蔚来汽车概念;新能源汽车;特斯拉	41.8	130.49亿
-     */
-    public static class SelectBeanDisplayPanel extends DisplayPanel {
-        public static DataFrame<Object> allBondInfoDfForRevise = null; // 背诵字段df; 仅载入一次
-        public static ConcurrentHashMap<String, List<Object>> allBondInfoForReviseMap = new ConcurrentHashMap<>(); //
-
-        SecurityBeanEm bondBean;
-
-        JLabel bondInfoLabel = getCommonLabel();
-        JLabel stockInfoLabel = getCommonLabel();
-        JLabel industryInfoLabel = getCommonLabel();
-        JLabel conceptInfoLabel = getCommonLabel();
-
-        public SelectBeanDisplayPanel() {
-            this.setLayout(new GridLayout(4, 1, -1, -1)); // 4行1列;
-            this.add(bondInfoLabel);
-            this.add(stockInfoLabel);
-            this.add(industryInfoLabel);
-            this.add(conceptInfoLabel);
-
-            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 100) {
-                ThreadUtil.execAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        while (true) {
-                            allBondInfoDfForRevise = BondUtil.generateCSVForRecite1(); // 首次
-                            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
-                                ThreadUtil.sleep(30000); // 30秒后再次尝试将
-                                continue; // 失败将重试
-                            }
-                            // 成功则载入然后跳出循环
-                            // 载入到map里面, key为转债代码, value 为df单行!, 带有这种代码列, 因此注意索引!
-                            for (int i = 0; i < allBondInfoDfForRevise.length(); i++) {
-                                allBondInfoForReviseMap.put(allBondInfoDfForRevise.get(i, 0).toString(),
-                                        allBondInfoDfForRevise.row(i));
-                            }
-                            break; //
-                        }
-                    }
-                }, true);
-            }
-        }
-
-        public static JLabel getCommonLabel() {
-            JLabel jLabel = new JLabel();
-            jLabel.setForeground(Color.red);
-            jLabel.setBackground(Color.black);
-            return jLabel;
-        }
-
-        /**
-         * 给定df一行, 给定索引列表, 创建显示内容, 使用 / 间隔, 且null显示null
-         *
-         * @param objects
-         * @param indexes
-         * @return
-         */
-        public static String buildStrForLabelShow(List<Object> objects, List<Integer> indexes) {
-            StringBuilder stringBuilder = new StringBuilder("");
-            for (Integer index : indexes) {
-                stringBuilder.append(" / "); // 最后去除
-                Object o = objects.get(index);
-                if (o == null) {
-                    stringBuilder.append("null");
-                } else {
-                    stringBuilder.append(o.toString());
-                }
-            }
-            return StrUtil.sub(stringBuilder.toString(), 3, stringBuilder.length());
-        }
-
-
-        @Override
-        public void update() {
-            if (this.bondBean == null) {
-                return;
-            }
-            if (allBondInfoDfForRevise == null || allBondInfoDfForRevise.length() < 200) {
-                return; // 要有全数据
-            }
-            String bondCode = bondBean.getSecCode();
-            // 转债代码	转债名称	价格	剩余规模	上市日期	20日振幅	正股代码	正股名称	行业	概念	pe动	流值
-            List<Object> infos = allBondInfoForReviseMap.get(bondCode);
-            String s = buildStrForLabelShow(infos, Arrays.asList(0, 1, 2, 3));
-            bondInfoLabel.setText(s);
-            bondInfoLabel.setToolTipText(s);
-
-            s = buildStrForLabelShow(infos, Arrays.asList(6, 7, 10, 11));
-            stockInfoLabel.setText(s);
-            stockInfoLabel.setToolTipText(s);
-
-            s = buildStrForLabelShow(infos, Arrays.asList(8, 4, 5));
-            industryInfoLabel.setText(s);
-            industryInfoLabel.setToolTipText(s);
-
-            s = buildStrForLabelShow(infos, Arrays.asList(9));
-            conceptInfoLabel.setText(s);
-            conceptInfoLabel.setToolTipText(s);
-            // conceptInfoLabel.setText(infos.get(9).toString());
-        }
-
-        public void update(SecurityBeanEm beanEm) {
-            this.bondBean = beanEm;
-            this.update();
-        }
-    }
-
     SelectBeanDisplayPanel bondInfoPanel;
 
     /*
@@ -950,7 +838,6 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton sell2Button;
     FuncButton sell3Button;
     FuncButton sell4Button;
-
 
     /**
      * 功能区初始化
@@ -1236,18 +1123,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                         ThreadUtil.execAsync(new Runnable() {
                             @Override
                             public void run() {
-                                dummyBuySellInfoLabel.setForeground(Color.red);
-                                dummyBuySellInfoLabel.setText("买入进行中...");
-                                dummyDialogWhenBuySell.setVisible(true);
-                                ThreadUtil.sleep(dummyBuySellOperationSleep);
-                                dummyDialogWhenBuySell.setVisible(false);
-                                ThreadUtil.sleep(dummyClinchOccurSleep);
-                                if (notClinchReason == null) {
-                                    playClinchSuccessSound();
-                                } else {
-//                                    playClinchFailSound();
-                                }
-                                CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
+                                notifyOrderClinchResult(notClinchReason, Color.red, "买入进行中...");
                             }
                         });
                     }
@@ -1258,14 +1134,19 @@ public class BondGlobalSimulationPanel extends JPanel {
         return buyButton;
     }
 
-    public static void playClinchSuccessSound() {
-        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_success.mp3");
-        Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
-    }
-
-    public static void playClinchFailSound() {
-        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_fail.mp3");
-        Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
+    public void notifyOrderClinchResult(String notClinchReason, Color red, String s) {
+        dummyBuySellInfoLabel.setForeground(red);
+        dummyBuySellInfoLabel.setText(s);
+        dummyDialogWhenBuySell.setVisible(true);
+        ThreadUtil.sleep(dummyBuySellOperationSleep);
+        dummyDialogWhenBuySell.setVisible(false);
+        ThreadUtil.sleep(dummyClinchOccurSleep);
+        if (notClinchReason == null) {
+            playClinchSuccessSound();
+        } else {
+//                                    playClinchFailSound();
+        }
+        CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
     }
 
     /**
@@ -1307,18 +1188,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                         ThreadUtil.execAsync(new Runnable() {
                             @Override
                             public void run() {
-                                dummyBuySellInfoLabel.setForeground(Color.green);
-                                dummyBuySellInfoLabel.setText("卖出进行中...");
-                                dummyDialogWhenBuySell.setVisible(true);
-                                ThreadUtil.sleep(dummyBuySellOperationSleep);
-                                dummyDialogWhenBuySell.setVisible(false);
-                                ThreadUtil.sleep(dummyClinchOccurSleep);
-                                if (notClinchReason == null) {
-                                    playClinchSuccessSound();
-                                } else {
-//                                    playClinchFailSound();
-                                }
-                                CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
+                                notifyOrderClinchResult(notClinchReason, Color.green, "卖出进行中...");
                             }
                         });
                         CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
@@ -1348,7 +1218,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                     CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
                     return;
                 }
-
                 // 重设复盘开始时间!
                 reviseStartDatetime = DateUtil.parse(DateUtil.format(reviseStartDatetime,
                         DatePattern.NORM_DATE_PATTERN + " " + tickHms)); // 变量更新
@@ -1389,83 +1258,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
-    }
-
-    /**
-     * 转债 涨跌幅列, 的表格 render --> 主要是 text 显示改变
-     */
-    public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
-        public static Font font1 = new Font("微软雅黑", Font.PLAIN, 18);
-        public static Font font2 = new Font("楷体", Font.BOLD, 18);
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                       boolean hasFocus, int row, int column) {
-            try {
-                if (isSelected) {
-                    this.setBackground(new Color(64, 0, 128)); // 同花顺
-                } else {
-                    this.setBackground(Color.black); // 同花顺
-                }
-                this.setForeground(Color.green);
-                if (value != null) {
-                    this.setText(value.toString());
-                }
-                if (column == 0 || column == 1) {
-                    this.setHorizontalAlignment(SwingConstants.CENTER);
-                    this.setFont(font1);
-                } else {
-                    this.setHorizontalAlignment(SwingConstants.RIGHT);
-                    this.setFont(font2);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return this;
-        }
-    }
-
-    /**
-     * 涨跌幅列渲染器, 只能用在涨跌幅列; 将格式化 文字显示
-     */
-    public static class TableCellRendererForBondTableForChgPct extends TableCellRendererForBondTable {
-        public static DecimalFormat dfOfChgPct = new DecimalFormat("####0.00%");
-
-        @Override
-        public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
-            Double price = null;
-            try {
-                price = Double.valueOf(text);
-            } catch (NumberFormatException e) {
-                // 例如null, 可能转换失败, 很正常!
-            }
-            if (price != null) { // 转换为涨跌幅成功, 则格式化显示!
-                // this.setForeground(Color.red); // 全红, 然后用高亮接口, - 开头的 绿色, 实现红绿区分!
-                super.setText(dfOfChgPct.format(price));
-            } else {
-                super.setText(text);
-            }
-        }
-    }
-
-    /**
-     * 成交额列渲染器, 只能用在成交额列; 将把数字转换为 万/亿后缀显示!
-     */
-    public static class TableCellRendererForBondTableForAmountCurrent extends TableCellRendererForBondTable {
-        @Override
-        public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
-            Double amount = null;
-            try {
-                amount = Double.valueOf(text);
-            } catch (NumberFormatException e) {
-                // 例如null, 可能转换失败, 很正常!
-            }
-            if (amount != null) { // 转换为涨跌幅成功, 则格式化显示!
-                super.setText(CommonUtil.formatNumberWithSuitable(amount, 1));
-            } else {
-                super.setText(text);
-            }
-        }
     }
 
 
@@ -1523,7 +1315,6 @@ public class BondGlobalSimulationPanel extends JPanel {
                 } catch (Exception exx) {
                     return;
                 }
-
 
                 if (row == preIndex) {
                     return;
@@ -1634,6 +1425,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
+    public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称
+
     /**
      * 默认设置是: 全背景黑色, 全字体绿色, 选中背景 深蓝!
      * 高亮对象均在此基础上更改
@@ -1654,13 +1447,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         jXTableForBonds.setHighlighters(redGreenChgPct, yellowHoldBondHighlighter);
 
     }
-
-    private void removeEnterKeyDefaultAction(JXTable jxTable) {
-        ActionMap am = jxTable.getActionMap();
-        am.getParent().remove("selectNextRowCell"); // 取消默认的: 按下回车键将移动到下一行
-        jxTable.setActionMap(am);
-    }
-
 
     /**
      * 设置转债列表表格样式
@@ -1684,12 +1470,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 2.表格自身文字颜色和背景色
 //        jXTableForBonds.setForeground(COLOR_LIST_FLAT_EM);
         jXTableForBonds.setBackground(Color.black);
-
-//        // 3.名称列红色
-//        DefaultTableCellRenderer cellRendererOfTitle = new DefaultTableCellRenderer();
-//        cellRendererOfTitle.setForeground(COLOR_LIST_RAISE_EM);
-//        jXTableForBonds.getColumn("名称").setCellRenderer(cellRendererOfTitle);
-
         // 4. 单行高 和字体
         jXTableForBonds.setRowHeight(30);
         jXTableForBonds.setFont(new Font("微软雅黑", Font.PLAIN, 18));
@@ -1746,45 +1526,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
-
-    /**
-     * 表格列宽自适应
-     *
-     * @param myTable
-     */
-    protected void fitTableColumns(JTable myTable) {
-        JTableHeader header = myTable.getTableHeader();
-        int rowCount = myTable.getRowCount();
-
-        Enumeration columns = myTable.getColumnModel().getColumns();
-
-        int dummyIndex = 0;
-        while (columns.hasMoreElements()) {
-            TableColumn column = (TableColumn) columns.nextElement();
-            int col = header.getColumnModel().getColumnIndex(column.getIdentifier());
-            int width = (int) myTable.getTableHeader().getDefaultRenderer()
-                    .getTableCellRendererComponent(myTable, column.getIdentifier()
-                            , false, false, -1, col).getPreferredSize().getWidth();
-            for (int row = 0; row < rowCount; row++) {
-                int preferedWidth = (int) myTable.getCellRenderer(row, col).getTableCellRendererComponent(myTable,
-                        myTable.getValueAt(row, col), false, false, row, col).getPreferredSize().getWidth();
-                width = Math.max(width, preferedWidth);
-            }
-            header.setResizingColumn(column); // 此行很重要
-
-            int actualWidth = width + myTable.getIntercellSpacing().width + 2;
-            actualWidth = Math.min(700, actualWidth); // 单列最大宽度
-            column.setWidth(actualWidth); // 多5
-//            break; // 仅第一列日期. 其他的平均
-
-            if (dummyIndex > -1) {
-                column.setWidth(80); //  每行宽度
-            }
-            dummyIndex++;
-        }
-    }
-
-
     /**
      * 更新选中bean , 请调用方法, 同步设置pre的方式, 因控件事件触发, 而不合适, preSelectedBean的语义已经修改
      *
@@ -1810,39 +1551,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
     }
 
-    public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {
-        String url = null;
-        SecurityBeanEm bean = po.getBean();
-        if (bean.isBK()) {
-            url = StrUtil.format("http://quote.eastmoney.com/bk/{}.html", bean.getQuoteId());
-        } else if (bean.isIndex()) {
-            url = StrUtil.format("http://quote.eastmoney.com/zs{}.html", bean.getSecCode());
-        } else if (bean.isStock()) {
-            if (bean.isHuA() || bean.isHuB()) {
-                url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sh", po.getSecCode());
-            } else if (bean.isShenA() || bean.isShenB()) {
-                url = StrUtil.format("https://quote.eastmoney.com/{}{}.html", "sz", po.getSecCode());
-            } else if (bean.isJingA()) {
-                url = StrUtil.format("http://quote.eastmoney.com/bj/{}.html", po.getSecCode());
-            } else if (bean.isXSB()) {
-                url = StrUtil.format("http://xinsanban.eastmoney.com/QuoteCenter/{}.html", po.getSecCode());
-            } else if (bean.isKCB()) {
-                url = StrUtil.format("http://quote.eastmoney.com/kcb/{}.html", po.getSecCode());
-            }
-        } else if (bean.isBond()) {
-            if (bean.getMarket() == 0) {
-                url = StrUtil.format("http://quote.eastmoney.com/sz{}.html", po.getSecCode());
-            } else if (bean.getMarket() == 1) {
-                url = StrUtil.format("http://quote.eastmoney.com/sh{}.html", po.getSecCode());
-            }
-        }
-
-        if (url == null) {
-            log.warn("未知资产类别, 无法打开行情页面: {}", bean.getName(), bean.getSecurityTypeName());
-            return;
-        }
-        CommonUtil.openUrlWithDefaultBrowser(url);
-    }
 
     public void showInMainDisplayWindow() {
         // 9.更改主界面显示自身
