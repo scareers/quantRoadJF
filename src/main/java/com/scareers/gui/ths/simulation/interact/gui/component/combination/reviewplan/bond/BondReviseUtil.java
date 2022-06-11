@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
@@ -55,6 +56,11 @@ public class BondReviseUtil {
     public static final String nuclearKeyBoardSettingOfRevise = "ths/nuclear/nuclear/revise"; // 核按钮键盘配置文件 -- classpath中路径 -- 复盘时使用配置
     public static final long dummyBuySellOperationSleep = 200; // 模拟交易的弹窗持续的时间
     public static final long dummyClinchOccurSleep = 2000; // 模拟买卖后, 到成交时间,大约sleep多久, 在上个sleep之后
+
+    public static void main(String[] args) {
+//        playClinchSuccessSound();
+        playClinchFailSound();
+    }
 
 
     /**
@@ -328,14 +334,22 @@ public class BondReviseUtil {
         CommonUtil.openUrlWithDefaultBrowser(url);
     }
 
-
+    /**
+     * 转换 mp3 格式才行
+     */
     public static void playClinchSuccessSound() {
-        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_success.mp3");
+//        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_success.mp3");
+        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/cj.mp3");
+        Console.log(fullPathOfClassPathFileOrDir);
         Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
     }
 
+    /**
+     * 声音是同花顺撤单声音, 因为复盘如果订单失败, 视为全自动撤单!
+     */
     public static void playClinchFailSound() {
-        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_fail.mp3");
+//        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_fail.mp3");
+        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/cd.mp3");
         Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
     }
 
