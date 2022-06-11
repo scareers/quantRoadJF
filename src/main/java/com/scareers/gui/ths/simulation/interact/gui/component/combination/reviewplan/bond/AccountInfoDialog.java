@@ -242,6 +242,7 @@ public class AccountInfoDialog extends JDialog {
             return;
         }
 
+        this.setTitle("账户: " + account.getStartRealTime() + " --> " + account.getAccountNameRemark());
 
         // @key: 变量声明, 在同步块中, 只获取这些数据, 同步块外, 再统一设置, 同样能保证数据截面一致性! 且不会因同步块中设置gui文本拖慢性能
         // 1. 账户基本信息
@@ -290,26 +291,65 @@ public class AccountInfoDialog extends JDialog {
         initMoneyValueLabel.setText(formatDouble(decimalFormatForMoney, initMoney, ""));
         cashValueLabel.setText(formatDouble(decimalFormatForMoney, cash, ""));
         totalAssetsValueLabel.setText(formatDouble(decimalFormatForMoney, totalAssets, ""));
+        if (totalAssets != null && initMoney != null) {
+            if (totalAssets > initMoney) {
+                totalAssetsValueLabel.setForeground(Color.red);
+            } else if (totalAssets < initMoney) {
+                totalAssetsValueLabel.setForeground(Color.green);
+            } else {
+                totalAssetsValueLabel.setForeground(Color.white);
+            }
+        }
         alreadyCommissionTotalValueLabel.setText(formatDouble(decimalFormatForMoney, alreadyCommissionTotal, ""));
         currentTotalProfitPercentValueLabel
                 .setText(formatDouble(decimalFormatForPercent, currentTotalProfitPercent, ""));
+        if (currentTotalProfitPercent != null) {
+            if (currentTotalProfitPercent > 0) {
+                currentTotalProfitPercentValueLabel.setForeground(Color.red);
+            } else if (currentTotalProfitPercent < 0) {
+                currentTotalProfitPercentValueLabel.setForeground(Color.green);
+            } else {
+                currentTotalProfitPercentValueLabel.setForeground(Color.white);
+            }
+        }
         // 2.1. 4大非原始属性的 数据计算
         if (totalAssets != null && cash != null) {
             currentMarketValueValueLabel.setText(decimalFormatForMoney.format(totalAssets - cash));
+            double positionPercent = (totalAssets - cash) / totalAssets;
             currentPositionPercentValueLabel
-                    .setText(decimalFormatForPercent.format((totalAssets - cash) / totalAssets));
+                    .setText(decimalFormatForPercent.format(positionPercent));
+            if (positionPercent < 0.2) {
+                currentPositionPercentValueLabel.setForeground(Color.white); // 仓位轻到重: 白黄橙红
+            } else if (positionPercent < 0.5) {
+                currentPositionPercentValueLabel.setForeground(Color.yellow);
+            } else if (positionPercent < 0.8) {
+                currentPositionPercentValueLabel.setForeground(Color.orange);
+            } else {
+                currentPositionPercentValueLabel.setForeground(Color.red);
+            }
         } else {
             currentMarketValueValueLabel.setText("");
             currentPositionPercentValueLabel.setText("");
         }
         if (totalAssets != null && initMoney != null) {
-            currentFloatProfitValueLabel.setText(decimalFormatForMoney.format(totalAssets - initMoney));
+            double profit = totalAssets - initMoney;
+            currentFloatProfitValueLabel.setText(decimalFormatForMoney.format(profit));
+            if (profit > 0) {
+                currentFloatProfitValueLabel.setForeground(Color.red);
+            } else if (profit < 0) {
+                currentFloatProfitValueLabel.setForeground(Color.green);
+            } else {
+                currentFloatProfitValueLabel.setForeground(Color.white);
+            }
         } else {
             currentFloatProfitValueLabel.setText("");
         }
         if (alreadyCommissionTotal != null) { // 两个百分号收尾, 万分之多少
             alreadyCommissionTotalPercentValueLabel
                     .setText(decimalFormatForPercent.format(alreadyCommissionTotal / initMoney * 100) + "%");
+            if (alreadyCommissionTotal / initMoney >= 0.01) {
+                alreadyCommissionTotalPercentValueLabel.setForeground(Color.red); // 手续费达到初始资金1%以上, 红色
+            }
         } else {
             currentFloatProfitValueLabel.setText("");
         }

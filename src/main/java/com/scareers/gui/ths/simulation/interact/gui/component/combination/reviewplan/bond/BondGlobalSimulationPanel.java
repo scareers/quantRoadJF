@@ -633,7 +633,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 if (accountInfoDialog == null) {
                     accountInfoDialog = AccountInfoDialog
-                            .getInstance(TraderGui.INSTANCE, "账户-- xx", AccountInfoDialog.modalS,
+                            .getInstance(TraderGui.INSTANCE, "账户 -- 尚未初始化 ", AccountInfoDialog.modalS,
                                     temp);
                 }
                 accountInfoDialog.setVisible(true);
