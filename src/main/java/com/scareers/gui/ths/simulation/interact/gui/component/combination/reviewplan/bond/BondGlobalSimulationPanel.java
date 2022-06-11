@@ -1637,7 +1637,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                 } else {
                     this.setBackground(Color.black); // 同花顺
                 }
-                this.setForeground(Color.red);
+                this.setForeground(Color.green);
                 if (value != null) {
                     this.setText(value.toString());
                 }
@@ -1865,13 +1865,15 @@ public class BondGlobalSimulationPanel extends JPanel {
     }
 
     /**
+     * 默认设置是: 全背景黑色, 全字体绿色, 选中背景 深蓝!
+     * 高亮对象均在此基础上更改
      * 转债列表高亮设置
      */
     private void addTableHighlighters() {
 //        PatternPredicate patternPredicate = new PatternPredicate("^-.*", 2);
-        ChgPctBtHighLighterPredicate patternPredicate = new ChgPctBtHighLighterPredicate();
-        ColorHighlighter redGreenChgPct = new ColorHighlighter(patternPredicate, Color.black,
-                Color.green, new Color(64, 0, 128), Color.green);
+        ChgPctBtHighLighterPredicate chgPctBtHighLighterPredicate = new ChgPctBtHighLighterPredicate();
+        ColorHighlighter redGreenChgPct = new ColorHighlighter(chgPctBtHighLighterPredicate, Color.black,
+                Color.red, new Color(64, 0, 128), Color.red);
 
 
         HashSet<String> x = new HashSet<>(Arrays.asList("113016"));
