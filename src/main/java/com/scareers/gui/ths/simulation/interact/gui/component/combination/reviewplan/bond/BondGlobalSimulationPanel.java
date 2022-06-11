@@ -488,6 +488,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton stopReviseButton; // 停止按钮
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
+    FuncButton openAccountButton; // 关闭k线折叠面板
 
     ThreadPoolExecutor poolExecutorForKLineUpdate = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
@@ -523,7 +524,17 @@ public class BondGlobalSimulationPanel extends JPanel {
         jTextFieldOfReviseStartDatetime.setCaretColor(Color.red);
         jTextFieldOfReviseStartDatetime.setPreferredSize(new Dimension(130, 40));
 
-        dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200);
+        dateTimePickerOfReviseStartDatetime = new DateTimePicker("yyyy-MM-dd HH:mm:ss", 160, 200) {
+            @Override
+            public void commit() {
+                if (reviseRunning) {
+                    CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
+                    dateTimePickerOfReviseStartDatetime.tryClosePopup();
+                    return;
+                }
+                super.commit();
+            }
+        };
         dateTimePickerOfReviseStartDatetime.setEnable(true).setSelect(reviseStartDatetime) // 默认值
                 .changeDateEvent(new Consumer<DateTimePicker>() {
                     @Override
@@ -718,13 +729,19 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 4.@update: 折叠面板 按钮关闭
         buttonCollapsibleKLinePanel = ButtonFactory.getButton("折叠k线");
-        buttonCollapsibleKLinePanel.setText("资讯面总结");
+        // buttonCollapsibleKLinePanel.setText("资讯面总结");
         buttonCollapsibleKLinePanel.setForeground(Color.red);
         functionContainerMain.add(buttonCollapsibleKLinePanel);
 
         // 5.模拟账户打开!
-
-
+        openAccountButton = ButtonFactory.getButton("打开账户");
+        openAccountButton.setForeground(Color.orange);
+        openAccountButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // todo
+            }
+        });
     }
 
     /**
@@ -1241,6 +1258,12 @@ public class BondGlobalSimulationPanel extends JPanel {
             @SneakyThrows
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
+                if (reviseRunning) {
+                    CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
+                    return;
+                }
+
+
                 String preSetDate = getReviseDateStrSettingYMD();
                 String newSet = EastMoneyDbApi.getPreNTradeDateStrict(preSetDate, changeDate);
 
@@ -1269,6 +1292,11 @@ public class BondGlobalSimulationPanel extends JPanel {
             @SneakyThrows
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
+                if (reviseRunning) {
+                    CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
+                    return;
+                }
+
                 // 重设复盘开始时间!
                 reviseStartDatetime = DateUtil.parse(DateUtil.format(reviseStartDatetime,
                         DatePattern.NORM_DATE_PATTERN + " " + tickHms)); // 变量更新

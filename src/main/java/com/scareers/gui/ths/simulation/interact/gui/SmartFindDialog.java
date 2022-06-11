@@ -7,10 +7,14 @@ import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.SecurityBeanEm.SecurityEmPoForSmartFind;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.EmKLineDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
+import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.charts.EmChartKLine;
+import joinery.DataFrame;
 import lombok.Data;
 import org.jdesktop.swingx.JXList;
 
@@ -23,6 +27,7 @@ import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
@@ -356,7 +361,7 @@ public class SmartFindDialog extends JDialog {
         manager.addKeyEventPostProcessor(new KeyEventPostProcessor() {
             @Override
             public synchronized boolean postProcessKeyEvent(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE && e.getID()==KeyEvent.KEY_PRESSED) { // 按下空格键
+                if (e.getKeyCode() == KeyEvent.VK_SPACE && e.getID() == KeyEvent.KEY_PRESSED) { // 按下空格键
                     // 1.如果处于复盘界面
                     if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
                         BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
@@ -369,9 +374,37 @@ public class SmartFindDialog extends JDialog {
                         }
 
                     }
+                } // 按下空格, 复盘界面暂停实现
+
+                if (e.getKeyCode() == KeyEvent.VK_ENTER && e.getID() == KeyEvent.KEY_PRESSED) {
+                    if (TraderGui.INSTANCE.functionGuiCurrent.equals(TraderGui.FunctionGuiCurrent.BOND_REVISE)) {
+                        BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                        if (instance != null) {
+                            EmKLineDisplayPanel dailyKLineDisplayPanel = instance.getDailyKLineDisplayPanel();
+                            if (dailyKLineDisplayPanel != null) {
+                                int crossLineIndex = dailyKLineDisplayPanel.getCrossLineIndex();
+                                if (crossLineIndex != -1) { // 索引正常, 读取日期, 显示 分时图
+                                    EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart = dailyKLineDisplayPanel
+                                            .getDynamicKLineChart();
+                                    if (dynamicKLineChart != null && dynamicKLineChart.isInited()) {
+                                        //
+                                        List<String> allDateStr = dynamicKLineChart.getAllDateStr();
+                                        if (crossLineIndex >= 0 && crossLineIndex <= allDateStr.size()) {
+                                            String dateStr = allDateStr.get(crossLineIndex); // 终于拿到了日期;
+                                            // 对话框, 显示k线
+                                            SecurityBeanEm beanEm = dynamicKLineChart.getBeanEm();
+                                            DataFrame<Object> fs1mDf = EastMoneyDbApi // 分时图数据拿到了
+                                                    .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+
+                    }
                 }
-
-
 
 
                 INSTANCE.resetLocation(); // 设置位置

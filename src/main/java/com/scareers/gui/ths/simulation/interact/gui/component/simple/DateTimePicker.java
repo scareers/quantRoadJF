@@ -333,6 +333,10 @@ public class DateTimePicker {
         if (null != this.callFun) {
             this.callFun.accept(this);
         }
+        tryClosePopup();
+    }
+
+    public void tryClosePopup() {
         if (null != this.popup) {
             this.popup.setVisible(false);
         }

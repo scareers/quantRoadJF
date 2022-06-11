@@ -1,7 +1,9 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jhlabs.math.VLNoise;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.utils.CommonUtil;
@@ -151,7 +153,6 @@ public class EmKLineDisplayPanel extends DisplayPanel {
      * 单根k线具体信息显示对话框! 默认放在右上角;
      * 初始出现; 点击折叠k线, 会消失, 展示k线又出现
      * 当主界面变大变小, 将重置位置到右上角
-     *
      */
     public static class InfoDialog extends JDialog {
         volatile Point origin = new Point(0, 0);  //全局的位置变量，用于表示鼠标在窗口上的位置
@@ -225,6 +226,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
      */
     public void update(EmChartKLine.DynamicEmKLineChartForRevise dynamicKLineChart) {
         this.dynamicKLineChart = dynamicKLineChart; // 更新动态chart对象!
+        crossLineIndex = -1; // 重置有效索引
         this.update();
     }
 
@@ -255,7 +257,6 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                 return;
             }
         }
-
         // 此后更新
         if (this.dynamicKLineChart != null && this.dynamicKLineChart.isInited()) {
             // 需要设置新的时间tick, 保证十字线正常!
@@ -263,6 +264,9 @@ public class EmKLineDisplayPanel extends DisplayPanel {
             chartPanel.setChart(dynamicKLineChart.getChart());
         }
     }
+
+
+    int crossLineIndex = -1; // 暂存最新的十字线位置; 可按下enter显示分时图
 
     /**
      * 十字线x 索引改变回调
@@ -273,6 +277,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
         return new CrossLineXIndexChangeCallback() {
             @Override
             public void call(int newIndex) {
+                crossLineIndex = newIndex;
                 if (dynamicKLineChart == null || !dynamicKLineChart.isInited()) {
                     return; // 需要动态图表已经初始化, 即有数据!
                 }

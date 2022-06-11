@@ -112,7 +112,7 @@ public class EmChartKLine {
      */
     @Data
     public static class DynamicEmKLineChartForRevise {
-        public static final double redundancyPriceRangePercent = 0.005;
+        public static final double redundancyPriceRangePercent = 0.03;
 
         DataFrame<Object> klineDfBeforeToday; // 今日之前的k线数据, 使用东财 k线api! 直接从网络访问,带缓存.
         SecurityBeanEm beanEm;
@@ -135,7 +135,7 @@ public class EmChartKLine {
         Double close;
         Double amount;
 
-        String title;
+        String title = "";
         Double preClose;
 
         int kLineAmountHope;
@@ -347,11 +347,11 @@ public class EmChartKLine {
             plot2.setBackgroundPaint(bgColorKLine);
             combineddomainxyplot.setBackgroundPaint(bgColorKLine);
             chart.setBackgroundPaint(bgColorKLine);
-            chart.setTitle(
-                    new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
-                            Title.DEFAULT_POSITION,
-                            Title.DEFAULT_HORIZONTAL_ALIGNMENT,
-                            Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
+//            chart.setTitle(
+//                    new TextTitle(title, new Font("华文行楷", Font.BOLD | Font.ITALIC, 18), Color.red,
+//                            Title.DEFAULT_POSITION,
+//                            Title.DEFAULT_HORIZONTAL_ALIGNMENT,
+//                            Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING));
         }
 
         private void initPlot2() {

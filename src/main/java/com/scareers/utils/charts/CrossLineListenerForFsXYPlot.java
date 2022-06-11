@@ -181,6 +181,8 @@ public class CrossLineListenerForFsXYPlot implements ChartMouseListener {
             volPlot.removeDomainMarker(markerX);
             pricePlot.addDomainMarker(markerX);
             volPlot.addDomainMarker(markerX);
+        } else {
+            reportXIndex(-1); // 均视为鼠标移除事件发生了
         }
 
         // 6.设置ymarker, 两个plot 只可能同时显示一个!
