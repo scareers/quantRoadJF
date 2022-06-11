@@ -2,6 +2,8 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,7 +14,8 @@ import java.awt.*;
  * @author: admin
  * @date: 2022/6/11/011-10:24:40
  */
-@Data
+@Getter
+@Setter
 public class AccountInfoDialog extends JDialog {
     ReviseAccountWithOrder account;
 

@@ -1462,7 +1462,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
         cellRenderer.setBackground(COLOR_LIST_BK_EM);
         cellRenderer.setForeground(Color.white);
-//        cellRenderer.setForeground(COLOR_LIST_HEADER_FORE_EM);
         TableColumnModel columnModel = jXTableForBonds.getTableHeader().getColumnModel();
         for (int i = 0; i < columnModel.getColumnCount(); i++) {
             //i是表头的列
@@ -1473,7 +1472,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
 
         // 2.表格自身文字颜色和背景色
-//        jXTableForBonds.setForeground(COLOR_LIST_FLAT_EM);
         jXTableForBonds.setBackground(Color.black);
         // 4. 单行高 和字体
         jXTableForBonds.setRowHeight(30);

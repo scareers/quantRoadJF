@@ -12,6 +12,8 @@ import com.scareers.utils.charts.CrossLineXIndexChangeCallback;
 import com.scareers.utils.charts.EmChartKLine;
 import joinery.DataFrame;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
@@ -28,7 +30,8 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
  * @author: admin
  * @date: 2022/4/5/005-06:30:09
  */
-@Data
+@Setter
+@Getter
 public class EmKLineDisplayPanel extends DisplayPanel {
     public static final int preferHeight = 300;
     public static final int infoPanelWidth = 62; // 信息显示panel宽度, 同花顺62
