@@ -547,7 +547,13 @@ public class AccountInfoDialog extends JDialog {
             currentFloatProfitValueLabel.setText("");
         }
 
+        // 尝试刷新持仓转债表格
+        tryFlushJxTableForHoldBonds();
+    }
 
+    private void tryFlushJxTableForHoldBonds() {
+        // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
+        // todo
     }
 
     /**
