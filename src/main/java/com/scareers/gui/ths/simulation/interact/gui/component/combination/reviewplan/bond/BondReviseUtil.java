@@ -18,6 +18,7 @@ import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.decorator.HighlightPredicate;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -28,6 +29,7 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * description: 重载, 减少主类行数, 降低idea负担
@@ -466,22 +468,32 @@ public class BondReviseUtil {
     }
 
     /**
-     * 转债 涨跌幅列, 的表格 render --> 主要是 text 显示改变
+     * 转债 涨跌幅列, 的表格 render --> 主要是子类 text 显示改变
+     * 第1,2列字体和 中对齐; 其余右对齐
      */
     public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
         public static Font font1 = new Font("微软雅黑", Font.PLAIN, 18);
         public static Font font2 = new Font("楷体", Font.BOLD, 18);
+
+        Color selectBackground;
+
+        public TableCellRendererForBondTable(Color color) {
+            this.selectBackground = color;
+        }
+
+        public TableCellRendererForBondTable() {
+            this(new Color(64, 0, 128));
+        }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                        boolean hasFocus, int row, int column) {
             try {
                 if (isSelected) {
-                    this.setBackground(new Color(64, 0, 128)); // 同花顺
+                    this.setBackground(selectBackground); // 同花顺
                 } else {
                     this.setBackground(Color.black); // 同花顺
                 }
-                this.setForeground(Color.white);
                 if (value != null) {
                     this.setText(value.toString());
                 }
@@ -500,10 +512,17 @@ public class BondReviseUtil {
     }
 
     /**
-     * 涨跌幅列渲染器, 只能用在涨跌幅列; 将格式化 文字显示
+     * 涨跌幅列渲染器,  将格式化 文字显示 --> 推广到任意 百分比 列
      */
-    public static class TableCellRendererForBondTableForChgPct extends TableCellRendererForBondTable {
+    public static class TableCellRendererForBondTableForPercent extends TableCellRendererForBondTable {
         public static DecimalFormat dfOfChgPct = new DecimalFormat("####0.00%");
+
+        public TableCellRendererForBondTableForPercent(Color color) {
+            super(color);
+        }
+
+        public TableCellRendererForBondTableForPercent() {
+        }
 
         @Override
         public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
@@ -524,9 +543,16 @@ public class BondReviseUtil {
 
 
     /**
-     * 成交额列渲染器, 只能用在成交额列; 将把数字转换为 万/亿后缀显示!
+     * 成交额列渲染器,  将把数字转换为 万/亿后缀显示! --> 推广到任意 数值大列
      */
-    public static class TableCellRendererForBondTableForAmountCurrent extends TableCellRendererForBondTable {
+    public static class TableCellRendererForBondTableForBigNumber extends TableCellRendererForBondTable {
+        public TableCellRendererForBondTableForBigNumber(Color color) {
+            super(color);
+        }
+
+        public TableCellRendererForBondTableForBigNumber() {
+        }
+
         @Override
         public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
             Double amount = null;
@@ -543,4 +569,179 @@ public class BondReviseUtil {
         }
     }
 
+    /**
+     * 列渲染器, 数值自动保留 2 位小数
+     */
+    public static class TableCellRendererForBondTableFor2Scale extends TableCellRendererForBondTable {
+        public TableCellRendererForBondTableFor2Scale(Color color) {
+            super(color);
+        }
+
+        public TableCellRendererForBondTableFor2Scale() {
+        }
+
+        public static DecimalFormat dfOfMoney = new DecimalFormat("####0.00");
+
+        @Override
+        public void setText(String text) { // 涨跌幅列, 再加功能, 需要改写文字形式!
+            Double money = null;
+            try {
+                money = Double.valueOf(text);
+            } catch (NumberFormatException e) {
+                // 例如null, 可能转换失败, 很正常!
+            }
+            if (money != null) { // 转换为涨跌幅成功, 则格式化显示!
+                super.setText(dfOfMoney.format(money));
+            } else {
+                super.setText(text);
+            }
+        }
+    }
+
+
+    /**
+     * 本行的 转债代码 和转债名称, 在给定集合之中, 则高亮它们; 用于当前持仓债!
+     * 与同花顺相同, 只要是曾经持仓过的, 都加入, 即使已经全部卖出了!
+     */
+    public static class HoldBondHighLighterPredicate implements HighlightPredicate {
+        private volatile CopyOnWriteArraySet<String> bondCodes = new CopyOnWriteArraySet<>();
+
+        public HoldBondHighLighterPredicate(Collection<String> initCodes) {
+            if (initCodes != null) {
+                this.bondCodes.addAll(initCodes);
+            }
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(0);
+            if (value == null) {
+                return false;
+            }
+            if (bondCodes.contains(value.toString())) {
+                if (adapter.column == 0 || adapter.column == 1) { // 只对代码和名称改颜色
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void addHoldBondCode(String newHoldBondCode) {
+            this.bondCodes.add(newHoldBondCode);
+        }
+
+        public void addHoldBondCodes(Collection<String> newHoldBondCodes) {
+            this.bondCodes.addAll(newHoldBondCodes);
+        }
+    }
+
+    /**
+     * 本行的 涨跌幅数值, >0.0 , 涨跌幅文字将红色
+     */
+    public static class ChgPctGt0HighLighterPredicate implements HighlightPredicate {
+        public ChgPctGt0HighLighterPredicate() {
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(2); // 涨跌幅
+            if (value == null) {
+                return false;
+            }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v > 0 && adapter.column == 2) { // 只改变涨跌幅列
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 每行的 某列数值, >0.0 , 全行都将 某色(例如红色)
+     */
+    public static class SingleColGt0HighLighterPredicate implements HighlightPredicate {
+        int referColIndex;
+
+        public SingleColGt0HighLighterPredicate(int referColIndex) {
+            this.referColIndex = referColIndex;
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(referColIndex); // 涨跌幅
+            if (value == null) {
+                return false;
+            }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v > 0) { // 只改变涨跌幅列
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 每行的 某列数值, <0.0 , 全行都将 某色(例如绿色)
+     */
+    public static class SingleColLt0HighLighterPredicate implements HighlightPredicate {
+        int referColIndex;
+
+        public SingleColLt0HighLighterPredicate(int referColIndex) {
+            this.referColIndex = referColIndex;
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(referColIndex); // 涨跌幅
+            if (value == null) {
+                return false;
+            }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v < 0) { // 只改变涨跌幅列
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 本行的 涨跌幅数值, <0.0 , 涨跌幅文字将绿色
+     */
+    public static class ChgPctLt0HighLighterPredicate implements HighlightPredicate {
+        public ChgPctLt0HighLighterPredicate() {
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(2); // 涨跌幅
+            if (value == null) {
+                return false;
+            }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v < 0 && adapter.column == 2) { // 只改变涨跌幅列
+                return true;
+            }
+            return false;
+        }
+    }
 }

@@ -27,7 +27,6 @@ import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.charts.EmChartKLine;
 import com.scareers.utils.log.LogUtil;
-import eu.verdelhan.ta4j.indicators.volume.PVIIndicator;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -1385,97 +1384,10 @@ public class BondGlobalSimulationPanel extends JPanel {
     private void setTableColCellRenders() {
         jXTableForBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable());
         jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
-        jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForChgPct());
-        jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForAmountCurrent());
+        jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForPercent());
+        jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForBigNumber());
     }
 
-    /**
-     * 本行的 转债代码 和转债名称, 在给定集合之中, 则高亮它们; 用于当前持仓债!
-     * 与同花顺相同, 只要是曾经持仓过的, 都加入, 即使已经全部卖出了!
-     */
-    public static class HoldBondHighLighterPredicate implements HighlightPredicate {
-        private volatile CopyOnWriteArraySet<String> bondCodes = new CopyOnWriteArraySet<>();
-
-        public HoldBondHighLighterPredicate(Collection<String> initCodes) {
-            if (initCodes != null) {
-                this.bondCodes.addAll(initCodes);
-            }
-        }
-
-        @Override
-        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
-            Object value = adapter.getValue(0);
-            if (value == null) {
-                return false;
-            }
-            if (bondCodes.contains(value.toString())) {
-                if (adapter.column == 0 || adapter.column == 1) { // 只对代码和名称改颜色
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public void addHoldBondCode(String newHoldBondCode) {
-            this.bondCodes.add(newHoldBondCode);
-        }
-
-        public void addHoldBondCodes(Collection<String> newHoldBondCodes) {
-            this.bondCodes.addAll(newHoldBondCodes);
-        }
-    }
-
-    /**
-     * 本行的 涨跌幅数值, >0.0 , 涨跌幅文字将红色
-     */
-    public static class ChgPctGt0HighLighterPredicate implements HighlightPredicate {
-        public ChgPctGt0HighLighterPredicate() {
-        }
-
-        @Override
-        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
-            Object value = adapter.getValue(2); // 涨跌幅
-            if (value == null) {
-                return false;
-            }
-            double v;
-            try {
-                v = Double.parseDouble(value.toString());
-            } catch (Exception e) {
-                return false;
-            }
-            if (v > 0 && adapter.column == 2) { // 只改变涨跌幅列
-                return true;
-            }
-            return false;
-        }
-    }
-
-    /**
-     * 本行的 涨跌幅数值, <0.0 , 涨跌幅文字将绿色
-     */
-    public static class ChgPctLt0HighLighterPredicate implements HighlightPredicate {
-        public ChgPctLt0HighLighterPredicate() {
-        }
-
-        @Override
-        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
-            Object value = adapter.getValue(2); // 涨跌幅
-            if (value == null) {
-                return false;
-            }
-            double v;
-            try {
-                v = Double.parseDouble(value.toString());
-            } catch (Exception e) {
-                return false;
-            }
-            if (v < 0 && adapter.column == 2) { // 只改变涨跌幅列
-                return true;
-            }
-            return false;
-        }
-    }
 
     public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称 使用白色
     public static Color amountForeColor = new Color(2, 226, 224); // 文字颜色 : 成交额
@@ -1540,6 +1452,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.表格自身文字颜色和背景色
         jXTableForBonds.setBackground(Color.black);
+        jXTableForBonds.setForeground(Color.white);
         // 4. 单行高 和字体
         jXTableForBonds.setRowHeight(30);
         jXTableForBonds.setFont(new Font("微软雅黑", Font.PLAIN, 18));

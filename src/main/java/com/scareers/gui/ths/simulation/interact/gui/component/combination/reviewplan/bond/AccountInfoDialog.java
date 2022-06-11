@@ -4,14 +4,27 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.layout.VerticalFlowLayout;
+import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.utils.CommonUtil;
 import lombok.Getter;
 import lombok.Setter;
+import org.jdesktop.swingx.JXTable;
+import org.jdesktop.swingx.decorator.ColorHighlighter;
 
+import javax.persistence.Column;
+import javax.persistence.Transient;
 import javax.swing.*;
+import javax.swing.table.*;
 import java.awt.*;
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.*;
 
 /**
  * description: 账户信息对话框.
@@ -29,6 +42,7 @@ import java.text.DecimalFormat;
 public class AccountInfoDialog extends JDialog {
     public static double scale = 0.7; // 对话框, 默认为全屏幕 宽高 的部分; 将居中;
     public static int leftPanelWidth = 710; // 左部分宽度!
+    public static int accountHoldBondPanelHeight = 700;
     public static int accountInfoPanelHeight = 105; // 左部分宽度!
     public static int accountMoneyPanelHeight = 105; // 左部分宽度!
     public static boolean modalS = true; // 是否模态
@@ -38,6 +52,8 @@ public class AccountInfoDialog extends JDialog {
     public static Color commonLabelForeGroundColor2 = new Color(154, 119, 49); // 常态字颜色: 白色
     public static DecimalFormat decimalFormatForPercent = new DecimalFormat("####0.00%"); // 两位百分比
     public static DecimalFormat decimalFormatForMoney = new DecimalFormat("####0.00"); // 元
+    public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比",
+            "总计盈亏", "市值", "仓位"); // 转债持仓表格列
 
     private static AccountInfoDialog INSTANCE;
 
@@ -212,14 +228,191 @@ public class AccountInfoDialog extends JDialog {
 
     }
 
+    @Transient
+    volatile ConcurrentHashMap<String, Integer> holdBondsAmountMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsAmountMap", columnDefinition = "longtext")
+    volatile String holdBondsMapJsonStr = "{}"; // 成分股列表json字符串
+
+    // 单只资产, 当前的剩余仓位的持仓成本价格(已折算); key为转债代码, value 为当前剩余仓位的持仓成本
+    @Transient
+    volatile ConcurrentHashMap<String, Double> bondCostPriceMap = new ConcurrentHashMap<>();
+    @Column(name = "bondCostPriceMap", columnDefinition = "longtext")
+    volatile String bondCostPriceMapJsonStr = "{}";
+
+    // 持有转债,当前实时价格map; 应当实时刷新;   ----------> 该map也会随着 总资产的刷新, 而刷新最新价格
+    @Transient
+    volatile ConcurrentHashMap<String, Double> holdBondsCurrentPriceMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsCurrentPriceMap", columnDefinition = "longtext")
+    volatile String holdBondsCurrentPriceMapJsonStr = "{}"; // 成分股列表json字符串
+
+    // 单只资产, 今日已发生的收益, 元(即不包括当前持仓的浮盈, 实际转换为了钱的收益);
+    // key为转债代码, value 为今日最终盈利 数值! 如果还有持仓, 以最新价格计算
+    @Transient
+    volatile ConcurrentHashMap<String, Double> bondAlreadyProfitMap = new ConcurrentHashMap<>(); // @key如果要真正盈利综合,
+    // 需要加上剩余持仓浮盈
+    @Column(name = "bondAlreadyProfitMap", columnDefinition = "longtext")
+    volatile String bondAlreadyProfitMapJsonStr = "{}";
+    // 持有转债, 剩余的数量, 成本价 与 当前价格相比, 赚的比例, 即 当前价格map - 成本价格map! (成本价是折算价)
+    @Transient
+    volatile ConcurrentHashMap<String, Double> holdBondsGainPercentMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsGainPercentMap", columnDefinition = "longtext")
+    volatile String holdBondsGainPercentMapJsonStr = "{}";
+    // 持有转债, 已发生(卖出) 的盈利 + 当前剩余仓位浮盈, 即今日单债总盈利, 浮动!
+    @Transient
+    volatile ConcurrentHashMap<String, Double> holdBondsTotalProfitMap = new ConcurrentHashMap<>();
+    @Column(name = "holdBondsTotalProfitMap", columnDefinition = "longtext")
+    volatile String holdBondsTotalProfitMapJsonStr = "{}";
+
+
     /**
      * 使用 表格, 展示当前持仓情况; 主要6大map
+     * 另外需要手动计算: 市值, 单债仓位, 转债名称, 浮动市值, 当前单债仓位
+     * 表格列依次: 转债代码,转债名称, 当前数量, 成本价, 最新价, 已实现盈利元, 当前持仓盈亏百分比, 总计浮动盈亏, 浮动市值, 当前单债仓位
+     * 共计 10 列
      */
     private void initAccountHoldBondPanel() {
         accountHoldBondPanel = new JPanel();
+        accountHoldBondPanel.setPreferredSize(new Dimension(4096, accountHoldBondPanelHeight));
+        accountHoldBondPanel.setLayout(new BorderLayout());
 
+        initSecurityEmJXTable(); // 持仓表格
+        accountHoldBondPanel.add(jScrollPaneForHoldBonds, BorderLayout.CENTER); // 滚动组件加入
+    }
+
+    JScrollPane jScrollPaneForHoldBonds;
+
+    private void initJTableWrappedJScrollPane() {
+        jScrollPaneForHoldBonds = new JScrollPane();
+        jScrollPaneForHoldBonds.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForHoldBonds.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        jScrollPaneForHoldBonds.setViewportView(jXTableForHoldBonds); // 滚动包裹转债列表
+        jScrollPaneForHoldBonds.getViewport().setBackground(COLOR_THEME_MINOR);
+        BasicScrollBarUIS
+                .replaceScrollBarUI(jScrollPaneForHoldBonds, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
+    }
+
+    protected volatile JXTable jXTableForHoldBonds; //  转债展示列表控件
+
+    /**
+     * 资产列表控件. 可重写
+     *
+     * @return
+     */
+    private void initSecurityEmJXTable() {
+        // 1.构造model
+        // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
+        Vector<Vector<Object>> datas = new Vector<>(); // 空数据, 仅提供列信息
+        Vector<Object> cols = new Vector<>(bondTableColNames);
+        DefaultTableModel model = new DefaultTableModel(datas, cols) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // 不可编辑!
+            }
+
+            @Override
+            public Class getColumnClass(int column) { // 返回列值得类型, 使得能够按照数据排序, 否则默认按照字符串排序
+                if (column == 0 || column == 1) { // 名称代码
+                    return String.class;
+                } else if (column == 2) { // 涨跌幅成交额
+                    return Integer.class;
+                } else { // 索引列 3 - 9 都是Double
+                    return Double.class;
+                }
+            }
+        };
+
+        // 2.实例化table, 设置model
+        jXTableForHoldBonds = new JXTable();
+        // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
+        jXTableForHoldBonds.setSortOrder("涨跌幅", SortOrder.DESCENDING);
+        jXTableForHoldBonds.setModel(model);
+        removeEnterKeyDefaultAction(jXTableForHoldBonds); // 按下enter不下移, 默认行为
+        addTableHighlighters(); // 高亮
+        jXTableForHoldBonds.setSortOrder(6, SortOrder.DESCENDING); // 默认当前持仓部分, 盈利百分比倒序
+        jXTableForHoldBonds.setAutoCreateRowSorter(true);
+
+        // 3.切换选择的回调绑定
+        // this.fitTableColumns(jXTableForBonds); // 默认平均
+        initJTableStyle();
+        setTableColCellRenders(); // 设置显示render
+        jXTableForHoldBonds.setGridColor(Color.black); // 不显示网格
+        jXTableForHoldBonds.setSelectionBackground(new Color(210, 210, 210)); // 同花顺
+    }
+
+    /**
+     * 设置表格各列的 cellRender; 主要的作用是设置 文本格式!
+     */
+    private void setTableColCellRenders() {
+        Color selectedBack = new Color(210, 210, 210);
+        // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
+        jXTableForHoldBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable(selectedBack));
+        jXTableForHoldBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable(selectedBack));
+        jXTableForHoldBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTable(selectedBack));
+        jXTableForHoldBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTable(selectedBack));
+        jXTableForHoldBonds.getColumn(4).setCellRenderer(new TableCellRendererForBondTable(selectedBack));
+        jXTableForHoldBonds.getColumn(5).setCellRenderer(new TableCellRendererForBondTableFor2Scale(selectedBack));
+        jXTableForHoldBonds.getColumn(6).setCellRenderer(new TableCellRendererForBondTableForPercent(selectedBack));
+        jXTableForHoldBonds.getColumn(7).setCellRenderer(new TableCellRendererForBondTableFor2Scale(selectedBack));
+        jXTableForHoldBonds.getColumn(8).setCellRenderer(new TableCellRendererForBondTableForBigNumber(selectedBack));
+        jXTableForHoldBonds.getColumn(9).setCellRenderer(new TableCellRendererForBondTableForPercent(selectedBack));
+    }
+
+    private void initJTableStyle() {
+        // 1.表头框颜色和背景色
+        jXTableForHoldBonds.getTableHeader().setBackground(Color.BLACK);
+        DefaultTableCellRenderer cellRenderer = new DefaultTableCellRenderer();
+        cellRenderer.setBackground(COLOR_LIST_BK_EM);
+        cellRenderer.setForeground(Color.white);
+        TableColumnModel columnModel = jXTableForHoldBonds.getTableHeader().getColumnModel();
+        for (int i = 0; i < columnModel.getColumnCount(); i++) {
+            //i是表头的列
+            TableColumn column = jXTableForHoldBonds.getTableHeader().getColumnModel().getColumn(i);
+            column.setHeaderRenderer(cellRenderer);
+            //表头文字居中
+            cellRenderer.setHorizontalAlignment(DefaultTableCellRenderer.CENTER);
+        }
+
+        // 2.表格自身文字颜色和背景色
+        jXTableForHoldBonds.setBackground(Color.black);
+        jXTableForHoldBonds.setForeground(Color.white);
+
+        // 4. 单行高 和字体
+        jXTableForHoldBonds.setRowHeight(30);
+        jXTableForHoldBonds.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+
+        // 5.单选,大小,无边框, 加放入滚动
+        jXTableForHoldBonds.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
+        // jXTableForBonds.setPreferredSize(new Dimension(jListWidth, 10000));
+        jXTableForHoldBonds.setBorder(null);
+        initJTableWrappedJScrollPane(); // 表格被包裹
+    }
+
+    public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称 使用白色
+    public static Color amountForeColor = new Color(2, 226, 224); // 文字颜色 : 成交额
+    public static Color upForeColor = new Color(255, 50, 50); // 向上的红色 : 涨跌幅
+    public static Color downForeColor = new Color(0, 230, 0); // 向下的绿色: 涨跌幅
+    public static Color selectedBackColor = new Color(64, 0, 128); // 选中时背景色
+    public static Color holdBondForeColor = new Color(206, 14, 95); // 持仓的文字颜色: 代码和名称!
+
+
+    private void addTableHighlighters() {
+        // Arrays.asList("代码", "名称", "数量", "成本价", "最新价", "已确定盈利", "持仓盈利百分比", "总计盈亏", "市值", "仓位");
+
+        // 1.总计盈亏 列, 与 0比较大小, 显示 红色 绿色!
+        SingleColGt0HighLighterPredicate singleColGt0HighLighterPredicate = new SingleColGt0HighLighterPredicate(7);
+        ColorHighlighter colorHighlighter1 = new ColorHighlighter(singleColGt0HighLighterPredicate, null,
+                upForeColor, null, upForeColor);
+        SingleColLt0HighLighterPredicate singleColLt0HighLighterPredicate = new SingleColLt0HighLighterPredicate(7);
+        ColorHighlighter colorHighlighter2 = new ColorHighlighter(singleColLt0HighLighterPredicate, null,
+                downForeColor, null, downForeColor);
+
+        jXTableForHoldBonds.setHighlighters(
+                colorHighlighter1,
+                colorHighlighter2
+        );
 
     }
+
 
     private void initAllAccountPanel() {
         allAccountPanel = new JPanel();
