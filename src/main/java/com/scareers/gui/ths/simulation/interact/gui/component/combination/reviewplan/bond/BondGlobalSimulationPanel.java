@@ -684,7 +684,12 @@ public class BondGlobalSimulationPanel extends JPanel {
             if (account != null && selectedBean != null) {
                 costPriceMaybe = account.getBondCostPriceMap().get(selectedBean.getSecCode());
             }
-            dynamicChart.updateChartFsTrans(DateUtil.parse(tick), costPriceMaybe, null); // 重绘图表
+            List<ReviseAccountWithOrder.BuySellPointRecord> buySellPointRecords = null;
+            if (selectedBean != null) {
+                buySellPointRecords = ReviseAccountWithOrder.BSPointSavingMap
+                        .get(selectedBean.getSecCode());
+            }
+            dynamicChart.updateChartFsTrans(DateUtil.parse(tick), costPriceMaybe, buySellPointRecords); // 重绘图表
             flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
 
             ThreadUtil.sleep(actualSleep); // 实际执行sleep

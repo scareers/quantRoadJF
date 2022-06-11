@@ -1,9 +1,6 @@
 package com.scareers.utils.charts;
 
-import cn.hutool.core.date.DateField;
-import cn.hutool.core.date.DateRange;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
@@ -695,8 +692,65 @@ public class EmChartFs {
 
         }
 
-        public void tryFlushBSPoints(List<BuySellPointRecord> bsPoints) {
+        List<XYTextAnnotation> xyTextAnnotations = new ArrayList<>();
+        // 例如y轴上限的涨跌幅是 15%此刻; 则买卖点显示的y值 == 成交价 + 15% * 本设置值!;  (或减法)
+        // 就是说BS点显示要高一点; 本设置越大, 越高于成交价!
+        // @ 当价格低于昨收, BS显示在上方一点, 否则显示在下方一点
+        public static double bsPointShowBiasOfY = 0.2;
+        public static Font annotationFont = new Font("楷体", Font.BOLD, 18);
 
+
+        /**
+         * bsPoints 是已经按照成交tick 升序排列;
+         *
+         * @param bsPoints
+         */
+        public void tryFlushBSPoints(List<BuySellPointRecord> bsPoints) {
+            for (XYTextAnnotation xyTextAnnotation : xyTextAnnotations) {
+                plot1.removeAnnotation(xyTextAnnotation);
+            }
+            xyTextAnnotations.clear(); // 清除原来买卖点
+            if (bsPoints == null) {
+                return;
+            }
+            double r1 = Math.abs(priceHigh - preClose);
+            double r2 = Math.abs(priceLow - preClose);
+            double maxRange = r1 > r2 ? r1 : r2;
+            double maxPercent = maxRange / preClose;  // 这是坐标y轴的, 百分比上下界! 买卖点显示, 应该是成交价 +一定程度偏离!
+
+            for (BuySellPointRecord bsPoint : bsPoints) {
+                // 1.正常文字, 即 B1-B4, S1-S4
+                String text = ("buy".equals(bsPoint.getBs()) ? "B" : "S") + bsPoint.getPositionDenominator();
+                Double clinchPrice = bsPoint.getClinchPrice();
+                double y;
+                if (clinchPrice > preClose) {
+                    y = clinchPrice - preClose * maxPercent * bsPointShowBiasOfY;
+                } else {
+                    y = clinchPrice + preClose * maxPercent * bsPointShowBiasOfY;
+                }
+                long x = convertTickToAnnotationXValue(bsPoint.getClinchTick());
+
+                XYTextAnnotation xyTextAnnotation = new XYTextAnnotation(text, x, y);
+                xyTextAnnotation.setPaint("buy".equals(bsPoint.getBs()) ? Color.red : Color.green);
+                xyTextAnnotation.setFont(annotationFont);
+                xyTextAnnotations.add(xyTextAnnotation);
+            }
+            for (XYTextAnnotation xyTextAnnotation : xyTextAnnotations) {
+                plot1.addAnnotation(xyTextAnnotation, true);
+            }
+        }
+
+        /**
+         * 将 时分秒tick, 转换为 x时间坐标轴里面的值, 能用于 文字标注!
+         * --> 本质是时间戳!
+         *
+         * @param clinchTick
+         * @return
+         */
+        private long convertTickToAnnotationXValue(String clinchTick) {
+            DateTime parse = DateUtil
+                    .parse(DateUtil.format(todayDummy, DatePattern.NORM_DATE_PATTERN) + " " + clinchTick);
+            return parse.getTime();
         }
 
         /**

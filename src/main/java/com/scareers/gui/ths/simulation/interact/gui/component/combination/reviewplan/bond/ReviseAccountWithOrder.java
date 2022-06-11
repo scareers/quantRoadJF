@@ -15,9 +15,11 @@ import joinery.DataFrame;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.hibernate.mapping.Collection;
 
 import javax.persistence.*;
 import java.math.RoundingMode;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,13 +64,23 @@ public class ReviseAccountWithOrder {
      */
     @Data
     @NoArgsConstructor
-    public static class BuySellPointRecord {
+    public static class BuySellPointRecord implements Comparable {
         String bs; // buy 或者 sell --> 重要, 决定 B 还是 S
         int positionDenominator; // 仓位分母  --> 重要, 决定 B1 的1
         int amount; // 具体数量 --> 随便
         Double clinchPrice; // 成交价格!  --> 重要, 决定 y
         String clinchTick; // 成交时间 时分秒 tick!        --> 重要, 决定x
         String bondCode; // 转债代码 --> 作为map 的key
+
+
+        @Override
+        public int compareTo(Object o) {
+            if (!(o instanceof BuySellPointRecord)) {
+                return 1;
+            }
+            BuySellPointRecord o1 = (BuySellPointRecord) o;
+            return this.clinchTick.compareTo(o1.clinchTick); // 成交时间tick排序, 自然顺序
+        }
     }
 
     // @add: 买卖点记录map, 唯一; 在每次复盘开始时, 将清空!!! 以便新的订单重新填充
@@ -83,6 +95,7 @@ public class ReviseAccountWithOrder {
     public static void putBsPointRecord(BuySellPointRecord bsPoint) {
         BSPointSavingMap.putIfAbsent(bsPoint.bondCode, new CopyOnWriteArrayList<>()); // 线程安全
         BSPointSavingMap.get(bsPoint.bondCode).add(bsPoint);
+        Collections.sort(BSPointSavingMap.get(bsPoint.bondCode));
     }
 
 
