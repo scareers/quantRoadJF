@@ -304,6 +304,8 @@ public class ReviseAccountWithOrder {
     volatile Double totalAssets = 10.0 * 10000;  // 当前总资产 == 现金 + 各个资产数量*价格求和
     @Column(name = "currentTotalProfitPercent", columnDefinition = "double")
     volatile Double currentTotalProfitPercent = 0.0; // 当前总盈利百分比!!! 随着总资产 自动刷新!; 用总资产 和初始资金计算
+    @Column(name = "alreadyCommissionTotal", columnDefinition = "double")
+    volatile Double alreadyCommissionTotal = 0.0; // 已发生手续费总计, 不断添加 新订单的手续费! 精确到分, 向上取整!
 
     /*
     单债统计map: 当前持仓数量,成本价,实时价格; 已发生盈利(卖出), 剩余持仓部分盈利百分比, 单债总浮盈!
@@ -384,8 +386,7 @@ public class ReviseAccountWithOrder {
 
     @Column(name = "stopAutoOrderFlag")
     volatile Boolean stopAutoOrderFlag = false; // 默认不是收盘自动卖出订单; 在stop复盘时, 自动执行停止卖出订单, 此属性将设置为 true!!!
-    @Column(name = "alreadyCommissionTotal", columnDefinition = "double")
-    volatile Double alreadyCommissionTotal = 0.0; // 已发生手续费总计, 不断添加 新订单的手续费! 精确到分, 向上取整!
+
     @Column(name = "commissionSingle", columnDefinition = "double")
     volatile Double commissionSingle; // 单次佣金
     @Column(name = "orderFinalClinchDescription", columnDefinition = "longtext")

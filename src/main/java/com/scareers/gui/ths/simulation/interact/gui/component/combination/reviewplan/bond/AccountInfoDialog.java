@@ -5,6 +5,7 @@ import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.Column;
 import javax.swing.*;
 import java.awt.*;
 
@@ -93,13 +94,46 @@ public class AccountInfoDialog extends JDialog {
         contentPanelS.add(panelRight, BorderLayout.CENTER);
     }
 
+    JLabel accountBaseInfoLabel = new JLabel();
+    JLabel reviseStartDateTimeStrLabel = new JLabel();
+    JLabel reviseStopTimeStrLabel = new JLabel();
+    JLabel startRealTimeLabel = new JLabel();
+    JLabel stopRealTimeLabel = new JLabel();
+    JLabel accountNameRemarkLabel = new JLabel();
+    JLabel innerObjectTypeLabel = new JLabel();
+
 
     private void initAccountInfoPanel() {
         accountInfoPanel = new JPanel();
+
+        accountBaseInfoLabel.setText("账户基本信息");
+        reviseStartDateTimeStrLabel.setText("复盘日期时间");
+        reviseStopTimeStrLabel.setText("复盘结束时间");
+        startRealTimeLabel.setText("开始真实时间");
+        stopRealTimeLabel.setText("结束真实时间");
+        accountNameRemarkLabel.setText("备注信息");
+        innerObjectTypeLabel.setText("当前内部状态");
+
     }
+
+    JLabel initMoneyLabel = new JLabel();
+    JLabel cashLabel = new JLabel();
+    JLabel totalAssetsLabel = new JLabel();
+    JLabel currentTotalProfitPercentLabel = new JLabel();
+    JLabel alreadyCommissionTotalLabel = new JLabel();
+
+    JLabel currentFloatProfitLabel = new JLabel(); // @key: 非account属性, 用 总资产 - 初始资金即可!
 
     private void initAccountMoneyPanel() {
         accountMoneyPanel = new JPanel();
+
+        initMoneyLabel.setText("初始总资金");
+        cashLabel.setText("当前现金");
+        totalAssetsLabel.setText("当前总资产"); // 已计算过手续费
+        currentFloatProfitLabel.setText("总计浮盈亏"); // 已计算手续费
+        currentTotalProfitPercentLabel.setText("当前总利润百分比"); // 已计算过手续费
+        alreadyCommissionTotalLabel.setText("总计手续费");
+
     }
 
     private void initAllAccountPanel() {
