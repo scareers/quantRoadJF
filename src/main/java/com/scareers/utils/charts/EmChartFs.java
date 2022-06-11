@@ -1223,8 +1223,6 @@ public class EmChartFs {
         ApplicationFrame frame = new ApplicationFrame("temp");
 
         ChartPanel chartPanel = new ChartPanel(chart);
-
-
         // 大小
         chartPanel.setPreferredSize(new Dimension(1200, 800));
         chartPanel.setMouseZoomable(false);

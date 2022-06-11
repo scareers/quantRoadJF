@@ -1,5 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
@@ -11,6 +12,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.combination.review
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
+import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.charts.EmChartFs;
@@ -18,6 +20,7 @@ import com.scareers.utils.charts.EmChartKLine;
 import joinery.DataFrame;
 import lombok.Data;
 import org.jdesktop.swingx.JXList;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 
 import javax.swing.*;
@@ -395,9 +398,34 @@ public class SmartFindDialog extends JDialog {
                                             String dateStr = allDateStr.get(crossLineIndex); // 终于拿到了日期;
                                             // 对话框, 显示k线
                                             SecurityBeanEm beanEm = dynamicKLineChart.getBeanEm();
-                                            DataFrame<Object> fs1mDf = EastMoneyDbApi // 分时图数据拿到了
-                                                    .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
-                                            JFreeChart chart = EmChartFs.createFs1MV2OfEm(fs1mDf, null, true);
+                                            DataFrame<Object> fs1mDf = null;
+                                            try {
+                                                fs1mDf = EastMoneyDbApi // 分时图数据拿到了
+                                                        .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
+                                            } catch (Exception ex) {
+                                                ex.printStackTrace();
+                                                CommonUtil.notifyError("分时1Mv2数据获取失败, 2022-06-02以后才有数据!");
+                                            }
+                                            if (fs1mDf != null) {
+                                                JFreeChart chart = EmChartFs.createFs1MV2OfEm(fs1mDf, "", true);
+                                                JDialog dialog = new JDialog(TraderGui.INSTANCE,
+                                                        beanEm.getName() + ": " + dateStr, true);
+                                                dialog.setSize(new Dimension(1200, 800)); // 不能是prefersize,需要size
+                                                ChartPanel chartPanel = new ChartPanel(chart);
+                                                // 大小
+                                                chartPanel.setPreferredSize(new Dimension(1200, 800));
+                                                chartPanel.setMouseZoomable(false);
+                                                chartPanel.setRangeZoomable(false);
+                                                chartPanel.setDomainZoomable(false);
+                                                List<DateTime> timeTicks = DataFrameS
+                                                        .getColAsDateList(fs1mDf, "date"); // 日期列表;传递给监听器,设置横轴marker
+                                                chartPanel.addChartMouseListener(
+                                                        EmChartFs.getCrossLineListenerForFsXYPlot(timeTicks));
+
+                                                dialog.setContentPane(chartPanel);
+                                                dialog.setLocationRelativeTo(TraderGui.INSTANCE);
+                                                dialog.setVisible(true);
+                                            }
                                         }
                                     }
                                 }

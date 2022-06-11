@@ -88,6 +88,8 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final int kLineAmountHope = 170; // k线图希望的数量
     // 今天多少点钟后, 复盘默认日期设置为今天(一般这时爬虫运行过了,数据库有数据了) , 否则设置默认复盘日期为上一交易日
     public static final int afterTodayNHDefaultDateAsToday = 20;
+    public static final double accountInitMoney = 10 * 10000;
+    public static final double accountStateFlushSleep = 1500; // 子线程不断刷新账户状态, 时间间隔
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -490,6 +492,9 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
     FuncButton openAccountButton; // 关闭k线折叠面板
 
+    volatile ReviseAccountWithOrder account; // 账户对象, 点击开始按钮首次实例化! 见开始按钮的回调
+    final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁
+
     ThreadPoolExecutor poolExecutorForKLineUpdate = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
 
@@ -497,6 +502,22 @@ public class BondGlobalSimulationPanel extends JPanel {
      * 主功能区组件添加, 添加到 functionContainerMain, 该panel为左浮动布局
      */
     private void addMainFunctions() {
+        // 0.1. @add: 账号对象, 子线程持续刷新
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    if (account != null) {
+                        synchronized (accountLock) { // 加锁刷新! 需要保证该方法执行快速!
+                            account.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
+                                    getReviseDateStrSettingHMS());
+                        }
+                    }
+                    ThreadUtil.sleep(accountStateFlushSleep); // 1.5s
+                }
+            }
+        }, true);
+
         // 1. 初始化复盘功能 相关属性
         // 1.0. 默认的复盘开始时间: >16点,今天是交易日,就今天, 否则都上一天! 给爬虫一个小时!
         try {
@@ -614,8 +635,16 @@ public class BondGlobalSimulationPanel extends JPanel {
                         // 死循环开始执行!
                         // 0.真正逻辑上开始, 设置 flag
                         reviseRunning = true;
+                        // @update: 账户对象初始实例化!
+                        synchronized (accountLock) {
+                            account =
+                                    ReviseAccountWithOrder
+                                            .initAccountWithOrderWhenRiveStart(getReviseDateStrSettingYMD(),
+                                                    getReviseDateStrSettingHMS(), accountInitMoney);
+                            CommonUtil.notifyKey("账户已经重新初始化");
+                        }
                         revisePausing = false;
-                        CommonUtil.notifyKey("复盘即将开始");
+                        CommonUtil.notifyKey("复盘开始");
 
                         startReviseMainLoop(finalStartIndex);
                         reviseRunning = false; // 非运行状态
@@ -630,10 +659,20 @@ public class BondGlobalSimulationPanel extends JPanel {
         stopReviseButton.addActionListener(new ActionListener() {
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
-                labelOfRealTimeSimulationTime.setText("00:00:00");
+                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 停止时, 不会改变最终的tick
                 reviseRunning = false; // 将停止 start后 的线程中的循环
                 revisePausing = false; // 暂停flag也将恢复!
                 pauseRebootReviseButton.setText("暂停"); // 强制暂停按钮恢复暂停状态
+
+                if (account != null) {
+                    synchronized (accountLock) {
+                        ReviseAccountWithOrder accountFianl = ReviseAccountWithOrder
+                                .handleAccountWhenReviseStop(BondGlobalSimulationPanel.this.account,
+                                        getReviseDateStrSettingYMD(),
+                                        getReviseDateStrSettingHMS());
+                        account = accountFianl;
+                    }
+                }
             }
         });
 
