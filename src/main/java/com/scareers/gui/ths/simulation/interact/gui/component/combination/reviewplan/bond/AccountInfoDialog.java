@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,6 +24,7 @@ import java.awt.*;
 public class AccountInfoDialog extends JDialog {
     public static double scale = 0.8; // 对话框, 默认为全屏幕 宽高 的部分; 将居中;
     public static int leftPanelWidth = 350; // 左部分宽度!
+    public static boolean modalS = true; // 是否模态
 
 
     BondGlobalSimulationPanel parentS;
@@ -34,11 +36,16 @@ public class AccountInfoDialog extends JDialog {
         super(owner, title, modal);
         this.parentS = parentS;
         this.account = account;
+        this.setResizable(true);
 
-        this.setSize((int) (TraderGui.screenW * scale), (int) (TraderGui.screenW * scale));
+        this.setSize((int) (TraderGui.screenW * scale), (int) (TraderGui.screenH * scale));
         this.setLocationRelativeTo(TraderGui.INSTANCE);
         initContentPanelS(); // 主面板
         this.setContentPane(contentPanelS);
+        this.setLocationRelativeTo(TraderGui.INSTANCE);
+
+        GuiCommonUtil.addEscNotVisibleCallbackToJDialog(this);
+
     }
 
     JPanel accountInfoPanel; // 左上
@@ -88,18 +95,23 @@ public class AccountInfoDialog extends JDialog {
 
 
     private void initAccountInfoPanel() {
+        accountInfoPanel = new JPanel();
     }
 
     private void initAccountMoneyPanel() {
+        accountMoneyPanel = new JPanel();
     }
 
     private void initAllAccountPanel() {
-    }
-
-    private void initAllOrderPanel() {
+        allAccountPanel = new JPanel();
     }
 
     private void initAccountHoldBondPanel() {
+        accountHoldBondPanel = new JPanel();
+    }
+
+    private void initAllOrderPanel() {
+        allOrderPanel = new JPanel();
     }
 
 

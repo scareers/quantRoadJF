@@ -624,11 +624,13 @@ public class BondGlobalSimulationPanel extends JPanel {
     private void initOpenAccountButton() {
         openAccountButton = ButtonFactory.getButton("打开账户");
         openAccountButton.setForeground(Color.orange);
+        BondGlobalSimulationPanel temp = this;
         openAccountButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (accountInfoDialog == null) {
-                    accountInfoDialog = new AccountInfoDialog(TraderGui.INSTANCE, "账户-- xx", false, account);
+                    accountInfoDialog = new AccountInfoDialog(TraderGui.INSTANCE, "账户-- xx", AccountInfoDialog.modalS,
+                            temp, account);
                 }
                 accountInfoDialog.setVisible(true);
             }

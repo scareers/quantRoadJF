@@ -378,13 +378,15 @@ public class IndustryConceptPanelForPlan extends DisplayPanel {
 
                 JDialog dialog = new JDialog(TraderGui.INSTANCE, "多线加身结果", false);
                 // 按下esc关闭对话框, 实测不能modal模式, 否则监听无效
-                KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
-                dialog.getRootPane().registerKeyboardAction(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        dialog.dispose();
-                    }
-                }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+//                KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+//                dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+//                    @Override
+//                    public void actionPerformed(ActionEvent e) {
+//                        dialog.dispose();
+//                    }
+//                }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+                GuiCommonUtil.addEscDisposeCallbackToJDialog(dialog);
 
                 //创建JDialog
                 JPanel panel = new JPanel();

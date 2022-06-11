@@ -9,6 +9,9 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.util.Enumeration;
 
 /**
@@ -172,5 +175,43 @@ public class GuiCommonUtil {
     public static String buildDialogShowStr(String infoContent, String coreContent) {
         return buildDialogShowStr(infoContent, coreContent, "yellow", "red");
     }
+
+
+    /**
+     * 给对话框, 添加 esc按键, 就不可见的回调
+     *
+     * @param dialog
+     */
+    public static void addEscNotVisibleCallbackToJDialog(JDialog dialog) {
+//        dialog.setModal(true);
+
+        KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.setVisible(false);
+            }
+        }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
+
+    /**
+     * 给对话框, 添加 esc按键, 就销毁对话框的回调
+     *
+     * @param dialog
+     */
+    public static void addEscDisposeCallbackToJDialog(JDialog dialog) {
+        // @key: 是否需要强制 modal 状态, 不确定
+//        dialog.setModal(true);
+
+        KeyStroke stroke = KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0);
+        dialog.getRootPane().registerKeyboardAction(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        }, stroke, JComponent.WHEN_IN_FOCUSED_WINDOW);
+    }
+
 
 }
