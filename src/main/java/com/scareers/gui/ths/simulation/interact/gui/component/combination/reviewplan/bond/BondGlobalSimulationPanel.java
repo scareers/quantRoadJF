@@ -491,7 +491,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton stopReviseButton; // 停止按钮
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
-    FuncButton openAccountButton; // 打开账户按钮!
+    FuncButton openAccountButton; // 打开账户按钮! -f12
 
     volatile ReviseAccountWithOrder account; // 账户对象, 点击开始按钮首次实例化! 见开始按钮的回调
     final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁

@@ -164,4 +164,20 @@ public class GuiGlobalKeyListener {
         }
     }
 
+    /**
+     * F12: 复盘时打开账户窗口!
+     *
+     * @param e
+     */
+    public static void tryReviseOpenAccountDialogButton(KeyEvent e) {
+        if (e.getID() == KeyEvent.KEY_PRESSED) {
+            if (e.getKeyCode() == KeyEvent.VK_F12) {
+                BondGlobalSimulationPanel instance = checkInBondGlobalSimulationPanel();
+                if (instance != null) {
+                    instance.getOpenAccountButton().doClick();
+                }
+            }
+        }
+    }
+
 }

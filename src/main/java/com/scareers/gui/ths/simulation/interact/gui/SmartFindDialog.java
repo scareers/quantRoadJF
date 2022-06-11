@@ -370,6 +370,7 @@ public class SmartFindDialog extends JDialog {
                 GuiGlobalKeyListener.tryOpenFs1mV2OnReviseDailyKline(e);
                 GuiGlobalKeyListener.tryReviseBuyButton(e);
                 GuiGlobalKeyListener.tryReviseSellButton(e);
+                GuiGlobalKeyListener.tryReviseOpenAccountDialogButton(e);
 
 
                 INSTANCE.resetLocation(); // 设置位置
