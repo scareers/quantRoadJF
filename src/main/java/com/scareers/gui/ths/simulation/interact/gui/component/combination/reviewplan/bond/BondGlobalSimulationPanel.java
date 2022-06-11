@@ -4,7 +4,8 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
-import cn.hutool.core.lang.Console;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.StrUtil;
@@ -13,6 +14,7 @@ import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
 import com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog;
+import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
@@ -24,6 +26,7 @@ import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
@@ -35,6 +38,7 @@ import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
+import org.jdesktop.swingx.decorator.HighlightPredicate;
 import org.jdesktop.swingx.decorator.PatternPredicate;
 import org.jfree.chart.ChartPanel;
 
@@ -54,6 +58,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
+import static com.scareers.utils.CommonUtil.waitForever;
 
 /**
  * description: 转债全市场(全局)复盘panel;
@@ -91,6 +96,11 @@ public class BondGlobalSimulationPanel extends JPanel {
     public static final double accountInitMoney = 10 * 10000;
     public static final double accountStateFlushSleep = 1500; // 子线程不断刷新账户状态, 时间间隔
     public static final double buySellPriceBias = 5.0; // 买卖时, 挂单价格, 在最新价格的偏移价格! 元
+    public static final String nuclearKeyBoardSettingDstDir = "C:\\Users\\admin\\Desktop\\自设键盘"; // 核按钮键盘配置文件目标文件夹
+    public static final String nuclearKeyBoardSettingOfThs = "ths/nuclear/nuclear/raw"; // 核按钮键盘配置文件 -- classpath中路径 --    // 同花顺原配置
+    public static final String nuclearKeyBoardSettingOfRevise = "ths/nuclear/nuclear/revise"; // 核按钮键盘配置文件 -- classpath中路径 -- 复盘时使用配置
+    public static final long dummyBuySellOperationSleep = 500; // 模拟交易的弹窗持续的时间
+    public static final long dummyClinchOccurSleep = 1000; // 模拟买卖后, 到成交时间,大约sleep多久, 在上个sleep之后
 
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
@@ -104,11 +114,15 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     @SneakyThrows
     public static void main(String[] args) {
-        DataFrame<Object> res = getReviseTimeBondListOverviewDataDf(
-                SecurityBeanEm.createBondList(Arrays.asList("小康转债", "盘龙转债"), true),
-                "2022-06-07",
-                "10:00:00");
-        Console.log(res);
+//        DataFrame<Object> res = getReviseTimeBondListOverviewDataDf(
+//                SecurityBeanEm.createBondList(Arrays.asList("小康转债", "盘龙转债"), true),
+//                "2022-06-07",
+//                "10:00:00");
+//        Console.log(res);
+
+//        playClinchSuccessSound();
+        playClinchFailSound();
+        waitForever();
     }
 
     protected BondGlobalSimulationPanel(MainDisplayWindow mainDisplayWindow, int jListWidth) {
@@ -171,6 +185,33 @@ public class BondGlobalSimulationPanel extends JPanel {
 
 
     }
+
+    /**
+     * 初始化复盘软件使用的 核按钮配置!
+     */
+    public static void initNuclearKeyBoardSettingForRevise() {
+        try {
+            String x = CommonUtil.getFullPathOfClassPathFileOrDir(nuclearKeyBoardSettingOfRevise);
+            FileUtil.copyFilesFromDir(FileUtil.file(x), FileUtil.file(nuclearKeyBoardSettingDstDir), true);
+            CommonUtil.notifyInfo("核按钮键盘已更改配置: 复盘配置");
+        } catch (IORuntimeException e) {
+            CommonUtil.notifyError("核按钮键盘更改配置失败 --> 复盘配置");
+        }
+    }
+
+    /**
+     * 恢复核按钮配置, 到同花顺配置
+     */
+    public static void recoverNuclearKeyBoardSettingToThs() {
+        try {
+            String x = CommonUtil.getFullPathOfClassPathFileOrDir(nuclearKeyBoardSettingOfThs);
+            FileUtil.copyFilesFromDir(FileUtil.file(x), FileUtil.file(nuclearKeyBoardSettingDstDir), true);
+            CommonUtil.notifyInfo("核按钮键盘已恢复配置: 同花顺配置");
+        } catch (IORuntimeException e) {
+            CommonUtil.notifyError("核按钮键盘恢复配置失败 --> 同花顺配置");
+        }
+    }
+
 
     protected JXCollapsiblePane klineCollapsiblePane; // k线图折叠面板对象
     protected JPanel klineDisplayContainerPanel; // k线图容器
@@ -641,7 +682,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             account =
                                     ReviseAccountWithOrder
                                             .initAccountWithOrderWhenRiveStart(getReviseDateStrSettingYMD(),
-                                                    getReviseDateStrSettingHMS(), accountInitMoney);
+                                                    getReviseDateStrSettingHMS(), "", accountInitMoney);
                             CommonUtil.notifyKey("账户已经重新初始化");
                         }
                         revisePausing = false;
@@ -779,12 +820,22 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionContainerMain.add(buttonCollapsibleKLinePanel);
 
         // 5.模拟账户打开!
+        initOpenAccountButton();
+        functionContainerMain.add(openAccountButton);
+    }
+
+    AccountInfoDialog accountInfoDialog;
+
+    private void initOpenAccountButton() {
         openAccountButton = ButtonFactory.getButton("打开账户");
         openAccountButton.setForeground(Color.orange);
         openAccountButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // todo
+                if (accountInfoDialog == null) {
+                    accountInfoDialog = new AccountInfoDialog(TraderGui.INSTANCE, "账户-- xx", false, account);
+                }
+                accountInfoDialog.setVisible(true);
             }
         });
     }
@@ -1174,6 +1225,18 @@ public class BondGlobalSimulationPanel extends JPanel {
             buttonContainer.add(button);
         }
 
+        // 2.2.0. 假装买卖模拟操作的弹窗, 会自动消失
+        dummyDialogWhenBuySell = new JDialog(TraderGui.INSTANCE, "交易执行中", false);
+        dummyDialogWhenBuySell.setSize(230, 270);
+        dummyBuySellInfoLabel = new JLabel("正在买入...");
+
+        dummyBuySellInfoLabel.setFont(new Font("宋体", Font.BOLD, 22));
+        JPanel panelTemp0 = new JPanel();
+        panelTemp0.setLayout(new BorderLayout());
+        panelTemp0.add(dummyBuySellInfoLabel, BorderLayout.CENTER);
+        dummyDialogWhenBuySell.setContentPane(panelTemp0);
+        dummyDialogWhenBuySell.setLocationRelativeTo(TraderGui.INSTANCE);
+
         // 2.2.1. @add: 4个买入按钮和4个卖出按钮!
         buy1Button = getBuyButton(1);
 
@@ -1361,6 +1424,9 @@ public class BondGlobalSimulationPanel extends JPanel {
         return changeReviseStartTimeButton;
     }
 
+    JDialog dummyDialogWhenBuySell; // 买卖时的 模拟弹窗, 展示1s左右; 假装 同花顺买入卖出弹窗
+    JLabel dummyBuySellInfoLabel;
+
     /**
      * 买入按钮.
      *
@@ -1389,19 +1455,47 @@ public class BondGlobalSimulationPanel extends JPanel {
                                 getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account0);
                         ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
+                        String notClinchReason = account1.getNotClinchReason();
                         account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
                                 getReviseSimulationCurrentTimeStr());
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
                         synchronized (accountLock) {
                             account = account1; // 设置.
                         }
-                        CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
+                        // 都进行好了才假装出现买卖窗口
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                dummyBuySellInfoLabel.setForeground(Color.red);
+                                dummyBuySellInfoLabel.setText("买入进行中...");
+                                dummyDialogWhenBuySell.setVisible(true);
+                                ThreadUtil.sleep(dummyBuySellOperationSleep);
+                                dummyDialogWhenBuySell.setVisible(false);
+                                ThreadUtil.sleep(dummyClinchOccurSleep);
+                                if (notClinchReason == null) {
+                                    playClinchSuccessSound();
+                                } else {
+//                                    playClinchFailSound();
+                                }
+                                CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
+                            }
+                        });
                     }
 
                 }
             }
         });
         return buyButton;
+    }
+
+    public static void playClinchSuccessSound() {
+        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_success.mp3");
+        Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
+    }
+
+    public static void playClinchFailSound() {
+        String fullPathOfClassPathFileOrDir = CommonUtil.getFullPathOfClassPathFileOrDir("revise/clinch_fail.mp3");
+        Tts.playSound(FileUtil.file(fullPathOfClassPathFileOrDir), true, false);
     }
 
     /**
@@ -1434,10 +1528,29 @@ public class BondGlobalSimulationPanel extends JPanel {
                         ReviseAccountWithOrder account1 = account0.clinchOrderDetermine();
                         account1.flushAccountStateByCurrentTick(getReviseDateStrSettingYMD(),
                                 getReviseSimulationCurrentTimeStr());
+                        String notClinchReason = account1.getNotClinchReason();
                         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
                         synchronized (accountLock) {
                             account = account1; // 设置.
                         }
+                        // 都进行好了才假装出现买卖窗口
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                dummyBuySellInfoLabel.setForeground(Color.green);
+                                dummyBuySellInfoLabel.setText("卖出进行中...");
+                                dummyDialogWhenBuySell.setVisible(true);
+                                ThreadUtil.sleep(dummyBuySellOperationSleep);
+                                dummyDialogWhenBuySell.setVisible(false);
+                                ThreadUtil.sleep(dummyClinchOccurSleep);
+                                if (notClinchReason == null) {
+                                    playClinchSuccessSound();
+                                } else {
+//                                    playClinchFailSound();
+                                }
+                                CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
+                            }
+                        });
                         CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
                     }
 
@@ -1585,15 +1698,6 @@ public class BondGlobalSimulationPanel extends JPanel {
         }
     }
 
-    /**
-     * 设置表格各列的 cellRender
-     */
-    private void setTableColCellRenders() {
-        jXTableForBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable());
-        jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
-        jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForChgPct());
-        jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForAmountCurrent());
-    }
 
     /**
      * 资产列表控件. 可重写
@@ -1628,10 +1732,10 @@ public class BondGlobalSimulationPanel extends JPanel {
         jXTableForBonds.setModel(model);
         removeEnterKeyDefaultAction(jXTableForBonds); // 按下enter不下移, 默认行为
 
-        PatternPredicate patternPredicate = new PatternPredicate("^-.*", 2);
-        ColorHighlighter redGreenChgPct = new ColorHighlighter(patternPredicate, Color.black,
-                Color.green, new Color(64, 0, 128), Color.green);
-        jXTableForBonds.setHighlighters(redGreenChgPct);
+        addTableHighlighters(); // 高亮
+
+        jXTableForBonds.setSortOrder(2, SortOrder.DESCENDING); // 默认涨跌幅降序
+        jXTableForBonds.setAutoCreateRowSorter(true);
 
         // 3.切换选择的回调绑定
         jXTableForBonds.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -1644,7 +1748,13 @@ public class BondGlobalSimulationPanel extends JPanel {
                     return;
                 }
 
-                row = jXTableForBonds.convertRowIndexToModel(row);
+                try {
+                    row = jXTableForBonds.convertRowIndexToModel(row);
+                } catch (Exception exx) {
+                    return;
+                }
+
+
                 if (row == preIndex) {
                     return;
                 }
@@ -1692,6 +1802,85 @@ public class BondGlobalSimulationPanel extends JPanel {
             }
 
         }, true);
+    }
+
+    /**
+     * 设置表格各列的 cellRender
+     */
+    private void setTableColCellRenders() {
+        jXTableForBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable());
+        jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
+        jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForChgPct());
+        jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForAmountCurrent());
+    }
+
+    /**
+     * 本行的 转债代码, 在给定集合之中 的 高亮条件
+     */
+    public static class ContainsHighLighterPredicate implements HighlightPredicate {
+        private volatile HashSet<String> bondCodes;
+
+        public ContainsHighLighterPredicate(HashSet<String> bondCodes) {
+            this.bondCodes = bondCodes;
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(0);
+            if (value == null) {
+                return false;
+            }
+            if (bondCodes.contains(value.toString())) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * 本行的 涨跌幅数值, >0.0
+     */
+    public static class ChgPctBtHighLighterPredicate implements HighlightPredicate {
+        public ChgPctBtHighLighterPredicate() {
+        }
+
+        @Override
+        public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
+            Object value = adapter.getValue(2); // 涨跌幅
+            if (value == null) {
+                return false;
+            }
+            double v;
+            try {
+                v = Double.parseDouble(value.toString());
+            } catch (Exception e) {
+                return false;
+            }
+            if (v > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * 转债列表高亮设置
+     */
+    private void addTableHighlighters() {
+//        PatternPredicate patternPredicate = new PatternPredicate("^-.*", 2);
+        ChgPctBtHighLighterPredicate patternPredicate = new ChgPctBtHighLighterPredicate();
+        ColorHighlighter redGreenChgPct = new ColorHighlighter(patternPredicate, Color.black,
+                Color.green, new Color(64, 0, 128), Color.green);
+
+
+        HashSet<String> x = new HashSet<>(Arrays.asList("113016"));
+
+        ContainsHighLighterPredicate predicate = new ContainsHighLighterPredicate(x);
+        ColorHighlighter yellowHoldBondHighlighter = new ColorHighlighter(predicate, Color.black,
+                Color.yellow, new Color(64, 0, 128), Color.green);
+        jXTableForBonds.setHighlighters(redGreenChgPct, yellowHoldBondHighlighter);
+
     }
 
     private void removeEnterKeyDefaultAction(JXTable jxTable) {

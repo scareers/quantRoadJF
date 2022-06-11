@@ -2,17 +2,20 @@ package com.scareers;
 
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
 import org.jdesktop.swingx.JXButton;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.net.URL;
 import java.util.List;
 
 
@@ -32,24 +35,37 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        String s = Character.toString(0x30);
-        Console.log(s);
+//        URL resource = ResourceUtil.getResource("ths/nuclear/nuclear/");
+//        Console.log(resource.getPath().substring(1));
 
-        JButton btn = new JButton("Test");
-        InputMap im = btn.getInputMap();
-        for (KeyStroke ik : im.allKeys()) {
-            System.out.println(ik + " = " + im.get(ik));
-        }
+        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/revise");
+//        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/raw");
+        Console.log(x);
 
-        Action blankAction = new AbstractAction() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-            }
-        };
+        FileUtil.copyFilesFromDir(FileUtil.file(x), FileUtil.file("C:\\Users\\admin\\Desktop\\自设键盘"), true);
 
-        ActionMap am = btn.getActionMap();
-        am.put("pressed", blankAction);
-        am.put("released", blankAction);
+
+//        FileUtil.copyFilesFromDir()
+
+
+//        String s = Character.toString(0x30);
+//        Console.log(s);
+//
+//        JButton btn = new JButton("Test");
+//        InputMap im = btn.getInputMap();
+//        for (KeyStroke ik : im.allKeys()) {
+//            System.out.println(ik + " = " + im.get(ik));
+//        }
+//
+//        Action blankAction = new AbstractAction() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+//            }
+//        };
+//
+//        ActionMap am = btn.getActionMap();
+//        am.put("pressed", blankAction);
+//        am.put("released", blankAction);
 
 
 //        DateTime date = DateUtil.date(1646150400);

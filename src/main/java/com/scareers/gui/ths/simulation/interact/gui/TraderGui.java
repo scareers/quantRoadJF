@@ -261,6 +261,7 @@ public class TraderGui extends JFrame {
      */
     private void whenWindowOpened() {
         SmartFindDialog.addGlobalSmartFinder(); // 窗口打开后, 首先添加只能查找框, 不可见
+        BondGlobalSimulationPanel.initNuclearKeyBoardSettingForRevise(); // 更改核按钮配置到复盘
 
         ThreadUtil.execAsync(() -> {
             try {
@@ -470,6 +471,7 @@ public class TraderGui extends JFrame {
                         "是否关闭程序",
                         JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
+                    BondGlobalSimulationPanel.recoverNuclearKeyBoardSettingToThs(); // 恢复核按钮配置
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
                     if (Trader.getInstance() != null) {
                         Trader.getInstance().stopTrade();

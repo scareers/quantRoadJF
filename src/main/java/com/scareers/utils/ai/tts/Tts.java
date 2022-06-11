@@ -18,6 +18,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static com.scareers.utils.CommonUtil.waitForever;
+
 /**
  * description: 搜狗和有道 免费tts API接口
  * tts: 即文字转语音, 以播放声音
@@ -53,10 +55,12 @@ public class Tts {
 
 
 //        thsAreaBkPoetryPlay(false, 500, 1, 0, 100); // 同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序
-        thsIndustryBkPoetryPlay(false, 500, 1, 0, 100); // 同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序
+//        thsIndustryBkPoetryPlay(false, 500, 1, 0, 100); // 同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序
 
-        return;
+        playSound("同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序", true, true);
+        playSound("滴滴", true, false);
 
+        waitForever();
     }
 
 
@@ -210,48 +214,87 @@ public class Tts {
     }
 
     public static void playSound(String content, boolean async) {
+        playSound(content, async, true);
+    }
+
+    /**
+     * @param content
+     * @param async   是否在子线程播放?
+     * @param lock    是否加唯一锁, 若全部声音加唯一锁, 则 声音保证不会重叠!
+     */
+    public static void playSound(String content, boolean async, boolean lock) {
         if (async) {
             threadPoolExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    playSoundCoreTts(content);
+                    playSoundCoreTts(content, lock);
                 }
             }, true);
         } else {
-            playSoundCoreTts(content);
+            playSoundCoreTts(content, lock);
         }
     }
+
 
     public static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
 
-    public static void playSound(File file, boolean async) {
+    public static void playSound(File file, boolean async, boolean lock) {
         if (async) {
             threadPoolExecutor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    playSoundCore(file);
+                    playSoundCore(file, lock);
                 }
             }, true);
         } else {
-            playSoundCore(file);
+            playSoundCore(file, lock);
         }
     }
 
     /**
      * 从tts api, 下载的音频流, 放入缓存池; 1小时缓存, 最多512; key为播放内容
      */
-    public static LRUCache<String, ByteArrayInputStream> ttsSoundCache = CacheUtil.newLRUCache(512, 3600 * 1000);
+    public static LRUCache<String, ByteArrayInputStream> ttsSoundCache = CacheUtil.newLRUCache(2048, 10 * 3600 * 1000);
 
-    /**
-     * 有道tts api, 播放文字
-     *
-     * @param content
-     */
-    private static void playSoundCoreTts(String content) {
+    private static void playSoundCoreTts(String content, boolean lock) {
         ByteArrayOutputStream bos = null;
         ByteArrayInputStream bis = ttsSoundCache.get(content);
-        synchronized (soundLock) {
+        if (lock) {
+            synchronized (soundLock) {
+                try {
+                    if (bis == null) {
+                        bos = new ByteArrayOutputStream(); // 输出流
+                        HttpDownloader.download(
+                                StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
+                                        content), bos, false, null);
+                        bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
+                        ttsSoundCache.put(content, bis);
+                    }
+                    bis.reset(); // 因为播放底层将读取流, 位置变化, 因此需要重置到位置0
+                    playSoundCore(bis); // 有缓存将不会下载; 不可重入锁
+                } catch (Exception e) {
+                    log.error("audio error: 语音播放失败,内容: {}", content);
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        if (bos != null) {
+                            bos.close();
+                        }
+                    } catch (IOException e) {
+
+                    }
+                    try {
+                        if (bis != null) {
+                            bis.close();
+                        }
+                    } catch (IOException e) {
+
+                    }
+
+                }
+            }
+        } else {
             try {
                 if (bis == null) {
                     bos = new ByteArrayOutputStream(); // 输出流
@@ -291,8 +334,19 @@ public class Tts {
      *
      * @param file
      */
-    private static void playSoundCore(File file) {
-        synchronized (soundLock) {
+    private static void playSoundCore(File file, boolean lock) {
+        if (lock) {
+            synchronized (soundLock) {
+                try {
+                    FileInputStream stream = new FileInputStream(file);
+                    Player player = new Player(stream);
+                    player.play();
+                } catch (FileNotFoundException | JavaLayerException e) {
+                    log.error("audio error: 语音播放失败");
+                    e.printStackTrace();
+                }
+            }
+        } else {
             try {
                 FileInputStream stream = new FileInputStream(file);
                 Player player = new Player(stream);
@@ -310,14 +364,12 @@ public class Tts {
      * @param file
      */
     private static void playSoundCore(InputStream stream) {
-        synchronized (soundLock) {
-            try {
-                Player player = new Player(stream);
-                player.play();
-            } catch (Exception e) {
-                log.error("audio error: 语音播放失败");
-                e.printStackTrace();
-            }
+        try {
+            Player player = new Player(stream);
+            player.play();
+        } catch (Exception e) {
+            log.error("audio error: 语音播放失败");
+            e.printStackTrace();
         }
     }
 
@@ -325,52 +377,3 @@ public class Tts {
 }
 
 
-
-/*
-使用MagicAudioPlayer
-MagicAudioPlayer的使用方法十分容易，只要将其实体化后再使用play方法即可。读取音频文件的方式如下：
-
-File audioFile = new File("/home/magiclen/test.wav");
-AudioPlayer player = AudioPlayer.createPlayer(audioFile);
-player.play();
-也可以用URL当作音频来源：
-
-AudioPlayer player = AudioPlayer.createPlayer(url);
-player.play();
-如果要暂停、停止播放的话，可以使用pause与stop方法。
-
-player.pause();
-player.stop();
-如果要设置播放次数以及播放完成后自动关闭并释放资源的话，可以使用setPlayCount和setAutoClose方法，程序如下：
-
-player.setPlayCount(2);
-player.setAutoClose(true);
-另外还可以使用setVolume和setBalance方法设置播放的音量以及左右声道的平衡，程序如下：
-
-player.setVolume(100);
-player.setBalance(100);
-如果要取得AudioPlayer目前的状态，可以使用getStatus方法，如下：
-
-AudioPlayer.Status status = player.getStatus();
-如果要监听AudioPlayer的状态改变事件，可以使用setStatusChangedListener方法，如下：
-
-player.setStatusChangedListener((previousStatus, currentStatus) -> {
-    switch (currentStatus) {
-        case OPEN:
-            break;
-        case START:
-            break;
-        case STOP:
-            break;
-        case CLOSE:
-            break;
-    }
-});
-当然也可以取得与设置目前播放的位置，如下：
-
-long position = player.getAudioPosition();
-//往前一秒
-player.setAudioPosition(position + 1000000);
-
-*
-* */

@@ -78,7 +78,7 @@ public class ReviseAccountWithOrder {
         Console.log(StrUtil.repeat('-', 30) + ">");
         Console.log("初始化 9号 9:30 开始复盘, 资金10万");
         String reviseDateStr = "2022-06-09";
-        ReviseAccountWithOrder account1 = initAccountWithOrderWhenRiveStart(reviseDateStr, "09:30:00", 100000);
+        ReviseAccountWithOrder account1 = initAccountWithOrderWhenRiveStart(reviseDateStr, "09:30:00", "测试", 100000);
         ReviseAccountWithOrderDao.saveOrUpdateBean(account1);
         Console.log(account1);
         Console.log();
@@ -160,6 +160,7 @@ public class ReviseAccountWithOrder {
      */
     public static ReviseAccountWithOrder initAccountWithOrderWhenRiveStart(String reviseDateStr,
                                                                            String reviseStartTimeStr,
+                                                                           String accountNameRemark,
                                                                            double initMoney
     ) {
         ReviseAccountWithOrder res = new ReviseAccountWithOrder();
@@ -173,6 +174,7 @@ public class ReviseAccountWithOrder {
         // 设置当前时间, 它将不会再改变, 理论上能标志唯一账号; 唯一账号对应一次未停止复盘, 使用的唯一虚拟账号
         String currentWitMills = DateUtil.format(DateUtil.date(), DatePattern.NORM_DATETIME_MS_PATTERN);
         res.setStartRealTime(currentWitMills);
+        res.setAccountNameRemark(accountNameRemark);
         // 停止的真实时间也null
 
         res.setInitMoney(initMoney); // 初始资金, 不会改变
@@ -281,6 +283,9 @@ public class ReviseAccountWithOrder {
 
     @Column(name = "AStartRealTime", columnDefinition = "varchar(64)")
     volatile String startRealTime; // 开始的真实时间; 现实时间 , 标准日期带毫秒
+
+    @Column(name = "accountNameRemark", columnDefinition = "varchar(512)")
+    volatile String accountNameRemark = ""; // @add: 新增属性, 账户名称或备注, 可对账户命名; 否则仅以开始时间命名不太直观
     @Column(name = "AStopRealTime", columnDefinition = "varchar(64)")
     volatile String stopRealTime; // 结束的真实时间; 现实时间, 标准日期带毫秒
 
@@ -781,6 +786,7 @@ public class ReviseAccountWithOrder {
         res.setReviseStopTimeStr(this.getReviseStopTimeStr()); // @key: 通常是 null;
 
         res.setStartRealTime(this.getStartRealTime());
+        res.setAccountNameRemark(this.getAccountNameRemark());
         res.setStopRealTime(this.getStopRealTime()); // 常常null
 
         /*

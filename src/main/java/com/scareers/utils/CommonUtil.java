@@ -1,6 +1,8 @@
 package com.scareers.utils;
 
 import cn.hutool.core.date.*;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -16,6 +18,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.List;
@@ -555,5 +558,26 @@ public class CommonUtil {
         ManiLog.put(content, Color.pink);
     }
 
+    /*
+     * 文件相关
+     */
+
+    /**
+     * 给定 classpath 路径下的 文件/文件夹 名称, 返回 对应文件/文件夹 的完整路径字符串, 带盘符
+     * 若不存在, 则返回null
+     *
+     * @param partPath
+     * @return
+     */
+    public static String getFullPathOfClassPathFileOrDir(String partPath) {
+        try {
+            URL resource = ResourceUtil.getResource(partPath);
+            return resource.getPath().substring(1);
+        } catch (IORuntimeException e) {
+            e.printStackTrace();
+            notifyError("classpath 下不存在文件/文件夹: " + partPath);
+            return null;
+        }
+    }
 
 }
