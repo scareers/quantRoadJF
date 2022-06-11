@@ -13,10 +13,12 @@ import com.scareers.gui.ths.simulation.interact.gui.model.DefaultListModelS2;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
+import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartKLine;
 import joinery.DataFrame;
 import lombok.Data;
 import org.jdesktop.swingx.JXList;
+import org.jfree.chart.JFreeChart;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -395,7 +397,7 @@ public class SmartFindDialog extends JDialog {
                                             SecurityBeanEm beanEm = dynamicKLineChart.getBeanEm();
                                             DataFrame<Object> fs1mDf = EastMoneyDbApi // 分时图数据拿到了
                                                     .getFs1MV2ByDateAndQuoteId(dateStr, beanEm.getQuoteId());
-
+                                            JFreeChart chart = EmChartFs.createFs1MV2OfEm(fs1mDf, null, true);
                                         }
                                     }
                                 }
