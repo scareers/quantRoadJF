@@ -650,7 +650,8 @@ public class ChartUtil {
         return dataset;
     }
 
-    public static DecimalFormat decimalFormatForPercent = new DecimalFormat();
+    public static DecimalFormat decimalFormatForPercent = new DecimalFormat("####0.00%");
+//    public static DecimalFormat decimalFormatForPercent = new DecimalFormat("####0.00%");
 
     static {
         decimalFormatForPercent.applyPattern("####0.00%");

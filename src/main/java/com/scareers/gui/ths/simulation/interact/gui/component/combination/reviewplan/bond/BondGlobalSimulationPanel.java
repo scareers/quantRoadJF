@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -329,7 +330,7 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton openAccountButton; // 打开账户按钮! -f12
 
     volatile ReviseAccountWithOrder account; // 账户对象, 点击开始按钮首次实例化! 见开始按钮的回调
-    final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁
+    public static final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁
 
     ThreadPoolExecutor poolExecutorForKLineUpdate = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
@@ -480,6 +481,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                                                     getReviseDateStrSettingHMS(), "", accountInitMoney);
                             CommonUtil.notifyKey("账户已经重新初始化");
                         }
+                        ReviseAccountWithOrderDao.saveOrUpdateBean(account); // 首次保存!
                         revisePausing = false;
                         CommonUtil.notifyKey("复盘开始");
 
@@ -509,6 +511,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                                         getReviseSimulationCurrentTimeStr());
                         account = accountFinal;
                     }
+                    ReviseAccountWithOrderDao.saveOrUpdateBean(account); // 停止时保存!
                 }
             }
         });
@@ -629,8 +632,9 @@ public class BondGlobalSimulationPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (accountInfoDialog == null) {
-                    accountInfoDialog = new AccountInfoDialog(TraderGui.INSTANCE, "账户-- xx", AccountInfoDialog.modalS,
-                            temp, account);
+                    accountInfoDialog = AccountInfoDialog
+                            .getInstance(TraderGui.INSTANCE, "账户-- xx", AccountInfoDialog.modalS,
+                                    temp);
                 }
                 accountInfoDialog.setVisible(true);
             }
@@ -1136,17 +1140,26 @@ public class BondGlobalSimulationPanel extends JPanel {
         return buyButton;
     }
 
+    /**
+     * sleep赋予了一定随机性, 模拟现实成交的时间随机性
+     *
+     * @param notClinchReason
+     * @param red
+     * @param s
+     */
     public void notifyOrderClinchResult(String notClinchReason, Color red, String s) {
         dummyBuySellInfoLabel.setForeground(red);
         dummyBuySellInfoLabel.setText(s);
         dummyDialogWhenBuySell.setVisible(true);
-        ThreadUtil.sleep(dummyBuySellOperationSleep);
+        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyBuySellOperationSleep * 0.6),
+                (int) (dummyBuySellOperationSleep * 1.2)));
         dummyDialogWhenBuySell.setVisible(false);
-        ThreadUtil.sleep(dummyClinchOccurSleep);
+        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyClinchOccurSleep * 0.5),
+                (int) (dummyClinchOccurSleep * 1.4)));
         if (notClinchReason == null) {
             playClinchSuccessSound();
         } else {
-//                                    playClinchFailSound();
+            playClinchFailSound();
         }
         CommonUtil.notifyInfo(account.getOrderFinalClinchDescription());
     }

@@ -55,7 +55,7 @@ public class BondReviseUtil {
     public static final String nuclearKeyBoardSettingOfThs = "ths/nuclear/nuclear/raw"; // 核按钮键盘配置文件 -- classpath中路径 --    // 同花顺原配置
     public static final String nuclearKeyBoardSettingOfRevise = "ths/nuclear/nuclear/revise"; // 核按钮键盘配置文件 -- classpath中路径 -- 复盘时使用配置
     public static final long dummyBuySellOperationSleep = 400; // 模拟交易的弹窗持续的时间
-    public static final long dummyClinchOccurSleep = 2000; // 模拟买卖后, 到成交时间,大约sleep多久, 在上个sleep之后
+    public static final long dummyClinchOccurSleep = 1500; // 模拟买卖后, 到成交时间,大约sleep多久, 在上个sleep之后
 
     public static void main(String[] args) {
 //        playClinchSuccessSound();
