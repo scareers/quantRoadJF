@@ -520,6 +520,9 @@ public class EmChartKLine {
             candlestickRender.setDownPaint(downColorKLine);//设置股票下跌的K线图颜色
             candlestickRender.setUseOutlinePaint(false);
 
+            candlestickRender.setSeriesStroke(0, new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.f,
+                    null, 0));
+
 //            candlestickRender.setBaseFillPaint(Color.orange);
 //            candlestickRender.setBasePaint(Color.orange);
 //            candlestickRender.setAutoPopulateSeriesFillPaint(false);

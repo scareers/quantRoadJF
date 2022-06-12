@@ -198,7 +198,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
             int y = TraderGui.INSTANCE.getY() + 53; // 菜单栏高度+gui标题栏高度大概
 //            flushLocation(parentPanel.getX(), parentPanel.getY());
             if (BondReviseUtil.infoRightAndFsLeft) { // 如果信息栏在右, 还需要-信息栏宽度
-                x -= BondReviseUtil.tick3sLogPanelWidth;
+                x = x-BondReviseUtil.tick3sLogPanelWidth+78; // 80合适
             }
 
             flushLocation(x, y);
