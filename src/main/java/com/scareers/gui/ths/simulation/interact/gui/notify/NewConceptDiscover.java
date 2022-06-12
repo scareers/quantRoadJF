@@ -98,7 +98,8 @@ public class NewConceptDiscover {
                             @Override
                             public void run() {
                                 notifyNewConceptDiscoveredWithBond(thsConcepts.stream().filter(
-                                        newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
+                                        newConcept -> collect.contains(newConcept.getName()))
+                                        .collect(Collectors.toList())
                                 );
                             }
                         }, true);
@@ -133,7 +134,8 @@ public class NewConceptDiscover {
                             @Override
                             public void run() {
                                 notifyNewConceptDiscoveredWithBond(emConcepts.stream().filter(
-                                        newConcept -> collect.contains(newConcept.getName())).collect(Collectors.toList())
+                                        newConcept -> collect.contains(newConcept.getName()))
+                                        .collect(Collectors.toList())
                                 );
                             }
                         }, true);
@@ -156,7 +158,7 @@ public class NewConceptDiscover {
      * 发现新概念时的 提示函数, 可打印日志, 语音播报, 发送邮件, print 等等. 需要传递内容
      */
     private static void notifyNewConceptDiscovered(String content) {
-        Tts.playSound(content, true);
+        Tts.playSound(content, true, false);
         log.info(content);
         try {
             ManiLog.put(content);
@@ -206,11 +208,7 @@ public class NewConceptDiscover {
 
                 // 带债提示: log
                 log.warn(content);
-                try {
-                    ManiLog.put(content);
-                } catch (Exception e) {
-
-                }
+                ManiLog.put(content);
             }
         }
     }
@@ -298,7 +296,7 @@ public class NewConceptDiscover {
                 DataFrame<Object> dataFrame = EmQuoteApi.getBkMembersQuote(bk, 3000, 2);
                 includeStockCodes = DataFrameS.getColAsStringList(dataFrame, "资产代码");
             } else if (source.equals(ConceptSource.THS)) {
-                DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念包含"+name, WenCaiApi.TypeStr.ASTOCK);
+                DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念包含" + name, WenCaiApi.TypeStr.ASTOCK);
                 if (dataFrame != null) {
                     try {
                         includeStockCodes = DataFrameS.getColAsStringList(dataFrame, "code"); // code列是股票简易代码
@@ -399,7 +397,7 @@ public class NewConceptDiscover {
 
             // 访问问财最新数据计算, 今日和上一交易日最新概念
             HashSet<String> set1 = ThsDbApi.getAllConceptNameByDate(dateStrList.get(dateStrList.size() - 2)); // 上一
-            DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念",1,WenCaiApi.TypeStr.ASTOCK);
+            DataFrame<Object> dataFrame = WenCaiApi.wenCaiQuery("所属概念", 1, WenCaiApi.TypeStr.ASTOCK);
 
             List<String> conceptCol = DataFrameS.getColAsStringList(dataFrame, "所属概念");// 分号分割
             HashSet<String> set2 = new HashSet<>(); // 此刻最新

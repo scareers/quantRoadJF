@@ -183,7 +183,7 @@ public class EmChartFs {
     public static class DynamicEmFs1MV2ChartForRevise {
         public static double redundancyPriceRangePercent = 0.01; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
         public static int redundancyPutDataAmount = 20; // 首次put时, 多添加历史n条数据
-        public static int tickLogPanelWidthDefault = 402; // tick打印面板的总宽度,含滚动条
+        public static int tickLogPanelWidthDefault = 420; // tick打印面板的总宽度,含滚动条
 
         // 基本属性
 

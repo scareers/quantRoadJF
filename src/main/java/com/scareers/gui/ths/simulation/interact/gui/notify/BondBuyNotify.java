@@ -27,6 +27,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.collections.functors.FalsePredicate;
 
 import java.awt.*;
 import java.util.List;
@@ -126,6 +127,7 @@ public class BondBuyNotify {
             algorithmChain.add(new SingleAmountAlgorithm());
 //            algorithmChain.add(new ChgPctAlgorithm());
             CommonUtil.notifyKey("播报程序进入主循环, 环境: 实盘环境");
+            Tts.playSound("播报开始", true, false);
 
             while (true) {
                 if (!broadcastRunning) { // 被停止
@@ -188,7 +190,7 @@ public class BondBuyNotify {
             // Console.log(bondPoolSet);
 
             String reviseDateStr = getReviseDateStr();
-
+            Tts.playSound("播报开始", true, false);
             while (true) {
                 if (!broadcastRunning) { // 被停止
                     break;

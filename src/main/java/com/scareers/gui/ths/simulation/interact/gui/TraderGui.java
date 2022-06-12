@@ -340,6 +340,9 @@ public class TraderGui extends JFrame {
 
 
     FuncTreeWindow funcTreeWindow;
+    public FuncButton objectsBtn;
+    public FuncButton maniLogFunc;
+    public FuncButton logsFunc;
     // AnalyzeRealtimeWindow analyzeRealtimeWindow;
     static volatile Trader trader;
 
@@ -363,7 +366,9 @@ public class TraderGui extends JFrame {
                 mainDisplayWindow.show();
 
 
-                FuncButton logsFunc = ButtonFactory.getButton("日志输出");
+                logsFunc = ButtonFactory.getButton("日志输出");
+                logsFunc.registerKeyboardAction(e1 -> logsFunc.doClick(), LOGS_BTN,
+                        JComponent.WHEN_IN_FOCUSED_WINDOW);
                 corePanel.registerFuncBtnWithoutFuncFrame(logsFunc, FuncFrameS.Type.BOTTOM_LEFT);
                 logsFunc.addActionListener(new ActionListener() {
                     @Override
@@ -388,7 +393,9 @@ public class TraderGui extends JFrame {
 
                 // ManipulateLogWindow
 
-                FuncButton maniLogFunc = ButtonFactory.getButton("操作日志");
+                maniLogFunc = ButtonFactory.getButton("操作日志");
+                maniLogFunc.registerKeyboardAction(e1 -> maniLogFunc.doClick(), MANI_LOG_BTN,
+                        JComponent.WHEN_IN_FOCUSED_WINDOW);
                 corePanel.registerFuncBtnWithoutFuncFrame(maniLogFunc, FuncFrameS.Type.BOTTOM_LEFT);
                 maniLogFunc.addActionListener(new ActionListener() {
                     @Override
@@ -434,7 +441,7 @@ public class TraderGui extends JFrame {
                     }
                 });
 
-                FuncButton objectsBtn = ButtonFactory.getButton("功能树", true);
+                objectsBtn = ButtonFactory.getButton("功能树", true);
                 // objectsBtn.setMnemonic(KeyEvent.VK_O);
                 objectsBtn.registerKeyboardAction(e1 -> objectsBtn.doClick(), OBJECT_TREE_KS,
                         JComponent.WHEN_IN_FOCUSED_WINDOW);

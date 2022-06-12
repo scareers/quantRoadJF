@@ -823,6 +823,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         panelLeft = new JPanel();
         panelLeft.setLayout(new BorderLayout());
         panelLeft.setPreferredSize(new Dimension(jListWidth, 2048));
+        panelLeft.setBackground(Color.black);
 
         // 1.上功能区
         initFunctionPanel();
@@ -869,11 +870,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         functionPanel = new JPanel();
         functionPanel.setPreferredSize(new Dimension(jListWidth, 250));
         functionPanel.setLayout(new BorderLayout());
+        functionPanel.setBackground(Color.black);
 
         // 1.转债信息显示
         bondInfoPanel = new SelectBeanDisplayPanel();
+        bondInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red,1));
         bondInfoPanel.setPreferredSize(new Dimension(jListWidth, 100));
         functionPanel.add(bondInfoPanel, BorderLayout.NORTH);
+        bondInfoPanel.setBackground(Color.black);
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();

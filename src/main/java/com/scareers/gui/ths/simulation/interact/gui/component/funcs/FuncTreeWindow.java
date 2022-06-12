@@ -1,6 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.funcs;
 
 import cn.hutool.core.io.resource.ResourceUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.accountstate.AccountStatesDisplayPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.order.OrderListAndDetailPanel;
@@ -344,7 +345,18 @@ public class FuncTreeWindow extends FuncFrameS {
                 .showInMainDisplayWindow();
         if (TraderGui.INSTANCE != null) { // 切换gui功能状态
             TraderGui.INSTANCE.setFunctionGuiCurrent(TraderGui.FunctionGuiCurrent.BOND_REVISE);
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    ThreadUtil.sleep(1000);
+                    TraderGui.INSTANCE.objectsBtn.doClick(); // 关闭侧边栏
+                }
+            }, true);
         }
+
+        // CTRL+Z 点击
+
+
     }
 
 
