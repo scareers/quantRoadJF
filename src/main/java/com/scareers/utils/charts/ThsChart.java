@@ -85,8 +85,8 @@ public class ThsChart {
 
     // 分时图形状控制!
     public static final int gapOfTwoPlotOfFs = 0; // 分时价格和成交量,两个图的gap
-    public static final int weight1OfTwoPlotOfFs = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
-    public static final int weight2OfTwoPlotOfFs = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
+    public static final int weight1OfTwoPlotOfFs = 650; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
+    public static final int weight2OfTwoPlotOfFs = 200; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
     public static void main(String[] args) {

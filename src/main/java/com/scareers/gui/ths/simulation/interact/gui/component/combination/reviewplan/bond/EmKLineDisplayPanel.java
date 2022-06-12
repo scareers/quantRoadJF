@@ -33,7 +33,7 @@ import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.C
 @Setter
 @Getter
 public class EmKLineDisplayPanel extends DisplayPanel {
-    public static final int preferHeight = 300;
+    public static final int preferHeight = 375;
     public static final int infoPanelWidth = 62; // 信息显示panel宽度, 同花顺62
     public static final Color infoLabelColor = new Color(192, 192, 192); // 文字颜色, 偏灰白, 同 同花顺
     public static final Color upColor = new Color(255, 50, 50); // 上升红色
@@ -123,7 +123,7 @@ public class EmKLineDisplayPanel extends DisplayPanel {
 
         // 将信息面板放进对话框,
         infoDialog = new InfoDialog("信息", false, this, new Dimension(infoPanelWidth,
-                preferHeight + 20));
+                preferHeight - 1));
         infoDialog.setContentPane(jPanelOfCurrentKLineInfo);
         TraderGui.INSTANCE.addComponentListener(new ComponentAdapter() {
             @Override
@@ -195,10 +195,10 @@ public class EmKLineDisplayPanel extends DisplayPanel {
                     TraderGui.INSTANCE.getWidth() - TraderGui.INSTANCE.getCorePanel().getRightTools()
                     .getWidth() - (int) defaultDimension.getWidth()
                     - 8; // 8为修正值
-            int y = TraderGui.INSTANCE.getY() + 53; // 菜单栏高度+gui标题栏高度大概
+            int y = TraderGui.INSTANCE.getY() + TraderGui.INSTANCE.getHeight() - preferHeight - 58; // 菜单栏高度+gui标题栏高度大概
 //            flushLocation(parentPanel.getX(), parentPanel.getY());
             if (BondReviseUtil.infoRightAndFsLeft) { // 如果信息栏在右, 还需要-信息栏宽度
-                x = x-BondReviseUtil.tick3sLogPanelWidth+78; // 80合适
+                x = x - BondReviseUtil.tick3sLogPanelWidth + 78; // 80合适
             }
 
             flushLocation(x, y);

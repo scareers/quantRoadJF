@@ -69,8 +69,8 @@ public class EmChartKLine {
     public static Color bgColorKLine = new Color(7, 7, 7);
     //    public static Color bgColorKLine = Color.white;
     public static int gapOfTwoPlotOfKLine = 0; // 分时价格和成交量,两个图的gap
-    public static final int weight1OfTwoPlotOfKLine = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
-    public static final int weight2OfTwoPlotOfKLine = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
+    public static final int weight1OfTwoPlotOfKLine = 650; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
+    public static final int weight2OfTwoPlotOfKLine = 200; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
     // 分时价格线和均线

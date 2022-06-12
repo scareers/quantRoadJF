@@ -293,11 +293,12 @@ public class BondBuyNotify {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    // todo: 播报选择.
                     // 获取最高优先级消息
                     if (message != null) {
                         if (!message.isExpired(getCurrentMills())) { // 消息未过期;
                             notifyInfoCommon(message.getInfoLong());
-                            Tts.playSound(message.getInfoShort(), false); // 纺织堆积!
+                            Tts.playSound(message.getInfoShort(), true, true); // 纺织堆积!
                         } else { // 已过期消息, 将仅仅 醒目log一下
                             notifyInfoError("过期消息: " + message.getInfoLong());
                         }

@@ -81,8 +81,8 @@ public class SmartFindDialog extends JDialog {
     /*
     静态数据
      */
-    public static int widthDefault0 = 300;
-    public static int heightDefault0 = 450;
+    public static int widthDefault0 = 350;
+    public static int heightDefault0 = 525;
     public static HashSet<Integer> smartFinderStartKeySet; // A-Z, 0-9; 监听到这些键, 才开启 一次只能查找! 初始化后一般不变
 
     static {
@@ -212,6 +212,8 @@ public class SmartFindDialog extends JDialog {
         findInput.getDocument().addDocumentListener(findInput);
         findInput.setText("测试内容");
         findInput.setPreferredSize(new Dimension(widthDefault0, 40));
+        findInput.setForeground(Color.black);
+        findInput.setFont(new Font("宋体", Font.BOLD,20));
         findInput.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -255,7 +257,7 @@ public class SmartFindDialog extends JDialog {
         findResList = buildResList();
         initJListWrappedJScrollPane();
         findResList.setBorder(BorderFactory.createLineBorder(Color.red, 1));
-
+        contentPanel.setBackground(Color.white);
         contentPanel.add(findInput, BorderLayout.NORTH);
         contentPanel.add(findResList, BorderLayout.CENTER);
     }
@@ -267,7 +269,7 @@ public class SmartFindDialog extends JDialog {
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setViewportView(findResList); // 滚动包裹转债列表
-        jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
+        jScrollPaneForList.getViewport().setBackground(Color.white);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
     }
@@ -285,7 +287,11 @@ public class SmartFindDialog extends JDialog {
         model.flush(Collections.emptyList());
         JXList jList = new JXList(model);
         jList.setCellRenderer(new ResCellRendererS()); // 设置render
-        jList.setForeground(COLOR_GRAY_COMMON);
+        jList.setForeground(Color.yellow);
+        jList.setFont(new Font("楷体", Font.PLAIN,18));
+        jList.setSelectionBackground(new Color(141,215,254));
+        jList.setSelectionForeground(Color.red);
+        jList.setBackground(Color.white);
 
         jList.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
         jList.setBackground(COLOR_THEME_MAIN);

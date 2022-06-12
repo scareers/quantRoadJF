@@ -104,8 +104,8 @@ public class EmChartFs {
 
     // 分时图形状控制!
     public static final int gapOfTwoPlotOfFs = 0; // 分时价格和成交量,两个图的gap
-    public static final int weight1OfTwoPlotOfFs = 4; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
-    public static final int weight2OfTwoPlotOfFs = 1; // 两大weight+gap, 可以绝对判定 鼠标位置!
+    public static final int weight1OfTwoPlotOfFs = 650; // 两大weight, 控制 分时价格图 和成交量图, 高度比例
+    public static final int weight2OfTwoPlotOfFs = 200; // 两大weight+gap, 可以绝对判定 鼠标位置!
 
 
     public static void main(String[] args) throws Exception {
@@ -181,8 +181,8 @@ public class EmChartFs {
     @Data
     @NoArgsConstructor
     public static class DynamicEmFs1MV2ChartForRevise {
-        public static double redundancyPriceRangePercent = 0.01; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
-        public static int redundancyPutDataAmount = 20; // 首次put时, 多添加历史n条数据
+        public static double redundancyPriceRangePercent = 0.005; // 价格上下限, 比最高最低价, 多出来的部分; 使得图表上下限更明显
+        public static int redundancyPutDataAmount = 50; // 首次put时, 多添加历史n条数据
         public static int tickLogPanelWidthDefault = 420; // tick打印面板的总宽度,含滚动条
 
         // 基本属性
@@ -1079,6 +1079,7 @@ public class EmChartFs {
             } catch (Exception e) {
             }
         }
+
 
         /**
          * 分时成交更新时, 刷新最高最低; 它需要提供最新 price

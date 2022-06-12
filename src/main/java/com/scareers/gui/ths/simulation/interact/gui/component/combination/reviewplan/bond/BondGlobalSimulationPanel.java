@@ -142,7 +142,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         JPanel panelTemp = new JPanel(); // 总容器, 上为新增k线折叠面板, 下为原分时图主面板
         panelTemp.setLayout(new BorderLayout());
-        panelTemp.add(klineCollapsiblePane, BorderLayout.NORTH); // 可折叠展示k线, 放在南边
+        panelTemp.add(klineCollapsiblePane, BorderLayout.SOUTH); // 可折叠展示k线, 放在南边 *** 下
         panelTemp.add(panelMainForRevise, BorderLayout.CENTER);
         this.add(panelTemp, BorderLayout.CENTER); // 中
 
@@ -183,10 +183,9 @@ public class BondGlobalSimulationPanel extends JPanel {
         klineDisplayContainerPanel.setLayout(new GridLayout(1, 1, -1, -1)); // 4份 k线
         // 4大k线
         dailyKLineDisplayPanel = new EmKLineDisplayPanel();
-        dailyKLineDisplayPanel.setPreferredSize(new Dimension(300, 300));
+        dailyKLineDisplayPanel.setPreferredSize(new Dimension(300, EmKLineDisplayPanel.preferHeight));
         klineDisplayContainerPanel.add(dailyKLineDisplayPanel);
         klineCollapsiblePane.add("Center", klineDisplayContainerPanel);
-        klineCollapsiblePane.setAnimated(true);
         klineCollapsiblePane.setCollapsed(false); // 默认展开
     }
 
@@ -242,8 +241,22 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 3. 更新chart对象, 刷新! // 后面常态逻辑也优化到了 0-1毫秒级别
         crossLineListenerForFsXYPlot.setTimeTicks(dynamicChart.getAllFsTimeTicks()); // 保证十字线正常
         chartPanel.setChart(dynamicChart.getChart());
+
+        // 尝试更新一下
+        Double costPriceMaybe = null;
+        if (account != null && selectedBean != null) {
+            costPriceMaybe = account.getBondCostPriceMap().get(selectedBean.getSecCode());
+        }
+        List<ReviseAccountWithOrder.BuySellPointRecord> buySellPointRecords = null;
+        if (selectedBean != null) {
+            buySellPointRecords = ReviseAccountWithOrder.BSPointSavingMap
+                    .get(selectedBean.getSecCode());
+        }
+        dynamicChart.updateChartFsTrans(DateUtil.parse(getReviseSimulationCurrentTimeStr()), costPriceMaybe, buySellPointRecords); // 重绘图表
+
         chartPanel.repaint();
         chartPanel.updateUI();
+//        CommonUtil.notifyError("正常");
         if (firstAddLogPanel) {
             try {
                 panelOfTick3sLog.removeAll(); // 需要删除才能保证只有一个
@@ -427,6 +440,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         jTextFieldOfTimeRate.setForeground(Color.yellow);
         jTextFieldOfTimeRate.setPreferredSize(new Dimension(35, 40));
         jTextFieldOfTimeRate.setCaretColor(Color.red);
+
 
         // 2.主功能区!
         // 2.1. 时间选择器, 操作可绝对开始时间 reviseStartDatetime;
@@ -665,7 +679,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
             if (!reviseRunning) { // 被停止
-                labelOfRealTimeSimulationTime.setText("00:00:00");
+                // labelOfRealTimeSimulationTime.setText("00:00:00");
                 reviseRunning = false; // 保证有效
                 CommonUtil.notifyCommon("复盘已停止");
                 break; // 被停止, 则立即停止循环!
@@ -874,7 +888,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 1.转债信息显示
         bondInfoPanel = new SelectBeanDisplayPanel();
-        bondInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red,1));
+        bondInfoPanel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
         bondInfoPanel.setPreferredSize(new Dimension(jListWidth, 100));
         functionPanel.add(bondInfoPanel, BorderLayout.NORTH);
         bondInfoPanel.setBackground(Color.black);
