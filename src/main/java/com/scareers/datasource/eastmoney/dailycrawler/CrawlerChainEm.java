@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.commons.*;
+import com.scareers.datasource.eastmoney.dailycrawler.datas.pcnew.PcHotNewCrawlerEm;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm2;
@@ -40,6 +41,8 @@ public class CrawlerChainEm {
         CrawlerChainEm crawlerChainEm = new CrawlerChainEm(4, 4);
 
         // 资讯
+        crawlerChainEm.addSynCrawler(new PcHotNewCrawlerEm());// pc热门资讯
+
         crawlerChainEm.addSynCrawler(new CaiJingDaoDuCrawlerEm());
         crawlerChainEm.addSynCrawler(new ZiXunJingHuaCrawlerEm());
         crawlerChainEm.addSynCrawler(new CompanyMajorIssuesCrawlerEm()); // 最近今天公司重大事件

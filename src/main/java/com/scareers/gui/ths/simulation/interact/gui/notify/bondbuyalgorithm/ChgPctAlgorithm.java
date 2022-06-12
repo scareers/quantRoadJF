@@ -26,7 +26,7 @@ public class ChgPctAlgorithm extends BondBuyNotify.BondStateAlgorithm {
     public double buySellRate = 0.3; // 衡量 买卖方其中 一方力量 特大/大 的比率阈值
 
     public long expireMillsDefault = 1000;  // 1秒过期
-    public long priorityDefault = 1000;  // 优先级
+    public long priorityDefault = 2000;  // 优先级
 
     public ChgPctAlgorithm() {
     }

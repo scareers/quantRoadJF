@@ -32,10 +32,7 @@ import org.apache.commons.collections.functors.FalsePredicate;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
@@ -266,8 +263,11 @@ public class BondBuyNotify {
      * 会检测消息是否过期 !
      */
     public static volatile boolean startedNotifyMessages = false; // 标志是否已经开启消息消费队列
+    // 当遇到了过期的消息, 应当返还令牌, 但不返还到令牌队列中, 只增加此计数; 若此计数>0, 则计数-1,视为获取了令牌; 不从令牌队列获取
+    public static volatile int returnTokenAmount = 0;
 
     public static void startNotifyMessages() {
+        startGeneratePermitToken(); // 令牌开始生成!
         ThreadUtil.execAsync(new Runnable() {
             @Override
             public void run() {
@@ -281,13 +281,28 @@ public class BondBuyNotify {
                         if (BondGlobalSimulationPanel.getInstance() != null) {
                             if (!BondGlobalSimulationPanel.getInstance().isReviseRunning()) {
                                 messageQueue.clear(); // 清除所有积累消息
+                                allowGeneratePermitToken = false; // 禁止令牌生成,且会清空!
                                 ThreadUtil.sleep(10);
                                 continue; // 复盘环境下, 如果非running状态, 睡眠返回, 不读取消息播报!
                             }
                         }
                     }
-                    NotifyMessage message = null;
 
+
+                    if (returnTokenAmount > 0) {
+                        returnTokenAmount--; // 存货令牌减少, 否则从队列获取
+                        allowGeneratePermitToken = false; // 允许令牌生成!
+                    } else {
+                        allowGeneratePermitToken = true;
+                        try {
+                            // 阻塞获取到令牌! 才会继续进行下去; 注意 Tts.playSound第二三两个参数, true+false搭配!
+                            Object take = soundFreqLimitQueue.take();
+                        } catch (InterruptedException e) {
+                            continue;
+                        }
+                    }
+
+                    NotifyMessage message = null;
                     try {
                         message = messageQueue.take();
                     } catch (InterruptedException e) {
@@ -298,15 +313,56 @@ public class BondBuyNotify {
                     if (message != null) {
                         if (!message.isExpired(getCurrentMills())) { // 消息未过期;
                             notifyInfoCommon(message.getInfoLong());
-                            Tts.playSound(message.getInfoShort(), true, true); // 纺织堆积!
+                            Tts.playSound(message.getInfoShort(), true, false); // 纺织堆积!
                         } else { // 已过期消息, 将仅仅 醒目log一下
                             notifyInfoError("过期消息: " + message.getInfoLong());
+                            returnTokenAmount++;
                         }
                     }
                 }
             }
         }, true);
     }
+
+    /**
+     * 允许播报声音, 有一定重叠, 原实现, 为串行, 声音播报不可重叠!
+     * 改进后, 使用类似令牌桶的机制, 生成令牌到队列; 能获取到令牌才允许执行播放声音
+     * "令牌获取"机制, 很明显, 在 优先级队列获取消息, 之前执行 !!
+     */
+    public static final int permitTokenMaxAmount = 2; // 最大n个令牌在队列中, 不会一直生成
+    public static volatile boolean allowGeneratePermitToken = false; // 默认不生成令牌!
+    public static long generateSpeedOfSleep = 1500; // sleep, 越大, 令牌生成越慢; 核心设定
+    public static LinkedBlockingQueue<Object> soundFreqLimitQueue = new LinkedBlockingQueue<>(permitTokenMaxAmount);
+
+
+    /**
+     * 开始生成 许可令牌, 放入 限流队列; 核心就是 放入速度, 即 sleep越少, 放入越快!
+     */
+    public static void startGeneratePermitToken() {
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    if (allowGeneratePermitToken) {
+                        if (returnTokenAmount > 0) { // 如果有可借用的, 暂不继续生成令牌
+                            soundFreqLimitQueue.clear(); // 清空, 使得停止生成后, 不会残留; 使得下次继续时, 不会两个同时出去
+                            ThreadUtil.sleep(1); // 暂不允许生成令牌
+                        }
+                        try {
+                            soundFreqLimitQueue.put(new Object());
+                        } catch (InterruptedException e) {
+
+                        }
+                        ThreadUtil.sleep(generateSpeedOfSleep);
+                    } else {
+                        soundFreqLimitQueue.clear(); // 清空, 使得停止生成后, 不会残留; 使得下次继续时, 不会两个同时出去
+                        ThreadUtil.sleep(2); // 暂不允许生成令牌
+                    }
+                }
+            }
+        }, true);
+    }
+
 
 
 

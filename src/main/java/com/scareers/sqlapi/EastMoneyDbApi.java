@@ -4,6 +4,7 @@ import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import com.scareers.annotations.Cached;
@@ -88,6 +89,9 @@ public class EastMoneyDbApi {
 //        Console.log(timer.intervalRestart());
 //        getFsTransByDateAndQuoteId("2022-06-06", "0.000001");
 //        Console.log(timer.intervalRestart());
+
+//        List<String> x = getNewestHotEmPcNewTitleSet(20);
+//        Console.log(x);
 
         loadFs1MAndFsTransAndKLineDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
                 "2022-06-02");
@@ -664,5 +668,22 @@ public class EastMoneyDbApi {
         res = new HashSet<>(conceptCol);
         allConceptNameByDateCache.put(timeStart + timeEnd, res);
         return res;
+    }
+
+    /**
+     * 东财pc, 最新热门资讯, 从数据库获取最后爬取的 500条; 用以爬虫去重
+     * 倒序, 符合东财pc显示逻辑
+     *
+     * @return
+     */
+    public static List<String> getNewestHotEmPcNewTitleSet(int limit) {
+        String sql = StrUtil.format("select title from pc_new_hots order by pushtime desc limit {}", limit);
+        DataFrame<Object> dataFrame;
+        try {
+            dataFrame = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            return null;
+        }
+        return DataFrameS.getColAsStringList(dataFrame, "title");
     }
 }

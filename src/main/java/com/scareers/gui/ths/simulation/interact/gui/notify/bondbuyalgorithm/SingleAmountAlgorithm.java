@@ -32,7 +32,7 @@ public class SingleAmountAlgorithm extends BondBuyNotify.BondStateAlgorithm {
     // 衡量 买卖方其中 一方力量明显大 的比率阈值; 即时间窗口内买方成交量和卖方成交量, 差距很大; 正数, 买卖方自行判定
     public double windowBuySellDiffRate = 0.3;
 
-    public long expireMillsDefault = 1000;  // 1秒过期
+    public long expireMillsDefault = 2000;  // 1秒过期
     public long priorityDefault = 500;  // 优先级
 
     public SingleAmountAlgorithm() {

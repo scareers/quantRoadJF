@@ -7,6 +7,7 @@ import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.pinyin.PinyinUtil;
 import cn.hutool.log.Log;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
@@ -35,14 +36,18 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
+        String x = PinyinUtil.getPinyin("同花顺", ",");
+        Console.log(x);
+
+
 //        URL resource = ResourceUtil.getResource("ths/nuclear/nuclear/");
 //        Console.log(resource.getPath().substring(1));
 
-        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/revise");
-//        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/raw");
-        Console.log(x);
-
-        FileUtil.copyFilesFromDir(FileUtil.file(x), FileUtil.file("C:\\Users\\admin\\Desktop\\自设键盘"), true);
+//        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/revise");
+////        String x = CommonUtil.getFullPathOfClassPathFileOrDir("ths/nuclear/nuclear/raw");
+//        Console.log(x);
+//
+//        FileUtil.copyFilesFromDir(FileUtil.file(x), FileUtil.file("C:\\Users\\admin\\Desktop\\自设键盘"), true);
 
 
 //        FileUtil.copyFilesFromDir()
