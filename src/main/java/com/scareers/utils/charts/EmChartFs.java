@@ -55,6 +55,8 @@ import java.util.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_SCROLL_BAR_THUMB;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_THEME_TITLE;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.dummyBuySellOperationSleep;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.dummyClinchOccurSleep;
 import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.ReviseAccountWithOrder.prohibitCostPriceUpdateMap;
 import static com.scareers.utils.CommonUtil.waitForever;
 
@@ -693,9 +695,10 @@ public class EmChartFs {
          * @param costPriceMaybe
          */
         private void tryFlushCostPriceMarker(Double costPriceMaybe) {
-            Boolean aBoolean = prohibitCostPriceUpdateMap.get(beanEm.getSecCode());
-            if (aBoolean != null) {
-                if (aBoolean) {
+            Long lastClinchTimeStamp = prohibitCostPriceUpdateMap.get(beanEm.getSecCode()); // 最新的成交现实时间戳
+            if (lastClinchTimeStamp != null) {
+                if (System
+                        .currentTimeMillis() - lastClinchTimeStamp < (30 + dummyBuySellOperationSleep + dummyClinchOccurSleep)) {
                     return; // 刚刚成交过, 延迟1-2s再更新成本线! 模拟实盘; 延迟机制靠 LRU缓存的key过期机制
                 }
             }

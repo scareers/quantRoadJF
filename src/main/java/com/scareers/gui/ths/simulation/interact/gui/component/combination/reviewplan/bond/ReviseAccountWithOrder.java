@@ -95,8 +95,9 @@ public class ReviseAccountWithOrder {
     // 本map为 禁止更新成本价显示 的map; 当成交后, 将 转债代码:true 放入map
     // 在尝试更新成本价线时, 访问map, 如果能获取到值为true, 说明刚成交不久, 不能更新成本价线,
     // 如果获取不到, 说明key已经过期了(或者没有成交单), 则正常更新成本价线显示.
-    public static LRUCache<String, Boolean> prohibitCostPriceUpdateMap = CacheUtil
-            .newLRUCache(2048, 200 + dummyBuySellOperationSleep + dummyClinchOccurSleep);
+    // @update: 缓存过期机制有bug, 还是使用 当前时间戳靠谱; value改为当前时间戳, 在尝试更新成本价线时, 需要实时时间超过value1-2秒
+    public static LRUCache<String, Long> prohibitCostPriceUpdateMap = CacheUtil
+            .newLRUCache(2048);
 
     /**
      * 买卖点加入 静态属性map, 以记录! 一般都是按照时间先后顺序
@@ -773,7 +774,7 @@ public class ReviseAccountWithOrder {
             bsPoint.bondCode = res.targetCode;
 
             putBsPointRecord(bsPoint);
-            prohibitCostPriceUpdateMap.put(res.targetCode, true); // 成本价暂时禁止刷新map, 1-2s后key过期才可刷新!
+            prohibitCostPriceUpdateMap.put(res.targetCode, System.currentTimeMillis()); // 成本价暂时禁止刷新map, 1-2s后key过期才可刷新!
 
         }
 

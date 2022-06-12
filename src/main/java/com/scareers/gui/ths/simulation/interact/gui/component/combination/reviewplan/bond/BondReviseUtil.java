@@ -39,6 +39,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
  */
 public class BondReviseUtil {
 
+    public static final boolean infoRightAndFsLeft = true; // 控制分时在左,信息在右, 同同花顺; 否则左右反转
+
     public static final int tick3sLogPanelWidth = EmChartFs.DynamicEmFs1MV2ChartForRevise.tickLogPanelWidthDefault; // 3stick数据显示组件宽度
     public static final double timeRateDefault = 1.0; // 默认复盘时间倍率
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确

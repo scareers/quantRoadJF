@@ -81,12 +81,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         return INSTANCE;
     }
 
+
     protected volatile List<SecurityBeanEm> bondBeanList = new ArrayList<>();
     protected volatile JXTable jXTableForBonds; //  转债展示列表控件
     protected SecurityBeanEm selectedBean = null; // 被选中的转债 东财bean对象
     protected SecurityBeanEm preChangedSelectedBean = null; // 此前被选中,且更新过fs图对象, 当新的等于它时, 将不重新实例化动态图表对象
     protected int jListWidth; // 列表宽度, 例如300
     protected MainDisplayWindow mainDisplayWindow; // 主显示区
+
 
     JPanel panelLeft; // 左panel, 显示列表和搜索等. 列表在下, 各种功能按钮组在上!
     JPanel panelMainForRevise; // 主要的复盘区域panel, 在右
@@ -112,7 +114,11 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 1.左panel 初始化和组装
         buildLeftPanel();
-        this.add(panelLeft, BorderLayout.WEST); // 左
+        if (infoRightAndFsLeft) {
+            this.add(panelLeft, BorderLayout.EAST); // 左
+        } else {
+            this.add(panelLeft, BorderLayout.WEST); // 左
+        }
 
         // @update: 使用折叠面板, 放k线图, 放在分时的上方! 新增临时面板
         // 2. 右panel
