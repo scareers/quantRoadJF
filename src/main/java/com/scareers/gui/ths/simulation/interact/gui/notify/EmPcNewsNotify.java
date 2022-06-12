@@ -62,12 +62,12 @@ public class EmPcNewsNotify {
 
 //        notifyCommonNew(); // 监控财经导读和要闻精华
 //        notifyFast724New(); // 监控7*24中重要的
-        notifyNewestHotNew(); // 最新热门资讯
+//        notifyNewestHotNew(); // 最新热门资讯
 
-//        List<EmPcNewestHotNew> newestHotEmPc = getNewestHotEmPc(40, 1);
-//        for (EmPcNewestHotNew x : newestHotEmPc) {
-//            Console.log(x.title);
-//        }
+        List<EmPcNewestHotNew> newestHotEmPc = getNewestHotEmPc(40, 1);
+        for (EmPcNewestHotNew x : newestHotEmPc) {
+            Console.log(x.source);
+        }
     }
 
     /**

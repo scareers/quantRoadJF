@@ -4,9 +4,6 @@ import java.awt.Color;//颜色系统
 import java.text.SimpleDateFormat;//时间格式
 import java.awt.Paint;//画笔系统
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.LocalDateTimeUtil;
 import org.jfree.data.time.*;
 import org.jfree.data.time.Day;
 import org.jfree.data.time.ohlc.OHLCSeries;
@@ -127,9 +124,9 @@ public class Test {
         }
 
 
-        final CandlestickRenderer candlestickRender = new CandlestickRenderer();//设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
+        final CandlestickRendererS candlestickRender = new CandlestickRendererS();//设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
         candlestickRender.setUseOutlinePaint(true); //设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
-        candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
+        candlestickRender.setAutoWidthMethod(CandlestickRendererS.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
         candlestickRender.setAutoWidthGap(0.001);//设置各个K线图之间的间隔
         candlestickRender.setUpPaint(Color.RED);//设置股票上涨的K线图颜色
         candlestickRender.setDownPaint(Color.GREEN);//设置股票下跌的K线图颜色

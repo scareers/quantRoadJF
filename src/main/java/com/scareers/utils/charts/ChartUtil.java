@@ -7,32 +7,22 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
-import com.scareers.datasource.eastmoney.SecurityBeanEm;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
-import com.scareers.datasource.ths.wencai.WenCaiDataApi;
-import com.scareers.gui.ths.simulation.strategy.adapter.state.hs.stock.StockStateHs;
 import com.scareers.pandasdummy.DataFrameS;
-import com.scareers.sqlapi.EastMoneyDbApi;
-import com.scareers.sqlapi.ThsDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import lombok.SneakyThrows;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.annotations.TextAnnotation;
 import org.jfree.chart.annotations.XYTextAnnotation;
 import org.jfree.chart.axis.*;
 import org.jfree.chart.labels.StandardXYToolTipGenerator;
-import org.jfree.chart.labels.XYToolTipGenerator;
 import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.*;
 import org.jfree.chart.urls.StandardXYURLGenerator;
-import org.jfree.chart.urls.XYURLGenerator;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.time.*;
@@ -40,17 +30,11 @@ import org.jfree.data.time.ohlc.OHLCSeries;
 import org.jfree.data.time.ohlc.OHLCSeriesCollection;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.text.TextUtilities;
 import org.jfree.ui.*;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Line2D;
-import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.IOException;
-import java.math.RoundingMode;
-import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -305,9 +289,9 @@ public class ChartUtil {
         TimeSeriesCollection timeSeriesCollection = new TimeSeriesCollection(); //保留成交量数据的集合
         timeSeriesCollection.addSeries(series2);
 
-        final CandlestickRenderer candlestickRender = new CandlestickRenderer(); // 设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
+        final CandlestickRendererS candlestickRender = new CandlestickRendererS(); // 设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
         candlestickRender.setUseOutlinePaint(true); //设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
-        candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
+        candlestickRender.setAutoWidthMethod(CandlestickRendererS.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
         candlestickRender.setAutoWidthGap(0.001);//设置各个K线图之间的间隔
         candlestickRender.setUpPaint(Color.RED);//设置股票上涨的K线图颜色
         candlestickRender.setDownPaint(Color.GREEN);//设置股票下跌的K线图颜色
@@ -486,9 +470,9 @@ public class ChartUtil {
         TimeSeriesCollection timeSeriesCollection = new TimeSeriesCollection(); //保留成交量数据的集合
         timeSeriesCollection.addSeries(series2);
 
-        final CandlestickRenderer candlestickRender = new CandlestickRenderer(); // 设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
+        final CandlestickRendererS candlestickRender = new CandlestickRendererS(); // 设置K线图的画图器，必须申明为final，后面要在匿名内部类里面用到
         candlestickRender.setUseOutlinePaint(true); //设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
-        candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
+        candlestickRender.setAutoWidthMethod(CandlestickRendererS.WIDTHMETHOD_AVERAGE);//设置如何对K线图的宽度进行设定
         candlestickRender.setAutoWidthGap(0.001);//设置各个K线图之间的间隔
         candlestickRender.setUpPaint(Color.RED);//设置股票上涨的K线图颜色
         candlestickRender.setDownPaint(Color.GREEN);//设置股票下跌的K线图颜色

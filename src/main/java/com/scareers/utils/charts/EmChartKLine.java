@@ -284,7 +284,7 @@ public class EmChartKLine {
         OHLCSeries seriesOfFourPrice = new OHLCSeries(""); // 开，高，低，收, 四项数据
         TimeSeriesCollection timeSeriesCollection;
         TimeSeries seriesOfVol;
-        CandlestickRenderer candlestickRender;
+        CandlestickRendererS candlestickRender;
         DateAxis xAxisOfDate;
         NumberAxisYSupportTickToPreClose y1Axis; // 左价格
         NumberAxisYSupportTickMultiColor y2Axis; // 右百分比
@@ -488,7 +488,7 @@ public class EmChartKLine {
         }
 
         private void initPriceCandlestickRender() {
-            candlestickRender = new CandlestickRenderer() {
+            candlestickRender = new CandlestickRendererS(true, false) {
                 @Override
                 public Paint getItemPaint(int row, int column) {
 
@@ -507,16 +507,23 @@ public class EmChartKLine {
                         return getDownPaint();
                     }
                 }
+
+
             };
             candlestickRender.setUseOutlinePaint(true); // 设置是否使用自定义的边框线，程序自带的边框线的颜色不符合中国股票市场的习惯
             candlestickRender.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_AVERAGE);// 设置如何对K线图的宽度进行设定
-            candlestickRender.setAutoWidthGap(0.5);//设置各个K线图之间的间隔: 例如0.001
-            candlestickRender.setAutoWidthFactor(0.2);//
+            candlestickRender.setAutoWidthGap(0.2);//设置各个K线图之间的间隔: 例如0.001
+            candlestickRender.setAutoWidthFactor(0.6);//
             candlestickRender.setCandleWidth(-1);//
 
             candlestickRender.setUpPaint(upColorKLine);//设置股票上涨的K线图颜色
             candlestickRender.setDownPaint(downColorKLine);//设置股票下跌的K线图颜色
             candlestickRender.setUseOutlinePaint(false);
+
+//            candlestickRender.setBaseFillPaint(Color.orange);
+//            candlestickRender.setBasePaint(Color.orange);
+//            candlestickRender.setAutoPopulateSeriesFillPaint(false);
+
         }
 
         private void initAmountSeries() {
