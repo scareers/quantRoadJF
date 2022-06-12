@@ -1,5 +1,7 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.cache.CacheUtil;
+import cn.hutool.cache.impl.LRUCache;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateTime;
@@ -24,6 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.dummyBuySellOperationSleep;
+import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.dummyClinchOccurSleep;
 
 /**
  * description: 复盘时模拟账号 + 订单;  账号和订单放入一个表之内, 账号相关列A开头,
@@ -86,6 +91,12 @@ public class ReviseAccountWithOrder {
     // @add: 买卖点记录map, 唯一; 在每次复盘开始时, 将清空!!! 以便新的订单重新填充
     // 只记录成交成功的订单; key为 转债代码; value为买卖点列表;
     public static ConcurrentHashMap<String, List<BuySellPointRecord>> BSPointSavingMap = new ConcurrentHashMap<>();
+    // @key: 成本价格线, 因为成交机制, 下单后几乎会立即显示, 不合现实, 因此
+    // 本map为 禁止更新成本价显示 的map; 当成交后, 将 转债代码:true 放入map
+    // 在尝试更新成本价线时, 访问map, 如果能获取到值为true, 说明刚成交不久, 不能更新成本价线,
+    // 如果获取不到, 说明key已经过期了(或者没有成交单), 则正常更新成本价线显示.
+    public static LRUCache<String, Boolean> prohibitCostPriceUpdateMap = CacheUtil
+            .newLRUCache(2048, 200 + dummyBuySellOperationSleep + dummyClinchOccurSleep);
 
     /**
      * 买卖点加入 静态属性map, 以记录! 一般都是按照时间先后顺序
@@ -96,6 +107,7 @@ public class ReviseAccountWithOrder {
         BSPointSavingMap.putIfAbsent(bsPoint.bondCode, new CopyOnWriteArrayList<>()); // 线程安全
         BSPointSavingMap.get(bsPoint.bondCode).add(bsPoint);
         Collections.sort(BSPointSavingMap.get(bsPoint.bondCode));
+
     }
 
 
@@ -761,6 +773,7 @@ public class ReviseAccountWithOrder {
             bsPoint.bondCode = res.targetCode;
 
             putBsPointRecord(bsPoint);
+            prohibitCostPriceUpdateMap.put(res.targetCode, true); // 成本价暂时禁止刷新map, 1-2s后key过期才可刷新!
 
         }
 

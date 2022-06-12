@@ -1162,11 +1162,13 @@ public class BondGlobalSimulationPanel extends JPanel {
         dummyBuySellInfoLabel.setForeground(red);
         dummyBuySellInfoLabel.setText(s);
         dummyDialogWhenBuySell.setVisible(true);
-        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyBuySellOperationSleep * 0.6),
-                (int) (dummyBuySellOperationSleep * 1.2)));
+//        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyBuySellOperationSleep * 0.6),
+//                (int) (dummyBuySellOperationSleep * 1.2)));
+        ThreadUtil.sleep(dummyBuySellOperationSleep);
         dummyDialogWhenBuySell.setVisible(false);
-        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyClinchOccurSleep * 0.5),
-                (int) (dummyClinchOccurSleep * 1.4)));
+//        ThreadUtil.sleep(RandomUtil.randomInt((int) (dummyClinchOccurSleep * 0.5),
+//                (int) (c * 1.4)));
+        ThreadUtil.sleep(dummyClinchOccurSleep);
         if (notClinchReason == null) {
             playClinchSuccessSound();
         } else {
