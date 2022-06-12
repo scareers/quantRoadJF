@@ -7,6 +7,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpDownloader;
 import cn.hutool.log.Log;
+import com.scareers.utils.HttpUtilS;
 import com.scareers.utils.log.LogUtil;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.Player;
@@ -43,6 +44,12 @@ import static com.scareers.utils.CommonUtil.waitForever;
 public class Tts {
     private static final Log log = LogUtil.getLogger();
     private static final Object soundLock = new Object(); // 声音不重复, 锁
+    // 超时算法: 根据内容长度, 自动调节超时; 且限制在最大最小超时之内
+    private static int defaultTimeout = 2000; // 默认超时
+    private static int maxTimeout = 5000; // 最大超时
+    private static int minTimeout = 500; // 最小超时!
+    private static int baseTimeout = 300; // 超时基数, 它将 + 内容长度 *倍率
+    private static int timeoutRateByContentLength = 200; // 毫秒; 长度为1的字符串, 给200毫秒下载时间
 
     //
     public static void main(String[] args)
@@ -57,12 +64,50 @@ public class Tts {
 //        thsAreaBkPoetryPlay(false, 500, 1, 0, 100); // 同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序
 //        thsIndustryBkPoetryPlay(false, 500, 1, 0, 100); // 同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序
 
-        playSound("同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序", true, true);
-        playSound("滴滴", true, false);
+//        playSound("同花顺地域板块 助记诗 播放, 一般均按同花顺默认排序", true, true);
+//        playSound("滴滴", true, false);
+//
+//        waitForever();
 
-        waitForever();
+
+        // https://fanyi.sogou.com/reventondc/synthesis?text=%E4%BD%A0%E5%A5%BD%E5%95%8A&speed=1&lang=zh-CHS&from=translateweb&speaker=6
+        String content = "同花顺地域板块";
+        ByteArrayOutputStream bos = null;
+        ByteArrayInputStream bis = ttsSoundCache.get(content);
+        if (bis == null) {
+            bos = new ByteArrayOutputStream(); // 输出流
+            HttpUtilS.download(
+                    StrUtil.format("https://fanyi.sogou.com/reventondc/synthesis?text={}&speed=1&lang=zh-CHS&from" +
+                                    "=translateweb&speaker=6",
+                            content), bos, false, null, calcTimeout(content));
+            bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
+            ttsSoundCache.put(content, bis);
+        }
+        bis.reset(); // 因为播放底层将读取流, 位置变化, 因此需要重置到位置0
+        playSoundCore(bis); // 有缓存将不会下载; 不可重入锁
+
+
     }
 
+    /**
+     * 超时算法, 依据内容长短确定
+     *
+     * @param content
+     * @return
+     */
+    public static int calcTimeout(String content) {
+        if (content == null) {
+            return defaultTimeout;
+        }
+        int i = baseTimeout + content.length() * timeoutRateByContentLength;
+        if (i > maxTimeout) {
+            i = maxTimeout;
+        }
+        if (i < minTimeout) {
+            i = minTimeout;
+        }
+        return i;
+    }
 
     /**
      * 同花顺行业板块 助记诗播放, 可指定 两个sleep, 和 全诗区间, 区间已经标准化, 可大于size
@@ -265,9 +310,9 @@ public class Tts {
                 try {
                     if (bis == null) {
                         bos = new ByteArrayOutputStream(); // 输出流
-                        HttpDownloader.download(
+                        HttpUtilS.download(
                                 StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
-                                        content), bos, false, null);
+                                        content), bos, false, null, calcTimeout(content));
                         bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
                         ttsSoundCache.put(content, bis);
                     }
