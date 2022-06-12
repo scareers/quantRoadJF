@@ -5,7 +5,6 @@ import cn.hutool.cache.CacheUtil;
 import cn.hutool.cache.impl.LRUCache;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpDownloader;
 import cn.hutool.log.Log;
 import com.scareers.utils.HttpUtilS;
 import com.scareers.utils.log.LogUtil;
@@ -19,12 +18,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static com.scareers.utils.CommonUtil.waitForever;
-
 /**
  * description: 搜狗和有道 免费tts API接口
  * tts: 即文字转语音, 以播放声音
- * 搜狗翻译api:
+ * 1.搜狗翻译api:
  * https://fanyi.sogou.com/reventondc/synthesis?text=%E4%BD%A0%E5%A5%BD%E5%95%8A&speed=1&lang=zh-CHS&from=translateweb&speaker=6
  * // 100不会读作一百
  * text 要转换的文本
@@ -33,10 +30,11 @@ import static com.scareers.utils.CommonUtil.waitForever;
  * lan=zh-CHS 中文
  * from 来自
  * speaker 语音类型 1-6的数字
- * 有道api: // 好听一些, 且可读出数字
+ * 2.有道api: // 好听一些, 且可读出数字
  * http://tts.youdao.com/fanyivoice?word=guizhou&le=zh&keyfrom=speaker-target
  * <p>
  * 因语音可能太多, 因此不写入到本地
+ * 3. https://dds.dui.ai/runtime/v1/synthesize?voiceId=qianranf&speed=0.9&volume=50&text=%E4%BD%A0%E5%A5%BD
  *
  * @author: admin
  * @date: 2022/2/15/015-19:53:28
@@ -68,25 +66,55 @@ public class Tts {
 //        playSound("滴滴", true, false);
 //
 //        waitForever();
-
+//        https://dds.dui.ai/runtime/v1/synthesize?voiceId=qianranf&speed=0.9&volume=50&text=%E4%BD%A0%E5%A5%BD
 
         // https://fanyi.sogou.com/reventondc/synthesis?text=%E4%BD%A0%E5%A5%BD%E5%95%8A&speed=1&lang=zh-CHS&from=translateweb&speaker=6
-        String content = "同花顺地域板块";
-        ByteArrayOutputStream bos = null;
-        ByteArrayInputStream bis = ttsSoundCache.get(content);
-        if (bis == null) {
-            bos = new ByteArrayOutputStream(); // 输出流
-            HttpUtilS.download(
-                    StrUtil.format("https://fanyi.sogou.com/reventondc/synthesis?text={}&speed=1&lang=zh-CHS&from" +
-                                    "=translateweb&speaker=6",
-                            content), bos, false, null, calcTimeout(content));
-            bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
-            ttsSoundCache.put(content, bis);
+        String content = "卡贝量拉 一百股";
+
+        usingSouGouApi();
+        usingYouDaoApi();
+        playSound(content, false, false);
+
+
+    }
+
+    private static TtsApi usingApi = TtsApi.YOU_DAO;
+
+    /**
+     * api类型
+     */
+    public enum TtsApi {
+        SOU_GOU,
+        YOU_DAO
+    }
+
+    public static void usingYouDaoApi() {
+        usingApi = TtsApi.YOU_DAO;
+    }
+
+    public static void usingSouGouApi() {
+        usingApi = TtsApi.SOU_GOU;
+    }
+
+
+    /**
+     * 给定文字内容, 返回具体使用的 api 完整url -- 使用url的核心方法
+     *
+     * @param content
+     * @return
+     */
+    private static String buildUrl(String content) {
+        String res = StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
+                content); // 默认有道
+        if (usingApi.equals(TtsApi.SOU_GOU)) {
+
+            // @key:速度1倍速正常, 调大数字极慢; speaker 1-6 有效; 6勉强
+            res = StrUtil.format("https://fanyi.sogou.com/reventondc/synthesis?text={}&speed=1&lang=zh-CHS&from" +
+                            "=translateweb&speaker=6",
+                    content);
         }
-        bis.reset(); // 因为播放底层将读取流, 位置变化, 因此需要重置到位置0
-        playSoundCore(bis); // 有缓存将不会下载; 不可重入锁
-
-
+//        System.out.println(res);
+        return res;
     }
 
     /**
@@ -106,7 +134,44 @@ public class Tts {
         if (i < minTimeout) {
             i = minTimeout;
         }
+//        System.out.println(i);
         return i;
+    }
+
+
+    /**
+     * @param content
+     * @param async   是否在子线程播放?
+     * @param lock    是否加唯一锁, 若全部声音加唯一锁, 则 声音保证不会重叠!
+     */
+    public static void playSound(String content, boolean async, boolean lock) {
+        if (async) {
+            threadPoolExecutor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    playSoundCoreTts(content, lock);
+                }
+            }, true);
+        } else {
+            playSoundCoreTts(content, lock);
+        }
+    }
+
+    /**
+     * 如果期间被其他线程改变api类型, 将使用其他api; 可靠性一般, 无伤大雅
+     *
+     * @param content
+     * @param async
+     * @param lock
+     */
+    public static void playSoundYouDao(String content, boolean async, boolean lock) {
+        usingApi = TtsApi.YOU_DAO;
+
+    }
+
+    public static void playSoundSouGou(String content, boolean async, boolean lock) {
+        usingApi = TtsApi.SOU_GOU;
+        playSound(content, async, lock);
     }
 
     /**
@@ -262,24 +327,6 @@ public class Tts {
         playSound(content, async, true);
     }
 
-    /**
-     * @param content
-     * @param async   是否在子线程播放?
-     * @param lock    是否加唯一锁, 若全部声音加唯一锁, 则 声音保证不会重叠!
-     */
-    public static void playSound(String content, boolean async, boolean lock) {
-        if (async) {
-            threadPoolExecutor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    playSoundCoreTts(content, lock);
-                }
-            }, true);
-        } else {
-            playSoundCoreTts(content, lock);
-        }
-    }
-
 
     public static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>());
@@ -297,6 +344,7 @@ public class Tts {
         }
     }
 
+
     /**
      * 从tts api, 下载的音频流, 放入缓存池; 1小时缓存, 最多512; key为播放内容
      */
@@ -310,9 +358,7 @@ public class Tts {
                 try {
                     if (bis == null) {
                         bos = new ByteArrayOutputStream(); // 输出流
-                        HttpUtilS.download(
-                                StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
-                                        content), bos, false, null, calcTimeout(content));
+                        HttpUtilS.download(buildUrl(content), bos, false, null, calcTimeout(content));
                         bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
                         ttsSoundCache.put(content, bis);
                     }
@@ -343,14 +389,12 @@ public class Tts {
             try {
                 if (bis == null) {
                     bos = new ByteArrayOutputStream(); // 输出流
-                    HttpDownloader.download(
-                            StrUtil.format("http://tts.youdao.com/fanyivoice?word={}&le=zh&keyfrom=speaker-target",
-                                    content), bos, false, null);
+                    HttpUtilS.download(buildUrl(content), bos, false, null, calcTimeout(content));
                     bis = new ByteArrayInputStream(bos.toByteArray()); // 输入流，需要源。
                     ttsSoundCache.put(content, bis);
                 }
                 bis.reset(); // 因为播放底层将读取流, 位置变化, 因此需要重置到位置0
-                playSoundCore(bis); // 有缓存将不会下载
+                playSoundCore(bis); // 有缓存将不会下载; 不可重入锁
             } catch (Exception e) {
                 log.error("audio error: 语音播放失败,内容: {}", content);
                 e.printStackTrace();
@@ -371,6 +415,7 @@ public class Tts {
                 }
 
             }
+
         }
     }
 
