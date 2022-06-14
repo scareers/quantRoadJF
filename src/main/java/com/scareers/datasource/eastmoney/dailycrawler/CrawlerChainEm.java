@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlerChainEm {
     public static void main(String[] args) {
+        main1();
+    }
+
+    public static void main1() {
         String today = DateUtil.today();
         boolean fullMode = true; // 非交易日全量更新; 主要针对 日k线数据
         try {

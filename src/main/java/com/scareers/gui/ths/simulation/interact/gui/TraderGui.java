@@ -8,6 +8,7 @@ import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
+import com.scareers.datasource.ths.dailycrawler.CrawlerChainThs;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
@@ -267,6 +268,45 @@ public class TraderGui extends JFrame {
         );
         startMenu.add(bondTtsItem4);
 
+
+        JMenuItem bondTtsItem5 = new JMenuItem("同花顺爬虫链启动");
+        bondTtsItem5.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    CrawlerChainThs.main1();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem5);
+        JMenuItem bondTtsItem6 = new JMenuItem("东财爬虫链启动");
+        bondTtsItem6.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    CrawlerChainThs.main1();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem6);
 
         startMenu.add(new JMenuItem("备用"));
 

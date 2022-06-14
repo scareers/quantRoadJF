@@ -19,6 +19,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class CrawlerChainThs {
     public static void main(String[] args) {
+        main1();
+    }
+
+    public static void main1() {
         boolean forceUpdate = true;
 
         CrawlerChainThs crawlerChainThs = new CrawlerChainThs(4, 4);
@@ -30,7 +34,6 @@ public class CrawlerChainThs {
 
 
         crawlerChainThs.run();
-
     }
 
     List<CrawlerThs> synCrawlerEms = new ArrayList<>(); // 同步爬虫, 按序run, 一般为 最基本数据. 后续爬虫会使用它们
