@@ -76,8 +76,8 @@ public class PcHotNewEm {
     private Boolean marked = false;
 
     public static List<String> allCol = Arrays
-            .asList("id", "code", "title", "digest", "simtitle", "titlecolor", "showtime", "ordertime",
-                    "pushtime", "url", "image", "author", "source", "columns", "channels",
+            .asList("id",  "pushtime", "title",  "showtime", "ordertime","digest", "simtitle", "titlecolor","code",
+                    "url", "image", "author", "source", "columns", "channels",
                     "interact", "sort", "type",
                     "briefly", "relatedObject", "trend", "remark", "lastModified", "marked"
             ); // 多了id列
@@ -93,14 +93,14 @@ public class PcHotNewEm {
         for (PcHotNewEm bean : news) {
             List<Object> row = new ArrayList<>();
             row.add(bean.getId());
-            row.add(bean.getCode());
+            row.add(bean.getPushtime());
             row.add(bean.getTitle());
+            row.add(bean.getShowtime());
+            row.add(bean.getOrdertime());
             row.add(bean.getDigest());
             row.add(bean.getSimtitle());
             row.add(bean.getTitlecolor());
-            row.add(bean.getShowtime());
-            row.add(bean.getOrdertime());
-            row.add(bean.getPushtime());
+            row.add(bean.getCode());
             row.add(bean.getUrl());
             row.add(bean.getImage());
             row.add(bean.getAuthor());

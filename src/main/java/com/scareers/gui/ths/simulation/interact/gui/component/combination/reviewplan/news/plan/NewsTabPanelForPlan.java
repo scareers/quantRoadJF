@@ -2,6 +2,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.GeneralSituationOverviewPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.NewsTabPanel;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.news.PcHotNewListPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.MainDisplayWindow;
 
 /**
@@ -27,6 +28,7 @@ public class NewsTabPanelForPlan extends NewsTabPanel {
 
     @Override
     protected void addTabs() {
+        tabbedPane.addTab("PC热门资讯", PcHotNewListPanelForPlan.getInstance(this));
         tabbedPane.addTab("资讯精华", ZiXunJingHuaPanelForPlan.getInstance(this));
         tabbedPane.addTab("财经导读", CaiJingDaoDuPanelForPlan.getInstance(this));
         tabbedPane.addTab("重大事项", MajorIssueListPanelForPlan.getInstance(this));
