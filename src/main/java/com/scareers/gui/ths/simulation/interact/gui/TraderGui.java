@@ -6,6 +6,7 @@ import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.datasource.ths.dailycrawler.CrawlerChainThs;
@@ -297,9 +298,9 @@ public class TraderGui extends JFrame {
                             @Override
                             public void run() {
                                 try {
-                                    CrawlerChainThs.main1();
+                                    CrawlerChainEm.main1();
                                 } catch (Exception ex) {
-                                    ex.printStackTrace();
+                                    ex.printStackTrace() ;
                                 }
                             }
                         }, true);
