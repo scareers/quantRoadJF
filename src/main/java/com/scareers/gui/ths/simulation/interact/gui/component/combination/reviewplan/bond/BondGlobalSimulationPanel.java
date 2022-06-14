@@ -1,11 +1,8 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
-import cn.hutool.core.date.DatePattern;
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.date.TimeInterval;
+import cn.hutool.core.date.*;
+import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -27,18 +24,18 @@ import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.charts.EmChartKLine;
 import com.scareers.utils.log.LogUtil;
-import io.netty.util.internal.NativeLibraryLoader;
 import joinery.DataFrame;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXCollapsiblePane;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
-import org.jdesktop.swingx.decorator.HighlightPredicate;
 import org.jdesktop.swingx.decorator.HighlightPredicate.ColumnHighlightPredicate;
 import org.jfree.chart.ChartPanel;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -252,7 +249,8 @@ public class BondGlobalSimulationPanel extends JPanel {
             buySellPointRecords = ReviseAccountWithOrder.BSPointSavingMap
                     .get(selectedBean.getSecCode());
         }
-        dynamicChart.updateChartFsTrans(DateUtil.parse(getReviseSimulationCurrentTimeStr()), costPriceMaybe, buySellPointRecords); // 重绘图表
+        dynamicChart.updateChartFsTrans(DateUtil.parse(getReviseSimulationCurrentTimeStr()), costPriceMaybe,
+                buySellPointRecords); // 重绘图表
 
         chartPanel.repaint();
         chartPanel.updateUI();
@@ -431,7 +429,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         labelOfRealTimeSimulationTime.setForeground(Color.green);
         labelOfRealTimeSimulationTime.setPreferredSize(new Dimension(60, 40));
         labelOfRealTimeSimulationTime.setBackground(Color.black);
-        labelOfRealTimeSimulationTime.setText("09:30:00"); // 初始!
+        labelOfRealTimeSimulationTime.setText("15:00:00"); // 初始! 未开始展示全部将
 
         // 1.4. 时间流速倍率, 默认 1.0
         jTextFieldOfTimeRate = new JTextField(String.valueOf(timeRateDefault));
@@ -460,7 +458,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                     CommonUtil.notifyError("复盘暂停中, 请点击重启!");
                     return;
                 }
-
+                // 主要目的是 将当日最新热门资讯 载入缓存!
+                BondReviseUtil.notifyNewestHotNewRevise("00:00:xx", getReviseDateStrSettingYMD());
 
                 // 此时 reviseRunning 必然为 false, 正式执行 -- 开始复盘
                 // @key3: 复盘逻辑:
@@ -519,7 +518,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         stopReviseButton.addActionListener(new ActionListener() {
             @Override
             public synchronized void actionPerformed(ActionEvent e) {
-                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 停止时, 不会改变最终的tick
+                labelOfRealTimeSimulationTime.setText("15:00:00"); // 停止时, 不会改变最终的tick
                 reviseRunning = false; // 将停止 start后 的线程中的循环
                 revisePausing = false; // 暂停flag也将恢复!
                 pauseRebootReviseButton.setText("暂停"); // 强制暂停按钮恢复暂停状态
@@ -554,7 +553,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                         CommonUtil.notifyError("复盘尚未进行, 不可暂停!");
                         return;
                     }
-
+                    // 主要目的是 将当日最新热门资讯 载入缓存!
+                    BondReviseUtil.notifyNewestHotNewRevise("00:00:xx", getReviseDateStrSettingYMD());
                     revisePausing = true; // 暂停, 正在执行的将停止, 但保留进度
                     ThreadUtil.execAsync(new Runnable() {
                         @Override
@@ -623,10 +623,12 @@ public class BondGlobalSimulationPanel extends JPanel {
             }
         });
 
+
         // 3.全部组件添加
         functionContainerMain.add(jTextFieldOfReviseStartDatetime);
         functionContainerMain.add(labelOfRealTimeSimulationTime);
         functionContainerMain.add(jTextFieldOfTimeRate);
+        addTimeTickSlider(); // 1.5: 滑块滑动,可改变设置时间!
         functionContainerMain.add(startReviseButton);
         functionContainerMain.add(stopReviseButton);
         functionContainerMain.add(pauseRebootReviseButton);
@@ -641,6 +643,111 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 5.模拟账户打开!
         initOpenAccountButton();
         functionContainerMain.add(openAccountButton);
+
+
+    }
+
+    /**
+     * 滑块, 可以秒改变复盘具体时间!
+     */
+    JSlider sliderOfReviseTimeTick;
+
+    private void addTimeTickSlider() {
+        // @noti: 滑块的所有取值, 对应 分时tick的 索引范围
+        sliderOfReviseTimeTick = new JSlider(0, allFsTransTimeTicks.size() - 1, 0);
+        sliderOfReviseTimeTick.setBackground(Color.black);
+        sliderOfReviseTimeTick.setUI(new javax.swing.plaf.metal.MetalSliderUI() {
+            @Override
+            public void paintThumb(Graphics g) {
+                //绘制指示物
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setColor(Color.red);
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2d.fillOval(thumbRect.x, thumbRect.y, thumbRect.width,
+                        thumbRect.height);//修改为圆形
+                //也可以帖图(利用鼠标事件转换image即可体现不同状态)
+                //g2d.drawImage(image, thumbRect.x, thumbRect.y, thumbRect.width,thumbRect.height,null);
+
+            }
+
+            @Override
+            public void paintTrack(Graphics g) {
+                //绘制刻度的轨迹
+                int cy, cw;
+                Rectangle trackBounds = trackRect;
+                if (slider.getOrientation() == JSlider.HORIZONTAL) {
+                    Graphics2D g2 = (Graphics2D) g;
+                    g2.setPaint(Color.black);//将背景设为黑色
+                    cy = (trackBounds.height / 2) - 2;
+                    cw = trackBounds.width;
+
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.translate(trackBounds.x, trackBounds.y + cy);
+                    g2.fillRect(0, -cy + 5, cw, cy);
+
+                    int trackLeft = 0;
+                    int trackRight = 0;
+                    trackRight = trackRect.width - 1;
+
+                    int middleOfThumb = 0;
+                    int fillLeft = 0;
+                    int fillRight = 0;
+                    //换算坐标
+                    middleOfThumb = thumbRect.x + (thumbRect.width / 2);
+                    middleOfThumb -= trackRect.x;
+
+                    if (!drawInverted()) {
+                        fillLeft = !slider.isEnabled() ? trackLeft : trackLeft + 1;
+                        fillRight = middleOfThumb;
+                    } else {
+                        fillLeft = middleOfThumb;
+                        fillRight = !slider.isEnabled() ? trackRight - 1
+                                : trackRight - 2;
+                    }
+                    //设定渐变,在这里从红色变为红色,则没有渐变,滑块划过的地方自动变成红色
+                    g2.setPaint(new GradientPaint(0, 0, Color.orange, cw, 0,
+                            Color.red, true));
+                    g2.fillRect(0, -cy + 5, fillRight - fillLeft, cy);
+
+                    g2.setPaint(slider.getBackground());
+                    g2.fillRect(10, 10, cw, 5);
+
+                    g2.setPaint(Color.orange);
+                    g2.drawLine(0, cy, cw - 1, cy);
+
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                            RenderingHints.VALUE_ANTIALIAS_OFF);
+                    g2.translate(-trackBounds.x, -(trackBounds.y + cy));
+                } else {
+                    super.paintTrack(g);
+                }
+            }
+
+        });
+
+        sliderOfReviseTimeTick.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (isReviseRunning()) {
+                    CommonUtil.notifyError("复盘进行中, 不可移动滑块,设置复盘开始时间(时分秒)");
+                    return;
+                }
+                int indexS = sliderOfReviseTimeTick.getValue(); // 索引
+                String tick = allFsTransTimeTicks.get(indexS); // 设置开始tick
+                labelOfRealTimeSimulationTime.setText(tick);
+                String rawDateTimeStr = getReviseDateStrSettingYMDHMS();
+                String newDateTimeStr = rawDateTimeStr.substring(0, 11) + tick;
+                jTextFieldOfReviseStartDatetime.setText(newDateTimeStr);
+                DateTime changedDate = DateUtil.parse(newDateTimeStr);
+                dateTimePickerOfReviseStartDatetime.setSelect(changedDate);
+                if (dynamicChart != null) {
+                    dynamicChart.updateChart(changedDate); // 尝试刷新到对应的时间!
+                }
+            }
+        });
+
+        functionContainerMain.add(sliderOfReviseTimeTick);
     }
 
     AccountInfoDialog accountInfoDialog;
@@ -662,6 +769,10 @@ public class BondGlobalSimulationPanel extends JPanel {
         });
     }
 
+
+    ThreadPoolExecutor poolExecutorForHotNewNotify = new ThreadPoolExecutor(2, 4, 100, TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
+
     /**
      * 复盘主循环逻辑
      *
@@ -679,14 +790,14 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         for (int i = finalStartIndex; i < allFsTransTimeTicks.size(); i++) {
             if (!reviseRunning) { // 被停止
-                // labelOfRealTimeSimulationTime.setText("00:00:00");
+                labelOfRealTimeSimulationTime.setText("15:00:00");
                 reviseRunning = false; // 保证有效
                 CommonUtil.notifyCommon("复盘已停止");
                 break; // 被停止, 则立即停止循环!
             }
 
             if (revisePausing) { // 被暂停
-                // labelOfRealTimeSimulationTime.setText("00:00:00"); // 实时时间得以保留!
+                labelOfRealTimeSimulationTime.setText("15:00:00"); // 实时时间得以保留!
                 revisePausing = true; // 保证有效
                 CommonUtil.notifyCommon("复盘已暂停");
                 break; // 被停止也终止循环, 等待重启!
@@ -711,6 +822,14 @@ public class BondGlobalSimulationPanel extends JPanel {
             }
             dynamicChart.updateChartFsTrans(DateUtil.parse(tick), costPriceMaybe, buySellPointRecords); // 重绘图表
             flushKlineWhenBondNotChangeAsync(); // 异步刷新当前转债k线图 -- 今日那最后一根k线
+
+            poolExecutorForHotNewNotify.submit(new Runnable() {
+                @Override
+                public void run() {
+                    BondReviseUtil.notifyNewestHotNewRevise(getReviseSimulationCurrentTimeStr(),
+                            getReviseDateStrSettingYMD());
+                }
+            }); // 尝试播报当时如果有最新资讯
 
             ThreadUtil.sleep(actualSleep); // 实际执行sleep
 
@@ -882,7 +1001,7 @@ public class BondGlobalSimulationPanel extends JPanel {
      */
     private void initFunctionPanel() {
         functionPanel = new JPanel();
-        functionPanel.setPreferredSize(new Dimension(jListWidth, 250));
+        functionPanel.setPreferredSize(new Dimension(jListWidth, 300));
         functionPanel.setLayout(new BorderLayout());
         functionPanel.setBackground(Color.black);
 
@@ -895,7 +1014,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.功能按钮列表
         JPanel buttonContainer = new JPanel();
-        buttonContainer.setLayout(new GridLayout(7, 4, 0, 0)); // 网格布局按钮
+        buttonContainer.setLayout(new GridLayout(11, 4, 0, 0)); // 网格布局按钮
         buttonContainer.setBackground(Color.black);
         buttonContainer.setBorder(BorderFactory.createLineBorder(Color.red, 1));
 
@@ -909,11 +1028,28 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.1. 8个点击改变复盘开始时间的按钮; 仅改变时分秒
         List<String> changeReviseStartTimeButtonTexts = Arrays
-                .asList("9:30:00", "10:00:00", "10:30:00", "11:00:00", "13:00:00", "13:30:00", "14:00:00", "14:30:00");
+                .asList("9:30:00", "9:45:00",
+                        "10:00:00", "10:15:00",
+                        "10:30:00", "10:45:00",
+                        "11:00:00", "11:15:00",
+                        "13:00:00", "13:15:00",
+                        "13:30:00", "13:45:00",
+                        "14:00:00", "14:15:00",
+                        "14:30:00", "14:45:00");
         for (String text : changeReviseStartTimeButtonTexts) {
             FuncButton changeReviseStartTimeButton = getChangeReviseStartTimeButton(text);
             buttonContainer.add(changeReviseStartTimeButton);
         }
+        // 2.1.2. 分钟调节4个按钮
+        buttonContainer.add(getChangeReviseStartTimeMoveMinuteButton("前1分", -1));
+        buttonContainer.add(getChangeReviseStartTimeMoveMinuteButton("前5分", -5));
+        buttonContainer.add(getChangeReviseStartTimeMoveMinuteButton("后1分", 1));
+        buttonContainer.add(getChangeReviseStartTimeMoveMinuteButton("后5分", 5));
+        // 2.1.3. 秒级别调节
+        buttonContainer.add(getChangeReviseStartTimeMoveSecondButton("前10秒", -10));
+        buttonContainer.add(getChangeReviseStartTimeMoveSecondButton("前30秒", -30));
+        buttonContainer.add(getChangeReviseStartTimeMoveSecondButton("后10秒", 10));
+        buttonContainer.add(getChangeReviseStartTimeMoveSecondButton("后30秒", 30));
 
         // 2.2. 4个点击改变复盘时间倍率的按钮
         List<String> changeReviseTimeRateButtonTexts = Arrays
@@ -1275,6 +1411,113 @@ public class BondGlobalSimulationPanel extends JPanel {
                 jTextFieldOfReviseStartDatetime // 文本框更新
                         .setText(DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATETIME_PATTERN));
                 dateTimePickerOfReviseStartDatetime.setSelect(reviseStartDatetime);// 改变选中
+
+                labelOfRealTimeSimulationTime.setText(tickHms);
+                int i = allFsTransTimeTicks.indexOf(tickHms);
+                if (i >= 0) {
+                    sliderOfReviseTimeTick.setValue(i);
+                }
+                if (dynamicChart != null) {
+                    dynamicChart.updateChart(reviseStartDatetime);
+                }
+            }
+        });
+        return changeReviseStartTimeButton;
+    }
+
+    /**
+     * 一类按钮: 点击改变复盘开始时间(仅仅时分秒) ; 改变分钟!
+     * 将调整时间! 前1分, 前5分, 后1分, 后5分
+     * 参数如上4个
+     *
+     * @param text
+     * @return
+     */
+    public FuncButton getChangeReviseStartTimeMoveMinuteButton(String text, int minuteChange) {
+        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(text);
+        changeReviseStartTimeButton.setForeground(Color.green);
+        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                if (reviseRunning) {
+                    CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
+                    return;
+                }
+
+                // 当前设定!
+                DateTime parse = DateUtil.parse(getReviseDateStrSettingYMDHMS());
+                DateTime newDateTime = DateUtil.offset(parse, DateField.MINUTE, minuteChange); // 新时间!
+                String format = DateUtil.format(newDateTime, DatePattern.NORM_TIME_PATTERN);
+                if (format.compareTo("09:30:00") < 0) {
+                    format = "09:30:00";
+                } else if (format.compareTo("15:00:00") > 0) {
+                    format = "15:00:00";
+                }
+                newDateTime = DateUtil.parse(getReviseDateStrSettingYMD() + " " + format);
+
+                // 重设复盘开始时间!
+                reviseStartDatetime = newDateTime; // 变量更新
+                jTextFieldOfReviseStartDatetime // 文本框更新
+                        .setText(DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATETIME_PATTERN));
+                dateTimePickerOfReviseStartDatetime.setSelect(reviseStartDatetime);// 改变选中
+
+                labelOfRealTimeSimulationTime.setText(format);
+                int i = allFsTransTimeTicks.indexOf(format);
+                if (i >= 0) {
+                    sliderOfReviseTimeTick.setValue(i);
+                }
+                if (dynamicChart != null) {
+                    dynamicChart.updateChart(reviseStartDatetime);
+                }
+            }
+        });
+        return changeReviseStartTimeButton;
+    }
+
+    /**
+     * 秒级改变复盘开始时间
+     * @param text
+     * @param secondChange
+     * @return
+     */
+    public FuncButton getChangeReviseStartTimeMoveSecondButton(String text, int secondChange) {
+        FuncButton changeReviseStartTimeButton = ButtonFactory.getButton(text);
+        changeReviseStartTimeButton.setForeground(Color.green);
+        changeReviseStartTimeButton.addActionListener(new ActionListener() {
+            @SneakyThrows
+            @Override
+            public synchronized void actionPerformed(ActionEvent e) {
+                if (reviseRunning) {
+                    CommonUtil.notifyError("复盘进行中,修改复盘开始日期需要先停止上次复盘!");
+                    return;
+                }
+
+                // 当前设定!
+                DateTime parse = DateUtil.parse(getReviseDateStrSettingYMDHMS());
+                DateTime newDateTime = DateUtil.offset(parse, DateField.SECOND, secondChange); // 新时间!
+                String format = DateUtil.format(newDateTime, DatePattern.NORM_TIME_PATTERN);
+                if (format.compareTo("09:30:00") < 0) {
+                    format = "09:30:00";
+                } else if (format.compareTo("15:00:00") > 0) {
+                    format = "15:00:00";
+                }
+                newDateTime = DateUtil.parse(getReviseDateStrSettingYMD() + " " + format);
+
+                // 重设复盘开始时间!
+                reviseStartDatetime = newDateTime; // 变量更新
+                jTextFieldOfReviseStartDatetime // 文本框更新
+                        .setText(DateUtil.format(reviseStartDatetime, DatePattern.NORM_DATETIME_PATTERN));
+                dateTimePickerOfReviseStartDatetime.setSelect(reviseStartDatetime);// 改变选中
+
+                labelOfRealTimeSimulationTime.setText(format);
+                int i = allFsTransTimeTicks.indexOf(format);
+                if (i >= 0) {
+                    sliderOfReviseTimeTick.setValue(i);
+                }
+                if (dynamicChart != null) {
+                    dynamicChart.updateChart(reviseStartDatetime);
+                }
             }
         });
         return changeReviseStartTimeButton;

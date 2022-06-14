@@ -12,6 +12,8 @@ import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.DisplayPanel;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.tools.stockplan.news.bean.PcHotNewEm;
+import com.scareers.tools.stockplan.news.bean.dao.PcHotNewEmDao;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.charts.EmChartFs;
@@ -25,6 +27,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
@@ -63,7 +66,108 @@ public class BondReviseUtil {
 
     public static void main(String[] args) {
 //        playClinchSuccessSound();
-        playClinchFailSound();
+//        playClinchFailSound();
+
+        notifyNewestHotNewRevise("06:32:48", "2022-06-14");
+    }
+
+
+    // 复盘日期字符串: 当日所有时间的 热门资讯列表 --> 推送时间tick: 新闻对象!
+    // 因开盘时间 9:30 -15:00 , 直接按照日期读取, 符合逻辑!
+    // 而复盘时, 盘前的 热门资讯阅读, 自行 查看大势资讯, (锁定大势资讯的时间, 为复盘时间即可)
+    public static ConcurrentHashMap<String, HashMap<String, PcHotNewEm>> hotNewMapOfDate = new ConcurrentHashMap<>(); // 充当数据缓存
+    public static int hotNewDelay = 2000; // 检测到最新热门资讯时, 强制延迟2s才真正提示! 模拟现实延迟
+
+
+    /**
+     * @key3 因为有模拟延迟, 请在子线程中调用!
+     * 复盘环境下, 最新热门资讯 尝试提示.
+     * 需要给定 "当前复盘时间"!
+     */
+    public static void notifyNewestHotNewRevise(String reviseTimeTick, String reviseDateStr) {
+        // 1.数据载入!
+        if (hotNewMapOfDate.get(reviseDateStr) == null) {
+            List<PcHotNewEm> newsOfThisDate;
+            try {
+                newsOfThisDate = PcHotNewEmDao.getNewsOfThisDate(reviseDateStr);
+            } catch (SQLException e) {
+                CommonUtil.notifyError("获取当日所有热门资讯失败: " + reviseDateStr);
+                return;
+            }
+            if (newsOfThisDate == null) {
+                CommonUtil.notifyError("获取当日所有热门资讯失败: " + reviseDateStr);
+                return;
+            }
+            HashMap<String, PcHotNewEm> pushTimeToBeanMap = new HashMap<>();
+            for (PcHotNewEm pcHotNewEm : newsOfThisDate) {
+                pushTimeToBeanMap.put(pcHotNewEm.getPushtime(), pcHotNewEm);
+            }
+            hotNewMapOfDate.put(reviseDateStr, pushTimeToBeanMap);
+        }
+        HashMap<String, PcHotNewEm> stringPcHotNewEmHashMap = hotNewMapOfDate.get(reviseDateStr);
+        PcHotNewEm pcHotNewEm = stringPcHotNewEmHashMap.get(reviseDateStr + " " + reviseTimeTick);
+        if (pcHotNewEm != null) { // 当前复盘时间, 恰好有最新消息!!! 应当给与提示
+            ThreadUtil.sleep(hotNewDelay);
+            Tts.playSound("热", true);
+            CommonUtil.notifyInfo("最新热门资讯:\n" + pcHotNewEm.toString()); //
+            guiNotify("最新热门资讯", pcHotNewEm);
+            ThreadUtil.sleep(3000);
+        }
+    }
+
+    /**
+     * 最新热门资讯, gui提示
+     *
+     * @param type 是财经导读或资讯精华
+     * @param item
+     */
+    public static void guiNotify(String type, PcHotNewEm item) {
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append("<html>");
+                stringBuilder.append("<h3 color=\"red\">");
+                stringBuilder.append(item.getTitle());
+                stringBuilder.append("</h3>");
+                stringBuilder.append("<br>");
+                stringBuilder.append("<p color=\"black\">");
+
+                // 分行加入
+                String content = item.getDigest();
+                int line = (int) Math.ceil(content.length() / 30.0); // 行数
+                for (int i = 0; i < line; i++) {
+                    stringBuilder.append(content, i * 30, Math.min((i + 1) * 30, content.length()));
+                    stringBuilder.append("<br>");
+                }
+
+                stringBuilder.append("</p>");
+                stringBuilder.append("<br>");
+                stringBuilder.append("<br>");
+
+                stringBuilder.append("<p color=\"red\">");
+                stringBuilder.append("--- ").append(item.getShowtime());
+                stringBuilder.append("</p>");
+                stringBuilder.append("<p color=\"red\">");
+                stringBuilder.append("--- ").append(item.getPushtime());
+                stringBuilder.append("</p>");
+                stringBuilder.append("<br>");
+                stringBuilder.append("<p color=\"red\">");
+                stringBuilder.append("--- ").append(item.getPushtime());
+                stringBuilder.append("</p>");
+                stringBuilder.append("<br>");
+                stringBuilder.append("<p color=\"red\">");
+//                <a href="url">链接文本</a>
+                stringBuilder.append(StrUtil.format("<a href=\"{}\">", item.getUrl()));
+                stringBuilder.append(item.getUrl());
+                stringBuilder.append("</a>");
+                stringBuilder.append("</p>");
+                stringBuilder.append("<br>");
+                stringBuilder.append("</html>");
+                JOptionPane
+                        .showMessageDialog(null, stringBuilder.toString(), type + "-- 新闻发现", JOptionPane.PLAIN_MESSAGE);
+            }
+        }, true);
     }
 
 
@@ -420,6 +524,9 @@ public class BondReviseUtil {
          * @return
          */
         public static String buildStrForLabelShow(List<Object> objects, List<Integer> indexes) {
+            if (objects == null) {
+                return "";
+            }
             StringBuilder stringBuilder = new StringBuilder("");
             for (Integer index : indexes) {
                 stringBuilder.append(" / "); // 最后去除

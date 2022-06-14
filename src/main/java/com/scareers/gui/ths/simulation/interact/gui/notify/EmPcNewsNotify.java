@@ -10,7 +10,11 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.datasource.eastmoney.quotecenter.EmNewsApi;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.tools.stockplan.news.bean.PcHotNewEm;
+import com.scareers.tools.stockplan.news.bean.dao.PcHotNewEmDao;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.ai.tts.Tts;
 import com.scareers.utils.log.LogUtil;
@@ -19,9 +23,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.swing.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -64,17 +70,41 @@ public class EmPcNewsNotify {
 //        notifyFast724New(); // 监控7*24中重要的
 //        notifyNewestHotNew(); // 最新热门资讯
 
-        List<EmNewsApi.EmPcNewestHotNew> newestHotEmPc = getNewestHotEmPc(40, 1);
-        for (EmNewsApi.EmPcNewestHotNew x : newestHotEmPc) {
-            Console.log(x.source);
-        }
+//        List<EmNewsApi.EmPcNewestHotNew> newestHotEmPc = getNewestHotEmPc(40, 1);
+//        for (EmNewsApi.EmPcNewestHotNew x : newestHotEmPc) {
+//            Console.log(x.source);
+//        }
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                notifyNewestHotNew();
+//            }
+//        }, true);
+//
+//        ThreadUtil.sleep(3000);
+//        notifyNewestHotNew();
+
+
+//        notifyNewestHotNewRevise("06:32:48", "2022-06-14");
+
+
     }
+
+    public static volatile boolean pcHotNewNotifyRunning = false; // 运行控制开关. 其他线程设置false, 可关闭
 
     /**
      * 东财 最新热门资讯 新闻监控主函数
      */
     public static void notifyNewestHotNew() {
-        infoLog("开始监控东财 最新热门资讯!");
+
+        if (pcHotNewNotifyRunning) {
+            CommonUtil.notifyError("东财pc最新热门资讯 监控中, 不可重复运行!");
+            return;
+        }
+
+        pcHotNewNotifyRunning = true;
+        infoLog("开始监控东财 最新热门资讯! -- 实盘环境!");
+        knownHotTitles.clear();
         // 1.载入最新100条打底
         for (int i = 1; i <= 2; i++) {
             getNewestHotEmPc(40, i).forEach(item -> knownHotTitles.add(item.getTitle()));
@@ -83,29 +113,43 @@ public class EmPcNewsNotify {
 
         int epoch = 1;
         while (true) {
-            try {
-                List<EmPcNewestHotNew> NewestHotEmPc = getNewestHotEmPc(commonPageSize, 1);
-                for (EmPcNewestHotNew item : NewestHotEmPc) {
-                    if (!knownHotTitles.contains(item.getTitle())) { // 新资讯发现
-                        Tts.playSound("热", true);
-                        knownHotTitles.add(item.getTitle()); // 已发现
-                        foundHotNews.add(item);
-                        infoLog("最新热门资讯:\n" + item.toString()); //
-//                        guiNotify("最新热门资讯", item);
-                        ThreadUtil.sleep(3000);
-                    }
+            if (BondGlobalSimulationPanel.getInstance() != null) {
+                if (BondGlobalSimulationPanel.getInstance().isReviseRunning()) {
+                    ThreadUtil.sleep(100); // 如果在复盘, 就无视我
+                    continue;
                 }
-                if (epoch % 500 == 0) {
-                    infoLog("东财新闻监控中...");
-                    epoch = 1;
-                }
-                epoch++;
-                ThreadUtil.sleep(sleepPerLoop / 4);
-            } catch (Exception e) {
-                e.printStackTrace();
-                ThreadUtil.sleep(sleepPerLoop / 4);
             }
+            if (pcHotNewNotifyRunning) {
+                try {
+                    List<EmPcNewestHotNew> NewestHotEmPc = getNewestHotEmPc(commonPageSize, 1);
+                    for (EmPcNewestHotNew item : NewestHotEmPc) {
+                        if (!knownHotTitles.contains(item.getTitle())) { // 新资讯发现
+                            Tts.playSound("热", true);
+                            knownHotTitles.add(item.getTitle()); // 已发现
+                            foundHotNews.add(item);
+                            infoLog("最新热门资讯:\n" + item.toString()); //
+//                        guiNotify("最新热门资讯", item);
+                            ThreadUtil.sleep(3000);
+                        }
+                    }
+                    if (epoch % 1000 == 0) {
+                        infoLog("东财新闻监控中...");
+                        epoch = 1;
+                    }
+                    epoch++;
+                    ThreadUtil.sleep(sleepPerLoop / 4);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    ThreadUtil.sleep(sleepPerLoop / 4);
+                }
+            } else {
+                break;
+            }
+
+
         }
+        pcHotNewNotifyRunning = false;
+        CommonUtil.notifyInfo("东财pc最新热门资讯 已停止监控!");
     }
 
 
@@ -209,12 +253,7 @@ public class EmPcNewsNotify {
     }
     // JOptionPane.showMessageDialog(null, "You input is"+str+"\n"+"ASCII is"+b, str, JOptionPane.PLAIN_MESSAGE);
 
-    /**
-     * 最新热门资讯, gui提示
-     *
-     * @param type 是财经导读或资讯精华
-     * @param item
-     */
+
     public static void guiNotify(String type, EmPcNewestHotNew item) {
         ThreadUtil.execAsync(new Runnable() {
             @Override

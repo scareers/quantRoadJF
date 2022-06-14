@@ -70,6 +70,34 @@ public class PcHotNewEmDao {
     }
 
     /**
+     * 给定日期, 返回 pushtime, 为当日的所有热门资讯! 使用 pushtime字段, 筛选 00:00:00 - 23:59:59的
+     *
+     * @param equivalenceNow
+     * @return
+     * @throws SQLException
+     */
+    public static List<PcHotNewEm> getNewsOfThisDate(String dateStr) throws SQLException {
+        // 合理计算 复盘时 应当抓取的 新闻发布 时间区间!
+        String startDateTime = dateStr + " 00:00:00";
+        String endDateTime = dateStr + " 23:59:59";
+        // hibernate API, 访问数据库
+        Session session = sessionFactory.openSession();
+        String hql = "FROM PcHotNewEm E WHERE  E.pushtime>=:startDateTime " +
+                "and E.pushtime<=:endDateTime " +
+                "ORDER BY E.pushtime DESC"; // 访问发布时间在区间内的新闻列表, 类型==1, 即财经导读
+        Query query = session.createQuery(hql);
+        query.setParameter("startDateTime", startDateTime); // 注意类型
+        query.setParameter("endDateTime", endDateTime); // 注意类型
+        List beans = query.list();
+        List<PcHotNewEm> res = new ArrayList<>();
+        for (Object bean : beans) {
+            res.add((PcHotNewEm) bean);
+        }
+        session.close();
+        return res;
+    }
+
+    /**
      * 操盘计划时, 获取 合理的时间区间的 新闻列表: 同样需要给定类型
      * 逻辑: 判定当前时间
      * 1. 判定今日是否交易日?
