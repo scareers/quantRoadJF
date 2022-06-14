@@ -9,6 +9,7 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.pinyin.PinyinUtil;
 import cn.hutool.log.Log;
+import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.utils.CommonUtil;
 import com.scareers.utils.JSONUtilS;
 import com.scareers.utils.log.LogUtil;
@@ -36,8 +37,12 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        String x = PinyinUtil.getPinyin("同花顺", ",");
-        Console.log(x);
+        String xx = EastMoneyUtil.getAsStrUseHutool("http://basic.10jqka.com.cn/000001/", null, 3000, 2);
+        Console.log(xx);
+
+
+//        String x = PinyinUtil.getPinyin("同花顺", ",");
+//        Console.log(x);
 
 
 //        URL resource = ResourceUtil.getResource("ths/nuclear/nuclear/");

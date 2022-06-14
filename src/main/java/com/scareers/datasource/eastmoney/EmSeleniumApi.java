@@ -1,6 +1,7 @@
 package com.scareers.datasource.eastmoney;
 
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.utils.log.LogUtil;
@@ -53,26 +54,20 @@ public class EmSeleniumApi {
             "新晋粉丝", "铁杆粉丝"); // 个股人气飙升榜 表头.
 
     public static void main(String[] args) {
-        setHeadless(false);
-        DataFrame<Object> dataFrame = stockPopularityRaisingList();
-//        Console.log(dataFrame.col("当前排名"));
-//        Console.log(dataFrame.col("排名较昨日变动"));
-//        Console.log(dataFrame.col("历史趋势"));
-//        Console.log(dataFrame.col("资产名称"));
-//        Console.log(dataFrame.col("涨跌额"));
-//        Console.log(dataFrame.col("新晋粉丝"));
-//        Console.log(dataFrame.col("铁杆粉丝"));
-//        Console.log(dataFrame.col("相关"));
+//        setHeadless(false);
+////        DataFrame<Object> dataFrame = stockPopularityRaisingList();
+////        Console.log(dataFrame);
+////        setHeadless(true);
+////        checkDriver(true);
+////
+////        DataFrame<Object> dataFrame2 = stockPopularityOnTheList();
+////        Console.log(dataFrame2);
+////        closeDriver();
 
-        Console.log(dataFrame);
 
-        setHeadless(true);
-        checkDriver(true);
 
-        DataFrame<Object> dataFrame2 = stockPopularityOnTheList();
-        Console.log(dataFrame2);
-        closeDriver();
     }
+
 
     /**
      * 可强制更新driver, 将关闭原driver, 打开新driver
@@ -171,6 +166,7 @@ public class EmSeleniumApi {
 
         return res;
     }
+
 
     /**
      * raising: 飙升榜前100

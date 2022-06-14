@@ -1,0 +1,2374 @@
+<!DOCTYPE HTML>
+<html>
+<head id="head">
+<title>平安银行(000001) 最新动态_F10_同花顺金融服务网</title>
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7;IE=9"/>
+<meta http-equiv="Content-Type" content="text/html; charset=gbk"/>
+<meta name="keywords" content="平安银行最新动态,平安银行公司概况,平安银行财务分析,平安银行股东研究,平安银行股本结构,平安银行公司大事,平安银行分红融资"/>
+<meta name="description" content="暂无"/>
+<!-- 券商url参数添加，落地只落broker-pcf10.html -->
+
+<script type="text/javascript" src="//s.thsi.cn/js/chameleon/chameleon.min.1655217.js"></script> <script type="text/javascript" src="//s.thsi.cn/js/chameleon/chameleon.min.1655217.js"></script> <script>
+function getUrlParams(key, url) {
+var href = url ? url : window.location.href;
+if (href.indexOf("?") < 0 && href.indexOf("#") < 0) {
+return false;
+}
+var hrefStr = href.replace(/#/g, "&");
+hrefStr = hrefStr.replace(/\?/g, "&");
+var paramsObj= {};
+hrefStr.split("&").forEach(i => {
+if (i.indexOf("=") > -1) {
+paramsObj[i.split("=")[0]] = i.split("=")[1];
+}
+});
+if (key) {
+return paramsObj[key] || false;
+} else {
+return paramsObj;
+}
+}
+
+function addParam(url, obj) {
+var str = "",res;
+for (var key in obj) {
+str += (key + "=" + obj[key]);
+}
+if (url.indexOf("?") > -1) {
+res = url.split('?').join('?' + str + '&');
+} else if (url.indexOf("#") > -1) {
+res = url.replace(/#/g, "?" + str + "#");
+} else {
+res = url + "?" + str;
+}
+return res;
+}
+
+var historyUrl = document.referrer;
+if (historyUrl) {
+var broker = getUrlParams('broker', historyUrl);
+if (broker && window.history) {
+var url = window.location.href;
+url = addParam(url, broker ? {broker: broker} : {});
+window.history.pushState('', '', url);
+}
+}
+</script>
+<!-- f10工具箱，工具函数修改，落地只落utils.html -->
+
+<script type="text/javascript" src="//s.thsi.cn/js/chameleon/chameleon.min.1655217.js"></script> <script type="text/javascript" charset="utf-8" src="//s.thsi.cn/cb?cd/website-thsc-f10-utils/1.4.8/f10-polyfill.js" crossorigin></script>
+<script type="text/javascript" charset="utf-8" src="//s.thsi.cn/cb?cd/website-thsc-f10-utils/1.4.36/thsc-f10-utils.js" crossorigin></script>
+
+<script type="text/javascript" src="//s.thsi.cn/js/chameleon/chameleon.min.1655217.js"></script> <script src="//s.thsi.cn/js/m/common/bridge.js" type="text/javascript"  crossorigin></script>
+<script id="monitor-script" api_key="ths_f10" src="//s.thsi.cn/cb?cd/website-thsc-f10-utils/1.4.28/monitor.js" crossorigin></script>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?js/common/cefapi/1.5.5/cefApi.min.js;js/basic/stock/newPcJs/common.js"></script>
+<script>
+try{
+feMonitor.setConfig(
+{
+slientDev:false,//开发环境(localhost)是否发送报错请求，默认不发送为true
+sampleRate:0.1, //采样率,可设置0-1之间，越小采集的频率越低
+isCollectPerformance:true, //是否采集性能
+title:'pc-F10'
+}
+);
+}catch(e){
+
+}
+</script>
+<style>
+.wencaibs{color:#008BFF!important;cursor:pointer;}
+.wd-tb .ptxt { word-break: break-word;}
+.comment-chart-head{color: #89a;}
+.comment-chart-head span{float: right;}
+.comment-chart-head span i{vertical-align: middle; display: inline-block; width: 20px; height: 20px;margin: 0 2px 0 6px; border-radius: 20px; overflow: hidden;}
+.comment-chart-head .imp-news{background: #da2e1f;}
+.comment-chart-head .yidong-news{background: #e3bf1a;}
+
+#ckg_table1 tr td{text-align:center}
+#ckg_table2 tr td{text-align:center}
+#ckg_table3 tr td{text-align:center}
+#ckg_table4 tr td{text-align:center}
+#ckg_table5 tr td{text-align:center}
+li{list-style-type:none;
+list-style-position:outside;}
+#jpjl-input:focus { outline: none; }
+</style>
+<!--统计页面加载时间-->
+<script type="text/javascript">
+var loadTimer= new Date().getTime();
+</script>
+<style>
+#search_cyter{
+display: block !important;
+}
+#profile .tickLabels .tickLabel{
+padding-right:12px;
+box-sizing:border-box;
+}
+.a_cursor {
+pointer: cursor;
+}
+</style>
+</head>
+<script type="text/javascript">
+
+//cookie设置
+function setReviewJumpState(state) {
+document.cookie = 'reviewJump='
++ state
++ ';path=/;domain='
++ window.location.host;
+}
+//取得对应名字cookie
+function getCookie(name) {
+var cookieValue = "";
+var search = name + "=";
+if (document.cookie.length > 0) {
+offset = document.cookie.indexOf(search);
+if (offset != -1)    {
+offset += search.length;
+end = document.cookie.indexOf(";", offset);
+if (end == -1) end = document.cookie.length;
+cookieValue = unescape(document.cookie.substring(offset, end))
+}
+}
+return cookieValue;
+}
+//栏目提前跳转
+var reviewJumpState = getCookie('reviewJump');
+if (!!reviewJumpState && reviewJumpState != 'nojump') {
+setReviewJumpState('nojump');
+window.location.href = unescape(reviewJumpState);
+} else {
+setReviewJumpState('nojump');
+}
+//动态添加link-同步-会阻塞
+function addCssByLink(url){
+document.write('<link rel="stylesheet" type="text/css"');
+document.write(' href="' + url + '">');
+}
+function isMac() {
+return /macintosh|mac os x/i.test(navigator.userAgent);
+};
+var hash = window.location.hash.substring(1);
+hashArray = hash.split('=');
+if (hashArray[0] == 'stockpage') {
+var STOCK_SKIN = 'white';
+} else {
+var STOCK_SKIN = getCookie('skin_color');
+}
+//肤色与客户端同步
+function syncClientSkin(){
+try {//取得客户端肤色
+if (isMac()) {
+return 'white';
+}
+return 'black';
+} catch(e) {}
+}
+if (!STOCK_SKIN) {
+STOCK_SKIN = syncClientSkin();
+}
+document.documentElement.setAttribute("class",STOCK_SKIN);
+if (STOCK_SKIN == 'white') {
+// addCssByLink('/f10/css/company-compare.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/company-compare-202006082100.css');
+
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/white/20200604153837/style_v4-2.css;css/basic/stock/white/20200604153837/chart_v2.min.20180110.css;css/basic/stock/white/20200604153837/dupont.css;css/basic/stock/white/20200604153837/black_v2-4.20190711.css;css/basic/stock/white/custom.min.css;css/basic/stock/white/20200604153837/operations.css;css/basic/stock/white/20200604153837/writecsskzd.min.css');
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/20200604153837/survey-w.css;css/basic/stock/20200604153837/wxgcl_mod.css;css/basic/stock/provider-w_v2.css;css/basic/stock/20200604153837/searchbar-w_v2.css;css/basic/stock/20200604153837/wccept.css;css/basic/stock/wtgfx.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/fschool/20200604153837/f_school_w.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/white/wsplpager.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/wchartsdom.css');
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/white/20200604153837/industrydata.css;css/basic/stock/white/20200604153837/main_v1-2.css;css/basic/stock/white/20200604153837/xgcl.css;css/basic/stock/white/20200604153837/courier.css;css/basic/stock/white/20200604153837/recommend.css;css/basic/stock/white/20200604153837/housedata.css;css/basic/stock/white/202005071600/20200604153837/longhu.css;css/basic/stock/white/20200604153837/operate_white.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/white/remind_white.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/index_v1.css');
+addCssByLink('//s.thsi.cn/js/home/v5/thirdpart/scrollbar/jquery.mCustomScrollbar.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/20200604153837/instition_white_v2.css');
+if (!!window.ActiveXObject&&!window.XMLHttpRequest) {
+addCssByLink('//s.thsi.cn/css/basic/stock/white/20200604153837/expression.css');
+}
+addCssByLink("//s.thsi.cn/css/basic/common/white/title.css")
+} else {
+// addCssByLink('/f10/css/company-compare.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/company-compare-202006082100.css');
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/black/20200604153837/style_v3-5.min.20200426.css;css/basic/stock/black/20200604153837/chart_v2.min.20190410.css;css/basic/stock/black/20200604153837/black_v2-4.20190711.css;css/basic/stock/black/custom.min.css;css/basic/stock/black/20200604153837/operations.css;css/basic/stock/black/20200604153837/csskzd.min.20150608.css;/css/basic/stock/20200604153837/survey.20150929.css;/css/basic/stock/provider_v2.css;/css/basic/stock/20200604153837/searchbar_v2.css;/css/basic/stock/20200604153837/ccept.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/fschool/20200604153837/f_school.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/black/splpager.20170504.css');
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/chartsdom.css;css/basic/stock/20200604153837/xgcl_mod.css;/css/basic/stock/tgfx.css');
+addCssByLink('//s.thsi.cn/cb?css/basic/stock/black/20200604153837/industrydata.css;css/basic/stock/black/20200604153837/main_v1-2.css;css/basic/stock/black/20200604153837/xgcl.css;css/basic/stock/black/20200604153837/courier.css;css/basic/stock/black/20200604153837/funcRecommend.css;css/basic/stock/black/20200604153837/dupont.css;css/basic/stock/black/202005071600/20200604153837/longhu.css;css/basic/stock/black/20200604153837/operate.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/black/remind_black.css');
+addCssByLink('//s.thsi.cn/js/home/v5/thirdpart/scrollbar/jquery.mCustomScrollbar.css');
+
+addCssByLink('//s.thsi.cn/css/basic/stock/index_v1.css');
+addCssByLink('//s.thsi.cn/css/basic/stock/20200604153837/instition_black_v2.css');
+if (!!window.ActiveXObject&&!window.XMLHttpRequest) {
+addCssByLink('//s.thsi.cn/css/basic/stock/black/20200604153837/expression.min.20140801.css');
+}
+addCssByLink("//s.thsi.cn/css/basic/common/black/title.css")
+}
+/*calendar*/
+function  minDate(){
+var data = $('#inte_json').text();
+var datajson =new Object();
+if (data) {
+data = eval('('+data+')');
+}
+for (var x in data) {
+datajson = data[x];
+}
+var minDate = datajson.year+'-'+datajson.month+'-'+datajson.day;
+return minDate;
+}
+Date.prototype.Format = function(fmt)
+{ //author: meizz
+var o = {
+"M+" : this.getMonth()+1,                 //月份
+"d+" : this.getDate(),                    //日
+"h+" : this.getHours(),                   //小时
+"m+" : this.getMinutes(),                 //分
+"s+" : this.getSeconds(),                 //秒
+"q+" : Math.floor((this.getMonth()+3)/3), //季度
+"S"  : this.getMilliseconds()             //毫
+};
+if(/(y+)/.test(fmt))
+fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+for(var k in o)
+if(new RegExp("("+ k +")").test(fmt))
+fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+return fmt;
+}
+function  displayDate(){
+var data = $('#inte_json').text();
+var date =new Array();
+var datajson =new Object();
+var i=0;
+if (data) {
+data = eval('('+data+')');
+}
+for (var x in data) {
+datajson[x] = data[x];
+dates = datajson[x].year+'-'+datajson[x].month+'-'+datajson[x].day;
+if (x==0|| date[i-1] != dates) {
+date[i] = dates;
+i++;
+}
+}
+var count =date.length;
+var date2 = new Date();
+var month =date2.getMonth()+1;
+var day =date2.getDate();
+if ((date2.getMonth()+1)>9) {
+} else {
+var month ="0"+month;
+}
+if (date2.getDate()>9) {
+} else {
+var day ="0"+day;
+}
+year = date2.getFullYear();
+date2 = year+'-'+month+'-'+day;
+var result = "['";
+for (i=0;i<count;i++) {
+if (date2 == date[i]) {
+dateArr = date2.split('-');
+newdate = new Date(new Date(dateArr[0], dateArr[1]-1,  dateArr[2])-24*60*60*1000);
+date2 = newdate.Format("yyyy-MM-dd");
+} else {
+result +=date2+"',";
+dateArr = date2.split('-');
+newdate = new Date(new Date(dateArr[0], dateArr[1]-1,  dateArr[2])-24*60*60*1000);
+date2 = newdate.Format("yyyy-MM-dd");
+i--;
+}
+}
+result = result.substr(0,result.length-1)+']';
+return result;
+}
+function showDatePicker1(color) {
+WdatePicker({
+selfCssUrl:'//s.thsi.cn/css/basic/stock/'+STOCK_SKIN+'/mydatepicker.css',
+eCont:'WdateDiv1',
+vel:'elDate1',
+minDate:minDate(),
+maxDate:'%y-%M-%d',
+onpicked:function(dp){
+$('#elDate1').text(dp.cal.getNewDateStr());
+var invalider = $(".J_calendar").find("iframe").contents().find(".WinvalidDay");
+},
+Mchanged:function(dp){
+var invalider = $(".J_calendar").find("iframe").contents().find(".WinvalidDay");
+}
+});
+}
+function showDatePicker2(color) {
+
+WdatePicker({
+selfCssUrl:'//s.thsi.cn/css/basic/stock/'+STOCK_SKIN+'/mydatepicker.css',
+eCont:'WdateDiv2',
+vel:'elDate2',
+maxDate:'%y-%M-%d',
+onpicked:function(dp){
+$('#elDate2').text(dp.cal.getNewDateStr());
+var invalider = $(".J_calendar").find("iframe").contents().find(".WinvalidDay");
+},
+Mchanged:function(dp){
+var invalider = $(".J_calendar").find("iframe").contents().find(".WinvalidDay");
+}
+});
+}
+function isIE() {
+// 判断IE浏览器及其版本
+if(document.documentMode) {
+return document.documentMode;
+}
+var userAgent = navigator.userAgent.toLowerCase();
+if (userAgent.indexOf('edge') > -1) {
+return 'edge';
+}
+return false;
+}
+// 是否是客户端且客户端内核是否是IE
+function isClientIE() {
+if (window.external && 'createObject' in window.external && window.cefQuery) {
+return false;
+}else {
+return true;
+}
+}
+// 初始化财务
+var initFinance = window.localStorage.getItem('initFinance');
+if (!initFinance) {
+window.localStorage.setItem('initFinance', 'init');
+window.localStorage.setItem('memoryPage', 'old');
+}
+// 跳转地址
+function jumpToUrl(url, name, anchor) {
+if (!url || !name) {
+return;
+}
+// 新老地址切换
+var oldPage = {
+'financen': true
+}
+var pageLocation = window.localStorage.getItem('memoryPage');
+// 如果不是客户端且客户端内核是IE
+if (isClientIE() || (pageLocation && pageLocation == 'old' && oldPage[name])) {
+location.href = url;
+return;
+}
+var code = $('#stockCode').val();
+var codeName = $('#stockName').val();
+var marketid = $('#marketId').val();
+var pageAnchor = anchor ? '&anchor=' + anchor : '';
+var host = window.location.host;
+location.href = '//' + host + '/astockpc/astockmain/index.html#/' + name + '?code=' + code + '&marketid=' + marketid + '&code_name=' + codeName + pageAnchor;
+}
+// 跳转新地址
+function jumpToNew() {
+var code = $('#stockCode').val();
+var codeName = $('#stockName').val();
+var marketid = $('#marketId').val();
+var url = window.location.href;
+var module = url.match(/\/(\w+).html?/);
+var moduleName = '';
+var host = window.location.host;
+if (module && module[1]) {
+moduleName = module[1];
+if (module[1] == 'finance') {
+moduleName = 'financen';
+}
+}
+window.TA.log('F10hs_cwfx.tyxbb.click');
+window.localStorage.setItem('memoryPage', 'new');
+setTimeout(function (){
+location.href = '//' + host + '/astockpc/astockmain/index.html#/' + moduleName + '?code=' + code + '&marketid=' + marketid + '&code_name=' + codeName;
+}, 10)
+}
+</script>
+<script type="text/javascript" charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/qdc_ad-4d60ed.js"></script>
+<link href="//s.thsi.cn/css/basic/stockph/qdc_ad-6e8683.css" rel="stylesheet" type="text/css">
+
+<body>
+<div class="votepopbox votesuccess" style="display: none">
+<div class="vpopicon"></div>
+<p class="vpoptxt fz18">谢谢您的宝贵意见</p>
+<p class="vpoptxt">您的支持是我们最大的动力</p>
+</div>
+<div class="votepopbox voteinfo" style="display: none">
+<div class="vpopicon"></div>
+<p class="vpoptxt fz18">谢谢您的支持</p>
+<p class="vpoptxt"></p>
+</div>
+<div class="wrapper">
+<!-- F10 Header Start -->
+<div class="header">
+<div class="hd">
+<div class="logo fl" id="logo_self"><a title="同花顺F10">同花顺F10</a></div>
+
+<div onclick="sendTalog('f10_click_quot')" style="width:260px; margin-left:60px; font-size:14px;cursor:pointer;margin-right:10px;display:none;text-align:center" class="fl tip " id="quotedata">
+<div  class="fl">最新价： <span style="width:40px" class="upcolor" id="zxj">--</span></div>
+<div  class="fr">涨跌幅： <span style="width:40px;" class="upcolor" id="zdf">--</span></div>
+</div>
+<span class="fr skin-change"><a href="###">换肤</a></span>
+<div class="search fr" id="search_cyter">
+<div id="updownchange" type="once" class="codeChange fl" style="display: none;">
+<a href="javascript:void(0)" class="per">上一个股</a>
+<a href="javascript:void(0)" class="next">下一个股</a>
+</div>
+<div class="fl searchbar">
+<div class="text fl">
+<input type="text" id="jpjl-input" value="输入股票名称或代码" /><!--文本框获得焦点给.searchbar添加hover类-->
+</div>
+<input type="button" value="搜索" class="btn" id="submit"/>
+</div>
+</div>
+</div>
+<div class="bd clear">
+<div class="code fl">
+<div><h1 style="margin:3px 0px 0px 0px">
+平安银行</h1></div>
+<div>
+<a href="interactive.html" tid="wdm" posid="r1c1" class="iwen" onclick="TA.log({'id':'F10_review','nj':1})">i问董秘</a>
+<h1 style="margin:3px 0px 0px 0px">
+000001						</h1>
+</div>
+</div>
+<div class="nav">
+<ul>
+<li><a href="./"              target="_self" tid="zxdt" posid="r1c3"  class="cur">最新动态</a></li>
+<li><a href="./company.html"  target="_self" tid="gszl" posid="r1c4" > 公司资料</a></li>
+<li><a href="./holder.html"   target="_self" tid="gdyj" posid="r1c5" >股东研究</a></li>
+<li><a href="./operate.html"  target="_self" tid="jyfx" posid="r1c6" > 经营分析</a></li>
+<li><a href="./equity.html"   target="_self" tid="gbjg" posid="r1c7" >股本结构</a></li>
+<li><a href="./capital.html"  target="_self" tid="zbyz" posid="r1c8" > 资本运作</a></li>
+<li><a href="./worth.html"    target="_self" tid="ylyc" posid="r1c9"  >盈利预测</a></li>
+<li><a href="./news.html"     target="_self" tid="xwgg" posid="r2c3" >新闻公告</a></li>
+<li><a href="./concept.html"  target="_self" tid="gntc" posid="r2c4" >概念题材</a></li>
+<li><a  href="javascript:void(0)"  onclick="jumpToUrl('./position.html', 'position', '');return false;"target="_self" tid="zlcc" posid="r2c5" >主力持仓</a></li>
+<li><a href="javascript:void(0)"  onclick="jumpToUrl('./finance.html', 'financen', '');return false;" target="_self" tid="cwgk" posid="r2c6" > 财务分析</a></li>
+<li><a href="javascript:void(0)"  onclick="jumpToUrl('./bonus.html', 'bonus', '');return false;" target="_self" tid="fhrz" posid="r2c7" >分红融资</a></li>
+<li><a href="./event.html"    target="_self" tid="gsds" posid="r2c8" >公司大事</a></li>
+<li><a href="./field.html"    target="_self" tid="hydb" posid="r2c9" >行业对比</a></li>
+</ul>
+</div>
+<div class="subnav">
+<ul>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="profile" taid="f10_click_profile" name="index.html#profile" href="###">公司概要							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="sick" taid="f10_click_sick" name="index.html#sick" href="###">直击疫情							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="pointnew" taid="f10_click_pointnew" name="index.html#pointnew" href="###">近期重要事件							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="compare" taid="f10_click_compare" name="index.html#compare" href="###">A股&GDR股价对比							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="news" taid="f10_click_news" name="index.html#news" href="###">新闻公告							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="finance" taid="f10_click_finance" name="index.html#finance" href="###">财务指标							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="main" taid="f10_click_main" name="index.html#main" href="###">主力控盘							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="movie" taid="f10_click_movie" name="index.html#movie" href="###">电影票房							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="material" taid="f10_click_material" name="index.html#material" href="###">题材要点							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="directional" taid="f10_click_directional" name="index.html#directional" href="###">定增融资							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="payback" taid="f10_click_payback" name="index.html#payback" href="###">龙虎榜							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="deal" taid="f10_click_deal" name="index.html#deal" href="###">大宗交易							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="margin" taid="f10_click_margin" name="index.html#margin" href="###">融资融券							</a>
+</li>
+<li>
+<a style="position:relative;height:25px;" class="skipto" type="" nav="interactive" taid="f10_click_interactive" name="interactive.html#interactive" href="###">投资者互动							</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- F10 Header End -->
+<!-- F10 Content Start -->
+<style>
+.iwc_searchbar{display: none;}
+</style>
+<div class="iwc_searchbar clearfix" style="">
+<div class="tips-box" style="display: none;">
+<div class="t-hd"></div>
+<div class="t-bd">
+<div class="info">
+<p>F10 功能找不到？在搜索框里直接输入您想要的功能！比如输入“龙虎榜”，赶快试一下哦！</p>
+<div class="btn">
+<a href="###" class="a-left close">跳过</a>
+<a href="###" class="a-right next">下一步</a>
+</div>
+</div>
+<div class="info" style="display: none;">
+<p>选股选不好？可以直接输入你想要的问句啦，比如输入“近一周涨幅超过30%的股票”赶紧行动吧！</p>
+<div class="btn">
+<a href="###" class="a-left prev">上一步</a>
+<a href="###" class="a-right close">完成</a>
+</div>
+</div>
+</div>
+<div class="t-ft"></div>
+</div>
+<div class="searchfx">
+<input id="search_input" x-webkit-speech="" x-webkit-grammar="builtin:search" lang="zh_CN" class="fillbox" autocomplete="off" type="text" value="输入问句，你想知道的都在这里">
+<input class="action_btn" id="search_submit" type="button" value="搜索">
+<span  class="tips-icon"></span>
+</div>
+</div>
+<div class="content page_event_content" >
+<!-- 公司概要 -->
+<style type="text/css">
+#norm_mgsy,#norm_mggjj,#norm_mgxjl,#norm_jlr,#norm_jzcsy,#norm_mgwfp,#norm_yysr,#norm_mgjzc,#norm_mgwfplr,#norm_xsmll,#norm_zzygf{height:200px;}
+</style>
+<div class="m_box popp_box event new_msg z102" id="profile" stat="index_profile">
+<div class="hd flow_index search_z">
+<h2>公司概要</h2>
+</div>
+<div class="bd" style="padding-bottom: 30px;">
+<table class="m_table m_table_db" style="table-layout:fixed">
+<tbody>
+<tr>
+<td width="620">
+<span class="hltip f12 fl">公司亮点：</span>
+<span class="tip f14 fl core-view-text" style="width:560px;" title="卓越领先的智能化零售银行">
+卓越领先的智能化零售银行						</span>
+</td>
+<td class="rank-td">
+<span class="hltip f12 f1">市场人气排名：</span>
+<span class="f14 popularing-rank popularing-rank" id="profileMarketBtn">
+
+</span>
+<span class="hltip f12 f1 industry-pupular-rank">行业人气排名：</span>
+<span class="f14 popularing-rank" id="profileIndustryBtn"></span>
+</td>
+</tr>
+<tr>
+<td width="620">
+<span class="hltip f12 fl">主营业务：</span>
+<span class="tip f14 fl main-bussiness-text" style="width:560px;">
+<a class='newtaid' ifjump='1'  newtaid='f10_zxdt_code-gsgy-r1c1-clickcontent-quota-zyyewu' title="经有关监管机构批准的各项商业银行业务。" href="operate.html#intro" >经有关监管机构批准的各项商业银行业务。</a>
+</span>
+</td>
+<td ><span class="hltip f12 f1">所属申万行业：</span>
+<span class="tip f14">股份制银行Ⅱ</span>
+</td>
+</tr>
+<tr>
+<td >
+<div class="hltip f12 fl iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r2c1-clickword-quota-gainian' taname='f10_stock_iwc_gnqrqm' style="width:96px;position: relative;" content="概念贴合度是指每支股票所涉及的概念与该股之间的走势贴合程度，按照其排名标注1、2、3，其中1表示此概念是与该股走势最贴合的概念，2次之，依次类推。" data-url='http://www.iwencai.com/yike/detail/auid/31280d5188b3ecd7?qs=client_f10_baike_1'>概念贴合度排名：</div>
+<div class="f14  newconcept" cont="yes" style="overflow: hidden;">
+<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-308855' title="此概念在该股票中走势贴合度排名第一" href="./concept.html?cid=308855#ifind">跨境支付（CIPS）<em class="ccept_top1"></em></a>，																																																			<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-301715' title="此概念在该股票中走势贴合度排名第二" href="./concept.html?cid=301715#ifind">证金持股<em class="ccept_top2"></em></a>，																																																			<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-303944' href="./concept.html?cid=303944#ifind">MSCI概念</a>，																																																			<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-308594' href="./concept.html?cid=308594#ifind">标普道琼斯A股</a>，																																																			<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-300900' href="./concept.html?cid=300900#ifind">融资融券</a>，																																																			<a class='newtaid'  ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickcontent-atgn-301636' href="./concept.html?cid=301636#ifind">深股通</a>																															 							<a class="alltext newtaid"   ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c1-clickxqcont-quota-gainian' style="color:#0199fa;font-size:12px;margin-left: 6px;" href="concept.html#ifind" >详情>></a>
+</div>
+</td>
+<td style="vertical-align:top">
+<div class="hltip f12 fl">财务分析：</div>
+<div class="f14" style="overflow: hidden;">
+<a   ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c2-clickcontent-quota-caiwu' href="##" class="newtaid tip fBox_trigger" tag="0">破净股</a>，                        	                        		<a   ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c2-clickcontent-quota-caiwu' href="##" class="newtaid tip fBox_trigger" tag="1">权重股</a>，                        	                        		<a   ifjump='1' newtaid='f10_zxdt_code-gsgy-r2c2-clickcontent-quota-caiwu' href="##" class="newtaid tip fBox_trigger" tag="2">一线蓝筹</a>                        	                    	</div>
+</td>
+</tr>
+<!-- 可比公司 -->
+<tr id="compareCompanyTr">
+<td colspan="2" style="padding: 0 8px;">
+<div class="compare-btn-box" id="compareBtn"><a href="###" class="f12 f1">对比>></a></div>
+<div class="compare-company-title">
+<span class="hltip f12 " id="compareCompanyTitle">可比公司<br/>()</span>
+</div>
+<div class="compare-company-list" id="compareCompanyList">
+<div class="china-company-list close">
+<span class="china-company-title" id="chinaCompanyTitle"></span>
+<span class="more-company-btn">全部</span>
+<span class="close-company-btn">收起</span>
+<span class="listing-company-num" id="listingCompanyNum">家未上市公司</span>
+<div class="company-list" id="chinaCompanyList"></div>
+<div class="company-list-all" id="chinaCompanyListAll"></div>
+</div>
+<div class="aborad-company-list close">
+<span class="china-company-title" id="abroadCompanyTitle"></span>
+<span class="more-company-btn">全部</span>
+<span class="close-company-btn">收起</span>
+<div class="company-list" id="abroadCompanyList"></div>
+<div class="company-list-all" id="abroadCompanyListAll">
+</div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<table class="m_table m_table_db mt10">
+<tbody>
+<tr>
+<td>
+<span newtaid='f10_zxdt_code-gsgy-r3c1-clickword-quota-dtshiyinglv' class="newtaid hltip f12 iwcclick" taname='f10_stock_iwc_gzgyck' data-url='http://www.iwencai.com/yike/detail/auid/2e874be2278ef2a8?qs=client_f10_baike_1'  content='总市值除以预估全年净利润，例如当前公布一季度净利润1000万，则预估全年净利润4000万。' >市盈率(动态)：</span>
+<span class="tip f12" id="dtsyl">5.331</span>
+</td>
+<td><span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r3c2-clickword-quota-eps' taname='f10_stock_iwc_gzgyck' data-url='http://www.iwencai.com/yike/detail/auid/e8047e835e78ef8f?qs=client_f10_baike_1' content='税后利润除以股本总数 。该指标综合反映公司获利能力，可以用来判断和评价管理层的经营业绩。'>每股收益：</span><span class="tip f12">0.56元</span>
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"  ifjump='1'  newtaid='f10_zxdt_code-gsgy-r3c2-clickplus-quota-eps' class="newtaid flashtab m_more popwin" targ="norm_mgsy" onclick="TA.log({'id':'f10_open_mgsy','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"0.66"],[1,"1.11"],[2,"1.40"],[3,"0.42"],[4,"0.80"],[5,"1.40"],[6,"1.73"],[7,"0.56"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u5143"]</span></a>
+
+<div class="rp_tipbox flash_tipbox none norm_mgsy" style="z-index:200;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">每股收益</strong></span><span><strong class="hltip f12 legend_label">单位：元</strong></span>
+<a href="/000001/field.html#position-0"><span class="hltip f12">同行业排名第<em class="the_rank">4</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_mgsy"></div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12" taname='f10_stock_iwc_gzgyck' >每股资本公积金：</span><span class="tip f12">4.16元</span>
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"  ifjump='1'  newtaid='f10_zxdt_code-gsgy-r3c3-clickplus-quota-mgggj' class="newtaid flashtab m_more popwin" targ="norm_mggjj" onclick="TA.log({'id':'f10_open_mgjzc','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"4.16"],[1,"4.16"],[2,"4.16"],[3,"4.16"],[4,"4.16"],[5,"4.16"],[6,"4.16"],[7,"4.16"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u5143"]</span>
+</a>
+<div class="rp_tipbox flash_tipbox none norm_mggjj" style="z-index:209;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">每股资本公积金</strong></span><span><strong class="hltip f12 legend_label">单位：元</strong></span>
+<a href="/000001/field.html#position-1"><span class="hltip f12">同行业排名第<em class="the_rank">1</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_mggjj">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12">分类：</span>
+<span class="hltip f12 newtaid iwcclick" newtaid='f10_zxdt_code-gsgy-r3c4-clickcontent-quota-devide' taname='f10_stock_iwc_gzgyck' data-url="http://www.iwencai.com/yike/detail/auid/716981f756614a79?qs=client_f10_baike_1" content="按照流通市值从大到小排名，排名在前的公司流通市值之和占A股市场总流通市值的一定比例（70%、90%）来划分大中小盘股。">
+超大盘股												</span>
+</td>
+</tr>
+<tr>
+<td>
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r4c1-clickword-quota-jtshiyinglv' taname='f10_stock_iwc_gzgyck' data-url='http://www.iwencai.com/yike/detail/auid/030cdc5aa4b28858?qs=client_f10_baike_1' content='总市值除以上年度净利润。市盈率是最常用来评估股价水平是否合理的指标之一。一般市盈率越小越好，动态市盈率小于静态市盈率说明这个股票的成长性好。'>市盈率(静态)：</span>
+<span class="tip f12" id="jtsyl">7.54</span>
+</td>
+<td>
+<span class="hltip f12">
+营业总收入：                        </span><span class="tip f12">
+462.07亿元
+同比增长10.57%
+</span>
+
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1'  newtaid='f10_zxdt_code-gsgy-r4c2-clickplus-quota-income' class="newtaid flashtab m_more popwin" targ="norm_yysr" onclick="TA.log({'id':'f10_open_yysr','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"783.28"],[1,"1165.64"],[2,"1535.42"],[3,"417.88"],[4,"846.80"],[5,"1271.90"],[6,"1693.83"],[7,"462.07"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u4ebf\u5143"]</span></a>							<div class="rp_tipbox flash_tipbox none norm_yysr" style="z-index:199;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">营业总收入</strong></span><span><strong class="hltip f12 legend_label">单位：亿元</strong></span>
+<a href="/000001/field.html#position-4"><span class="hltip f12">同行业排名第<em class="the_rank">5</em>位</span></a>								</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_yysr">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+
+<td>
+<span class="hltip f12 " taname='f10_stock_iwc_gzgyck' >每股未分配利润：</span><span class="tip f12">8.49元</span>
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1' newtaid='f10_zxdt_code-gsgy-r4c3-clickplus-quota-udpps' class="newtaid flashtab m_more popwin" targ="norm_mgwfplr" onclick="TA.log({'id':'f10_open_mgwfplr','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"6.28"],[1,"6.73"],[2,"6.76"],[3,"7.18"],[4,"7.38"],[5,"7.94"],[6,"7.96"],[7,"8.49"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u5143"]</span></a>							<div class="rp_tipbox flash_tipbox none norm_mgwfplr" style="z-index:209;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">每股未分配利润</strong></span><span><strong class="hltip f12 legend_label">单位：元</strong></span>
+<a href="/000001/field.html#position-1"><span class="hltip f12">同行业排名第<em class="the_rank">3</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_mgwfplr">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r4c4-clickword-quota-zongguben'  taname='f10_stock_iwc_gzgyck' content='总股本,包括新股发行前的股份和新发行的股份的数量的总和。'  data-url='http://www.iwencai.com/yike/detail/auid/49a7ab6c3635d98a?qs=client_f10_baike_1' >总股本：</span>
+<span class="tip f12" ><input type="hidden" value="194.06" id="stockzgb" />194.06亿股</span>
+</td>
+</tr>
+<tr>
+<td>
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r5c1-clickword-quota-shijinglv'  taname='f10_stock_iwc_gzgyck' content='每股股价除以每股净资产。一般来说市净率较低的股票，投资价值较高，相反，则投资价值较低。市净率小于1，股票市价低于每股净资产，称为破净。' data-url='http://www.iwencai.com/yike/detail/auid/8edcac9853037bde?qs=client_f10_baike_1' >市净率：</span>
+<span class="tip f12" id="sjl">0.81</span>
+</td>
+<td>
+<span class="hltip f12">净利润：</span>
+<span class="tip f12">128.50亿元
+
+同比增长26.83%						</span>
+
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1'  newtaid='f10_zxdt_code-gsgy-r5c2-clickplus-quota-netprofit' class="newtaid flashtab m_more popwin" targ="norm_jlr" onclick="TA.log({'id':'f10_open_jlr','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"136.78"],[1,"223.98"],[2,"289.28"],[3,"101.32"],[4,"175.83"],[5,"291.35"],[6,"363.36"],[7,"128.50"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u4ebf\u5143"]</span></a>							<div class="rp_tipbox flash_tipbox none norm_jlr" style="z-index:198;width:900px;left:18px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">净利润</strong></span><span><strong class="hltip f12 legend_label">单位：亿元</strong></span>
+<a href="/000001/field.html#position-3"><span class="hltip f12">同行业排名第<em class="the_rank">6</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_jlr">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r5c3-clickword-quota-cfps' taname='f10_stock_iwc_gzgyck' content='经营活动产生现金流量净额除以年度末普通股总股本，反映了每股发行在外的普通股票所平均占有的现金流量。' data-url='http://www.iwencai.com/yike/detail/auid/80b26f89d653f5c9?qs=client_f10_baike_1'>每股经营现金流：</span><span class="tip f12">7.58元</span>
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1'  newtaid='f10_zxdt_code-gsgy-r5c3-clickplus-quota-cfps' class="newtaid flashtab m_more popwin" targ="norm_mgxjl" onclick="TA.log({'id':'f10_open_mgxjl','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"-1.32"],[1,"1.58"],[2,"-0.83"],[3,"-0.60"],[4,"-5.98"],[5,"-6.48"],[6,"-9.93"],[7,"7.58"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u5143"]</span></a>							<div class="rp_tipbox flash_tipbox none norm_mgxjl" style="z-index:188;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">每股经营现金流</strong></span><span><strong class="hltip f12 legend_label">单位：元</strong></span>
+<a href="/000001/field.html#position-2"><span class="hltip f12">同行业排名第<em class="the_rank">1</em>位</span></a>								</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_mgxjl">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12"  taname='f10_stock_iwc_gzgyck'>总市值：</span><span class="tip f12 " id="stockzsz">2740亿</span>
+</td>
+</tr>
+<tr>
+<td>
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r6c1-clickword-quota-pne' taname='f10_stock_iwc_gzgyck' content='股东权益除以总股数。反映了每股股票所拥有的资产现值，每股净资产越少，股东拥有的资产现值越少，通常每股净资产越高越好。' data-url='http://www.iwencai.com/yike/detail/auid/6fba27adc0f9439b?qs=client_f10_baike_1'>每股净资产：</span><span class="tip f12">17.33元</span>
+
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1' newtaid='f10_zxdt_code-gsgy-r6c1-clickplus-quota-pne' class="newtaid flashtab m_more popwin" targ="norm_mgjzc" onclick="TA.log({'id':'f10_open_mgjzc','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"14.50"],[1,"14.88"],[2,"15.16"],[3,"15.60"],[4,"15.83"],[5,"16.43"],[6,"16.77"],[7,"17.33"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],"\u5143"]</span></a>
+<div class="rp_tipbox flash_tipbox none norm_mgjzc" style="z-index:209;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">每股净资产</strong></span><span><strong class="hltip f12 legend_label">单位：元</strong></span>
+<a href="/000001/field.html#position-1"><span class="hltip f12">同行业排名第<em class="the_rank">4</em>位</span></a>								</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_mgjzc">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12" taname='f10_stock_iwc_gzgyck' >毛利率：</span><span class="tip f12">未公布</span>
+<div class="popp_box" style="display:inline;">
+<div class="rp_tipbox flash_tipbox none norm_xsmll" style="z-index:209;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">毛利率</strong></span><span><strong class="hltip f12 legend_label">单位：%</strong></span>
+<a href="/000001/field.html#position-1"><span class="hltip f12">同行业排名第<em class="the_rank">3</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_xsmll">
+</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+
+<td >
+<span class="hltip f12 iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r6c3-clickword-quota-roe' taname='f10_stock_iwc_gzgyck' data-url='http://www.iwencai.com/yike/detail/auid/d2edf9bd2e6a92ce?qs=client_f10_baike_1' content='净利润除以平均股东权益，该指标反映股东权益的收益水平。指标值越高，说明投资带来的收益越高。'>净资产收益率：</span><span class="tip f12">3.27%</span>
+
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1'  newtaid='f10_zxdt_code-gsgy-r6c3-clickplus-quota-roe' class="newtaid flashtab m_more popwin" targ="norm_jzcsy" onclick="TA.log({'id':'f10_open_jzcsyl','fid':'f10_click_gsgy','nj':1})"><span class="none falshData">[[[0,"4.59"],[1,"7.63"],[2,"9.58"],[3,"2.72"],[4,"5.17"],[5,"8.86"],[6,"10.85"],[7,"3.27"]],[[0,"2020\u4e2d\u62a5"],[1,"2020\u4e09\u5b63\u62a5"],[2,"2020\u5e74\u62a5"],[3,"2021\u4e00\u5b63\u62a5"],[4,"2021\u4e2d\u62a5"],[5,"2021\u4e09\u5b63\u62a5"],[6,"2021\u5e74\u62a5"],[7,"2022\u4e00\u5b63\u62a5"]],""]</span></a>
+<div class="rp_tipbox flash_tipbox none norm_jzcsy" style="z-index:208;width:660px;">
+<p class="pd5 fl">
+<span><strong class="the_tit">净资产收益率</strong></span><span><strong class="hltip f12 legend_label">单位：%</strong></span>
+<a href="/000001/field.html#position-6"><span class="hltip f12">同行业排名第<em class="the_rank">6</em>位</span></a>
+</p>
+<span class="fr"><a class="gray f12" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_ckmx#f10_click_gsgy">查看明细>></a></span>
+<div class="flash_wraper pd5 cb" id="norm_jzcsy"></div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+<td>
+<span class="hltip f12  iwcclick newtaid" newtaid='f10_zxdt_code-gsgy-r6c4-clickword-quota-liutongagu' taname='f10_stock_iwc_gzgyck' content='流通股是指上市公司股份中，可以在交易所流通的股份数量。'  data-url='http://www.iwencai.com/yike/detail/auid/e17f528dc6567415?qs=client_f10_baike_1'>流通A股：</span><span class="tip f12">194.06亿股</span>
+</td>
+</tr>
+
+<tr>
+<td>
+<span class="hltip f12">更新日期：</span>
+<span class="tip f12">2022-06-10</span>
+</td>
+<td>
+<span class="hltip f12">总质押股份数量：</span>
+<span class="tip f12">301.16万股</span>
+</td>
+<td colspan="2">
+<span class="hltip f12">质押股份占A股总股本比：</span>
+<span class="tip f12">
+0.02%    </span>
+<div class="popp_box" style="display:inline;">
+<a href="javascript:void(0)"   ifjump='1'  newtaid='f10_zxdt_code-gsgy-r8c3-clickplus-quota-zybl' class="newtaid flashtab m_more popwin" targ="norm_zzygf" onclick="TA.log({'id':'f10_open_zysl','fid':'f10_click_gsgy','nj':1})"><span class="none gqzy falshData">
+[["0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200","0.0200"],["2022-03-25","2022-04-01","2022-04-08","2022-04-15","2022-04-22","2022-04-29","2022-05-06","2022-05-13","2022-05-20","2022-05-27","2022-06-02","2022-06-10"]]          </span>
+</a>
+<div class="rp_tipbox flash_tipbox none norm_zzygf" style="z-index:208;">
+<p class="pd5 fl">
+<span><strong class="the_tit">质押股份占A股总股本比</strong></span><span><strong class="hltip f12 legend_label">单位：%</strong></span>
+</p>
+<div class="flash_wraper pd5 cb" id="zzygfzx" style="width:580px;height:200px;"></div>
+<div class="tl f12" style="padding-bottom:5px;padding-left:10px;">*数据来源：中登公司及上市公司最新公布的质押公告</div>
+<s class="left_arrow"></s>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+
+<span class="fr" style="margin-top: 4px;margin-right: 10px;color:#666">
+以上为一季报		</span>
+<div class="financeBox" style="display: none;">
+<div class="tabCont" style="display:none">
+<div class="tipbox_hd">
+<h3>
+<span class="tip">破净股条件</span><a onclick="TA.log({'id':'f10_stock_index_financetab_jump','nj':1})" href="http://www.iwencai.com/stockpick/search?typed=0&preParams=&ts=1&f=1&qs=f10_caiwu_tag&selfsectsn=&querytype=&searchfilter=&tid=stockpick&w=破净股"  target="_blank" >[成分股]</a>
+</h3>
+<span class="msg  plh"></span>
+</div>
+<div class="tipbox_bd">
+<div class="bk">
+<span class="tip">问财百科：</span>
+所谓破净股是指股票的每股市场价格低于它每股净资产价格。破净全称为股价跌破净资产值，当股票的市场价格低于每股净资产时就叫“破净”。
+</div>
+</div>
+</div>
+
+<div class="tabCont" style="display:none">
+<div class="tipbox_hd">
+<h3>
+<span class="tip">权重股条件</span><a onclick="TA.log({'id':'f10_stock_index_financetab_jump','nj':1})" href="http://www.iwencai.com/stockpick/search?typed=0&preParams=&ts=1&f=1&qs=f10_caiwu_tag&selfsectsn=&querytype=&searchfilter=&tid=stockpick&w=权重股"  target="_blank" >[成分股]</a>
+</h3>
+<span class="msg  zx"></span>
+</div>
+<div class="tipbox_bd">
+<div class="bk">
+<span class="tip">问财百科：</span>
+权重股就是总股本巨大的上市公司股票，他的股票总数占股票市场股票总数的比重很大，也就权重很大，他的涨跌对股票指数的影响很大。
+</div>
+</div>
+</div>
+
+<div class="tabCont" style="display:none">
+<div class="tipbox_hd">
+<h3>
+<span class="tip">一线蓝筹条件</span><a onclick="TA.log({'id':'f10_stock_index_financetab_jump','nj':1})" href="http://www.iwencai.com/stockpick/search?typed=0&preParams=&ts=1&f=1&qs=f10_caiwu_tag&selfsectsn=&querytype=&searchfilter=&tid=stockpick&w=一线蓝筹"  target="_blank" >[成分股]</a>
+</h3>
+<span class="msg  plh"></span>
+</div>
+<div class="tipbox_bd">
+<div class="bk">
+<span class="tip">问财百科：</span>
+蓝筹股(blue chip)是指稳定的现金股利政策对公司现金流管理有较高的要求，通常将那些经营业绩较好，具有稳定且较高的现金股利支付的公司股票，多指长期稳定增长的、大型的、传统工业股及金融股。
+</div>
+</div>
+</div>
+
+
+<div class="opinion_opts_wraper fr evaluate" tag="financetab">
+<div class="oow_cont fl">
+<span>您对此栏目的评价：</span>
+<a class="opinion_up" tag="support" href="javascript:void(0)"> 有用 <span class="opi_up">0</span></a>
+<a class="opinion_down" tag="opposition" href="javascript:void(0)"> 没用 <span class="opi_down">0</span></a>
+<span class="btn_idea"><a onclick="$('.f10_append_advice').click();" title="我要提建议" href="javascript:void(0)">提建议</a></span>
+</div>
+</div>
+<div class="arrow"></div>
+</div>
+</div>
+<!-- 公司信息 -->
+<div class="rp_tipbox company-info-box" id="companyInfoBox">
+<table class="m_table m_table_db">
+<tr>
+<td rowspan="3" class="logo-box" width="100">
+<img src="//i.thsi.cn/images/basic/client/company/logo1.png">
+</td>
+<td>
+<span class="hltip f12 fl">公司名称：</span>
+<span class="tip f14 fl info-text" id="companyInfoName" title="">
+
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span class="hltip f12 fl">公司简称：</span>
+<span class="tip f14 fl info-text" id="companyInfoNickName" title="">
+
+</span>
+</td>
+</tr>
+<tr>
+<td>
+<span class="hltip f12 fl">上市场所：</span>
+<span class="tip f14 fl info-text" id="companyInfoMarket" title="">
+
+</span>
+</td>
+</tr>
+<tr>
+<td colspan="2" class="tip-td">
+<div class="industry-info">
+<span class="hltip f12 fl">所属行业：</span>
+<span class="tip f14 fl info-text" id="companyInfoIndustry" title="">
+
+</span>
+</div>
+<div class="place-info">
+<span class="hltip f12 fl">所属地域：</span>
+<span class="tip f14 fl info-text" id="companyInfoArea" title="">
+
+</span>
+</div>
+</td>
+</tr>
+<tr style="display: none" id="companyMainBussiness">
+<td colspan="2">
+<span class="hltip f12 fl">主营业务：</span>
+<span class="tip f14 fl info-text" id="companyInfoBussiness" title="">
+
+</span>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<span class="hltip f12 fl">公司简介：</span>
+<span class="tip f14 fl info-text" id="companyInfoIntro" title="">
+
+</span>
+<span class="show-more" id="companyInfoMore">了解更多>></span>
+</td>
+</tr>
+</table>
+</div>
+<!-- 人气对比 -->
+<div class="rp_tipbox compare-list-box" id="compareListBox" >
+<div class="compare-header">
+<span class="compare-title"></span>
+</div>
+<div class="tool-box clearfix">
+<!-- <input type="text" readonly name="" value="全球" class="compare-select-input"> -->
+<span class="compare-mid-count"></span>
+<ul class="compare-select close">
+<li class="selected-item">全球</li>
+<li class="select-choose">全球</li>
+<li class="select-choose">国内</li>
+<li class="select-choose">国外</li>
+</ul>
+<ul class="compare-choose-list">
+<li class="active">总市值</li>
+<li>市盈率(TTM)</li>
+<li>市净率</li>
+</ul>
+</div>
+<div class="compare-content" id="compareContent">
+<ul class="default-list" id="compareComtentDefault">
+</ul>
+<ul class="default-list sort-list" id="compareComtentSort">
+</ul>
+</div>
+<p class="remark-text">注：市值数据为截止上一交易日并已进行货币转换</p>
+</div>
+<!-- 人气排名 -->
+<iframe class="rp_tipbox market-compare-box" id="marketCompareBox" src="">
+</iframe>
+<div class="ft"></div>
+</div>
+
+<!-- 直击疫情 -->
+<!--  -->
+<!--  -->
+<!--  -->
+
+<!-- 近期重要事件 -->
+<!-- 近期重要事件 -->
+<!-- 2013-04-09 将“最新提示”修改为“特别提示” -->
+<div class="m_box event new_msg z101" id="pointnew" stat="index_pointnew">
+<div class="hd flow_index">
+<h2>近期重要事件</h2>
+</div>
+
+<div class="scrollWrap bd">
+<div id="scrollbar1">
+<div class="scrollbar">
+<div class="track none">
+<div class="thumb">
+<div class="end"></div>
+</div>
+</div>
+</div>
+<div class="viewport">
+<div class="overview">
+
+<!-- 2014-03-14 add-->
+<!-- 2014-03-14 end -->
+
+<!-- 2013-05-22 add -->
+<!-- end 2013-05-22 add-->
+
+<table class="m_table m_table_db" id="tableList">
+<tbody>
+<tr >
+<td class="hltip tc f12">2022-06-13</td>
+</tr>
+
+<tr >
+<td class="hltip tc f12">2022-06-08</td>
+<td><strong class="hltip fl red">投资互动：</strong>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r2c2-clickxqcont-quota-interaction'  class="newtaid fr hla gray f12 skipto" name="interactive.html" taid="f10_tbts_tzhd#F10new_tbts" title="到投资互动列表栏目查看">详情&gt;&gt;</a>
+<span>
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r2c2-clickcontent-quota-interaction'  class="newtaid skipto" name="interactive.html" taid="f10_tbts_tzhd#F10new_tbts">最新4条关于平安银行公司投资者动态互动内容</a>
+</span>
+</td>                    				</tr>
+
+<tr >
+<td class="hltip tc f12">2022-06-07</td>
+
+
+
+
+
+
+
+
+
+
+</tr>
+
+<tr >
+<td class="hltip tc f12">2022-05-25</td>
+<td><strong class="hltip fl">大宗交易：</strong>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r4c2-clickxqcont-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid fr hla gray skipto f12" name="index.html#deal" title="到大宗交易栏目查看">详情&gt;&gt;</a>
+
+<span>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r4c2-clickcontent-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid skipto" name="index.html#deal" title="到大宗交易栏目查看">
+成交均价13.15元，溢价率-8.62%，成交量150万股，成交金额1973万元	</a>
+
+</span>
+
+</td>                    				</tr>
+
+<tr >
+<td class="hltip tc f12">2022-05-01</td>
+</tr>
+
+<tr >
+<td class="hltip tc f12">2022-04-27</td>
+
+
+
+
+
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-27</td>
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-27</td>
+<td>
+<strong class="hltip fl">股东人数变化：</strong>
+<a   ifjump='1'  newtaid='f10_zxdt_code-rctevt-r8c2-clickxqcont-quota-holdernum' taid="f10_tbts_gdrs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="holder.html" title="到股东研究栏目查看">详情&gt;&gt;</a>
+<span>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r8c2-clickcontent-quota-holdernum'  taid="f10_tbts_gdrs#F10new_tbts" class="newtaid skipto" name="holder.html">
+截止2022-03-31，公司股东人数比上期（2022-02-28）增长1945户，幅度0.38%
+
+</span>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-26</td>
+
+
+
+
+
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-21</td>
+<td><strong class="hltip fl">大宗交易：</strong>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r10c2-clickxqcont-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid fr hla gray skipto f12" name="index.html#deal" title="到大宗交易栏目查看">详情&gt;&gt;</a>
+
+<span>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r10c2-clickcontent-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid skipto" name="index.html#deal" title="到大宗交易栏目查看">
+成交均价14.27元，溢价率-9.74%，成交量40万股，成交金额570.8万元	</a>
+
+</span>
+
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-19</td>
+<td><strong class="hltip fl">大宗交易：</strong>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r11c2-clickxqcont-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid fr hla gray skipto f12" name="index.html#deal" title="到大宗交易栏目查看">详情&gt;&gt;</a>
+
+<span>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r11c2-clickcontent-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid skipto" name="index.html#deal" title="到大宗交易栏目查看">
+成交均价14.31元，溢价率-9.49%，成交量44万股，成交金额629.6万元	</a>
+
+</span>
+
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-15</td>
+<td><strong class="hltip fl">大宗交易：</strong>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r12c2-clickxqcont-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid fr hla gray skipto f12" name="index.html#deal" title="到大宗交易栏目查看">详情&gt;&gt;</a>
+
+<span>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r12c2-clickcontent-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid skipto" name="index.html#deal" title="到大宗交易栏目查看">
+成交均价14.44元，溢价率-12.06%，成交量50万股，成交金额722.0万元	</a>
+
+</span>
+
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-14</td>
+<td><strong class="hltip fl">大宗交易：</strong>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r13c2-clickxqcont-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid fr hla gray skipto f12" name="index.html#deal" title="到大宗交易栏目查看">详情&gt;&gt;</a>
+
+<span>
+
+<a  ifjump='1'  newtaid='f10_zxdt_code-rctevt-r13c2-clickcontent-quota-dzjy' taid="f10_tbts_dzjy#F10new_tbts" class="newtaid skipto" name="index.html#deal" title="到大宗交易栏目查看">
+成交均价14.22元，溢价率-11.35%，成交量49万股，成交金额696.8万元	</a>
+
+</span>
+
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-04-13</td>
+
+
+
+
+
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+
+
+
+
+
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+<td>
+<strong class="hltip fl">股东人数变化：</strong>
+<a   ifjump='1'  newtaid='f10_zxdt_code-rctevt-r18c2-clickxqcont-quota-holdernum' taid="f10_tbts_gdrs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="holder.html" title="到股东研究栏目查看">详情&gt;&gt;</a>
+<span>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r18c2-clickcontent-quota-holdernum'  taid="f10_tbts_gdrs#F10new_tbts" class="newtaid skipto" name="holder.html">
+截止2022-02-28，公司股东人数比上期（2021-12-31）增长4018户，幅度0.80%
+
+</span>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+<td>
+<strong class="hltip fl">股东人数变化：</strong>
+<a   ifjump='1'  newtaid='f10_zxdt_code-rctevt-r19c2-clickxqcont-quota-holdernum' taid="f10_tbts_gdrs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="holder.html" title="到股东研究栏目查看">详情&gt;&gt;</a>
+<span>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r19c2-clickcontent-quota-holdernum'  taid="f10_tbts_gdrs#F10new_tbts" class="newtaid skipto" name="holder.html">
+截止2021-12-31，公司股东人数比上期（2021-09-30）增长11.22万户，幅度28.74%
+
+</span>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-03-10</td>
+<td>
+
+<strong class="hltip fl">参控公司：</strong>
+
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r20c2-clickxqcont-quota-ckgs'  taid="f10_tbts_ckgs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="company.html#share" title="到公司资料-参控股公司查看">详情&gt;&gt;</a>
+
+<span>
+
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r20c2-clickcontent-quota-ckgs'  taid="f10_tbts_gdcg#F10new_tbts" class="newtaid skipto" name="company.html#share">
+
+参控平安理财有限责任公司，参控比例为100.0000%，参控关系为子公司
+</a>
+
+</span>
+
+</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2022-02-27</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-10-21</td>
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-10-21</td>
+<td>
+<strong class="hltip fl">股东人数变化：</strong>
+<a   ifjump='1'  newtaid='f10_zxdt_code-rctevt-r23c2-clickxqcont-quota-holdernum' taid="f10_tbts_gdrs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="holder.html" title="到股东研究栏目查看">详情&gt;&gt;</a>
+<span>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r23c2-clickcontent-quota-holdernum'  taid="f10_tbts_gdrs#F10new_tbts" class="newtaid skipto" name="holder.html">
+截止2021-09-30，公司股东人数比上期（2021-06-30）增长9.37万户，幅度31.55%
+
+</span>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-09-07</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-09-06</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-09-03</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-09-02</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-09-01</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-08-20</td>
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-08-20</td>
+
+
+
+
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-08-20</td>
+<td>
+<strong class="hltip fl">股东人数变化：</strong>
+<a   ifjump='1'  newtaid='f10_zxdt_code-rctevt-r31c2-clickxqcont-quota-holdernum' taid="f10_tbts_gdrs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="holder.html" title="到股东研究栏目查看">详情&gt;&gt;</a>
+<span>
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r31c2-clickcontent-quota-holdernum'  taid="f10_tbts_gdrs#F10new_tbts" class="newtaid skipto" name="holder.html">
+截止2021-06-30，公司股东人数比上期（2021-03-31）减少3.5万户，幅度-10.55%
+
+</span>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-08-20</td>
+<td>
+<strong class="hltip title fl">参控公司：</strong>
+<span class="hltip_cont">
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r32c2-clickxqcont-quota-ckgs' taid="f10_tbts_ckgs#F10new_tbts" class="newtaid fr hla gray f12 skipto" name="company.html#share" title="到公司资料—参控股公司查看">详情&gt;&gt;</a>
+参控平安理财有限责任公司，参控比例为100.0000%，参控关系为子公司		<span class="performance_trailer">
+<a   ifjump='1' newtaid='f10_zxdt_code-rctevt-r32c2-expand-quota-ckgs'  class="newtaid check_details f12" style="width:auto" href="javascript:void(0);" onclick="clickTalogStat('f10_tbts_qtckgs','F10new_tbts');">
+其它参控公司&nbsp<span class="open_btn">▼</span><span class="close_btn hidden">▲</span>
+</a>
+<div class="check_else">
+<dl>
+<dd class="tip">参控招商局南京油运股份有限公司，参控比例为0.6000%，参控关系为其他					</dd><br>
+<dd class="tip">参控云南云维股份有限公司，参控比例为0.8500%，参控关系为其他					</dd><br>
+<dd class="tip">参控浙商银行股份有限公司，参控比例为0.0500%，参控关系为其他					</dd><br>
+<dd class="tip">参控佳木斯金地造纸股份有限公司，参控比例为1.7600%，参控关系为其他					</dd><br>
+<dd class="tip">参控大化集团大连化工股份有限公司，参控比例为0.5000%，参控关系为其他					</dd><br>
+<dd class="tip">参控力帆科技(集团)股份有限公司，参控比例为0.6900%，参控关系为其他					</dd><br>
+<dd class="tip">参控郴州市金贵银业股份有限公司，参控比例为1.7300%，参控关系为其他					</dd><br>
+<dd class="tip">参控Visa Inc.，参控比例为0.0100%，参控关系为其他					</dd><br>
+<dd class="tip">参控中国银联股份有限公司，参控关系为其他					</dd><br>
+<dd class="tip">参控SWIFT会员股份，参控关系为其他					</dd><br>
+<dd class="tip">参控城市商业银行资金清算中心，参控关系为其他					</dd><br>
+</dl>
+</div>
+</span>
+</span>
+
+</td>
+
+</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2021-08-05</td>
+</td>                    				</tr>
+
+<tr  class="none">
+<td class="hltip tc f12">2020-12-31</td>
+<td>
+<strong class="hltip title fl">资产收购：</strong>
+<a ifjump='1' newtaid='f10_zxdt_code-rctevt-r34c2-clickxqcont-quota-shougou' taid="f10_tbts_sgjb#F10new_tbts" class="newtaid fr hla gray skipto f12" name="capital.html#asset" title="到公司大事的资本运作栏目查看">详情&gt;&gt;</a>
+<span>
+拟受让深圳市前海自贸区桂湾片区四开发单元07街坊T201-0140地块土地使用权，进度：完成
+<span class="performance_trailer">
+<a class="check_details f12" href="javascript:void(0);" onclick="clickTalogStat('f10_tbts_ztyyxl');">
+<span class="open_btn">详细内容▼</span><span class="close_btn hidden">收起▲</span>
+</a>
+<div class="check_else">
+2020年4月20日,平安银行股份有限公司(以下简称“本行”)第十一届董事会第七次会议通过《关于在深圳市购建平安信用卡大厦的议案》,同意以本行信用卡中心为主体申请竞买前海自贸区桂湾片区四开发单元07街坊T201-0140地块,用于建设“平安信用卡大厦”,授权管理层具体组织落实相关事宜。鉴于参加竞买T201-0140地块事项涉及本行临时性商业机密,根据深圳市土地招拍挂及深圳证券交易所的相关规定,本行履行了相关事项暂缓披露程序。2020年12月30日,本行参加了深圳市国有土地使用权竞买活动,竞得深圳市前海自贸区桂湾片区四开发单元07街坊T201-0140地块(深土交告〔2020〕67号),土地面积13904.52平方米,总建筑面积140000平方米,地块带设计方案出让,土地出让金264600万元,设计移交费2012.52万元,土建预留工程移交费40695.7993万元。本行已于竞得当日签订了《成交确认书》、《深圳市前海深港现代服务业合作区产业发展监管协议书》、《深圳市前海深港现代服务业合作区建设项目质量安全监管协议书》、《前海交易广场T201-0140宗地土建预留工程移交协议》、《前海交易广场T201-0140宗地地上工程设计资料移交协议》、《深圳市前海深港现代服务业合作区土地使用权出让合同书》等协议文本。        </div>
+</span>
+</span>
+</td>                    				</tr>
+
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<div class="part_all_show_btn">
+<a   ifjump='1'  newtaid="f10_zxdt_code-rctevt-s-expand-sta-rctevt" onclick="TA.log({'id':'f10_click_zysj','nj':1})" class="newtaid arrow_btn btndown" href="javascript:void(0);"></a>
+</div>
+</div>
+<div class="ft"></div>
+</div>
+<!-- end 特别提示 -->
+
+
+<!-- 热点新闻 -->
+<!-- 新闻公告 -->
+<div class="m_box  clearfix" id="news" stat="index_news">
+<div class="hd">
+<h2>新闻公告</h2>
+</div>
+<div class="bd pt5 pr clearfix">
+<div class="clearfix index">
+<div class="m_box post_news fl post clearfix">
+<div class="bd clearfix">
+<div class="newslist clearfix">
+<div class="news_title">热点新闻 <a   ifjump='1' newtaid="f10_zxdt_code-rdxw-nw-clickmore-sta-rdxw" class="newtaid gray f12 news_more skipto" title="更多热点新闻" href="###" name="news.html#mine" taid="f10_click_rdxw#f10_click_xwgg"> 更多>></a></div>
+<!-- 新闻数据改为ajax请求 -->
+<ul id="news_ajax_content"></ul>
+</div>
+</div>
+<div class="ft">
+<div class="ftin"></div>
+</div>
+</div>
+<div class="m_box comp_post fr post">
+<div class="bd clearfix">
+<div class="newslist clearfix">
+<div class="news_title">公司公告 <a   ifjump='1' newtaid="f10_zxdt_code-gsgg-ne-clickmore-sta-gsgg" class="newtaid gray f12 news_more skipto" title="更多公司公告" href="###" name="news.html#pub" taid="f10_click_gsgg#f10_click_xwgg"> 更多>></a></div>
+<ul>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r1c1-click-atgg-36643407" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220607/36643407.shtml" class="newtaid client" target="_blank" title="平安银行：平安银行股份有限公司董事会决议公告">
+<span class="gray" sctime="06/06" todaytime="18:51">06/07</span>
+平安银行：平安银行股份有限公司董事会决议公告                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r2c1-click-atgg-36643437" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220607/36643437.shtml" class="newtaid client" target="_blank" title="平安银行：平安银行股份有限公司关于召开2021年年度股东大会的通知">
+<span class="gray" sctime="06/06" todaytime="18:53">06/07</span>
+平安银行：平安银行股份有限公司关于召开2021年年度股东大会的通知                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r3c1-click-atgg-36643435" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220607/36643435.shtml" class="newtaid client" target="_blank" title="平安银行：平安银行股份有限公司2021年年度股东大会文件2022-06-07">
+<span class="gray" sctime="06/06" todaytime="18:53">06/07</span>
+平安银行：平安银行股份有限公司2021年年度股东大会文件2022-06-07                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r4c1-click-atgg-35782487" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220427/35782487.shtml" class="newtaid client" target="_blank" title="平安银行：2022年一季度报告">
+<span class="gray" sctime="04/26" todaytime="17:44">04/27</span>
+平安银行：2022年一季度报告                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r5c1-click-atgg-35782585" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220427/35782585.shtml" class="newtaid client" target="_blank" title="平安银行：董事会决议公告">
+<span class="gray" sctime="04/26" todaytime="17:44">04/27</span>
+平安银行：董事会决议公告                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r6c1-click-atgg-35782687" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220427/35782687.shtml" class="newtaid client" target="_blank" title="平安银行：监事会决议公告">
+<span class="gray" sctime="04/26" todaytime="17:46">04/27</span>
+平安银行：监事会决议公告                                            </a>
+</li>
+<li>
+<a   ifjump='1'  newtaid="f10_zxdt_code-gsgg-r7c1-click-atgg-35780753" onclick="TA.log({'id':'f10_home_gsgg','fid':'f10_click_xwgg','nj':1})" href="http://news.10jqka.com.cn/field/sn/20220426/35780753.shtml" class="newtaid client" target="_blank" title="平安银行：000001平安银行业绩说明会、路演活动信息20220424(2)">
+<span class="gray" sctime="04/26" todaytime="17:31">04/26</span>
+平安银行：000001平安银行业绩说明会、路演活动信息20220424(2)                                            </a>
+</li>
+</ul>
+</div>
+</div>
+<div class="ft">
+<div class="ftin"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="ft"></div>
+</div>
+
+<!-- 财务指标 -->
+<!-- 财务指标 -->
+<div class="m_box new_msg z100" id="finance" stat="index_finance">
+<div class="hd flow_index">
+<h2>财务指标</h2>
+</div>
+<div class="bd">
+<table class="m_table m_hl fixtable">
+<thead>
+<tr>
+<th width="95px">报告期\指标</th>
+<th>基本每股收益(元)</th>
+<th>每股净资产(元)</th>
+<th newtaid="f10_zxdt_code-cwzb-r1c4-clickword-quota-mggjj" class='newtaid iwcclick' taname='f10_stock_iwc_cwzbck' data-url='http://www.iwencai.com/yike/detail/auid/ead9ab6046834303?qs=client_f10_baike_2' content='每股公积金就是公积金除股票总股数。是公司未来扩张的物质基础，也可以是股东未来转赠红股的希望之所在。没有公积金的上市公司，就是没有希望的上市公司。'>每股资本公积金(元)</th>
+<th newtaid="f10_zxdt_code-cwzb-r1c5-clickword-quota-udpps" class='newtaid iwcclick' taname='f10_stock_iwc_cwzbck' data-url='http://www.iwencai.com/yike/detail/auid/0f7d51cf91a3a0c0?qs=client_f10_baike_2' content='每股未分配利润=企业当期未分配利润总额/总股本。每股未分配利润反映的是公司平均每股所占有的留存于公司内部的未分配利润的多少' >每股未分配利润(元)</th>
+<th newtaid="f10_zxdt_code-cwzb-r1c6-clickword-quota-ocfps" class='newtaid iwcclick' taname='f10_stock_iwc_cwzbck' data-url='http://www.iwencai.com/yike/detail/auid/80b26f89d653f5c9?qs=client_f10_baike_2' content='指用公司经营活动的现金流入-经营活动的现金流出再除以总股本。反映每股发行在外的普通股票所平均占有的现金流量，或者说是反映公司为每一普通股获取的现金流入量的指标'>每股经营现金流(元)</th>
+<th width="80px">营业总收入(元)</th>
+<th width="80px">净利润(元)</th>
+<th width="72px">净资产收益率</th>
+<th width="90px">变动原因</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tc f12">2022-03-31</td>
+<td>0.56</td>
+<td>17.33</td>
+<td>4.16</td>
+<td>8.49</td>
+<td>7.58</td>
+<td>462.07亿</td>
+<td>128.50亿</td>
+<td>3.27%</td>
+<td class="tl f12">
+<div class="popp_box" style="display: inline">
+</div>
+一季报					</td>
+</tr>
+<tr>
+<td class="tc f12">2021-12-31</td>
+<td>1.73</td>
+<td>16.77</td>
+<td>4.16</td>
+<td>7.96</td>
+<td>-9.93</td>
+<td>1693.83亿</td>
+<td>363.36亿</td>
+<td>10.85%</td>
+<td class="tl f12">
+<div class="popp_box" style="display: inline">
+</div>
+年报					</td>
+</tr>
+<tr>
+<td class="tc f12">2021-09-30</td>
+<td>1.40</td>
+<td>16.43</td>
+<td>4.16</td>
+<td>7.94</td>
+<td>-6.48</td>
+<td>1271.90亿</td>
+<td>291.35亿</td>
+<td>8.86%</td>
+<td class="tl f12">
+<div class="popp_box" style="display: inline">
+</div>
+三季报					</td>
+</tr>
+<tr>
+<td class="tc f12">2021-06-30</td>
+<td>0.80</td>
+<td>15.83</td>
+<td>4.16</td>
+<td>7.38</td>
+<td>-5.98</td>
+<td>846.80亿</td>
+<td>175.83亿</td>
+<td>5.17%</td>
+<td class="tl f12">
+<div class="popp_box" style="display: inline">
+</div>
+中报					</td>
+</tr>
+<tr>
+<td class="tc f12">2021-03-31</td>
+<td>0.42</td>
+<td>15.60</td>
+<td>4.16</td>
+<td>7.18</td>
+<td>-0.60</td>
+<td>417.88亿</td>
+<td>101.32亿</td>
+<td>2.72%</td>
+<td class="tl f12">
+<div class="popp_box" style="display: inline">
+</div>
+一季报					</td>
+</tr>
+</tbody>
+</table>
+<p class="p5_0 tr">
+<a   ifjump='1' newtaid="f10_zxdt_code-cwzb-se-clickmore-sta-caiwu" href="javascript:void(0)" onclick="jumpToUrl('./finance.html', 'financen', 'cwzb');return false;" taid="f10_click_cwsj#f10_click_cwzb" class="newtaid hla f12" title="到财务分析栏目查看">查看更多财务数据&gt;&gt;</a>
+</p>
+</div>
+<div class="ft">
+<div class="ftin"></div>
+</div>
+</div>
+
+<!-- 主力控盘 -->
+<div class="m_box clearfix" id="main" stat="index_main">
+<div class="hd">
+<h2>主力控盘</h2>
+</div>
+<div class="bd clearfix">
+<table class="m_table m_hl">
+<thead>
+<tr>
+<th>指标/日期</th>
+<th>2022-03-31</th>
+<th>2022-02-28</th>
+<th>2021-12-31</th>
+<th>2021-09-30</th>
+<th>2021-06-30</th>
+<th>2021-03-31</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<th class="tl">股东总数</th>
+<td class="tr">508679</td>
+<td class="tr">506734</td>
+<td class="tr">502716</td>
+<td class="tr">390490</td>
+<td class="tr">296828</td>
+<td class="tr">331829</td>
+</tr>
+<tr>
+<th class="tl">较上期变化</th>
+<td class="tr"><span style="color:#FB0000">+0.38%</span></td>
+<td class="tr"><span style="color:#FB0000">+0.80%</span></td>
+<td class="tr"><span style="color:#FB0000">+28.74%</span></td>
+<td class="tr"><span style="color:#FB0000">+31.55%</span></td>
+<td class="tr"><span class="downcolor">-10.55%</span></td>
+<td class="tr"><span style="color:#FB0000">+14.13%</span></td>
+</tr>
+<tr>
+<td class="tl" colspan="7"><span class="gray f12">提示：股票价格通常与股东人数成反比，股东人数越少，则代表筹码越集中，股价越有可能上涨</span></td>
+</tr>
+</tbody>
+</table>
+<div id="chartsData" style="display:none;">[["\u4fdd\u9669\u516c\u53f8",58.24],["\u5176\u4ed6\u673a\u6784",10.93],["\u57fa\u91d1",4.18],["\u5238\u5546\u96c6\u5408\u7406\u8d22","0.32"],["\u5176\u4ed6\u80a1\u4e1c",26.33]]</div>
+<div  class="tc flashbox fl" id="chartWrap" style="height:200px;width:200px;padding: 10px 10px 0 0;">
+<p class="charttit" id="charttit">流通盘占比</p>
+<div class="chartmain fl" id="chartmain" style="width: 200px;height:170px;"></div>
+</div>
+<div class="flash_box_cont fl">
+<p class="topcolor f14">
+截止2022-03-31，前十大流通股东持有<strong>136.77亿</strong>股，占流通盘<strong>70.48%</strong>，主力控盘度非常高。
+</p>
+
+<div class="f10_label_box" style="display: none;">
+<div class="head">
+<span class="close">X</span>
+<span class="tip">平安银行</span>十大流通股东<span class="tip">机构持股成本</span>估算
+<span class="gd_ques iwcclick" taname="f10_stock_iwc_cbgsbk" data-url="http://www.iwencai.com/yike/detail/auid/fd14fbc180f05d69?qs=client_f10_baike_14" tag="syl" content="机构持股成本是计算机构（暂不含个人）从进入到现在的持仓成本价。通俗的算法就是，每个季度买卖股票所花的钱/当前股份数量。"></span>
+
+</div>
+<div class="title">
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th class="tl" width="225">机构名称</th>
+<th>持股比例</th>
+<th>成本估算</th>
+</tr>
+</thead>
+</table>
+</div>
+<div class="cont" tag="-1">
+<table style="">
+<tbody>
+</tbody>
+</table>
+
+<table style="display: none;">
+<tbody>
+</tbody>
+</tbody>
+</table>
+</div>
+<div class="totalinfo">
+<span class="tip"></span>家机构平均持股成本<span class="tip"></span>元，最近收盘价<span class="tip">--</span>元 <a href="holder.html#flowholder" style="color: #0199fa;">[详细]</a>
+</div>
+<div class="clearfix">
+<div class="opinion_opts_wraper fr evaluate " tag="main">
+<b class="oow_left fl"></b>
+<div class="oow_cont fl">
+<span>您对此栏目的评价：</span>
+<a class="opinion_up" tag="support" href="javascript:void(0)">有用 <span class="opi_up">0</span></a>
+<a class="opinion_down" tag="opposition" href="javascript:void(0)"> 没用 <span class="opi_down">0</span></a>
+<span class="btn_idea">
+<a onclick="$('.f10_append_advice').click();" title="我要提建议" href="javascript:void(0)">提建议</a></span>
+<!--<a title="参与调查" href="http://vote.10jqka.com.cn/webvote/089bbf82354d38796389130318308dd1"  target="_blank" class="btn_survey">参与调查</a>-->
+</div>
+<b class="oow_right fl"></b>
+</div>
+</div>
+</div>
+
+
+<dl class="f14">
+<dt class="fl">截止
+2022-03-31</dt>
+<dd class="fl">
+<ul class="extra_list">
+<li>
+<span class="fl">合计329家机构持仓，持仓量合计143.51亿股，占流通盘合计73.95%
+<a   ifjump='1'  newtaid="f10_zxdt_code-zlkp-se-click-sta-mingxi" class="newtaid c_text2 f12" href="javascript:void(0)" onclick="jumpToUrl('./position.html', 'position', 'position_holdDetail');return false;" taid="f10_click_zlkpmx#f10_click_zlkp">明细 &gt;</a></span>
+</li>
+<li>
+<span class="fl"><i class="charts_icon1 charts_icon" style="margin-top: 9px"></i>3 家保险公司，持仓量113.02亿股，占流通盘58.24%							<a   ifjump='1' newtaid="f10_zxdt_code-zlkp-se2-click-sta-mingxi" class="newtaid c_text2 f12" href="javascript:void(0)" onclick="jumpToUrl('./position.html', 'position', 'position_holdDetail');return false;" taid="f10_click_zlkpmx#f10_click_zlkp">明细 &gt;</a></span>
+</li>
+<li>
+<span class="fl"><i class="charts_icon2 charts_icon" style="margin-top: 9px"></i>3 家其他机构，持仓量21.22亿股，占流通盘10.93%							<a   ifjump='1' newtaid="f10_zxdt_code-zlkp-se3-click-sta-mingxi" class="newtaid c_text2 f12" href="javascript:void(0)" onclick="jumpToUrl('./position.html', 'position', 'position_holdDetail');return false;" taid="f10_click_zlkpmx#f10_click_zlkp">明细 &gt;</a></span>
+</li>
+<li>
+<span class="fl"><i class="charts_icon3 charts_icon" style="margin-top: 9px"></i>322 家基金，持仓量8.65亿股，占流通盘4.18%							<a   ifjump='1' newtaid="f10_zxdt_code-zlkp-se4-click-sta-mingxi" class="newtaid c_text2 f12" href="javascript:void(0)" onclick="jumpToUrl('./position.html', 'position', 'position_holdDetail');return false;" taid="f10_click_zlkpmx#f10_click_zlkp">明细 &gt;</a></span>
+</li>
+<li>
+<span class="fl"><i class="charts_icon4 charts_icon" style="margin-top: 9px"></i>1 家券商集合理财，持仓量6189.29万股，占流通盘0.32%							<a   ifjump='1' newtaid="f10_zxdt_code-zlkp-se5-click-sta-mingxi" class="newtaid c_text2 f12" href="javascript:void(0)" onclick="jumpToUrl('./position.html', 'position', 'position_holdDetail');return false;" taid="f10_click_zlkpmx#f10_click_zlkp">明细 &gt;</a></span>
+</li>
+</ul>
+</dd>
+</dl>
+<a   ifjump='1' newtaid="f10_zxdt_code-zlkp-se6-click-sta-gudong" style="bottom:0;right:0" class="newtaid shareholders skipto" href="###" name="holder.html#holdernum" taid="f10_click_zlgdyj#f10_click_zlkp">股东研究</a>
+</div>
+
+
+</div>
+<div class="ft"></div>
+</div>
+<!-- 电影票房 -->
+<!-- content -->
+
+<!-- 概念题材 -->
+<!-- 概念题材 -->
+<div class="m_box" id="material" stat="index_concept">
+<div class="hd">
+<h2> 题材要点</h2>
+<!--<div tag="material" class="opinion_opts_wraper fr evaluate"><b class="oow_left fl"></b><div class="oow_cont fl"><span>您对此栏目的评价：</span><a href="javascript:void(0)" tag="support" class="opinion_up"> 有用 <span class="opi_up">0</span></a><a href="javascript:void(0)" tag="opposition" class="opinion_down"> 没用 <span class="opi_down">1</span></a><span class="btn_idea"><a href="javascript:void(0)" title="我要提建议" onclick="$('.idea').click();">提建议</a></span></div><b class="oow_right fl"></b></div>-->
+<a   ifjump='1' newtaid="f10_zxdt_code-tcyd-ne-clickmore-sta-ticai" class="newtaid fr more skipto" href="###" name="concept.html" taid="f10_gntc_gd" title="查看更多概念题材">更多&gt;&gt;</a>
+</div>
+<div class="bd pr clearfix">
+<div class="gntc">
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点一:平安旗下</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;平安银行是深圳发展银行股份有限公司以吸收合并原平安银行股份有限公司的方式完成两行整合并更名后的银行，是全国性股份制商业银行。中国平安为本行的控股股东。        </p>
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点二:领先的金融科技</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;本行以科技驱动战略转型，通过科技手段创新业务模式，升级传统业务，促进智慧管理，提升队伍产能。依托集团核心技术，持续深化大数据，区块链，人工智能，云计算，生物识别等前沿科技与应用场景的融合，实现“技术引领”，坚持科技赋能金融，通过不断优化升级面向个人，公司，小微企业和金融同业客户的口袋银行，口袋财务，小企业数字金融和“行e通”等服务模式和平台，实现“模式和平台”引领，以“金融 科技”双轮驱动，培养高素质的复合型金融科技人才队伍，并从硅谷，国内外领先互联网企业引入大量复合型高端技术人才，实现“人才引领”。        </p>
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点三:精耕细作的公司银行业务</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;本行坚持以客户为中心的经营理念，通过“精选行业”，“精耕客户”，“精配产品”，“精控风险”，做精做强行业银行，交易银行，综合金融，聚焦战略客群，小微客群，严守资产质量，打造智能化精品公司银行，为实体经济持续发展提供高质量的金融服务。坚持生态化布局，数据化经营，以科技赋能业务，不断升级面向战略客群的智能供应链金融体系，面向中小企业的小企业数字金融和口袋财务，面向离岸和国际业务客户的跨境e产品，构造开放银行平台，全方位满足客户多元化需求，有效支持实体经济。        </p>
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点四:践行“金融 生活”的理念</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;公司不断提升线上化服务水平，让金融覆盖面更广，体验更好。三年来，公司的网点数下降1.3%，但客户数增长近1.5倍，口袋银行月活量增长了2倍多。公司不断深化“金融 生活”的理念，把金融产品，服务与老百姓生活场景相结合，用无时不在，无处不在的金融手段让老百姓的生活更加便捷。公司围绕出行，购物，视频等主题，推出联名信用卡，让客户享受更多实实在在的权益，并不断优化互联网商城的体验，实现一站式，场景化购物。        </p>
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点五:打造全球领先的智能化零售银行</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;作为新中国第一家公开发行股票的股份制商业银行，本行坚定不移地推进零售转型，持续深化“科技引领，零售突破，对公做精”十二字策略方针，始终坚持科技是第一生产力的理念，以领先科技作为发展引擎，全面构建零售业务，对公业务，资金同业业务“3 2 1”经营策略，持续加大对民营企业，小微企业的支持力度，不断满足人民群众美好生活需求，持续增强金融扶贫的广度深度，持续提升金融服务实体经济，服务人民群众的能力和水平，持续强化金融风险防控，致力于打造“中国最卓越，全球领先的智能化零售银行”。        </p>
+<p ><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点六:私行财富业务</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;本行以打造“中国最智能，国际领先的私人银行”为愿景目标，贯彻资产配置理念，持续升级1名PB（Private Banker，私行金融顾问）加N个专家团队的“1 N”线上线下经营模式，推动实现私行客户服务半径及专业程度的最优化。开放产品平台，在风险内嵌的基础上，借助平安集团资源及公私联动，多元化引入优质资产，满足客户多样化的投融资需求，同时持续强化科技赋能，完善投顾和权益体系，深化超高净值客户经营，实现客户服务能力及品牌价值的全面升级。        </p>
+<p style="display:none"><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点七:资金同业持续升级</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;本行紧随金融市场的发展趋势，以科技为依托，精心打造智慧资金系统平台，持续优化投资效率，扩大投资品类，完善“平安避险”交易服务体系，同时，本行发挥综合金融优势，以“行e通”，“同e家”两个线上平台和机构销售铁军，打造多主体互利共赢的销售生态圈。销售和交易两大能力形成组合拳，构建本行资金同业业务的核心竞争力。        </p>
+<p style="display:none"><span  href="concept.html" title="查看详细"><span class="gnmc f16">要点八:消费金融业务</span></span>
+</br> &nbsp; &nbsp; &nbsp; &nbsp;本行深化信用卡，“新一贷”和汽融业务“三大尖兵”的引领作用，通过产品多元化，流程线上化，业务平台化，不断推动模式创新，促进业务持续较快增长，强化信用类贷款产品能力，建立和发展基于客户分层分群经营的，差异化定价的信用类产品体系，同时积极服务实体经济，聚焦中高端客户和小微企业主两大客群需求，通过提供综合化产品及服务，实现综合效益的提升。        </p>
+</div>
+<div class="part_all_show_btn">
+<a   ifjump='1' id="gntc_but" newtaid="f10_zxdt_code-tcyd-s-expand-sta-tcyd"  class="newtaid arrow_btn btndown" href="javascript:void(0);"></a>
+</div>
+</div>
+<div class="ft"></div>
+</div>
+
+<!-- 龙虎榜 -->
+<div class="m_box" id="payback" stat="index_payback">
+<div class="hd">
+<h2><span class="iwcclick"  taname='f10_stock_iwc_lhb' content='龙虎榜指每日两市中涨跌幅、换手率等由大到小的排名榜单。'  data-url='http://www.iwencai.com/yike/detail/auid/341edcdcaaee5c49?qs=client_f10_baike_7'>龙虎榜</span></h2>
+</div>
+<div class="bd">
+
+<p class="tip"><a onclick="TA.log({'id':'f10_click_lhb','nj':1})" target="_blank" href="http://data.10jqka.com.cn/market/lhbgg/code/000001#refCountId=basic_50d2bfa6_569" class="fr hla stat_jumptodata">查看历史龙虎榜&gt;&gt;</a><span class="f14">最近1年内该股未能登上龙虎榜。</span></p>
+
+</div>
+<div class="ft"></div>
+</div>
+<!-- 大宗交易 -->
+<!-- 大宗交易 -->
+<div class="m_box" id="deal" stat="index_deal">
+<div class="hd">
+<h2><span class="iwcclick" taname='f10_stock_iwc_dzjyck' content='大宗交易又称为大宗买卖，一般是指交易规模、数量和金额都非常大，远远超过市场的平均交易规模。'  data-url='http://www.iwencai.com/yike/detail/auid/6b3ef1de5effbe4f?qs=client_f10_baike_3'  >大宗交易</span></h2>
+</div>
+<div class="bd">
+<p class="over">
+<a   ifjump='1' newtaid="f10_zxdt_code-dzjy-ne-clickmore-sta-lishi" onclick="TA.log({'id':'f10_click_dzjy','nj':1})" href="http://data.10jqka.com.cn/market/dzjy/op/code/code/000001/#refCountId=basic_50d2c0da_234" target="_blank" class="newtaid fr hla stat_jumptodata">查看历史大宗交易信息&gt;&gt;</a>
+</p>
+<table class="m_table m_hl mt10">
+<thead>
+<tr>
+<th width="80px">交易日期</th>
+<th>成交价(元)</th>
+<th>成交金额(元)</th>
+<th>成交量(股)</th>
+<th newtaid="f10_zxdt_code-dzjy-r1c5-clickword-quota-yijialv" class='newtaid iwcclick' taname='f10_stock_iwc_dzjyck' data-url='http://www.iwencai.com/yike/detail/auid/e106225fd9e07626?qs=client_f10_baike_3' content='是指正股的价格还要上涨多少百分比才可让认购权证持有人达到盈亏平衡'>溢价率</th>
+<th width="220px">买入营业部</th>
+<th width="220px">卖出营业部</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tc">2022-05-25</td>
+<td>13.15</td>
+<td>1972.50万</td>
+<td>150.00万</td>
+<td>-8.62%</td>
+<td class="tl">中信证券股份有限公司深圳分公司</td>
+<td class="tl">中信证券股份有限公司深圳分公司</td>
+</tr>
+<tr>
+<td class="tc">2022-04-21</td>
+<td>14.27</td>
+<td>570.80万</td>
+<td>40.00万</td>
+<td>-9.74%</td>
+<td class="tl">世纪证券有限责任公司东莞鸿福路证券营业部</td>
+<td class="tl">长城证券股份有限公司深圳后海中心路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-04-19</td>
+<td>14.31</td>
+<td>629.64万</td>
+<td>44.00万</td>
+<td>-9.49%</td>
+<td class="tl">世纪证券有限责任公司东莞鸿福路证券营业部</td>
+<td class="tl">长城证券股份有限公司深圳后海中心路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-04-15</td>
+<td>14.44</td>
+<td>722.00万</td>
+<td>50.00万</td>
+<td>-12.06%</td>
+<td class="tl">世纪证券有限责任公司东莞鸿福路证券营业部</td>
+<td class="tl">长城证券股份有限公司深圳后海中心路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-04-14</td>
+<td>14.22</td>
+<td>696.78万</td>
+<td>49.00万</td>
+<td>-11.35%</td>
+<td class="tl">世纪证券有限责任公司东莞鸿福路证券营业部</td>
+<td class="tl">长城证券股份有限公司深圳后海中心路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-04-13</td>
+<td>14.33</td>
+<td>415.57万</td>
+<td>29.00万</td>
+<td>-9.30%</td>
+<td class="tl">世纪证券有限责任公司东莞鸿福路证券营业部</td>
+<td class="tl">长城证券股份有限公司深圳后海中心路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-03-31</td>
+<td>15.99</td>
+<td>287.82万</td>
+<td>18.00万</td>
+<td>3.97%</td>
+<td class="tl">华泰证券股份有限公司南京止马营证券营业部</td>
+<td class="tl">华泰证券股份有限公司南京止马营证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-03-24</td>
+<td>13.50</td>
+<td>1620.00万</td>
+<td>120.00万</td>
+<td>-11.18%</td>
+<td class="tl">中信建投证券股份有限公司南京龙园西路证券营业部</td>
+<td class="tl">中信建投证券股份有限公司南京龙园西路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-03-23</td>
+<td>15.18</td>
+<td>2285.38万</td>
+<td>150.55万</td>
+<td>1.20%</td>
+<td class="tl">中国中金财富证券有限公司上海静安区灵石路证券营业部</td>
+<td class="tl">中信建投证券股份有限公司上海浦东新区福山路证券营业部</td>
+</tr>
+<tr>
+<td class="tc">2022-01-24</td>
+<td>15.62</td>
+<td>483.13万</td>
+<td>30.93万</td>
+<td>-9.19%</td>
+<td class="tl">光大证券股份有限公司深圳深南大道证券营业部</td>
+<td class="tl">万联证券股份有限公司上海富贵东路证券营业部</td>
+</tr>
+</tbody>
+</table>
+
+<div class='dzjyhctl hover_ta' taname="f10_stock_mktl_dzjyhc">
+<div style='font-size:14px;line-height:40px;height:40px'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;机构成功率回测: <a   ifjump='1' href='http://www.iwencai.com/regression/result-normal?qs=backtest_F10dzjy&query=%E5%A4%A7%E5%AE%97%E4%BA%A4%E6%98%93%E4%B9%B0%E6%96%B9%E8%90%A5%E4%B8%9A%E9%83%A8%E5%8C%85%E5%90%AB%E4%B8%AD%E4%BF%A1%E8%AF%81%E5%88%B8%E8%82%A1%E4%BB%BD%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8%E6%B7%B1%E5%9C%B3%E5%88%86%E5%85%AC%E5%8F%B8%3B%E5%A4%A7%E5%AE%97%E4%BA%A4%E6%98%93%E6%BA%A2%E4%BB%B7%E7%8E%87%E5%A4%A7%E4%BA%8E-12%25%E5%B0%8F%E4%BA%8E-6%25&startDate=20200531&endDate=20220531&daysForSaleStrategy=1,3,5,8,10,15,20,25,30' onclick="sendTalog('f10_stock_dzjy_hc');" newtaid="f10_zxdt_code-dzjy-se-clickmore-sta-huice" class="newtaid fr hla stat_jumptodata"  target="_blank">更多回测数据跟踪>></a></div>
+<div style="font-size:14px;line-height:25px">
+
+<p>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;截至2022-05-25，<span style="color:#ffba00">中信证券股份有限公司深圳分公司</span>以均价<span style="color:#e93030">13.15元</span>买入，大宗交易溢价率<span style="color:#e93030">大于-12%小于-6%</span>，次日上涨概率为<span style="color:#e93030">48.28%</span>，
+平均盈利为<span style="color:green">-0.16%</span>。收益率最高是持股25日后卖出，收益率为<span style="color:#e93030">4.81%</span>，成功率为<span style="color:#e93030">42.86%</span>。
+
+</p>
+</div>
+</div>
+</div>
+<div class="ft"></div>
+</div>
+<!-- 融资融券 -->
+<div class="m_box" id="margin" stat="index_margin">
+<div class="hd">
+<h2><span class="iwcclick" taname='f10_stock_iwc_rzrq' content='融资融券是指投资者向具有深圳证券交易所会员资格的证券公司提供担保物，借入资金买入本所上市证券或借入本所上市证券并卖出的行为。'  data-url='http://www.iwencai.com/yike/detail/auid/59841202292da8c6?qs=client_f10_baike_8' >融资融券</span></h2>
+</div>
+<div class="bd">
+<p>
+<a   ifjump='1' newtaid="f10_zxdt_code-rzrq-ne-clickmore-sta-lishi" onclick="TA.log({'id':'f10_click_rzrq','nj':1})" href="http://data.10jqka.com.cn/market/rzrqgg/op/code/code/000001/#refCountId=basic_50d2c037_178" target="_blank" class="newtaid fr hla stat_jumptodata">查看历史融资融券信息&gt;&gt;</a>
+<span class="tip f14">融资余额若长期增加时表示投资者心态偏向买方，市场人气旺盛属强势市场；反之则属弱势市场。</span>
+</p>
+<table class="m_table m_hl mt10">
+<thead>
+<tr>
+<th width="80px">交易日期</th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c2-clickword-quota-rzyue" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='融资余额指投资者每日融资买进与归还借款间的差额。融券余额增加，表示市场趋向卖方；反之则趋向买方。'  data-url='http://www.iwencai.com/yike/detail/auid/d27e9b9e5d23d33f?qs=client_f10_baike_8'>融资余额</span>(元)</th>
+<th><span style="color:#FB0000">融资余额/流通市值</span></th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c4-clickword-quota-rzmairu" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='是指每天收盘后累计发生的向券商借钱买股票尚未偿还的资金，也就是融资买入后未偿还的金额。'  data-url='http://www.iwencai.com/yike/detail/auid/ca38b49b0d3cbfc2?qs=client_f10_baike_8'>融资买入额</span>(元)</th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c5-clickword-quota-rzmaichu" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='融券卖出量，是指某一股票每天收盘后累计发生的向证券公司借的股票卖出总和。'  data-url='http://www.iwencai.com/yike/detail/auid/7bc03e9c150af4e2?qs=client_f10_baike_8'>融券卖出量</span>(股)</th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c6-clickword-quota-rqyuliang" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='融券余量，是指每天收盘后累计发生的向券商借股票卖出尚未偿还的股票数量。'  data-url='http://www.iwencai.com/yike/detail/auid/9c4a232daafff976?qs=client_f10_baike_8'>融券余量</span>(股)</th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c7-clickword-quota-rqyue" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='融券余额指投资者每日融券卖出与买进还券间的差额。'  data-url='http://www.iwencai.com/yike/detail/auid/06701d417a274584?qs=client_f10_baike_8'>融券余额</span>(元)</th>
+<th><span newtaid="f10_zxdt_code-rzrq-r1c8-clickword-quota-rzrqyue" class="newtaid iwcclick" taname='f10_stock_iwc_rzrq' content='融资融券余额=融资余额+融券余额'  data-url='http://www.iwencai.com/yike/detail/auid/3354aeff90ee0a08?qs=client_f10_baike_8'>融资融券余额</span>(元)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tc">2022-06-13</td>
+<td>
+42.48亿											</td>
+
+<td>
+1.57%
+</td>
+
+<td>
+2.75亿											</td>
+<td>33.39万</td>
+<td>1431.46万</td>
+<td>1.99亿</td>
+<td>								44.47亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-10</td>
+<td>
+41.27亿											</td>
+
+<td>
+1.49%
+</td>
+
+<td>
+2.73亿											</td>
+<td>30.74万</td>
+<td>1430.11万</td>
+<td>2.05亿</td>
+<td>								43.32亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-09</td>
+<td>
+40.59亿											</td>
+
+<td>
+1.46%
+</td>
+
+<td>
+1.88亿											</td>
+<td>35.84万</td>
+<td>1431.51万</td>
+<td>2.05亿</td>
+<td>								42.64亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-08</td>
+<td>
+41.51亿											</td>
+
+<td>
+1.51%
+</td>
+
+<td>
+2.22亿											</td>
+<td>47.50万</td>
+<td>1447.67万</td>
+<td>2.05亿</td>
+<td>								43.56亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-07</td>
+<td>
+41.10亿											</td>
+
+<td>
+1.50%
+</td>
+
+<td>
+2.09亿											</td>
+<td>29.15万</td>
+<td>1431.87万</td>
+<td>2.03亿</td>
+<td>								43.13亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-06</td>
+<td>
+40.82亿											</td>
+
+<td>
+1.48%
+</td>
+
+<td>
+2.78亿											</td>
+<td>47.01万</td>
+<td>1469.32万</td>
+<td>2.08亿</td>
+<td>								42.90亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-02</td>
+<td>
+39.68亿											</td>
+
+<td>
+1.47%
+</td>
+
+<td>
+1.28亿											</td>
+<td>16.56万</td>
+<td>1459.99万</td>
+<td>2.04亿</td>
+<td>								41.72亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-06-01</td>
+<td>
+39.46亿											</td>
+
+<td>
+1.44%
+</td>
+
+<td>
+1.26亿											</td>
+<td>39.36万</td>
+<td>1483.07万</td>
+<td>2.09亿</td>
+<td>								41.55亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-05-31</td>
+<td>
+39.14亿											</td>
+
+<td>
+1.42%
+</td>
+
+<td>
+1.46亿											</td>
+<td>22.49万</td>
+<td>1461.97万</td>
+<td>2.07亿</td>
+<td>								41.21亿											</td>
+</tr>
+<tr>
+<td class="tc">2022-05-30</td>
+<td>
+38.73亿											</td>
+
+<td>
+1.42%
+</td>
+
+<td>
+1.65亿											</td>
+<td>36.10万</td>
+<td>1478.56万</td>
+<td>2.08亿</td>
+<td>								40.81亿											</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+<div class="ft"></div>
+</div>
+<div class="m_box" id="interactive" stat="index_interactive">
+</div>
+</div>
+<!-- F10 Content End -->
+<!-- F10 Footer Start -->
+<div class="footer">
+<div class="links">
+<a href="http://stockpage.10jqka.com.cn" target="_blank" onclick="clickTalogStat('jptostock');">同花顺个股页面</a> |
+<a href="http://moni.10jqka.com.cn/" target="_blank">模拟炒股</a> |
+<a href="http://www.10jqka.com.cn/school/" target="_blank">股民学校</a> |
+<a href="http://mobile.10jqka.com.cn/?req=pcf10" target="_blank">手机炒股</a>|
+<a target="_blank" href=" http://wpa.qq.com/msgrd?v=3&amp;uin=2270716061&amp;site=qq&amp;menu=yes">联系我们</a>
+</div>
+<p>免责声明:本信息由同花顺金融研究中心提供，仅供参考，同花顺金融研究中心力求但不保证数据的完全准确，如有错漏请以中国证监会指定上市公司信息披露媒体为准，同花顺金融研究中心不对因该资料全部或部分内容而引致的盈亏承担任何责任。用户个人对服务的使用承担风险。同花顺对此不作任何类型的担保。同花顺不担保服务一定能满足用户的要求，也不担保服务不会受中断，对服务的及时性，安全性，出错发生都不作担保。同花顺对在同花顺上得到的任何信息服务或交易进程不作担保。同花顺提供的包括同花顺理财的所有文章，数据，不构成任何的投资建议，用户查看或依据这些内容所进行的任何行为造成的风险和结果都自行负责，与同花顺无关。 </p>
+</div>
+<!-- F10 Footer End -->
+</div>
+<div class="r-go-top" id="r-go-top"></div>
+</body>
+<input id="stockCode" type="hidden" value="000001">
+<input id="F001" type="hidden" value="A">
+<input id="F002" type="hidden" value="深圳证券交易所">
+<input id="F004" type="hidden" value="1">
+<input id="stockName" type="hidden" value="平安银行">
+<input id="marketId" type="hidden" value="33">
+<input id="cateName"  type="hidden" value="最新动态">
+<input id="catecode"  type="hidden" value="index">
+<input id="fcatecode"  type="hidden" value="index">
+<input id="sid" type="hidden" value="F10new_zxdt">
+<input id="fid" type="hidden" value="F10,F10master,F10main,F10new">
+<input id="qid" type="hidden" value="14585021">
+<div style="display:none" id="wordraddom">
+</div>
+<!-- title 容器 -->
+<div class="titleBox" id="altlayer" style="display:none; width: 260px;">
+<div class="tipbox_bd p0_5"><span style="line-height:24px;" class="tip f14">
+<span id="altlayer_content"></span>
+</div>
+</div>
+<!--pc-New头部入口跳转-->
+
+
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?js/common/cefapi/1.5.5/cefApi.min.js;js/basic/stock/newPcJs/common.js"></script>
+<script>
+try {
+external.createObject('Util');
+//document.getElementById("updownchange").style.display = "block";
+} catch (e) {}
+</script>
+
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?js/jquery-1.8.3.min.js;js/basic/common/inheritance.js;js/basic/stock/popWin.js;js/basic/common/Model_v2.js;js/basic/stock/20200604153837/po_v2.js"></script>
+<script type="text/javascript" crossorigin charset="utf-8" src="//s.thsi.cn/js/basic/companyCompare-202008172012.js"></script>
+
+<script type="text/javascript" crossorigin charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/stock/common_v3-2-c4f8cb.js"></script>
+
+<!--[if IE ]><script type="text/javascript"  crossorigin src="//s.thsi.cn/js/excanvas.min.js"></script><![endif]-->
+<!--[if IE 6]>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/js/basic/DD_belatedPNG_0.0.8a-min.js"></script>
+<script type="text/javascript">DD_belatedPNG.fix('.company_logo,.btn-gnjx-left, .btn-gnjx-right, .concept_hot_icons,.iwc_searchbar,.iwc_searchbar .tips-icon,#autocomplete_search_input dd .icona,#autocomplete_search_input dd .iconb');</script>
+<![endif]-->
+<script type="text/javascript" crossorigin src="//s.thsi.cn/js/basic/jquery.pos-fixed.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/ta.min.js;js/pa.min.js;js/basic/stock/StatLoad.js;js/basic/stock/20200605135220/xgcl_mod.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/js/basic/stock/tongji.min.js"></script>
+<!-- 统计 -->
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?js/home/ths_core.min.js;js/home/ths_quote.min.js;js/home/tongji.min.js" charset="utf-8"></script>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/js/basic/stock/commonLog_v3.js" charset="utf-8"></script>
+<!--F10运营位脚本-->
+<script type="text/javascript" crossorigin charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/stock/append-00e09b.js"></script>
+<script type="text/javascript" crossorigin charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/stock/f10widget_v3-16c371.js"></script>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?/js/navigation/jquery.bgiframe.min.js;/js/navigation/jquery.ui.position.min.js"></script>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/cb?js/basic/stock/json2.js"></script>
+<script type="text/javascript" charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/stock/search_v3-fec53c.js"></script>
+<script>
+//---------------自定义title弹窗 start----------
+var tempalt='';//临时存储title
+document.body.onmousemove = function(event) {
+if(altlayer.style.display==''){
+$("#altlayer").css({
+left: event.pageX,
+top: event.pageY+10
+});
+}
+};
+document.body.onmouseover = function(event) {
+if (event.srcElement.className !== 'titleIcon') {
+return false;
+}
+if(event.srcElement.title && (event.srcElement.title!='' || (event.srcElement.title=='' && tempalt!=''))){
+$("#altlayer").css({
+left: event.pageX,
+top: event.pageY+20,
+display: ''
+});
+$("#altlayer_content").html(event.srcElement.title)
+tempalt = event.srcElement.title;
+event.srcElement.title='';
+}
+};
+document.body.onmouseout = function(event) {
+if (tempalt != '') {
+event.srcElement.title = tempalt;
+}
+tempalt = '';
+$("#altlayer").hide();
+};
+//---------------自定义title弹窗 end----------
+//F10客户端结点设置
+function setClientCacheData() {
+try { //判断是否在客户端，存入结点
+external.createObject('Util');
+window.API.use({
+method: 'Util.getHxVer',
+success: function(data) {
+var hexinVer = getVersionStr(data);
+var pathname = window.location.pathname
+pathname = pathname.replace(/\/\d{2,3}\//, '/%4/');
+pathname = pathname.replace(/\/[\d|A]\d{5}\//, '/%6/');
+//dalert(hexinVer);//上线注意，测试版版本86080  正式版 86090 请注意
+if (hexinVer >= 86080) {
+window.API.use({
+method: 'Info.cacheInfoData',
+data: ['f10_client_node', 'http://basic.10jqka.com.cn' + pathname],
+success: function() {
+}
+})
+} else {
+window.API.use({
+method: 'Info.cacheInfoData',
+data: ['', 'http://basic.10jqka.com.cn/' + pathname],
+success: function() {
+}
+})
+}
+}
+})
+document.getElementById("updownchange").style.display = "block";
+} catch (e) {
+//远航版隐藏header
+$("#quotedata").empty()
+$("#updownchange").empty()
+}
+try {
+callNativeHandler('getMacVer', {}, function(data){
+if (data.plaform == 'mac' && data.version>='1.3.0' ) {
+var pathname = window.location.pathname
+pathname = pathname.replace(/\/\d{2,3}\//, '/%4/');
+pathname = pathname.replace(/\/[\d|A]\d{5}\//, '/%6/');
+callNativeHandler('cache_info_Data', {
+'f10_client_node': 'http://basic.10jqka.com.cn' + pathname
+}, function(data){
+});
+}
+});
+} catch (e) {
+}
+}
+setClientCacheData();
+</script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/basic/stock/highcharts_v2.js;js/basic/stock/tableSorter_v2-2.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/basic/stock/jquery.flot.min.js;js/basic/stock/jquery.flot.tooltip.min.js;js/basic/stock/jskzd.20151120.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/basic/stock/iwencai_v2-4.201605172.js;js/basic/stock/userevaluate_v3.20170811.js;js/basic/stock/pubtime_v2.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/basic/stock/modpager.js;js/basic/stock/jquery.pager.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/js/clientinfo/nav/jquery.tinyscrollbar.js"></script>
+<script type="text/javascript" crossorigin src="//s.thsi.cn/cb?js/basic/stock/202005271800/20200604153837/remind_v6.js"></script>
+<script type="text/javascript" crossorigin charset="utf-8" src="//s.thsi.cn/js/basic/stockph_v2/stock/gdr-ce9bc8.js"></script>
+<script type="text/javascript" charset="utf-8" crossorigin src="//s.thsi.cn/cb?js/basic/stockph_v2/stock/index-afb812.js"></script>
+<script type="text/javascript" charset="utf-8" crossorigin src="//s.thsi.cn/cb?js/basic/stockph_v2/stock/dongtai-dd4014.js"></script>
+<script type="text/javascript"  crossorigin src="//s.thsi.cn/js/basic/stock/20200604153837/stockpage_v3.20190506.js"></script>
+<script type="text/javascript" charset="utf-8" crossorigin id="ths-parser-script" app_key="f10_astockpc_config" src="//s.thsi.cn/cd/website-thsc-f10-utils/1.4.39/parser.js"></script>
+<script type="text/javascript">
+var sid = 'F10new_zxdt';
+var fid = 'F10,F10master,F10main,F10new';
+var stockcode = '000001';
+if (window.location.href.indexOf('interactive')<0
+&&window.location.href.indexOf('dupont')<0) {
+$(".subnav .skipto").each(function(){
+sonnav = $(this).attr('nav');
+if ($("#"+sonnav).length>0 || $("[idchange='"+sonnav+"']").length>0) {
+} else {
+$(this).hide();
+}
+})
+}
+if (stockcode.substr(0,2) == '43' || stockcode.substr(0,2) == '83') {
+var third_sid = sid+'_thirdboard';
+var third_fid = fid+'_thirdboard';
+PA.setStartTime(loadTimer);
+PA.init({'id':third_sid, 'fid':third_fid, 'stockcode':stockcode});
+}
+$(document).ready(function(){
+var hash = window.location.hash.substring(1);
+var hashArray = hash.split('-');
+if(hashArray[0]  == 'position'){
+$("#sortNav li").eq(hashArray[1]).find("a").click();
+}
+});
+try {
+external.createObject('Util');
+window.API.use({
+method: 'Passport.get',
+data: ['m_qs'],
+success: function(data) {
+var qsid = data
+if (qsid == '114') {
+$("#f10_top_ad").hide();
+$("#r-go-top").hide();
+}
+}
+})
+} catch (e) {}
+if (!isIE6()) {
+$(".m_box").statload();
+}
+try {
+external.createObject('Util');
+window.API.use({
+method: 'Passport.get',
+data: 'm_qs',
+success: function(data) {
+var qsid = data
+if (qsid < 800) {
+fid += ',f10new_qs';
+} else {
+fid += ',f10new_fqs';
+}
+PA.setStartTime(loadTimer);
+setTimeout(function(){
+PA.init({
+'id': sid,
+'fid': fid,
+'stockcode': stockcode,
+'qsid': qsid
+});
+},100)
+}
+})
+} catch (e) {
+PA.setStartTime(loadTimer);
+PA.init({
+'id': sid,
+'fid': fid,
+'stockcode': stockcode
+});
+}
+try {
+external.createObject('Util');
+var externalSessionId = window.API.createSessionId('external');
+window.API.use({
+method: 'external.registerEvent',
+data: 'onshow',
+sessionId: externalSessionId,
+persistent: true,
+callbackName: 'onshow',
+success: function(data) {
+if (!data) {
+PA.setStartTime(loadTimer);
+PA.init({
+'id': sid,
+'fid': fid,
+'stockcode': stockcode,
+'hide': 1,
+'nj': 1,
+_sid: "__ths_onshow"
+});
+}
+}
+})
+} catch (e) {}
+</script>
+<div style="display:none"><script type="text/javascript">
+(function(){
+var _bdhmProtocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3F78c58f01938e4d85eaf619eae71b4ed1' type='text/javascript'%3E%3C/script%3E"));
+});
+</script>
+
+<script type="text/javascript" charset="utf-8" crossorigin src="//s.thsi.cn/js/basic/stockph_v2/stock/f10hq_v4-5-576b58.js"></script>
+<script type="text/javascript" charset="utf-8" crossorigin src="//s.thsi.cn/js/basic/stockph_v2/stock/onlyBAuthorize-4a6ce9.js"></script>
+</div>
+<!--F10头部广告-->
+
+<!--<div id="f10_top_ad" class="f10_ad_top none"><script type="text/javascript">CNZZ_SLOT_RENDER('297563');</script></div>-->
+</html>
+
+
+
+
+
+

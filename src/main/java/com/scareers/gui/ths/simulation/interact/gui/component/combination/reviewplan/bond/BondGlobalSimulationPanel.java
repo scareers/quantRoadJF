@@ -1029,7 +1029,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         // 2.1. 8个点击改变复盘开始时间的按钮; 仅改变时分秒
         List<String> changeReviseStartTimeButtonTexts = Arrays
-                .asList("9:30:00", "9:45:00",
+                .asList("09:30:00", "09:45:00",
                         "10:00:00", "10:15:00",
                         "10:30:00", "10:45:00",
                         "11:00:00", "11:15:00",
