@@ -300,7 +300,7 @@ public class TraderGui extends JFrame {
                                 try {
                                     CrawlerChainEm.main1();
                                 } catch (Exception ex) {
-                                    ex.printStackTrace( )   ;
+                                    ex.printStackTrace()   ;
                                 }
                             }
                         }, true);
