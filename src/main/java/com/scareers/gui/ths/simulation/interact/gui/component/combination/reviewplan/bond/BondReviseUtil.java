@@ -1,5 +1,9 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.lang.Console;
@@ -49,7 +53,10 @@ public class BondReviseUtil {
     // 转债全列表, 是否使用问财实时列表; 若不, 则使用数据库对应日期列表; @noti: 目前问财的成交额排名, 似乎有bug, 无法排名正确
     public static final boolean bondListUseRealTimeWenCai = true;
     public static final boolean loadAllFsDataFromDbWhenFlushBondList = true; // @key: 更新转债列表显示时, 是否载入所有fs数据
-    public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额");
+    public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额", "短速", "短额");
+    public static int bondShortTermChgPctSecondRange = 30; // 转债短期的 涨跌幅成交额, 使用近 多少秒内的df, 计算涨跌幅
+    public static int bondShortTermAmountSecondRange = 30; // 转债短期的 总成交额, 使用近 多少秒内的df, 计算成交额!
+
     // 主循环因代码执行而损耗的时间, 修正每次循环的sleep值, 以符合理论! 将自动调整sleep值! <-- 2毫秒约等于循环的代码执行(排除sleep)时间,
     public static volatile long codeExecLossSleepFixSimulation = 2;
     public static final int kLineAmountHope = 170; // k线图希望的数量
@@ -257,6 +264,15 @@ public class BondReviseUtil {
                                                                         String timeTick) {
         HashMap<SecurityBeanEm, Double> chgPctRealTime = new HashMap<>(); // 涨跌幅
         HashMap<SecurityBeanEm, Double> amountRealTime = new HashMap<>(); // 成交额
+
+        // @add: 短期涨跌幅, 以及短期的 成交额总和!
+        HashMap<SecurityBeanEm, Double> chgPctShortTermRealTime = new HashMap<>(); // 短期涨跌幅变化, 以昨收为基准
+        HashMap<SecurityBeanEm, Double> amountShortTermRealTime = new HashMap<>(); // 短期成交额汇总
+
+        DateTime shortTermChgPctStartTick = getStdDateTimeOffset(date, timeTick, -bondShortTermChgPctSecondRange);
+        DateTime shortTermAmountStartTick = getStdDateTimeOffset(date, timeTick, -bondShortTermAmountSecondRange);
+
+
         for (SecurityBeanEm bondBean : bondList) {
             // 1.昨收, 计算涨跌幅
             Double preClose = EastMoneyDbApi.getPreCloseOf(date, bondBean.getQuoteId());
@@ -280,7 +296,29 @@ public class BondReviseUtil {
 
             // 5.总计成交额, 需要强行计算! price 和 vol 列, vol手数 需要转换为 张数, *10
             amountRealTime.put(bondBean, getAmountOfEffectDf(bondBean, effectDf));
+
+            // 6.短期的涨速
+            DataFrame<Object> shortEffectDfOfChgPct = getEffectDfByTickRange(fsTransDf,
+                    DateUtil.format(shortTermChgPctStartTick,
+                            DatePattern.NORM_TIME_PATTERN)
+                    , timeTick);
+            if (shortEffectDfOfChgPct == null || shortEffectDfOfChgPct.length() == 0) {
+                continue;
+            }
+            Double price0 = Double.valueOf(shortEffectDfOfChgPct.get(0, "price").toString());
+            chgPctShortTermRealTime.put(bondBean, (newestPrice - price0) / preClose);
+
+            // 7.短期的成交额
+            DataFrame<Object> shortEffectDfOfAmount = getEffectDfByTickRange(fsTransDf,
+                    DateUtil.format(shortTermAmountStartTick,
+                            DatePattern.NORM_TIME_PATTERN)
+                    , timeTick);
+            if (shortEffectDfOfAmount == null || shortEffectDfOfAmount.length() == 0) {
+                continue;
+            }
+            amountShortTermRealTime.put(bondBean, getAmountOfEffectDf(bondBean, shortEffectDfOfAmount));
         }
+
 
         // 1.构建结果df! 列简单: 代码,名称, 涨跌幅, 当前总成交额!
         DataFrame<Object> res = new DataFrame<>(bondTableColNames);
@@ -290,12 +328,31 @@ public class BondReviseUtil {
             row.add(beanEm.getName());
             row.add(chgPctRealTime.get(beanEm));
             row.add(amountRealTime.get(beanEm)); // 涨跌幅成交额都可能是 null, 但保证需要所有转债;
+            row.add(chgPctShortTermRealTime.get(beanEm)); // 涨跌幅成交额都可能是 null, 但保证需要所有转债;
+            row.add(amountShortTermRealTime.get(beanEm)); // 涨跌幅成交额都可能是 null, 但保证需要所有转债;
             res.append(row);
         }
 
         // 2. 无需排序, 自行使用 JXTable 的排序功能! 但转换为数字排序, 是需要重新一下排序逻辑的, 默认按照字符串排序
         //Console.log(res.toString(10));
         return res;
+    }
+
+    /**
+     * 给定日期, 给定改变的秒数, (一般负数), 返回在 09:30:00 - 15:00:00 之间的合理 时间
+     */
+    public static DateTime getStdDateTimeOffset(String date,
+                                                String timeTick,
+                                                int offsetSecond) {
+        DateTime parse = DateUtil.parse(date + " " + timeTick);
+        DateTime offset = DateUtil.offset(parse, DateField.SECOND, offsetSecond);
+        String format = DateUtil.format(offset, DatePattern.NORM_TIME_PATTERN);
+        if (format.compareTo("09:30:00") < 0) {
+            format = "09:30:00";
+        } else if (format.compareTo("15:00:00") > 0) {
+            format = "15:00:00";
+        }
+        return DateUtil.parse(DateUtil.format(offset, DatePattern.NORM_DATE_PATTERN) + " " + format);
     }
 
 
@@ -377,35 +434,35 @@ public class BondReviseUtil {
      * @param myTable
      */
     public static void fitTableColumns(JTable myTable) {
-        JTableHeader header = myTable.getTableHeader();
-        int rowCount = myTable.getRowCount();
-
-        Enumeration columns = myTable.getColumnModel().getColumns();
-
-        int dummyIndex = 0;
-        while (columns.hasMoreElements()) {
-            TableColumn column = (TableColumn) columns.nextElement();
-            int col = header.getColumnModel().getColumnIndex(column.getIdentifier());
-            int width = (int) myTable.getTableHeader().getDefaultRenderer()
-                    .getTableCellRendererComponent(myTable, column.getIdentifier()
-                            , false, false, -1, col).getPreferredSize().getWidth();
-            for (int row = 0; row < rowCount; row++) {
-                int preferedWidth = (int) myTable.getCellRenderer(row, col).getTableCellRendererComponent(myTable,
-                        myTable.getValueAt(row, col), false, false, row, col).getPreferredSize().getWidth();
-                width = Math.max(width, preferedWidth);
-            }
-            header.setResizingColumn(column); // 此行很重要
-
-            int actualWidth = width + myTable.getIntercellSpacing().width + 2;
-            actualWidth = Math.min(700, actualWidth); // 单列最大宽度
-            column.setWidth(actualWidth); // 多5
-//            break; // 仅第一列日期. 其他的平均
-
-            if (dummyIndex > -1) {
-                column.setWidth(80); //  每行宽度
-            }
-            dummyIndex++;
-        }
+//        JTableHeader header = myTable.getTableHeader();
+//        int rowCount = myTable.getRowCount();
+//
+//        Enumeration columns = myTable.getColumnModel().getColumns();
+//
+//        int dummyIndex = 0;
+//        while (columns.hasMoreElements()) {
+//            TableColumn column = (TableColumn) columns.nextElement();
+//            int col = header.getColumnModel().getColumnIndex(column.getIdentifier());
+//            int width = (int) myTable.getTableHeader().getDefaultRenderer()
+//                    .getTableCellRendererComponent(myTable, column.getIdentifier()
+//                            , false, false, -1, col).getPreferredSize().getWidth();
+//            for (int row = 0; row < rowCount; row++) {
+//                int preferedWidth = (int) myTable.getCellRenderer(row, col).getTableCellRendererComponent(myTable,
+//                        myTable.getValueAt(row, col), false, false, row, col).getPreferredSize().getWidth();
+//                width = Math.max(width, preferedWidth);
+//            }
+//            header.setResizingColumn(column); // 此行很重要
+//
+//            int actualWidth = width + myTable.getIntercellSpacing().width + 2;
+//            actualWidth = Math.min(700, actualWidth); // 单列最大宽度
+//            column.setWidth(actualWidth); // 多5
+////            break; // 仅第一列日期. 其他的平均
+//
+//            if (dummyIndex > -1) {
+//                column.setWidth(60); //  每行宽度
+//            }
+//            dummyIndex++;
+//        }
     }
 
     public static void openSecurityQuoteUrl(SecurityBeanEm.SecurityEmPo po) {
@@ -581,8 +638,9 @@ public class BondReviseUtil {
      * 第1,2列字体和 中对齐; 其余右对齐
      */
     public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
-        public static Font font1 = new Font("微软雅黑", Font.PLAIN, 18);
-        public static Font font2 = new Font("楷体", Font.BOLD, 18);
+        public static Font font1 = new Font("微软雅黑", Font.PLAIN, 14);
+//        public static Font font2 = new Font("楷体", Font.BOLD, 12);
+        public static Font font2 = new Font("楷体", Font.PLAIN, 14);
 
         Color selectBackground;
 
@@ -748,12 +806,15 @@ public class BondReviseUtil {
      * 本行的 涨跌幅数值, >0.0 , 涨跌幅文字将红色
      */
     public static class ChgPctGt0HighLighterPredicate implements HighlightPredicate {
-        public ChgPctGt0HighLighterPredicate() {
+        int colIndex;
+
+        public ChgPctGt0HighLighterPredicate(int colIndex) {
+            this.colIndex = colIndex;
         }
 
         @Override
         public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
-            Object value = adapter.getValue(2); // 涨跌幅
+            Object value = adapter.getValue(colIndex); // 涨跌幅
             if (value == null) {
                 return false;
             }
@@ -763,7 +824,7 @@ public class BondReviseUtil {
             } catch (Exception e) {
                 return false;
             }
-            if (v > 0 && adapter.column == 2) { // 只改变涨跌幅列
+            if (v > 0 && adapter.column == colIndex) { // 只改变涨跌幅列
                 return true;
             }
             return false;
@@ -832,12 +893,16 @@ public class BondReviseUtil {
      * 本行的 涨跌幅数值, <0.0 , 涨跌幅文字将绿色
      */
     public static class ChgPctLt0HighLighterPredicate implements HighlightPredicate {
-        public ChgPctLt0HighLighterPredicate() {
+        int colIndex;
+
+        public ChgPctLt0HighLighterPredicate(int colIndex) {
+            this.colIndex = colIndex;
         }
+
 
         @Override
         public boolean isHighlighted(Component renderer, org.jdesktop.swingx.decorator.ComponentAdapter adapter) {
-            Object value = adapter.getValue(2); // 涨跌幅
+            Object value = adapter.getValue(colIndex); // 涨跌幅
             if (value == null) {
                 return false;
             }
@@ -847,7 +912,7 @@ public class BondReviseUtil {
             } catch (Exception e) {
                 return false;
             }
-            if (v < 0 && adapter.column == 2) { // 只改变涨跌幅列
+            if (v < 0 && adapter.column == colIndex) { // 只改变涨跌幅列
                 return true;
             }
             return false;

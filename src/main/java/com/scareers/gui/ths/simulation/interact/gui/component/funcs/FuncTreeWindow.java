@@ -341,7 +341,7 @@ public class FuncTreeWindow extends FuncFrameS {
 
     private void changeToBondGlobalSimulationPanel() {
         BondGlobalSimulationPanel
-                .getInstance(this.getMainDisplayWindow(), 340)
+                .getInstance(this.getMainDisplayWindow(), 380)
                 .showInMainDisplayWindow();
         if (TraderGui.INSTANCE != null) { // 切换gui功能状态
             TraderGui.INSTANCE.setFunctionGuiCurrent(TraderGui.FunctionGuiCurrent.BOND_REVISE);

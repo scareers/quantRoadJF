@@ -3,6 +3,7 @@ package com.scareers.gui.ths.simulation.interact.gui.component.combination.revie
 import cn.hutool.core.date.*;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.eastmoney.BondUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
@@ -1022,7 +1023,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         List<Integer> changeAmounts = Arrays
                 .asList(1, -1, 3, -3);
         for (Integer changeAmount : changeAmounts) {
-            FuncButton changeReviseStartDateButton =  getChangeReviseStartDateButton(changeAmount);
+            FuncButton changeReviseStartDateButton = getChangeReviseStartDateButton(changeAmount);
             buttonContainer.add(changeReviseStartDateButton);
         }
 
@@ -1477,6 +1478,7 @@ public class BondGlobalSimulationPanel extends JPanel {
 
     /**
      * 秒级改变复盘开始时间
+     *
      * @param text
      * @param secondChange
      * @return
@@ -1574,7 +1576,7 @@ public class BondGlobalSimulationPanel extends JPanel {
             public Class getColumnClass(int column) { // 返回列值得类型, 使得能够按照数据排序, 否则默认按照字符串排序
                 if (column == 0 || column == 1) { // 名称代码
                     return String.class;
-                } else if (column == 2 || column == 3) { // 涨跌幅成交额
+                } else if (column == 2 || column == 3 || column == 4 || column == 5) { // 涨跌幅成交额
                     return Double.class;
                 } else {
                     return Object.class;
@@ -1652,7 +1654,7 @@ public class BondGlobalSimulationPanel extends JPanel {
                             bondBeanList, getReviseDateStrSettingYMD(), currentTick
                     );
                     fullFlushBondListTable(newDataDf);
-                    ThreadUtil.sleep(1000); // 每秒刷新!
+                    ThreadUtil.sleep(RandomUtil.randomInt(1000, 1500)); // 每秒刷新!
                 }
             }
 
@@ -1667,11 +1669,14 @@ public class BondGlobalSimulationPanel extends JPanel {
         jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
         jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForPercent());
         jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForBigNumber());
+        jXTableForBonds.getColumn(4).setCellRenderer(new TableCellRendererForBondTableForPercent());
+        jXTableForBonds.getColumn(5).setCellRenderer(new TableCellRendererForBondTableForBigNumber());
     }
 
 
     public static Color commonForeColor = Color.white; // 普通的字颜色, 转债代码和名称 使用白色
     public static Color amountForeColor = new Color(2, 226, 224); // 文字颜色 : 成交额
+    public static Color amountForeColorShort = Color.orange; // 文字颜色 : 成交额
     public static Color upForeColor = new Color(255, 50, 50); // 向上的红色 : 涨跌幅
     public static Color downForeColor = new Color(0, 230, 0); // 向下的绿色: 涨跌幅
     public static Color selectedBackColor = new Color(64, 0, 128); // 选中时背景色
@@ -1690,13 +1695,25 @@ public class BondGlobalSimulationPanel extends JPanel {
         ColumnHighlightPredicate columnHighlightPredicate = new ColumnHighlightPredicate(3);
         ColorHighlighter amountColForeHighlighter = new ColorHighlighter(columnHighlightPredicate, null,
                 amountForeColor, null, amountForeColor);
+        // 1.2.@add: 短额 黄色
+        ColumnHighlightPredicate columnHighlightPredicate0 = new ColumnHighlightPredicate(5);
+        ColorHighlighter amountColForeHighlighterShort = new ColorHighlighter(columnHighlightPredicate0, null,
+                amountForeColorShort, null, amountForeColorShort);
 
         // 2.涨跌幅>0 则文字 偏红色 , <0, 则偏绿色
-        ChgPctGt0HighLighterPredicate chgPctGt0HighLighterPredicate = new ChgPctGt0HighLighterPredicate();
+        ChgPctGt0HighLighterPredicate chgPctGt0HighLighterPredicate = new ChgPctGt0HighLighterPredicate(2);
         ColorHighlighter chgPctGt0Highlighter = new ColorHighlighter(chgPctGt0HighLighterPredicate, null,
                 upForeColor, null, upForeColor);
-        ChgPctLt0HighLighterPredicate chgPctLt0HighLighterPredicate = new ChgPctLt0HighLighterPredicate();
+        ChgPctLt0HighLighterPredicate chgPctLt0HighLighterPredicate = new ChgPctLt0HighLighterPredicate(2);
         ColorHighlighter chgPctLt0Highlighter = new ColorHighlighter(chgPctLt0HighLighterPredicate, null,
+                downForeColor, null, downForeColor);
+
+        // 2.2.@add: 短速同理
+        ChgPctGt0HighLighterPredicate chgPctGt0HighLighterPredicate1 = new ChgPctGt0HighLighterPredicate(4);
+        ColorHighlighter chgPctGt0HighlighterShort = new ColorHighlighter(chgPctGt0HighLighterPredicate1, null,
+                upForeColor, null, upForeColor);
+        ChgPctLt0HighLighterPredicate chgPctLt0HighLighterPredicate2 = new ChgPctLt0HighLighterPredicate(4);
+        ColorHighlighter chgPctLt0HighlighterShort = new ColorHighlighter(chgPctLt0HighLighterPredicate2, null,
                 downForeColor, null, downForeColor);
 
         // 3.持仓转债 代码和名称 变深红 , 两者均为属性, 为了实时修改!
@@ -1706,8 +1723,11 @@ public class BondGlobalSimulationPanel extends JPanel {
 
         jXTableForBonds.setHighlighters(
                 amountColForeHighlighter,
+                amountColForeHighlighterShort,
                 chgPctGt0Highlighter,
                 chgPctLt0Highlighter,
+                chgPctGt0HighlighterShort,
+                chgPctLt0HighlighterShort,
                 holdBondHighlighter
         );
 
@@ -1735,8 +1755,8 @@ public class BondGlobalSimulationPanel extends JPanel {
         jXTableForBonds.setBackground(Color.black);
         jXTableForBonds.setForeground(Color.white);
         // 4. 单行高 和字体
-        jXTableForBonds.setRowHeight(30);
-        jXTableForBonds.setFont(new Font("微软雅黑", Font.PLAIN, 18));
+        jXTableForBonds.setRowHeight(25);
+        jXTableForBonds.setFont(new Font("微软雅黑", Font.PLAIN, 16));
 
         // 5.单选,大小,无边框, 加放入滚动
         jXTableForBonds.setSelectionMode(DefaultListSelectionModel.SINGLE_SELECTION);
