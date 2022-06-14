@@ -1022,7 +1022,7 @@ public class BondGlobalSimulationPanel extends JPanel {
         List<Integer> changeAmounts = Arrays
                 .asList(1, -1, 3, -3);
         for (Integer changeAmount : changeAmounts) {
-            FuncButton changeReviseStartDateButton = getChangeReviseStartDateButton(changeAmount);
+            FuncButton changeReviseStartDateButton =  getChangeReviseStartDateButton(changeAmount);
             buttonContainer.add(changeReviseStartDateButton);
         }
 
