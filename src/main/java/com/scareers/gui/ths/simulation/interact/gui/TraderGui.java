@@ -247,6 +247,26 @@ public class TraderGui extends JFrame {
         );
         startMenu.add(bondTtsItem3);
 
+        JMenuItem bondTtsItem4 = new JMenuItem("核按钮快捷方式切换同花顺");
+        bondTtsItem4.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    BondReviseUtil.recoverNuclearKeyBoardSettingToThs();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem4);
+
 
         startMenu.add(new JMenuItem("备用"));
 
