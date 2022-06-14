@@ -15,6 +15,7 @@ import joinery.DataFrame;
 import lombok.Getter;
 import org.jdesktop.swingx.JXTable;
 
+import javax.persistence.Index;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -162,6 +163,9 @@ public abstract class PcHotNewListPanel extends DisplayPanel {
                 public void mouseClicked(MouseEvent e) {
                     int row = jTable.getSelectedRow();
                     RowSorter<? extends TableModel> rowSorter = jTable.getRowSorter();
+                    if (row < -1) {
+                        return;
+                    }
                     row = rowSorter.convertRowIndexToModel(row);
 
                     currentBean = beanMap.get(Long.parseLong(model.getValueAt(row, 0).toString()));

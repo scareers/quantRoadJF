@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.StrUtil;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePicker;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -133,8 +134,31 @@ public class PlanReviewDateTimeDecider extends JPanel {
             }
         });
 
+        // @updater: 添加一个按钮, 可设置整体时间, 等价于 复盘程序所设置时间!
+        FuncButton button2 = ButtonFactory.getButton("同步复盘时间");
+        button2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                if (instance == null) {
+                    return;
+                }
+                // 复盘程序当前设置
+                String reviseDateStrSettingYMDHMS = instance.getReviseDateStrSettingYMDHMS();
+                showDate.setText(reviseDateStrSettingYMDHMS);
+                try {
+                    uniqueDatetime = DateUtil.parse(reviseDateStrSettingYMDHMS);
+                    dateTimePicker.setSelect(uniqueDatetime);
+                    dateTimePicker.refresh();
+                } catch (Exception ex) {
+
+                }
+            }
+        });
+
         this.add(showDate);
         this.add(button);
+        this.add(button2);
     }
 
 
