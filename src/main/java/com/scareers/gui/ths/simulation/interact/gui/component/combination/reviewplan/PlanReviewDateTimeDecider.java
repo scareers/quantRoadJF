@@ -9,6 +9,7 @@ import com.scareers.gui.ths.simulation.interact.gui.component.simple.DateTimePic
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
+import com.scareers.utils.CommonUtil;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -141,6 +142,7 @@ public class PlanReviewDateTimeDecider extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
                 if (instance == null) {
+                    CommonUtil.notifyKey("需要 BondGlobalSimulationPanel 已实例化才可同步复盘时间!");
                     return;
                 }
                 // 复盘程序当前设置
