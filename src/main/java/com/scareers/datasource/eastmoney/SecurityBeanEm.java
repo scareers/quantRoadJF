@@ -31,6 +31,7 @@ import static com.scareers.datasource.eastmoney.EastMoneyUtil.querySecurityIdsTo
  * 1.单个bean, 仅可转换一次, 转换为特定类型后不可变化
  * 2.且本类仅包含一种资产的各种属性, 原则上不包含 "数据(特指k线,分时图等)", 应当将本类实例组合进代表数据的类中
  * 3.东财所有相关api, 建议使用 SecurityBeanEm 作为参数, 而非简单使用资产代码等
+ * // @noti: web api, 概念板块和风格板块,无法区分,  "TypeUS":"3" 都是3;
  *
  * @author: admin
  * @date: 2021/12/21/021-20:51:45
@@ -57,7 +58,17 @@ public class SecurityBeanEm implements Serializable {
     private static SecurityBeanEm ShangZhengZhuanZhaiIndex; // 上证转债指数
     private static SecurityBeanEm ShenZhengZhuanZhaiIndex; // 深证转债指数
 
+
     public static void main(String[] args) throws Exception {
+        SecurityBeanEm bk = SecurityBeanEm.createBK("茅指数");
+        Console.log(bk.getConvertRawJsonObject());
+        bk = SecurityBeanEm.createBK("屏下摄像");
+        Console.log(bk.getConvertRawJsonObject());
+        bk = SecurityBeanEm.createBK("证券");
+        Console.log(bk.getConvertRawJsonObject());
+        bk = SecurityBeanEm.createBK("北京板块");
+        Console.log(bk.getConvertRawJsonObject());
+
 //        Console.log(SecurityBeanEm.createStock("002070",true).getConvertRawJsonObject());
 //        Console.log(SecurityBeanEm.createStock("000001",true).getConvertRawJsonObject());
 //        Console.log(SecurityBeanEm.createStock("600798",true).getConvertRawJsonObject());
@@ -71,7 +82,7 @@ public class SecurityBeanEm implements Serializable {
 //        Console.log(SecurityBeanEm.getShenZhengZhuanZhaiIndex());
 
 
-        Console.log(SecurityBeanEm.createBond("124005"));
+//        Console.log(SecurityBeanEm.createBond("124005"));
 //        Console.log(SecurityBeanEm.createBond("江山转债").getConvertRawJsonObject());
 //        Console.log(SecurityBeanEm.createBond("中金转债").getConvertRawJsonObject());
 //
