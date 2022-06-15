@@ -613,8 +613,11 @@ public class EmAllBkDisplayDialog extends JDialog {
         if (currentBk == null) {
             return; // 首次
         }
+        /*
+        @key: 同样, 因为最新一天不渲染机制, 应当多传递一天!
+         */
         kLineChart = new EmChartKLine.DynamicEmKLineChartForRevise(
-                currentBk, dateStr, hopeKLineAmount);
+                currentBk, EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1), hopeKLineAmount);
         DataFrame<Object> fsDf = EastMoneyDbApi
                 .getFs1MV2ByDateAndQuoteId(dateStr, currentBk.getQuoteId());
         fsChart = EmChartFs.createFs1MV2OfEm(fsDf, currentBk.getName(), true);

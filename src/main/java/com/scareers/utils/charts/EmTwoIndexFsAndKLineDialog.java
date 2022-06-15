@@ -96,10 +96,13 @@ public class EmTwoIndexFsAndKLineDialog extends JDialog {
     CrossLineListenerForFsXYPlot crossLineListenerForFsXYPlotHu;
 
     public void update(String dateStr, int hopeKLineAmount) {
+        /*
+         * @key: 因为k线实现机制, 会不显示今日k线, 因此这里应当后移一天
+         */
         shenKLine = new EmChartKLine.DynamicEmKLineChartForRevise(
-                shenIndex, dateStr, hopeKLineAmount);
+                shenIndex, EastMoneyDbApi.getPreNTradeDateStrict(dateStr,-1), hopeKLineAmount);
         huKLine = new EmChartKLine.DynamicEmKLineChartForRevise(
-                huIndex, dateStr, hopeKLineAmount);
+                huIndex, EastMoneyDbApi.getPreNTradeDateStrict(dateStr,-1), hopeKLineAmount);
 
         DataFrame<Object> fsDfShen = EastMoneyDbApi
                 .getFs1MV2ByDateAndQuoteId(dateStr, shenIndex.getQuoteId());
