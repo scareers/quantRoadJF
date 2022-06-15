@@ -35,7 +35,7 @@ public class ZiXunJingHuaPanelForPlan extends SimpleNewListPanel {
     public void flushBeanMapAndShowDf() {
         List<SimpleNewEm> newsForReviseByType;
         try {
-            newsForReviseByType = SimpleNewEmDao.getNewsForTradePlanByType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE,
+            newsForReviseByType = SimpleNewEmDao.getZiXunJingHuaNewsExcludeHotNewForPlan(
                     PlanReviewDateTimeDecider.getUniqueDatetime());
         } catch (SQLException e) {
             e.printStackTrace();

@@ -8,6 +8,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.log.Log;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.tools.stockplan.news.bean.PcHotNewEm;
 import com.scareers.tools.stockplan.news.bean.SimpleNewEm;
 import com.scareers.utils.log.LogUtil;
 import org.hibernate.Session;
@@ -133,15 +134,45 @@ public class SimpleNewEmDao {
      */
     public static List<SimpleNewEm> getCaiJingDaoDuNewsExcludeZiXunJingHuaForPlan(Date equivalenceNow)
             throws SQLException {
+
+        List<PcHotNewEm> newsForTradePlanByType = PcHotNewEmDao.getNewsForTradePlanByType(equivalenceNow);
+        Set<String> collect = newsForTradePlanByType.stream().map(PcHotNewEm::getTitle).collect(Collectors.toSet());
+
+
         List<SimpleNewEm> caiJingDaoDus = getNewsForTradePlanByType(SimpleNewEm.CAI_JING_DAO_DU_TYPE,
                 equivalenceNow);
         List<SimpleNewEm> ziXunJingHuas = getNewsForTradePlanByType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE,
                 equivalenceNow);
         Set<String> titles = ziXunJingHuas.stream().map(SimpleNewEm::getTitle).collect(Collectors.toSet());
+        titles.addAll(collect); // 标题全部加上!
+
         List<SimpleNewEm> res = new ArrayList<>();
         for (SimpleNewEm jingDaoDus : caiJingDaoDus) {
             if (!titles.contains(jingDaoDus.getTitle())) {
                 res.add(jingDaoDus);
+            }
+        }
+        return res;
+    }
+
+    /**
+     * 资讯精华列表, 需要排除掉 热门资讯 title 去重
+     *
+     * @param equivalenceNow
+     * @return
+     * @throws SQLException
+     */
+    public static List<SimpleNewEm> getZiXunJingHuaNewsExcludeHotNewForPlan(Date equivalenceNow)
+            throws SQLException {
+        List<PcHotNewEm> newsForTradePlanByType = PcHotNewEmDao.getNewsForTradePlanByType(equivalenceNow);
+        Set<String> collect = newsForTradePlanByType.stream().map(PcHotNewEm::getTitle).collect(Collectors.toSet());
+
+        List<SimpleNewEm> ziXunJingHuas = getNewsForTradePlanByType(SimpleNewEm.ZI_XUN_JING_HUA_TYPE,
+                equivalenceNow);
+        List<SimpleNewEm> res = new ArrayList<>();
+        for (SimpleNewEm ziXunJingHua : ziXunJingHuas) {
+            if (!collect.contains(ziXunJingHua.getTitle())) {
+                res.add(ziXunJingHua);
             }
         }
         return res;
