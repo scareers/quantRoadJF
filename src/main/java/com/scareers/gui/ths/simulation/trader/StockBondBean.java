@@ -9,6 +9,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 
 import javax.persistence.*;
+import java.util.Objects;
 
 /**
  * description:
@@ -62,5 +63,17 @@ public class StockBondBean {
         session.close();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StockBondBean bean = (StockBondBean) o;
+        return Objects.equals(stockCode, bean.stockCode) &&
+                Objects.equals(bondCode, bean.bondCode);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(stockCode, bondCode);
+    }
 }

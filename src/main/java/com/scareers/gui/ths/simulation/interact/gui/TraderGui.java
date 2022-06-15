@@ -20,6 +20,7 @@ import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
 import com.scareers.gui.ths.simulation.interact.gui.notify.EmPcNewsNotify;
 import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
+import com.scareers.gui.ths.simulation.interact.gui.notify.ThsSsjpNotify;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
@@ -300,7 +301,7 @@ public class TraderGui extends JFrame {
                                 try {
                                     CrawlerChainEm.main1();
                                 } catch (Exception ex) {
-                                    ex.printStackTrace( )   ;
+                                    ex.printStackTrace();
                                 }
                             }
                         }, true);
@@ -393,6 +394,15 @@ public class TraderGui extends JFrame {
                 @Override
                 public void run() {
                     EmPcNewsNotify.notifyNewestHotNew(); //
+                }
+            }, true);
+        }
+
+        if (autoThsPcSsjpNotify) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    ThsSsjpNotify.main0();
                 }
             }, true);
         }

@@ -3,5 +3,6 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java/com/scareers/gui/ths/simulation/interact/gui/TraderGui.java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java/com/scareers/gui/ths/simulation/interact/gui/notify/ThsNewConceptDiscoverSuper.java" charset="UTF-8" />
   </component>
 </project>

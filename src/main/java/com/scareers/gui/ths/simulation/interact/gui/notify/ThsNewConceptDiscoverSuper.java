@@ -1,13 +1,18 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.date.TimeInterval;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.StrUtil;
-import com.scareers.datasource.eastmoney.EastMoneyUtil;
-import com.scareers.datasource.eastmoney.quotecenter.EmQuoteApi;
-import com.scareers.pandasdummy.DataFrameS;
-import joinery.DataFrame;
+import com.scareers.datasource.eastmoney.BondUtil;
+import com.scareers.gui.ths.simulation.trader.StockBondBean;
+import com.scareers.sqlapi.EastMoneyDbApi;
+import com.scareers.sqlapi.ThsDbApi;
+import com.scareers.utils.CommonUtil;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -15,15 +20,11 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverLogLevel;
 import org.openqa.selenium.chrome.ChromeOptions;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
 
 /**
  * description: 同花顺新概念发现超级版本, 使用selenium 访问 "近期重要事件"!
@@ -43,86 +44,122 @@ import java.util.concurrent.TimeUnit;
  * @date: 2022/6/14/014-23:11:51
  */
 public class ThsNewConceptDiscoverSuper {
-    public static CopyOnWriteArraySet<String> res = new CopyOnWriteArraySet<>();
+    /**
+     * 保存今日重要事件! 映射; value是 具体描述
+     */
+    public static ConcurrentHashMap<StockBondBean, List<ThsKeyIssue>> todayKeyIssuesMap = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) {
-        String url = StrUtil.format("http://basic.10jqka.com.cn/{}/", "000001");
+    public static void main(String[] args) throws UnsupportedEncodingException, TimeoutException, InterruptedException {
+        main1();
+//        SpecialDriver specialDriver = new SpecialDriver(true);
+//        specialDriver.accessStock("600007");
 
-        String responseText = StrUtil.format("var xmlhttp=new XMLHttpRequest();\n" +
-                "            xmlhttp.open(\\\"POST\\\",\\\"%s\\\",false);\n" +
-                "            xmlhttp.setRequestHeader(\\\"Content-type\\\",\\\"application/x-www-form-urlencoded\\\");\n" +
-                "            xmlhttp.send();\n" +
-                "            return xmlhttp.responseText;", url);
-
-        SpecialDriver driver1 = new SpecialDriver(true);
-        driver1.accessStock("600001");
-
-        WebDriver driver = driver1.getDriver();
-// todo 未完成
-
-//        // 1.所有股票代码列表
-//        DataFrame<Object> stocks = EmQuoteApi.getRealtimeQuotes(Arrays.asList("沪深A股"));
-//        List<String> stockCodes = DataFrameS.getColAsStringList(stocks, "资产代码");
-//        Console.log(stockCodes.size());
-//
-//        // 2.浏览器池!
-//        ArrayList<SpecialDriver> drivers = new ArrayList<>();
-//        int driverPoolSize = 5;
-//        for (int i = 0; i < driverPoolSize; i++) {
-//            drivers.add(new SpecialDriver(true));
-//        }
-//
-//        // 3.线程池, 数量与浏览器相等
-//        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(driverPoolSize, driverPoolSize, 200, TimeUnit.SECONDS,
-//                new LinkedBlockingQueue<>());
-//
-//        // 3.遍历股票, 执行访问
-//        while (true) {
-//            for (int i = 0; i < 100; i++) {
-//                String s = stockCodes.get(i);
-//
-//                // 1.找到一个空闲的driver
-//                SpecialDriver tempDriver = null;
-//                for (SpecialDriver driver : drivers) {
-//                    if (!driver.running) {
-//                        tempDriver = driver;
-//                        break;
-//                    }
-//                }
-//                // 2.全部遍历完成, 都在运行有可能
-//                if (tempDriver == null) {
-//                    ThreadUtil.sleep(100);
-//                    continue;
-//                }
-//
-//                // 3.有浏览器空闲, 执行任务
-//                SpecialDriver finalTempDriver = tempDriver;
-//                poolExecutor.submit(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        String s1 = finalTempDriver.accessStock(s);
-//                        res.add(s);
-//                        Console.log(res.size());
-//                    }
-//                });
-//            }
-//        }
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ThsKeyIssue {
+        String type; // 类型, 例如: 新增概念, 异动提醒, 发布公告 等等描述性
+        String content; // 具体内容
+    }
+
+
+    public static volatile boolean oneEpochFinish = false;
+
+    public static void main1() throws TimeoutException, InterruptedException {
+        // 1.所有股票代码列表
+        List<StockBondBean> allStockWithBond = BondUtil.getAllStockWithBond();
+
+        // 2.浏览器池!
+        ArrayList<SpecialDriver> drivers = new ArrayList<>();
+        int driverPoolSize = 2;
+        for (int i = 0; i < driverPoolSize; i++) {
+            drivers.add(new SpecialDriver(true));
+        }
+
+        // 3.线程池, 数量与浏览器相等
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(driverPoolSize, driverPoolSize, 200, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>());
+
+        TimeInterval timer = DateUtil.timer();
+        timer.start();
+//        for (int i = 0; i < stockCodes.size(); i++) {
+        for (int i = 0; i < allStockWithBond.size(); i++) {
+            // 1.尝试等待有空闲浏览器, 没有则会阻塞
+            CommonUtil.waitUtil(new BooleanSupplier() {
+                @Override
+                public boolean getAsBoolean() {
+                    for (SpecialDriver specialDriver : SpecialDriver.driverPool) {
+                        if (!specialDriver.isRunning()) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }, Integer.MAX_VALUE, 1, null, false);
+            // 尝试异步执行任务, 等待防止异步任务堆积
+
+            int finalI = i;
+            poolExecutor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    StockBondBean stockBondBean = allStockWithBond.get(finalI);
+                    List<ThsKeyIssue> s = SpecialDriver.accessStockWithPool(stockBondBean);
+                    todayKeyIssuesMap.put(stockBondBean, s);
+                }
+            });
+        }
+        CommonUtil.waitUtil(new BooleanSupplier() {
+            @Override
+            public boolean getAsBoolean() {
+                return amount >= allStockWithBond.size() - 1;
+            }
+        }, Integer.MAX_VALUE, 1, null, false);
+
+        CommonUtil.notifyInfo(StrUtil.format("耗时: {}", timer.intervalRestart()));
+    }
+
+    public static volatile int amount = 0;
 
     /**
      * 封装 selenium 的 WebDriver, 专门执行 任务!
      */
     @Data
     public static class SpecialDriver {
+        public static CopyOnWriteArraySet<SpecialDriver> driverPool = new CopyOnWriteArraySet<>();
+        public static CopyOnWriteArraySet<String> oldAllConceptNameSet = new CopyOnWriteArraySet();
+
         private volatile boolean running; // 是否正在访问某只股票?
         private volatile boolean headless; // 是否隐藏浏览器窗口?
 
         private WebDriver driver;
 
+        public static void init() {
+            String today = DateUtil.today();
+            String pre5Date = EastMoneyDbApi.getPreNTradeDateStrict(today, 5);
+            oldAllConceptNameSet.addAll(ThsDbApi.getAllConceptNameByDate(pre5Date));
+        }
+
+        public static List<ThsKeyIssue> accessStockWithPool(StockBondBean stockBondBean) {
+            while (true) {
+                for (SpecialDriver specialDriver : driverPool) {
+                    if (!specialDriver.isRunning()) {
+                        return specialDriver.accessStock(stockBondBean);
+                    }
+                }
+                ThreadUtil.sleep(1);
+            }
+
+
+        }
+
+
         public SpecialDriver(boolean headless) {
             this.headless = headless;
             this.running = false;
             initDriver();
+            driverPool.add(this);
         }
 
         /**
@@ -137,7 +174,8 @@ public class ThsNewConceptDiscoverSuper {
             chromeOptions.setLogLevel(ChromeDriverLogLevel.OFF);
             this.driver = new ChromeDriver(chromeOptions);
             // 5秒默认超时, 差不多了
-            driver.manage().timeouts().implicitlyWait(Duration.of(500, ChronoUnit.MILLIS));
+            // 查找元素 500ms内没出现就超时, 也可以禁用!
+//            driver.manage().timeouts().implicitlyWait(Duration.of(500, ChronoUnit.MILLIS));
         }
 
         /**
@@ -145,13 +183,44 @@ public class ThsNewConceptDiscoverSuper {
          *
          * @param stockCode
          */
-        public String accessStock(String stockCode) {
+        public List<ThsKeyIssue> accessStock(StockBondBean stockBondBean) {
+            amount++;
+            driverPool.remove(this);
             this.running = true;
-            Console.log(stockCode);
-            driver.get(StrUtil.format("http://basic.10jqka.com.cn/{}/", stockCode));
-            WebElement tablelist = driver.findElement(By.id("tableList"));
+
+            driver.get(StrUtil.format("http://basic.10jqka.com.cn/{}/", stockBondBean.getStockCode()));
+            WebElement tableToday = null;
+            try {
+                tableToday = driver.findElement(By.id("tableToday"));
+            } catch (org.openqa.selenium.NoSuchElementException e) {
+                this.running = false;
+                driverPool.add(this);
+//                e.printStackTrace();
+                return null;
+            }
+
+            List<String> contentRes = new ArrayList<>();
+            // 具体内容的标签, 都是span标签
+            List<WebElement> contents = tableToday.findElements(By.tagName("span"));
+            for (WebElement content : contents) {
+                contentRes.add(content.getText());
+            }
+
+            List<String> typeRes = new ArrayList<>();
+            // 具体内容的标签, 都是span标签
+            List<WebElement> contents2 = tableToday.findElements(By.tagName("strong"));
+            for (WebElement content2 : contents2) {
+                typeRes.add(content2.getText());
+            }
+
+            List<ThsKeyIssue> res = new ArrayList<>();
+            for (int i = 0; i < typeRes.size(); i++) {
+                res.add(new ThsKeyIssue(typeRes.get(i), contentRes.get(i)));
+            }
+            Console.log(res);
             this.running = false;
-            return tablelist.getText();
+            driverPool.add(this);
+            return res;
         }
 
         /**

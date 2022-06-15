@@ -5,6 +5,7 @@ import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.pinyin.PinyinUtil;
@@ -18,6 +19,7 @@ import org.jdesktop.swingx.JXButton;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.List;
 
 
@@ -37,12 +39,15 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        String xx = EastMoneyUtil.getAsStrUseHutool("http://basic.10jqka.com.cn/000001/", null, 3000, 2);
+        String xx = EastMoneyUtil.getAsStrUseHutool("http://stock.10jqka.com.cn/jiepan_list/20220614/", null, 3000, 2);
         Console.log(xx);
+//
+//        String convert = CharsetUtil.convert("鍙戝竷鍏", "GBK", "UTF-8");
+//        Console.log(convert);
 
 
-//        String x = PinyinUtil.getPinyin("同花顺", ",");
-//        Console.log(x);
+        String x = PinyinUtil.getPinyin("同花顺", ",");
+        Console.log(x);
 
 
 //        URL resource = ResourceUtil.getResource("ths/nuclear/nuclear/");
