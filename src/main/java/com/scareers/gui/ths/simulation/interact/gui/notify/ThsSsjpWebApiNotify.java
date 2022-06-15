@@ -1,6 +1,5 @@
 package com.scareers.gui.ths.simulation.interact.gui.notify;
 
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.EastMoneyUtil;
 import com.scareers.utils.CommonUtil;
@@ -13,7 +12,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -25,7 +23,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author: admin
  * @date: 2022/6/15/015-11:16:00
  */
-public class ThsSsjpNotify {
+public class ThsSsjpWebApiNotify {
     public static CopyOnWriteArraySet<ThsSsjpNew> newPool = new CopyOnWriteArraySet<>();
 
     public static void main(String[] args) {
@@ -58,7 +56,7 @@ public class ThsSsjpNotify {
             for (ThsSsjpNew thsSsjpNew : newestSsjp0) {
                 if (!newPool.contains(thsSsjpNew)) {
                     newPool.add(thsSsjpNew);
-                    Tts.playSound("解", true, true);
+                    Tts.playSound("解", true, false);
                     CommonUtil.notifyInfo("同花顺最新热门资讯:\n" + thsSsjpNew.toString() + "  [" + thsSsjpNew.timeStr + " ]");
 //                        guiNotify("最新热门资讯", item);
                     ThreadUtil.sleep(3000);
@@ -102,6 +100,7 @@ public class ThsSsjpNotify {
                 res.add(thsSsjpNew);
             }
         } catch (Exception e) {
+            CommonUtil.notifyError("同花顺实时解盘监控异常: " + e.toString());
             e.printStackTrace();
         }
         return res;

@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui;
 
 import cn.hutool.core.io.resource.ResourceUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.cron.CronUtil;
 import cn.hutool.cron.task.Task;
@@ -10,23 +9,17 @@ import com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm;
 import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.selfdb.HibernateSessionFactory;
 import com.scareers.datasource.ths.dailycrawler.CrawlerChainThs;
-import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil;
 import com.scareers.gui.ths.simulation.interact.gui.component.core.CorePanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.*;
 import com.scareers.gui.ths.simulation.interact.gui.component.funcs.base.FuncFrameS;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
-import com.scareers.gui.ths.simulation.interact.gui.notify.BondBuyNotify;
-import com.scareers.gui.ths.simulation.interact.gui.notify.EmPcNewsNotify;
-import com.scareers.gui.ths.simulation.interact.gui.notify.NewConceptDiscover;
-import com.scareers.gui.ths.simulation.interact.gui.notify.ThsSsjpNotify;
+import com.scareers.gui.ths.simulation.interact.gui.notify.*;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
-import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 
@@ -38,7 +31,6 @@ import java.awt.*;
 import java.awt.event.*;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
-import static com.scareers.gui.ths.simulation.interact.gui.SmartFindDialog.*;
 import static com.scareers.utils.CommonUtil.waitForever;
 
 
@@ -402,7 +394,16 @@ public class TraderGui extends JFrame {
             ThreadUtil.execAsync(new Runnable() {
                 @Override
                 public void run() {
-                    ThsSsjpNotify.main0();
+                    ThsSsjpWebApiNotify.main0();
+                }
+            }, true);
+        }
+
+        if (autoThsF10NewConceptNotify) {
+            ThreadUtil.execAsync(new Runnable() {
+                @Override
+                public void run() {
+                    ThsNewConceptDiscoverSuper.main0();
                 }
             }, true);
         }

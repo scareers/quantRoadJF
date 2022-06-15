@@ -13,6 +13,7 @@ import com.alee.utils.swing.Scale;
 import com.scareers.gui.ths.simulation.interact.gui.util.ManiLog;
 import com.scareers.settings.SettingsCommon;
 import com.scareers.utils.log.LogUtil;
+import lombok.SneakyThrows;
 
 import java.awt.*;
 import java.io.IOException;
@@ -265,8 +266,7 @@ public class CommonUtil {
      * @throws InterruptedException
      */
     public static void waitUtil(BooleanSupplier booleanSupplier, int timeout, int interval, String description,
-                                boolean showWaitTime)
-            throws TimeoutException, InterruptedException {
+                                boolean showWaitTime) throws TimeoutException, InterruptedException {
         if (description != null) {
             LogUtil.log.warn("wait util: {}", description);
         }
