@@ -22,6 +22,7 @@ import lombok.SneakyThrows;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
@@ -58,6 +59,9 @@ public class EastMoneyDbApi {
     private static Cache<String, Double> fs1MV2PreCloseCache = CacheUtil
             .newLRUCache(2048); // 字段顺序数据表原始
 
+    private static Cache<String, DataFrame<Object>> BkDailyKlineAllOfOneDayCache = CacheUtil
+            .newLRUCache(256); // 单日所有板块, 日k线数据!
+
     public static void main(String[] args) throws Exception {
 
 
@@ -93,8 +97,11 @@ public class EastMoneyDbApi {
 //        List<String> x = getNewestHotEmPcNewTitleSet(20);
 //        Console.log(x);
 
-        loadFs1MAndFsTransAndKLineDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
-                "2022-06-02");
+//        loadFs1MAndFsTransAndKLineDataToCache(SecurityBeanEm.createBondList(Arrays.asList("小康转债", "卡倍转债"), false),
+//                "2022-06-02");
+        DataFrame<Object> x = getBkDailyKlineAllOfOneDay("2022-06-14");
+        Console.log(x.length());
+        Console.log(x);
     }
 
 
@@ -686,5 +693,28 @@ public class EastMoneyDbApi {
             return null;
         }
         return DataFrameS.getColAsStringList(dataFrame, "title");
+    }
+
+    /**
+     * 从 bk_kline_daily 数据表, 给定日期, 筛选所有当日的 全部板块数据!
+     *
+     * @param dateStr
+     * @return
+     */
+    @Cached
+    public static DataFrame<Object> getBkDailyKlineAllOfOneDay(String dateStr) {
+        DataFrame<Object> res = BkDailyKlineAllOfOneDayCache.get(dateStr);
+        if (res != null) {
+            return res;
+        }
+        String sql = StrUtil.format("select * from bk_kline_daily where date='{}'", dateStr);
+        try {
+            res = DataFrame.readSql(connection, sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+        BkDailyKlineAllOfOneDayCache.put(dateStr, res);
+        return res;
     }
 }

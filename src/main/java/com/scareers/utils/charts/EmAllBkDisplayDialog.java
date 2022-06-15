@@ -1,17 +1,19 @@
 package com.scareers.utils.charts;
 
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
+import com.scareers.gui.ths.simulation.interact.gui.component.simple.tablerow.RowHeaderJTableS;
+import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
 import com.scareers.gui.ths.simulation.interact.gui.ui.BasicScrollBarUIS;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.pandasdummy.DataFrameS;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.CommonUtil;
 import joinery.DataFrame;
-import lombok.SneakyThrows;
 import org.jdesktop.swingx.JXTable;
 import org.jdesktop.swingx.decorator.ColorHighlighter;
 import org.jdesktop.swingx.decorator.HighlightPredicate;
@@ -26,13 +28,15 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
-import java.util.Arrays;
-import java.util.Vector;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.*;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.COLOR_LIST_BK_EM;
 import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.*;
-import static com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondReviseUtil.getReviseTimeBondListOverviewDataDf;
 
 /**
  * description: 对话框, 首先决定 日期, 随后, 左边显示该日收盘, 所有板块(全部,行业,概念,风格) 的收盘行情状态,表格显示
@@ -56,7 +60,7 @@ public class EmAllBkDisplayDialog extends JDialog {
     }
 
     public static double scale = 0.8;
-    public static int leftPanelWidth = 300; // 表格在左宽度!
+    public static int leftPanelWidth = 500; // 表格在左宽度!
 
 
     public EmAllBkDisplayDialog(Frame owner, String title, boolean modal) {
@@ -112,20 +116,90 @@ public class EmAllBkDisplayDialog extends JDialog {
         leftPanel.setLayout(new BorderLayout());
         leftPanel.setPreferredSize(new Dimension(leftPanelWidth, 4096));
 
-        initSecurityEmJXTable();
-        leftPanel.add(jXTableForBonds, BorderLayout.CENTER);
-
         initButtons();
+        leftPanel.add(buttonContainer, BorderLayout.NORTH);
+
+        initSecurityEmJXTable();
+        leftPanel.add(jScrollPaneForList, BorderLayout.CENTER);
 
     }
+
+    String dateStr = DateUtil.today();
+    int hopeKLineAmount = 100;
+    FuncButton allBkButton;
+    FuncButton conceptBkButton;
+    FuncButton industryBkButton;
+    FuncButton areaBkButton;
 
     /**
      * 4大按钮! + 2大切换日期(向前1向后1) 的按钮
      */
     private void initButtons() {
         buttonContainer = new JPanel();
+        buttonContainer.setLayout(new FlowLayout(FlowLayout.LEFT));
 
+        allBkButton = ButtonFactory.getButton("全部板块");
+        allBkButton.setForeground(Color.red);
+        allBkButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateTableDataOfAsync(BkType.ALL);
+            }
+        });
 
+        conceptBkButton = ButtonFactory.getButton("概念板块");
+        conceptBkButton.setForeground(Color.red);
+        conceptBkButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateTableDataOfAsync(BkType.CONCEPT);
+            }
+        });
+
+        industryBkButton = ButtonFactory.getButton("行业板块");
+        industryBkButton.setForeground(Color.red);
+        industryBkButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateTableDataOfAsync(BkType.INDUSTRY);
+            }
+        });
+
+        areaBkButton = ButtonFactory.getButton("地域板块");
+        areaBkButton.setForeground(Color.red);
+        areaBkButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                updateTableDataOfAsync(BkType.AREA);
+            }
+        });
+
+        buttonContainer.add(allBkButton);
+        buttonContainer.add(industryBkButton);
+        buttonContainer.add(conceptBkButton);
+        buttonContainer.add(areaBkButton);
+
+    }
+
+    public void updateTableDataOfAsync(BkType type) {
+        ThreadUtil.execAsync(new Runnable() {
+            @Override
+            public void run() {
+                DataFrame<Object> dfOfBksForDisplay = getDfOfBksForDisplay(dateStr, type);
+                fullFlushBondListTable(dfOfBksForDisplay);
+                // 尝试默认选中第一行
+                int i = jXTableForBonds.convertRowIndexToModel(0);
+                if (i >= 0) {
+                    try {
+                        updateTwoChart(dateStr, SecurityBeanEm.createBK(jXTableForBonds.getModel().getValueAt(i,
+                                0).toString()
+                        ), hopeKLineAmount);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        }, true);
     }
 
     /**
@@ -138,23 +212,83 @@ public class EmAllBkDisplayDialog extends JDialog {
         AREA
     }
 
+    public static java.util.List<String> tableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额", "振幅",
+            "收盘价");
+
     /**
      * 给定日期, 给定板块类型(上enum), 返回 对应所有板块, 相关数据, 组成 df!
+     * 转债当前列为:
+     * public static List<String> bondTableColNames = Arrays.asList("代码", "名称", "涨跌幅", "成交额", "短速", "短额");
+     * 复制的代码, 为了兼容, 板块行情, 分别为:
+     * Arrays.asList("代码", "名称", "涨跌幅", "成交额", "振幅",      "收盘价");
+     * 其中只有 最新价 可以不用 万/亿格式化, 其他完全兼容!
+     * <p>
+     * // @key: 主要从 bk_kline_daily 数据表, 获取; 即日k线表获取
+     * // @noti: 为了适配代码, 涨跌幅和振幅, 都对数据库元数据, 除以 100
      *
      * @return
      */
-    public static DataFrame<Object> getDfOfBksForDisplay() {
+    public static DataFrame<Object> getDfOfBksForDisplay(String date, BkType bkType) {
+        DataFrame<Object> allBkDf = EastMoneyDbApi.getBkDailyKlineAllOfOneDay(date);
+        if (allBkDf == null) {
+            return null;
+        }
+        List<String> allSecCode = DataFrameS.getColAsStringList(allBkDf, "secCode");
+        List<SecurityBeanEm> bkList = null;
+        try {
+            bkList = SecurityBeanEm.createBKList(allSecCode);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        if (bkType.equals(BkType.INDUSTRY)) {
+            bkList = bkList.stream().filter(SecurityBeanEm::isIndustryBK).collect(Collectors.toList());
+        } else if (bkType.equals(BkType.CONCEPT)) {
+            bkList = bkList.stream().filter(SecurityBeanEm::isConceptBK).collect(Collectors.toList());
+        } else if (bkType.equals(BkType.AREA)) {
+            bkList = bkList.stream().filter(SecurityBeanEm::isAreaBK).collect(Collectors.toList());
+        } // ALL    则不进行筛选!
 
+        // 筛选后的 板块代码 集合, 遍历总df, 单行进行筛选即可!
+        Set<String> bkCodeFiltered = bkList.stream().map(SecurityBeanEm::getSecCode).collect(Collectors.toSet());
+
+        DataFrame<Object> res = new DataFrame<>(tableColNames);
+        for (int i = 0; i < allBkDf.length(); i++) {
+            if (bkCodeFiltered.contains(allBkDf.get(i, "secCode").toString())) {
+                // 筛选, 构建单行, 注意顺序
+                List<Object> row = new ArrayList<>();
+                row.add(allBkDf.get(i, "secCode").toString());
+                row.add(allBkDf.get(i, "secName").toString());
+                try {
+                    row.add(Double.parseDouble(allBkDf.get(i, "chgPct").toString()) / 100);
+                } catch (NumberFormatException e) {
+                    row.add(null);
+                }
+                row.add(Double.valueOf(allBkDf.get(i, "amount").toString()));
+                try {
+                    row.add(Double.parseDouble(allBkDf.get(i, "amplitude").toString()) / 100);
+                } catch (NumberFormatException e) {
+                    row.add(null);
+                }
+                row.add(Double.valueOf(allBkDf.get(i, "close").toString()));
+
+
+                res.append(row);
+            }
+        }
+        return res;
     }
 
 
     JScrollPane jScrollPaneForList;
 
     private void initJTableWrappedJScrollPane() {
-        jScrollPaneForList = new JScrollPane();
+        jScrollPaneForList = new JScrollPane(jXTableForBonds);
+        // todo: 无效, 需要bug修复
+//        jScrollPaneForList.setRowHeaderView(new RowHeaderJTableS(jXTableForBonds, 20));
         jScrollPaneForList.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         jScrollPaneForList.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        jScrollPaneForList.setViewportView(jXTableForBonds); // 滚动包裹转债列表
+//        jScrollPaneForList.setViewportView(jXTableForBonds); // 滚动包裹转债列表
         jScrollPaneForList.getViewport().setBackground(COLOR_THEME_MINOR);
         BasicScrollBarUIS
                 .replaceScrollBarUI(jScrollPaneForList, COLOR_THEME_TITLE, COLOR_SCROLL_BAR_THUMB); // 替换自定义 barUi
@@ -169,7 +303,7 @@ public class EmAllBkDisplayDialog extends JDialog {
     private void initSecurityEmJXTable() {
         // 1.构造model
         Vector<Vector<Object>> datas = new Vector<>(); // 空数据, 仅提供列信息
-        Vector<Object> cols = new Vector<>(bondTableColNames);
+        Vector<Object> cols = new Vector<>(tableColNames);
         DefaultTableModel model = new DefaultTableModel(datas, cols) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -228,19 +362,23 @@ public class EmAllBkDisplayDialog extends JDialog {
                 } catch (Exception ex) {
                     return; // 行数底层实现有bug
                 }
-                try {
-                    SecurityBeanEm bond = SecurityBeanEm.createBond(bondCode);
-//                    setSelectedBean(bond);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    CommonUtil.notifyError("表格切换选中行,回调函数执行失败");
-                }
+                String finalBondCode = bondCode;
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+
+                            SecurityBeanEm bk = SecurityBeanEm.createBK(finalBondCode);
+                            updateTwoChart(dateStr, bk, hopeKLineAmount);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            CommonUtil.notifyError("表格切换选中行,回调函数执行失败");
+                        }
+                    }
+                }, true);
             }
         });
         fitTableColumns(jXTableForBonds);
-//        if (jxFindBarS != null) { // 双边都有判定设置
-//            jxFindBarS.setSearchable(this.jXTableForBonds.getSearchable());
-//        }
         initJTableStyle();
         setTableColCellRenders(); // 设置显示render
         jXTableForBonds.setGridColor(Color.black); // 不显示网格
@@ -253,10 +391,10 @@ public class EmAllBkDisplayDialog extends JDialog {
     private void setTableColCellRenders() {
         jXTableForBonds.getColumn(0).setCellRenderer(new TableCellRendererForBondTable());
         jXTableForBonds.getColumn(1).setCellRenderer(new TableCellRendererForBondTable());
+        jXTableForBonds.getColumn(5).setCellRenderer(new TableCellRendererForBondTable());
         jXTableForBonds.getColumn(2).setCellRenderer(new TableCellRendererForBondTableForPercent());
         jXTableForBonds.getColumn(3).setCellRenderer(new TableCellRendererForBondTableForBigNumber());
         jXTableForBonds.getColumn(4).setCellRenderer(new TableCellRendererForBondTableForPercent());
-        jXTableForBonds.getColumn(5).setCellRenderer(new TableCellRendererForBondTableForBigNumber());
     }
 
 
@@ -369,7 +507,7 @@ public class EmAllBkDisplayDialog extends JDialog {
 
         DefaultTableModel model = (DefaultTableModel) jXTableForBonds.getModel();
         // 老数据
-        Vector<Vector> oldDatas = model.getDataVector();
+//        Vector<Vector> oldDatas = model.getDataVector();
 
         // 新数据
         Vector<Vector> newDatas = new Vector<>();
@@ -378,8 +516,7 @@ public class EmAllBkDisplayDialog extends JDialog {
         }
         // 行改变 :将自动增减行, 若新数据行少, 则多的行不会显示, 但本身存在
         model.setRowCount(newDatas.size());
-
-//        model.setDataVector(newDatas, new Vector<>(bondTableColNames));
+//        model.setDataVector(newDatas, new Vector<>(tableColNames));
 
         for (int i = 0; i < newDatas.size(); i++) {
             for (int j = 0; j < model.getColumnCount(); j++) {
@@ -391,6 +528,8 @@ public class EmAllBkDisplayDialog extends JDialog {
         if (sortedColumnIndex != -1) {
             jXTableForBonds.setSortOrder(sortedColumnIndex, sortOrder);
         }
+
+
     }
 
     private void initRightPanel() {
@@ -404,8 +543,19 @@ public class EmAllBkDisplayDialog extends JDialog {
 
     public void update(String dateStr, SecurityBeanEm currentBk, int hopeKLineAmount) {
         // 1.更新表格, 暂未实现
+        this.dateStr = dateStr;
+        this.hopeKLineAmount = hopeKLineAmount;
 
         // 2.更新图表
+        updateTwoChart(dateStr, currentBk, hopeKLineAmount);
+
+        updateTableDataOfAsync(BkType.ALL);
+    }
+
+    public void updateTwoChart(String dateStr, SecurityBeanEm currentBk, int hopeKLineAmount) {
+        if (currentBk == null) {
+            return; // 首次
+        }
         kLineChart = new EmChartKLine.DynamicEmKLineChartForRevise(
                 currentBk, dateStr, hopeKLineAmount);
         DataFrame<Object> fsDf = EastMoneyDbApi
