@@ -112,51 +112,51 @@ public class EmChartFs {
 
 //        kLineDemo();
 //
-//        fsV2Demo();
-        String bondCode = "123134"; // 卡倍转债
-        SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
-        String dateStr = "2022-06-06";
-        Console.log(bondBean.getName());
-        SecurityBeanEm indexBean = SecurityBeanEm.getShangZhengZhiShu();
-        SecurityBeanEm stockBean = SecurityBeanEm.createStock("300863");//卡倍忆
-        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean,
-                dateStr, indexBean,
-                stockBean);
-
-        double timeRate = 5;
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
-                for (int i = 1000; i < allFsTransTimeTicks.size(); i++) {
-                    Date tick = allFsTransTimeTicks.get(i);
-                    ThreadUtil.sleep((long) (1000 / timeRate));
-                    Console.log("即将刷新");
-                    dynamicChart.updateChartFsTrans(tick, dynamicChart.preClose * 1.01, null); // 重绘图表
-                }
-            }
-        }, true);
-
-
-        long timeX = getTimeX(dynamicChart.todayDummy, 9, 35, 30);
-        double y = 450.0;
-
-        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, Math.PI * 1.5);
-//        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, 3.1415 / 2);
-        annotation.setPaint(Color.white);  // 文字颜色
-        annotation.setArrowPaint(Color.yellow); // 整个箭头颜色
-        float[] dashs = {2, 2}; // 箭头直线部分笔触
-        annotation.setArrowStroke(new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dashs, 0));
-        annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
-        annotation.setArrowLength(5); // 箭头长度
-        annotation.setLabelOffset(3); // 文字和箭头 尾部的距离, 需要和 箭头长度匹配好看
-//        annotation.setTextAnchor(TextAnchor.BASELINE_CENTER); // 文字位置
-        annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER); // 文字位置
-
-        dynamicChart.showChartSimple(); // 显示
-
-        dynamicChart.plot1.addAnnotation(annotation);
-        waitForever();
+        fsV2Demo();
+//        String bondCode = "123134"; // 卡倍转债
+//        SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
+//        String dateStr = "2022-06-06";
+//        Console.log(bondBean.getName());
+//        SecurityBeanEm indexBean = SecurityBeanEm.getShangZhengZhiShu();
+//        SecurityBeanEm stockBean = SecurityBeanEm.createStock("300863");//卡倍忆
+//        DynamicEmFs1MV2ChartForRevise dynamicChart = new DynamicEmFs1MV2ChartForRevise(bondBean,
+//                dateStr, indexBean,
+//                stockBean);
+//
+//        double timeRate = 5;
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                List<DateTime> allFsTransTimeTicks = CommonUtil.generateMarketOpenTimeListHms(false);
+//                for (int i = 1000; i < allFsTransTimeTicks.size(); i++) {
+//                    Date tick = allFsTransTimeTicks.get(i);
+//                    ThreadUtil.sleep((long) (1000 / timeRate));
+//                    Console.log("即将刷新");
+//                    dynamicChart.updateChartFsTrans(tick, dynamicChart.preClose * 1.01, null); // 重绘图表
+//                }
+//            }
+//        }, true);
+//
+//
+//        long timeX = getTimeX(dynamicChart.todayDummy, 9, 35, 30);
+//        double y = 450.0;
+//
+//        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, Math.PI * 1.5);
+////        XYPointerAnnotation annotation = new XYPointerAnnotation("B", timeX, y, 3.1415 / 2);
+//        annotation.setPaint(Color.white);  // 文字颜色
+//        annotation.setArrowPaint(Color.yellow); // 整个箭头颜色
+//        float[] dashs = {2, 2}; // 箭头直线部分笔触
+//        annotation.setArrowStroke(new BasicStroke(1, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, dashs, 0));
+//        annotation.setArrowWidth(4); // 包含箭头整个宽度, 不能1
+//        annotation.setArrowLength(5); // 箭头长度
+//        annotation.setLabelOffset(3); // 文字和箭头 尾部的距离, 需要和 箭头长度匹配好看
+////        annotation.setTextAnchor(TextAnchor.BASELINE_CENTER); // 文字位置
+//        annotation.setTextAnchor(TextAnchor.BOTTOM_CENTER); // 文字位置
+//
+//        dynamicChart.showChartSimple(); // 显示
+//
+//        dynamicChart.plot1.addAnnotation(annotation);
+//        waitForever();
     }
 
     private static long getTimeX(Date today, int hour, int minute, int second) {
@@ -1361,8 +1361,6 @@ public class EmChartFs {
         SecurityBeanEm bondBean = SecurityBeanEm.createBond(bondCode);
 
 
-        DataFrame<Object> fsTransDf = EastMoneyDbApi
-                .getFsTransByDateAndQuoteId(dateStr, bondBean.getQuoteId());
         DataFrame<Object> fsDf = EastMoneyDbApi
                 .getFs1MV2ByDateAndQuoteId(dateStr, bondBean.getQuoteId());
 

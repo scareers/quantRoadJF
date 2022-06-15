@@ -102,7 +102,19 @@ public class EmChartKLine {
 //            }
 //        }, true);
 
-        dynamicKlineChart.showSimple();
+
+        ApplicationFrame frame = new ApplicationFrame("temp");
+        ChartPanel chartPanel = new ChartPanel(dynamicKlineChart.getChart());
+        // 大小
+        chartPanel.setPreferredSize(new Dimension(1200, 800));
+        chartPanel.setMouseZoomable(false);
+        chartPanel.setRangeZoomable(false);
+        chartPanel.setDomainZoomable(false);
+        chartPanel.addChartMouseListener(getCrossLineListenerForKLineXYPlot(dynamicKlineChart.getAllDateTime()));
+        frame.setContentPane(chartPanel);
+        frame.pack(); // 显示.
+        // @noti: 这里由例子中的 org.jfree.ui.RefineryUtilities;变为了 org.jfree.chart.ui.UIUtils;
+        frame.setVisible(true);
     }
 
 

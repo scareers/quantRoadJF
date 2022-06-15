@@ -107,6 +107,7 @@ public class CrawlerChainEm {
     List<CrawlerEm> rearCrawlerEms = new ArrayList<>(); // 后置爬虫, 常规数据项
     ExecutorService esFront;
     ExecutorService esRear;
+    ExecutorService esForFail;
 
 
     public CrawlerChainEm(
@@ -116,6 +117,9 @@ public class CrawlerChainEm {
                 .newExecutor(coreSizeOfFrontCrawlersThreadPool, 2 * coreSizeOfFrontCrawlersThreadPool,
                         Integer.MAX_VALUE);
         this.esRear = ThreadUtil
+                .newExecutor(coreSizeOfRearCrawlersThreadPool, 2 * coreSizeOfRearCrawlersThreadPool,
+                        Integer.MAX_VALUE);
+        this.esForFail = ThreadUtil
                 .newExecutor(coreSizeOfRearCrawlersThreadPool, 2 * coreSizeOfRearCrawlersThreadPool,
                         Integer.MAX_VALUE);
     }
@@ -173,7 +177,7 @@ public class CrawlerChainEm {
         log.error("show: 尝试再次执行失败爬虫");
 
         for (CrawlerEm failCrawlerEm : failCrawlerEms) {
-            esRear.submit(() -> {
+            esForFail.submit(() -> {
                 failCrawlerEm.run();
                 if (failCrawlerEm.isSuccess()) {
                     successCrawlerEms.add(failCrawlerEm);
@@ -182,7 +186,7 @@ public class CrawlerChainEm {
                 }
             });
         }
-        waitPoolFinish(esRear);
+        waitPoolFinish(esForFail);
 
         log.error("show: 执行状况:\n 成功的爬虫:数量: {}\n{}" +
                         "\n首次失败的爬虫数量: {}\n{}\n重试后最终失败的爬虫数量: {}\n{}", successCrawlerEms.size(), successCrawlerEms,

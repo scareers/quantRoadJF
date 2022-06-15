@@ -282,7 +282,7 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
                 }
             });
         }
-
+        success=true;
         waitPoolFinish(poolExecutor);
         logSuccess();
         poolExecutor.shutdownNow();
