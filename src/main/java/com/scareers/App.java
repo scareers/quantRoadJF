@@ -39,15 +39,20 @@ public class App {
     private static final Log log = LogUtil.getLogger();
 
     public static void main(String[] args) throws Exception {
-        String xx = EastMoneyUtil.getAsStrUseHutool("http://stock.10jqka.com.cn/jiepan_list/20220614/", null, 3000, 2);
-        Console.log(xx);
+//        String xx = EastMoneyUtil.getAsStrUseHutool("http://stock.10jqka.com.cn/jiepan_list/20220614/", null, 3000, 2);
+//        Console.log(xx);
+
+        String command = "taskkill /f /im chromedriver.exe";
+        Runtime.getRuntime().exec(command);
+         command = "taskkill /f /im chrome.exe";
+        Runtime.getRuntime().exec(command);
 //
 //        String convert = CharsetUtil.convert("鍙戝竷鍏", "GBK", "UTF-8");
 //        Console.log(convert);
 
 
-        String x = PinyinUtil.getPinyin("同花顺", ",");
-        Console.log(x);
+//        String x = PinyinUtil.getPinyin("同花顺", ",");
+//        Console.log(x);
 
 
 //        URL resource = ResourceUtil.getResource("ths/nuclear/nuclear/");

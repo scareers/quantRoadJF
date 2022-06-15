@@ -556,6 +556,7 @@ public class TraderGui extends JFrame {
                     if (Trader.getInstance() != null) {
                         Trader.getInstance().stopTrade();
                     }
+                    ThsNewConceptDiscoverSuper.quitAllDriver();
                     System.exit(0);
                 }
             }

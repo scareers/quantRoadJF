@@ -28,7 +28,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.function.BooleanSupplier;
 
 import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm.waitPoolFinish;
 
@@ -36,6 +35,7 @@ import static com.scareers.datasource.eastmoney.dailycrawler.CrawlerChainEm.wait
  * //@key3 : 两大url
  * http://stockpage.10jqka.com.cn/601788/event/
  * http://basic.10jqka.com.cn/000001/event.html
+ * // @key4: 使用4个selenium 十分消耗cpu
  * description: 同花顺新概念发现超级版本, 使用selenium 访问 "近期重要事件"!
  * 因web api 太难处理;
  * ------------->
@@ -58,10 +58,18 @@ public class ThsNewConceptDiscoverSuper {
      */
     public static ConcurrentHashMap<StockBondBean, List<ThsKeyIssue>> todayKeyIssuesMap = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) throws UnsupportedEncodingException, TimeoutException, InterruptedException {
-        main0();
-//        SpecialDriver specialDriver = new SpecialDriver(true);
-//        specialDriver.accessStock("600007");
+    public static void main(String[] args) throws Exception {
+
+        // 强制关闭遗留! --> 注意也会关闭正常的浏览器
+
+        String command = "taskkill /f /im chromedriver.exe";
+        Runtime.getRuntime().exec(command);
+        command = "taskkill /f /im chrome.exe";
+        Runtime.getRuntime().exec(command);
+
+
+//        main0();
+
 
     }
 
@@ -73,13 +81,25 @@ public class ThsNewConceptDiscoverSuper {
         String content; // 具体内容
     }
 
-
+    public static ArrayList<SpecialDriver> drivers;
     public static volatile boolean headless = true;
     public static final int driverPoolSize = 4;
     public static final int maxSoundNotiTimes = 2; // 新概念发现, 最多播放n次
 
+    /**
+     * 程序退出, 应当关闭所有浏览器
+     */
+    public static void quitAllDriver() {
+        if (drivers != null) {
+            for (SpecialDriver driver : drivers) {
+                driver.quitDriver();
+            }
+            CommonUtil.notifyInfo("同花顺新概念F10发现: --> 已关闭所有selenium浏览器");
+        }
+    }
+
     public static void main0() {
-//        initOldConceptNameSet(); // 所有老概念列表
+        initOldConceptNameSet(); // 所有老概念列表
 
         // 1.所有股票代码列表
         List<StockBondBean> allStockWithBond = null;
@@ -89,7 +109,7 @@ public class ThsNewConceptDiscoverSuper {
         }
 
         // 2.浏览器池!
-        ArrayList<SpecialDriver> drivers = new ArrayList<>();
+        drivers = new ArrayList<>();
         for (int i = 0; i < driverPoolSize; i++) {
             drivers.add(new SpecialDriver(headless));
         }
@@ -103,8 +123,8 @@ public class ThsNewConceptDiscoverSuper {
                     TimeUnit.SECONDS,
                     new LinkedBlockingQueue<>());
 
-//        for (int i = 150; i < allStockWithBond.size(); i++) {
-            for (int i = 150; i < 200; i++) {
+            for (int i = 0; i < allStockWithBond.size(); i++) {
+//            for (int i = 150; i < 200; i++) {
 //        for (int i = 0; i < 100; i++) {
                 // 1.随机取
                 SpecialDriver freeDriver = RandomUtil.randomEle(drivers);
@@ -146,7 +166,7 @@ public class ThsNewConceptDiscoverSuper {
                 driver.setRunning(false);
             }
 
-            CommonUtil.notifyInfo(StrUtil.format("耗时: {}", timer.intervalRestart()));
+//            CommonUtil.notifyInfo(StrUtil.format("耗时: {}", timer.intervalRestart()));
         }
     }
 
