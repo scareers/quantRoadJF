@@ -80,27 +80,32 @@ public class EmChartKLine {
 
     @SneakyThrows
     public static void main(String[] args) {
-        SecurityBeanEm beanEm = SecurityBeanEm.createBond("小康转债");
+        SecurityBeanEm beanEm = SecurityBeanEm.createIndex("深证成指");
         DynamicEmKLineChartForRevise dynamicKlineChart = new DynamicEmKLineChartForRevise(beanEm, "2022-06-07", 100);
 
-        ThreadUtil.execAsync(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    ThreadUtil.sleep(1000);
-                    dynamicKlineChart.updateTodayKline(
-                            516.0,
-                            RandomUtil.randomDouble(590, 650),
-                            RandomUtil.randomDouble(480, 515),
-                            RandomUtil.randomDouble(520, 580),
-                            RandomUtil.randomDouble(17789525504.0 / 2, 17789525504.0 * 2)
 
-                    );
-                }
-            }
-        }, true);
+
+//        ThreadUtil.execAsync(new Runnable() {
+//            @Override
+//            public void run() {
+//                while (true) {
+//                    ThreadUtil.sleep(1000);
+//                    dynamicKlineChart.updateTodayKline(
+//                            516.0,
+//                            RandomUtil.randomDouble(590, 650),
+//                            RandomUtil.randomDouble(480, 515),
+//                            RandomUtil.randomDouble(520, 580),
+//                            RandomUtil.randomDouble(17789525504.0 / 2, 17789525504.0 * 2)
+//
+//                    );
+//                }
+//            }
+//        }, true);
+
         dynamicKlineChart.showSimple();
     }
+
+
 
     /**
      * 东财k线图, 动态

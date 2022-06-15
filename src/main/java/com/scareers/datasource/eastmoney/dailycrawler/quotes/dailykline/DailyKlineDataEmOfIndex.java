@@ -18,10 +18,11 @@ public class DailyKlineDataEmOfIndex extends DailyKlineDataEm {
 
     public DailyKlineDataEmOfIndex(boolean fullMode) {
         super("index_kline_daily", "", fullMode); // 会使用 nofq 默认
+        this.earlyDateStr = null; // null则全部
     }
 
     public static void main(String[] args) {
-        new DailyKlineDataEmOfIndex(true).run();
+        new DailyKlineDataEmOfIndex(false).run();
     }
 
 

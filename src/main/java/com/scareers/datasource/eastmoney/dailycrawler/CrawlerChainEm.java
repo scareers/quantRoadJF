@@ -9,6 +9,9 @@ import com.scareers.datasource.eastmoney.dailycrawler.datas.simplenew.*;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.Fs1MDataEm2;
 import com.scareers.datasource.eastmoney.dailycrawler.quotes.FsTransDataEm;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfBk;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfIndex;
+import com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline.DailyKlineDataEmOfStock;
 import com.scareers.sqlapi.EastMoneyDbApi;
 import com.scareers.utils.log.LogUtil;
 
@@ -32,15 +35,15 @@ public class CrawlerChainEm {
 
     public static void main1() {
         String today = DateUtil.today();
-        boolean fullMode = true; // 非交易日全量更新; 主要针对 日k线数据
-        try {
-            if (EastMoneyDbApi.isTradeDate(today)) {
-                fullMode = false; // 交易日增量更新
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        //fullMode = false;
+        boolean fullMode = false; // 交易日增量更新; 主要针对 日k线数据;  一般都合理!
+        // @key: 要全量更新, 自己改, 会删除已存在数据表, 重新抓取全部数据! 一般不需要!
+//        try {
+//            if (!EastMoneyDbApi.isTradeDate(today)) {
+//                fullMode = true; // 非交易日全量更新
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
 
         CrawlerChainEm crawlerChainEm = new CrawlerChainEm(4, 4);
 
@@ -54,12 +57,6 @@ public class CrawlerChainEm {
         crawlerChainEm.addSynCrawler(new NewsFeedsCrawlerEm()); // 新闻联播集锦
         crawlerChainEm.addSynCrawler(new FourPaperNewsCrawlerEm()); // 四大报媒精华
 
-        // k线和分时
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
-//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
 //         //基本列表
         if (DateUtil.hour(DateUtil.date(), true) >= 15) {
@@ -75,6 +72,14 @@ public class CrawlerChainEm {
             crawlerChainEm.addFrontCrawlers(new Fs1MDataEm2());
             crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
 
+
+            // k线和分时
+
+            crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+            crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+            crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+            crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+            crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
         }
 //
 //        crawlerChainEm.addSynCrawler(new StockListEm());
@@ -86,6 +91,12 @@ public class CrawlerChainEm {
 //        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm());
 //        crawlerChainEm.addFrontCrawlers(new Fs1MDataEm2());
 //        crawlerChainEm.addFrontCrawlers(new FsTransDataEm());
+
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("nofq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("hfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfStock("qfq", fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfBk(fullMode));
+//        crawlerChainEm.addFrontCrawlers(new DailyKlineDataEmOfIndex(fullMode));
 
         crawlerChainEm.run();
 

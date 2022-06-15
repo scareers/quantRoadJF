@@ -1,5 +1,8 @@
 package com.scareers.datasource.eastmoney.dailycrawler.quotes.dailykline;
 
+import cn.hutool.core.date.DateField;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.thread.ThreadUtil;
@@ -30,6 +33,8 @@ import static com.scareers.utils.SqlUtil.execSql;
  * @date: 2022/3/6/006-15:21:25
  */
 public abstract class DailyKlineDataEm extends CrawlerEm {
+
+    public String earlyDateStr = null; // 如果获取全部日k线, 会太多数据, 一般用不上. 设置最早日期
     String fq;
     boolean fullMode;
     int hasAlreadyIncrementalUpdatedThreshold = 100;
@@ -139,13 +144,16 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
 
     public boolean forceIncrementalUpdate = false;
 
-    @SneakyThrows
     @Override
     protected void runCore() {
-        /**
-         * 全量更新模式: 将删除原表
+        /*
+         * 全量更新模式: 将删除原表, 此时 map为空
+         * 增量更新模式: 将读取数据表, 构建最大日期map
          */
-        String begDate = null; // 全量更新模式, 两个均为null
+
+        // 对单个标的, 读取全数据库, 依据 secCode 进行 group by, 对单个group, 求 max(date), 实际抓取数据, 应当从下一日begDate
+        HashMap<String, String> alreadyFetchDateMap = new HashMap<>();
+        String begDate = earlyDateStr; // 全量更新模式,
         String endDate = null;
         if (fullMode) {
             log.warn("日k线数据: 全量更新");
@@ -154,44 +162,49 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else { // 增量更新模式, 将保留原表, 但日期为今日
-            log.warn("日k线数据: 增量更新");
-            String today = DateUtil.today();
-            if (EastMoneyDbApi.isTradeDate(today)) {
-                begDate = today;
-                endDate = today;
-            } else {
-                String preNTradeDateStrict = EastMoneyDbApi.getPreNTradeDateStrict(today, 1);
-                begDate = preNTradeDateStrict; // 前1交易日
-                endDate = preNTradeDateStrict;
-                log.warn("应当增量更新上一交易日");
+
+            try {
+                execSql(sqlCreateTable, conn); //
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            // 此时尝试获取原数据库是否有过上一交易日的数据!
-            String sql = StrUtil.format("select count(*) from `{}` where date='{}'", tableName, begDate);
-            DataFrame<Object> dataFrame = DataFrame.readSql(conn, sql);
-            if (Integer.parseInt(dataFrame.get(0, 0).toString()) >hasAlreadyIncrementalUpdatedThreshold) {
-                // 这里>0,基本断定已经增量更新过.这里1000更严谨; 严格应该==  getBeanList().size()
+        } else { // 增量更新模式, 将保留原表, 但日期为今日
+            try {
+                execSql(sqlCreateTable, conn); //
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
-                if (!forceIncrementalUpdate) {
-                    log.error("该交易日似乎已经增量更新过, 不再更新; 强制增量更新, 请设置 forceIncrementalUpdate = true");
-                    success=true;
-                    return;
-                } else {
-                    log.error("该交易日似乎已经增量更新过, 删除上次增量更新,强制更新");
+            log.warn("日k线数据: 增量更新: 获取已存在数据的最大日期map");
 
-                    String sqlD = StrUtil.format("delete from `{}` where date='{}'", tableName, begDate);
-                    execSql(sqlD, conn);
+            String groupSql = StrUtil.format("select max(date) as mdate,secCode from {} group by secCode", tableName);
+            DataFrame<Object> dataFrame0 = null;
+            try {
+                dataFrame0 = DataFrame.readSql(conn, groupSql);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            if (dataFrame0 != null) {
+                for (int i = 0; i < dataFrame0.length(); i++) {
+                    alreadyFetchDateMap.put(
+                            dataFrame0.get(i, "secCode").toString(),
+                            dataFrame0.get(i, "mdate").toString()
+                    );
                 }
             }
-
         }
 
+        String lastHasDataDate = DateUtil.today(); // 这是已发生的最后一个有数据的交易日; 作为 endDate
         try {
-            execSql(sqlCreateTable, conn);
-        } catch (Exception e) {
+            if (!EastMoneyDbApi.isTradeDate(DateUtil.today())) {
+                lastHasDataDate = EastMoneyDbApi.getPreNTradeDateStrict(DateUtil.today(), 1);
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        endDate = lastHasDataDate; //
 
 
         List<SecurityBeanEm> stockBeans = getBeanList();
@@ -199,11 +212,8 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
             return;
         }
 
-        success = true;
-
         AtomicInteger process = new AtomicInteger(1);
         for (SecurityBeanEm beanEm : stockBeans) {
-            String finalBegDate = begDate;
             String finalEndDate = endDate;
 
             poolExecutor.execute(new Runnable() {
@@ -216,8 +226,32 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
                     } else if (fq.equals("hfq")) {
                         fqStr = "2";
                     }
+
+                    // @add:
+                    String begDate = alreadyFetchDateMap.get(beanEm.getSecCode());
+                    if (begDate != null) {
+                        begDate = DateUtil.format(DateUtil.offset(DateUtil.parse(begDate), DateField.DAY_OF_MONTH, 1),
+                                DatePattern.NORM_DATE_PATTERN); // 前一天
+                    }
+                    // 此时开始时间可能为null, 或者已保存记录最大日期的后一天开始
+                    if (begDate == null) {
+                        begDate = earlyDateStr;
+                    } else {
+                        if (earlyDateStr != null) {
+                            begDate = begDate.compareTo(earlyDateStr) < 0 ? earlyDateStr : begDate; // 取最小
+                        } // begDate 最终依然可能为null
+                    }
+
+                    if (begDate != null && begDate.compareTo(finalEndDate) > 0) {
+                        log.info("数据早已更新到最新, 跳过: {}", beanEm.getSecCode());
+                        process.incrementAndGet();
+                        return;
+                    }
+
                     DataFrame<Object> dfTemp = EmQuoteApi
-                            .getQuoteHistorySingle(false, beanEm, finalBegDate, finalEndDate, "101", fqStr, 3, 4000);
+                            .getQuoteHistorySingle(false, beanEm,
+                                    begDate
+                                    , finalEndDate, "101", fqStr, 3, 4000);
                     if (dfTemp == null) {
                         log.error("获取日k线数据失败: {}", beanEm.getSecCode());
                         success = false;
@@ -225,7 +259,6 @@ public abstract class DailyKlineDataEm extends CrawlerEm {
                     }
 
                     if (dfTemp.length() == 0) {
-
                         log.warn("当日无日k线数据: {}", beanEm.getSecCode());
                     }
 

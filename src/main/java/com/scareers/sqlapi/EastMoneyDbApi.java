@@ -114,6 +114,7 @@ public class EastMoneyDbApi {
      * @param date 任意可被hutool解析的日期形式
      * @return
      */
+
     public static Boolean isTradeDate(String date) throws SQLException {
         if (!isStdDatePattern(date)) { // 匹配标准形式, 否则解析
             date = DateUtil.parse(date).toString(DatePattern.NORM_DATE_PATTERN); // 标准化

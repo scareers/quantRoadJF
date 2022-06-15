@@ -18,10 +18,12 @@ public class DailyKlineDataEmOfStock extends DailyKlineDataEm {
 
     public DailyKlineDataEmOfStock(String fq, boolean fullMode) {
         super("stock_kline_daily__", fq, fullMode);
+        this.earlyDateStr = "2018-01-01"; // null则全部
     }
 
     public static void main(String[] args) {
-        new DailyKlineDataEmOfStock("nofq", true).run();
+        new DailyKlineDataEmOfStock("nofq", false).run();
+
     }
 
 

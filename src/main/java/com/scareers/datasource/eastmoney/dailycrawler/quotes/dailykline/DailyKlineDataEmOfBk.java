@@ -22,10 +22,12 @@ public class DailyKlineDataEmOfBk extends DailyKlineDataEm {
 
     public DailyKlineDataEmOfBk(boolean fullMode) {
         super("bk_kline_daily", "", fullMode); // 会使用 nofq 默认
+
+        this.earlyDateStr = null; // null则全部
     }
 
     public static void main(String[] args) throws SQLException {
-        new DailyKlineDataEmOfBk(false).setForceIncrementalUpdate(true).run();
+        new DailyKlineDataEmOfBk(false).run();
 //        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs_transaction",
 //                ConnectionFactory.getConnLocalFSTransactionFromEastmoney()));
 //        Console.log(MysqlApi.getDiskUsageOfDB("eastmoney_fs1m",
