@@ -30,7 +30,7 @@ public class EmTwoIndexFsAndKLineDialog extends JDialog {
 
     }
 
-    public static double scale = 0.8;
+    public static double scale = 0.9;
     SecurityBeanEm shenIndex;
     SecurityBeanEm huIndex;
 

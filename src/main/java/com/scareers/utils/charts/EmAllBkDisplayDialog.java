@@ -5,6 +5,7 @@ import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import com.scareers.datasource.eastmoney.SecurityBeanEm;
 import com.scareers.gui.ths.simulation.interact.gui.TraderGui;
+import com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond.BondGlobalSimulationPanel;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.FuncButton;
 import com.scareers.gui.ths.simulation.interact.gui.component.simple.tablerow.RowHeaderJTableS;
 import com.scareers.gui.ths.simulation.interact.gui.factory.ButtonFactory;
@@ -131,6 +132,11 @@ public class EmAllBkDisplayDialog extends JDialog {
     FuncButton industryBkButton;
     FuncButton areaBkButton;
 
+    JLabel dateStrLabel;
+    FuncButton preDayButton; // 将尝试刷新到上一交易日
+    FuncButton nextDayBkButton;
+
+
     /**
      * 4大按钮! + 2大切换日期(向前1向后1) 的按钮
      */
@@ -179,6 +185,50 @@ public class EmAllBkDisplayDialog extends JDialog {
         buttonContainer.add(conceptBkButton);
         buttonContainer.add(areaBkButton);
 
+        // 上下一日切换
+        dateStrLabel = new JLabel(DateUtil.today());
+//        dateStrLabel.setBorder(BorderFactory.createLineBorder(Color.red, 1));
+        dateStrLabel.setBackground(Color.black);
+        dateStrLabel.setForeground(Color.green);
+
+        preDayButton = ButtonFactory.getButton("上一日");
+        preDayButton.setForeground(Color.red);
+        preDayButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                if (instance != null) {
+                    EmAllBkDisplayDialog dialog = instance
+                            .getEmAllBkDisplayDialogYesterdayOrToday();
+                    dialog.setVisible(false);
+                    dialog.update(EastMoneyDbApi.getPreNTradeDateStrict(dateStr, 1), null, hopeKLineAmount);
+                    dialog.setVisible(true);
+                }
+            }
+        });
+
+        nextDayBkButton = ButtonFactory.getButton("下一日");
+        nextDayBkButton.setForeground(Color.red);
+        nextDayBkButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                BondGlobalSimulationPanel instance = BondGlobalSimulationPanel.getInstance();
+                if (instance != null) {
+                    EmAllBkDisplayDialog dialog = instance
+                            .getEmAllBkDisplayDialogYesterdayOrToday();
+                    dialog.setVisible(false);
+                    dialog.update(EastMoneyDbApi.getPreNTradeDateStrict(dateStr, -1), null, hopeKLineAmount);
+                    dialog.setVisible(true);
+                }
+            }
+        });
+        buttonContainer.add(preDayButton);
+        buttonContainer.add(nextDayBkButton);
+
+
+        // 放在最后
+        buttonContainer.add(dateStrLabel);
+
     }
 
     public void updateTableDataOfAsync(BkType type) {
@@ -188,16 +238,22 @@ public class EmAllBkDisplayDialog extends JDialog {
                 DataFrame<Object> dfOfBksForDisplay = getDfOfBksForDisplay(dateStr, type);
                 fullFlushBondListTable(dfOfBksForDisplay);
                 // 尝试默认选中第一行
-                int i = jXTableForBonds.convertRowIndexToModel(0);
-                if (i >= 0) {
-                    try {
-                        updateTwoChart(dateStr, SecurityBeanEm.createBK(jXTableForBonds.getModel().getValueAt(i,
-                                0).toString()
-                        ), hopeKLineAmount);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
+                try {
+//                    ThreadUtil.sleep(100);
+                    jXTableForBonds.setRowSelectionInterval(0, 0);
+                } catch (Exception e) {
+
                 }
+//                int i = jXTableForBonds.convertRowIndexToModel(0);
+//                if (i >= 0) {
+//                    try {
+//                        updateTwoChart(dateStr, SecurityBeanEm.createBK(jXTableForBonds.getModel().getValueAt(i,
+//                                0).toString()
+//                        ), hopeKLineAmount);
+//                    } catch (Exception ex) {
+//                        ex.printStackTrace();
+//                    }
+//                }
             }
         }, true);
     }
@@ -518,7 +574,7 @@ public class EmAllBkDisplayDialog extends JDialog {
         model.setRowCount(newDatas.size());
 //        model.setDataVector(newDatas, new Vector<>(tableColNames));
 
-        for (int i = 0; i < newDatas.size(); i++) {
+        for (int i = 0; i < model.getRowCount(); i++) {
             for (int j = 0; j < model.getColumnCount(); j++) {
                 model.setValueAt(newDatas.get(i).get(j), i, j);
             }
@@ -545,6 +601,7 @@ public class EmAllBkDisplayDialog extends JDialog {
         // 1.更新表格, 暂未实现
         this.dateStr = dateStr;
         this.hopeKLineAmount = hopeKLineAmount;
+        this.dateStrLabel.setText(dateStr);
 
         // 2.更新图表
         updateTwoChart(dateStr, currentBk, hopeKLineAmount);

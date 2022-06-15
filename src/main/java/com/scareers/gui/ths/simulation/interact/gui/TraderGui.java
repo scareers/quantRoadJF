@@ -19,6 +19,7 @@ import com.scareers.gui.ths.simulation.interact.gui.notify.*;
 import com.scareers.gui.ths.simulation.interact.gui.util.GuiCommonUtil;
 import com.scareers.gui.ths.simulation.trader.ConvertibleBondArbitrage;
 import com.scareers.gui.ths.simulation.trader.Trader;
+import com.scareers.utils.CommonUtil;
 import com.scareers.utils.log.LogUtil;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -29,6 +30,8 @@ import javax.swing.plaf.InsetsUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import static com.scareers.gui.ths.simulation.interact.gui.SettingsOfGuiGlobal.*;
 import static com.scareers.utils.CommonUtil.waitForever;
@@ -302,6 +305,32 @@ public class TraderGui extends JFrame {
         );
         startMenu.add(bondTtsItem6);
 
+        JMenuItem bondTtsItem7 = new JMenuItem("关闭chrome和driver");
+        bondTtsItem7.addActionListener(
+                new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ThreadUtil.execAsync(new Runnable() {
+                            @Override
+                            public void run() {
+                                int i = JOptionPane
+                                        .showConfirmDialog(TraderGui.INSTANCE,
+                                                "<html><p color=\"red\">警告: 即将关闭chrome及chromedriver全部进程, 如有selenium或浏览器运行, 将被强制关闭,造成错误!!</p></html>",
+                                                "警告",
+                                                JOptionPane.YES_NO_CANCEL_OPTION);
+                                if (i == JOptionPane.OK_OPTION) {
+                                    CommonUtil.closeChromeRelatedProcess();
+                                }
+                                // "警告: 即将关闭chrome及chromedriver全部进程, " +
+                                //                                                        "如有selenium或浏览器运行, 将被强制关闭,造成错误!!", "警告!"
+                            }
+                        }, true);
+                    }
+                }
+        );
+        startMenu.add(bondTtsItem7);
+
+
         startMenu.add(new JMenuItem("备用"));
 
 
@@ -551,10 +580,27 @@ public class TraderGui extends JFrame {
                         "是否关闭程序",
                         JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
+
+//                    ThreadUtil.execAsync(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            JOptionPane
+//                                    .showMessageDialog(mainWindow, GuiCommonUtil.buildDialogShowStr("请稍等", "保存状态中...",
+//                                            "yellow", "red"));
+//                        }
+//                    }, true);
+
+//                    ThreadUtil.sleep(500);
                     BondReviseUtil.recoverNuclearKeyBoardSettingToThs(); // 恢复核按钮配置
                     SystemTray.getSystemTray().remove(trayIcon); // 图标消失
                     if (Trader.getInstance() != null) {
-                        Trader.getInstance().stopTrade();
+                        try {
+                            Trader.getInstance().stopTrade();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        } catch (TimeoutException ex) {
+                            ex.printStackTrace();
+                        }
                     }
                     ThsNewConceptDiscoverSuper.quitAllDriver();
                     System.exit(0);

@@ -22,6 +22,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverLogLevel;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -62,16 +63,15 @@ public class ThsNewConceptDiscoverSuper {
 
         // 强制关闭遗留! --> 注意也会关闭正常的浏览器
 
-        String command = "taskkill /f /im chromedriver.exe";
-        Runtime.getRuntime().exec(command);
-        command = "taskkill /f /im chrome.exe";
-        Runtime.getRuntime().exec(command);
+        CommonUtil.closeChromeRelatedProcess();
+        return;
 
 
 //        main0();
 
 
     }
+
 
     @Data
     @NoArgsConstructor
@@ -113,7 +113,7 @@ public class ThsNewConceptDiscoverSuper {
         for (int i = 0; i < driverPoolSize; i++) {
             drivers.add(new SpecialDriver(headless));
         }
-
+        CommonUtil.notifyInfo("初始化 chrome池 成功");
 
         while (true) {
             TimeInterval timer = DateUtil.timer();
@@ -189,9 +189,9 @@ public class ThsNewConceptDiscoverSuper {
             int j = content.indexOf("”");
             String conceptName = content.substring(i + 1, j);
 
-            CommonUtil.notifyInfo(
-                    StrUtil.format("{}/{} -- {}", stockBondBean.getBondName(), stockBondBean.getStockName(),
-                            thsKeyIssue)); // 增加概念
+//            CommonUtil.notifyInfo(
+//                    StrUtil.format("{}/{} -- {}", stockBondBean.getBondName(), stockBondBean.getStockName(),
+//                            thsKeyIssue)); // 增加概念
 
             if (!oldAllConceptNameSet.contains(conceptName)) {
                 notiTimesOfConceptMap.putIfAbsent(conceptName, 0);

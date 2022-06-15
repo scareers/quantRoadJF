@@ -687,7 +687,8 @@ public class BondGlobalSimulationPanel extends JPanel {
                         indexFsKLineDialogYesterdayOrToday.setTitle("两大指数今日分时图与k线");
                         try {
                             indexFsKLineDialogYesterdayOrToday
-                                    .update(getReviseDateStrSettingYMD(), indexKlineAmountHopeY);
+                                    .update(getReviseDateStrSettingYMD(),
+                                            indexKlineAmountHopeY);
                             indexFsKLineDialogYesterdayOrToday.setVisible(true);
                         } catch (Exception ex) {
                             ex.printStackTrace();

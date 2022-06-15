@@ -580,4 +580,20 @@ public class CommonUtil {
         }
     }
 
+    /**
+     * 尝试关闭 chrome相关; selenium调试后尤其
+     *
+     * @throws IOException
+     */
+    public static void closeChromeRelatedProcess()  {
+        try {
+            String command = "taskkill /f /im chromedriver.exe";
+            Runtime.getRuntime().exec(command);
+            command = "taskkill /f /im chrome.exe";
+            Runtime.getRuntime().exec(command);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
