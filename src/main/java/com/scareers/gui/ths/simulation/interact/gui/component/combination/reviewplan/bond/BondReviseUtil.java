@@ -71,6 +71,8 @@ public class BondReviseUtil {
     public static final long dummyBuySellOperationSleep = 400; // 模拟交易的弹窗持续的时间
     public static final long dummyClinchOccurSleep = 1500; // 模拟买卖后, 到成交时间,大约sleep多久, 在上个sleep之后
 
+    public static final int indexKlineAmountHopeY = 200; // 查看昨日指数时,k线期望的数量
+
     public static void main(String[] args) {
 //        playClinchSuccessSound();
 //        playClinchFailSound();
@@ -639,7 +641,7 @@ public class BondReviseUtil {
      */
     public static class TableCellRendererForBondTable extends DefaultTableCellRenderer {
         public static Font font1 = new Font("微软雅黑", Font.PLAIN, 14);
-//        public static Font font2 = new Font("楷体", Font.BOLD, 12);
+        //        public static Font font2 = new Font("楷体", Font.BOLD, 12);
         public static Font font2 = new Font("楷体", Font.PLAIN, 14);
 
         Color selectBackground;

@@ -1,7 +1,6 @@
 package com.scareers.gui.ths.simulation.interact.gui.component.combination.reviewplan.bond;
 
 import cn.hutool.core.date.*;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.log.Log;
@@ -24,6 +23,7 @@ import com.scareers.utils.charts.CrossLineListenerForFsXYPlot;
 import com.scareers.utils.charts.EmChartFs;
 import com.scareers.utils.charts.EmChartFs.DynamicEmFs1MV2ChartForRevise;
 import com.scareers.utils.charts.EmChartKLine;
+import com.scareers.utils.charts.EmTwoIndexFsAndKLineDialog;
 import com.scareers.utils.log.LogUtil;
 import joinery.DataFrame;
 import lombok.Getter;
@@ -346,10 +346,13 @@ public class BondGlobalSimulationPanel extends JPanel {
     FuncButton pauseRebootReviseButton; // 暂停和重启按钮, 将自行变换状态; 检测 自身text 判定应当执行的功能!
     FuncButton buttonCollapsibleKLinePanel; // 关闭k线折叠面板
     FuncButton openAccountButton; // 打开账户按钮! -f12
+    FuncButton openIndexPreFsAndKLineButton; // 打开指数昨日分时图与k线对话框! - f3
+    // @warning: 未来数据!
+    FuncButton openIndexTodayFsAndKLineButton; // 打开指数今日分时图与k线对话框! - f3
 
     volatile ReviseAccountWithOrder account; // 账户对象, 点击开始按钮首次实例化! 见开始按钮的回调
     public static final Object accountLock = new Object(); // 任意时候, 访问account, 均需要同步获取锁
-
+    EmTwoIndexFsAndKLineDialog indexFsKLineDialogYesterdayOrToday; // 两大指数的分时图和k线: 昨天的 或今天的; 点击不同按钮出现
     ThreadPoolExecutor poolExecutorForKLineUpdate = new ThreadPoolExecutor(4, 8, 100, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>()); // 专门用于k线更新的; 异步执行
 
@@ -644,6 +647,55 @@ public class BondGlobalSimulationPanel extends JPanel {
         // 5.模拟账户打开!
         initOpenAccountButton();
         functionContainerMain.add(openAccountButton);
+
+        // 6.指数昨日分时图与k线, 给盘前看的
+        indexFsKLineDialogYesterdayOrToday = new EmTwoIndexFsAndKLineDialog(TraderGui.INSTANCE, "两大指数上一交易日分时图与k线",
+                true);
+        openIndexPreFsAndKLineButton = ButtonFactory.getButton("指数昨日");
+        openIndexPreFsAndKLineButton.setForeground(Color.green);
+        openIndexPreFsAndKLineButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String reviseDateStrSettingYMD = getReviseDateStrSettingYMD();
+                            indexFsKLineDialogYesterdayOrToday
+                                    .update(EastMoneyDbApi.getPreNTradeDateStrict(reviseDateStrSettingYMD, 1),
+                                            indexKlineAmountHopeY);
+                            indexFsKLineDialogYesterdayOrToday.setVisible(true);
+
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }, true);
+
+            }
+        });
+        openIndexTodayFsAndKLineButton = ButtonFactory.getButton("指数今日");
+        openIndexTodayFsAndKLineButton.setForeground(Color.red);
+        openIndexTodayFsAndKLineButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ThreadUtil.execAsync(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            indexFsKLineDialogYesterdayOrToday
+                                    .update(getReviseDateStrSettingYMD(), indexKlineAmountHopeY);
+                            indexFsKLineDialogYesterdayOrToday.setVisible(true);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }, true);
+
+            }
+        });
+        functionContainerMain.add(openIndexPreFsAndKLineButton);
+        functionContainerMain.add(openIndexTodayFsAndKLineButton);
 
 
     }
