@@ -30,7 +30,9 @@ public class DailyKlineDataEmOfStock extends DailyKlineDataEm {
     @Override
     protected List<SecurityBeanEm> getBeanList() {
 //        return getStockBeanList(20);
-        return getAllStockList();
+        List<SecurityBeanEm> allStockList = getAllStockList();
+        allStockList.addAll(getAllBondList());
+        return allStockList;
     }
 
 }
