@@ -148,7 +148,7 @@ public class CrawlerChainEm {
             synCrawlerEm.run();
         }
 
-        log.error("show: 开始执行前置爬虫");
+        log.error("show: 开始执行前置爬虫" );
         for (CrawlerEm frontCrawlerEm : frontCrawlerEms) {
             esFront.submit(() -> {
                 frontCrawlerEm.run();
